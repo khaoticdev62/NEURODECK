@@ -193,6 +193,16 @@ if (!window.__TAURI_INTERNALS__) {
                 return [];
             case 'get_active_transfers':
                 return [];
+            case 'agent_step':
+                return JSON.stringify({
+                    thought: "Mock: I'll write a simple Python hello world script.",
+                    code: 'print("Hello from NEURODECK Agent!")',
+                    lang: "python",
+                    action: "run_code",
+                    summary: "Print a hello world message"
+                });
+            case 'agent_exec_code':
+                return "Hello from NEURODECK Agent!\n(mock output — run in Tauri for real execution)";
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -237,6 +247,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
                     <button class="nav-tab" data-view="share">📤 Share</button>
                     <button class="nav-tab" data-view="browser">🌐 Browser</button>
+                    <button class="nav-tab" data-view="agent">🤖 Agent</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -509,6 +520,45 @@ document.querySelector('#app').innerHTML = `
                                     <p class="blocked-url" id="blocked-url-display"></p>
                                     <button class="browser-btn go-btn blocked-ext-btn" id="blocked-open-ext-btn">Open in System Browser ↗️</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Autonomous Coding Agent View -->
+                <div class="view-content" id="view-agent">
+                    <div class="agent-toolbar">
+                        <input type="text" id="agent-task-input" class="agent-task-input" placeholder="Describe your task… e.g. Write a Python script that lists all .txt files in the current directory">
+                        <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
+                        <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
+                        <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
+                    </div>
+
+                    <div class="agent-body">
+                        <!-- Left: step-by-step log -->
+                        <div class="agent-log-pane" id="agent-log-pane">
+                            <div class="agent-pane-header">Execution Log</div>
+                            <div class="agent-log" id="agent-log">
+                                <div class="agent-empty-state">
+                                    <div class="agent-empty-icon">🤖</div>
+                                    <p>Describe a task above and click <strong>Run Agent</strong>.</p>
+                                    <p class="agent-empty-hint">The agent will write code, execute it, and iterate until the task is complete — up to 5 steps.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: code + live output -->
+                        <div class="agent-code-pane" id="agent-code-pane">
+                            <div class="agent-pane-header">
+                                <span>Current Code</span>
+                                <button class="agent-btn agent-btn-sm" id="agent-send-canvas-btn" title="Open in Canvas">→ Canvas</button>
+                            </div>
+                            <div class="agent-code-display" id="agent-code-display">
+                                <pre id="agent-code-pre"><code id="agent-code-content" class="agent-code"></code></pre>
+                            </div>
+                            <div class="agent-output-header">Output</div>
+                            <div class="agent-output" id="agent-output">
+                                <span class="agent-output-empty">No output yet.</span>
                             </div>
                         </div>
                     </div>
@@ -916,6 +966,12 @@ function getGamepadFocusableElements() {
         "#view-share.active #share-filepath-input",
         "#view-share.active #share-send-btn",
         
+        // Agent View
+        "#view-agent.active #agent-task-input",
+        "#view-agent.active #agent-run-btn",
+        "#view-agent.active #agent-stop-btn",
+        "#view-agent.active #agent-send-canvas-btn",
+
         // Inspect Drawer if not collapsed
         "#inspect-drawer:not(.collapsed) #inspect-close-btn"
     ];
@@ -2373,6 +2429,7 @@ invoke("get_initial_state").then((state) => {
     initTunnelClient();
     initFileShare();
     initBrowser();
+    initAgentView();
 }).catch((err) => {
     console.error("Error getting initial state:", err);
 });
@@ -3429,5 +3486,174 @@ function initBrowser() {
 
     // Initialize
     loadPage("neurodeck://home");
+}
+
+// ==========================================================================
+// AUTONOMOUS CODING AGENT
+// ==========================================================================
+function initAgentView() {
+    const taskInput = document.getElementById("agent-task-input");
+    const runBtn = document.getElementById("agent-run-btn");
+    const stopBtn = document.getElementById("agent-stop-btn");
+    const iterLabel = document.getElementById("agent-iter-label");
+    const logEl = document.getElementById("agent-log");
+    const codePre = document.getElementById("agent-code-content");
+    const outputEl = document.getElementById("agent-output");
+    const sendCanvasBtn = document.getElementById("agent-send-canvas-btn");
+
+    if (!taskInput || !runBtn) return;
+
+    let agentRunning = false;
+    let agentShouldStop = false;
+    let lastCode = "";
+    let lastLang = "python";
+
+    function setRunning(on) {
+        agentRunning = on;
+        runBtn.classList.toggle("hidden", on);
+        stopBtn.classList.toggle("hidden", !on);
+        iterLabel.classList.toggle("hidden", !on);
+        taskInput.disabled = on;
+    }
+
+    function appendLog(type, content, step) {
+        // Remove empty state on first entry
+        const empty = logEl.querySelector(".agent-empty-state");
+        if (empty) empty.remove();
+
+        const entry = document.createElement("div");
+        entry.className = `agent-log-entry agent-log-${type}`;
+
+        const icons = { thought: "💭", code: "📄", exec: "⚡", output: "📟", done: "✅", error: "❌", info: "ℹ️" };
+        const labels = { thought: "Thinking", code: "Code Written", exec: "Executing", output: "Output", done: "Done", error: "Error", info: "Info" };
+
+        entry.innerHTML = `<span class="agent-log-icon">${icons[type] || "•"}</span>
+            <div class="agent-log-body">
+                <div class="agent-log-label">${step !== undefined ? `Step ${step} — ` : ""}${labels[type] || type}</div>
+                <div class="agent-log-text">${escapeHtml(String(content))}</div>
+            </div>`;
+
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function parseAgentStep(raw) {
+        // Strip markdown fences if present
+        let text = raw.trim();
+        const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (fence) text = fence[1].trim();
+        // Find JSON object
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]); } catch (_) {}
+        }
+        // Fallback: treat whole thing as error
+        return { thought: raw, code: "", lang: "python", action: "error", summary: "Failed to parse agent response" };
+    }
+
+    async function runAgentLoop(task) {
+        const history = [];
+        const MAX_STEPS = 5;
+        setRunning(true);
+        agentShouldStop = false;
+
+        logEl.innerHTML = "";
+        outputEl.innerHTML = '<span class="agent-output-empty">Waiting…</span>';
+        codePre.textContent = "";
+
+        for (let step = 1; step <= MAX_STEPS; step++) {
+            if (agentShouldStop) {
+                appendLog("info", "Agent stopped by user.", step);
+                break;
+            }
+
+            iterLabel.textContent = `Step ${step} / ${MAX_STEPS}`;
+
+            // 1. Call LLM
+            appendLog("info", "Calling LLM…", step);
+            let raw;
+            try {
+                raw = await invoke("agent_step", { task, history });
+            } catch (e) {
+                appendLog("error", `LLM call failed: ${e}`, step);
+                break;
+            }
+
+            if (agentShouldStop) break;
+
+            // 2. Parse response
+            const parsed = parseAgentStep(raw);
+            appendLog("thought", parsed.thought || "(no thought)", step);
+
+            if (parsed.action === "done") {
+                appendLog("done", parsed.summary || "Task complete.", step);
+                break;
+            }
+
+            if (parsed.action === "error") {
+                appendLog("error", parsed.summary || "Agent reported an error.", step);
+                break;
+            }
+
+            if (!parsed.code) {
+                appendLog("error", "Agent returned no code and action is not done.", step);
+                break;
+            }
+
+            // 3. Show code
+            lastCode = parsed.code;
+            lastLang = parsed.lang || "python";
+            codePre.textContent = parsed.code;
+            appendLog("code", `[${(parsed.lang || "?").toUpperCase()}] ${parsed.summary || ""}`, step);
+
+            if (agentShouldStop) break;
+
+            // 4. Execute
+            appendLog("exec", `Running ${parsed.lang} code…`, step);
+            outputEl.innerHTML = '<span class="agent-output-spinner">⟳ Executing…</span>';
+
+            let execOut;
+            try {
+                execOut = await invoke("agent_exec_code", { code: parsed.code, lang: parsed.lang });
+            } catch (e) {
+                execOut = `[Error] ${e}`;
+            }
+
+            outputEl.textContent = execOut;
+            appendLog("output", execOut.length > 300 ? execOut.slice(0, 300) + "…" : execOut, step);
+
+            // 5. Feed into history
+            history.push({ role: "step", content: JSON.stringify(parsed) });
+            history.push({ role: "output", content: execOut });
+        }
+
+        setRunning(false);
+    }
+
+    runBtn.onclick = () => {
+        const task = taskInput.value.trim();
+        if (!task) { taskInput.focus(); return; }
+        runAgentLoop(task);
+    };
+
+    taskInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey && !agentRunning) {
+            e.preventDefault();
+            runBtn.click();
+        }
+    });
+
+    stopBtn.onclick = () => { agentShouldStop = true; };
+
+    sendCanvasBtn.onclick = () => {
+        if (!lastCode) return;
+        window.neurodeckCanvas.loadCode(lastLang, lastCode);
+        const canvasTab = document.querySelector('[data-view="canvas"]');
+        if (canvasTab) canvasTab.click();
+    };
 }
 
