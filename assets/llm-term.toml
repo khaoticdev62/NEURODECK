@@ -1,0 +1,30 @@
+# Alacritty Configuration for SteamOS LLM Terminal (Neurodeck)
+# Copy this file to ~/.config/alacritty/llm-term.toml on your Steam Deck
+
+[window]
+dimensions = { columns = 120, lines = 30 }
+padding = { x = 10, y = 10 }
+decorations = "none"
+fullscreen = true
+
+[font]
+normal = { family = "monospace", style = "Regular" }
+size = 14.0
+
+[colors]
+# Default colors
+primary = { background = "#0C0C0C", foreground = "#E0E0E0" }
+
+# Normal colors
+normal = { black = "#0C0C0C", red = "#FF5555", green = "#50FA7B", yellow = "#F1FA8C", blue = "#BD93F9", magenta = "#FF79C6", cyan = "#00F0FF", white = "#BFBFBF" }
+
+# Bright colors
+bright = { black = "#4D4D4D", red = "#FF6E67", green = "#5AF78E", yellow = "#F4F99D", blue = "#CAA9FA", magenta = "#FF92D0", cyan = "#5AF7FF", white = "#E6E6E6" }
+
+[cursor]
+style = { shape = "Block", blinking = "On" }
+blink_interval = 500
+
+[keyboard]
+# Add any specific keybindings if needed
+# Example: Map Ctrl+S to save (handled by Bubble Tea)

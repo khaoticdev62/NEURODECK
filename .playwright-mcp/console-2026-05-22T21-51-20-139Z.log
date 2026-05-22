@@ -1,0 +1,40 @@
+[      35ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ http://localhost:5173/src/main.js:193
+[      45ms] [LOG] [Mock IPC] Invoked: get_initial_state {} @ http://localhost:5173/src/main.js:35
+[      45ms] [LOG] [Mock IPC] Invoked: get_personas {} @ http://localhost:5173/src/main.js:35
+[      45ms] [LOG] [Mock IPC] Invoked: set_theme {name: Nord} @ http://localhost:5173/src/main.js:35
+[      45ms] [LOG] [Mock IPC] Invoked: list_sessions {} @ http://localhost:5173/src/main.js:35
+[      55ms] [LOG] [Mock IPC] Invoked: pty_kill {id: main_pty_session} @ http://localhost:5173/src/main.js:35
+[      56ms] [WARNING] [Mock IPC] Unknown command: pty_kill @ http://localhost:5173/src/main.js:187
+[      56ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[      56ms] [LOG] [Mock IPC] Invoked: get_discovered_peers {} @ http://localhost:5173/src/main.js:35
+[      56ms] [WARNING] [Mock IPC] Unknown command: get_discovered_peers @ http://localhost:5173/src/main.js:187
+[      56ms] [LOG] [Mock IPC] Invoked: get_active_transfers {} @ http://localhost:5173/src/main.js:35
+[      56ms] [WARNING] [Mock IPC] Unknown command: get_active_transfers @ http://localhost:5173/src/main.js:187
+[      56ms] [LOG] [Mock IPC] Invoked: pty_spawn {id: main_pty_session, cols: 80, rows: 24, shell: null} @ http://localhost:5173/src/main.js:35
+[      57ms] [WARNING] [Mock IPC] Unknown command: pty_spawn @ http://localhost:5173/src/main.js:187
+[      66ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[    5058ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   10058ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   15058ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   20058ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   25058ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   30057ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   35057ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   40057ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   45056ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   50056ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   55056ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   60056ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   61507ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ http://localhost:5173/src/main.js:203
+[   61529ms] [LOG] [Mock IPC] Invoked: get_initial_state {} @ http://localhost:5173/src/main.js:35
+[   61529ms] [LOG] [Mock IPC] Invoked: get_personas {} @ http://localhost:5173/src/main.js:35
+[   61530ms] [LOG] [Mock IPC] Invoked: set_theme {name: Nord} @ http://localhost:5173/src/main.js:35
+[   61530ms] [LOG] [Mock IPC] Invoked: list_sessions {} @ http://localhost:5173/src/main.js:35
+[   61539ms] [LOG] [Mock IPC] Invoked: pty_kill {id: main_pty_session} @ http://localhost:5173/src/main.js:35
+[   61540ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   61540ms] [LOG] [Mock IPC] Invoked: get_discovered_peers {} @ http://localhost:5173/src/main.js:35
+[   61540ms] [LOG] [Mock IPC] Invoked: get_active_transfers {} @ http://localhost:5173/src/main.js:35
+[   61542ms] [LOG] [Mock IPC] Invoked: pty_spawn {id: main_pty_session, cols: 80, rows: 24, shell: null} @ http://localhost:5173/src/main.js:35
+[   61549ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[   66540ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   71540ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35

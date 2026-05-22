@@ -1,0 +1,11 @@
+[theme]
+primary_color = "#00F0FF"
+secondary_color = "#FF0055"
+bg_color = "#050505"
+foreground_color = "#D9F7FF"
+response_color = "#00FF88"
+
+[llm]
+default_provider = "ollama"
+ollama_model = "llama2"
+gemini_model = "gemini-1.5-flash"

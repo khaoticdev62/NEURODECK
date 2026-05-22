@@ -1,0 +1,23 @@
+{
+  "document": {
+    "margin": 1
+  },
+  "heading": {
+    "foreground": "#FF00FF",
+    "bold": true
+  },
+  "h1": {
+    "foreground": "#FF00FF",
+    "bold": true
+  },
+  "code_block": {
+    "background": "#1A1A1A"
+  },
+  "link": {
+    "foreground": "#FF00FF",
+    "underline": true
+  },
+  "text": {
+    "foreground": "#E0E0FF"
+  }
+}

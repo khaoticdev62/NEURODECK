@@ -1,0 +1,89 @@
+# generated: 2026-05-11
+# last_updated: 2026-05-11
+# project: S-Term
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+generated: 2026-05-11
+last_updated: 2026-05-11
+project: S-Term
+project_key: NOKEY
+tracking_system: file-system
+story_location: {project-root}/_bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: done
+  1-1-bootstrap-repository: done
+  1-2-configure-bubble-tea: done
+  1-3-create-viewport: done
+  1-4-build-input-system: done
+  epic-1-retrospective: done
+
+  epic-2: in-progress
+  2-1-implement-steam-input-mappings: done
+  2-2-create-launch-wrapper: done
+  2-3-validate-gamescope-support: ready-for-dev
+  2-4-refine-steam-input-radial-menu-support: ready-for-dev
+  epic-2-retrospective: optional
+
+  epic-3: done
+  3-1-connect-ollama-backend: done
+  3-2-implement-streaming: done
+  3-3-add-loading-indicators: done
+  epic-3-retrospective: optional
+
+  epic-4: done
+  4-1-persistence-layer: done
+  4-2-session-export: done
+  4-3-markdown-support: done
+  4-4-session-loading-in-ui: done
+  epic-4-retrospective: optional
+
+  epic-5: done
+  5-1-theme-engine: done
+  5-2-animation-system: done
+  5-3-performance-optimization: done
+  5-4-persona-engine-system-prompts: done
+  5-5-dynamic-markdown-width: done
+  epic-5-retrospective: optional
+
+  epic-6: done
+  6-1-command-execution: done
+  6-2-cross-platform-commands: done
+  6-3-file-mentions: done
+  6-4-text-to-speech: done
+  6-5-speech-to-text: done
+  6-6-game-detection: done
+
+  7-1-lua-runtime: done
+  7-2-expose-functions: done
+  7-3-script-execution: done
+  7-4-example-scripts: done
+  epic-7: done
+
+  epic-8: done
+  8-1-plugin-discovery: done
+  8-2-register-commands: done
+  8-3-hook-events: done
+  8-4-example-plugins: done
+
+  epic-9: done
+  9-1-vector-db: done
+  9-2-generate-embeddings: done
+  9-3-store-retrieve: done
+  9-4-rag: done
+
+  epic-10: done
+  10-1-help-screen: done
+  10-2-responsiveness: done
+  10-3-loading-indicator: done
+
+  epic-11: done
+  11-1-docs: done
+  11-2-install-script: done
+  11-3-cross-platform: done
+
+  epic-12: done
+  12-1-switch-persona: done
+  12-2-dual-agent: done

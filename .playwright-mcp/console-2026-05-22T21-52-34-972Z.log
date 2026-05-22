@@ -1,0 +1,41 @@
+[      25ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ http://localhost:5173/src/main.js:203
+[      35ms] [LOG] [Mock IPC] Invoked: get_initial_state {} @ http://localhost:5173/src/main.js:35
+[      36ms] [LOG] [Mock IPC] Invoked: get_personas {} @ http://localhost:5173/src/main.js:35
+[      36ms] [LOG] [Mock IPC] Invoked: set_theme {name: Nord} @ http://localhost:5173/src/main.js:35
+[      36ms] [LOG] [Mock IPC] Invoked: list_sessions {} @ http://localhost:5173/src/main.js:35
+[      46ms] [LOG] [Mock IPC] Invoked: pty_kill {id: main_pty_session} @ http://localhost:5173/src/main.js:35
+[      46ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[      46ms] [LOG] [Mock IPC] Invoked: get_discovered_peers {} @ http://localhost:5173/src/main.js:35
+[      46ms] [LOG] [Mock IPC] Invoked: get_active_transfers {} @ http://localhost:5173/src/main.js:35
+[      47ms] [LOG] [Mock IPC] Invoked: pty_spawn {id: main_pty_session, cols: 80, rows: 24, shell: null} @ http://localhost:5173/src/main.js:35
+[      55ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[    5052ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   10052ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   15052ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   20049ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   25051ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   30051ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   35047ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   40050ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   45050ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   50048ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   55046ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   60049ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   65050ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   70049ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   75049ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   80048ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   81150ms] [LOG] [Mock IPC] Invoked: send_command {prompt: hello} @ http://localhost:5173/src/main.js:35
+[   82651ms] [LOG] [Mock IPC] Invoked: speak_text {text: Hello! This is a simulated stream response from NE…ECK.
+
+You sent: "hello".
+
+Let's test code output:} @ http://localhost:5173/src/main.js:35
+[   82651ms] [LOG] [Mock TTS] Speaking: Hello! This is a simulated stream response from NEURODECK.
+
+You sent: "hello".
+
+Let's test code output: @ http://localhost:5173/src/main.js:94
+[   82651ms] [LOG] [Mock IPC] Invoked: list_sessions {} @ http://localhost:5173/src/main.js:35
+[   85048ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
+[   90048ms] [LOG] [Mock IPC] Invoked: send_tunnel_request {request: {"type":"run_cmd","command":"whoami"}} @ http://localhost:5173/src/main.js:35
