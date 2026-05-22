@@ -948,8 +948,25 @@ document.querySelectorAll(".bg-preset-btn").forEach(btn => {
 let gamepadActive = false;
 let gamepadFocusIndex = -1;
 let previousGamepadState = {
-    buttons: Array(17).fill(false)
+    buttons: Array(32).fill(false),
+    l2Held: false,
+    r2Held: false,
 };
+
+// Radial menu state
+let radialMenuVisible = false;
+let radialSelectedSegment = null;
+
+const RADIAL_SEGMENTS = [
+    { icon: "💬", label: "Chat",     view: "chat"     },
+    { icon: "🎨", label: "Canvas",   view: "canvas"   },
+    { icon: "💻", label: "Terminal", view: "terminal" },
+    { icon: "🔗", label: "Tunnel",   view: "tunnel"   },
+    { icon: "🌐", label: "Browser",  view: "browser"  },
+    { icon: "🤖", label: "Agent",    view: "agent"    },
+    { icon: "🧠", label: "Memory",   view: "memory"   },
+    { icon: "📤", label: "Share",    view: "share"    },
+];
 
 function getGamepadFocusableElements() {
     // If settings overlay is open, focus only settings elements
@@ -1078,6 +1095,125 @@ document.addEventListener("mousedown", () => {
     document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
     gamepadFocusIndex = -1;
 });
+
+function initRadialMenu() {
+    const overlay = document.createElement("div");
+    overlay.id = "radial-menu";
+    overlay.className = "radial-menu";
+    overlay.setAttribute("aria-hidden", "true");
+
+    // Build SVG pie ring — 8 sectors of 45° each
+    const R_OUTER = 130;
+    const R_INNER = 52;
+    const CX = 150;
+    const CY = 150;
+
+    function polarToXY(angleDeg, r) {
+        const rad = (angleDeg - 90) * Math.PI / 180;
+        return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+    }
+
+    let svgPaths = "";
+    RADIAL_SEGMENTS.forEach((seg, i) => {
+        const startAngle = i * 45 - 22.5;
+        const endAngle = startAngle + 45;
+        const p1 = polarToXY(startAngle, R_INNER);
+        const p2 = polarToXY(startAngle, R_OUTER);
+        const p3 = polarToXY(endAngle, R_OUTER);
+        const p4 = polarToXY(endAngle, R_INNER);
+        const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${R_OUTER} ${R_OUTER} 0 0 1 ${p3.x} ${p3.y} L ${p4.x} ${p4.y} A ${R_INNER} ${R_INNER} 0 0 0 ${p1.x} ${p1.y} Z`;
+        svgPaths += `<path class="radial-slice" data-segment="${i}" d="${d}" />`;
+    });
+
+    // Build item labels positioned around the ring
+    const LABEL_R = 105;
+    let items = "";
+    RADIAL_SEGMENTS.forEach((seg, i) => {
+        const angleDeg = i * 45;
+        const rad = (angleDeg - 90) * Math.PI / 180;
+        const x = CX + LABEL_R * Math.cos(rad);
+        const y = CY + LABEL_R * Math.sin(rad);
+        items += `<div class="radial-item" data-segment="${i}" style="left:${x}px;top:${y}px">
+            <span class="radial-item-icon">${seg.icon}</span>
+            <span class="radial-item-label">${seg.label}</span>
+        </div>`;
+    });
+
+    overlay.innerHTML = `
+        <div class="radial-backdrop"></div>
+        <div class="radial-ring" id="radial-ring">
+            <svg class="radial-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                ${svgPaths}
+            </svg>
+            ${items}
+            <div class="radial-center" id="radial-center-label">
+                <span class="radial-center-icon" id="radial-center-icon">🎮</span>
+                <span class="radial-center-text" id="radial-center-text">MENU</span>
+            </div>
+        </div>
+        <div class="radial-hint">Release L2 to navigate · Push stick to select</div>`;
+
+    document.body.appendChild(overlay);
+}
+
+function showRadialMenu() {
+    const el = document.getElementById("radial-menu");
+    if (el) el.classList.add("active");
+    radialMenuVisible = true;
+    radialSelectedSegment = null;
+    updateRadialDisplay(null);
+}
+
+function hideRadialMenu() {
+    const el = document.getElementById("radial-menu");
+    if (el) el.classList.remove("active");
+    radialMenuVisible = false;
+    radialSelectedSegment = null;
+}
+
+function getRadialSegmentFromStick(x, y) {
+    const DEADZONE = 0.38;
+    if (Math.sqrt(x * x + y * y) < DEADZONE) return null;
+    // atan2(x, -y) gives 0=up, increasing clockwise
+    let angle = Math.atan2(x, -y) * 180 / Math.PI;
+    if (angle < 0) angle += 360;
+    // Offset by half-segment (22.5°) so segments are centered on cardinal/diagonal directions
+    angle = (angle + 22.5) % 360;
+    return Math.floor(angle / 45) % 8;
+}
+
+function updateRadialDisplay(segIdx) {
+    radialSelectedSegment = segIdx;
+
+    // Update slice highlights
+    document.querySelectorAll(".radial-slice").forEach(slice => {
+        const si = parseInt(slice.dataset.segment, 10);
+        slice.classList.toggle("active", si === segIdx);
+    });
+    // Update item highlights
+    document.querySelectorAll(".radial-item").forEach(item => {
+        const si = parseInt(item.dataset.segment, 10);
+        item.classList.toggle("active", si === segIdx);
+    });
+
+    const centerIcon = document.getElementById("radial-center-icon");
+    const centerText = document.getElementById("radial-center-text");
+    if (segIdx !== null && RADIAL_SEGMENTS[segIdx]) {
+        const seg = RADIAL_SEGMENTS[segIdx];
+        if (centerIcon) centerIcon.textContent = seg.icon;
+        if (centerText) centerText.textContent = seg.label;
+    } else {
+        if (centerIcon) centerIcon.textContent = "🎮";
+        if (centerText) centerText.textContent = "MENU";
+    }
+}
+
+function activateRadialSegment(segIdx) {
+    if (segIdx === null || !RADIAL_SEGMENTS[segIdx]) return;
+    const view = RADIAL_SEGMENTS[segIdx].view;
+    const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
+    if (tab) tab.click();
+}
 
 function pollGamepads() {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -1228,32 +1364,43 @@ function pollGamepads() {
         updateGamepadFocus(gamepadFocusIndex + 1);
     }
 
-    // D-pad Left (14) / Right (15) - adjust sliders / selects
+    // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
     if (buttonPressed(14) || buttonPressed(15)) {
         const els = getGamepadFocusableElements();
         const activeEl = els[gamepadFocusIndex];
-        if (activeEl) {
+        const handled = activeEl && (() => {
             if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
                 let val = parseInt(activeEl.value, 10);
                 const step = parseInt(activeEl.step, 10) || 5;
-                if (buttonPressed(14)) {
-                    val = Math.max(parseInt(activeEl.min, 10) || 0, val - step);
-                } else {
-                    val = Math.min(parseInt(activeEl.max, 10) || 100, val + step);
-                }
-                activeEl.value = val;
+                activeEl.value = buttonPressed(14)
+                    ? Math.max(parseInt(activeEl.min, 10) || 0, val - step)
+                    : Math.min(parseInt(activeEl.max, 10) || 100, val + step);
                 activeEl.dispatchEvent(new Event("input", { bubbles: true }));
-            } else if (activeEl.tagName === "SELECT") {
+                return true;
+            }
+            if (activeEl.tagName === "SELECT") {
                 let idx = activeEl.selectedIndex;
-                if (buttonPressed(14)) {
-                    idx = Math.max(0, idx - 1);
-                } else {
-                    idx = Math.min(activeEl.options.length - 1, idx + 1);
-                }
+                idx = buttonPressed(14) ? Math.max(0, idx - 1) : Math.min(activeEl.options.length - 1, idx + 1);
                 if (idx !== activeEl.selectedIndex) {
                     activeEl.selectedIndex = idx;
                     activeEl.dispatchEvent(new Event("change", { bubbles: true }));
                 }
+                return true;
+            }
+            return false;
+        })();
+
+        // Fallback: cycle tabs when no slider/select is focused
+        if (!handled) {
+            const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+            const activeTabIdx = tabs.findIndex(t => t.classList.contains("active"));
+            if (activeTabIdx !== -1) {
+                const nextIdx = buttonPressed(14)
+                    ? (activeTabIdx - 1 + tabs.length) % tabs.length
+                    : (activeTabIdx + 1) % tabs.length;
+                tabs[nextIdx].click();
+                gamepadFocusIndex = -1;
+                document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
             }
         }
     }
@@ -1282,10 +1429,33 @@ function pollGamepads() {
         cycleTheme();
     }
 
+    // === RADIAL MENU — L2 Trigger (button 6 / axis 5) ===
+    const l2Raw = gp.buttons[6] ? gp.buttons[6].value : 0;
+    const l2Held = l2Raw > 0.5;
+    const l2WasHeld = previousGamepadState.l2Held;
+
+    if (l2Held && !l2WasHeld) {
+        // L2 just pressed — show radial
+        showRadialMenu();
+    } else if (l2Held) {
+        // L2 held — update selected segment from left stick
+        const stickX = gp.axes[0] || 0;
+        const stickY = gp.axes[1] || 0;
+        const seg = getRadialSegmentFromStick(stickX, stickY);
+        if (seg !== radialSelectedSegment) {
+            updateRadialDisplay(seg);
+        }
+    } else if (!l2Held && l2WasHeld) {
+        // L2 just released — activate selected and close
+        activateRadialSegment(radialSelectedSegment);
+        hideRadialMenu();
+    }
+
     // Sync button state for next frame
     for (let i = 0; i < gp.buttons.length; i++) {
         previousGamepadState.buttons[i] = gp.buttons[i] && gp.buttons[i].pressed;
     }
+    previousGamepadState.l2Held = l2Held;
 
     requestAnimationFrame(pollGamepads);
 }
@@ -2154,6 +2324,38 @@ function startNewSession() {
 document.getElementById("new-chat-btn").onclick = startNewSession;
 
 // Keydown shortcuts for Save/Load/Record/Mute
+// Backtick (`) — toggle radial menu for keyboard/desktop testing
+window.addEventListener("keydown", function(e) {
+    if (e.key === "`" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        if (radialMenuVisible) {
+            hideRadialMenu();
+        } else {
+            showRadialMenu();
+        }
+        return;
+    }
+});
+
+// Arrow keys to cycle radial segments when menu is open
+window.addEventListener("keydown", function(e) {
+    if (!radialMenuVisible) return;
+    const keyToSeg = { ArrowUp: 0, ArrowRight: 2, ArrowDown: 4, ArrowLeft: 6 };
+    if (e.key in keyToSeg) {
+        e.preventDefault();
+        updateRadialDisplay(keyToSeg[e.key]);
+    }
+    if (e.key === "Enter") {
+        e.preventDefault();
+        activateRadialSegment(radialSelectedSegment);
+        hideRadialMenu();
+    }
+    if (e.key === "Escape") {
+        e.preventDefault();
+        hideRadialMenu();
+    }
+});
+
 window.addEventListener("keydown", function(e) {
     if (e.ctrlKey && e.altKey && e.key === "1") {
         e.preventDefault();
@@ -2490,6 +2692,7 @@ invoke("get_initial_state").then((state) => {
     initBrowser();
     initAgentView();
     initMemoryView();
+    initRadialMenu();
 }).catch((err) => {
     console.error("Error getting initial state:", err);
 });
