@@ -1313,6 +1313,67 @@ async fn send_command(
 }
 
 // =============================================================================
+// MEMORY UI COMMANDS
+// =============================================================================
+
+#[derive(serde::Serialize, Clone)]
+struct MemoryRecordFrontend {
+    id: String,
+    content: String,
+    metadata: std::collections::HashMap<String, String>,
+}
+
+#[tauri::command]
+fn memory_list_all(state: State<'_, Mutex<AppState>>) -> Result<Vec<MemoryRecordFrontend>, String> {
+    let mem_db = {
+        let app = state.lock().unwrap();
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let records = db.list_all()?;
+    Ok(records.into_iter().map(|r| MemoryRecordFrontend {
+        id: r.id,
+        content: r.content,
+        metadata: r.metadata,
+    }).collect())
+}
+
+#[tauri::command]
+fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mem_db = {
+        let app = state.lock().unwrap();
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    db.delete_record(&id)
+}
+
+#[tauri::command]
+fn memory_pin(id: String, pinned: bool, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mem_db = {
+        let app = state.lock().unwrap();
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    db.set_pinned(&id, pinned)
+}
+
+#[tauri::command]
+fn memory_add_fact(content: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    if content.trim().is_empty() {
+        return Err("Fact content cannot be empty".to_string());
+    }
+    let mem_db = {
+        let app = state.lock().unwrap();
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let id = format!("fact-{}", chrono::Utc::now().format("%Y%m%d%H%M%S%3f"));
+    db.add_fact(id.clone(), content)?;
+    Ok(id)
+}
+
+// =============================================================================
 // AUTONOMOUS CODING AGENT
 // =============================================================================
 
@@ -1574,7 +1635,11 @@ pub fn run() {
             open_external,
             get_game_context,
             agent_step,
-            agent_exec_code
+            agent_exec_code,
+            memory_list_all,
+            memory_delete,
+            memory_pin,
+            memory_add_fact
         ])
         .run(tauri::generate_context!())
 

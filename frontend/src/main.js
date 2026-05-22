@@ -203,6 +203,20 @@ if (!window.__TAURI_INTERNALS__) {
                 });
             case 'agent_exec_code':
                 return "Hello from NEURODECK Agent!\n(mock output — run in Tauri for real execution)";
+            case 'memory_list_all':
+                return [
+                    { id: "mock-20240101-1", content: "User: How do I reverse a list in Python?", metadata: { role: "user" } },
+                    { id: "mock-20240101-2", content: "AI: Use list[::-1] or list.reverse() for in-place reversal.", metadata: { role: "ai" } },
+                    { id: "fact-20240101000000000", content: "Preferred language: Python 3.11. Always use type hints.", metadata: { role: "fact", pinned: "true" } },
+                    { id: "mock-20240102-1", content: "User: Explain the Rust borrow checker.", metadata: { role: "user" } },
+                    { id: "mock-20240102-2", content: "AI: The borrow checker ensures memory safety by enforcing ownership rules at compile time.", metadata: { role: "ai", pinned: "true" } },
+                ];
+            case 'memory_delete':
+                return null;
+            case 'memory_pin':
+                return null;
+            case 'memory_add_fact':
+                return `fact-mock-${Date.now()}`;
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -248,6 +262,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="share">📤 Share</button>
                     <button class="nav-tab" data-view="browser">🌐 Browser</button>
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
+                    <button class="nav-tab" data-view="memory">🧠 Memory</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -561,6 +576,44 @@ document.querySelector('#app').innerHTML = `
                                 <span class="agent-output-empty">No output yet.</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Memory UI View -->
+                <div class="view-content" id="view-memory">
+                    <div class="memory-toolbar">
+                        <input type="text" id="memory-search-input" class="memory-search-input" placeholder="🔍  Search memory records…">
+                        <div class="memory-filter-tabs">
+                            <button class="memory-filter-btn active" data-filter="all">All</button>
+                            <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>
+                            <button class="memory-filter-btn" data-filter="user">User</button>
+                            <button class="memory-filter-btn" data-filter="ai">AI</button>
+                            <button class="memory-filter-btn" data-filter="fact">Facts</button>
+                        </div>
+                        <button class="memory-btn memory-btn-refresh" id="memory-refresh-btn">↺ Refresh</button>
+                    </div>
+
+                    <div class="memory-add-fact-bar" id="memory-add-fact-bar">
+                        <input type="text" id="memory-fact-input" class="memory-fact-input" placeholder="Add a pinned fact or note to memory…">
+                        <button class="memory-btn memory-btn-pin" id="memory-fact-save-btn">📌 Save Fact</button>
+                    </div>
+
+                    <div class="memory-body">
+                        <div class="memory-list" id="memory-list">
+                            <div class="memory-empty-state" id="memory-empty-state">
+                                <div class="memory-empty-icon">🧠</div>
+                                <p>No memory records yet.</p>
+                                <p class="memory-empty-hint">Records are stored automatically during chat sessions. You can also add pinned facts above.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="memory-status-bar" id="memory-status-bar">
+                        <span id="memory-total-count">0 records</span>
+                        <span class="memory-sep">·</span>
+                        <span id="memory-pinned-count">0 pinned</span>
+                        <span class="memory-sep">·</span>
+                        <span id="memory-filtered-count">showing 0</span>
                     </div>
                 </div>
             </div>
@@ -966,6 +1019,12 @@ function getGamepadFocusableElements() {
         "#view-share.active #share-filepath-input",
         "#view-share.active #share-send-btn",
         
+        // Memory View
+        "#view-memory.active #memory-search-input",
+        "#view-memory.active #memory-refresh-btn",
+        "#view-memory.active #memory-fact-input",
+        "#view-memory.active #memory-fact-save-btn",
+
         // Agent View
         "#view-agent.active #agent-task-input",
         "#view-agent.active #agent-run-btn",
@@ -2430,6 +2489,7 @@ invoke("get_initial_state").then((state) => {
     initFileShare();
     initBrowser();
     initAgentView();
+    initMemoryView();
 }).catch((err) => {
     console.error("Error getting initial state:", err);
 });
@@ -3655,5 +3715,196 @@ function initAgentView() {
         const canvasTab = document.querySelector('[data-view="canvas"]');
         if (canvasTab) canvasTab.click();
     };
+}
+
+// ==========================================================================
+// MEMORY UI
+// ==========================================================================
+function initMemoryView() {
+    const searchInput = document.getElementById("memory-search-input");
+    const refreshBtn = document.getElementById("memory-refresh-btn");
+    const factInput = document.getElementById("memory-fact-input");
+    const factSaveBtn = document.getElementById("memory-fact-save-btn");
+    const listEl = document.getElementById("memory-list");
+    const totalCount = document.getElementById("memory-total-count");
+    const pinnedCount = document.getElementById("memory-pinned-count");
+    const filteredCount = document.getElementById("memory-filtered-count");
+
+    if (!listEl) return;
+
+    let allRecords = [];
+    let activeFilter = "all";
+
+    function roleLabel(role) {
+        const map = { user: "User", ai: "AI", fact: "Fact" };
+        return map[role] || role || "—";
+    }
+
+    function roleBadgeClass(role) {
+        const map = { user: "mem-role-user", ai: "mem-role-ai", fact: "mem-role-fact" };
+        return map[role] || "mem-role-other";
+    }
+
+    function tsFromId(id) {
+        // IDs like "20240501-123456-1" or "fact-20240501120000000"
+        const m = id.match(/(\d{8})/);
+        if (m) {
+            const d = m[1];
+            return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+        }
+        return "";
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function renderList() {
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const pinned = allRecords.filter(r => r.metadata.pinned === "true");
+
+        let filtered = allRecords;
+        if (activeFilter === "pinned")  filtered = allRecords.filter(r => r.metadata.pinned === "true");
+        else if (activeFilter === "user") filtered = allRecords.filter(r => r.metadata.role === "user");
+        else if (activeFilter === "ai")   filtered = allRecords.filter(r => r.metadata.role === "ai");
+        else if (activeFilter === "fact") filtered = allRecords.filter(r => r.metadata.role === "fact");
+
+        if (query) {
+            filtered = filtered.filter(r => r.content.toLowerCase().includes(query) || r.id.toLowerCase().includes(query));
+        }
+
+        // Pinned records first
+        filtered.sort((a, b) => {
+            const ap = a.metadata.pinned === "true" ? 0 : 1;
+            const bp = b.metadata.pinned === "true" ? 0 : 1;
+            return ap - bp;
+        });
+
+        // Update status bar
+        if (totalCount) totalCount.textContent = `${allRecords.length} record${allRecords.length !== 1 ? "s" : ""}`;
+        if (pinnedCount) pinnedCount.textContent = `${pinned.length} pinned`;
+        if (filteredCount) filteredCount.textContent = `showing ${filtered.length}`;
+
+        // Remove all existing record cards (preserve empty state)
+        listEl.querySelectorAll(".memory-record-card").forEach(el => el.remove());
+        const emptyState = document.getElementById("memory-empty-state");
+
+        if (filtered.length === 0) {
+            if (emptyState) {
+                emptyState.style.display = "";
+                emptyState.querySelector("p").textContent = query || activeFilter !== "all"
+                    ? "No records match this filter."
+                    : "No memory records yet.";
+            }
+            return;
+        }
+        if (emptyState) emptyState.style.display = "none";
+
+        filtered.forEach(record => {
+            const isPinned = record.metadata.pinned === "true";
+            const role = record.metadata.role || "other";
+            const card = document.createElement("div");
+            card.className = `memory-record-card${isPinned ? " memory-record-pinned" : ""}`;
+            card.dataset.id = record.id;
+
+            card.innerHTML = `
+                <div class="memory-record-header">
+                    <span class="memory-record-role ${roleBadgeClass(role)}">${roleLabel(role)}</span>
+                    <span class="memory-record-ts">${tsFromId(record.id)}</span>
+                    <div class="memory-record-actions">
+                        <button class="memory-icon-btn mem-pin-btn${isPinned ? " pinned" : ""}" title="${isPinned ? "Unpin" : "Pin"}" data-id="${escHtml(record.id)}" data-pinned="${isPinned}">📌</button>
+                        <button class="memory-icon-btn mem-del-btn" title="Delete" data-id="${escHtml(record.id)}">🗑</button>
+                    </div>
+                </div>
+                <div class="memory-record-content">${escHtml(record.content)}</div>
+                <div class="memory-record-id">${escHtml(record.id)}</div>`;
+
+            card.querySelector(".mem-pin-btn").onclick = async function() {
+                const id = this.dataset.id;
+                const wasPinned = this.dataset.pinned === "true";
+                try {
+                    await invoke("memory_pin", { id, pinned: !wasPinned });
+                    const rec = allRecords.find(r => r.id === id);
+                    if (rec) {
+                        if (!wasPinned) rec.metadata.pinned = "true";
+                        else delete rec.metadata.pinned;
+                    }
+                    renderList();
+                } catch(e) { console.error("pin error", e); }
+            };
+
+            card.querySelector(".mem-del-btn").onclick = async function() {
+                const id = this.dataset.id;
+                if (!confirm("Delete this memory record?")) return;
+                try {
+                    await invoke("memory_delete", { id });
+                    allRecords = allRecords.filter(r => r.id !== id);
+                    renderList();
+                } catch(e) { console.error("delete error", e); }
+            };
+
+            listEl.appendChild(card);
+        });
+    }
+
+    async function loadMemory() {
+        if (refreshBtn) refreshBtn.textContent = "⟳";
+        try {
+            allRecords = await invoke("memory_list_all");
+        } catch(e) {
+            console.error("memory_list_all error", e);
+            allRecords = [];
+        }
+        // Sort newest first by id string (IDs start with date prefix)
+        allRecords.sort((a, b) => b.id.localeCompare(a.id));
+        renderList();
+        if (refreshBtn) refreshBtn.textContent = "↺ Refresh";
+    }
+
+    // Load on tab activation
+    document.querySelector('[data-view="memory"]')?.addEventListener("click", () => {
+        setTimeout(loadMemory, 50);
+    });
+
+    if (refreshBtn) refreshBtn.onclick = loadMemory;
+
+    if (searchInput) {
+        let debounce = null;
+        searchInput.addEventListener("input", () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(renderList, 200);
+        });
+    }
+
+    // Filter tabs
+    document.querySelectorAll(".memory-filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".memory-filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeFilter = btn.dataset.filter;
+            renderList();
+        });
+    });
+
+    // Add fact
+    async function saveFact() {
+        const content = factInput ? factInput.value.trim() : "";
+        if (!content) { if (factInput) factInput.focus(); return; }
+        if (factSaveBtn) { factSaveBtn.textContent = "Saving…"; factSaveBtn.disabled = true; }
+        try {
+            const id = await invoke("memory_add_fact", { content });
+            allRecords.unshift({ id, content, metadata: { role: "fact", pinned: "true" } });
+            if (factInput) factInput.value = "";
+            renderList();
+        } catch(e) { console.error("memory_add_fact error", e); }
+        if (factSaveBtn) { factSaveBtn.textContent = "📌 Save Fact"; factSaveBtn.disabled = false; }
+    }
+
+    if (factSaveBtn) factSaveBtn.onclick = saveFact;
+    if (factInput) {
+        factInput.addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveFact(); }
+        });
+    }
 }
 

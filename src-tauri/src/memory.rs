@@ -69,6 +69,49 @@ impl MemoryDB {
         Ok(())
     }
 
+    pub fn list_all(&self) -> Result<Vec<MemoryRecord>, String> {
+        let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        Ok(records.clone())
+    }
+
+    pub fn delete_record(&self, id: &str) -> Result<(), String> {
+        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let before = records.len();
+        records.retain(|r| r.id != id);
+        if records.len() == before {
+            return Err(format!("Record '{}' not found", id));
+        }
+        let serialized = serde_json::to_string_pretty(&*records)
+            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+        fs::write(&self.file_path, serialized)
+            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        Ok(())
+    }
+
+    pub fn set_pinned(&self, id: &str, pinned: bool) -> Result<(), String> {
+        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let record = records.iter_mut().find(|r| r.id == id)
+            .ok_or_else(|| format!("Record '{}' not found", id))?;
+        if pinned {
+            record.metadata.insert("pinned".to_string(), "true".to_string());
+        } else {
+            record.metadata.remove("pinned");
+        }
+        let serialized = serde_json::to_string_pretty(&*records)
+            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+        fs::write(&self.file_path, serialized)
+            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        Ok(())
+    }
+
+    /// Store a manually written fact with a pinned marker and no embedding.
+    pub fn add_fact(&self, id: String, content: String) -> Result<(), String> {
+        let mut metadata = HashMap::new();
+        metadata.insert("role".to_string(), "fact".to_string());
+        metadata.insert("pinned".to_string(), "true".to_string());
+        self.store_message(id, content, vec![], metadata)
+    }
+
     pub fn search(&self, query_embedding: &[f32], limit: usize) -> Result<Vec<MemoryRecord>, String> {
         let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
         
