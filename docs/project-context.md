@@ -1,0 +1,284 @@
+# NEURODECK — Project Context
+
+> This file is loaded automatically by every BMAD agent as foundational context.
+> Keep it current as the project evolves.
+
+---
+
+## Project Identity
+
+| Field | Value |
+|---|---|
+| **Name** | NEURODECK |
+| **Type** | Tauri v2 Desktop Application |
+| **Platform targets** | Steam Deck (primary, 1280×800), Windows, Linux |
+| **Version** | 0.1.0 |
+| **Repo** | https://github.com/khaoticdev62/NEURODECK |
+| **Dev** | khaoticdev |
+
+---
+
+## Purpose
+
+NEURODECK is an AI-powered terminal and productivity interface designed for the Steam Deck in Game Mode. It combines an LLM chat interface, live code canvas, autonomous coding agent, PTY terminal, memory/RAG system, and gamepad-native navigation into a single unified desktop app.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Desktop runtime** | Tauri v2 (Rust + WebView2/WebKit) |
+| **Backend language** | Rust (edition 2021, rust-version 1.77.2) |
+| **Frontend** | Vite + Vanilla JavaScript (no framework) |
+| **Scripting** | Lua 5.4 via `mlua` crate |
+| **Terminal emulator** | `portable-pty` (Rust) + `xterm.js` (frontend) |
+| **LLM providers** | Google Gemini (streaming, default) · Ollama (local) |
+| **Memory / RAG** | Custom cosine-similarity vector DB (`memory.rs`) |
+| **Build system** | `npm run tauri dev` / `npm run build` |
+| **Packaging** | MSI + NSIS (Windows), AppImage (Linux) |
+
+---
+
+## Architecture
+
+### IPC Pattern
+Frontend (`frontend/src/main.js`) ↔ Rust backend (`src-tauri/src/lib.rs`) via Tauri IPC:
+- `invoke('command_name', { args })` — synchronous-style requests
+- `app_handle.emit(event, payload)` — streaming/async updates (chat, terminal output)
+
+### Backend Modules
+
+| Module | File | Responsibility |
+|---|---|---|
+| Core | `lib.rs` | All Tauri command handlers, state management, themes, personas, game detection |
+| LLM | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local), embedding generation |
+| Lua | `lua.rs` | Lua 5.4 runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
+| PTY | `pty_manager.rs` | Cross-platform PTY via portable-pty; native shell sessions |
+| Memory | `memory.rs` | Vector memory DB with cosine similarity search; persists to `data/memory/chat_history.json` |
+| Storage | `storage.rs` | Session save/load as JSON in `sessions/` |
+| Config | `config.rs` | Parses `llm-term.toml` at startup |
+| Tunnel | `tunnel.rs` | SteamOS LAN tunneling |
+| Transfer | `transfer.rs` | P2P file sharing over LAN |
+
+### Frontend Structure
+
+Single-file vanilla JS (`frontend/src/main.js`, ~3700 lines):
+- Chat UI with markdown rendering via `marked.js`
+- Terminal emulator via `xterm.js` + `xterm-addon-fit`
+- Live Canvas (CodePen-style split: code editor + iframe preview)
+- Autonomous Agent loop (LLM → exec → iterate, up to 5 steps)
+- Memory UI (search, filter, pin, delete, add facts)
+- Browser (sandboxed iframe with speed dial)
+- LAN file sharing + tunnel client
+
+Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base reset)
+
+---
+
+## Features Implemented
+
+### Sprint 1 — Game Detection
+- Scans Steam ACF manifest files (`appmanifest_*.acf`) across all Steam library paths
+- Linux: `/proc/*/cmdline` scanner for currently running games
+- Windows: Steam registry + environment variable library paths
+- Game badge in status bar; context injected into LLM system prompt
+
+### Sprint 2 — Live Code Canvas (`🎨 Canvas` tab)
+- Split pane: Monaco-style textarea editor (left) + sandboxed iframe preview (right)
+- Languages: HTML, CSS, JavaScript (console.log capture), Markdown (CDN marked), Bash/Python (run-hint)
+- Draggable divider; Ctrl+Enter to run; 600ms debounce live update
+- "→ Canvas" button on chat code blocks loads code and switches to tab
+
+### Sprint 3 — Autonomous Coding Agent (`🤖 Agent` tab)
+- User describes task → LLM writes code → Rust executes in subprocess → output fed back → iterate
+- Max 5 steps; JSON response format parsed from LLM; markdown fence stripping
+- `agent_step` Tauri command: streams full LLM response with structured agent system prompt
+- `agent_exec_code` Tauri command: spawns python/bash/node/powershell with 30s timeout
+- Stop button; "→ Canvas" sends last code to Canvas view
+
+### Sprint 4 — Memory UI (`🧠 Memory` tab)
+- Browse all vector DB records with search + filter tabs (All / Pinned / User / AI / Facts)
+- Pin/unpin records; delete individual records; add manually pinned facts
+- Lazy load on tab activation; sorted pinned-first then newest-first
+- Rust commands: `memory_list_all`, `memory_delete`, `memory_pin`, `memory_add_fact`
+
+### Sprint 5 — Steam Input + Radial Menu
+- **Radial Menu**: Hold L2 trigger → 8-segment circular overlay; left stick selects segment; release navigates
+- 8 segments (clockwise from top): Chat, Canvas, Terminal, Tunnel, Browser, Agent, Memory, Share
+- Keyboard shortcut: backtick `` ` `` toggles radial; arrow keys select; Enter navigates
+- D-pad left/right cycles tabs when no slider/select is focused
+- `steam_input.vdf` controller mapping file for Steam Deck Game Mode import
+
+---
+
+## Tauri Commands (26 registered)
+
+```
+get_initial_state, execute_command, execute_command_stream,
+write_to_process, kill_process, start_recording, stop_recording,
+get_personas, get_themes, set_persona, set_theme,
+save_session, load_latest_session, list_sessions, load_session_by_id,
+delete_session, new_session, send_command, speak_text,
+cancel_generation, execute_lua, export_session_markdown,
+pty_spawn, pty_write, pty_resize, pty_kill,
+start_tunnel_server, stop_tunnel_server, send_tunnel_request,
+start_file_transfer, respond_to_transfer, get_discovered_peers, get_active_transfers,
+open_external, get_game_context,
+agent_step, agent_exec_code,
+memory_list_all, memory_delete, memory_pin, memory_add_fact
+```
+
+---
+
+## Persona System
+
+9 built-in personas in `lib.rs` (PERSONAS static):
+
+| Name | Role | Notes |
+|---|---|---|
+| Default | General assistant | Base persona |
+| Developer | Software developer | Code-focused, concise |
+| Cyberpunk | Cyberpunk AI construct | Terminal lingo, edgy |
+| **John** | Product Manager | BMAD agent |
+| **Sally** | UX Designer | BMAD agent |
+| **Winston** | System Architect | BMAD agent |
+| **Amelia** | Senior Developer | BMAD agent |
+| **Paige** | Technical Writer | BMAD agent |
+| **Mary** | Business Analyst | BMAD agent |
+
+BMAD personas are activated via Lua: `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary`
+Or via `Ctrl+P` to cycle, or the persona selector in the settings modal.
+
+---
+
+## Plugin System
+
+Lua 5.4 files in `plugins/` auto-load on startup:
+- `bmad.lua` — Registers `/john`…`/mary` slash commands, calls `setPersona()`
+- `auto_responder.lua` — Auto-response hooks
+- `ip_lookup.lua` — IP lookup utility command
+
+Lua globals available to plugins:
+- `print(...)` → streams to frontend via `command_stdout` event
+- `execute(cmd)` → runs shell command, returns stdout+stderr
+- `registerCommand(name, fn)` → registers `/name` slash command
+- `registerHook(event, fn)` → hooks into `onMessage` / `onAIResponse`
+- `setPersona(name)` → switches active LLM persona, emits `persona_changed`
+
+---
+
+## Configuration
+
+### `llm-term.toml` (runtime, project root)
+```toml
+[llm]
+default_provider = "gemini"        # or "ollama"
+gemini_model = "gemini-1.5-flash"
+ollama_model = "llama3"
+ollama_base_url = "http://localhost:11434"
+```
+
+### Environment Variables
+- `GEMINI_API_KEY` — Required for Gemini provider
+
+---
+
+## Key Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Enter` | Submit chat |
+| `Shift+Enter` | Newline in chat |
+| `Ctrl+B` | Execute selected Lua |
+| `Ctrl+S` | Save session |
+| `Ctrl+L` | Load session |
+| `Ctrl+N` | New session |
+| `Ctrl+P` | Cycle persona |
+| `Ctrl+R` | Voice record |
+| `Ctrl+M` | Mute TTS |
+| `Ctrl+C` | Kill process |
+| `Escape` | Cancel |
+| `` ` `` | Toggle radial gamepad menu |
+| `Ctrl+Enter` | Run Canvas code |
+
+---
+
+## In-Chat Commands
+
+`/help` · `/persona <name>` · `/discuss <p1> <p2> <topic>` · `@file:<path>` · `/<plugin-command>`
+BMAD: `/john` · `/sally` · `/winston` · `/amelia` · `/paige` · `/mary`
+
+---
+
+## Development Commands
+
+```bash
+npm run tauri dev          # Hot-reload dev
+npm run build              # Production build
+
+# Frontend only
+npm run --prefix frontend dev
+npm run --prefix frontend build
+
+# Rust only
+cd src-tauri && cargo build
+cd src-tauri && cargo check
+cd src-tauri && cargo clippy
+```
+
+---
+
+## Directory Layout
+
+```
+NEURODECK/
+├── frontend/src/
+│   ├── main.js          # All UI logic (~3700 lines)
+│   ├── app.css          # Feature-specific styles (~2600 lines)
+│   └── style.css        # Base reset
+├── src-tauri/src/
+│   ├── lib.rs           # All Tauri commands + state (~1600 lines)
+│   ├── llm.rs           # LLM providers
+│   ├── lua.rs           # Lua engine
+│   ├── pty_manager.rs   # PTY sessions
+│   ├── memory.rs        # Vector DB
+│   ├── storage.rs       # Session persistence
+│   ├── config.rs        # TOML config parser
+│   ├── tunnel.rs        # LAN tunnel
+│   └── transfer.rs      # P2P file transfer
+├── plugins/             # Auto-loaded Lua plugins
+├── docs/                # Project knowledge (this file lives here)
+├── sessions/            # Saved chat sessions (JSON)
+├── data/memory/         # Vector memory DB
+├── _bmad/               # BMAD framework config
+├── _bmad-output/        # BMAD generated artifacts
+│   ├── planning-artifacts/
+│   └── implementation-artifacts/
+├── .agent/skills/       # 43 BMAD skills
+├── steam_input.vdf      # Steam Deck controller mapping
+└── llm-term.toml        # Runtime LLM config
+```
+
+---
+
+## BMAD Workflow Status
+
+| Phase | Status |
+|---|---|
+| Analysis (research, brief, PRFAQ) | Available — not started |
+| Planning (PRD, UX spec) | Available — not started |
+| Solutioning (architecture, epics) | In progress — see `_bmad-output/planning-artifacts/epics.md` |
+| Implementation (stories, code, tests) | Active — see `_bmad-output/implementation-artifacts/` |
+| QA / retrospective | Available |
+
+Active sprint artifacts in `_bmad-output/implementation-artifacts/` — 30+ story files generated.
+
+---
+
+## Constraints
+
+- Window locked to **1280×800** for Steam Deck Game Mode compatibility
+- Maintain this constraint when modifying any UI layout or sizing
+- LLM responses stream via SSE — never block the UI thread
+- All user input from outside Tauri is sanitized (IPC args validated, session IDs checked for traversal)

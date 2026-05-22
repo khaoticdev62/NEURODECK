@@ -85,3 +85,22 @@ Lua files in `plugins/` are auto-loaded on startup. Plugins can register:
 
 ## Target Platform
 Primary: **Steam Deck** at 1280×800 (Game Mode via Gamescope). Also supports Windows and Linux desktop. Window is sized and styled for 1280×800 fullscreen — maintain this constraint when modifying UI.
+
+## BMAD Framework
+
+43 skills installed in `.agent/skills/`. Agent personas are active via `plugins/bmad.lua` — each registers a `/name` slash command calling `setPersona()` in `lua.rs`.
+
+| Slash Command | Persona | Role |
+|---|---|---|
+| `/john` | John | Product Manager |
+| `/sally` | Sally | UX Designer |
+| `/winston` | Winston | System Architect |
+| `/amelia` | Amelia | Senior Developer |
+| `/paige` | Paige | Technical Writer |
+| `/mary` | Mary | Business Analyst |
+
+Project context loaded by all BMAD agents: `docs/project-context.md` — keep this file current as features are added.
+
+Custom project overrides: `_bmad/custom/config.toml` — agent descriptors scoped to NEURODECK constraints.
+
+Sprint artifacts: `_bmad-output/implementation-artifacts/` (stories) and `_bmad-output/planning-artifacts/` (epics, architecture docs).
