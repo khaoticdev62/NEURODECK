@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=NEURODECK
+GenericName=AI Terminal Interface
+Comment=AI-powered terminal OS for Steam Deck — LLM chat, canvas, PTY, SSH, FTP, gamepad navigation
+Exec=neurodeck
+Icon=com.neurodeck.app
+Terminal=false
+Categories=Utility;Development;System;
+Keywords=AI;terminal;LLM;chatbot;ssh;ftp;gamepad;steam deck;
+StartupNotify=true
+StartupWMClass=neurodeck

@@ -1,0 +1,116 @@
+id: com.neurodeck.app
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node20
+command: neurodeck
+
+# Tauri v2 on Linux requires WebKit2GTK 4.1 (provided by freedesktop 23.08)
+# and libsoup 3.0. Both are in the runtime.
+
+finish-args:
+  # Network: LLM API calls, SSH, FTP, LAN transfer, Remote Control WS server
+  - --share=network
+  # IPC: clipboard, D-Bus
+  - --share=ipc
+  # Display: Wayland primary (Steam Deck Game Mode), X11 fallback
+  - --socket=wayland
+  - --socket=fallback-x11
+  # Audio: PulseAudio/PipeWire for voice STT (arecord) and TTS (espeak)
+  - --socket=pulseaudio
+  # GPU: hardware acceleration in WebKit WebView
+  - --device=dri
+  # Filesystem: SSH keys (~/.ssh), FTP/SFTP paths, config, history, plugins
+  - --filesystem=home
+  # Secrets: OS keychain for Gemini API key storage
+  - --talk-name=org.freedesktop.secrets
+  # Portal: file chooser, screenshots
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.FileChooser
+  - --talk-name=org.freedesktop.portal.Screenshot
+  # WebKit compositing workaround (needed in some Wayland compositors)
+  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
+  # Allow NEURODECK to find its own data relative to binary
+  - --env=NEURODECK_DATA_DIR=/app/share/neurodeck
+
+build-options:
+  # Add Rust and Node.js toolchains to PATH during build
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node20/bin
+  env:
+    CARGO_HOME: /run/build/neurodeck/cargo
+    npm_config_cache: /run/build/neurodeck/npm-cache
+    # Build for the host architecture (x86_64 on Steam Deck)
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: x86_64-unknown-linux-gnu-gcc
+  # Allow network during build so cargo can fetch crates.
+  # For Flathub submission: replace with offline cargo sources via cargo vendor.
+  build-args:
+    - --share=network
+
+modules:
+  # ── WebKit2GTK dependency hint ─────────────────────────────────────────────
+  # webkit2gtk-4.1 is provided by org.freedesktop.Platform 23.08.
+  # No separate module needed.
+
+  # ── Main NEURODECK module ──────────────────────────────────────────────────
+  - name: neurodeck
+    buildsystem: simple
+    build-commands:
+      # 1. Install frontend npm dependencies
+      - npm install --prefix frontend --no-audit --no-fund
+
+      # 2. Build Vite frontend
+      - npm run --prefix frontend build
+
+      # 3. Compile Rust release binary via Tauri CLI
+      #    (tauri build handles the full bundle; we only need the binary here)
+      - cargo build --release --manifest-path src-tauri/Cargo.toml
+
+      # 4. Install binary
+      - install -Dm755 target/release/app /app/bin/neurodeck
+
+      # 5. Install config template (read by app at startup)
+      - install -Dm644 src-tauri/llm-term.toml /app/share/neurodeck/llm-term.toml
+
+      # 6. Install Lua plugins
+      - cp -r plugins /app/share/neurodeck/plugins
+
+      # 7. Install BMAD agent framework
+      - |
+        if [ -d _bmad ]; then
+          cp -r _bmad /app/share/neurodeck/_bmad
+        fi
+
+      # 8. Install .agents directory
+      - |
+        if [ -d .agents ]; then
+          cp -r .agents /app/share/neurodeck/.agents
+        fi
+
+      # 9. Install app icon
+      - install -Dm644 src-tauri/icons/128x128.png
+          /app/share/icons/hicolor/128x128/apps/com.neurodeck.app.png
+      - install -Dm644 src-tauri/icons/32x32.png
+          /app/share/icons/hicolor/32x32/apps/com.neurodeck.app.png
+
+      # 10. Install desktop entry
+      - install -Dm644 flatpak/com.neurodeck.app.desktop
+          /app/share/applications/com.neurodeck.app.desktop
+
+      # 11. Install AppStream metadata
+      - install -Dm644 flatpak/com.neurodeck.app.metainfo.xml
+          /app/share/metainfo/com.neurodeck.app.metainfo.xml
+
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - target
+          - frontend/node_modules
+          - frontend/dist
+          - .git
+          - '*.flatpak'
+          - 'neurodeck_win_release.zip'
+          - 'neurodeck_installer.exe'
+          - 'neurodeck-win-release'

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.neurodeck.app</id>
+
+  <name>NEURODECK</name>
+  <summary>AI Terminal Interface for Steam Deck</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      NEURODECK is a Tauri-based desktop application that transforms a Steam Deck
+      into a fullscreen AI-powered terminal OS. It combines LLM chat, a live code
+      canvas, multi-session PTY terminal, SSH client, FTP/SFTP file browser, LAN
+      file transfer, iPhone remote control, and gamepad-native navigation in a
+      single 1280×800 window.
+    </p>
+    <p>Key features:</p>
+    <ul>
+      <li>LLM chat with RAG memory, game-context awareness, and Vision (Gemini)</li>
+      <li>Live HTML/CSS/JS canvas with Python, Bash, and Lua execution</li>
+      <li>Multi-session PTY terminal with AI autocomplete (Ctrl+Space)</li>
+      <li>SSH client with password and key-based authentication</li>
+      <li>FTP and SFTP file browser with drag-and-drop upload</li>
+      <li>LAN P2P file transfer with mDNS peer discovery (Warpinator-compatible)</li>
+      <li>iPhone remote control via WebSocket and QR pairing</li>
+      <li>Local document RAG indexing for knowledge base queries</li>
+      <li>Whisper.cpp offline STT and espeak TTS</li>
+      <li>Gamepad radial menu with 10 views (L2 trigger or backtick)</li>
+      <li>BMAD multi-agent persona system with Lua plugin support</li>
+      <li>MCP server — use NEURODECK as a tool server from Claude Desktop</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.neurodeck.app.desktop</launchable>
+
+  <url type="homepage">https://github.com/khaoticdev62/NEURODECK</url>
+  <url type="bugtracker">https://github.com/khaoticdev62/NEURODECK/issues</url>
+  <url type="vcs-browser">https://github.com/khaoticdev62/NEURODECK</url>
+
+  <developer id="com.neurodeck">
+    <name>khaoticdev62</name>
+  </developer>
+
+  <provides>
+    <binary>neurodeck</binary>
+  </provides>
+
+  <categories>
+    <category>Utility</category>
+    <category>Development</category>
+    <category>System</category>
+  </categories>
+
+  <keywords>
+    <keyword>AI</keyword>
+    <keyword>terminal</keyword>
+    <keyword>LLM</keyword>
+    <keyword>Steam Deck</keyword>
+    <keyword>chatbot</keyword>
+    <keyword>SSH</keyword>
+    <keyword>FTP</keyword>
+    <keyword>gamepad</keyword>
+  </keywords>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>NEURODECK chat interface with AI response and RAG memory</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="1.0.0" date="2026-05-23">
+      <description>
+        <p>Initial v1.0.0 release.</p>
+        <ul>
+          <li>22 features shipped: Chat, Canvas, Terminal, SSH, FTP/SFTP, Share, Agent, Memory, Prompt Lab, Remote Control</li>
+          <li>Radial menu expanded to 10 segments (SSH and Remote added)</li>
+          <li>AI terminal autocomplete via Ctrl+Space (ghost text)</li>
+          <li>Local document RAG indexing with progress bar</li>
+          <li>iPhone remote control via WebSocket and QR pairing</li>
+          <li>FTP streaming download/upload (no OOM on large files)</li>
+          <li>Whisper.cpp offline STT support</li>
+          <li>BMAD agent framework integration</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">moderate</content_attribute>
+    <content_attribute id="social-info">mild</content_attribute>
+  </content_rating>
+
+  <recommends>
+    <display_length compare="ge">1280</display_length>
+    <control>gamepad</control>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
+
+  <supports>
+    <internet>always</internet>
+  </supports>
+</component>
