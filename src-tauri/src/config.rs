@@ -79,6 +79,15 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
     Config::default()
 }
 
+pub fn save_config<P: AsRef<Path>>(path: P, config: &Config) -> Result<(), String> {
+    let content = toml::to_string_pretty(config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    fs::write(path, content)
+        .map_err(|e| format!("Failed to write config file: {}", e))?;
+    Ok(())
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

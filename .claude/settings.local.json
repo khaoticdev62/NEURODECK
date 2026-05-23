@@ -23,7 +23,8 @@
       "Bash(do echo:*)",
       "Read(//c/Users/thecr/Desktop/S-Term/**)",
       "Bash(done)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(ls C:/Users/thecr/Desktop/S-Term/src-tauri/src/*.rs)"
     ]
   }
 }

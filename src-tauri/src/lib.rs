@@ -7,7 +7,9 @@ mod pty_manager;
 mod tunnel;
 mod transfer;
 mod ftp;
-
+mod sftp;
+mod ollama_mgr;
+mod plugin_mgr;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -197,6 +199,12 @@ lazy_static::lazy_static! {
 }
 pub struct LuaState(pub Mutex<lua::LuaEngine>);
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct CustomPersona {
+    pub name: String,
+    pub prompt: String,
+}
+
 pub struct AppState {
     provider: Arc<dyn LlmProvider>,
     config: config::Config,
@@ -209,6 +217,7 @@ pub struct AppState {
     kill_tx: Option<tokio::sync::oneshot::Sender<()>>,
     active_process_id: u64,
     cancel_stream_tx: Option<tokio::sync::oneshot::Sender<()>>,
+    pub custom_personas: Vec<CustomPersona>,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -664,8 +673,13 @@ async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, Str
 }
 
 #[tauri::command]
-fn get_personas() -> Vec<String> {
-    PERSONAS.iter().map(|p| p.0.clone()).collect()
+fn get_personas(state: State<'_, Mutex<AppState>>) -> Vec<String> {
+    let app = state.lock().unwrap();
+    let mut list: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+    for cp in &app.custom_personas {
+        list.push(cp.name.clone());
+    }
+    list
 }
 
 #[tauri::command]
@@ -676,12 +690,80 @@ fn get_themes() -> Vec<String> {
 #[tauri::command]
 fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap();
-    if PERSONAS.iter().any(|p| p.0 == name) {
+    let is_valid = PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
+    if is_valid {
         app.active_persona = name.clone();
         format!("Persona set to {}", name)
     } else {
         "Persona not found".to_string()
     }
+}
+
+#[tauri::command]
+fn list_custom_personas(state: State<'_, Mutex<AppState>>) -> Result<Vec<CustomPersona>, String> {
+    let app = state.lock().unwrap();
+    Ok(app.custom_personas.clone())
+}
+
+#[tauri::command]
+fn add_custom_persona(name: String, prompt: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let name_trimmed = name.trim().to_string();
+    let prompt_trimmed = prompt.trim().to_string();
+
+    if name_trimmed.is_empty() || prompt_trimmed.is_empty() {
+        return Err("Name and prompt cannot be empty".to_string());
+    }
+
+    if name_trimmed.len() > 30 {
+        return Err("Persona name must be under 30 characters".to_string());
+    }
+
+    if !name_trimmed.chars().all(|c| c.is_alphanumeric() || c == ' ' || c == '_' || c == '-') {
+        return Err("Persona name can only contain letters, numbers, spaces, underscores, and hyphens".to_string());
+    }
+
+    if PERSONAS.iter().any(|p| p.0.to_lowercase() == name_trimmed.to_lowercase()) {
+        return Err(format!("Persona '{}' clashes with a built-in persona", name_trimmed));
+    }
+
+    let mut app = state.lock().unwrap();
+
+    if app.custom_personas.iter().any(|p| p.name.to_lowercase() == name_trimmed.to_lowercase()) {
+        return Err(format!("Persona '{}' already exists", name_trimmed));
+    }
+
+    app.custom_personas.push(CustomPersona {
+        name: name_trimmed,
+        prompt: prompt_trimmed,
+    });
+
+    let json_data = serde_json::to_string_pretty(&app.custom_personas)
+        .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
+    
+    std::fs::write("./data/personas.json", json_data)
+        .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn delete_custom_persona(name: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap();
+
+    let initial_len = app.custom_personas.len();
+    app.custom_personas.retain(|p| p.name != name);
+
+    if app.custom_personas.len() == initial_len {
+        return Err(format!("Custom persona '{}' not found", name));
+    }
+
+    let json_data = serde_json::to_string_pretty(&app.custom_personas)
+        .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
+    
+    std::fs::write("./data/personas.json", json_data)
+        .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -972,7 +1054,7 @@ async fn send_command(
     }
 
     // 1. Gather variables from state
-    let (provider, active_persona, messages_len, session_id, mem_db) = {
+    let (provider, active_persona, messages_len, session_id, mem_db, custom_personas) = {
         let mut app = state.lock().unwrap();
         app.messages.push(format!("User: {}", prompt));
         (
@@ -981,6 +1063,7 @@ async fn send_command(
             app.messages.len(),
             app.session_id.clone(),
             app.mem_db.clone(),
+            app.custom_personas.clone(),
         )
     };
 
@@ -1005,7 +1088,13 @@ async fn send_command(
         .iter()
         .find(|p| p.0 == active_persona)
         .map(|p| p.1.clone())
-        .unwrap_or_else(|| "You are a helpful assistant.".to_string());
+        .unwrap_or_else(|| {
+            custom_personas
+                .iter()
+                .find(|p| p.name == active_persona)
+                .map(|p| p.prompt.clone())
+                .unwrap_or_else(|| "You are a helpful assistant.".to_string())
+        });
 
     // Add game context if available
     let (game_name, game_id, game_running) = detect_game();
@@ -1067,11 +1156,14 @@ async fn send_command(
     if prompt.trim().starts_with("/persona") {
         let parts: Vec<&str> = prompt.trim().split_whitespace().collect();
         if parts.len() == 1 {
-            let available_personas: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
-            let active = {
+            let mut available_personas: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+            let (active, custom_list) = {
                 let app = state.lock().unwrap();
-                app.active_persona.clone()
+                (app.active_persona.clone(), app.custom_personas.clone())
             };
+            for cp in custom_list {
+                available_personas.push(cp.name);
+            }
             let response = format!(
                 "System: Available personas: {}\nActive persona: {}",
                 available_personas.join(", "),
@@ -1083,7 +1175,8 @@ async fn send_command(
         } else {
             let name = parts[1..].join(" ");
             let mut app = state.lock().unwrap();
-            if PERSONAS.iter().any(|p| p.0 == name) {
+            let is_valid = PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
+            if is_valid {
                 app.active_persona = name.clone();
                 let _ = app_handle.emit("persona_changed", name.clone());
                 let response = format!("System: Persona set to {}", name);
@@ -1107,11 +1200,18 @@ async fn send_command(
             let p2 = caps.get(2).unwrap().as_str().to_string();
             let topic = caps.get(3).unwrap().as_str().to_string();
 
-            let has_p1 = PERSONAS.iter().any(|p| p.0 == p1);
-            let has_p2 = PERSONAS.iter().any(|p| p.0 == p2);
+            let (has_p1, has_p2, custom_list) = {
+                let app = state.lock().unwrap();
+                let has1 = PERSONAS.iter().any(|p| p.0 == p1) || app.custom_personas.iter().any(|p| p.name == p1);
+                let has2 = PERSONAS.iter().any(|p| p.0 == p2) || app.custom_personas.iter().any(|p| p.name == p2);
+                (has1, has2, app.custom_personas.clone())
+            };
 
             if !has_p1 || !has_p2 {
-                let available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+                let mut available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+                for cp in custom_list {
+                    available.push(cp.name);
+                }
                 let error_msg = format!(
                     "System: Invalid personas specified. Available personas: {}\nUsage: `/discuss <persona1> <persona2> <topic>`",
                     available.join(", ")
@@ -1150,6 +1250,10 @@ async fn send_command(
                     .iter()
                     .find(|p| p.0 == current_speaker)
                     .map(|p| p.1.clone())
+                    .or_else(|| {
+                        let app = state.lock().unwrap();
+                        app.custom_personas.iter().find(|p| p.name == current_speaker).map(|p| p.prompt.clone())
+                    })
                     .unwrap_or_default();
 
                 let full_system_prompt = format!(
@@ -1518,6 +1622,284 @@ async fn agent_exec_code(code: String, lang: String) -> Result<String, String> {
     }
 }
 
+fn get_home_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var("USERPROFILE").map(PathBuf::from).ok()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::env::var("HOME").map(PathBuf::from).ok()
+    }
+}
+
+fn load_env_file() {
+    if let Some(home) = get_home_dir() {
+        let env_path = home.join(".config").join("neurodeck").join("env");
+        if env_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(env_path) {
+                for line in content.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() || trimmed.starts_with('#') {
+                        continue;
+                    }
+                    if let Some((key, val)) = trimmed.split_once('=') {
+                        let k = key.trim();
+                        let v = val.trim().trim_matches('"').trim_matches('\'');
+                        std::env::set_var(k, v);
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_config_path() -> PathBuf {
+    if std::path::Path::new("../llm-term.toml").exists() {
+        PathBuf::from("../llm-term.toml")
+    } else {
+        PathBuf::from("llm-term.toml")
+    }
+}
+
+fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
+    if std::env::var("GEMINI_API_KEY").is_ok()
+        || config.llm.default_provider == "gemini" 
+    {
+        Arc::new(GeminiProvider::new(config.llm.gemini_model.clone()))
+    } else {
+        Arc::new(OllamaProvider::new(
+            config.llm.ollama_model.clone(),
+            config.llm.ollama_base_url.clone(),
+        ))
+    }
+}
+
+#[tauri::command]
+fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap();
+    let mut config = app.config.clone();
+
+    match key.as_str() {
+        "llm.default_provider" => config.llm.default_provider = value,
+        "llm.ollama_model" => config.llm.ollama_model = value,
+        "llm.gemini_model" => config.llm.gemini_model = value,
+        "llm.ollama_base_url" => config.llm.ollama_base_url = value,
+        _ => return Err(format!("Unknown config key: {}", key)),
+    }
+
+    let path = get_config_path();
+    config::save_config(&path, &config)?;
+    
+    // Update state and recreate provider
+    app.config = config.clone();
+    app.provider = create_provider(&config);
+    Ok(())
+}
+
+#[tauri::command]
+fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, String> {
+    let app = state.lock().unwrap();
+    Ok(app.config.clone())
+}
+
+#[tauri::command]
+fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap();
+    
+    if let Some(home) = get_home_dir() {
+        let env_dir = home.join(".config").join("neurodeck");
+        std::fs::create_dir_all(&env_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
+        let env_path = env_dir.join("env");
+        
+        let mut new_content = String::new();
+        let mut key_written = false;
+        
+        if env_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&env_path) {
+                for line in content.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.starts_with("GEMINI_API_KEY=") {
+                        new_content.push_str(&format!("GEMINI_API_KEY={}\n", key));
+                        key_written = true;
+                    } else if !trimmed.is_empty() {
+                        new_content.push_str(line);
+                        new_content.push('\n');
+                    }
+                }
+            }
+        }
+        
+        if !key_written {
+            new_content.push_str(&format!("GEMINI_API_KEY={}\n", key));
+        }
+        
+        std::fs::write(&env_path, new_content).map_err(|e| format!("Failed to write env file: {}", e))?;
+    }
+    
+    std::env::set_var("GEMINI_API_KEY", &key);
+    app.provider = create_provider(&app.config);
+    Ok(())
+}
+
+#[tauri::command]
+fn get_gemini_api_key() -> Result<String, String> {
+    Ok(std::env::var("GEMINI_API_KEY").unwrap_or_default())
+}
+
+#[tauri::command]
+async fn test_llm_connection(
+    provider: String,
+    model: String,
+    url: String,
+    key: Option<String>,
+) -> Result<String, String> {
+    if provider == "gemini" {
+        let api_key = match key {
+            Some(ref k) if !k.is_empty() => k.clone(),
+            _ => std::env::var("GEMINI_API_KEY").map_err(|_| "Gemini API key is required but not set".to_string())?,
+        };
+
+        let original_key = std::env::var("GEMINI_API_KEY").ok();
+        std::env::set_var("GEMINI_API_KEY", &api_key);
+
+        let test_provider = GeminiProvider::new(model);
+        let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+        let first_chunk = stream.next().await;
+
+        if let Some(orig) = original_key {
+            std::env::set_var("GEMINI_API_KEY", orig);
+        } else {
+            std::env::remove_var("GEMINI_API_KEY");
+        }
+
+        match first_chunk {
+            Some(Ok(_)) => Ok("Gemini Connection Successful!".to_string()),
+            Some(Err(e)) => Err(format!("Gemini Connection Failed: {}", e)),
+            None => Err("Gemini Connection Failed: Empty response".to_string()),
+        }
+    } else {
+        let test_provider = OllamaProvider::new(model, url);
+        let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+        let first_chunk = stream.next().await;
+
+        match first_chunk {
+            Some(Ok(_)) => Ok("Ollama Connection Successful!".to_string()),
+            Some(Err(e)) => Err(format!("Ollama Connection Failed: {}", e)),
+            None => Err("Ollama Connection Failed: Empty response".to_string()),
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+struct ContextStats {
+    active_model: String,
+    active_provider: String,
+    memory_records_count: usize,
+    memory_pinned_count: usize,
+    memory_last_store: String,
+    session_id: String,
+    session_messages_count: usize,
+    session_created: String,
+    active_persona: String,
+    ram_available: String,
+}
+
+#[tauri::command]
+fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
+    let app = state.lock().unwrap();
+    
+    let active_provider = app.config.llm.default_provider.clone();
+    let active_model = if active_provider == "gemini" {
+        app.config.llm.gemini_model.clone()
+    } else {
+        app.config.llm.ollama_model.clone()
+    };
+
+    let mut memory_records_count = 0;
+    let mut memory_pinned_count = 0;
+    let mut memory_last_store = "Never".to_string();
+
+    if let Some(ref db) = app.mem_db {
+        if let Ok(records) = db.list_all() {
+            memory_records_count = records.len();
+            memory_pinned_count = records.iter().filter(|r| r.metadata.get("pinned") == Some(&"true".to_string())).count();
+            if memory_records_count > 0 {
+                memory_last_store = "Connected".to_string();
+            }
+        }
+    }
+
+    let session_id = app.session_id.clone();
+    let session_messages_count = app.messages.len();
+    let session_created = if session_id.len() >= 15 {
+        let date = &session_id[0..8];
+        let time = &session_id[9..15];
+        format!("{}-{}-{} {}:{}:{}", &date[0..4], &date[4..6], &date[6..8], &time[0..2], &time[2..4], &time[4..6])
+    } else {
+        "N/A".to_string()
+    };
+
+    let active_persona = app.active_persona.clone();
+
+    let ram_available = if cfg!(target_os = "windows") {
+        let output = std::process::Command::new("cmd")
+            .args(&["/c", "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value"])
+            .output();
+        if let Ok(out) = output {
+            let res = String::from_utf8_lossy(&out.stdout);
+            let mut free_kb = 0u64;
+            let mut total_kb = 0u64;
+            for line in res.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("FreePhysicalMemory=") {
+                    free_kb = trimmed["FreePhysicalMemory=".len()..].trim().parse().unwrap_or(0);
+                } else if trimmed.starts_with("TotalVisibleMemorySize=") {
+                    total_kb = trimmed["TotalVisibleMemorySize=".len()..].trim().parse().unwrap_or(0);
+                }
+            }
+            if total_kb > 0 {
+                format!("{}MB / {}MB", free_kb / 1024, total_kb / 1024)
+            } else {
+                "Unknown".to_string()
+            }
+        } else {
+            "Unknown".to_string()
+        }
+    } else {
+        let output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg("free -m | grep Mem")
+            .output();
+        if let Ok(out) = output {
+            let res = String::from_utf8_lossy(&out.stdout);
+            let parts: Vec<&str> = res.split_whitespace().collect();
+            if parts.len() >= 4 {
+                let total = parts[1];
+                let available = parts[parts.len() - 1]; // available is the last column
+                format!("{}MB / {}MB", available, total)
+            } else {
+                "Unknown".to_string()
+            }
+        } else {
+            "Unknown".to_string()
+        }
+    };
+
+    Ok(ContextStats {
+        active_model,
+        active_provider,
+        memory_records_count,
+        memory_pinned_count,
+        memory_last_store,
+        session_id,
+        session_messages_count,
+        session_created,
+        active_persona,
+        ram_available,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -1530,24 +1912,13 @@ pub fn run() {
         std::process::exit(0);
     }
 
-    // Resolve config path: prefer ../llm-term.toml (project root) over ./llm-term.toml (src-tauri/)
-    let config_path = if std::path::Path::new("../llm-term.toml").exists() {
-        "../llm-term.toml"
-    } else {
-        "llm-term.toml"
-    };
-    let config = config::load_config(config_path);
+    // Load env file variables (e.g. GEMINI_API_KEY from ~/.config/neurodeck/env)
+    load_env_file();
+
+    let config_path = get_config_path();
+    let config = config::load_config(&config_path);
     
-    let provider: Arc<dyn LlmProvider> = if std::env::var("GEMINI_API_KEY").is_ok()
-        || config.llm.default_provider == "gemini" 
-    {
-        Arc::new(GeminiProvider::new(config.llm.gemini_model.clone()))
-    } else {
-        Arc::new(OllamaProvider::new(
-            config.llm.ollama_model.clone(),
-            config.llm.ollama_base_url.clone(),
-        ))
-    };
+    let provider = create_provider(&config);
 
     let mem_db = match MemoryDB::init("./data/memory") {
         Ok(db) => Some(db),
@@ -1555,6 +1926,12 @@ pub fn run() {
             println!("Error initializing memory: {}", e);
             None
         }
+    };
+
+    let _ = std::fs::create_dir_all("./data");
+    let custom_personas = match std::fs::read_to_string("./data/personas.json") {
+        Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
+        Err(_) => Vec::new(),
     };
 
     let app_state = AppState {
@@ -1569,6 +1946,7 @@ pub fn run() {
         kill_tx: None,
         active_process_id: 0,
         cancel_stream_tx: None,
+        custom_personas,
     };
 
     tauri::Builder::default()
@@ -1650,7 +2028,29 @@ pub fn run() {
             ftp::ftp_list_dir,
             ftp::ftp_download_file,
             ftp::ftp_upload_file,
-            ftp::ftp_test_connection
+            ftp::ftp_test_connection,
+            sftp::sftp_list_dir,
+            sftp::sftp_download_file,
+            sftp::sftp_upload_file,
+            sftp::sftp_test_connection,
+            ollama_mgr::ollama_list_models,
+            ollama_mgr::ollama_pull_model,
+            ollama_mgr::ollama_delete_model,
+            set_config,
+            get_config,
+            save_gemini_api_key,
+            get_gemini_api_key,
+            test_llm_connection,
+            get_context_stats,
+            list_custom_personas,
+            add_custom_persona,
+            delete_custom_persona,
+            plugin_mgr::list_plugins,
+            plugin_mgr::toggle_plugin,
+            plugin_mgr::install_plugin,
+            plugin_mgr::read_plugin,
+            plugin_mgr::save_plugin,
+            plugin_mgr::reload_plugins
         ])
         .run(tauri::generate_context!())
 

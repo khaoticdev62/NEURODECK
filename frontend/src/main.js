@@ -28,6 +28,12 @@ if (!window.__TAURI_INTERNALS__) {
     let mockSessions = ["session_mock_123", "session_mock_456"];
     let mockActivePersona = "Default";
     let mockCurrentSessionId = "session_mock_123";
+    let mockPlugins = [
+        { name: "auto_responder", file_name: "auto_responder.lua", enabled: true },
+        { name: "bmad", file_name: "bmad.lua", enabled: true },
+        { name: "ip_lookup", file_name: "ip_lookup.lua.disabled", enabled: false }
+    ];
+    let mockCustomPersonas = [];
     
     mockIPC((cmd, args) => {
         console.log(`[Mock IPC] Invoked: ${cmd}`, args);
@@ -41,7 +47,43 @@ if (!window.__TAURI_INTERNALS__) {
                     active_persona: mockActivePersona
                 };
             case 'get_personas':
-                return ["Default", "Developer", "Support", "Writer", "Philosopher"];
+                return ["Default", "Developer", "Cyberpunk", "John", "Sally", "Winston", "Amelia", "Paige", "Mary"].concat(mockCustomPersonas.map(p => p.name));
+            case 'list_custom_personas':
+                return mockCustomPersonas;
+            case 'add_custom_persona': {
+                const { name, prompt } = args;
+                const name_trimmed = name.trim();
+                const prompt_trimmed = prompt.trim();
+                
+                if (!name_trimmed || !prompt_trimmed) {
+                    throw "Name and prompt cannot be empty";
+                }
+                if (name_trimmed.length > 30) {
+                    throw "Persona name must be under 30 characters";
+                }
+                const alphanumeric = /^[a-zA-Z0-9_\-\s]+$/;
+                if (!alphanumeric.test(name_trimmed)) {
+                    throw "Persona name can only contain letters, numbers, spaces, underscores, and hyphens";
+                }
+                const builtIn = ["Default", "Developer", "Cyberpunk", "John", "Sally", "Winston", "Amelia", "Paige", "Mary"];
+                if (builtIn.some(p => p.toLowerCase() === name_trimmed.toLowerCase())) {
+                    throw `Persona '${name_trimmed}' clashes with a built-in persona`;
+                }
+                if (mockCustomPersonas.some(p => p.name.toLowerCase() === name_trimmed.toLowerCase())) {
+                    throw `Persona '${name_trimmed}' already exists`;
+                }
+                mockCustomPersonas.push({ name: name_trimmed, prompt: prompt_trimmed });
+                return null;
+            }
+            case 'delete_custom_persona': {
+                const { name } = args;
+                const initial_len = mockCustomPersonas.length;
+                mockCustomPersonas = mockCustomPersonas.filter(p => p.name !== name);
+                if (mockCustomPersonas.length === initial_len) {
+                    throw `Custom persona '${name}' not found`;
+                }
+                return null;
+            }
             case 'get_themes':
                 return ["Default", "Nord", "Gruvbox", "Sunset", "Dracula"];
             case 'set_persona':
@@ -199,10 +241,52 @@ if (!window.__TAURI_INTERNALS__) {
             case 'ftp_download_file':
             case 'ftp_upload_file':
                 return null;
+            case 'sftp_test_connection':
+                return "Connected. Current directory: /";
+            case 'sftp_list_dir':
+                return [
+                    { name: "sftp_documents", is_dir: true, size: 0 },
+                    { name: "sftp_readme.txt", is_dir: false, size: 2048 },
+                ];
+            case 'sftp_download_file':
+            case 'sftp_upload_file':
+                return null;
             case 'get_discovered_peers':
                 return [];
             case 'get_active_transfers':
                 return [];
+            case 'ollama_list_models':
+                return [
+                    { name: "llama2:latest", size: 3791823901, modified_at: "2026-05-23T01:21:46Z" },
+                    { name: "llama3.2:latest", size: 2018898124, modified_at: "2026-05-23T01:21:46Z" },
+                ];
+            case 'ollama_pull_model': {
+                setTimeout(() => {
+                    const el = document.getElementById("settings-ollama-pull-status");
+                    if (el) el.innerText = "Downloading...";
+                    const pct = document.getElementById("settings-ollama-pull-percent");
+                    if (pct) pct.innerText = "50%";
+                    const bar = document.getElementById("settings-ollama-pull-bar");
+                    if (bar) bar.style.width = "50%";
+                    setTimeout(() => {
+                        if (el) el.innerText = "Pull complete!";
+                        if (pct) pct.innerText = "100%";
+                        if (bar) bar.style.width = "100%";
+                        setTimeout(() => {
+                            const container = document.getElementById("settings-ollama-pull-progress-container");
+                            if (container) container.style.display = "none";
+                            const pullBtn = document.getElementById("settings-ollama-pull-btn");
+                            if (pullBtn) pullBtn.disabled = false;
+                            const inputEl = document.getElementById("settings-ollama-pull-input");
+                            if (inputEl) inputEl.value = "";
+                            refreshOllamaModels();
+                        }, 1000);
+                    }, 1000);
+                }, 500);
+                return null;
+            }
+            case 'ollama_delete_model':
+                return null;
             case 'agent_step':
                 return JSON.stringify({
                     thought: "Mock: I'll write a simple Python hello world script.",
@@ -227,6 +311,100 @@ if (!window.__TAURI_INTERNALS__) {
                 return null;
             case 'memory_add_fact':
                 return `fact-mock-${Date.now()}`;
+            case 'get_config':
+                return {
+                    theme: {
+                        primary_color: "#00F0FF",
+                        secondary_color: "#FF0055",
+                        bg_color: "#050505",
+                        foreground_color: "#D9F7FF",
+                        response_color: "#00FF88"
+                    },
+                    llm: {
+                        default_provider: "ollama",
+                        ollama_model: "llama2",
+                        gemini_model: "gemini-1.5-flash",
+                        ollama_base_url: "http://localhost:11434"
+                    }
+                };
+            case 'set_config':
+                return null;
+            case 'save_gemini_api_key':
+                return null;
+            case 'get_gemini_api_key':
+                return "MOCK_GEMINI_API_KEY";
+            case 'test_llm_connection':
+                return "Mock LLM Connection Successful!";
+            case 'get_context_stats':
+                return {
+                    active_model: "llama2 (mock)",
+                    active_provider: "ollama (mock)",
+                    memory_records_count: 5,
+                    memory_pinned_count: 2,
+                    memory_last_store: "Stable",
+                    session_id: "20260523-011800",
+                    session_messages_count: 3,
+                    session_created: "2026-05-23 01:18:00",
+                    active_persona: "Default",
+                    ram_available: "12867MB / 15867MB"
+                };
+            case 'list_plugins':
+                return mockPlugins;
+            case 'toggle_plugin': {
+                const { fileName, enabled } = args;
+                const plugin = mockPlugins.find(p => p.file_name === fileName);
+                if (plugin) {
+                    plugin.enabled = enabled;
+                    if (enabled) {
+                        if (fileName.endsWith(".disabled")) {
+                            plugin.file_name = fileName.replace(".disabled", "");
+                        }
+                    } else {
+                        if (!fileName.endsWith(".disabled")) {
+                            plugin.file_name = fileName + ".disabled";
+                        }
+                    }
+                }
+                return null;
+            }
+            case 'install_plugin': {
+                const { url } = args;
+                const lastSlash = url.lastIndexOf('/');
+                let name = lastSlash !== -1 ? url.substring(lastSlash + 1) : "new_plugin.lua";
+                if (!name.endsWith(".lua") && !name.endsWith(".disabled")) {
+                    name += ".lua";
+                }
+                const baseName = name.endsWith(".disabled") ? name.replace(".lua.disabled", "") : name.replace(".lua", "");
+                mockPlugins.push({
+                    name: baseName,
+                    file_name: name,
+                    enabled: !name.endsWith(".disabled")
+                });
+                return null;
+            }
+            case 'read_plugin': {
+                const { fileName } = args;
+                if (fileName.includes("bmad")) {
+                    return `-- plugins/bmad.lua\n-- Preinstalled BMad framework plugin.\nprint("Hello Bmad Mock")`;
+                } else if (fileName.includes("ip_lookup")) {
+                    return `-- ip_lookup.lua\nprint("Hello IP Lookup Mock")`;
+                } else {
+                    return `-- ${fileName}\nprint("Custom Mock Script")`;
+                }
+            }
+            case 'save_plugin': {
+                const { fileName, content } = args;
+                const baseName = fileName.endsWith(".disabled") ? fileName.replace(".lua.disabled", "") : fileName.replace(".lua", "");
+                let plugin = mockPlugins.find(p => p.file_name === fileName);
+                if (!plugin) {
+                    plugin = { name: baseName, file_name: fileName, enabled: !fileName.endsWith(".disabled") };
+                    mockPlugins.push(plugin);
+                }
+                console.log(`[Mock IPC] Saved plugin ${fileName} with content length: ${content.length}`);
+                return null;
+            }
+            case 'reload_plugins':
+                return null;
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -335,6 +513,7 @@ document.querySelector('#app').innerHTML = `
                             <option value="markdown">Markdown</option>
                             <option value="bash">Bash / Shell</option>
                             <option value="python">Python</option>
+                            <option value="lua">Lua</option>
                         </select>
                         <button class="canvas-btn" id="canvas-run-btn">▶ Run</button>
                         <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
@@ -355,6 +534,7 @@ document.querySelector('#app').innerHTML = `
                                 <button class="canvas-btn canvas-btn-sm" id="canvas-refresh-btn">↺</button>
                             </div>
                             <iframe id="canvas-preview-frame" class="canvas-preview-frame" sandbox="allow-scripts allow-same-origin allow-modals" title="Live Preview"></iframe>
+                            <pre id="canvas-preview-output" class="canvas-preview-output" style="display: none; flex: 1; margin: 0; padding: 15px; background: #050505; color: #00FF88; font-family: var(--font-mono); font-size: 0.9rem; overflow: auto; white-space: pre-wrap; word-break: break-all; border: none; height: calc(100% - 30px); box-sizing: border-box;"></pre>
                         </div>
                     </div>
                 </div>
@@ -376,6 +556,10 @@ document.querySelector('#app').innerHTML = `
                         <div class="terminal-toolbar-actions">
                             <button class="canvas-btn" id="pty-reconnect-btn">↺ Restart</button>
                         </div>
+                    </div>
+                    <div class="terminal-tab-bar" id="terminal-tab-bar">
+                        <div class="terminal-tab-list" id="terminal-tabs-list"></div>
+                        <button class="terminal-tab-add" id="terminal-add-tab-btn">+ New Tab</button>
                     </div>
                     <div id="pty-terminal-container"></div>
                 </div>
@@ -400,8 +584,19 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                             </div>
                             <div class="setting-field-group">
+                                <label>Auth Type</label>
+                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                    <option value="password">Password</option>
+                                    <option value="key">Key File</option>
+                                </select>
+                            </div>
+                            <div class="setting-field-group" id="ssh-pass-group">
                                 <label>Password</label>
                                 <input type="password" id="ssh-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
+                            </div>
+                            <div class="setting-field-group" id="ssh-key-path-group" style="display: none;">
+                                <label>Private Key Path</label>
+                                <input type="text" id="ssh-key-path-input" class="tunnel-text-input" placeholder="~/.ssh/id_rsa" style="width:100%;box-sizing:border-box;">
                             </div>
                             <button class="send-prompt-btn" id="ssh-connect-btn" style="width:100%;margin-top:8px;">Connect</button>
                             <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
@@ -471,6 +666,7 @@ document.querySelector('#app').innerHTML = `
                 <div class="view-content" id="view-share">
                     <div class="share-inner-tabs">
                         <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
+                        <button class="share-inner-tab" data-panel="sftp">🔒 SFTP</button>
                         <button class="share-inner-tab" data-panel="ftp">📁 FTP</button>
                     </div>
 
@@ -533,6 +729,11 @@ document.querySelector('#app').innerHTML = `
                                     <input type="text" id="ftp-path-input" class="tunnel-text-input" value="/" placeholder="/" style="width:100%;box-sizing:border-box;">
                                 </div>
                                 <button class="send-prompt-btn" id="ftp-connect-btn" style="width:100%;margin-top:8px;">Connect & List</button>
+                                <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
+                                <div class="ftp-profiles-list" id="ftp-profiles-list">
+                                    <div class="ftp-no-profiles">No saved profiles.</div>
+                                </div>
+                                <button class="canvas-btn" id="ftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
                                 <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
                                 <div class="setting-field-group">
                                     <label>Local File Path</label>
@@ -551,6 +752,72 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                                 <div class="ftp-file-list" id="ftp-file-list">
                                     <div class="ftp-empty-state">Connect to an FTP server to browse files.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- SFTP Panel -->
+                    <div class="share-panel-section" id="share-panel-sftp">
+                        <div class="ftp-layout">
+                            <div class="ftp-sidebar">
+                                <div class="ssh-panel-header">SFTP Connection</div>
+                                <div class="setting-field-group">
+                                    <label>Host / IP</label>
+                                    <input type="text" id="sftp-host-input" class="tunnel-text-input" placeholder="192.168.1.100" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="ssh-row-fields">
+                                    <div class="setting-field-group" style="flex:0 0 80px;">
+                                        <label>Port</label>
+                                        <input type="number" id="sftp-port-input" class="tunnel-text-input" value="22" style="width:100%;box-sizing:border-box;">
+                                    </div>
+                                    <div class="setting-field-group" style="flex:1;">
+                                        <label>Username</label>
+                                        <input type="text" id="sftp-user-input" class="tunnel-text-input" placeholder="deck" style="width:100%;box-sizing:border-box;">
+                                    </div>
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Auth Type</label>
+                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                        <option value="password">Password</option>
+                                        <option value="key">Key File</option>
+                                    </select>
+                                </div>
+                                <div class="setting-field-group" id="sftp-pass-group">
+                                    <label>Password</label>
+                                    <input type="password" id="sftp-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group" id="sftp-key-path-group" style="display: none;">
+                                    <label>Private Key Path</label>
+                                    <input type="text" id="sftp-key-path-input" class="tunnel-text-input" placeholder="~/.ssh/id_rsa" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Remote Path</label>
+                                    <input type="text" id="sftp-path-input" class="tunnel-text-input" value="/" placeholder="/" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <button class="send-prompt-btn" id="sftp-connect-btn" style="width:100%;margin-top:8px;">Connect & List</button>
+                                <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
+                                <div class="ftp-profiles-list" id="sftp-profiles-list">
+                                    <div class="ftp-no-profiles">No saved profiles.</div>
+                                </div>
+                                <button class="canvas-btn" id="sftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
+                                <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
+                                <div class="setting-field-group">
+                                    <label>Local File Path</label>
+                                    <input type="text" id="sftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Remote Destination</label>
+                                    <input type="text" id="sftp-remote-dest-input" class="tunnel-text-input" placeholder="/uploads/file.txt" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <button class="canvas-btn" id="sftp-upload-btn" style="width:100%;margin-top:8px;">⬆ Upload</button>
+                            </div>
+                            <div class="ftp-browser">
+                                <div class="ftp-browser-header">
+                                    <span id="sftp-cwd-label">📁 /</span>
+                                    <span id="sftp-status-text" class="ftp-status">Disconnected</span>
+                                </div>
+                                <div class="ftp-file-list" id="sftp-file-list">
+                                    <div class="ftp-empty-state">Connect to an SFTP server to browse files.</div>
                                 </div>
                             </div>
                         </div>
@@ -746,23 +1013,52 @@ document.querySelector('#app').innerHTML = `
                 <span class="inspect-title">Agent Context</span>
                 <button class="sidebar-toggle-btn" id="inspect-close-btn" title="Collapse Drawer">▶</button>
             </div>
-            <div class="inspect-content">
+            <div class="inspect-content" style="overflow-y: auto; max-height: calc(100% - 52px);">
                 <div class="inspect-card">
                     <h4>SYSTEM HEALTH</h4>
                     <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Memory:</span>
-                        <span class="inspect-stat-value" id="memory-status">Stable</span>
+                        <span class="inspect-stat-label">Active Provider:</span>
+                        <span class="inspect-stat-value" id="drawer-active-provider">--</span>
                     </div>
                     <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Vector DB:</span>
-                        <span class="inspect-stat-value" id="vector-db-status">Connected</span>
+                        <span class="inspect-stat-label">Active Model:</span>
+                        <span class="inspect-stat-value" id="drawer-active-model">--</span>
+                    </div>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Available RAM:</span>
+                        <span class="inspect-stat-value" id="drawer-ram-val">--</span>
                     </div>
                 </div>
+                
+                <div class="inspect-card">
+                    <h4>VECTOR MEMORY</h4>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">DB Status:</span>
+                        <span class="inspect-stat-value" id="vector-db-status">Connected</span>
+                    </div>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Total Records:</span>
+                        <span class="inspect-stat-value" id="drawer-memory-records">0</span>
+                    </div>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Pinned Facts:</span>
+                        <span class="inspect-stat-value" id="drawer-memory-pinned">0</span>
+                    </div>
+                </div>
+                
                 <div class="inspect-card">
                     <h4>SESSION METRICS</h4>
                     <div class="inspect-stat-row">
                         <span class="inspect-stat-label">Session ID:</span>
-                        <span class="inspect-stat-value" id="session-id">Active</span>
+                        <span class="inspect-stat-value" id="drawer-session-id">Active</span>
+                    </div>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Created At:</span>
+                        <span class="inspect-stat-value" id="drawer-session-created">--</span>
+                    </div>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Messages Count:</span>
+                        <span class="inspect-stat-value" id="drawer-session-messages">0</span>
                     </div>
                     <div class="inspect-stat-row">
                         <span class="inspect-stat-label">Latency:</span>
@@ -771,6 +1067,14 @@ document.querySelector('#app').innerHTML = `
                     <div class="inspect-stat-row">
                         <span class="inspect-stat-label">Tokens Speed:</span>
                         <span class="inspect-stat-value" id="token-speed">--/s</span>
+                    </div>
+                </div>
+
+                <div class="inspect-card">
+                    <h4>ACTIVE PERSONA</h4>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Persona Name:</span>
+                        <span class="inspect-stat-value" id="drawer-active-persona">Default</span>
                     </div>
                 </div>
             </div>
@@ -784,6 +1088,54 @@ document.querySelector('#app').innerHTML = `
                     <button class="sidebar-toggle-btn" id="close-settings-x">✕</button>
                 </div>
                 <div class="settings-modal-content" style="max-height: 70vh; overflow-y: auto;">
+                    <div class="ssh-panel-header" style="margin-top: 0; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">LLM PROVIDER CONFIGURATION</div>
+                    <div class="setting-field-group">
+                        <label for="llm-provider-select">LLM Provider:</label>
+                        <select id="llm-provider-select" class="canvas-lang-select" style="width:100%; box-sizing:border-box; background:#1a242f; color:#e2e8f0; border:1px solid var(--border-color); border-radius:4px; padding:6px;">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="ollama">Ollama (Local/Remote)</option>
+                        </select>
+                    </div>
+                    <div class="setting-field-group" id="settings-gemini-group">
+                        <label for="settings-gemini-key">Gemini API Key:</label>
+                        <input type="password" id="settings-gemini-key" class="tunnel-text-input" placeholder="Enter Gemini API key" style="width:100%; box-sizing:border-box;">
+                        <label for="settings-gemini-model" style="margin-top: 8px;">Gemini Model:</label>
+                        <input type="text" id="settings-gemini-model" class="tunnel-text-input" placeholder="gemini-1.5-flash" style="width:100%; box-sizing:border-box;">
+                    </div>
+                    <div class="setting-field-group" id="settings-ollama-group" style="display: none;">
+                        <label for="settings-ollama-url">Ollama Base URL:</label>
+                        <input type="text" id="settings-ollama-url" class="tunnel-text-input" placeholder="http://localhost:11434" style="width:100%; box-sizing:border-box;">
+                        <label for="settings-ollama-model" style="margin-top: 8px;">Ollama Model:</label>
+                        <input type="text" id="settings-ollama-model" class="tunnel-text-input" placeholder="llama2" style="width:100%; box-sizing:border-box;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button class="canvas-btn" id="settings-test-connection-btn" style="flex: 1; height: 32px; padding: 0;">Test Connection</button>
+                        <button class="send-prompt-btn" id="settings-save-llm-btn" style="margin: 0; flex: 1; height: 32px; padding: 0; justify-content: center;">Save & Apply</button>
+                    </div>
+                    <div id="settings-llm-status" style="font-size: 0.8rem; margin-top: -12px; margin-bottom: 15px; opacity: 0.8; font-family: var(--font-mono); min-height: 15px;"></div>
+                    
+                    <!-- Ollama Models section -->
+                    <div id="settings-ollama-models-section" style="display: none; border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">OLLAMA MODELS</div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="settings-ollama-pull-input" class="tunnel-text-input" placeholder="e.g. llama3.2" style="flex: 1; margin: 0; box-sizing: border-box;">
+                            <button class="send-prompt-btn" id="settings-ollama-pull-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 12px;">Pull Model</button>
+                        </div>
+                        <div id="settings-ollama-pull-progress-container" style="display: none; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; font-family: var(--font-mono);">
+                                <span id="settings-ollama-pull-status">Downloading...</span>
+                                <span id="settings-ollama-pull-percent">0%</span>
+                            </div>
+                            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                                <div id="settings-ollama-pull-bar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.1s ease;"></div>
+                            </div>
+                        </div>
+                        <div id="settings-ollama-models-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
+                            <div style="opacity: 0.5; font-style: italic;">Loading models...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ssh-panel-header" style="margin-top: 15px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">SYSTEM PREFERENCES</div>
                     <div class="setting-field-group">
                         <label for="persona-select">Persona:</label>
                         <select id="persona-select"></select>
@@ -861,6 +1213,56 @@ document.querySelector('#app').innerHTML = `
                             <div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>
                         </div>
                         <button class="canvas-btn" id="settings-clear-ssh-profiles" style="margin-top:8px;">Clear All SSH Profiles</button>
+                    </div>
+                    <div class="setting-field-group" style="margin-top: 20px;">
+                        <label>FTP Saved Profiles</label>
+                        <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list">
+                            <div class="ssh-no-profiles">No saved profiles. Use the FTP tab to add profiles.</div>
+                        </div>
+                        <button class="canvas-btn" id="settings-clear-ftp-profiles" style="margin-top:8px;">Clear All FTP Profiles</button>
+                    </div>
+                    <div class="setting-field-group" style="margin-top: 20px;">
+                        <label>SFTP Saved Profiles</label>
+                        <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list">
+                            <div class="ssh-no-profiles">No saved profiles. Use the SFTP tab to add profiles.</div>
+                        </div>
+                        <button class="canvas-btn" id="settings-clear-sftp-profiles" style="margin-top:8px;">Clear All SFTP Profiles</button>
+                    </div>
+                    
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">PLUGINS MANAGER</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">LUA PLUGINS</div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="settings-plugin-install-url" class="tunnel-text-input" placeholder="Enter raw Lua plugin URL" style="flex: 1; margin: 0; box-sizing: border-box;">
+                            <button class="send-prompt-btn" id="settings-plugin-install-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 12px;">Install</button>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <button class="canvas-btn" id="settings-plugin-new-btn" style="flex: 1; padding: 4px 8px; font-size: 0.75rem;">+ New Plugin</button>
+                            <button class="canvas-btn" id="settings-plugin-reload-btn" style="flex: 1; padding: 4px 8px; font-size: 0.75rem;">↺ Reload Plugins</button>
+                        </div>
+                        <div id="settings-plugin-status" style="font-size: 0.75rem; margin-bottom: 8px; font-family: var(--font-mono); color: var(--response-color); min-height: 15px;"></div>
+                        <div id="settings-plugins-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
+                            <div style="opacity: 0.5; font-style: italic;">Loading plugins...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">MY CUSTOM PERSONAS</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">ADD CUSTOM PERSONA</div>
+                        <div class="setting-field-group" style="margin-bottom: 8px;">
+                            <label for="settings-persona-name">Name:</label>
+                            <input type="text" id="settings-persona-name" class="tunnel-text-input" placeholder="e.g. GamerBot" style="width: 100%; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="settings-persona-prompt">System Prompt:</label>
+                            <textarea id="settings-persona-prompt" class="tunnel-text-input" placeholder="e.g. You are a retro gamer bot..." rows="3" style="width: 100%; box-sizing: border-box; resize: vertical; margin: 0; font-family: inherit; font-size: inherit; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #e2e8f0; border-radius: 4px; padding: 6px;"></textarea>
+                        </div>
+                        <button class="send-prompt-btn" id="settings-persona-create-btn" style="margin: 0 0 12px 0; height: 32px; justify-content: center; padding: 0 12px; width: 100%;">Create Persona</button>
+                        <div id="settings-persona-status" style="font-size: 0.75rem; margin-bottom: 8px; font-family: var(--font-mono); color: var(--response-color); min-height: 15px;"></div>
+                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">MANAGE CUSTOM PERSONAS</div>
+                        <div id="settings-personas-list-custom" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
+                            <div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>
+                        </div>
                     </div>
                 </div>
                 <div class="settings-modal-footer">
@@ -1043,6 +1445,102 @@ document.getElementById("shell-select").onchange = function() {
     applySettings();
 };
 
+function toggleSettingsLlmGroups(provider) {
+    const geminiGroup = document.getElementById("settings-gemini-group");
+    const ollamaGroup = document.getElementById("settings-ollama-group");
+    const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
+    if (provider === "gemini") {
+        if (geminiGroup) geminiGroup.style.display = "block";
+        if (ollamaGroup) ollamaGroup.style.display = "none";
+        if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+    } else {
+        if (geminiGroup) geminiGroup.style.display = "none";
+        if (ollamaGroup) ollamaGroup.style.display = "block";
+        if (ollamaModelsSec) {
+            ollamaModelsSec.style.display = "block";
+            refreshOllamaModels();
+        }
+    }
+}
+
+document.getElementById("llm-provider-select")?.addEventListener("change", function() {
+    toggleSettingsLlmGroups(this.value);
+});
+
+document.getElementById("settings-test-connection-btn")?.addEventListener("click", () => {
+    const provider = document.getElementById("llm-provider-select")?.value;
+    const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
+    const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
+    const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
+    const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
+
+    const statusEl = document.getElementById("settings-llm-status");
+    if (statusEl) {
+        statusEl.style.color = "var(--accent-color)";
+        statusEl.innerText = "Connecting & testing...";
+    }
+
+    const model = provider === "gemini" ? geminiModel : ollamaModel;
+    const url = provider === "gemini" ? "" : ollamaUrl;
+
+    invoke("test_llm_connection", { provider, model, url, key: geminiKey })
+        .then(res => {
+            if (statusEl) {
+                statusEl.style.color = "var(--response-color)";
+                statusEl.innerText = res;
+            }
+        })
+        .catch(err => {
+            if (statusEl) {
+                statusEl.style.color = "var(--error-color)";
+                statusEl.innerText = `Error: ${err}`;
+            }
+        });
+});
+
+document.getElementById("settings-save-llm-btn")?.addEventListener("click", () => {
+    const provider = document.getElementById("llm-provider-select")?.value;
+    const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
+    const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
+    const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
+    const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
+
+    const statusEl = document.getElementById("settings-llm-status");
+    if (statusEl) {
+        statusEl.style.color = "var(--accent-color)";
+        statusEl.innerText = "Applying changes...";
+    }
+
+    const saveKeyPromise = geminiKey 
+        ? invoke("save_gemini_api_key", { key: geminiKey })
+        : Promise.resolve();
+
+    saveKeyPromise
+        .then(() => invoke("set_config", { key: "llm.default_provider", value: provider }))
+        .then(() => invoke("set_config", { key: "llm.gemini_model", value: geminiModel }))
+        .then(() => invoke("set_config", { key: "llm.ollama_base_url", value: ollamaUrl }))
+        .then(() => invoke("set_config", { key: "llm.ollama_model", value: ollamaModel }))
+        .then(() => {
+            if (statusEl) {
+                statusEl.style.color = "var(--response-color)";
+                statusEl.innerText = "Config updated and applied!";
+            }
+            const activeModelName = provider === "gemini" ? geminiModel : ollamaModel;
+            document.getElementById("model-name").innerText = `[ MODEL: ${activeModelName.toUpperCase()} ]`;
+            
+            if (typeof updateContextDrawer === "function") {
+                updateContextDrawer();
+            }
+        })
+        .catch(err => {
+            if (statusEl) {
+                statusEl.style.color = "var(--error-color)";
+                statusEl.innerText = `Save error: ${err}`;
+            }
+        });
+});
+
+
 // Shell Switcher Pills (terminal toolbar)
 document.querySelectorAll(".shell-pill").forEach(pill => {
     pill.onclick = function() {
@@ -1056,7 +1554,15 @@ document.querySelectorAll(".shell-pill").forEach(pill => {
             const option = shellSelect.querySelector(`option[value="${shell}"]`);
             if (option) shellSelect.value = shell;
         }
-        initPtyTerminal();
+        
+        // Update shell for the active session and restart it
+        if (activeTerminalSessionId) {
+            const session = terminalSessions.find(s => s.id === activeTerminalSessionId);
+            if (session) {
+                session.shell = shell === "default" ? null : shell;
+                restartTerminalSession(activeTerminalSessionId);
+            }
+        }
     };
 });
 
@@ -1694,8 +2200,37 @@ const inspectDrawer = document.getElementById("inspect-drawer");
 const toggleDrawerBtn = document.getElementById("toggle-drawer-btn");
 const inspectCloseBtn = document.getElementById("inspect-close-btn");
 
+function updateContextDrawer() {
+    invoke("get_context_stats")
+        .then(stats => {
+            const providerEl = document.getElementById("drawer-active-provider");
+            const modelEl = document.getElementById("drawer-active-model");
+            const ramEl = document.getElementById("drawer-ram-val");
+            const recordsEl = document.getElementById("drawer-memory-records");
+            const pinnedEl = document.getElementById("drawer-memory-pinned");
+            const sessionIdEl = document.getElementById("drawer-session-id");
+            const sessionCreatedEl = document.getElementById("drawer-session-created");
+            const messagesEl = document.getElementById("drawer-session-messages");
+            const personaEl = document.getElementById("drawer-active-persona");
+
+            if (providerEl) providerEl.innerText = stats.active_provider.toUpperCase();
+            if (modelEl) modelEl.innerText = stats.active_model;
+            if (ramEl) ramEl.innerText = stats.ram_available;
+            if (recordsEl) recordsEl.innerText = stats.memory_records_count;
+            if (pinnedEl) pinnedEl.innerText = stats.memory_pinned_count;
+            if (sessionIdEl) sessionIdEl.innerText = stats.session_id;
+            if (sessionCreatedEl) sessionCreatedEl.innerText = stats.session_created;
+            if (messagesEl) messagesEl.innerText = stats.session_messages_count;
+            if (personaEl) personaEl.innerText = stats.active_persona;
+        })
+        .catch(err => console.error("Error updating context drawer stats:", err));
+}
+
 toggleDrawerBtn.onclick = function() {
     inspectDrawer.classList.toggle("collapsed");
+    if (!inspectDrawer.classList.contains("collapsed")) {
+        updateContextDrawer();
+    }
 };
 
 inspectCloseBtn.onclick = function() {
@@ -1711,20 +2246,36 @@ const closeSettingsX = document.getElementById("close-settings-x");
 settingsBtn.onclick = function() {
     settingsOverlay.classList.add("active");
     
-    // Populate personas
-    invoke("get_personas").then((personas) => {
-        let select = document.getElementById("persona-select");
-        select.innerHTML = "";
-        personas.forEach((p) => {
-            let option = document.createElement("option");
-            option.value = p;
-            option.innerText = p;
-            if (p === activePersona) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
+    // Clear status text
+    const statusEl = document.getElementById("settings-llm-status");
+    if (statusEl) statusEl.innerText = "";
+
+    // Load active LLM config and API key
+    Promise.all([
+        invoke("get_config"),
+        invoke("get_gemini_api_key")
+    ]).then(([config, apiKey]) => {
+        const providerSelect = document.getElementById("llm-provider-select");
+        const geminiKeyInput = document.getElementById("settings-gemini-key");
+        const geminiModelInput = document.getElementById("settings-gemini-model");
+        const ollamaUrlInput = document.getElementById("settings-ollama-url");
+        const ollamaModelInput = document.getElementById("settings-ollama-model");
+
+        if (providerSelect) providerSelect.value = config.llm.default_provider;
+        if (geminiKeyInput) geminiKeyInput.value = apiKey;
+        if (geminiModelInput) geminiModelInput.value = config.llm.gemini_model;
+        if (ollamaUrlInput) ollamaUrlInput.value = config.llm.ollama_base_url;
+        if (ollamaModelInput) ollamaModelInput.value = config.llm.ollama_model;
+
+        toggleSettingsLlmGroups(config.llm.default_provider);
+    }).catch(err => {
+        console.error("Error loading LLM config in settings:", err);
     });
+
+    // Populate personas
+    if (typeof refreshSettingsPersonaDropdown === 'function') {
+        refreshSettingsPersonaDropdown();
+    }
     
     // Populate themes
     invoke("get_themes").then((themes) => {
@@ -1741,6 +2292,16 @@ settingsBtn.onclick = function() {
             select.appendChild(option);
         });
     });
+    
+    renderSshProfilesSettings();
+    renderFtpProfilesSettings();
+    renderSftpProfilesSettings();
+    if (typeof loadPluginsList === 'function') {
+        loadPluginsList();
+    }
+    if (typeof loadCustomPersonas === 'function') {
+        loadCustomPersonas();
+    }
 };
 
 closeSettings.onclick = function() {
@@ -2235,6 +2796,9 @@ listen("stream_done", function () {
     
     // Refresh sessions sidebar list
     refreshSessionsList();
+
+    // Refresh context drawer live metrics
+    updateContextDrawer();
 });
 
 // Listen for command stream events
@@ -2794,12 +3358,26 @@ setInterval(() => {
 
 // Initial state initialization
 invoke("get_initial_state").then((state) => {
-    document.getElementById("model-name").innerText = `[ MODEL: ${state.model} ]`;
-    document.getElementById("memory-status").innerText = state.memory_status;
-    document.getElementById("tool-status").innerText = state.tool_status;
-    document.getElementById("session-id").innerText = state.session_id;
+    const modelNameEl = document.getElementById("model-name");
+    if (modelNameEl) modelNameEl.innerText = `[ MODEL: ${state.model.toUpperCase()} ]`;
+    
+    const dbStatusEl = document.getElementById("vector-db-status");
+    if (dbStatusEl) dbStatusEl.innerText = state.memory_status;
+    
+    const memoryStatusEl = document.getElementById("memory-status");
+    if (memoryStatusEl) memoryStatusEl.innerText = state.memory_status;
+
+    const toolStatusEl = document.getElementById("tool-status");
+    if (toolStatusEl) toolStatusEl.innerText = state.tool_status;
+
+    const sessionIdEl = document.getElementById("session-id");
+    if (sessionIdEl) sessionIdEl.innerText = state.session_id;
+
     currentSessionId = state.session_id;
     activePersona = state.active_persona || "Default";
+    
+    // Initial Context Drawer metrics load
+    updateContextDrawer();
 
     // Show game badge if a game was detected at startup
     updateGameBadge({
@@ -2896,12 +3474,17 @@ navTabs.forEach(tab => {
         }
         if (targetView === "share") {
             renderSshProfilesSettings();
+            renderFtpProfiles();
+            renderSftpProfiles();
         }
     };
 });
 
 // --- PTY TERMINAL SYSTEM ---
-let ptySessionId = "main_pty_session";
+let terminalSessions = []; // list of { id, shell, term, fitAddon, containerEl }
+let activeTerminalSessionId = null;
+let ptySessionId = null; // compatibility pointer for active session id
+const MAX_TERMINAL_SESSIONS = 5;
 
 function getActiveShellPath() {
     const selectedShell = localStorage.getItem("selectedShell") || "default";
@@ -2915,11 +3498,38 @@ function getActiveShellPath() {
     return selectedShell;
 }
 
-function initPtyTerminal() {
+function syncShellPillsForSession(shell) {
+    const targetShell = shell || "default";
+    document.querySelectorAll(".shell-pill").forEach(p => {
+        const dataShell = p.getAttribute("data-shell");
+        if (dataShell === targetShell) {
+            p.classList.add("active");
+        } else {
+            p.classList.remove("active");
+        }
+    });
+}
+
+function createTerminalSession(shellPath) {
+    if (terminalSessions.length >= MAX_TERMINAL_SESSIONS) {
+        alert(`Maximum of ${MAX_TERMINAL_SESSIONS} active terminal tabs allowed.`);
+        return;
+    }
+
     const container = document.getElementById("pty-terminal-container");
     if (!container) return;
-    container.innerHTML = "";
-    
+
+    const id = "pty_session_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    const shell = shellPath !== undefined ? shellPath : getActiveShellPath();
+
+    // Create container div for this terminal
+    const containerEl = document.createElement("div");
+    containerEl.className = "pty-terminal-instance";
+    containerEl.id = `pty-terminal-instance-${id}`;
+    containerEl.style.display = "none"; // hidden until switched to
+    container.appendChild(containerEl);
+
+    // Initialize xterm
     const savedFontSizeStr = localStorage.getItem("terminalFontSize");
     const fontSize = savedFontSizeStr !== null ? parseInt(savedFontSizeStr, 10) : 14;
     const savedScrollbackStr = localStorage.getItem("terminalScrollback");
@@ -2937,61 +3547,228 @@ function initPtyTerminal() {
             selectionBackground: 'rgba(0, 240, 255, 0.3)'
         }
     });
-    
+
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
-    term.open(container);
-    
-    window.ptyTerminal = term;
-    window.ptyTerminalFitAddon = fitAddon;
-    
+    term.open(containerEl);
+
     try {
         fitAddon.fit();
     } catch (e) {
         console.warn("Could not fit xterm immediately:", e);
     }
-    
-    invoke("pty_kill", { id: ptySessionId }).catch(() => {}).then(() => {
-        const dims = fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
-        invoke("pty_spawn", {
-            id: ptySessionId,
-            cols: dims.cols,
-            rows: dims.rows,
-            shell: getActiveShellPath()
-        }).then(() => {
-            term.write("\r\n\x1b[1;36mNEURODECK Interactive Shell Started\x1b[0m\r\n");
-        }).catch(err => {
-            term.write(`\r\n\x1b[1;31mError starting PTY: ${err}\x1b[0m\r\n`);
+
+    // Spawn Backend PTY
+    const dims = fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
+    invoke("pty_spawn", {
+        id: id,
+        cols: dims.cols,
+        rows: dims.rows,
+        shell: shell
+    }).then(() => {
+        term.write("\r\n\x1b[1;36mNEURODECK Interactive Shell Started\x1b[0m\r\n");
+    }).catch(err => {
+        term.write(`\r\n\x1b[1;31mError starting PTY: ${err}\x1b[0m\r\n`);
+    });
+
+    term.onData(data => {
+        invoke("pty_write", { id: id, data: data }).catch(err => {
+            console.error("PTY Write error:", err);
         });
     });
-    
-    term.onData(data => {
-        invoke("pty_write", { id: ptySessionId, data: data }).catch(err => {
-            console.error("PTY Write error:", err);
+
+    const sessionObj = { id, shell, term, fitAddon, containerEl };
+    terminalSessions.push(sessionObj);
+
+    renderTerminalTabs();
+    switchTerminalSession(id);
+}
+
+function switchTerminalSession(id) {
+    const session = terminalSessions.find(s => s.id === id);
+    if (!session) return;
+
+    activeTerminalSessionId = id;
+    ptySessionId = id; // update for backwards compatibility
+
+    // Update globals for resize handler
+    window.ptyTerminal = session.term;
+    window.ptyTerminalFitAddon = session.fitAddon;
+
+    // Toggle display of containers
+    terminalSessions.forEach(s => {
+        if (s.id === id) {
+            s.containerEl.style.display = "block";
+            // Refit
+            setTimeout(() => {
+                try {
+                    s.fitAddon.fit();
+                    const dims = s.fitAddon.proposeDimensions();
+                    if (dims) {
+                        invoke("pty_resize", { id: s.id, cols: dims.cols, rows: dims.rows }).catch(console.error);
+                    }
+                } catch (e) {}
+                s.term.focus();
+            }, 50);
+        } else {
+            s.containerEl.style.display = "none";
+        }
+    });
+
+    // Update tab bar buttons active state
+    const list = document.getElementById("terminal-tabs-list");
+    if (list) {
+        list.querySelectorAll(".terminal-tab").forEach(btn => {
+            const btnId = btn.getAttribute("data-session-id");
+            if (btnId === id) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+    }
+
+    // Update shell pills to match this session's shell
+    syncShellPillsForSession(session.shell);
+}
+
+function closeTerminalSession(id) {
+    if (terminalSessions.length <= 1) {
+        restartTerminalSession(id);
+        return;
+    }
+
+    const idx = terminalSessions.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    const sessionObj = terminalSessions[idx];
+
+    // Kill backend process
+    invoke("pty_kill", { id: id }).catch(() => {});
+
+    // Dispose xterm
+    try {
+        sessionObj.term.dispose();
+    } catch (e) {}
+
+    // Remove container from DOM
+    sessionObj.containerEl.remove();
+
+    // Remove from array
+    terminalSessions.splice(idx, 1);
+
+    renderTerminalTabs();
+
+    // Switch to another active tab
+    if (activeTerminalSessionId === id) {
+        const nextActiveIdx = Math.max(0, idx - 1);
+        const nextSession = terminalSessions[nextActiveIdx];
+        if (nextSession) {
+            switchTerminalSession(nextSession.id);
+        }
+    }
+}
+
+function restartTerminalSession(id) {
+    const session = terminalSessions.find(s => s.id === id);
+    if (!session) return;
+
+    session.term.write("\r\n\x1b[1;33mRestarting shell session...\x1b[0m\r\n");
+    invoke("pty_kill", { id: id }).catch(() => {}).then(() => {
+        const dims = session.fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
+        invoke("pty_spawn", {
+            id: id,
+            cols: dims.cols,
+            rows: dims.rows,
+            shell: session.shell
+        }).then(() => {
+            session.term.write("\r\n\x1b[1;36mNEURODECK Interactive Shell Started\x1b[0m\r\n");
+        }).catch(err => {
+            session.term.write(`\r\n\x1b[1;31mError starting PTY: ${err}\x1b[0m\r\n`);
         });
     });
 }
 
+function renderTerminalTabs() {
+    const list = document.getElementById("terminal-tabs-list");
+    if (!list) return;
+
+    list.innerHTML = terminalSessions.map((s, idx) => {
+        const label = `Shell ${idx + 1}`;
+        const activeClass = s.id === activeTerminalSessionId ? "active" : "";
+        return `
+            <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
+                <span>${label}</span>
+                <span class="terminal-tab-close" data-session-id="${s.id}">✕</span>
+            </div>
+        `;
+    }).join("");
+
+    // Tab clicks
+    list.querySelectorAll(".terminal-tab").forEach(tab => {
+        tab.onclick = () => {
+            const sid = tab.getAttribute("data-session-id");
+            switchTerminalSession(sid);
+        };
+    });
+
+    // Close clicks
+    list.querySelectorAll(".terminal-tab-close").forEach(closeBtn => {
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            const sid = closeBtn.getAttribute("data-session-id");
+            closeTerminalSession(sid);
+        };
+    });
+}
+
+function initPtyTerminal() {
+    if (terminalSessions.length > 0) {
+        if (activeTerminalSessionId) {
+            switchTerminalSession(activeTerminalSessionId);
+        }
+        return;
+    }
+
+    const addBtn = document.getElementById("terminal-add-tab-btn");
+    if (addBtn) {
+        addBtn.onclick = () => {
+            createTerminalSession();
+        };
+    }
+
+    const reconnectBtn = document.getElementById("pty-reconnect-btn");
+    if (reconnectBtn) {
+        reconnectBtn.onclick = () => {
+            if (activeTerminalSessionId) {
+                restartTerminalSession(activeTerminalSessionId);
+            }
+        };
+    }
+
+    createTerminalSession();
+}
+
 window.addEventListener("resize", () => {
-    if (window.ptyTerminalFitAddon && window.ptyTerminal) {
+    // Resize all active terminal sessions to fit their respective windows
+    terminalSessions.forEach(s => {
         try {
-            window.ptyTerminalFitAddon.fit();
-            const dims = window.ptyTerminalFitAddon.proposeDimensions();
+            s.fitAddon.fit();
+            const dims = s.fitAddon.proposeDimensions();
             if (dims) {
-                invoke("pty_resize", { id: ptySessionId, cols: dims.cols, rows: dims.rows }).catch(err => {
+                invoke("pty_resize", { id: s.id, cols: dims.cols, rows: dims.rows }).catch(err => {
                     console.error("PTY resize error:", err);
                 });
             }
-        } catch (e) {
-            // ignore
-        }
-    }
+        } catch (e) {}
+    });
 });
 
 listen("pty_output", (event) => {
     const payload = event.payload;
-    if (payload.id === ptySessionId && window.ptyTerminal) {
-        window.ptyTerminal.write(payload.data);
+    const session = terminalSessions.find(s => s.id === payload.id);
+    if (session) {
+        session.term.write(payload.data);
     } else if (payload.id === sshSessionId && window.sshTerminal) {
         window.sshTerminal.write(payload.data);
     }
@@ -2999,21 +3776,15 @@ listen("pty_output", (event) => {
 
 listen("pty_exit", (event) => {
     const id = event.payload;
-    if (id === ptySessionId && window.ptyTerminal) {
-        window.ptyTerminal.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");
+    const session = terminalSessions.find(s => s.id === id);
+    if (session) {
+        session.term.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");
     } else if (id === sshSessionId) {
         window.sshTerminal?.write("\r\n\x1b[1;31m[SSH Session Disconnected]\x1b[0m\r\n");
         setSshStatus(false, "Disconnected");
         sshSessionId = null;
     }
 });
-
-const ptyReconnectBtn = document.getElementById("pty-reconnect-btn");
-if (ptyReconnectBtn) {
-    ptyReconnectBtn.onclick = function() {
-        initPtyTerminal();
-    };
-}
 
 // ==========================================================================
 // SSH CLIENT SYSTEM
@@ -3069,6 +3840,8 @@ function connectSsh() {
     const host = document.getElementById("ssh-host-input")?.value.trim();
     const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
     const user = document.getElementById("ssh-user-input")?.value.trim();
+    const authType = document.getElementById("ssh-auth-type")?.value || "password";
+    const keyPath = document.getElementById("ssh-key-path-input")?.value.trim();
 
     if (!host || !user) {
         window.sshTerminal?.write("\r\n\x1b[1;31mError: Host and Username are required.\x1b[0m\r\n");
@@ -3086,7 +3859,11 @@ function connectSsh() {
 
     // Use system ssh binary
     const sshBin = "ssh";
-    const sshArgs = ["-o", "StrictHostKeyChecking=no", "-p", String(port), `${user}@${host}`];
+    const sshArgs = ["-o", "StrictHostKeyChecking=no", "-p", String(port)];
+    if (authType === "key" && keyPath) {
+        sshArgs.push("-i", keyPath);
+    }
+    sshArgs.push(`${user}@${host}`);
 
     window.sshTerminal?.write(`\r\n\x1b[1;33mConnecting to ${user}@${host}:${port}...\x1b[0m\r\n`);
     setSshStatus(false, `Connecting to ${host}...`);
@@ -3151,9 +3928,12 @@ function renderSshProfiles() {
         btn.onclick = () => {
             const p = getSshProfiles()[parseInt(btn.getAttribute("data-index"))];
             if (!p) return;
-            document.getElementById("ssh-host-input").value = p.host;
-            document.getElementById("ssh-port-input").value = p.port;
-            document.getElementById("ssh-user-input").value = p.user;
+            document.getElementById("ssh-host-input").value = p.host || "";
+            document.getElementById("ssh-port-input").value = p.port || "22";
+            document.getElementById("ssh-user-input").value = p.user || "";
+            document.getElementById("ssh-auth-type").value = p.auth_type || "password";
+            document.getElementById("ssh-key-path-input").value = p.key_path || "";
+            document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
             document.getElementById("ssh-pass-input").value = "";
         };
     });
@@ -3201,11 +3981,13 @@ document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () =>
     const host = document.getElementById("ssh-host-input")?.value.trim();
     const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
     const user = document.getElementById("ssh-user-input")?.value.trim();
+    const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
+    const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
     if (!host || !user) { alert("Enter host and username first."); return; }
     const name = prompt("Profile name:", `${user}@${host}`);
     if (!name) return;
     const profiles = getSshProfiles();
-    profiles.push({ name, host, port, user });
+    profiles.push({ name, host, port, user, auth_type, key_path });
     saveSshProfiles(profiles);
     renderSshProfiles();
 });
@@ -3218,6 +4000,118 @@ document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click"
 
 // Init SSH profiles on load
 renderSshProfiles();
+
+document.getElementById("ssh-auth-type")?.addEventListener("change", (e) => {
+    const isKey = e.target.value === "key";
+    const passGroup = document.getElementById("ssh-pass-group");
+    const keyPathGroup = document.getElementById("ssh-key-path-group");
+    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
+    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
+});
+
+// --- FTP Profile Management ---
+function getFtpProfiles() {
+    try { return JSON.parse(localStorage.getItem("ftpProfiles") || "[]"); } catch { return []; }
+}
+
+function saveFtpProfiles(profiles) {
+    localStorage.setItem("ftpProfiles", JSON.stringify(profiles));
+}
+
+function renderFtpProfiles() {
+    const list = document.getElementById("ftp-profiles-list");
+    if (!list) return;
+    const profiles = getFtpProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item" data-index="${i}">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <div class="ssh-profile-actions">
+                <button class="canvas-btn ftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
+                <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            </div>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".ftp-profile-load-btn").forEach(btn => {
+        btn.onclick = () => {
+            const p = getFtpProfiles()[parseInt(btn.getAttribute("data-index"))];
+            if (!p) return;
+            document.getElementById("ftp-host-input").value = p.host || "";
+            document.getElementById("ftp-port-input").value = p.port || "21";
+            document.getElementById("ftp-user-input").value = p.user || "";
+            document.getElementById("ftp-pass-input").value = "";
+            document.getElementById("ftp-path-input").value = p.path || "/";
+        };
+    });
+
+    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getFtpProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            saveFtpProfiles(profiles);
+            renderFtpProfiles();
+            renderFtpProfilesSettings();
+        };
+    });
+}
+
+function renderFtpProfilesSettings() {
+    const list = document.getElementById("settings-ftp-profiles-list");
+    if (!list) return;
+    const profiles = getFtpProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the FTP tab to add profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+        </div>
+    `).join("");
+    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getFtpProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            saveFtpProfiles(profiles);
+            renderFtpProfilesSettings();
+            renderFtpProfiles();
+        };
+    });
+}
+
+document.getElementById("ftp-save-profile-btn")?.addEventListener("click", () => {
+    const host = document.getElementById("ftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+    const user = document.getElementById("ftp-user-input")?.value.trim();
+    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
+    if (!host || !user) { alert("Enter host and username first."); return; }
+    const name = prompt("Profile name:", `${user}@${host}`);
+    if (!name) return;
+    const profiles = getFtpProfiles();
+    profiles.push({ name, host, port, user, path });
+    saveFtpProfiles(profiles);
+    renderFtpProfiles();
+});
+
+document.getElementById("settings-clear-ftp-profiles")?.addEventListener("click", () => {
+    localStorage.removeItem("ftpProfiles");
+    renderFtpProfiles();
+    renderFtpProfilesSettings();
+});
+
+// Init FTP profiles on load
+renderFtpProfiles();
 
 // ==========================================================================
 // FTP CLIENT SYSTEM
@@ -3324,6 +4218,234 @@ document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
         .catch(err => setFtpStatus(`Upload error: ${err}`));
 });
 
+// ==========================================================================
+// SFTP CLIENT SYSTEM
+// ==========================================================================
+
+let sftpCurrentPath = "/";
+
+function renderSftpFiles(entries) {
+    const list = document.getElementById("sftp-file-list");
+    if (!list) return;
+    if (!entries || entries.length === 0) {
+        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
+        return;
+    }
+    list.innerHTML = entries.map(e => `
+        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
+            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
+            <span class="ftp-file-name">${e.name}</span>
+            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
+            ${!e.is_dir ? `<button class="canvas-btn sftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
+        </div>
+    `).join("");
+
+    // Directory navigation
+    list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
+        item.style.cursor = "pointer";
+        item.onclick = () => {
+            const name = item.getAttribute("data-name");
+            sftpCurrentPath = sftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            loadSftpDir(sftpCurrentPath);
+        };
+    });
+
+    // Download buttons
+    list.querySelectorAll(".sftp-download-btn").forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const name = btn.getAttribute("data-name");
+            const remotePath = sftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+            const host = document.getElementById("sftp-host-input")?.value.trim();
+            const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+            const user = document.getElementById("sftp-user-input")?.value.trim();
+            const authType = document.getElementById("sftp-auth-type")?.value || "password";
+            const pass = document.getElementById("sftp-pass-input")?.value;
+            const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+            setSftpStatus(`Downloading ${name}...`);
+            invoke("sftp_download_file", { host, port, user, authType, password: pass, keyPath, remotePath, localPath })
+                .then(() => setSftpStatus(`Downloaded to ${localPath}`))
+                .catch(err => setSftpStatus(`Download error: ${err}`));
+        };
+    });
+}
+
+function setSftpStatus(msg) {
+    const el = document.getElementById("sftp-status-text");
+    if (el) el.textContent = msg;
+}
+
+function loadSftpDir(path) {
+    const host = document.getElementById("sftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+    const user = document.getElementById("sftp-user-input")?.value.trim();
+    const authType = document.getElementById("sftp-auth-type")?.value || "password";
+    const pass = document.getElementById("sftp-pass-input")?.value;
+    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+    if (!host) return;
+
+    setSftpStatus("Loading...");
+    const cwdLabel = document.getElementById("sftp-cwd-label");
+    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
+
+    invoke("sftp_list_dir", { host, port, user, authType, password: pass, keyPath, path })
+        .then(entries => {
+            sftpCurrentPath = path;
+            renderSftpFiles(entries);
+            setSftpStatus(`Connected — ${entries.length} items`);
+        })
+        .catch(err => {
+            setSftpStatus(`Error: ${err}`);
+            const list = document.getElementById("sftp-file-list");
+            if (list) list.innerHTML = `<div class="ftp-empty-state" style="color:#ff6b6b;">Error: ${err}</div>`;
+        });
+}
+
+document.getElementById("sftp-connect-btn")?.addEventListener("click", () => {
+    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
+    loadSftpDir(path);
+});
+
+document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
+    const host = document.getElementById("sftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+    const user = document.getElementById("sftp-user-input")?.value.trim();
+    const authType = document.getElementById("sftp-auth-type")?.value || "password";
+    const pass = document.getElementById("sftp-pass-input")?.value;
+    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+    const localPath = document.getElementById("sftp-local-path-input")?.value.trim();
+    const remotePath = document.getElementById("sftp-remote-dest-input")?.value.trim();
+    if (!host || !localPath || !remotePath) {
+        setSftpStatus("Fill in host, local path, and remote destination.");
+        return;
+    }
+    setSftpStatus("Uploading...");
+    invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
+        .then(() => {
+            setSftpStatus("Upload complete.");
+            loadSftpDir(sftpCurrentPath);
+        })
+        .catch(err => setSftpStatus(`Upload error: ${err}`));
+});
+
+// --- SFTP Profile Management ---
+function getSftpProfiles() {
+    try { return JSON.parse(localStorage.getItem("sftpProfiles") || "[]"); } catch { return []; }
+}
+
+const fn_sftp_save_profiles = (profiles) => {
+    localStorage.setItem("sftpProfiles", JSON.stringify(profiles));
+};
+
+function renderSftpProfiles() {
+    const list = document.getElementById("sftp-profiles-list");
+    if (!list) return;
+    const profiles = getSftpProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item" data-index="${i}">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <div class="ssh-profile-actions">
+                <button class="canvas-btn sftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
+                <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            </div>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".sftp-profile-load-btn").forEach(btn => {
+        btn.onclick = () => {
+            const p = getSftpProfiles()[parseInt(btn.getAttribute("data-index"))];
+            if (!p) return;
+            document.getElementById("sftp-host-input").value = p.host || "";
+            document.getElementById("sftp-port-input").value = p.port || "22";
+            document.getElementById("sftp-user-input").value = p.user || "";
+            document.getElementById("sftp-auth-type").value = p.auth_type || "password";
+            document.getElementById("sftp-key-path-input").value = p.key_path || "";
+            document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
+            document.getElementById("sftp-pass-input").value = "";
+            document.getElementById("sftp-path-input").value = p.path || "/";
+        };
+    });
+
+    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getSftpProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            fn_sftp_save_profiles(profiles);
+            renderSftpProfiles();
+            renderSftpProfilesSettings();
+        };
+    });
+}
+
+function renderSftpProfilesSettings() {
+    const list = document.getElementById("settings-sftp-profiles-list");
+    if (!list) return;
+    const profiles = getSftpProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SFTP tab to add profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+        </div>
+    `).join("");
+    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getSftpProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            fn_sftp_save_profiles(profiles);
+            renderSftpProfilesSettings();
+            renderSftpProfiles();
+        };
+    });
+}
+
+document.getElementById("sftp-save-profile-btn")?.addEventListener("click", () => {
+    const host = document.getElementById("sftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+    const user = document.getElementById("sftp-user-input")?.value.trim();
+    const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
+    const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
+    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
+    if (!host || !user) { alert("Enter host and username first."); return; }
+    const name = prompt("Profile name:", `${user}@${host}`);
+    if (!name) return;
+    const profiles = getSftpProfiles();
+    profiles.push({ name, host, port, user, auth_type, key_path, path });
+    fn_sftp_save_profiles(profiles);
+    renderSftpProfiles();
+});
+
+document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", () => {
+    localStorage.removeItem("sftpProfiles");
+    renderSftpProfiles();
+    renderSftpProfilesSettings();
+});
+
+document.getElementById("sftp-auth-type")?.addEventListener("change", (e) => {
+    const isKey = e.target.value === "key";
+    const passGroup = document.getElementById("sftp-pass-group");
+    const keyPathGroup = document.getElementById("sftp-key-path-group");
+    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
+    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
+});
+
+// Init SFTP profiles on load
+renderSftpProfiles();
+
 // --- LIVE CODE CANVAS SYSTEM ---
 
 const CANVAS_EXT_MAP = {
@@ -3332,7 +4454,8 @@ const CANVAS_EXT_MAP = {
     javascript: 'script.js',
     markdown: 'README.md',
     bash: 'script.sh',
-    python: 'script.py'
+    python: 'script.py',
+    lua: 'plugin.lua'
 };
 
 function buildPreviewDoc(lang, code) {
@@ -3359,14 +4482,27 @@ try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
 function renderCanvasPreview() {
     const editor = document.getElementById("canvas-editor");
     const frame = document.getElementById("canvas-preview-frame");
-    if (!editor || !frame) return;
+    const outputPre = document.getElementById("canvas-preview-output");
+    if (!editor || !frame || !outputPre) return;
     const lang = window.neurodeckCanvas.currentLang;
     const code = editor.value;
     window.neurodeckCanvas.currentCode = code;
-    frame.srcdoc = buildPreviewDoc(lang, code);
+    
+    if (lang === 'python' || lang === 'bash') {
+        frame.style.display = 'none';
+        outputPre.style.display = 'block';
+        if (!outputPre.textContent || outputPre.textContent.startsWith("[Select '▶ Run'")) {
+            outputPre.textContent = `[Select '▶ Run' to execute this ${lang === 'python' ? 'Python' : 'Bash'} code]`;
+        }
+    } else {
+        frame.style.display = 'block';
+        outputPre.style.display = 'none';
+        frame.srcdoc = buildPreviewDoc(lang, code);
+    }
 }
 
-function loadCanvasCode(lang, content) {
+function loadCanvasCode(lang, content, fileName = "") {
+    window.neurodeckCanvas.activePluginFile = fileName;
     const normalizedLang = lang.toLowerCase();
     const mappedLang = ['js', 'javascript'].includes(normalizedLang) ? 'javascript'
         : ['sh', 'shell', 'zsh', 'bash'].includes(normalizedLang) ? 'bash'
@@ -3381,9 +4517,14 @@ function loadCanvasCode(lang, content) {
     window.neurodeckCanvas.currentLang = select ? select.value : 'html';
 
     if (editor) editor.value = content;
-    if (fileTitle) fileTitle.textContent = CANVAS_EXT_MAP[window.neurodeckCanvas.currentLang] || 'untitled';
+    if (fileTitle) {
+        fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[window.neurodeckCanvas.currentLang] || 'untitled';
+    }
 
     renderCanvasPreview();
+    if (typeof updateCanvasToolbarButtons === 'function') {
+        updateCanvasToolbarButtons();
+    }
 }
 
 function initCanvasView() {
@@ -3458,17 +4599,64 @@ function initCanvasView() {
     if (select) {
         select.addEventListener("change", () => {
             window.neurodeckCanvas.currentLang = select.value;
-            if (fileTitle) fileTitle.textContent = CANVAS_EXT_MAP[select.value] || 'untitled';
+            if (fileTitle) {
+                fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[select.value] || 'untitled';
+            }
             renderCanvasPreview();
+            if (typeof updateCanvasToolbarButtons === 'function') {
+                updateCanvasToolbarButtons();
+            }
         });
     }
 
     if (runBtn) {
         runBtn.onclick = () => {
             clearTimeout(debounceTimer);
-            renderCanvasPreview();
-            runBtn.textContent = "✓ Done";
-            setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1200);
+            const lang = window.neurodeckCanvas.currentLang;
+            const code = editor.value;
+            const outputPre = document.getElementById("canvas-preview-output");
+
+            if (lang === 'python' || lang === 'bash') {
+                runBtn.textContent = "⚡ Running...";
+                runBtn.disabled = true;
+                if (outputPre) outputPre.textContent = "Executing code on system...\n";
+
+                invoke("agent_exec_code", { code: code, lang: lang })
+                    .then(res => {
+                        if (outputPre) outputPre.textContent = res;
+                        runBtn.textContent = "✓ Done";
+                        runBtn.disabled = false;
+                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                    })
+                    .catch(err => {
+                        if (outputPre) outputPre.textContent = `Error executing code:\n${err}`;
+                        runBtn.textContent = "❌ Failed";
+                        runBtn.disabled = false;
+                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                    });
+            } else if (lang === 'lua') {
+                runBtn.textContent = "⚡ Running...";
+                runBtn.disabled = true;
+                if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
+
+                invoke("execute_lua", { code: code })
+                    .then(() => {
+                        if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
+                        runBtn.textContent = "✓ Done";
+                        runBtn.disabled = false;
+                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                    })
+                    .catch(err => {
+                        if (outputPre) outputPre.textContent = `Lua Error:\n${err}`;
+                        runBtn.textContent = "❌ Failed";
+                        runBtn.disabled = false;
+                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                    });
+            } else {
+                renderCanvasPreview();
+                runBtn.textContent = "✓ Done";
+                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1200);
+            }
         };
     }
 
@@ -4605,4 +5793,460 @@ function initMemoryView() {
         });
     }
 }
+
+// --- OLLAMA MODEL MANAGER SYSTEM ---
+function refreshOllamaModels() {
+    const baseUrlInput = document.getElementById("settings-ollama-url");
+    const baseUrl = (baseUrlInput?.value || "").trim() || "http://localhost:11434";
+    const listEl = document.getElementById("settings-ollama-models-list");
+    if (!listEl) return;
+
+    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading models...</div>`;
+
+    invoke("ollama_list_models", { baseUrl })
+        .then(models => {
+            if (models.length === 0) {
+                listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">No local models found.</div>`;
+                return;
+            }
+            listEl.innerHTML = models.map(m => {
+                const isCurrent = m.name.includes(localStorage.getItem("settings-ollama-model") || "llama2") || m.name === (document.getElementById("settings-ollama-model")?.value || "llama2");
+                const currentBadge = isCurrent ? `<span style="color: var(--accent-color); font-weight: bold; margin-right: 6px;">[Active]</span>` : "";
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; cursor: pointer;" class="settings-ollama-model-item" data-model="${m.name}">
+                            ${currentBadge}${m.name} <span style="opacity: 0.5; font-size: 0.75rem;">(${formatBytes(m.size)})</span>
+                        </div>
+                        <button class="canvas-btn settings-ollama-delete-btn" style="padding: 2px 8px; font-size: 0.7rem; border-color: #ff3c5a; color: #ff3c5a;" data-model="${m.name}">Delete</button>
+                    </div>
+                `;
+            }).join("");
+
+            // Switch active model
+            listEl.querySelectorAll(".settings-ollama-model-item").forEach(item => {
+                item.onclick = () => {
+                    const modelName = item.getAttribute("data-model");
+                    const modelInput = document.getElementById("settings-ollama-model");
+                    if (modelInput) {
+                        modelInput.value = modelName;
+                        document.getElementById("settings-save-llm-btn")?.click();
+                    }
+                };
+            });
+
+            // Delete model
+            listEl.querySelectorAll(".settings-ollama-delete-btn").forEach(btn => {
+                btn.onclick = () => {
+                    const modelName = btn.getAttribute("data-model");
+                    if (confirm(`Are you sure you want to delete local model ${modelName}?`)) {
+                        btn.disabled = true;
+                        btn.innerText = "Deleting...";
+                        invoke("ollama_delete_model", { baseUrl, model: modelName })
+                            .then(() => {
+                                refreshOllamaModels();
+                            })
+                            .catch(err => {
+                                alert(`Delete failed: ${err}`);
+                                refreshOllamaModels();
+                            });
+                    }
+                };
+            });
+        })
+        .catch(err => {
+            listEl.innerHTML = `<div style="color: #ff6b6b; font-size: 0.75rem;">Failed to list models: ${err}</div>`;
+        });
+}
+
+document.getElementById("settings-ollama-pull-btn")?.addEventListener("click", () => {
+    const inputEl = document.getElementById("settings-ollama-pull-input");
+    const model = (inputEl?.value || "").trim();
+    if (!model) {
+        alert("Enter a model name to pull first.");
+        return;
+    }
+
+    const baseUrlInput = document.getElementById("settings-ollama-url");
+    const baseUrl = (baseUrlInput?.value || "").trim() || "http://localhost:11434";
+    const pullBtn = document.getElementById("settings-ollama-pull-btn");
+    const progressContainer = document.getElementById("settings-ollama-pull-progress-container");
+    const statusEl = document.getElementById("settings-ollama-pull-status");
+    const percentEl = document.getElementById("settings-ollama-pull-percent");
+    const barEl = document.getElementById("settings-ollama-pull-bar");
+
+    if (pullBtn) pullBtn.disabled = true;
+    if (progressContainer) progressContainer.style.display = "block";
+    if (statusEl) statusEl.innerText = "Initiating pull...";
+    if (percentEl) percentEl.innerText = "0%";
+    if (barEl) barEl.style.width = "0%";
+
+    invoke("ollama_pull_model", { baseUrl, model })
+        .then(() => {
+            // Background task started successfully
+        })
+        .catch(err => {
+            alert(`Failed to start pull: ${err}`);
+            if (pullBtn) pullBtn.disabled = false;
+            if (progressContainer) progressContainer.style.display = "none";
+        });
+});
+
+listen("ollama_pull_progress", (event) => {
+    const payload = event.payload;
+    const progressContainer = document.getElementById("settings-ollama-pull-progress-container");
+    const statusEl = document.getElementById("settings-ollama-pull-status");
+    const percentEl = document.getElementById("settings-ollama-pull-percent");
+    const barEl = document.getElementById("settings-ollama-pull-bar");
+    const pullBtn = document.getElementById("settings-ollama-pull-btn");
+
+    if (payload.status === "success") {
+        if (statusEl) statusEl.innerText = "Pull complete!";
+        if (percentEl) percentEl.innerText = "100%";
+        if (barEl) barEl.style.width = "100%";
+        
+        setTimeout(() => {
+            if (pullBtn) pullBtn.disabled = false;
+            if (progressContainer) progressContainer.style.display = "none";
+            const inputEl = document.getElementById("settings-ollama-pull-input");
+            if (inputEl) inputEl.value = "";
+            refreshOllamaModels();
+        }, 1500);
+    } else if (payload.status.startsWith("Error:")) {
+        if (statusEl) statusEl.innerText = payload.status;
+        if (pullBtn) pullBtn.disabled = false;
+    } else {
+        if (statusEl) statusEl.innerText = payload.status;
+        if (payload.completed && payload.total) {
+            const percent = Math.round((payload.completed / payload.total) * 100);
+            if (percentEl) percentEl.innerText = `${percent}%`;
+            if (barEl) barEl.style.width = `${percent}%`;
+        }
+    }
+});
+
+// --- LUA PLUGINS MANAGER SYSTEM ---
+function loadPluginsList() {
+    const listEl = document.getElementById("settings-plugins-list");
+    if (!listEl) return;
+    
+    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading plugins...</div>`;
+    
+    invoke("list_plugins").then((plugins) => {
+        if (plugins.length === 0) {
+            listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic; padding: 5px;">No plugins found.</div>`;
+            return;
+        }
+        
+        listEl.innerHTML = plugins.map((p) => {
+            const checked = p.enabled ? "checked" : "";
+            return `
+                <div class="ssh-profile-item" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" class="plugin-toggle-checkbox" data-file="${p.file_name}" ${checked} style="accent-color: var(--accent-color); cursor: pointer;">
+                        <span style="font-weight: 500; color: ${p.enabled ? "var(--foreground-color)" : "rgba(255,255,255,0.3)"};">${p.name}</span>
+                        <span style="font-size: 0.7rem; opacity: 0.5;">(${p.file_name})</span>
+                    </div>
+                    <button class="canvas-btn plugin-edit-btn" data-file="${p.file_name}" style="padding: 3px 8px; font-size: 0.75rem;">Edit</button>
+                </div>
+            `;
+        }).join("");
+        
+        // Wire checkbox toggle listeners
+        listEl.querySelectorAll(".plugin-toggle-checkbox").forEach(chk => {
+            chk.onchange = () => {
+                const fileName = chk.getAttribute("data-file");
+                const enabled = chk.checked;
+                const statusEl = document.getElementById("settings-plugin-status");
+                if (statusEl) statusEl.innerText = "Toggling plugin...";
+                
+                invoke("toggle_plugin", { fileName, enabled }).then(() => {
+                    if (statusEl) statusEl.innerText = `Plugin ${enabled ? "enabled" : "disabled"} successfully.`;
+                    loadPluginsList();
+                }).catch(err => {
+                    if (statusEl) statusEl.innerText = `Failed to toggle: ${err}`;
+                    chk.checked = !enabled; // revert
+                });
+            };
+        });
+        
+        // Wire edit button click listeners
+        listEl.querySelectorAll(".plugin-edit-btn").forEach(btn => {
+            btn.onclick = () => {
+                const fileName = btn.getAttribute("data-file");
+                const statusEl = document.getElementById("settings-plugin-status");
+                if (statusEl) statusEl.innerText = "Reading plugin content...";
+                
+                invoke("read_plugin", { fileName }).then((content) => {
+                    // Close settings modal
+                    document.getElementById("settings-overlay")?.classList.remove("active");
+                    
+                    // Clear status
+                    if (statusEl) statusEl.innerText = "";
+                    
+                    // Set active file
+                    window.neurodeckCanvas.activePluginFile = fileName;
+                    
+                    // Load into canvas
+                    loadCanvasCode("lua", content, fileName);
+                    
+                    // Switch to canvas tab
+                    const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
+                    if (canvasTab) canvasTab.click();
+                }).catch(err => {
+                    if (statusEl) statusEl.innerText = `Failed to read plugin: ${err}`;
+                });
+            };
+        });
+    }).catch(err => {
+        listEl.innerHTML = `<div style="color: var(--error-color); padding: 5px;">Failed to load plugins: ${err}</div>`;
+    });
+}
+
+function initPluginsManager() {
+    // Wire install plugin from URL
+    const installBtn = document.getElementById("settings-plugin-install-btn");
+    const urlInput = document.getElementById("settings-plugin-install-url");
+    const statusEl = document.getElementById("settings-plugin-status");
+    const newBtn = document.getElementById("settings-plugin-new-btn");
+    const reloadBtn = document.getElementById("settings-plugin-reload-btn");
+
+    if (installBtn && urlInput) {
+        installBtn.onclick = () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert("Please enter a valid plugin URL.");
+                return;
+            }
+            if (statusEl) statusEl.innerText = "Downloading and installing plugin...";
+            installBtn.disabled = true;
+
+            invoke("install_plugin", { url }).then(() => {
+                if (statusEl) statusEl.innerText = "Plugin installed successfully!";
+                urlInput.value = "";
+                loadPluginsList();
+            }).catch((err) => {
+                if (statusEl) statusEl.innerText = `Installation failed: ${err}`;
+            }).finally(() => {
+                installBtn.disabled = false;
+            });
+        };
+    }
+
+    if (newBtn) {
+        newBtn.onclick = () => {
+            // Close settings modal
+            document.getElementById("settings-overlay")?.classList.remove("active");
+
+            // Boilerplate template
+            const boilerplate = `-- plugins/new_plugin.lua
+-- Template for a new S-Term plugin.
+
+-- 1. Register a custom chat command (type /mycommand in chat)
+registerCommand("mycommand", function(args)
+    print("Executing mycommand with args: " .. tostring(args))
+    return "mycommand executed! Args: " .. tostring(args)
+end)
+
+-- 2. Register hooks to inspect or modify messages/responses
+-- Available events: onMessage, onAIResponse
+registerHook("onMessage", function(text)
+    -- This hook runs whenever a user sends a message.
+    -- You can modify the text and return it.
+    return text
+end)
+
+print("[Plugin] New plugin loaded successfully!")
+`;
+            // Load into canvas
+            loadCanvasCode("lua", boilerplate, "");
+
+            // Switch to canvas tab
+            const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
+            if (canvasTab) canvasTab.click();
+        };
+    }
+
+    if (reloadBtn) {
+        reloadBtn.onclick = () => {
+            if (statusEl) statusEl.innerText = "Reloading plugins in engine...";
+            reloadBtn.disabled = true;
+
+            invoke("reload_plugins").then(() => {
+                if (statusEl) statusEl.innerText = "Plugins reloaded successfully!";
+                loadPluginsList();
+            }).catch((err) => {
+                if (statusEl) statusEl.innerText = `Reload failed: ${err}`;
+            }).finally(() => {
+                reloadBtn.disabled = false;
+            });
+        };
+    }
+}
+
+function updateCanvasToolbarButtons() {
+    const lang = window.neurodeckCanvas.currentLang;
+    let saveBtn = document.getElementById("canvas-save-plugin-btn");
+    
+    if (lang === "lua") {
+        if (!saveBtn) {
+            // Create "Save Plugin" button
+            saveBtn = document.createElement("button");
+            saveBtn.className = "canvas-btn";
+            saveBtn.id = "canvas-save-plugin-btn";
+            saveBtn.innerText = "💾 Save Plugin";
+            saveBtn.style.marginLeft = "8px";
+            
+            // Insert it after canvas-run-btn
+            const runBtn = document.getElementById("canvas-run-btn");
+            if (runBtn) {
+                runBtn.parentNode.insertBefore(saveBtn, runBtn.nextSibling);
+            }
+            
+            // Wire up Save click
+            saveBtn.onclick = () => {
+                const code = document.getElementById("canvas-editor").value;
+                let activeFile = window.neurodeckCanvas.activePluginFile;
+                
+                if (activeFile) {
+                    invoke("save_plugin", { fileName: activeFile, content: code }).then(() => {
+                        alert(`Plugin '${activeFile}' saved successfully.`);
+                    }).catch(err => {
+                        alert(`Failed to save plugin: ${err}`);
+                    });
+                } else {
+                    const fileNameInput = prompt("Enter filename for the new plugin (must end with .lua):", "my_plugin.lua");
+                    if (!fileNameInput) return;
+                    let sanitized = fileNameInput.trim();
+                    if (!sanitized.endsWith(".lua")) {
+                        sanitized += ".lua";
+                    }
+                    if (sanitized.includes("/") || sanitized.includes("\\") || sanitized.includes("..")) {
+                        alert("Invalid file name. Do not include path slashes or dots.");
+                        return;
+                    }
+                    
+                    invoke("save_plugin", { fileName: sanitized, content: code }).then(() => {
+                        window.neurodeckCanvas.activePluginFile = sanitized;
+                        const fileTitle = document.getElementById("canvas-file-title");
+                        if (fileTitle) fileTitle.textContent = sanitized;
+                        alert(`Plugin '${sanitized}' saved successfully.`);
+                    }).catch(err => {
+                        alert(`Failed to save plugin: ${err}`);
+                    });
+                }
+            };
+        }
+        saveBtn.style.display = "inline-block";
+    } else {
+        if (saveBtn) {
+            saveBtn.style.display = "none";
+        }
+    }
+}
+
+// Initialize Plugins Manager event handlers
+initPluginsManager();
+
+// --- CUSTOM PERSONA CREATOR SYSTEM ---
+function refreshSettingsPersonaDropdown() {
+    invoke("get_personas").then((personas) => {
+        let select = document.getElementById("persona-select");
+        if (!select) return;
+        select.innerHTML = "";
+        personas.forEach((p) => {
+            let option = document.createElement("option");
+            option.value = p;
+            option.innerText = p;
+            if (p === activePersona) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+}
+
+function loadCustomPersonas() {
+    const listEl = document.getElementById("settings-personas-list-custom");
+    if (!listEl) return;
+    
+    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>`;
+    
+    invoke("list_custom_personas").then((personas) => {
+        if (personas.length === 0) {
+            listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic; padding: 5px;">No custom personas found.</div>`;
+            return;
+        }
+        
+        listEl.innerHTML = personas.map((p) => {
+            return `
+                <div class="ssh-profile-item" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
+                    <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;">
+                        <span style="font-weight: 500; color: var(--foreground-color);">${p.name}</span>
+                        <span style="font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;" title="${p.prompt.replace(/"/g, '&quot;')}">${p.prompt}</span>
+                    </div>
+                    <button class="canvas-btn persona-delete-btn" data-name="${p.name}" style="padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);">✕</button>
+                </div>
+            `;
+        }).join("");
+        
+        // Wire delete button listeners
+        listEl.querySelectorAll(".persona-delete-btn").forEach(btn => {
+            btn.onclick = () => {
+                const name = btn.getAttribute("data-name");
+                if (confirm(`Are you sure you want to delete custom persona '${name}'?`)) {
+                    const statusEl = document.getElementById("settings-persona-status");
+                    if (statusEl) statusEl.innerText = "Deleting custom persona...";
+                    
+                    invoke("delete_custom_persona", { name }).then(() => {
+                        if (statusEl) statusEl.innerText = `Custom persona '${name}' deleted successfully.`;
+                        loadCustomPersonas();
+                        refreshSettingsPersonaDropdown();
+                    }).catch(err => {
+                        if (statusEl) statusEl.innerText = `Failed to delete: ${err}`;
+                    });
+                }
+            };
+        });
+    }).catch(err => {
+        listEl.innerHTML = `<div style="color: var(--error-color); padding: 5px;">Failed to load custom personas: ${err}</div>`;
+    });
+}
+
+function initCustomPersonas() {
+    const createBtn = document.getElementById("settings-persona-create-btn");
+    const nameInput = document.getElementById("settings-persona-name");
+    const promptInput = document.getElementById("settings-persona-prompt");
+    const statusEl = document.getElementById("settings-persona-status");
+
+    if (createBtn && nameInput && promptInput) {
+        createBtn.onclick = () => {
+            const name = nameInput.value.trim();
+            const prompt = promptInput.value.trim();
+
+            if (!name || !prompt) {
+                alert("Please enter a name and system prompt.");
+                return;
+            }
+
+            if (statusEl) statusEl.innerText = "Creating custom persona...";
+            createBtn.disabled = true;
+
+            invoke("add_custom_persona", { name, prompt }).then(() => {
+                if (statusEl) statusEl.innerText = `Persona '${name}' created successfully!`;
+                nameInput.value = "";
+                promptInput.value = "";
+                loadCustomPersonas();
+                refreshSettingsPersonaDropdown();
+            }).catch((err) => {
+                if (statusEl) statusEl.innerText = `Failed to create: ${err}`;
+            }).finally(() => {
+                createBtn.disabled = false;
+            });
+        };
+    }
+}
+
+// Initialize Custom Personas event handlers
+initCustomPersonas();
+
 

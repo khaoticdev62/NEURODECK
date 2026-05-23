@@ -93,7 +93,8 @@ impl LuaEngine {
         let set_persona_fn = lua.create_function(move |_, name: String| {
             let state = app_handle_persona.state::<std::sync::Mutex<crate::AppState>>();
             let mut app = state.lock().unwrap();
-            if crate::PERSONAS.iter().any(|p| p.0 == name) {
+            let is_valid = crate::PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
+            if is_valid {
                 app.active_persona = name.clone();
                 let _ = app_handle_persona.emit("persona_changed", name.clone());
                 Ok(true)
