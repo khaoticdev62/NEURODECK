@@ -1193,7 +1193,6 @@ code {
 #view-canvas {
     background: #04070a;
     overflow: hidden;
-    display: flex;
     flex-direction: column;
 }
 
@@ -2422,7 +2421,6 @@ body.crt-flicker-disabled .crt-flicker {
    ========================================================================== */
 #view-agent {
     background: #030508;
-    display: flex;
     flex-direction: column;
     overflow: hidden;
 }
@@ -2711,7 +2709,6 @@ body.crt-flicker-disabled .crt-flicker {
    ========================================================================== */
 #view-memory {
     background: #030508;
-    display: flex;
     flex-direction: column;
     overflow: hidden;
 }
