@@ -6,37 +6,123 @@
 
 ## Quick State Summary
 
+> Last updated: 2026-05-22 — ALL 11 MUST-HAVE ITEMS SHIPPED ✅ | Notification Center + Game Context Panel wired
+
 | Layer | Status |
 |---|---|
 | Chat + RAG | ✅ Wired end-to-end (memory injection confirmed in `send_command`) |
 | Canvas (HTML/CSS/JS) | ✅ Live iframe preview works |
-| Canvas (Python/Bash) | ⚠️ Shows "run hint" — NOT executed. Agent tab handles real exec |
-| Terminal (PTY shell) | ✅ Works; shell switcher pills wired |
-| SSH Tab | ✅ Spawns system `ssh` via PTY; password auth only |
+| Canvas (Python/Bash) | ✅ `agent_exec_code` command + run handler fully wired; stdout shown in `canvas-preview-output` |
+| Terminal (PTY shell) | ✅ Multi-session tabs (up to 5), shell switcher pills, restart per session |
+| SSH Tab | ✅ PTY + system `ssh`; password auth + key-file auth supported |
 | Share → LAN | ✅ P2P wired via `transfer.rs` |
-| Share → FTP | ✅ Rust commands built; UI wired |
-| Share → SFTP | ❌ Not implemented (ssh2 crate skipped due to OpenSSL cross-platform complexity) |
+| Share → FTP | ✅ `suppaftp` backend + full file browser UI; saved profiles in localStorage |
+| Share → SFTP | ✅ System `sftp` binary batch mode; password + key auth; file browser UI |
 | Voice STT / TTS | ✅ Wired (`arecord` + `espeak`); quality is system-tool-limited |
 | Memory UI | ✅ Full CRUD + search wired |
 | Agent Loop | ✅ 5-step max; works with Gemini and Ollama |
 | Radial Menu | ✅ L2 / backtick; 8 segments |
-| Game Detection | ✅ ACF scanner + badge |
+| Game Detection + Context Panel | ✅ ACF scanner + badge + clickable modal (header art, notes, persona switch, ask AI) |
+| Notification Center | ✅ Toast + center modal wired; hooks: agent loop, SSH connect/exit, FTP/SFTP, file transfer, game detection |
 | BMAD Personas | ✅ 6 personas via Lua plugins |
-| Config UI | ❌ No settings UI for API key, model selection, or Ollama URL |
-| Context Drawer (📊) | ⚠️ Container exists, toggle wired — content not populated |
-| Multiple PTY Sessions | ❌ Single session only |
-| FTP Saved Connections | ❌ Not persisted (SSH profiles save to localStorage; FTP does not) |
-| Plugin Manager UI | ❌ Manual file editing only |
+| Config UI | ✅ Settings modal: provider toggle, API key save, model/URL, test+apply |
+| Context Drawer (📊) | ✅ Live data via `get_context_stats` — provider, model, RAM, memory, session |
+| Multiple PTY Sessions | ✅ Up to 5 tabs, each with independent xterm.js + session ID |
+| FTP / SFTP Saved Profiles | ✅ localStorage persistence; visible in Settings modal |
+| Plugin Manager UI | ✅ list/toggle/install from URL/new plugin/reload in Settings modal |
+| Ollama Model Manager | ✅ list models, pull with progress bar, delete — in Settings modal |
+| Custom Personas | ✅ Create name+prompt, delete, persisted to `data/personas.json` |
 | Custom Themes | ❌ 4 hardcoded themes; no user editor |
 
 ---
 
 ## MUST-HAVE: Blocking Fixes
 
-These must ship before v1 is usable day-to-day on the Deck.
+> ✅ = Shipped | ⚠️ = Partial | ❌ = Not started
 
-### 1. Config / API Key Settings UI
-**Problem**: `GEMINI_API_KEY` is env-var only. There is no way to change the LLM provider, model name, or Ollama base URL from inside the app. Users editing `llm-term.toml` manually and restarting is not acceptable for a Deck Game Mode app.
+### ✅ 1. Config / API Key Settings UI  — SHIPPED
+~~**Problem**: `GEMINI_API_KEY` is env-var only.~~
+
+Delivered: Settings modal LLM section with provider toggle, Gemini API key input (persists to `~/.config/neurodeck/env`), model names, Ollama URL, Test Connection button, Save & Apply button. `set_config`, `get_config`, `save_gemini_api_key`, `get_gemini_api_key`, `test_llm_connection` Tauri commands all wired.
+
+---
+
+### ✅ 2. Canvas — Python/Bash Execution — SHIPPED
+~~**Problem**: Canvas Run button does nothing for Python/Bash.~~
+
+Delivered:
+- `renderCanvasPreview()` hides iframe and shows `canvas-preview-output` `<pre>` element when lang is `python` or `bash` (shows "Select ▶ Run" hint until executed)
+- `runBtn.onclick` calls `invoke("agent_exec_code", { code, lang })` — routes to `lib.rs:1581`
+- Rust `agent_exec_code`: `python`/`python3` via `-c` flag; `bash`/`sh` via `-c` flag; falls back to `powershell -Command` on Windows; 30s timeout
+- stdout + stderr combined and displayed in the `<pre>` output panel
+- Lua execution also wired through `execute_lua` Tauri command
+
+---
+
+### ✅ 3. Context Drawer (📊) — SHIPPED
+~~**Problem**: The drawer is empty.~~
+
+Delivered: `get_context_stats` Tauri command + `updateContextDrawer()` JS function wired to the toggle button. Refreshes on open and after config changes.
+
+---
+
+### ✅ 4. SSH — Key-Based Authentication — SHIPPED
+~~**Problem**: SSH tab only supports password auth.~~
+
+Delivered: SSH sidebar has Auth Type toggle (Password / Key File), key path input field, `args` passed through `pty_spawn`.
+
+---
+
+### ✅ 5. FTP Saved Connections — SHIPPED
+~~**Problem**: FTP connection form fields were ephemeral.~~
+
+Delivered: FTP and SFTP profiles saved to `localStorage`, displayed in Settings modal alongside SSH profiles.
+
+---
+
+### ✅ 6. Share → SFTP File Browser — SHIPPED
+~~**Problem**: SFTP was deferred due to ssh2/OpenSSL cross-platform complexity.~~
+
+Delivered: `sftp.rs` uses system `sftp` binary in batch mode — no C dependencies, works everywhere OpenSSH is installed. Auth type toggle (password via `sshpass`, key via `-i`). Full file browser UI in Share tab third inner tab.
+
+---
+
+### ✅ 7. Multiple PTY Sessions — SHIPPED
+~~**Problem**: Single session only.~~
+
+Delivered: Terminal tab has `+ New Tab`, up to 5 sessions, each with its own xterm.js instance and session ID. Close per tab, switch between tabs.
+
+---
+
+### ✅ 8. Ollama Model Manager UI — SHIPPED
+~~**Problem**: No way to manage models from inside the app.~~
+
+Delivered: Settings modal Ollama Models section — lists local models, pull with streaming progress bar, delete model. Uses `ollama_list_models`, `ollama_pull_model` (streaming via `ollama_pull_progress` event), `ollama_delete_model`.
+
+---
+
+### ✅ 9. Plugin Manager UI — SHIPPED
+~~**Problem**: Plugins required manual file editing.~~
+
+Delivered: Settings modal Plugin Manager — list all plugins with enable/disable toggle (renames `.disabled`), install from raw URL, "+ New Plugin" opens Canvas, "↺ Reload" hot-reloads all plugins without restart.
+
+---
+
+### ✅ 10. Custom Persona Creator — SHIPPED
+~~**Problem**: Personas hardcoded in Rust.~~
+
+Delivered: Settings modal Custom Personas section — create name+prompt, list, delete. Persists to `data/personas.json`. Merged into `get_personas` response so they appear in the persona selector everywhere.
+
+---
+
+### ✅ 11. Game-Aware AI Mode — SHIPPED
+Delivered:
+- Clicking the game badge opens `#game-context-modal` with Steam header image, optimization notes, injected prompt preview
+- `initGameContextPanel()` wired — uses `get_game_context` Tauri command, populates all fields
+- 15-second poll: auto-suggests Gaming AI switch (once per session per detected game) via notification toast
+- "Switch to Gaming AI" + "Ask AI about this game" actions inside the panel
+
+---
 
 **What to build**:
 - Settings modal: **LLM Provider** section with provider toggle (Gemini / Ollama), model name input, Ollama URL input
@@ -320,8 +406,7 @@ Agent task completion, file transfer done, SSH connect/disconnect — these even
 | Config path fragility | `lib.rs:1532` | Binary reads `../llm-term.toml` with fallback. Works but will break if working dir changes. Fix: use `tauri::api::path::app_config_dir()` |
 | `pty_spawn` no timeout | `pty_manager.rs` | PTY sessions never time out. A hung SSH handshake will hold a thread indefinitely. Add `tokio::time::timeout` wrapping the spawn |
 | FTP upload is blocking | `ftp.rs` | `ftp_upload_file` calls `spawn_blocking` but there's no progress event. Large files appear frozen. Emit `ftp_progress { id, bytes_sent, total }` events |
-| Canvas bash/python "run" | `main.js` | Run button exists, does nothing for non-HTML. Misleading UX. Either wire it or hide the button for those languages |
-| GEMINI_API_KEY env only | `lib.rs:1541` | API key is checked at startup once. If not set, provider silently falls back to Ollama. No user-visible error in the UI |
+| `main.js` 6600+ lines | `main.js` | Single file is intentional (no framework) but risky. Consider splitting to `chat.js`, `terminal.js`, `ftp.js` etc. as ES modules via Vite when it crosses 8000 lines |
 | suppaftp `retr_as_buffer` | `ftp.rs` | Loads entire file into RAM. Files > 500MB will OOM. Stream to disk via `retr` with a write callback for production |
 
 ---

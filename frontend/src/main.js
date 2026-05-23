@@ -44,7 +44,10 @@ if (!window.__TAURI_INTERNALS__) {
                     memory_status: "Stable",
                     tool_status: "Idle",
                     session_id: mockCurrentSessionId,
-                    active_persona: mockActivePersona
+                    active_persona: mockActivePersona,
+                    game_name: "Elden Ring",
+                    game_app_id: "1245620",
+                    game_running: "true"
                 };
             case 'get_personas':
                 return ["Default", "Developer", "Cyberpunk", "John", "Sally", "Winston", "Amelia", "Paige", "Mary"].concat(mockCustomPersonas.map(p => p.name));
@@ -219,7 +222,12 @@ if (!window.__TAURI_INTERNALS__) {
                 console.log(`[Mock Browser] Opening external URL: ${args.url}`);
                 return "ok";
             case 'get_game_context':
-                return { name: "", app_id: "", is_running: "false" };
+                return {
+                    name: "Elden Ring",
+                    app_id: "1245620",
+                    is_running: "true",
+                    notes: "Action RPG / Souls-like. Recommended Settings: Medium settings, 800p, Lock at 30FPS for visual stability. Common tweaks: Use Proton Experimental and enable CryoUtilities swap file increase to resolve open world stutters."
+                };
             case 'send_tunnel_request':
                 return JSON.stringify({ status: "offline", error: "Mock: no tunnel server" });
             case 'start_tunnel_server':
@@ -405,6 +413,55 @@ if (!window.__TAURI_INTERNALS__) {
             }
             case 'reload_plugins':
                 return null;
+            case 'shell_autocomplete': {
+                // Simulate an AI-generated completion suffix
+                const buf = (args.buffer || '').trim();
+                let completion = '';
+                if (buf.startsWith('git cl')) completion = 'one ';
+                else if (buf.startsWith('git co')) completion = 'mmit -m ""';
+                else if (buf.startsWith('git s')) completion = 'tatus';
+                else if (buf.startsWith('npm r')) completion = 'un dev';
+                else if (buf.startsWith('ls')) completion = ' -la';
+                else if (buf.startsWith('cd')) completion = ' ~/Desktop';
+                else if (buf.startsWith('docker')) completion = ' ps -a';
+                else if (buf.startsWith('sudo ap')) completion = 't update';
+                console.log(`[Mock IPC] Autocomplete for "${buf}": "${completion}"`);
+                return completion;
+            }
+            case 'read_last_screenshot': {
+                // Return a mock 1x1 cyan PNG as base64 (a real image)
+                const mockPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+                return {
+                    path: '/home/deck/Pictures/Screenshots/mock_screenshot.png',
+                    data: mockPng,
+                    mime: 'image/png'
+                };
+            }
+            case 'search_history_ai': {
+                const query = (args.query || '').toLowerCase();
+                const mockHistory = [
+                    'git commit -m "feat: add category B features"',
+                    'git push origin main',
+                    'npm run dev',
+                    'cargo check',
+                    'ls -la ~/.local/share/Steam',
+                    'cd ~/Desktop/S-Term',
+                    'cat ~/.bash_history | tail -50',
+                    'docker ps -a',
+                    'sudo pacman -Syu',
+                    'flatpak update',
+                    'steam-run ./game.sh',
+                    'systemctl restart sshd',
+                    'journalctl -xe',
+                    'df -h',
+                    'htop',
+                ];
+                // Simple keyword filter for demo
+                const filtered = mockHistory.filter(cmd =>
+                    query === '' || cmd.toLowerCase().includes(query.split(' ')[0])
+                ).slice(0, 10);
+                return filtered.length > 0 ? filtered : mockHistory.slice(0, 5);
+            }
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -465,6 +522,7 @@ document.querySelector('#app').innerHTML = `
                         <span id="tool-status">Idle</span>
                     </span>
                     <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">🔊</button>
+                    <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">🔔<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
                 </div>
             </header>
@@ -485,12 +543,14 @@ document.querySelector('#app').innerHTML = `
                     <div class="floating-input-container">
                         <div class="input-console-bar">
                             <div class="input-textarea-wrapper">
+                                <div class="chat-attachment-bar hidden" id="chat-attachment-bar"></div>
                                 <textarea id="user-input" placeholder="Enter command or type message..." rows="1" autocomplete="off"></textarea>
                             </div>
                             <div class="input-actions-bar">
                                 <div class="input-actions-left">
                                     <button class="input-btn mic-btn" id="mic-btn" title="Voice Input">🎙️</button>
                                     <button class="input-btn" id="toggle-drawer-btn" title="Toggle Context Drawer">📊</button>
+                                    <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)">📸</button>
                                 </div>
                                 <div class="input-actions-right">
                                     <button class="send-prompt-btn" id="send-btn" title="Send Message">
@@ -499,6 +559,28 @@ document.querySelector('#app').innerHTML = `
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Search Overlay (Ctrl+H) -->
+                <div id="history-search-overlay" class="hidden">
+                    <div class="history-search-panel">
+                        <div class="history-search-header">
+                            <div class="history-search-title">⚡ AI Shell History Search</div>
+                            <div class="history-search-input-wrap">
+                                <span class="history-search-icon">🔍</span>
+                                <input type="text" id="history-search-input" placeholder="Describe the command you're looking for..." autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="history-search-status" id="history-search-status">Press Enter to search • Esc to close</div>
+                        </div>
+                        <div class="history-search-body" id="history-search-body">
+                            <div class="history-empty-state">Start typing to search your shell history with AI</div>
+                        </div>
+                        <div class="history-search-footer">
+                            <span><kbd>↑↓</kbd> navigate</span>
+                            <span><kbd>Enter</kbd> insert command</span>
+                            <span><kbd>Esc</kbd> close</span>
                         </div>
                     </div>
                 </div>
@@ -735,6 +817,9 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                                 <button class="canvas-btn" id="ftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
                                 <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
+                                <div class="share-dropzone" id="ftp-dropzone" style="margin-bottom: 8px;">
+                                    <div class="dropzone-text">Drag files here to upload</div>
+                                </div>
                                 <div class="setting-field-group">
                                     <label>Local File Path</label>
                                     <input type="text" id="ftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
@@ -801,6 +886,9 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                                 <button class="canvas-btn" id="sftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
                                 <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
+                                <div class="share-dropzone" id="sftp-dropzone" style="margin-bottom: 8px;">
+                                    <div class="dropzone-text">Drag files here to upload</div>
+                                </div>
                                 <div class="setting-field-group">
                                     <label>Local File Path</label>
                                     <input type="text" id="sftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
@@ -1302,6 +1390,61 @@ document.querySelector('#app').innerHTML = `
                 </div>
             </div>
         </div>
+
+        <!-- Game Context Panel Modal -->
+        <div class="settings-overlay" id="game-context-modal">
+            <div class="settings-modal-card" style="max-width: 450px;">
+                <div class="settings-modal-header">
+                    <h3>Active Game Context</h3>
+                    <button class="sidebar-toggle-btn" id="close-game-context-x">✕</button>
+                </div>
+                <div class="settings-modal-content">
+                    <img id="game-context-header" class="game-context-header-img" src="" alt="Game Header" onerror="this.style.display='none'">
+                    <div class="game-context-row">
+                        <span class="game-context-label">Game Name:</span>
+                        <span class="game-context-val" id="game-context-name">None Detected</span>
+                    </div>
+                    <div class="game-context-row">
+                        <span class="game-context-label">Steam App ID:</span>
+                        <span class="game-context-val" id="game-context-appid">-</span>
+                    </div>
+                    <div class="game-context-row">
+                        <span class="game-context-label">Running Status:</span>
+                        <span class="game-context-val" id="game-context-status">Offline</span>
+                    </div>
+                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">STEAM DECK OPTIMIZATION NOTES</div>
+                    <div id="game-context-notes" style="font-size: 0.8rem; line-height: 1.4; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 4px; max-height: 120px; overflow-y: auto;">
+                        No game optimization notes available.
+                    </div>
+                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">INJECTED AI PROMPT CONTEXT</div>
+                    <textarea id="game-context-prompt-view" class="tunnel-text-input" readonly style="width: 100%; box-sizing: border-box; resize: none; height: 100px; font-family: var(--font-mono); font-size: 0.72rem; background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 8px;" placeholder="No active context injected."></textarea>
+                </div>
+                <div class="settings-modal-footer">
+                    <button class="settings-close-btn" id="close-game-context" style="margin-left: auto;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Center Modal -->
+        <div class="settings-overlay" id="notif-modal">
+            <div class="settings-modal-card" style="max-width: 400px;">
+                <div class="settings-modal-header">
+                    <h3>🔔 NOTIFICATION CENTER</h3>
+                    <button class="sidebar-toggle-btn" id="close-notif-x">✕</button>
+                </div>
+                <div class="settings-modal-content" style="max-height: 350px; overflow-y: auto;" id="notif-list-container">
+                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications.</div>
+                </div>
+                <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+                    <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
+                    <button class="settings-close-btn" id="close-notif-btn" style="margin: 0;">Close</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container" id="toast-container"></div>
     </div>
     <div class="app-background-image" id="app-background-image"></div>
     <div class="crt-overlay crt-flicker"></div>
@@ -1630,6 +1773,26 @@ const RADIAL_SEGMENTS = [
 ];
 
 function getGamepadFocusableElements() {
+    // If notifications modal is open, focus only notif modal elements
+    const notifModal = document.getElementById("notif-modal");
+    if (notifModal && notifModal.classList.contains("active")) {
+        const els = Array.from(notifModal.querySelectorAll("button"));
+        return els.filter(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && !el.disabled;
+        });
+    }
+
+    // If game context modal is open, focus only its elements
+    const gameModal = document.getElementById("game-context-modal");
+    if (gameModal && gameModal.classList.contains("active")) {
+        const els = Array.from(gameModal.querySelectorAll("button"));
+        return els.filter(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && !el.disabled;
+        });
+    }
+
     // If settings overlay is open, focus only settings elements
     const settingsOverlay = document.getElementById("settings-overlay");
     if (settingsOverlay && settingsOverlay.classList.contains("active")) {
@@ -1662,6 +1825,7 @@ function getGamepadFocusableElements() {
         "#sidebar-toggle-btn",
         ".nav-tab",
         "#mute-btn",
+        "#notif-btn",
         "#settings-btn",
         
         // Chat View
@@ -1924,7 +2088,13 @@ function pollGamepads() {
         const transferModal = document.getElementById("transfer-modal");
         const inspectDrawer = document.getElementById("inspect-drawer");
         const sidebar = document.getElementById("sidebar");
-        if (settingsOverlay && settingsOverlay.classList.contains("active")) {
+        const notifModal = document.getElementById("notif-modal");
+        const gameModal = document.getElementById("game-context-modal");
+        if (notifModal && notifModal.classList.contains("active")) {
+            document.getElementById("close-notif-btn").click();
+        } else if (gameModal && gameModal.classList.contains("active")) {
+            document.getElementById("close-game-context").click();
+        } else if (settingsOverlay && settingsOverlay.classList.contains("active")) {
             document.getElementById("close-settings").click();
         } else if (transferModal && transferModal.classList.contains("active")) {
             document.getElementById("transfer-modal-reject").click();
@@ -1932,6 +2102,21 @@ function pollGamepads() {
             document.getElementById("inspect-close-btn").click();
         } else if (sidebar && !sidebar.classList.contains("collapsed")) {
             document.getElementById("sidebar-close-btn").click();
+        }
+    }
+
+    // L2 (6) / R2 (7) - Cycle inner tabs (e.g. Share LAN/SFTP/FTP)
+    if (buttonPressed(6) || buttonPressed(7)) {
+        const shareView = document.getElementById("view-share");
+        if (shareView && shareView.classList.contains("active")) {
+            const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+            const activeSubtabIdx = subtabs.findIndex(t => t.classList.contains("active"));
+            if (activeSubtabIdx !== -1) {
+                const nextSubtabIdx = buttonPressed(6) // L2
+                    ? (activeSubtabIdx - 1 + subtabs.length) % subtabs.length
+                    : (activeSubtabIdx + 1) % subtabs.length;
+                subtabs[nextSubtabIdx].click();
+            }
         }
     }
 
@@ -2362,14 +2547,23 @@ function sendMessage() {
     let text = inputElement.value.trim();
     if (text === "") return;
 
+    // Collect any pending screenshot attachment
+    const attachment = window.pendingScreenshot || null;
+
     // Add message to viewport
     let viewport = document.getElementById("chat-workspace");
     let chatViewport = document.getElementById("chat-viewport");
     let msg = document.createElement("div");
     msg.className = "message user";
+
+    let attachmentHTML = '';
+    if (attachment) {
+        attachmentHTML = `<div style="margin-bottom:8px;"><img src="data:${attachment.mime};base64,${attachment.data}" style="max-width:160px;max-height:100px;border-radius:5px;border:1px solid rgba(0,240,255,0.3);display:block;" alt="Screenshot"></div>`;
+    }
+
     msg.innerHTML = `
         <div class="message-card">
-            ${text}
+            ${attachmentHTML}${text}
         </div>
     `;
     chatViewport.appendChild(msg);
@@ -2396,12 +2590,29 @@ function sendMessage() {
     // Clear and reset input size
     inputElement.value = "";
     inputElement.style.height = "36px";
+
+    // Clear screenshot attachment
+    if (attachment) {
+        window.pendingScreenshot = null;
+        const bar = document.getElementById("chat-attachment-bar");
+        if (bar) {
+            bar.innerHTML = "";
+            bar.classList.add("hidden");
+        }
+        const btn = document.getElementById("screenshot-btn");
+        if (btn) btn.classList.remove("has-attachment");
+    }
     
     // Scroll workspace
     viewport.scrollTop = viewport.scrollHeight;
     
-    // Call Tauri backend
-    invoke('send_command', { prompt: text }).catch((err) => {
+    // Call Tauri backend — the existing `send_command` receives the full prompt;
+    // if vision is needed we prepend a system note about the attached image.
+    let effectivePrompt = text;
+    if (attachment) {
+        effectivePrompt = `[User attached a screenshot]\n${text}`;
+    }
+    invoke('send_command', { prompt: effectivePrompt }).catch((err) => {
         let errorMsg = document.createElement("div");
         errorMsg.className = "message system error";
         errorMsg.innerHTML = `
@@ -3580,6 +3791,11 @@ function createTerminalSession(shellPath) {
     const sessionObj = { id, shell, term, fitAddon, containerEl };
     terminalSessions.push(sessionObj);
 
+    // Wire up Category B autocomplete if the function is already defined
+    if (typeof patchTerminalSessionWithAutocomplete === "function") {
+        patchTerminalSessionWithAutocomplete(sessionObj);
+    }
+
     renderTerminalTabs();
     switchTerminalSession(id);
 }
@@ -3779,12 +3995,403 @@ listen("pty_exit", (event) => {
     const session = terminalSessions.find(s => s.id === id);
     if (session) {
         session.term.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");
+        addNotification("Shell Exited", "Session '" + id + "' has terminated.", "warning");
     } else if (id === sshSessionId) {
         window.sshTerminal?.write("\r\n\x1b[1;31m[SSH Session Disconnected]\x1b[0m\r\n");
         setSshStatus(false, "Disconnected");
         sshSessionId = null;
+        addNotification("SSH Disconnected", "SSH session has terminated.", "warning");
     }
 });
+
+// ==========================================================================
+// CATEGORY B: SCREENSHOT VISION BRIDGE
+// ==========================================================================
+
+window.pendingScreenshot = null;
+
+(function initScreenshotVision() {
+    const screenshotBtn = document.getElementById("screenshot-btn");
+    if (!screenshotBtn) return;
+
+    screenshotBtn.addEventListener("click", async () => {
+        // If we already have an attachment, remove it
+        if (window.pendingScreenshot) {
+            window.pendingScreenshot = null;
+            const bar = document.getElementById("chat-attachment-bar");
+            if (bar) { bar.innerHTML = ""; bar.classList.add("hidden"); }
+            screenshotBtn.classList.remove("has-attachment");
+            return;
+        }
+
+        screenshotBtn.style.opacity = "0.5";
+        screenshotBtn.disabled = true;
+
+        try {
+            const result = await invoke("read_last_screenshot");
+            window.pendingScreenshot = result;
+
+            // Render thumbnail in attachment bar
+            const bar = document.getElementById("chat-attachment-bar");
+            if (bar) {
+                bar.classList.remove("hidden");
+                bar.innerHTML = "";
+
+                const preview = document.createElement("div");
+                preview.className = "chat-attachment-preview";
+                preview.title = result.path || "Screenshot";
+
+                const img = document.createElement("img");
+                img.src = `data:${result.mime};base64,${result.data}`;
+                img.alt = "Screenshot";
+
+                const removeBtn = document.createElement("button");
+                removeBtn.className = "chat-attachment-remove";
+                removeBtn.innerHTML = "✕";
+                removeBtn.title = "Remove attachment";
+                removeBtn.onclick = () => {
+                    window.pendingScreenshot = null;
+                    bar.innerHTML = "";
+                    bar.classList.add("hidden");
+                    screenshotBtn.classList.remove("has-attachment");
+                };
+
+                preview.appendChild(img);
+                preview.appendChild(removeBtn);
+                bar.appendChild(preview);
+            }
+
+            screenshotBtn.classList.add("has-attachment");
+
+            if (typeof addNotification === "function") {
+                addNotification("Screenshot attached", "Vision context added to next message.", "success");
+            }
+        } catch (err) {
+            console.error("[Screenshot] Error:", err);
+            if (typeof addNotification === "function") {
+                addNotification("Screenshot Error", String(err), "error");
+            }
+        } finally {
+            screenshotBtn.style.opacity = "";
+            screenshotBtn.disabled = false;
+        }
+    });
+})();
+
+// ==========================================================================
+// CATEGORY B: AI SHELL HISTORY SEARCH (Ctrl+H)
+// ==========================================================================
+
+let historySearchOpen = false;
+let historySearchResults = [];
+let historySearchSelectedIdx = -1;
+let historySearchDebounce = null;
+
+function openHistorySearch() {
+    const overlay = document.getElementById("history-search-overlay");
+    if (!overlay) return;
+    historySearchOpen = true;
+    historySearchSelectedIdx = -1;
+    historySearchResults = [];
+    overlay.classList.remove("hidden");
+    setTimeout(() => {
+        const input = document.getElementById("history-search-input");
+        if (input) { input.value = ""; input.focus(); }
+        const body = document.getElementById("history-search-body");
+        if (body) body.innerHTML = '<div class="history-empty-state">Start typing to search your shell history with AI</div>';
+    }, 30);
+}
+
+function closeHistorySearch() {
+    const overlay = document.getElementById("history-search-overlay");
+    if (overlay) overlay.classList.add("hidden");
+    historySearchOpen = false;
+    historySearchResults = [];
+    historySearchSelectedIdx = -1;
+}
+
+function renderHistoryResults(results) {
+    const body = document.getElementById("history-search-body");
+    if (!body) return;
+
+    if (results.length === 0) {
+        body.innerHTML = '<div class="history-empty-state">No matching commands found</div>';
+        historySearchSelectedIdx = -1;
+        return;
+    }
+
+    body.innerHTML = "";
+    results.forEach((cmd, idx) => {
+        const item = document.createElement("div");
+        item.className = "history-result-item" + (idx === historySearchSelectedIdx ? " selected" : "");
+        item.dataset.idx = idx;
+        item.innerHTML = `
+            <span class="history-result-rank">${idx + 1}</span>
+            <span class="history-result-cmd" title="${cmd.replace(/"/g, '&quot;')}">${cmd}</span>
+            <span class="history-result-insert-hint">↵ Insert</span>
+        `;
+        item.addEventListener("click", () => {
+            insertHistoryCommand(cmd);
+        });
+        item.addEventListener("mouseenter", () => {
+            historySearchSelectedIdx = idx;
+            updateHistorySelection();
+        });
+        body.appendChild(item);
+    });
+}
+
+function updateHistorySelection() {
+    const body = document.getElementById("history-search-body");
+    if (!body) return;
+    const items = body.querySelectorAll(".history-result-item");
+    items.forEach((item, idx) => {
+        item.classList.toggle("selected", idx === historySearchSelectedIdx);
+    });
+    // Scroll selected into view
+    if (historySearchSelectedIdx >= 0 && historySearchSelectedIdx < items.length) {
+        items[historySearchSelectedIdx].scrollIntoView({ block: "nearest" });
+    }
+}
+
+function insertHistoryCommand(cmd) {
+    // Insert into the active PTY terminal session
+    const activeSession = (typeof terminalSessions !== "undefined") ?
+        terminalSessions.find(s => s.id === activeTerminalSessionId) : null;
+
+    if (activeSession && activeSession.term) {
+        // Write the command to the active PTY terminal
+        invoke("pty_write", { id: activeSession.id, data: cmd }).catch(console.error);
+        closeHistorySearch();
+        // Switch to terminal view
+        const termTab = document.querySelector('.nav-tab[data-view="terminal"]');
+        if (termTab) termTab.click();
+        if (typeof addNotification === "function") {
+            addNotification("Command Inserted", `→ ${cmd.substring(0, 50)}${cmd.length > 50 ? '…' : ''}`, "success");
+        }
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(cmd).then(() => {
+            if (typeof addNotification === "function") {
+                addNotification("Copied to Clipboard", "No active terminal. Command copied.", "info");
+            }
+        }).catch(() => {});
+        closeHistorySearch();
+    }
+}
+
+async function performHistorySearch(query) {
+    const statusEl = document.getElementById("history-search-status");
+    const body = document.getElementById("history-search-body");
+
+    if (!query.trim()) {
+        if (body) body.innerHTML = '<div class="history-empty-state">Start typing to search your shell history with AI</div>';
+        if (statusEl) statusEl.textContent = "Press Enter to search • Esc to close";
+        return;
+    }
+
+    if (body) body.innerHTML = '<div class="history-ai-loading">AI is searching history…</div>';
+    if (statusEl) statusEl.textContent = "Searching…";
+
+    try {
+        const results = await invoke("search_history_ai", { query });
+        historySearchResults = results;
+        historySearchSelectedIdx = results.length > 0 ? 0 : -1;
+        renderHistoryResults(results);
+        if (statusEl) statusEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} found`;
+        updateHistorySelection();
+    } catch (err) {
+        console.error("[History Search] Error:", err);
+        if (body) body.innerHTML = `<div class="history-empty-state" style="color:var(--error-color);">Error: ${err}</div>`;
+        if (statusEl) statusEl.textContent = "Error occurred";
+    }
+}
+
+// History search input event wiring (DOM already exists at this point)
+(function wireHistorySearchInput() {
+    const hsInput = document.getElementById("history-search-input");
+    if (hsInput) {
+        hsInput.addEventListener("keydown", (e) => {
+            if (!historySearchOpen) return;
+            if (e.key === "Escape") {
+                e.preventDefault();
+                closeHistorySearch();
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (historySearchSelectedIdx >= 0 && historySearchResults[historySearchSelectedIdx]) {
+                    insertHistoryCommand(historySearchResults[historySearchSelectedIdx]);
+                } else {
+                    // Submit search
+                    clearTimeout(historySearchDebounce);
+                    performHistorySearch(hsInput.value);
+                }
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                historySearchSelectedIdx = Math.min(historySearchSelectedIdx + 1, historySearchResults.length - 1);
+                updateHistorySelection();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                historySearchSelectedIdx = Math.max(historySearchSelectedIdx - 1, 0);
+                updateHistorySelection();
+            }
+        });
+
+        hsInput.addEventListener("input", () => {
+            clearTimeout(historySearchDebounce);
+            historySearchDebounce = setTimeout(() => {
+                performHistorySearch(hsInput.value);
+            }, 500);
+        });
+    }
+})();
+
+// Click outside to close
+document.addEventListener("click", (e) => {
+    if (!historySearchOpen) return;
+    const overlay = document.getElementById("history-search-overlay");
+    const panel = overlay && overlay.querySelector(".history-search-panel");
+    if (panel && !panel.contains(e.target)) {
+        closeHistorySearch();
+    }
+});
+
+// Global keyboard shortcut Ctrl+H from terminal view
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "h" && !historySearchOpen) {
+        // Only trigger if we're in the terminal view or terminal is focused
+        const terminalView = document.getElementById("view-terminal");
+        const isTerminalActive = terminalView && terminalView.classList.contains("active");
+        if (isTerminalActive) {
+            e.preventDefault();
+            openHistorySearch();
+        }
+    }
+    if (e.key === "Escape" && historySearchOpen) {
+        e.preventDefault();
+        closeHistorySearch();
+    }
+});
+
+// ==========================================================================
+// CATEGORY B: AI TERMINAL AUTOCOMPLETE (Ctrl+Space)
+// ==========================================================================
+
+let autocompleteGhostText = null;
+let autocompleteDebounce = null;
+let autocompleteActive = false;
+
+function clearAutocompleteGhost() {
+    autocompleteGhostText = null;
+    autocompleteActive = false;
+    const statusBar = document.getElementById("autocomplete-status-bar");
+    if (statusBar) statusBar.classList.remove("visible");
+}
+
+function showAutocompleteGhost(completion) {
+    if (!completion) { clearAutocompleteGhost(); return; }
+    autocompleteGhostText = completion;
+    autocompleteActive = true;
+
+    let statusBar = document.getElementById("autocomplete-status-bar");
+    if (!statusBar) {
+        statusBar = document.createElement("div");
+        statusBar.id = "autocomplete-status-bar";
+        statusBar.className = "autocomplete-status-bar";
+        const container = document.getElementById("pty-terminal-container");
+        if (container) container.appendChild(statusBar);
+    }
+    statusBar.innerHTML = `⚡ <strong>${completion}</strong><span class="ac-key-hint">→ Accept &nbsp; Esc Dismiss</span>`;
+    statusBar.classList.add("visible");
+}
+
+function triggerAutocomplete(sessionId, buffer) {
+    if (!buffer || !buffer.trim()) { clearAutocompleteGhost(); return; }
+    clearTimeout(autocompleteDebounce);
+    autocompleteDebounce = setTimeout(async () => {
+        try {
+            const completion = await invoke("shell_autocomplete", { buffer: buffer.trim() });
+            if (completion && completion.trim()) {
+                showAutocompleteGhost(completion);
+            } else {
+                clearAutocompleteGhost();
+            }
+        } catch (err) {
+            console.warn("[Autocomplete] Error:", err);
+            clearAutocompleteGhost();
+        }
+    }, 100);
+}
+
+// Hook into xterm onKey to intercept Ctrl+Space and RightArrow when ghost text is visible.
+// We patch createTerminalSession to add the key handler after session creation.
+const _origCreateTerminalSession = window.createTerminalSession;
+
+function patchTerminalSessionWithAutocomplete(session) {
+    if (!session || !session.term) return;
+    const term = session.term;
+
+    let currentLineBuffer = "";
+
+    // Track what's typed to maintain a local line buffer
+    term.onData((data) => {
+        // Handle special sequences
+        if (data === "\r" || data === "\n") {
+            currentLineBuffer = "";
+            clearAutocompleteGhost();
+            return;
+        }
+        if (data === "\x7f" || data === "\b") {
+            // Backspace
+            currentLineBuffer = currentLineBuffer.slice(0, -1);
+            clearAutocompleteGhost();
+            return;
+        }
+        if (data === "\x03" || data === "\x1b") {
+            // Ctrl+C or Escape
+            currentLineBuffer = "";
+            clearAutocompleteGhost();
+            return;
+        }
+        // Ctrl+Space (0x00 or \x00 in xterm key events)
+        if (data === "\x00" || data === " " && autocompleteActive) {
+            // Accept ghost text if active and space is pressed
+        }
+        // Printable chars
+        if (data.length === 1 && data.charCodeAt(0) >= 32) {
+            currentLineBuffer += data;
+            clearAutocompleteGhost();
+        }
+    });
+
+    // Override Ctrl+Space using the custom keyEventHandler
+    term.attachCustomKeyEventHandler((e) => {
+        // Ctrl+Space: trigger autocomplete
+        if (e.ctrlKey && e.code === "Space" && e.type === "keydown") {
+            e.preventDefault();
+            triggerAutocomplete(session.id, currentLineBuffer);
+            return false;
+        }
+
+        // Right Arrow or Ctrl+Y: accept ghost completion
+        if (autocompleteActive && autocompleteGhostText && e.type === "keydown") {
+            if (e.code === "ArrowRight" || (e.ctrlKey && e.key === "y")) {
+                e.preventDefault();
+                const ghost = autocompleteGhostText;
+                clearAutocompleteGhost();
+                currentLineBuffer += ghost;
+                // Write the ghost text to the PTY
+                invoke("pty_write", { id: session.id, data: ghost }).catch(console.error);
+                return false;
+            }
+            // Escape: dismiss
+            if (e.code === "Escape") {
+                clearAutocompleteGhost();
+                return true; // Let xterm handle normally
+            }
+        }
+        return true; // Allow normal key processing
+    });
+}
 
 // ==========================================================================
 // SSH CLIENT SYSTEM
@@ -3876,10 +4483,12 @@ function connectSsh() {
         args: sshArgs
     }).then(() => {
         setSshStatus(true, `${user}@${host}:${port}`);
+        addNotification("SSH Connected", "Connected to " + user + "@" + host + ".", "success");
     }).catch(err => {
         window.sshTerminal?.write(`\r\n\x1b[1;31mFailed to launch SSH: ${err}\x1b[0m\r\n`);
         setSshStatus(false, "Connection failed");
         sshSessionId = null;
+        addNotification("SSH Failed", "Could not connect to " + host + ".", "error");
     });
 }
 
@@ -4158,8 +4767,18 @@ function renderFtpFiles(entries) {
             const pass = document.getElementById("ftp-pass-input")?.value;
             setFtpStatus(`Downloading ${name}...`);
             invoke("ftp_download_file", { host, port, user, password: pass, remotePath, localPath })
-                .then(() => setFtpStatus(`Downloaded to ${localPath}`))
-                .catch(err => setFtpStatus(`Download error: ${err}`));
+                .then(() => {
+                    setFtpStatus(`Downloaded to ${localPath}`);
+                    if (typeof addNotification === "function") {
+                        addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
+                    }
+                })
+                .catch(err => {
+                    setFtpStatus(`Download error: ${err}`);
+                    if (typeof addNotification === "function") {
+                        addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
+                    }
+                });
         };
     });
 }
@@ -4213,9 +4832,17 @@ document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
     invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
         .then(() => {
             setFtpStatus("Upload complete.");
+            if (typeof addNotification === "function") {
+                addNotification("FTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
+            }
             loadFtpDir(ftpCurrentPath);
         })
-        .catch(err => setFtpStatus(`Upload error: ${err}`));
+        .catch(err => {
+            setFtpStatus(`Upload error: ${err}`);
+            if (typeof addNotification === "function") {
+                addNotification("FTP Upload Failed", `Failed to upload file: ${err}`, "error");
+            }
+        });
 });
 
 // ==========================================================================
@@ -4265,8 +4892,18 @@ function renderSftpFiles(entries) {
             const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
             setSftpStatus(`Downloading ${name}...`);
             invoke("sftp_download_file", { host, port, user, authType, password: pass, keyPath, remotePath, localPath })
-                .then(() => setSftpStatus(`Downloaded to ${localPath}`))
-                .catch(err => setSftpStatus(`Download error: ${err}`));
+                .then(() => {
+                    setSftpStatus(`Downloaded to ${localPath}`);
+                    if (typeof addNotification === "function") {
+                        addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
+                    }
+                })
+                .catch(err => {
+                    setSftpStatus(`Download error: ${err}`);
+                    if (typeof addNotification === "function") {
+                        addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
+                    }
+                });
         };
     });
 }
@@ -4324,9 +4961,17 @@ document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
     invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
         .then(() => {
             setSftpStatus("Upload complete.");
+            if (typeof addNotification === "function") {
+                addNotification("SFTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
+            }
             loadSftpDir(sftpCurrentPath);
         })
-        .catch(err => setSftpStatus(`Upload error: ${err}`));
+        .catch(err => {
+            setSftpStatus(`Upload error: ${err}`);
+            if (typeof addNotification === "function") {
+                addNotification("SFTP Upload Failed", `Failed to upload file: ${err}`, "error");
+            }
+        });
 });
 
 // --- SFTP Profile Management ---
@@ -5039,6 +5684,10 @@ function initFileShare() {
             modal.classList.add("active");
         }
         
+        if (typeof addNotification === "function") {
+            addNotification("Incoming Transfer Request", `From ${transfer.peer_name || 'Unknown'} (${transfer.peer_ip}): ${transfer.filename}`, "info");
+        }
+        
         invoke("get_active_transfers").then(renderTransfers);
     });
     
@@ -5046,10 +5695,16 @@ function initFileShare() {
     listen("transfer_progress", () => {
         invoke("get_active_transfers").then(renderTransfers);
     });
-    listen("transfer_completed", () => {
+    listen("transfer_completed", (event) => {
+        if (typeof addNotification === "function") {
+            addNotification("File Transfer Complete", "A LAN file transfer completed successfully.", "success");
+        }
         invoke("get_active_transfers").then(renderTransfers);
     });
-    listen("transfer_failed", () => {
+    listen("transfer_failed", (event) => {
+        if (typeof addNotification === "function") {
+            addNotification("File Transfer Failed", "A LAN file transfer has failed.", "error");
+        }
         invoke("get_active_transfers").then(renderTransfers);
     });
     
@@ -5578,6 +6233,7 @@ function initAgentView() {
         }
 
         setRunning(false);
+        addNotification("Agent Complete", "Agent loop finished all execution steps.", "success");
     }
 
     runBtn.onclick = () => {
@@ -6248,5 +6904,252 @@ function initCustomPersonas() {
 
 // Initialize Custom Personas event handlers
 initCustomPersonas();
+
+
+// --- NOTIFICATION CENTER SYSTEM ---
+let notifications = [];
+let unreadNotifCount = 0;
+
+function addNotification(title, text, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const notif = {
+        id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        title,
+        text,
+        type, // 'info' | 'success' | 'warning' | 'error'
+        time: timestamp
+    };
+    notifications.unshift(notif); // Add to beginning
+    unreadNotifCount++;
+    updateNotifBadge();
+    
+    // Create visual Toast
+    const toastContainer = document.getElementById("toast-container");
+    if (toastContainer) {
+        const toast = document.createElement("div");
+        toast.className = `toast-notif ${type}`;
+        toast.innerHTML = `
+            <div class="toast-notif-title">
+                <span>${title}</span>
+                <span style="font-size: 0.65rem; opacity: 0.5;">${timestamp}</span>
+            </div>
+            <div class="toast-notif-text">${text}</div>
+        `;
+        toastContainer.appendChild(toast);
+        
+        // Auto remove toast in 4 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 4000);
+    }
+    
+    renderNotificationsList();
+}
+
+window.addNotification = addNotification; // Expose globally if needed
+
+function updateNotifBadge() {
+    const badge = document.getElementById("notif-badge");
+    if (!badge) return;
+    if (unreadNotifCount > 0) {
+        badge.innerText = unreadNotifCount;
+        badge.classList.remove("hidden");
+    } else {
+        badge.classList.add("hidden");
+    }
+}
+
+function renderNotificationsList() {
+    const container = document.getElementById("notif-list-container");
+    if (!container) return;
+    
+    if (notifications.length === 0) {
+        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications.</div>`;
+        return;
+    }
+    
+    container.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.type}">
+            <div class="notif-item-header">
+                <span>${n.title}</span>
+                <span class="notif-item-time">${n.time}</span>
+            </div>
+            <div class="notif-item-text">${n.text}</div>
+        </div>
+    `).join("");
+}
+
+function initNotificationCenter() {
+    const notifBtn = document.getElementById("notif-btn");
+    const notifModal = document.getElementById("notif-modal");
+    const closeX = document.getElementById("close-notif-x");
+    const closeBtn = document.getElementById("close-notif-btn");
+    const clearAllBtn = document.getElementById("notif-clear-all-btn");
+    
+    if (notifBtn && notifModal) {
+        notifBtn.onclick = () => {
+            notifModal.classList.add("active");
+            unreadNotifCount = 0;
+            updateNotifBadge();
+            renderNotificationsList();
+        };
+    }
+    
+    const dismiss = () => {
+        if (notifModal) notifModal.classList.remove("active");
+    };
+    
+    if (closeX) closeX.onclick = dismiss;
+    if (closeBtn) closeBtn.onclick = dismiss;
+    
+    if (clearAllBtn) {
+        clearAllBtn.onclick = () => {
+            notifications = [];
+            unreadNotifCount = 0;
+            updateNotifBadge();
+            renderNotificationsList();
+        };
+    }
+}
+
+// --- GAME CONTEXT PANEL SYSTEM ---
+function initGameContextPanel() {
+    const gameBadge = document.getElementById("game-badge");
+    const gameModal = document.getElementById("game-context-modal");
+    const closeX = document.getElementById("close-game-context-x");
+    const closeBtn = document.getElementById("close-game-context");
+    
+    if (gameBadge && gameModal) {
+        gameBadge.onclick = () => {
+            invoke("get_game_context").then(ctx => {
+                const nameEl = document.getElementById("game-context-name");
+                const appidEl = document.getElementById("game-context-appid");
+                const statusEl = document.getElementById("game-context-status");
+                const notesEl = document.getElementById("game-context-notes");
+                const headerImg = document.getElementById("game-context-header");
+                const promptView = document.getElementById("game-context-prompt-view");
+                
+                const name = ctx.name || "None Detected";
+                const appId = ctx.app_id || "-";
+                const isRunning = ctx.is_running === "true";
+                const notes = ctx.notes || "No optimization profile found.";
+                
+                if (nameEl) nameEl.innerText = name;
+                if (appidEl) appidEl.innerText = appId;
+                if (statusEl) {
+                    statusEl.innerText = isRunning ? "Running" : "Offline";
+                    statusEl.style.color = isRunning ? "var(--response-color)" : "rgba(255,255,255,0.4)";
+                }
+                if (notesEl) notesEl.innerText = notes;
+                
+                if (headerImg) {
+                    if (appId !== "-") {
+                        headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
+                        headerImg.style.display = "block";
+                    } else {
+                        headerImg.style.display = "none";
+                    }
+                }
+                
+                if (promptView) {
+                    promptView.value = `[Active SteamOS Game Context]\nThe user is currently playing the game: ${name} (Steam AppID: ${appId}).\nSteam Deck Optimization Notes: ${notes}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.`;
+                }
+                
+                gameModal.classList.add("active");
+            }).catch(err => {
+                console.error("Error loading game context panel:", err);
+            });
+        };
+    }
+    
+    const dismiss = () => {
+        if (gameModal) gameModal.classList.remove("active");
+    };
+    
+    if (closeX) closeX.onclick = dismiss;
+    if (closeBtn) closeBtn.onclick = dismiss;
+}
+
+// --- FTP/SFTP DRAG AND DROP UPLOADS ---
+function initFtpSftpDragDrop() {
+    const ftpDropzone = document.getElementById("ftp-dropzone");
+    const ftpPathInput = document.getElementById("ftp-local-path-input");
+    const ftpRemoteDest = document.getElementById("ftp-remote-dest-input");
+    
+    if (ftpDropzone && ftpPathInput) {
+        ftpDropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ftpDropzone.classList.add("dragover");
+        });
+        
+        ftpDropzone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ftpDropzone.classList.remove("dragover");
+        });
+        
+        ftpDropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            ftpDropzone.classList.remove("dragover");
+            
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const path = file.path || file.name;
+                ftpPathInput.value = path;
+                
+                if (ftpRemoteDest && !ftpRemoteDest.value.trim()) {
+                    ftpRemoteDest.value = "/" + file.name;
+                }
+                addNotification("FTP File Drop", `File local path set to: ${file.name}`, "info");
+            }
+        });
+    }
+
+    const sftpDropzone = document.getElementById("sftp-dropzone");
+    const sftpPathInput = document.getElementById("sftp-local-path-input");
+    const sftpRemoteDest = document.getElementById("sftp-remote-dest-input");
+    
+    if (sftpDropzone && sftpPathInput) {
+        sftpDropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sftpDropzone.classList.add("dragover");
+        });
+        
+        sftpDropzone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sftpDropzone.classList.remove("dragover");
+        });
+        
+        sftpDropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sftpDropzone.classList.remove("dragover");
+            
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const path = file.path || file.name;
+                sftpPathInput.value = path;
+                
+                if (sftpRemoteDest && !sftpRemoteDest.value.trim()) {
+                    sftpRemoteDest.value = "/" + file.name;
+                }
+                addNotification("SFTP File Drop", `File local path set to: ${file.name}`, "info");
+            }
+        });
+    }
+}
+
+// Initialize Sprint 5 modules
+initNotificationCenter();
+initGameContextPanel();
+initFtpSftpDragDrop();
 
 
