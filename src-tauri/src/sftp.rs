@@ -5,6 +5,13 @@ fn to_string_err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
+fn validate_sftp_path(path: &str) -> Result<(), String> {
+    if path.contains('\n') || path.contains('\r') || path.contains('"') {
+        return Err("Invalid characters in SFTP path. Newlines and double-quotes are forbidden.".to_string());
+    }
+    Ok(())
+}
+
 #[derive(serde::Serialize, Clone)]
 pub struct FtpFileEntry {
     pub name: String,
@@ -136,6 +143,7 @@ pub async fn sftp_list_dir(
     key_path: Option<String>,
     path: String,
 ) -> Result<Vec<FtpFileEntry>, String> {
+    validate_sftp_path(&path)?;
     tokio::task::spawn_blocking(move || {
         let cmd = build_sftp_command(
             &host,
@@ -170,6 +178,8 @@ pub async fn sftp_download_file(
     remote_path: String,
     local_path: String,
 ) -> Result<(), String> {
+    validate_sftp_path(&remote_path)?;
+    validate_sftp_path(&local_path)?;
     tokio::task::spawn_blocking(move || {
         let cmd = build_sftp_command(
             &host,
@@ -198,6 +208,8 @@ pub async fn sftp_upload_file(
     local_path: String,
     remote_path: String,
 ) -> Result<(), String> {
+    validate_sftp_path(&local_path)?;
+    validate_sftp_path(&remote_path)?;
     tokio::task::spawn_blocking(move || {
         let cmd = build_sftp_command(
             &host,

@@ -1,5 +1,38 @@
 
-# KFMS loose zone — scratch files, never committed
+# =============================================================================
+# NEURODECK — .gitignore
+# =============================================================================
+
+# --- Rust / Cargo ---
+target/
+**/*.rs.bk
+
+# --- Node / Frontend ---
+node_modules/
+frontend/node_modules/
+e2e/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- Build artifacts & binaries ---
+neurodeck
+neurodeck_rc.zip
+neurodeck_win_release.zip
+
+# --- Test screenshots & temporary output ---
+test-*.png
+*.bak
+src-tauri/data/logs/
+
+# --- Local tool state ---
+.claude/settings.local.json
+.playwright-mcp/
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- KFMS loose zone — scratch files, never committed ---
 .loose/*
 !.loose/
 !.loose/inbox/

@@ -104,6 +104,38 @@ impl LuaEngine {
         })?;
         lua.globals().set("setPersona", set_persona_fn)?;
 
+        // 6. sendPrompt(prompt) function to execute prompts against active LLM provider
+        let app_handle_prompt = app_handle.clone();
+        let send_prompt_fn = lua.create_function(move |_, prompt: String| {
+            let state = app_handle_prompt.state::<std::sync::Mutex<crate::AppState>>();
+            let (provider, active_persona, custom_personas) = {
+                let app = state.lock().unwrap_or_else(|e| e.into_inner());
+                (app.provider.clone(), app.active_persona.clone(), app.custom_personas.clone())
+            };
+            
+            let system_prompt = crate::PERSONAS
+                .iter()
+                .find(|p| p.0 == active_persona)
+                .map(|p| p.1.clone())
+                .unwrap_or_else(|| {
+                    custom_personas
+                        .iter()
+                        .find(|p| p.name == active_persona)
+                        .map(|p| p.prompt.clone())
+                        .unwrap_or_else(|| "You are a helpful assistant.".to_string())
+                });
+            
+            let response = tauri::async_runtime::block_on(async move {
+                provider.chat_with_image(&prompt, &system_prompt, None, None).await
+            });
+            
+            match response {
+                Ok(res) => Ok(res),
+                Err(e) => Ok(format!("Error: {}", e)),
+            }
+        })?;
+        lua.globals().set("sendPrompt", send_prompt_fn)?;
+
         Ok(Self { lua })
     }
 
@@ -171,6 +203,35 @@ impl LuaEngine {
         names
     }
 
+    pub fn assemble_prompt(
+        &self,
+        persona: &str,
+        task: &str,
+        context: &str,
+        tone: &str,
+        constraints: &str,
+        format: &str,
+        examples: &str,
+        formula: &str,
+    ) -> Result<String, String> {
+        let globals = self.lua.globals();
+        let assemble_fn: Function = globals.get("assemble_prompt_via_lua")
+            .map_err(|e| format!("Failed to find assemble_prompt_via_lua function in Lua: {}", e))?;
+        
+        let res: String = assemble_fn.call((
+            persona.to_string(),
+            task.to_string(),
+            context.to_string(),
+            tone.to_string(),
+            constraints.to_string(),
+            format.to_string(),
+            examples.to_string(),
+            formula.to_string(),
+        )).map_err(|e| format!("Error executing assemble_prompt_via_lua: {}", e))?;
+        
+        Ok(res)
+    }
+
     pub fn load_plugins<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
         let dir = path.as_ref();
         if !dir.exists() {
@@ -191,3 +252,4 @@ impl LuaEngine {
         Ok(())
     }
 }
+

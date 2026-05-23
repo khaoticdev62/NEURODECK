@@ -46,8 +46,13 @@ impl GeminiProvider {
     }
 
     fn get_api_key(&self) -> Result<String, String> {
-        std::env::var("GEMINI_API_KEY")
-            .map_err(|_| "GEMINI_API_KEY environment variable not set".to_string())
+        if let Ok(key) = std::env::var("GEMINI_API_KEY") {
+            if !key.is_empty() {
+                return Ok(key);
+            }
+        }
+        neurodeck_infrastructure::secrets::get_gemini_api_key()
+            .map_err(|e| format!("GEMINI_API_KEY environment variable not set and failed to retrieve from OS keychain: {}", e))
     }
 }
 

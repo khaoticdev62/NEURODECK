@@ -5,17 +5,21 @@ use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, AsyncBufReadExt};
-use tokio::net::{TcpListener, TcpStream, UdpSocket};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
 use serde::{Deserialize, Serialize};
 use rand::Rng;
 use chrono::Utc;
+use mdns_sd::{ServiceDaemon, ServiceInfo, ServiceEvent};
+use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Peer {
     pub ip: String,
     pub hostname: String,
     pub os: String,
+    pub port: u16,
+    pub is_warpinator: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,7 +28,7 @@ pub struct FileTransfer {
     pub filename: String,
     pub size: u64,
     pub progress: u64,
-    pub status: String, // "Pending", "Accepted", "Rejected", "Transferring", "Completed", "Failed"
+    pub status: String, // "Pending", "Accepted", "Rejected", "Transferring", "Completed", "Failed", "Cancelled"
     pub direction: String, // "Incoming", "Outgoing"
     pub peer_ip: String,
     pub peer_name: String,
@@ -47,6 +51,10 @@ pub struct TransferState {
     pub peers: HashMap<String, (Peer, Instant)>,
     pub transfers: HashMap<String, FileTransfer>,
     pub accept_txs: HashMap<String, oneshot::Sender<bool>>,
+    pub group_code: String,
+    pub cancel_txs: HashMap<String, tokio::sync::oneshot::Sender<()>>,
+    pub mdns_daemon: Option<ServiceDaemon>,
+    pub outgoing_paths: HashMap<String, PathBuf>,
 }
 
 impl TransferState {
@@ -55,6 +63,10 @@ impl TransferState {
             peers: HashMap::new(),
             transfers: HashMap::new(),
             accept_txs: HashMap::new(),
+            group_code: "DEFAULT".to_string(),
+            cancel_txs: HashMap::new(),
+            mdns_daemon: None,
+            outgoing_paths: HashMap::new(),
         }
     }
 }
@@ -76,112 +88,420 @@ fn get_os_name() -> String {
     std::env::consts::OS.to_string()
 }
 
-pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferState>>) {
-    // 1. UDP Discovery Beacon
-    tauri::async_runtime::spawn(async move {
-        let socket = match UdpSocket::bind("0.0.0.0:0").await {
-            Ok(s) => s,
-            Err(e) => {
-                println!("Failed to bind UDP beacon socket: {}", e);
-                return;
-            }
-        };
-        let _ = socket.set_broadcast(true);
-        let hostname = get_hostname();
-        let os = get_os_name();
-        let payload = format!("NEURODECK_PEER:{}:{}", hostname, os);
-        let bytes = payload.as_bytes();
+struct STermWarpinatorCallbacks {
+    app_handle: AppHandle,
+    state: Arc<Mutex<TransferState>>,
+}
 
-        loop {
-            if let Err(e) = socket.send_to(bytes, "255.255.255.255:18339").await {
-                println!("Failed to send UDP broadcast: {}", e);
-            }
-            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+#[tonic::async_trait]
+impl WarpinatorCallbacks for STermWarpinatorCallbacks {
+    fn get_local_machine_info(&self) -> (String, String) {
+        (get_hostname(), "deck".to_string())
+    }
+
+    async fn on_incoming_transfer(
+        &self,
+        transfer_id: String,
+        sender_name: String,
+        sender_ip: String,
+        filename: String,
+        total_size: u64,
+        _file_count: u32,
+    ) -> bool {
+        let transfer = FileTransfer {
+            id: transfer_id.clone(),
+            filename: filename.clone(),
+            size: total_size,
+            progress: 0,
+            status: "Pending".to_string(),
+            direction: "Incoming".to_string(),
+            peer_ip: sender_ip.clone(),
+            peer_name: sender_name.clone(),
+        };
+
+        let (accept_tx, accept_rx) = tokio::sync::oneshot::channel::<bool>();
+
+        {
+            let mut s = self.state.lock().unwrap();
+            s.transfers.insert(transfer_id.clone(), transfer.clone());
+            s.accept_txs.insert(transfer_id.clone(), accept_tx);
         }
-    });
 
-    // 2. UDP Discovery Listener
-    let app_handle_listener = app_handle.clone();
-    let state_listener = state.clone();
-    tauri::async_runtime::spawn(async move {
-        let socket = match UdpSocket::bind("0.0.0.0:18339").await {
-            Ok(s) => s,
+        let _ = self.app_handle.emit("transfer_incoming", transfer);
+        
+        match accept_rx.await {
+            Ok(val) => val,
+            Err(_) => false,
+        }
+    }
+
+    async fn on_chunk_received(
+        &self,
+        _transfer_id: &str,
+        relative_path: &str,
+        file_type: i32,
+        chunk: &[u8],
+    ) -> Result<(), String> {
+        let download_dir = self.app_handle.path().download_dir()
+            .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
+            .join("neurodeck_transfers");
+
+        let dest_path = download_dir.join(relative_path);
+
+        if file_type == 1 {
+            tokio::fs::create_dir_all(&dest_path).await
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        } else if file_type == 0 {
+            if let Some(parent) = dest_path.parent() {
+                tokio::fs::create_dir_all(parent).await
+                    .map_err(|e| format!("Failed to create parent directory: {}", e))?;
+            }
+            use tokio::fs::OpenOptions;
+            let mut file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .append(true)
+                .open(&dest_path).await
+                .map_err(|e| format!("Failed to open file: {}", e))?;
+
+            file.write_all(chunk).await
+                .map_err(|e| format!("Failed to write chunk: {}", e))?;
+        }
+        Ok(())
+    }
+
+    fn on_transfer_progress(&self, transfer_id: &str, progress: u64) {
+        {
+            let mut s = self.state.lock().unwrap();
+            if let Some(t) = s.transfers.get_mut(transfer_id) {
+                t.progress = progress;
+                if t.status == "Pending" || t.status == "Accepted" {
+                    t.status = "Transferring".to_string();
+                }
+            }
+        }
+        let _ = self.app_handle.emit("transfer_progress", (transfer_id.to_string(), progress));
+    }
+
+    fn on_transfer_completed(&self, transfer_id: &str) {
+        {
+            let mut s = self.state.lock().unwrap();
+            if let Some(t) = s.transfers.get_mut(transfer_id) {
+                t.status = "Completed".to_string();
+            }
+        }
+        let _ = self.app_handle.emit("transfer_completed", transfer_id.to_string());
+
+        // Clean up temp file if it was a directory archive
+        let path_to_clean = {
+            let mut s = self.state.lock().unwrap();
+            s.outgoing_paths.remove(transfer_id)
+        };
+        if let Some(path) = path_to_clean {
+            if path.to_string_lossy().contains("neurodeck_tar") {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+    }
+
+    fn on_transfer_failed(&self, transfer_id: &str) {
+        {
+            let mut s = self.state.lock().unwrap();
+            if let Some(t) = s.transfers.get_mut(transfer_id) {
+                t.status = "Failed".to_string();
+            }
+        }
+        let _ = self.app_handle.emit("transfer_failed", transfer_id.to_string());
+
+        // Clean up temp file if it was a directory archive
+        let path_to_clean = {
+            let mut s = self.state.lock().unwrap();
+            s.outgoing_paths.remove(transfer_id)
+        };
+        if let Some(path) = path_to_clean {
+            if path.to_string_lossy().contains("neurodeck_tar") {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+    }
+
+    fn is_cancelled(&self, transfer_id: &str) -> bool {
+        let s = self.state.lock().unwrap();
+        if let Some(t) = s.transfers.get(transfer_id) {
+            t.status == "Cancelled"
+        } else {
+            true
+        }
+    }
+
+    fn get_outgoing_file_path(&self, transfer_id: &str) -> Option<std::path::PathBuf> {
+        let s = self.state.lock().unwrap();
+        s.outgoing_paths.get(transfer_id).cloned()
+    }
+}
+
+pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferState>>) {
+    // 1. Initialize mDNS ServiceDaemon
+    let mdns = match ServiceDaemon::new() {
+        Ok(d) => d,
+        Err(e) => {
+            println!("Failed to create mDNS daemon: {}", e);
+            return;
+        }
+    };
+
+    // Store daemon in state for later updates
+    {
+        let mut s = state.lock().unwrap();
+        s.mdns_daemon = Some(mdns.clone());
+    }
+
+    let hostname = get_hostname();
+    let os = get_os_name();
+    let service_type = "_neurodeck._tcp.local.";
+    let instance_name = format!("neurodeck-{}", hostname);
+    let host_name = format!("{}.local.", hostname.replace(" ", "-"));
+    let port = 18338;
+
+    let group_code = {
+        let s = state.lock().unwrap();
+        s.group_code.clone()
+    };
+
+    let mut properties = HashMap::new();
+    properties.insert("hostname".to_string(), hostname.clone());
+    properties.insert("os".to_string(), os);
+    properties.insert("group_code".to_string(), group_code);
+
+    if let Ok(service_info) = ServiceInfo::new(
+        service_type,
+        &instance_name,
+        &host_name,
+        "0.0.0.0",
+        port,
+        Some(properties),
+    ) {
+        if let Err(e) = mdns.register(service_info) {
+            println!("Failed to register mDNS service: {}", e);
+        } else {
+            println!("mDNS peer registered as: {} ({})", instance_name, host_name);
+        }
+    }
+
+    // 2a. mDNS Neurodeck Browser Loop (runs in a separate standard thread)
+    let browser_mdns = mdns.clone();
+    let state_browser = state.clone();
+    let app_handle_browser = app_handle.clone();
+    std::thread::spawn(move || {
+        let receiver = match browser_mdns.browse(service_type) {
+            Ok(r) => r,
             Err(e) => {
-                println!("Failed to bind UDP discovery listener: {}", e);
+                println!("Failed to start mDNS browser: {}", e);
                 return;
             }
         };
 
-        let mut buf = [0u8; 1024];
+        while let Ok(event) = receiver.recv() {
+            match event {
+                ServiceEvent::ServiceResolved(info) => {
+                    let peer_group = info.get_property_val_str("group_code")
+                        .unwrap_or("DEFAULT")
+                        .to_string();
 
-        // Stale peer cleanup worker
-        let state_cleanup = state_listener.clone();
-        let app_handle_cleanup = app_handle_listener.clone();
-        tauri::async_runtime::spawn(async move {
-            loop {
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                let mut changed = false;
-                let mut peer_list = Vec::new();
-                {
-                    let mut s = state_cleanup.lock().unwrap();
-                    let now = Instant::now();
-                    let len_before = s.peers.len();
-                    s.peers.retain(|_, (_, last_seen)| now.duration_since(*last_seen) < std::time::Duration::from_secs(10));
-                    if s.peers.len() != len_before {
-                        changed = true;
-                    }
-                    for (peer, _) in s.peers.values() {
-                        peer_list.push(peer.clone());
-                    }
-                }
-                if changed {
-                    let _ = app_handle_cleanup.emit("peers_updated", peer_list);
-                }
-            }
-        });
+                    let local_group = {
+                        let s = state_browser.lock().unwrap();
+                        s.group_code.clone()
+                    };
 
-        loop {
-            match socket.recv_from(&mut buf).await {
-                Ok((len, src_addr)) => {
-                    let text = String::from_utf8_lossy(&buf[..len]);
-                    if text.starts_with("NEURODECK_PEER:") {
-                        let parts: Vec<&str> = text.splitn(3, ':').collect();
-                        if parts.len() == 3 {
-                            let hostname = parts[1].to_string();
-                            let os = parts[2].to_string();
-                            let ip = src_addr.ip().to_string();
+                    if peer_group == local_group {
+                        let ip = info.get_addresses().iter()
+                            .filter(|ip| ip.is_ipv4())
+                            .next()
+                            .map(|ip| ip.to_string())
+                            .unwrap_or_else(|| {
+                                info.get_addresses().iter()
+                                    .next()
+                                    .map(|ip| ip.to_string())
+                                    .unwrap_or_default()
+                            });
 
-                            let local_hostname = get_hostname();
-                            if hostname != local_hostname {
-                                let mut changed = false;
-                                let mut peer_list = Vec::new();
-                                {
-                                    let mut s = state_listener.lock().unwrap();
-                                    let peer = Peer {
-                                        ip: ip.clone(),
-                                        hostname,
-                                        os,
-                                    };
-                                    let is_new = !s.peers.contains_key(&ip);
-                                    s.peers.insert(ip.clone(), (peer, Instant::now()));
-                                    if is_new {
-                                        changed = true;
-                                    }
-                                    for (p, _) in s.peers.values() {
-                                        peer_list.push(p.clone());
-                                    }
+                        if ip.is_empty() {
+                            continue;
+                        }
+
+                        let hostname = info.get_property_val_str("hostname")
+                            .unwrap_or_else(|| info.get_fullname())
+                            .to_string();
+                        let os = info.get_property_val_str("os")
+                            .unwrap_or("unknown")
+                            .to_string();
+
+                        if hostname != get_hostname() {
+                            let mut changed = false;
+                            let mut peer_list = Vec::new();
+                            {
+                                let mut s = state_browser.lock().unwrap();
+                                let peer = Peer {
+                                    ip: ip.clone(),
+                                    hostname: hostname.clone(),
+                                    os,
+                                    port: 18338,
+                                    is_warpinator: false,
+                                };
+                                let is_new = !s.peers.contains_key(&ip);
+                                s.peers.insert(ip.clone(), (peer, Instant::now()));
+                                if is_new {
+                                    changed = true;
                                 }
-                                if changed {
-                                    let _ = app_handle_listener.emit("peers_updated", peer_list);
+                                for (p, _) in s.peers.values() {
+                                    peer_list.push(p.clone());
                                 }
+                            }
+                            if changed {
+                                let _ = app_handle_browser.emit("peers_updated", peer_list);
                             }
                         }
                     }
                 }
-                Err(e) => {
-                    println!("UDP recv error: {}", e);
+                ServiceEvent::ServiceRemoved(_service_type, name) => {
+                    let mut changed = false;
+                    let mut peer_list = Vec::new();
+                    {
+                        let mut s = state_browser.lock().unwrap();
+                        let to_remove: Vec<String> = s.peers.iter()
+                            .filter(|(_, (p, _))| name.contains(&p.hostname) && !p.is_warpinator)
+                            .map(|(ip, _)| ip.clone())
+                            .collect();
+
+                        for ip in to_remove {
+                            s.peers.remove(&ip);
+                            changed = true;
+                        }
+                        for (p, _) in s.peers.values() {
+                            peer_list.push(p.clone());
+                        }
+                    }
+                    if changed {
+                        let _ = app_handle_browser.emit("peers_updated", peer_list);
+                    }
                 }
+                _ => {}
             }
+        }
+    });
+
+    // 2b. mDNS Warpinator Browser Loop (runs in a separate standard thread)
+    let browser_mdns_warp = mdns.clone();
+    let state_browser_warp = state.clone();
+    let app_handle_browser_warp = app_handle.clone();
+    std::thread::spawn(move || {
+        let receiver = match browser_mdns_warp.browse("_warpinator._tcp.local.") {
+            Ok(r) => r,
+            Err(e) => {
+                println!("Failed to start Warpinator mDNS browser: {}", e);
+                return;
+            }
+        };
+
+        while let Ok(event) = receiver.recv() {
+            match event {
+                ServiceEvent::ServiceResolved(info) => {
+                    let peer_group = info.get_property_val_str("group")
+                        .unwrap_or("warpinator")
+                        .to_string();
+
+                    let local_group = {
+                        let s = state_browser_warp.lock().unwrap();
+                        s.group_code.clone()
+                    };
+
+                    if peer_group.to_lowercase() == local_group.to_lowercase() {
+                        let ip = info.get_addresses().iter()
+                            .filter(|ip| ip.is_ipv4())
+                            .next()
+                            .map(|ip| ip.to_string())
+                            .unwrap_or_else(|| {
+                                info.get_addresses().iter()
+                                    .next()
+                                    .map(|ip| ip.to_string())
+                                    .unwrap_or_default()
+                            });
+
+                        if ip.is_empty() {
+                            continue;
+                        }
+
+                        let hostname = info.get_property_val_str("machine")
+                            .or_else(|| info.get_property_val_str("hostname"))
+                            .unwrap_or_else(|| info.get_fullname())
+                            .to_string();
+                        let os = "linux".to_string();
+                        let port = info.get_port();
+
+                        if hostname != get_hostname() {
+                            let mut changed = false;
+                            let mut peer_list = Vec::new();
+                            {
+                                let mut s = state_browser_warp.lock().unwrap();
+                                let peer = Peer {
+                                    ip: ip.clone(),
+                                    hostname: hostname.clone(),
+                                    os,
+                                    port,
+                                    is_warpinator: true,
+                                };
+                                let is_new = !s.peers.contains_key(&ip);
+                                s.peers.insert(ip.clone(), (peer, Instant::now()));
+                                if is_new {
+                                    changed = true;
+                                }
+                                for (p, _) in s.peers.values() {
+                                    peer_list.push(p.clone());
+                                }
+                            }
+                            if changed {
+                                let _ = app_handle_browser_warp.emit("peers_updated", peer_list);
+                            }
+                        }
+                    }
+                }
+                ServiceEvent::ServiceRemoved(_service_type, name) => {
+                    let mut changed = false;
+                    let mut peer_list = Vec::new();
+                    {
+                        let mut s = state_browser_warp.lock().unwrap();
+                        let to_remove: Vec<String> = s.peers.iter()
+                            .filter(|(_, (p, _))| name.contains(&p.hostname) && p.is_warpinator)
+                            .map(|(ip, _)| ip.clone())
+                            .collect();
+
+                        for ip in to_remove {
+                            s.peers.remove(&ip);
+                            changed = true;
+                        }
+                        for (p, _) in s.peers.values() {
+                            peer_list.push(p.clone());
+                        }
+                    }
+                    if changed {
+                        let _ = app_handle_browser_warp.emit("peers_updated", peer_list);
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
+
+    // 2c. Start Warpinator gRPC Server
+    let callbacks = Arc::new(STermWarpinatorCallbacks {
+        app_handle: app_handle.clone(),
+        state: state.clone(),
+    });
+    
+    let callbacks_clone = callbacks.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, 42000).await {
+            println!("Failed to start Warpinator service: {}", e);
         }
     });
 
@@ -280,12 +600,15 @@ async fn handle_incoming_connection(
     let resp_bytes = format!("{}\n", serde_json::to_string(&resp)?);
     tx.write_all(resp_bytes.as_bytes()).await?;
     
+    // Register cancellation oneshot
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
         let mut s = state.lock().unwrap();
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Transferring".to_string();
         }
         s.accept_txs.remove(&transfer_id);
+        s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
     let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
     
@@ -295,20 +618,48 @@ async fn handle_incoming_connection(
     
     tokio::fs::create_dir_all(&download_dir).await?;
     
-    let file_path = download_dir.join(&filename);
-    let mut file = File::create(file_path).await?;
+    let clean_filename = std::path::Path::new(&filename)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "unnamed_transfer".to_string());
+        
+    let file_path = download_dir.join(&clean_filename);
+    let mut file = File::create(&file_path).await?;
     
     let mut buffer = [0u8; 16384];
     let mut bytes_written = 0u64;
     let mut last_emit = Instant::now();
+    let mut transfer_success = true;
     
     while bytes_written < size {
         let to_read = std::cmp::min((size - bytes_written) as usize, buffer.len());
-        let n = reader.read(&mut buffer[..to_read]).await?;
+        
+        let n = tokio::select! {
+            n_res = reader.read(&mut buffer[..to_read]) => {
+                match n_res {
+                    Ok(val) => val,
+                    Err(_) => {
+                        transfer_success = false;
+                        break;
+                    }
+                }
+            }
+            _ = &mut cancel_rx => {
+                transfer_success = false;
+                break;
+            }
+        };
+        
         if n == 0 {
-            return Err("TCP stream closed prematurely".into());
+            transfer_success = false;
+            break;
         }
-        file.write_all(&buffer[..n]).await?;
+        
+        if let Err(_) = file.write_all(&buffer[..n]).await {
+            transfer_success = false;
+            break;
+        }
+        
         bytes_written += n as u64;
         
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_written == size {
@@ -323,6 +674,28 @@ async fn handle_incoming_connection(
         }
     }
     
+    // Clean up cancellation handle
+    {
+        let mut s = state.lock().unwrap();
+        s.cancel_txs.remove(&transfer_id);
+    }
+    
+    if !transfer_success || bytes_written < size {
+        // Cancelled or aborted transfer cleanup
+        {
+            let mut s = state.lock().unwrap();
+            if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                if t.status != "Cancelled" {
+                    t.status = "Failed".to_string();
+                }
+            }
+        }
+        let _ = app_handle.emit("transfer_failed", transfer_id.clone());
+        let _ = tokio::fs::remove_file(&file_path).await;
+        return Ok(());
+    }
+    
+    // Completed successfully
     {
         let mut s = state.lock().unwrap();
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
@@ -330,8 +703,39 @@ async fn handle_incoming_connection(
             t.progress = size;
         }
     }
-    let _ = app_handle.emit("transfer_completed", transfer_id);
     
+    // Auto-extract tar folders
+    if clean_filename.ends_with(".tar") {
+        let tar_path = file_path.clone();
+        let folder_name = clean_filename.trim_end_matches(".tar").to_string();
+        let dest_dir = download_dir.join(&folder_name);
+        let _ = tokio::fs::create_dir_all(&dest_dir).await;
+        
+        // Spawn blocking extraction
+        let extract_res = tokio::task::spawn_blocking(move || {
+            let file = std::fs::File::open(&tar_path)?;
+            let mut ar = tar::Archive::new(file);
+            ar.unpack(&dest_dir)?;
+            Ok::<(), std::io::Error>(())
+        }).await;
+        
+        // Always delete the temporary tar file
+        let _ = tokio::fs::remove_file(&file_path).await;
+        
+        if let Err(e) = extract_res {
+            println!("Failed to extract folder: {:?}", e);
+            {
+                let mut s = state.lock().unwrap();
+                if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                    t.status = "Failed".to_string();
+                }
+            }
+            let _ = app_handle.emit("transfer_failed", transfer_id);
+            return Ok(());
+        }
+    }
+    
+    let _ = app_handle.emit("transfer_completed", transfer_id);
     Ok(())
 }
 
@@ -343,6 +747,7 @@ async fn run_outgoing_transfer(
     size: u64,
     app_handle: AppHandle,
     state: Arc<Mutex<TransferState>>,
+    is_temp: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let peer_addr = format!("{}:18338", peer_ip);
     
@@ -356,6 +761,9 @@ async fn run_outgoing_transfer(
                 }
             }
             let _ = app_handle.emit("transfer_failed", transfer_id.clone());
+            if is_temp {
+                let _ = tokio::fs::remove_file(&file_path).await;
+            }
             return Err(e.into());
         }
     };
@@ -385,28 +793,55 @@ async fn run_outgoing_transfer(
             }
         }
         let _ = app_handle.emit("transfer_failed", transfer_id);
+        if is_temp {
+            let _ = tokio::fs::remove_file(&file_path).await;
+        }
         return Ok(());
     }
     
+    // Register cancellation oneshot
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
         let mut s = state.lock().unwrap();
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Transferring".to_string();
         }
+        s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
     let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
     
-    let mut file = File::open(file_path).await?;
+    let mut file = File::open(&file_path).await?;
     let mut buffer = [0u8; 16384];
     let mut bytes_sent = 0u64;
     let mut last_emit = Instant::now();
+    let mut transfer_success = true;
     
     loop {
-        let n = file.read(&mut buffer).await?;
+        let n = tokio::select! {
+            n_res = file.read(&mut buffer) => {
+                match n_res {
+                    Ok(val) => val,
+                    Err(_) => {
+                        transfer_success = false;
+                        break;
+                    }
+                }
+            }
+            _ = &mut cancel_rx => {
+                transfer_success = false;
+                break;
+            }
+        };
+        
         if n == 0 {
             break;
         }
-        tx.write_all(&buffer[..n]).await?;
+        
+        if let Err(_) = tx.write_all(&buffer[..n]).await {
+            transfer_success = false;
+            break;
+        }
+        
         bytes_sent += n as u64;
         
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_sent == size {
@@ -419,6 +854,30 @@ async fn run_outgoing_transfer(
             let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), bytes_sent));
             last_emit = Instant::now();
         }
+    }
+    
+    // Clean up cancellation handle
+    {
+        let mut s = state.lock().unwrap();
+        s.cancel_txs.remove(&transfer_id);
+    }
+    
+    // Clean up temp file
+    if is_temp {
+        let _ = tokio::fs::remove_file(&file_path).await;
+    }
+    
+    if !transfer_success || bytes_sent < size {
+        {
+            let mut s = state.lock().unwrap();
+            if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                if t.status != "Cancelled" {
+                    t.status = "Failed".to_string();
+                }
+            }
+        }
+        let _ = app_handle.emit("transfer_failed", transfer_id);
+        return Ok(());
     }
     
     {
@@ -441,17 +900,48 @@ pub async fn start_file_transfer(
     state: State<'_, SharedTransferState>,
 ) -> Result<String, String> {
     let path = PathBuf::from(&file_path);
-    if !path.is_file() {
-        return Err("Provided path is not a file".to_string());
+    if !path.exists() {
+        return Err("Provided path does not exist".to_string());
     }
     
-    let filename = path.file_name()
+    let mut is_temp = false;
+    let mut final_path = path.clone();
+    let mut filename = path.file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown_file".to_string());
         
-    let size = match tokio::fs::metadata(&path).await {
+    if path.is_dir() {
+        is_temp = true;
+        filename = format!("{}.tar", filename);
+        
+        let tar_dir = std::env::temp_dir().join("neurodeck_tar");
+        let _ = std::fs::create_dir_all(&tar_dir);
+        let tar_path = tar_dir.join(format!("dir-{}-{}.tar", Utc::now().timestamp(), rand::thread_rng().gen_range(1000..9999)));
+        
+        let dir_to_tar = path.clone();
+        let tar_path_clone = tar_path.clone();
+        
+        // Spawn blocking compression
+        tokio::task::spawn_blocking(move || {
+            let file = std::fs::File::create(&tar_path_clone)?;
+            let mut ar = tar::Builder::new(file);
+            ar.append_dir_all(".", &dir_to_tar)?;
+            ar.finish()?;
+            Ok::<(), std::io::Error>(())
+        }).await.map_err(|e| format!("Archiver thread failed: {}", e))?
+          .map_err(|e| format!("Failed to create tar archive: {}", e))?;
+          
+        final_path = tar_path;
+    }
+    
+    let size = match tokio::fs::metadata(&final_path).await {
         Ok(meta) => meta.len(),
-        Err(e) => return Err(format!("Failed to read file size: {}", e)),
+        Err(e) => {
+            if is_temp {
+                let _ = tokio::fs::remove_file(&final_path).await;
+            }
+            return Err(format!("Failed to read file size: {}", e));
+        }
     };
     
     let transfer_id = format!("{}-{}", Utc::now().timestamp(), rand::thread_rng().gen_range(1000..9999));
@@ -467,23 +957,53 @@ pub async fn start_file_transfer(
         peer_name: "".to_string(),
     };
     
+    let (is_warpinator, peer_port) = {
+        let s = state.0.lock().unwrap();
+        s.peers.get(&peer_ip).map(|(p, _)| (p.is_warpinator, p.port)).unwrap_or((false, 18338))
+    };
+
     {
         let mut s = state.0.lock().unwrap();
         let peer_name = s.peers.get(&peer_ip).map(|(p, _)| p.hostname.clone()).unwrap_or_else(|| "Unknown Peer".to_string());
         let mut t = transfer.clone();
         t.peer_name = peer_name;
         s.transfers.insert(transfer_id.clone(), t);
+        s.outgoing_paths.insert(transfer_id.clone(), final_path.clone());
     }
     
-    let state_inner = state.0.clone();
-    let app_handle_inner = app_handle.clone();
-    let transfer_id_clone = transfer_id.clone();
-    
-    tauri::async_runtime::spawn(async move {
-        if let Err(e) = run_outgoing_transfer(transfer_id_clone, peer_ip, path, filename, size, app_handle_inner, state_inner).await {
-            println!("Outgoing transfer error: {}", e);
-        }
-    });
+    if is_warpinator {
+        let callbacks = Arc::new(STermWarpinatorCallbacks {
+            app_handle: app_handle.clone(),
+            state: state.0.clone(),
+        });
+        let peer_ip_clone = peer_ip.clone();
+        let transfer_id_clone = transfer_id.clone();
+        let filename_clone = filename.clone();
+        
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = neurodeck_infrastructure::warpinator::send_file_to_warpinator_peer(
+                &peer_ip_clone,
+                peer_port,
+                &transfer_id_clone,
+                &filename_clone,
+                size,
+                callbacks.clone(),
+            ).await {
+                println!("Failed to send file to Warpinator peer: {:?}", e);
+                callbacks.on_transfer_failed(&transfer_id_clone);
+            }
+        });
+    } else {
+        let state_inner = state.0.clone();
+        let app_handle_inner = app_handle.clone();
+        let transfer_id_clone = transfer_id.clone();
+        
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = run_outgoing_transfer(transfer_id_clone, peer_ip, final_path, filename, size, app_handle_inner, state_inner, is_temp).await {
+                println!("Outgoing transfer error: {}", e);
+            }
+        });
+    }
     
     Ok(transfer_id)
 }
@@ -517,4 +1037,77 @@ pub fn get_active_transfers(
 ) -> Vec<FileTransfer> {
     let s = state.0.lock().unwrap();
     s.transfers.values().cloned().collect()
+}
+
+#[tauri::command]
+pub fn cancel_transfer(
+    transfer_id: String,
+    state: State<'_, SharedTransferState>,
+) -> Result<(), String> {
+    let mut s = state.0.lock().unwrap();
+    if let Some(tx) = s.cancel_txs.remove(&transfer_id) {
+        let _ = tx.send(());
+        if let Some(t) = s.transfers.get_mut(&transfer_id) {
+            t.status = "Cancelled".to_string();
+        }
+        Ok(())
+    } else {
+        if let Some(tx) = s.accept_txs.remove(&transfer_id) {
+            let _ = tx.send(false);
+            if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                t.status = "Cancelled".to_string();
+            }
+            Ok(())
+        } else {
+            Err("No active or pending transfer found to cancel".to_string())
+        }
+    }
+}
+
+#[tauri::command]
+pub fn set_group_code(
+    code: String,
+    state: State<'_, SharedTransferState>,
+) -> Result<(), String> {
+    let mut s = state.0.lock().unwrap();
+    s.group_code = code.trim().to_string();
+    
+    if let Some(ref mdns) = s.mdns_daemon {
+        let local_hostname = get_hostname();
+        let instance_name = format!("neurodeck-{}", local_hostname);
+        let service_type = "_neurodeck._tcp.local.";
+        let host_name = format!("{}.local.", local_hostname.replace(" ", "-"));
+        let port = 18338;
+        
+        let fullname = format!("{}.{}", instance_name, service_type);
+        let _ = mdns.unregister(&fullname);
+        
+        let mut properties = HashMap::new();
+        properties.insert("hostname".to_string(), local_hostname.clone());
+        properties.insert("os".to_string(), get_os_name());
+        properties.insert("group_code".to_string(), s.group_code.clone());
+        
+        if let Ok(service_info) = ServiceInfo::new(
+            service_type,
+            &instance_name,
+            &host_name,
+            "0.0.0.0",
+            port,
+            Some(properties),
+        ) {
+            let _ = mdns.register(service_info);
+            println!("mDNS Peer re-registered with group code: {}", s.group_code);
+        }
+    }
+    
+    s.peers.clear();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_group_code(
+    state: State<'_, SharedTransferState>,
+) -> Result<String, String> {
+    let s = state.0.lock().unwrap();
+    Ok(s.group_code.clone())
 }

@@ -1,3 +1,23 @@
+import { state } from './state.js';
+import { 
+    updateMuteButtonUI, toggleMute, refreshSessionsList, 
+    loadSession, startNewSession, formatCodeBlocks, appendLineToTerminal, 
+    finishRunningProcess, runLuaScript, sendMessage, initChat 
+} from './chat.js';
+import { 
+    initCanvasView, initCanvasCollab, loadCanvasCode, initCanvas 
+} from './canvas.js';
+import { 
+    initSettings, applySettings, toggleSettingsLlmGroups, initSettingsSidebar 
+} from './settings.js';
+import { 
+    initPtyTerminal, initSshTerminal, connectSsh, 
+    initSshProfilesFromDisk, renderSshProfiles, renderSshProfilesSettings, 
+    initFtpProfilesFromDisk, renderFtpProfiles, renderFtpProfilesSettings, 
+    initSftpProfilesFromDisk, renderSftpProfiles, renderSftpProfilesSettings, 
+    initFtpSftpDragDrop, createTerminalSession, initTerminal 
+} from './terminal.js';
+
 import './style.css';
 import './app.css';
 
@@ -1944,12 +1964,18 @@ document.querySelector('#app').innerHTML = `
                                 <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Warning</label><input type="color" id="ct-warning" value="#FFB000" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
                                 <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Error</label><input type="color" id="ct-error" value="#FF3C5A" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
                             </div>
-                            <div id="ct-preview" style="height:16px;border-radius:6px;margin-bottom:10px;display:flex;overflow:hidden;">
-                                <div id="ct-preview-bg" style="flex:2;background:#050505;"></div>
-                                <div id="ct-preview-accent" style="flex:1;background:#00F0FF;"></div>
-                                <div id="ct-preview-response" style="flex:1;background:#00FF88;"></div>
-                                <div id="ct-preview-warning" style="flex:0.5;background:#FFB000;"></div>
-                                <div id="ct-preview-error" style="flex:0.5;background:#FF3C5A;"></div>
+                            <div id="theme-viewport-preview" class="theme-viewport-preview">
+                                <div class="tvp-bg-layer" id="tvp-bg-layer"></div>
+                                <div class="tvp-header">
+                                    <span class="tvp-dot"></span><span class="tvp-dot"></span><span class="tvp-dot"></span>
+                                </div>
+                                <div class="tvp-body">
+                                    <div class="tvp-message user-msg">Hello, AI. Check systems.</div>
+                                    <div class="tvp-message ai-msg">System initialized. Memory online.</div>
+                                    <div class="tvp-terminal-line"><span class="tvp-prompt">neuro@deck:~$</span> <span class="tvp-cmd">./start_core.sh</span></div>
+                                    <div class="tvp-warning" style="margin-top:2px;">[Warn] Node latency high</div>
+                                    <div class="tvp-error">[Fail] Uplink dropped</div>
+                                </div>
                             </div>
                             <button class="stv-btn-primary" id="ct-save-btn" style="width:100%;justify-content:center;">Save Theme</button>
                             <div id="ct-status" class="stv-status-line"></div>
@@ -2291,7 +2317,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="sidebar-toggle-btn" id="close-notif-x">✕</button>
                 </div>
                 <div class="settings-modal-content" style="max-height: 350px; overflow-y: auto;" id="notif-list-container">
-                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications.</div>
+                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No state.notifications.</div>
                 </div>
                 <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
                     <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
@@ -2351,16 +2377,26 @@ const LIVE_BACKGROUNDS = [
 ];
 
 const STATIC_BACKGROUNDS = [
-    { id: "cyber-alley", name: "Neo-Tokyo Alley", url: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1920", desc: "Moody cyberpunk night street neon lights" },
-    { id: "sci-fi-hud", name: "Tactical HUD", url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=1920", desc: "Glowing interface telemetry blueprint" },
-    { id: "cyber-sun", name: "Synthwave Sunset", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920", desc: "Neon-pink and cyan liquid sun abstract" },
-    { id: "deep-nebula", name: "Helix Nebula", url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1920", desc: "Cosmic colors and stars in deep space" },
-    { id: "liquid-metal", name: "Fluid Mercury", url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=1920", desc: "Liquid glass and colorful chrome refract" },
-    { id: "neon-grid", name: "Neon Mesh", url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1920", desc: "Bright abstract cyber grid wires" },
-    { id: "green-circuit", name: "Cyber Board", url: "https://images.unsplash.com/photo-1601987177651-8edfe6c20009?q=80&w=1920", desc: "Glowing circuit nodes macro shot" },
-    { id: "datacenter", name: "Server Terminal", url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1920", desc: "Faint rack LEDs in dark server corridor" },
-    { id: "mech-bay", name: "Industrial Deck", url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1920", desc: "Heavy mechanical structural framing" },
-    { id: "cyber-rain", name: "Code Grid", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920", desc: "Abstract green terminal data streams" },
+    { id: "hq-1", name: "Nebula Core", url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=100&w=2560", desc: "Ultra HD cosmic nebula" },
+    { id: "hq-2", name: "Neon District", url: "https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=100&w=2560", desc: "Cyberpunk city street at night" },
+    { id: "hq-3", name: "Abstract Fluid", url: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=100&w=2560", desc: "Dark liquid metal and glass" },
+    { id: "hq-4", name: "Quantum Chip", url: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=100&w=2560", desc: "Macro shot of illuminated processor" },
+    { id: "hq-5", name: "Data Center", url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=100&w=2560", desc: "Endless rows of glowing servers" },
+    { id: "hq-6", name: "Vaporwave Sun", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=100&w=2560", desc: "Retrowave sunset over digital grid" },
+    { id: "hq-7", name: "Deep Ocean Base", url: "https://images.unsplash.com/photo-1682687982501-1e5898cb4693?q=100&w=2560", desc: "Submerged metallic structures" },
+    { id: "hq-8", name: "Hexagon Matrix", url: "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=100&w=2560", desc: "Glowing geometric hex patterns" },
+    { id: "hq-9", name: "Cyber Samurai", url: "https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=100&w=2560", desc: "Neon kanji and rain reflections" },
+    { id: "hq-10", name: "Fractal Glass", url: "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=100&w=2560", desc: "Shattered glowing 3D glass" },
+    { id: "hq-11", name: "Aurora Night", url: "https://images.unsplash.com/photo-1531366936337-7c912a454b07?q=100&w=2560", desc: "Vivid northern lights over dark silhouette" },
+    { id: "hq-12", name: "Dark Marble", url: "https://images.unsplash.com/photo-1600821034455-ee53151b7ea7?q=100&w=2560", desc: "Premium black marble texture" },
+    { id: "hq-13", name: "Synth Wave", url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=100&w=2560", desc: "Abstract colorful vector waves" },
+    { id: "hq-14", name: "Void Horizon", url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=100&w=2560", desc: "Earth curve from orbit at night" },
+    { id: "hq-15", name: "Neon Flora", url: "https://images.unsplash.com/photo-1500829243541-74b676404532?q=100&w=2560", desc: "Bioluminescent jungle leaves" },
+    { id: "hq-16", name: "Code Rain", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=100&w=2560", desc: "Classic green hacker terminal" },
+    { id: "hq-17", name: "Fiber Optics", url: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=100&w=2560", desc: "Macro glowing fiber strands" },
+    { id: "hq-18", name: "Galactic Core", url: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=100&w=2560", desc: "Stunning star cluster" },
+    { id: "hq-19", name: "Dark Carbon", url: "https://images.unsplash.com/photo-1596700547143-69024f2b9bf2?q=100&w=2560", desc: "Carbon fiber sleek material" },
+    { id: "hq-20", name: "Laser Grid", url: "https://images.unsplash.com/photo-1550684376-efcbd6e3f031?q=100&w=2560", desc: "Retro 80s 3D laser landscape" }
 ];
 
 class LiveBackgroundManager {
@@ -2957,6 +2993,22 @@ function renderBackgroundGallery() {
                 bgUrlInput.value = url;
             }
             localStorage.setItem("bgUrl", url);
+            
+            // Update the miniature preview viewport background
+            const tvpBgLayer = document.getElementById("tvp-bg-layer");
+            if (tvpBgLayer) {
+                if (isLive) {
+                    tvpBgLayer.style.backgroundImage = "none";
+                    tvpBgLayer.style.backgroundColor = bg.preview || "#050505";
+                } else if (bg.url) {
+                    tvpBgLayer.style.backgroundColor = "transparent";
+                    tvpBgLayer.style.backgroundImage = `url('${bg.url}')`;
+                } else {
+                    tvpBgLayer.style.backgroundImage = "none";
+                    tvpBgLayer.style.backgroundColor = "transparent";
+                }
+            }
+
             applySettings();
         };
 
@@ -2997,352 +3049,53 @@ function renderBackgroundGallery() {
             liveContainer.style.display = "none";
         };
     }
-}
 
-// ==========================================================================
-// SETTINGS AND PERSISTENCE IMPLEMENTATION
-// ==========================================================================
-function applySettings() {
-    // 1. Font Style
-    const font = localStorage.getItem("selectedFont") || "inter";
-    const fontSelect = document.getElementById("font-select");
-    if (fontSelect) fontSelect.value = font;
-    const fontClasses = ["font-inter", "font-outfit", "font-jetbrains", "font-vt323", "font-sharetech", "font-orbitron", "font-pressstart"];
-    fontClasses.forEach(cls => document.body.classList.remove(cls));
-    document.body.classList.add(`font-${font}`);
+    // --- Theme Viewport Preview Color Wiring ---
+    function updateThemePreview() {
+        const tvpPreview = document.getElementById("theme-viewport-preview");
+        if (!tvpPreview) return;
+        const bg = document.getElementById("ct-bg")?.value || "#050505";
+        const fg = document.getElementById("ct-fg")?.value || "#D9F7FF";
+        const accent = document.getElementById("ct-accent")?.value || "#00F0FF";
+        const response = document.getElementById("ct-response")?.value || "#00FF88";
+        const warning = document.getElementById("ct-warning")?.value || "#FFB000";
+        const error = document.getElementById("ct-error")?.value || "#FF3C5A";
 
-    // 2. Custom Background URL & Live backgrounds setup
-    const bgUrl = localStorage.getItem("bgUrl") || "";
-    const bgUrlInput = document.getElementById("bg-url-input");
-    if (bgUrlInput) bgUrlInput.value = bgUrl;
-
-    const bgImgEl = document.getElementById("app-background-image");
-    const opacityValStr = localStorage.getItem("bgOpacity");
-    const opacity = opacityValStr !== null ? parseInt(opacityValStr, 10) : 10;
-    
-    const bgOpacitySlider = document.getElementById("bg-opacity-slider");
-    if (bgOpacitySlider) bgOpacitySlider.value = opacity;
-    const bgOpacityVal = document.getElementById("bg-opacity-val");
-    if (bgOpacityVal) bgOpacityVal.innerText = `${opacity}%`;
-
-    if (bgUrl.startsWith("live:")) {
-        const liveType = bgUrl.substring(5);
-        if (bgImgEl) {
-            bgImgEl.style.backgroundImage = "none";
-            bgImgEl.style.opacity = "0";
-        }
-        if (window.liveBgManager) {
-            window.liveBgManager.start(liveType);
-        }
-    } else {
-        if (window.liveBgManager) {
-            window.liveBgManager.stop();
-        }
-        if (bgImgEl) {
-            if (bgUrl) {
-                bgImgEl.style.backgroundImage = `url('${bgUrl}')`;
-                bgImgEl.style.opacity = (opacity / 100).toString();
-            } else {
-                bgImgEl.style.backgroundImage = "none";
-                bgImgEl.style.opacity = "0";
-            }
-        }
+        tvpPreview.style.setProperty("--preview-bg", bg);
+        tvpPreview.style.setProperty("--preview-fg", fg);
+        tvpPreview.style.setProperty("--preview-accent", accent);
+        tvpPreview.style.setProperty("--preview-response", response);
+        tvpPreview.style.setProperty("--preview-warning", warning);
+        tvpPreview.style.setProperty("--preview-error", error);
     }
 
-    // Highlight active card in gallery
-    document.querySelectorAll(".bg-gallery-card").forEach(c => {
-        const cardId = c.getAttribute("data-id");
-        const cardUrl = c.getAttribute("data-url");
-        let isActive = false;
-        if (bgUrl.startsWith("live:")) {
-            const liveType = bgUrl.substring(5);
-            isActive = (cardId === liveType && (cardUrl === null || cardUrl === undefined));
-        } else {
-            if (!bgUrl) {
-                isActive = (!cardUrl && !cardId);
-            } else {
-                isActive = (cardUrl === bgUrl);
-            }
-        }
-        if (isActive) {
-            c.classList.add("active");
-        } else {
-            c.classList.remove("active");
-        }
+    const colorInputs = ["ct-bg", "ct-fg", "ct-accent", "ct-response", "ct-warning", "ct-error"];
+    colorInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", updateThemePreview);
     });
-
-    // 4. CRT Scanlines (default to false / disabled for "remove crt animation")
-    const scanlinesStr = localStorage.getItem("scanlinesEnabled");
-    const scanlines = scanlinesStr === "true"; // default false
-    const scanlinesToggle = document.getElementById("scanlines-toggle");
-    if (scanlinesToggle) scanlinesToggle.checked = scanlines;
-    if (scanlines) {
-        document.body.classList.remove("crt-scanlines-disabled");
-    } else {
-        document.body.classList.add("crt-scanlines-disabled");
-    }
-
-    // 5. CRT Flicker (default to false / disabled for "remove crt animation")
-    const flickerStr = localStorage.getItem("flickerEnabled");
-    const flicker = flickerStr === "true"; // default false
-    const flickerToggle = document.getElementById("flicker-toggle");
-    if (flickerToggle) flickerToggle.checked = flicker;
-    if (flicker) {
-        document.body.classList.remove("crt-flicker-disabled");
-    } else {
-        document.body.classList.add("crt-flicker-disabled");
-    }
-
-    // 6. Terminal Shell
-    const shell = localStorage.getItem("selectedShell") || "default";
-    const shellSelect = document.getElementById("shell-select");
-    if (shellSelect) shellSelect.value = shell;
-
-    const customShell = localStorage.getItem("customShell") || "";
-    const customShellInput = document.getElementById("custom-shell-input");
-    if (customShellInput) customShellInput.value = customShell;
-
-    const customShellGroup = document.getElementById("custom-shell-group");
-    if (customShellGroup) {
-        customShellGroup.style.display = shell === "custom" ? "block" : "none";
-    }
-
-    // 7. Terminal Font Size
-    const fontSizeValStr = localStorage.getItem("terminalFontSize");
-    const fontSize = fontSizeValStr !== null ? parseInt(fontSizeValStr, 10) : 14;
-    const termFontSizeSlider = document.getElementById("term-fontsize-slider");
-    if (termFontSizeSlider) termFontSizeSlider.value = fontSize;
-    const termFontSizeVal = document.getElementById("term-fontsize-val");
-    if (termFontSizeVal) termFontSizeVal.innerText = `${fontSize}px`;
-    if (window.ptyTerminal) {
-        window.ptyTerminal.options.fontSize = fontSize;
-        if (window.ptyTerminalFitAddon) {
-            try {
-                window.ptyTerminalFitAddon.fit();
-            } catch (e) {
-                console.warn("Could not refit terminal:", e);
-            }
-        }
-    }
-
-    // 8. Terminal Scrollback Limit
-    const scrollbackValStr = localStorage.getItem("terminalScrollback");
-    const scrollback = scrollbackValStr !== null ? parseInt(scrollbackValStr, 10) : 2000;
-    const termScrollbackInput = document.getElementById("term-scrollback-input");
-    if (termScrollbackInput) termScrollbackInput.value = scrollback;
-    if (window.ptyTerminal) {
-        window.ptyTerminal.options.scrollback = scrollback;
-    }
+    // Initial sync
+    updateThemePreview();
 }
 
-// Render background gallery elements dynamically
-renderBackgroundGallery();
-
-// Initial application of settings on startup
-applySettings();
-
-// Focus the main input
-document.getElementById("user-input").focus();
-
-// Event listeners for settings controls
-document.getElementById("font-select").onchange = function() {
-    localStorage.setItem("selectedFont", this.value);
-    applySettings();
-};
-
-document.getElementById("bg-url-input").oninput = function() {
-    localStorage.setItem("bgUrl", this.value);
-    applySettings();
-};
-
-document.getElementById("bg-opacity-slider").oninput = function() {
-    localStorage.setItem("bgOpacity", this.value);
-    applySettings();
-};
-
-document.getElementById("scanlines-toggle").onchange = function() {
-    localStorage.setItem("scanlinesEnabled", this.checked ? "true" : "false");
-    applySettings();
-};
-
-document.getElementById("flicker-toggle").onchange = function() {
-    localStorage.setItem("flickerEnabled", this.checked ? "true" : "false");
-    applySettings();
-};
-
-document.getElementById("shell-select").onchange = function() {
-    localStorage.setItem("selectedShell", this.value);
-    applySettings();
-};
-
-function toggleSettingsLlmGroups(provider) {
-    const geminiGroup = document.getElementById("settings-gemini-group");
-    const ollamaGroup = document.getElementById("settings-ollama-group");
-    const ollamaLabel = document.getElementById("stv-ollama-label");
-    const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
-    if (provider === "gemini") {
-        if (geminiGroup) geminiGroup.style.display = "block";
-        if (ollamaGroup) ollamaGroup.style.display = "none";
-        if (ollamaLabel) ollamaLabel.style.display = "none";
-        if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
-    } else {
-        if (geminiGroup) geminiGroup.style.display = "none";
-        if (ollamaGroup) ollamaGroup.style.display = "block";
-        if (ollamaLabel) ollamaLabel.style.display = "block";
-        if (ollamaModelsSec) {
-            ollamaModelsSec.style.display = "block";
-            refreshOllamaModels();
-        }
-    }
-}
-
-document.getElementById("llm-provider-select")?.addEventListener("change", function() {
-    toggleSettingsLlmGroups(this.value);
-});
-
-document.getElementById("settings-test-connection-btn")?.addEventListener("click", () => {
-    const provider = document.getElementById("llm-provider-select")?.value;
-    const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
-    const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
-    const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
-    const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
-
-    const statusEl = document.getElementById("settings-llm-status");
-    if (statusEl) {
-        statusEl.style.color = "var(--accent-color)";
-        statusEl.innerText = "Connecting & testing...";
-    }
-
-    const model = provider === "gemini" ? geminiModel : ollamaModel;
-    const url = provider === "gemini" ? "" : ollamaUrl;
-
-    invoke("test_llm_connection", { provider, model, url, key: geminiKey })
-        .then(res => {
-            if (statusEl) {
-                statusEl.style.color = "var(--response-color)";
-                statusEl.innerText = res;
-            }
-        })
-        .catch(err => {
-            if (statusEl) {
-                statusEl.style.color = "var(--error-color)";
-                statusEl.innerText = `Error: ${err}`;
-            }
-        });
-});
-
-document.getElementById("settings-save-llm-btn")?.addEventListener("click", () => {
-    const provider = document.getElementById("llm-provider-select")?.value;
-    const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
-    const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
-    const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
-    const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
-
-    const statusEl = document.getElementById("settings-llm-status");
-    if (statusEl) {
-        statusEl.style.color = "var(--accent-color)";
-        statusEl.innerText = "Applying changes...";
-    }
-
-    const saveKeyPromise = geminiKey 
-        ? invoke("save_gemini_api_key", { key: geminiKey })
-        : Promise.resolve();
-
-    saveKeyPromise
-        .then(() => invoke("set_config", { key: "llm.default_provider", value: provider }))
-        .then(() => invoke("set_config", { key: "llm.gemini_model", value: geminiModel }))
-        .then(() => invoke("set_config", { key: "llm.ollama_base_url", value: ollamaUrl }))
-        .then(() => invoke("set_config", { key: "llm.ollama_model", value: ollamaModel }))
-        .then(() => {
-            if (statusEl) {
-                statusEl.style.color = "var(--response-color)";
-                statusEl.innerText = "Config updated and applied!";
-            }
-            const activeModelName = provider === "gemini" ? geminiModel : ollamaModel;
-            document.getElementById("model-name").innerText = `[ MODEL: ${activeModelName.toUpperCase()} ]`;
-            
-            if (typeof updateContextDrawer === "function") {
-                updateContextDrawer();
-            }
-        })
-        .catch(err => {
-            if (statusEl) {
-                statusEl.style.color = "var(--error-color)";
-                statusEl.innerText = `Save error: ${err}`;
-            }
-        });
-});
 
 
-// Shell Switcher (terminal top bar)
-document.querySelectorAll(".term-shell-btn").forEach(pill => {
-    pill.onclick = function() {
-        const shell = this.getAttribute("data-shell");
-        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
-        this.classList.add("active");
-        localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
-        // Also sync the settings dropdown
-        const shellSelect = document.getElementById("shell-select");
-        if (shellSelect) {
-            const option = shellSelect.querySelector(`option[value="${shell}"]`);
-            if (option) shellSelect.value = shell;
-        }
-        // Update shell for the active session and restart it
-        if (activeTerminalSessionId) {
-            const session = terminalSessions.find(s => s.id === activeTerminalSessionId);
-            if (session) {
-                session.shell = shell === "default" ? null : shell;
-                restartTerminalSession(activeTerminalSessionId);
-            }
-        }
-    };
-});
-
-// Sync shell buttons on load
-(function syncShellPills() {
-    const saved = localStorage.getItem("selectedShell") || "default";
-    const pill = document.querySelector(`.term-shell-btn[data-shell="${saved}"]`);
-    if (pill) {
-        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
-        pill.classList.add("active");
-    }
-})();
-
-document.getElementById("custom-shell-input").oninput = function() {
-    localStorage.setItem("customShell", this.value);
-    applySettings();
-};
-
-document.getElementById("term-fontsize-slider").oninput = function() {
-    localStorage.setItem("terminalFontSize", this.value);
-    applySettings();
-};
-
-document.getElementById("term-scrollback-input").oninput = function() {
-    localStorage.setItem("terminalScrollback", this.value);
-    applySettings();
-};
-
-
+/* --- SEPARATOR --- */
 
 // ==========================================================================
 // STEAM DECK CONTROLLER (GAMEPAD API) INPUT WIRING
 // ==========================================================================
-let gamepadActive = false;
-let gamepadFocusIndex = -1;
-let previousGamepadState = {
-    buttons: Array(32).fill(false),
-    l2Held: false,
-    r2Held: false,
-};
+// let gamepadActive = false; (Moved to state.js)
+// let gamepadFocusIndex = -1; (Moved to state.js)
+// Removed state.previousGamepadState multiline declaration (moved to state.js)
 
 // Sprint C — Touchpad cursor state
-let tpCursorX = 640; // Start at screen center (1280/2)
-let tpCursorY = 400; // Start at screen center (800/2)
-let tpCursorVisible = false;
-let tpCursorHideTimer = null;
-let tpScrollVisible = false;
-let tpScrollHideTimer = null;
+// let tpCursorX = 640; (Moved to state.js) // Start at screen center (1280/2)
+// let tpCursorY = 400; (Moved to state.js) // Start at screen center (800/2)
+// let tpCursorVisible = false; (Moved to state.js)
+// let tpCursorHideTimer = null; (Moved to state.js)
+// let tpScrollVisible = false; (Moved to state.js)
+// let tpScrollHideTimer = null; (Moved to state.js)
 const TP_SENSITIVITY   = 9;   // pixels per frame per axis unit
 const TP_DEADZONE      = 0.06; // ignore jitter below this magnitude
 const TP_SCROLL_SPEED  = 14;  // pixels per frame for left-stick scroll
@@ -3363,25 +3116,25 @@ function initTouchpadCursorDOM() {
 initTouchpadCursorDOM();
 
 function moveTpCursor(dx, dy) {
-    tpCursorX = Math.max(0, Math.min(window.innerWidth  - 1, tpCursorX + dx));
-    tpCursorY = Math.max(0, Math.min(window.innerHeight - 1, tpCursorY + dy));
+    state.tpCursorX = Math.max(0, Math.min(window.innerWidth  - 1, state.tpCursorX + dx));
+    state.tpCursorY = Math.max(0, Math.min(window.innerHeight - 1, state.tpCursorY + dy));
     const el = document.getElementById("tp-cursor");
     if (el) {
-        el.style.left = tpCursorX + "px";
-        el.style.top  = tpCursorY + "px";
+        el.style.left = state.tpCursorX + "px";
+        el.style.top  = state.tpCursorY + "px";
         el.classList.add("tp-visible");
     }
-    tpCursorVisible = true;
-    clearTimeout(tpCursorHideTimer);
-    tpCursorHideTimer = setTimeout(() => {
+    state.tpCursorVisible = true;
+    clearTimeout(state.tpCursorHideTimer);
+    state.tpCursorHideTimer = setTimeout(() => {
         const c = document.getElementById("tp-cursor");
         if (c) c.classList.remove("tp-visible");
-        tpCursorVisible = false;
+        state.tpCursorVisible = false;
     }, TP_CURSOR_TIMEOUT);
 }
 
 function tpClick(button = 0) {
-    const el = document.elementFromPoint(tpCursorX, tpCursorY);
+    const el = document.elementFromPoint(state.tpCursorX, state.tpCursorY);
     if (!el) return;
     const cursor = document.getElementById("tp-cursor");
     if (cursor) {
@@ -3389,7 +3142,7 @@ function tpClick(button = 0) {
         setTimeout(() => cursor.classList.remove("tp-clicking"), 120);
     }
     // Dispatch full pointer/mouse/click event chain
-    const opts = { bubbles: true, cancelable: true, clientX: tpCursorX, clientY: tpCursorY, button };
+    const opts = { bubbles: true, cancelable: true, clientX: state.tpCursorX, clientY: state.tpCursorY, button };
     el.dispatchEvent(new PointerEvent("pointerdown", opts));
     el.dispatchEvent(new MouseEvent("mousedown",     opts));
     el.dispatchEvent(new PointerEvent("pointerup",   opts));
@@ -3417,21 +3170,21 @@ function showTpScrollIndicator(active) {
     if (!el) return;
     if (active) {
         el.classList.add("tp-visible");
-        clearTimeout(tpScrollHideTimer);
-        tpScrollHideTimer = setTimeout(() => {
+        clearTimeout(state.tpScrollHideTimer);
+        state.tpScrollHideTimer = setTimeout(() => {
             el.classList.remove("tp-visible");
-            tpScrollVisible = false;
+            state.tpScrollVisible = false;
         }, 1200);
-        tpScrollVisible = true;
+        state.tpScrollVisible = true;
     } else {
         el.classList.remove("tp-visible");
-        tpScrollVisible = false;
+        state.tpScrollVisible = false;
     }
 }
 
 // Radial menu state
-let radialMenuVisible = false;
-let radialSelectedSegment = null;
+// let radialMenuVisible = false; (Moved to state.js)
+// let radialSelectedSegment = null; (Moved to state.js)
 
 // Controller Prompt Picker state (declared here so pollGamepads can reference it)
 
@@ -3452,7 +3205,7 @@ function getGamepadFocusableElements() {
     // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
     if (ctrlPromptVisible) return [];
 
-    // If notifications modal is open, focus only notif modal elements
+    // If state.notifications modal is open, focus only notif modal elements
     const notifModal = document.getElementById("notif-modal");
     if (notifModal && notifModal.classList.contains("active")) {
         const els = Array.from(notifModal.querySelectorAll("button"));
@@ -3574,19 +3327,19 @@ function updateGamepadFocus(index) {
     document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
     
     if (els.length === 0) {
-        gamepadFocusIndex = -1;
+        state.gamepadFocusIndex = -1;
         return;
     }
     
     if (index < 0) {
-        gamepadFocusIndex = els.length - 1;
+        state.gamepadFocusIndex = els.length - 1;
     } else if (index >= els.length) {
-        gamepadFocusIndex = 0;
+        state.gamepadFocusIndex = 0;
     } else {
-        gamepadFocusIndex = index;
+        state.gamepadFocusIndex = index;
     }
     
-    const target = els[gamepadFocusIndex];
+    const target = els[state.gamepadFocusIndex];
     if (target) {
         target.classList.add("gamepad-focused");
         target.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -3598,7 +3351,7 @@ function updateGamepadFocus(index) {
 
 document.addEventListener("mousedown", () => {
     document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
-    gamepadFocusIndex = -1;
+    state.gamepadFocusIndex = -1;
 });
 
 function initRadialMenu() {
@@ -3666,16 +3419,16 @@ function initRadialMenu() {
 function showRadialMenu() {
     const el = document.getElementById("radial-menu");
     if (el) el.classList.add("active");
-    radialMenuVisible = true;
-    radialSelectedSegment = null;
+    state.radialMenuVisible = true;
+    state.radialSelectedSegment = null;
     updateRadialDisplay(null);
 }
 
 function hideRadialMenu() {
     const el = document.getElementById("radial-menu");
     if (el) el.classList.remove("active");
-    radialMenuVisible = false;
-    radialSelectedSegment = null;
+    state.radialMenuVisible = false;
+    state.radialSelectedSegment = null;
 }
 
 function getRadialSegmentFromStick(x, y) {
@@ -3691,7 +3444,7 @@ function getRadialSegmentFromStick(x, y) {
 }
 
 function updateRadialDisplay(segIdx) {
-    radialSelectedSegment = segIdx;
+    state.radialSelectedSegment = segIdx;
 
     // Update slice highlights
     document.querySelectorAll(".radial-slice").forEach(slice => {
@@ -3734,20 +3487,20 @@ function pollGamepads() {
     }
 
     if (!gp) {
-        if (gamepadActive) {
-            gamepadActive = false;
+        if (state.gamepadActive) {
+            state.gamepadActive = false;
             document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
-            gamepadFocusIndex = -1;
+            state.gamepadFocusIndex = -1;
         }
         requestAnimationFrame(pollGamepads);
         return;
     }
 
-    gamepadActive = true;
+    state.gamepadActive = true;
 
     function buttonPressed(index) {
         const isPressed = gp.buttons[index] && gp.buttons[index].pressed;
-        const wasPressed = previousGamepadState.buttons[index];
+        const wasPressed = state.previousGamepadState.buttons[index];
         return isPressed && !wasPressed;
     }
 
@@ -3761,7 +3514,7 @@ function pollGamepads() {
             }
         } else {
             const els = getGamepadFocusableElements();
-            const activeEl = els[gamepadFocusIndex];
+            const activeEl = els[state.gamepadFocusIndex];
             if (activeEl) {
                 activeEl.click();
                 if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") {
@@ -3854,12 +3607,12 @@ function pollGamepads() {
 
     // Y Button (3) - Cycle active persona (blocked when prompt picker open)
     if (buttonPressed(3) && !ctrlPromptVisible) {
-        if (availablePersonas && availablePersonas.length > 0) {
-            const currentIdx = availablePersonas.indexOf(activePersona);
-            const nextIdx = (currentIdx + 1) % availablePersonas.length;
-            const nextPersona = availablePersonas[nextIdx];
+        if (state.availablePersonas && state.availablePersonas.length > 0) {
+            const currentIdx = state.availablePersonas.indexOf(state.activePersona);
+            const nextIdx = (currentIdx + 1) % state.availablePersonas.length;
+            const nextPersona = state.availablePersonas[nextIdx];
             invoke("set_persona", { name: nextPersona }).then((msg) => {
-                activePersona = nextPersona;
+                state.activePersona = nextPersona;
                 let chatViewport = document.getElementById("chat-viewport");
                 let viewport = document.getElementById("chat-workspace");
                 let div = document.createElement("div");
@@ -3906,7 +3659,7 @@ function pollGamepads() {
             }
             if (nextIdx !== activeTabIdx) {
                 tabs[nextIdx].click();
-                gamepadFocusIndex = -1;
+                state.gamepadFocusIndex = -1;
                 document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
             }
         }
@@ -3971,10 +3724,10 @@ function pollGamepads() {
                 profileItems[nextIdx].classList.add("gamepad-focused");
                 profileItems[nextIdx].scrollIntoView({ block: "nearest" });
             } else {
-                updateGamepadFocus(goUp ? gamepadFocusIndex - 1 : gamepadFocusIndex + 1);
+                updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
             }
         } else {
-            updateGamepadFocus(goUp ? gamepadFocusIndex - 1 : gamepadFocusIndex + 1);
+            updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
         }
     }
 
@@ -3991,7 +3744,7 @@ function pollGamepads() {
     // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
     if ((buttonPressed(14) || buttonPressed(15)) && !ctrlPromptVisible) {
         const els = getGamepadFocusableElements();
-        const activeEl = els[gamepadFocusIndex];
+        const activeEl = els[state.gamepadFocusIndex];
         const handled = activeEl && (() => {
             if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
                 let val = parseInt(activeEl.value, 10);
@@ -4023,7 +3776,7 @@ function pollGamepads() {
                     ? (activeTabIdx - 1 + tabs.length) % tabs.length
                     : (activeTabIdx + 1) % tabs.length;
                 tabs[nextIdx].click();
-                gamepadFocusIndex = -1;
+                state.gamepadFocusIndex = -1;
                 document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
             }
         }
@@ -4056,7 +3809,7 @@ function pollGamepads() {
     // === RADIAL MENU — L2 Trigger (button 6 / axis 5) ===
     const l2Raw = gp.buttons[6] ? gp.buttons[6].value : 0;
     const l2Held = l2Raw > 0.5;
-    const l2WasHeld = previousGamepadState.l2Held;
+    const l2WasHeld = state.previousGamepadState.l2Held;
 
     if (l2Held && !l2WasHeld) {
         // L2 just pressed — show radial
@@ -4066,12 +3819,12 @@ function pollGamepads() {
         const stickX = gp.axes[0] || 0;
         const stickY = gp.axes[1] || 0;
         const seg = getRadialSegmentFromStick(stickX, stickY);
-        if (seg !== radialSelectedSegment) {
+        if (seg !== state.radialSelectedSegment) {
             updateRadialDisplay(seg);
         }
     } else if (!l2Held && l2WasHeld) {
         // L2 just released — activate selected and close
-        activateRadialSegment(radialSelectedSegment);
+        activateRadialSegment(state.radialSelectedSegment);
         hideRadialMenu();
     }
 
@@ -4088,7 +3841,7 @@ function pollGamepads() {
     }
 
     // Right stick click (button[11] on Steam Deck) = click at cursor position
-    if (buttonPressed(11) && tpCursorVisible) {
+    if (buttonPressed(11) && state.tpCursorVisible) {
         tpClick(0);
     }
 
@@ -4108,10 +3861,10 @@ function pollGamepads() {
 
     // B button (1) — also hides VK and cursor if visible (already handled above for overlays,
     // but additionally dismiss cursor mode here)
-    if (buttonPressed(1) && tpCursorVisible) {
+    if (buttonPressed(1) && state.tpCursorVisible) {
         const c = document.getElementById("tp-cursor");
         if (c) c.classList.remove("tp-visible");
-        tpCursorVisible = false;
+        state.tpCursorVisible = false;
     }
 
     // B button — toggle virtual keyboard (when nothing else consumed B)
@@ -4124,9 +3877,9 @@ function pollGamepads() {
 
     // Sync button state for next frame
     for (let i = 0; i < gp.buttons.length; i++) {
-        previousGamepadState.buttons[i] = gp.buttons[i] && gp.buttons[i].pressed;
+        state.previousGamepadState.buttons[i] = gp.buttons[i] && gp.buttons[i].pressed;
     }
-    previousGamepadState.l2Held = l2Held;
+    state.previousGamepadState.l2Held = l2Held;
 
     requestAnimationFrame(pollGamepads);
 }
@@ -4165,27 +3918,27 @@ function cycleTheme() {
 
 window.addEventListener("gamepadconnected", (e) => {
     console.log("Gamepad connected:", e.gamepad.id);
-    previousGamepadState.buttons = Array(e.gamepad.buttons.length).fill(false);
+    state.previousGamepadState.buttons = Array(e.gamepad.buttons.length).fill(false);
 });
 
 requestAnimationFrame(pollGamepads);
 
-let currentSessionId = "";
-let activePersona = "Default";
-let availablePersonas = [];
-let isMuted = localStorage.getItem("isMuted") === "true";
-let currentAIMessage = null;
-let currentAIText = "";
+// let currentSessionId = ""; (Moved to state.js)
+// let activePersona = "Default"; (Moved to state.js)
+// let availablePersonas = []; (Moved to state.js)
+// let isMuted = localStorage.getItem("state.isMuted") === "true"; (Moved to state.js)
+// let currentAIMessage = null; (Moved to state.js)
+// let currentAIText = ""; (Moved to state.js)
 
-let isProcessRunning = false;
-let activeTerminalBody = null;
-let activeExecuteBtn = null;
-let pendingLuaScript = "";
+// let isProcessRunning = false; (Moved to state.js)
+// let activeTerminalBody = null; (Moved to state.js)
+// let activeExecuteBtn = null; (Moved to state.js)
+// let pendingLuaScript = ""; (Moved to state.js)
 
 // Analytics & Speed Indicators
-let streamStartTime = 0;
-let firstChunkTime = 0;
-let totalTokens = 0;
+// let streamStartTime = 0; (Moved to state.js)
+// let firstChunkTime = 0; (Moved to state.js)
+// let totalTokens = 0; (Moved to state.js)
 
 // Sidebar & Drawer Collapsing Event Listeners
 const sidebar = document.getElementById("sidebar");
@@ -4241,1164 +3994,18 @@ inspectCloseBtn.onclick = function() {
     inspectDrawer.classList.add("collapsed");
 };
 
-// Settings Modal Event Listeners
-const settingsOverlay = document.getElementById("settings-overlay");
-const settingsBtn = document.getElementById("settings-btn");
-const closeSettings = document.getElementById("close-settings");
-const closeSettingsX = document.getElementById("close-settings-x");
 
-// ── Apple TV sidebar nav ──────────────────────────────────────────────
-(function initSettingsSidebar() {
-    document.querySelectorAll(".stv-nav-item").forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll(".stv-nav-item").forEach(b => b.classList.remove("active"));
-            document.querySelectorAll(".settings-panel").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            const panel = document.getElementById(btn.dataset.panel);
-            if (panel) panel.classList.add("active");
-        };
-    });
-})();
 
-settingsBtn.onclick = function() {
-    settingsOverlay.classList.add("active");
-    
-    // Clear status text
-    const statusEl = document.getElementById("settings-llm-status");
-    if (statusEl) statusEl.innerText = "";
+// Expose main.js functions to global scope for submodules
+window.hideRadialMenu = hideRadialMenu;
+window.showRadialMenu = showRadialMenu;
+window.updateContextDrawer = updateContextDrawer;
+window.updateGameBadge = updateGameBadge;
+window.cycleTheme = cycleTheme;
 
-    // Load active LLM config and API key
-    Promise.all([
-        invoke("get_config"),
-        invoke("get_gemini_api_key")
-    ]).then(([config, apiKey]) => {
-        const providerSelect = document.getElementById("llm-provider-select");
-        const geminiKeyInput = document.getElementById("settings-gemini-key");
-        const geminiModelInput = document.getElementById("settings-gemini-model");
-        const ollamaUrlInput = document.getElementById("settings-ollama-url");
-        const ollamaModelInput = document.getElementById("settings-ollama-model");
 
-        if (providerSelect) providerSelect.value = config.llm.default_provider;
-        if (geminiKeyInput) geminiKeyInput.value = apiKey;
-        if (geminiModelInput) geminiModelInput.value = config.llm.gemini_model;
-        if (ollamaUrlInput) ollamaUrlInput.value = config.llm.ollama_base_url;
-        if (ollamaModelInput) ollamaModelInput.value = config.llm.ollama_model;
 
-        toggleSettingsLlmGroups(config.llm.default_provider);
-    }).catch(err => {
-        console.error("Error loading LLM config in settings:", err);
-    });
-
-    // Populate personas
-    if (typeof refreshSettingsPersonaDropdown === 'function') {
-        refreshSettingsPersonaDropdown();
-    }
-    
-    // Populate themes
-    invoke("get_themes").then((themes) => {
-        let select = document.getElementById("theme-select");
-        select.innerHTML = "";
-        let savedTheme = localStorage.getItem("selectedTheme");
-        themes.forEach((t) => {
-            let option = document.createElement("option");
-            option.value = t;
-            option.innerText = t;
-            if (t === savedTheme) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-    });
-    
-    renderSshProfilesSettings();
-    renderFtpProfilesSettings();
-    renderSftpProfilesSettings();
-    if (typeof loadPluginsList === 'function') {
-        loadPluginsList();
-    }
-    if (typeof loadCustomPersonas === 'function') {
-        loadCustomPersonas();
-    }
-    if (window._customThemes) {
-        window._customThemes.renderList();
-        window._customThemes.refreshThemeSelect();
-    }
-};
-
-closeSettings.onclick = function() {
-    settingsOverlay.classList.remove("active");
-};
-
-closeSettingsX.onclick = function() {
-    settingsOverlay.classList.remove("active");
-};
-
-// Auto-growing Textarea Logic
-const inputElement = document.getElementById("user-input");
-inputElement.addEventListener("input", function() {
-    this.style.height = "auto";
-    this.style.height = (this.scrollHeight) + "px";
-});
-
-function updateMuteButtonUI() {
-    let muteBtn = document.getElementById("mute-btn");
-    if (muteBtn) {
-        muteBtn.innerText = isMuted ? "🔇" : "🔊";
-        muteBtn.title = isMuted ? "Unmute Speech (Ctrl+M)" : "Mute Speech (Ctrl+M)";
-        if (isMuted) {
-            muteBtn.classList.add("muted");
-        } else {
-            muteBtn.classList.remove("muted");
-        }
-    }
-}
-
-function toggleMute() {
-    isMuted = !isMuted;
-    localStorage.setItem("isMuted", isMuted);
-    updateMuteButtonUI();
-    
-    let chatViewport = document.getElementById("chat-viewport");
-    let viewport = document.getElementById("chat-workspace");
-    let div = document.createElement("div");
-    div.className = "message system";
-    div.innerHTML = `
-        <div class="message-card">
-            System: Speech voice feedback is now ${isMuted ? "disabled (Muted)" : "enabled (Unmuted)"}.
-        </div>
-    `;
-    chatViewport.appendChild(div);
-    viewport.scrollTop = viewport.scrollHeight;
-}
-
-function cleanTextForSpeech(text) {
-    let clean = text.replace(/```[\s\S]*?```/g, "");
-    clean = clean.replace(/`[^`]+`/g, "");
-    clean = clean.replace(/[*_~#]/g, "");
-    clean = clean.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
-    return clean.trim();
-}
-
-// Send Message Handler
-function sendMessage() {
-    let text = inputElement.value.trim();
-    if (text === "") return;
-
-    if (text === "/login") {
-        inputElement.value = "";
-        inputElement.style.height = "36px";
-        triggerOAuthLogin();
-        return;
-    }
-
-    // Collect any pending screenshot attachment
-    const attachment = window.pendingScreenshot || null;
-
-    // Add message to viewport
-    let viewport = document.getElementById("chat-workspace");
-    let chatViewport = document.getElementById("chat-viewport");
-    let msg = document.createElement("div");
-    msg.className = "message user";
-
-    let attachmentHTML = '';
-    if (attachment) {
-        attachmentHTML = `<div style="margin-bottom:8px;"><img src="data:${attachment.mime};base64,${attachment.data}" style="max-width:160px;max-height:100px;border-radius:5px;border:1px solid rgba(0,240,255,0.3);display:block;" alt="Screenshot"></div>`;
-    }
-
-    msg.innerHTML = `
-        <div class="message-card">
-            ${attachmentHTML}${text}
-        </div>
-    `;
-    chatViewport.appendChild(msg);
-
-    // Create a placeholder for AI response
-    currentAIMessage = document.createElement("div");
-    currentAIMessage.className = "message ai thinking";
-    currentAIMessage.innerHTML = `
-        <div class="message-card">
-            <span class="thinking-dots">AI is thinking</span>
-        </div>
-    `;
-    chatViewport.appendChild(currentAIMessage);
-    
-    currentAIText = "";
-
-    // Reset analytics
-    streamStartTime = performance.now();
-    firstChunkTime = 0;
-    totalTokens = 0;
-    document.getElementById("latency-val").innerText = "--ms";
-    document.getElementById("token-speed").innerText = "--/s";
-
-    // Clear and reset input size
-    inputElement.value = "";
-    inputElement.style.height = "36px";
-
-    // Clear screenshot attachment
-    if (attachment) {
-        window.pendingScreenshot = null;
-        const bar = document.getElementById("chat-attachment-bar");
-        if (bar) {
-            bar.innerHTML = "";
-            bar.classList.add("hidden");
-        }
-        const btn = document.getElementById("screenshot-btn");
-        if (btn) btn.classList.remove("has-attachment");
-    }
-    
-    // Scroll workspace
-    viewport.scrollTop = viewport.scrollHeight;
-    
-    // Warn user if they attach a screenshot while Ollama is the active provider
-    if (attachment) {
-        const provSel = document.getElementById("llm-provider-select");
-        if (provSel && provSel.value === "ollama") {
-            const warn = document.createElement("div");
-            warn.className = "message system";
-            warn.innerHTML = `<div class="message-card" style="border-color:var(--warning-color)">
-                ⚠️ <strong>Vision not supported with Ollama.</strong>
-                The screenshot attachment will be ignored. Switch to Gemini in Settings to use vision.
-            </div>`;
-            chatViewport.appendChild(warn);
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    }
-
-    // Call Tauri backend — pass image data directly when a screenshot is attached
-    const invokeArgs = { prompt: text };
-    if (attachment) {
-        invokeArgs.imageBase64 = attachment.data;
-        invokeArgs.imageMime = attachment.mime;
-    }
-    invoke('send_command', invokeArgs).catch((err) => {
-        let errorMsg = document.createElement("div");
-        errorMsg.className = "message system error";
-        errorMsg.innerHTML = `
-            <div class="message-card">
-                <strong>Error:</strong> ${err}
-            </div>
-        `;
-        chatViewport.appendChild(errorMsg);
-        viewport.scrollTop = viewport.scrollHeight;
-        document.getElementById("tool-status").innerText = "Idle";
-    });
-    document.getElementById("tool-status").innerText = "Thinking...";
-}
-
-function updateInputConsoleState() {
-    const userInput = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
-    
-    if (isProcessRunning) {
-        userInput.placeholder = "[Terminal Executing...] Type input for process and press Enter (Ctrl+C to Terminate)";
-        userInput.classList.add("terminal-input-active");
-        if (sendBtn) {
-            sendBtn.querySelector("span:first-child").innerText = "Send In";
-            sendBtn.title = "Send Input to Process";
-        }
-    } else {
-        userInput.placeholder = "Enter command or type message...";
-        userInput.classList.remove("terminal-input-active");
-        if (sendBtn) {
-            sendBtn.querySelector("span:first-child").innerText = "Send";
-            sendBtn.title = "Send Message";
-        }
-    }
-}
-
-function sendProcessInput() {
-    let text = inputElement.value;
-    if (text === "") return;
-
-    invoke("write_to_process", { input: text }).then(() => {
-        appendLineToTerminal(`> ${text}`, false);
-    }).catch(err => {
-        appendLineToTerminal(`System error sending stdin: ${err}`, true);
-    });
-
-    inputElement.value = "";
-    inputElement.style.height = "36px";
-}
-
-function handleSendAction() {
-    if (isProcessRunning) {
-        sendProcessInput();
-    } else {
-        sendMessage();
-    }
-}
-
-function appendLineToTerminal(line, isError) {
-    if (!activeTerminalBody) return;
-    const lineSpan = document.createElement("div");
-    if (isError) {
-        lineSpan.style.color = "var(--error-color, #FF3C5A)";
-    }
-    lineSpan.innerText = line;
-    activeTerminalBody.appendChild(lineSpan);
-
-    // Auto-scroll the terminal body
-    activeTerminalBody.scrollTop = activeTerminalBody.scrollHeight;
-}
-
-function finishRunningProcess(code) {
-    isProcessRunning = false;
-    if (activeTerminalBody) {
-        activeTerminalBody.classList.remove("running");
-        const statusMsg = document.createElement("div");
-        statusMsg.style.marginTop = "8px";
-        statusMsg.style.opacity = "0.5";
-        statusMsg.style.borderTop = "1px solid rgba(255, 255, 255, 0.05)";
-        statusMsg.style.paddingTop = "4px";
-        statusMsg.innerText = `Process exited with code ${code}`;
-        activeTerminalBody.appendChild(statusMsg);
-        activeTerminalBody.scrollTop = activeTerminalBody.scrollHeight;
-    }
-    if (activeExecuteBtn) {
-        activeExecuteBtn.innerText = "Execute";
-        activeExecuteBtn.disabled = false;
-    }
-    document.getElementById("tool-status").innerText = "Idle";
-    updateInputConsoleState();
-}
-
-// Event listeners for send action
-inputElement.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSendAction();
-    }
-    if (isProcessRunning && e.ctrlKey && e.key === "c") {
-        e.preventDefault();
-        invoke("kill_process").catch(err => console.error("Error killing process:", err));
-    }
-});
-
-document.getElementById("send-btn").onclick = handleSendAction;
-
-// Custom Premium Markdown Code Header / Action Injection
-function formatCodeBlocks(container) {
-    const pres = container.querySelectorAll("pre");
-    pres.forEach(pre => {
-        if (pre.querySelector(".code-header-bar")) return;
-
-        const code = pre.querySelector("code");
-        if (!code) return;
-
-        let lang = "text";
-        code.classList.forEach(cls => {
-            if (cls.startsWith("language-")) {
-                lang = cls.replace("language-", "");
-            }
-        });
-
-        const header = document.createElement("div");
-        header.className = "code-header-bar";
-        
-        const label = document.createElement("span");
-        label.className = "code-lang-label";
-        label.innerText = lang;
-        header.appendChild(label);
-
-        const actions = document.createElement("div");
-        actions.className = "code-header-actions";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "code-header-btn copy-btn";
-        copyBtn.innerText = "Copy";
-        copyBtn.onclick = function() {
-            navigator.clipboard.writeText(code.innerText).then(() => {
-                copyBtn.innerText = "Copied!";
-                setTimeout(() => { copyBtn.innerText = "Copy"; }, 2000);
-            });
-        };
-        actions.appendChild(copyBtn);
-
-        // Send to Canvas button
-        const sendToCanvasBtn = document.createElement("button");
-        sendToCanvasBtn.className = "code-header-btn canvas-export-btn";
-        sendToCanvasBtn.innerText = "→ Canvas";
-        sendToCanvasBtn.onclick = function() {
-            const codeText = code.innerText;
-            window.neurodeckCanvas.loadCode(lang, codeText);
-            // Switch to canvas view
-            const canvasTab = document.querySelector('[data-view="canvas"]');
-            if (canvasTab) canvasTab.click();
-            sendToCanvasBtn.innerText = "Sent!";
-            setTimeout(() => { sendToCanvasBtn.innerText = "→ Canvas"; }, 2000);
-        };
-        actions.appendChild(sendToCanvasBtn);
-
-        const executableLangs = ["bash", "sh", "powershell", "cmd", "zsh", "shell"];
-        if (executableLangs.includes(lang.toLowerCase())) {
-            const execBtn = document.createElement("button");
-            execBtn.className = "code-header-btn execute-btn";
-            execBtn.innerText = "Execute";
-            execBtn.onclick = function() {
-                if (isProcessRunning) {
-                    invoke("kill_process").catch(e => console.error("Error killing process:", e));
-                }
-
-                execBtn.innerText = "Running...";
-                execBtn.disabled = true;
-                activeExecuteBtn = execBtn;
-
-                const cmd = code.innerText;
-
-                // Create terminal block immediately below the <pre> block
-                let existingTerm = pre.nextElementSibling;
-                if (existingTerm && existingTerm.classList.contains("terminal-console")) {
-                    existingTerm.remove();
-                }
-
-                const termConsole = document.createElement("div");
-                termConsole.className = "terminal-console";
-                termConsole.innerHTML = `
-                    <div class="terminal-console-header">
-                        <span>Terminal Output</span>
-                        <button class="terminal-terminate-btn">Terminate (Ctrl+C)</button>
-                    </div>
-                    <div class="terminal-console-body running"></div>
-                `;
-
-                pre.parentNode.insertBefore(termConsole, pre.nextSibling);
-                activeTerminalBody = termConsole.querySelector(".terminal-console-body");
-
-                const terminateBtn = termConsole.querySelector(".terminal-terminate-btn");
-                terminateBtn.onclick = function() {
-                    invoke("kill_process").catch(err => {
-                        console.error("Error invoking kill_process:", err);
-                    });
-                };
-
-                isProcessRunning = true;
-                document.getElementById("tool-status").innerText = "Executing...";
-                updateInputConsoleState();
-
-                let viewport = document.getElementById("chat-workspace");
-                viewport.scrollTop = viewport.scrollHeight;
-
-                invoke("execute_command_stream", { cmdStr: cmd }).catch((err) => {
-                    appendLineToTerminal(`Error spawning process: ${err}`, true);
-                    finishRunningProcess(1);
-                });
-            };
-            actions.appendChild(execBtn);
-        }
-
-        if (lang.toLowerCase() === "lua") {
-            pendingLuaScript = code.innerText;
-            const execBtn = document.createElement("button");
-            execBtn.className = "code-header-btn execute-btn";
-            execBtn.innerText = "Execute";
-            execBtn.onclick = function() {
-                runLuaScript(code.innerText, pre, execBtn);
-            };
-            actions.appendChild(execBtn);
-        }
-
-        header.appendChild(actions);
-        pre.insertBefore(header, pre.firstChild);
-    });
-}
-
-function runLuaScript(scriptCode, preElement, execBtn) {
-    if (!scriptCode || scriptCode.trim() === "") {
-        console.warn("No Lua script to execute.");
-        return;
-    }
-
-    if (!window.confirm("Execute this Lua script?")) {
-        return;
-    }
-
-    if (isProcessRunning) {
-        invoke("kill_process").catch(e => console.error("Error killing process:", e));
-    }
-
-    if (execBtn) {
-        execBtn.innerText = "Running...";
-        execBtn.disabled = true;
-        activeExecuteBtn = execBtn;
-    }
-
-    if (!preElement) {
-        const luaPres = document.querySelectorAll("pre");
-        for (let i = luaPres.length - 1; i >= 0; i--) {
-            const code = luaPres[i].querySelector("code");
-            let isLua = false;
-            if (code) {
-                code.classList.forEach(cls => {
-                    if (cls === "language-lua") isLua = true;
-                });
-            }
-            if (isLua) {
-                preElement = luaPres[i];
-                break;
-            }
-        }
-    }
-
-    let targetParent = document.getElementById("chat-viewport");
-    let targetSibling = null;
-
-    if (preElement) {
-        let existingTerm = preElement.nextElementSibling;
-        if (existingTerm && existingTerm.classList.contains("terminal-console")) {
-            existingTerm.remove();
-        }
-        targetParent = preElement.parentNode;
-        targetSibling = preElement.nextSibling;
-    }
-
-    const termConsole = document.createElement("div");
-    termConsole.className = "terminal-console";
-    termConsole.innerHTML = `
-        <div class="terminal-console-header">
-            <span>Lua Script Output</span>
-            <button class="terminal-terminate-btn">Terminate</button>
-        </div>
-        <div class="terminal-console-body running"></div>
-    `;
-
-    if (preElement) {
-        targetParent.insertBefore(termConsole, targetSibling);
-    } else {
-        targetParent.appendChild(termConsole);
-    }
-
-    activeTerminalBody = termConsole.querySelector(".terminal-console-body");
-
-    const terminateBtn = termConsole.querySelector(".terminal-terminate-btn");
-    terminateBtn.onclick = function() {
-        finishRunningProcess(-1);
-    };
-
-    isProcessRunning = true;
-    document.getElementById("tool-status").innerText = "Executing...";
-    updateInputConsoleState();
-
-    let viewport = document.getElementById("chat-workspace");
-    viewport.scrollTop = viewport.scrollHeight;
-
-    invoke("execute_lua", { code: scriptCode }).catch((err) => {
-        appendLineToTerminal(`Error executing Lua: ${err}`, true);
-        finishRunningProcess(1);
-    });
-}
-
-// Listen for stream events
-listen("stream_chunk", function (event) {
-    let chunk = event.payload;
-    if (currentAIMessage) {
-        if (currentAIMessage.classList.contains("thinking")) {
-            currentAIMessage.classList.remove("thinking");
-            const msgCard = currentAIMessage.querySelector(".message-card");
-            if (msgCard) {
-                msgCard.innerHTML = "";
-            }
-        }
-        currentAIText += chunk;
-        
-        // Latency and Tokens Speed Calculation
-        totalTokens += chunk.split(/\s+/).filter(Boolean).length || 1;
-        if (firstChunkTime === 0) {
-            firstChunkTime = performance.now();
-            let latency = Math.round(firstChunkTime - streamStartTime);
-            document.getElementById("latency-val").innerText = latency + "ms";
-        }
-        let elapsedSecs = (performance.now() - firstChunkTime) / 1000;
-        if (elapsedSecs > 0.5) {
-            let speed = Math.round(totalTokens / elapsedSecs);
-            document.getElementById("token-speed").innerText = speed + " t/s";
-        }
-
-        const msgCard = currentAIMessage.querySelector(".message-card");
-        if (msgCard) {
-            msgCard.innerHTML = window.sanitizeHtml(marked.parse(currentAIText));
-            formatCodeBlocks(msgCard);
-        }
-        
-        let viewport = document.getElementById("chat-workspace");
-        let isAtBottom = (viewport.scrollHeight - viewport.clientHeight) - viewport.scrollTop < 100;
-        if (isAtBottom) {
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    }
-    // Forward token to any connected remote clients
-    invoke("remote_send_to_clients", {
-        message: JSON.stringify({ type: "chat_token", text: chunk, done: false })
-    }).catch(() => {});
-});
-
-listen("stream_error", function (event) {
-    let err = event.payload;
-    let chatViewport = document.getElementById("chat-viewport");
-    let viewport = document.getElementById("chat-workspace");
-    let msg = document.createElement("div");
-    msg.className = "message system error";
-    msg.innerHTML = `
-        <div class="message-card">
-            <strong>Error:</strong> ${err}
-        </div>
-    `;
-    chatViewport.appendChild(msg);
-    viewport.scrollTop = viewport.scrollHeight;
-    document.getElementById("tool-status").innerText = "Idle";
-});
-
-listen("stream_done", function () {
-    document.getElementById("tool-status").innerText = "Idle";
-    if (currentAIMessage) {
-        const msgCard = currentAIMessage.querySelector(".message-card");
-        if (msgCard) {
-            msgCard.innerHTML = window.sanitizeHtml(marked.parse(currentAIText));
-            formatCodeBlocks(msgCard);
-        }
-    }
-    
-    if (!isMuted && currentAIText && currentAIText.trim().length > 0) {
-        let speechText = cleanTextForSpeech(currentAIText);
-        if (speechText.length > 0) {
-            invoke("speak_text", { text: speechText }).catch(err => console.error("TTS Error:", err));
-        }
-    }
-
-    currentAIMessage = null;
-    currentAIText = "";
-
-    // Notify remote clients that the AI response stream is complete
-    invoke("remote_send_to_clients", {
-        message: JSON.stringify({ type: "chat_token", text: "", done: true })
-    }).catch(() => {});
-
-    // Refresh sessions sidebar list
-    refreshSessionsList();
-
-    // Refresh context drawer live metrics
-    updateContextDrawer();
-});
-
-// Listen for command stream events
-listen("command_stdout", function (event) {
-    const line = event.payload;
-    appendLineToTerminal(line, false);
-});
-
-listen("command_stderr", function (event) {
-    const line = event.payload;
-    appendLineToTerminal(line, true);
-});
-
-listen("command_exit", function (event) {
-    const code = event.payload;
-    finishRunningProcess(code);
-});
-
-// Audio Recording Logic
-let isRecording = false;
-let micBtn = document.getElementById("mic-btn");
-
-micBtn.onclick = function() {
-    let chatViewport = document.getElementById("chat-viewport");
-    let viewport = document.getElementById("chat-workspace");
-    if (!isRecording) {
-        isRecording = true;
-        micBtn.innerText = "🛑";
-        micBtn.classList.add("recording");
-        invoke("start_recording").then((msg) => {
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: ${msg}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        }).catch((err) => {
-            isRecording = false;
-            micBtn.innerText = "🎙️";
-            micBtn.classList.remove("recording");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System error starting recording: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        });
-    } else {
-        isRecording = false;
-        micBtn.innerText = "🎙️";
-        micBtn.classList.remove("recording");
-        
-        let div = document.createElement("div");
-        div.className = "message system";
-        div.innerHTML = `
-            <div class="message-card">
-                System: Processing audio...
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
-
-        invoke("stop_recording").then((text) => {
-            inputElement.value = text;
-            inputElement.style.height = "auto";
-            inputElement.style.height = (inputElement.scrollHeight) + "px";
-            inputElement.focus();
-            
-            div.querySelector(".message-card").innerText = "System: Audio transcribed.";
-        }).catch((err) => {
-            div.className = "message system error";
-            div.querySelector(".message-card").innerText = "System error stop recording/transcribing: " + err;
-        });
-    }
-};
-
-// Sessions History Management (Sidebar UI)
-function refreshSessionsList() {
-    invoke("list_sessions").then((sessions) => {
-        const historyContainer = document.getElementById("sidebar-history");
-        historyContainer.innerHTML = '<div class="history-group-label">Recent Sessions</div>';
-        
-        if (sessions.length === 0) {
-            const noSessions = document.createElement("div");
-            noSessions.style.padding = "10px 12px";
-            noSessions.style.opacity = "0.4";
-            noSessions.style.fontSize = "0.8rem";
-            noSessions.innerText = "No saved sessions";
-            historyContainer.appendChild(noSessions);
-            return;
-        }
-
-        sessions.forEach((sid) => {
-            const item = document.createElement("div");
-            item.className = "history-item";
-            if (sid === currentSessionId) {
-                item.classList.add("active");
-            }
-            
-            const title = document.createElement("span");
-            title.className = "history-title";
-            title.innerText = sid;
-            title.onclick = function() {
-                loadSession(sid);
-            };
-            item.appendChild(title);
-            
-            const actions = document.createElement("div");
-            actions.className = "history-actions";
-            
-            const exportBtn = document.createElement("button");
-            exportBtn.className = "history-action-btn";
-            exportBtn.innerHTML = "📤";
-            exportBtn.title = "Export to Markdown";
-            exportBtn.onclick = function(e) {
-                e.stopPropagation();
-                invoke("export_session_markdown", { id: sid }).then((msg) => {
-                    alert(msg);
-                }).catch((err) => {
-                    alert("Error exporting session: " + err);
-                });
-            };
-            actions.appendChild(exportBtn);
-            
-            const deleteBtn = document.createElement("button");
-            deleteBtn.className = "history-action-btn";
-            deleteBtn.innerHTML = "🗑️";
-            deleteBtn.title = "Delete Session";
-            deleteBtn.onclick = function(e) {
-                e.stopPropagation();
-                if (confirm(`Delete session ${sid}?`)) {
-                    invoke("delete_session", { id: sid }).then(() => {
-                        if (sid === currentSessionId) {
-                            startNewSession();
-                        } else {
-                            refreshSessionsList();
-                        }
-                    });
-                }
-            };
-            actions.appendChild(deleteBtn);
-            
-            item.appendChild(actions);
-            historyContainer.appendChild(item);
-        });
-    }).catch(err => {
-        console.error("Error listing sessions:", err);
-    });
-}
-
-function loadSession(sid) {
-    invoke("load_session_by_id", { id: sid }).then((data) => {
-        currentSessionId = data.session_id;
-        document.getElementById("session-id").innerText = currentSessionId;
-        document.getElementById("session-title").innerText = "Session: " + currentSessionId;
-        
-        let chatViewport = document.getElementById("chat-viewport");
-        let viewport = document.getElementById("chat-workspace");
-        chatViewport.innerHTML = "";
-        
-        data.messages.forEach((msgStr) => {
-            const div = document.createElement("div");
-            if (msgStr.startsWith("User: ")) {
-                div.className = "message user";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${msgStr.substring(6)}
-                    </div>
-                `;
-            } else if (msgStr.startsWith("AI: ")) {
-                div.className = "message ai";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
-                    </div>
-                `;
-                formatCodeBlocks(div);
-            } else {
-                div.className = "message system";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${msgStr}
-                    </div>
-                `;
-            }
-            chatViewport.appendChild(div);
-        });
-        
-        viewport.scrollTop = viewport.scrollHeight;
-        
-        let systemDiv = document.createElement("div");
-        systemDiv.className = "message system";
-        systemDiv.innerHTML = `
-            <div class="message-card">
-                System: Loaded session ${currentSessionId}
-            </div>
-        `;
-        chatViewport.appendChild(systemDiv);
-        viewport.scrollTop = viewport.scrollHeight;
-        
-        refreshSessionsList();
-    }).catch((err) => {
-        let chatViewport = document.getElementById("chat-viewport");
-        let viewport = document.getElementById("chat-workspace");
-        let div = document.createElement("div");
-        div.className = "message system error";
-        div.innerHTML = `
-            <div class="message-card">
-                Error loading session: ${err}
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
-    });
-}
-
-function startNewSession() {
-    invoke("new_session").then((newId) => {
-        currentSessionId = newId;
-        document.getElementById("session-id").innerText = currentSessionId;
-        document.getElementById("session-title").innerText = "New Session";
-        
-        let chatViewport = document.getElementById("chat-viewport");
-        chatViewport.innerHTML = `
-            <div class="message system">
-                <div class="message-card">System initialized. Welcome to NEURODECK.</div>
-            </div>
-        `;
-        
-        refreshSessionsList();
-    }).catch(err => {
-        console.error("Error starting new session:", err);
-    });
-}
-
-document.getElementById("new-chat-btn").onclick = startNewSession;
-
-// Keydown shortcuts for Save/Load/Record/Mute
-// Backtick (`) — toggle radial menu for keyboard/desktop testing
-window.addEventListener("keydown", function(e) {
-    if (e.key === "`" && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        if (radialMenuVisible) {
-            hideRadialMenu();
-        } else {
-            showRadialMenu();
-        }
-        return;
-    }
-});
-
-// Arrow keys to cycle radial segments when menu is open
-window.addEventListener("keydown", function(e) {
-    if (!radialMenuVisible) return;
-    const keyToSeg = { ArrowUp: 0, ArrowRight: 2, ArrowDown: 4, ArrowLeft: 6 };
-    if (e.key in keyToSeg) {
-        e.preventDefault();
-        updateRadialDisplay(keyToSeg[e.key]);
-    }
-    if (e.key === "Enter") {
-        e.preventDefault();
-        activateRadialSegment(radialSelectedSegment);
-        hideRadialMenu();
-    }
-    if (e.key === "Escape") {
-        e.preventDefault();
-        hideRadialMenu();
-    }
-});
-
-window.addEventListener("keydown", function(e) {
-    if (e.ctrlKey && e.altKey && e.key === "1") {
-        e.preventDefault();
-        const sidebar = document.getElementById("sidebar");
-        if (sidebar) sidebar.classList.toggle("collapsed");
-    }
-    
-    if (e.ctrlKey && e.altKey && e.key === "2") {
-        e.preventDefault();
-        const inspectDrawer = document.getElementById("inspect-drawer");
-        if (inspectDrawer) inspectDrawer.classList.toggle("collapsed");
-    }
-    
-    if (e.ctrlKey && e.altKey && e.key === "3") {
-        e.preventDefault();
-        const clearBtn = document.getElementById("canvas-clear-btn");
-        if (clearBtn) clearBtn.click();
-    }
-    
-    if (e.ctrlKey && e.altKey && e.key === "4") {
-        e.preventDefault();
-        cycleTheme();
-    }
-
-    if (e.ctrlKey && e.key === "s") {
-        e.preventDefault();
-        invoke("save_session").then((msg) => {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: ${msg}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-            
-            // Update session title in top navigation bar
-            document.getElementById("session-title").innerText = "Session: " + currentSessionId;
-            
-            refreshSessionsList();
-        }).catch((err) => {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System error saving session: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        });
-    }
-    
-    if (e.ctrlKey && e.key === "l") {
-        e.preventDefault();
-        invoke("load_latest_session").then((data) => {
-            currentSessionId = data.session_id;
-            document.getElementById("session-id").innerText = currentSessionId;
-            document.getElementById("session-title").innerText = "Session: " + currentSessionId;
-            
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            chatViewport.innerHTML = "";
-            
-            data.messages.forEach((msgStr) => {
-                const div = document.createElement("div");
-                if (msgStr.startsWith("User: ")) {
-                    div.className = "message user";
-                    div.innerHTML = `
-                        <div class="message-card">
-                            ${msgStr.substring(6)}
-                        </div>
-                    `;
-                } else if (msgStr.startsWith("AI: ")) {
-                    div.className = "message ai";
-                    div.innerHTML = `
-                        <div class="message-card">
-                            ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
-                        </div>
-                    `;
-                    formatCodeBlocks(div);
-                }
-                chatViewport.appendChild(div);
-            });
-            
-            viewport.scrollTop = viewport.scrollHeight;
-            
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: Loaded session ${currentSessionId}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-            
-            refreshSessionsList();
-        }).catch((err) => {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    Error loading session: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        });
-    }
-    
-    if (e.ctrlKey && e.key === "b") {
-        e.preventDefault();
-        if (pendingLuaScript) {
-            runLuaScript(pendingLuaScript);
-        } else {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: No pending Lua script found in chat to execute.
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    }
-
-    if (e.ctrlKey && e.key === "r") {
-        e.preventDefault();
-        let micBtn = document.getElementById("mic-btn");
-        if (micBtn) {
-            micBtn.click();
-        }
-    }
-    
-    if (e.ctrlKey && e.key === "m") {
-        e.preventDefault();
-        toggleMute();
-    }
-
-    if (e.ctrlKey && e.key === "n") {
-        e.preventDefault();
-        startNewSession();
-    }
-
-    if (e.ctrlKey && e.key === "p") {
-        e.preventDefault();
-        if (availablePersonas.length > 0) {
-            let currentIndex = availablePersonas.indexOf(activePersona);
-            let nextIndex = (currentIndex + 1) % availablePersonas.length;
-            let nextPersona = availablePersonas[nextIndex];
-            
-            invoke("set_persona", { name: nextPersona }).then((msg) => {
-                activePersona = nextPersona;
-                let select = document.getElementById("persona-select");
-                if (select) {
-                    select.value = nextPersona;
-                }
-                
-                let chatViewport = document.getElementById("chat-viewport");
-                let viewport = document.getElementById("chat-workspace");
-                let div = document.createElement("div");
-                div.className = "message system";
-                div.innerHTML = `
-                    <div class="message-card">
-                        System: Persona cycled to ${nextPersona}
-                    </div>
-                `;
-                chatViewport.appendChild(div);
-                viewport.scrollTop = viewport.scrollHeight;
-            }).catch((err) => {
-                console.error("Error cycling persona:", err);
-            });
-        }
-    }
-
-    if (e.key === "Escape") {
-        if (currentAIMessage !== null) {
-            e.preventDefault();
-            invoke("cancel_generation").catch((err) => {
-                console.error("Error cancelling generation:", err);
-            });
-        }
-    }
-});
-
-// Listen for persona changes from backend commands
-listen("persona_changed", function(event) {
-    activePersona = event.payload;
-    let select = document.getElementById("persona-select");
-    if (select) {
-        select.value = activePersona;
-    }
-});
-
-// Persona and Theme selection change logic
-document.getElementById("persona-select").onchange = function() {
-    let val = this.value;
-    invoke("set_persona", { name: val }).then((msg) => {
-        activePersona = val;
-        let chatViewport = document.getElementById("chat-viewport");
-        let viewport = document.getElementById("chat-workspace");
-        let div = document.createElement("div");
-        div.className = "message system";
-        div.innerHTML = `
-            <div class="message-card">
-                System: ${msg}
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
-    });
-};
-
-document.getElementById("theme-select").onchange = function() {
-    let val = this.value;
-    invoke("set_theme", { name: val }).then((theme) => {
-        if (theme) {
-            applyThemeColors(theme);
-            localStorage.setItem("selectedTheme", val);
-            
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: Theme applied and saved: ${val}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    });
-};
+/* --- SEPARATOR --- */
 
 // --- GAME CONTEXT BADGE ---
 function updateGameBadge(ctx) {
@@ -5430,38 +4037,38 @@ setInterval(() => {
 }, 15000);
 
 // Initial state initialization
-invoke("get_initial_state").then((state) => {
+invoke("get_initial_state").then((initialState) => {
     const modelNameEl = document.getElementById("model-name");
-    if (modelNameEl) modelNameEl.innerText = `[ MODEL: ${state.model.toUpperCase()} ]`;
+    if (modelNameEl) modelNameEl.innerText = `[ MODEL: ${initialState.model.toUpperCase()} ]`;
     
     const dbStatusEl = document.getElementById("vector-db-status");
-    if (dbStatusEl) dbStatusEl.innerText = state.memory_status;
+    if (dbStatusEl) dbStatusEl.innerText = initialState.memory_status;
     
     const memoryStatusEl = document.getElementById("memory-status");
-    if (memoryStatusEl) memoryStatusEl.innerText = state.memory_status;
+    if (memoryStatusEl) memoryStatusEl.innerText = initialState.memory_status;
 
     const toolStatusEl = document.getElementById("tool-status");
-    if (toolStatusEl) toolStatusEl.innerText = state.tool_status;
+    if (toolStatusEl) toolStatusEl.innerText = initialState.tool_status;
 
     const sessionIdEl = document.getElementById("session-id");
-    if (sessionIdEl) sessionIdEl.innerText = state.session_id;
+    if (sessionIdEl) sessionIdEl.innerText = initialState.session_id;
 
-    currentSessionId = state.session_id;
-    activePersona = state.active_persona || "Default";
+    state.currentSessionId = initialState.session_id;
+    state.activePersona = initialState.active_persona || "Default";
     
     // Initial Context Drawer metrics load
     updateContextDrawer();
 
     // Show game badge if a game was detected at startup
     updateGameBadge({
-        name: state.game_name || "",
-        app_id: state.game_app_id || "",
-        is_running: state.game_running || "false"
+        name: initialState.game_name || "",
+        app_id: initialState.game_app_id || "",
+        is_running: initialState.game_running || "false"
     });
     
     // Fetch and cache available personas list
     invoke("get_personas").then((personas) => {
-        availablePersonas = personas;
+        state.availablePersonas = personas;
     }).catch((err) => {
         console.error("Error loading personas:", err);
     });
@@ -5480,14 +4087,14 @@ invoke("get_initial_state").then((state) => {
     document.getElementById("mute-btn").onclick = function() {
         toggleMute();
     };
-    updateMuteButtonUI();
+    
     
     // Refresh sessions list on startup
     refreshSessionsList();
     
     // Initialize our sub-systems
-    initPtyTerminal();
-    initCanvasView();
+    initTerminal();
+    initCanvas();
     initTunnelClient();
     initFileShare();
     initBrowser();
@@ -5557,1775 +4164,12 @@ navTabs.forEach(tab => {
     };
 });
 
-// --- PTY TERMINAL SYSTEM ---
-let terminalSessions = []; // list of { id, shell, term, fitAddon, containerEl }
-let activeTerminalSessionId = null;
-let ptySessionId = null; // compatibility pointer for active session id
-const MAX_TERMINAL_SESSIONS = 5;
 
-function getActiveShellPath() {
-    const selectedShell = localStorage.getItem("selectedShell") || "default";
-    if (selectedShell === "default") {
-        return null;
-    }
-    if (selectedShell === "custom") {
-        const custom = localStorage.getItem("customShell") || "";
-        return custom.trim() !== "" ? custom.trim() : null;
-    }
-    return selectedShell;
-}
 
-function syncShellPillsForSession(shell) {
-    const targetShell = shell || "default";
-    document.querySelectorAll(".term-shell-btn").forEach(p => {
-        p.classList.toggle("active", p.getAttribute("data-shell") === targetShell);
-    });
-}
-
-function createTerminalSession(shellPath) {
-    if (terminalSessions.length >= MAX_TERMINAL_SESSIONS) {
-        alert(`Maximum of ${MAX_TERMINAL_SESSIONS} active terminal tabs allowed.`);
-        return;
-    }
-
-    const container = document.getElementById("pty-terminal-container");
-    if (!container) return;
-
-    const id = "pty_session_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    const shell = shellPath !== undefined ? shellPath : getActiveShellPath();
-
-    // Create container div for this terminal
-    const containerEl = document.createElement("div");
-    containerEl.className = "pty-terminal-instance";
-    containerEl.id = `pty-terminal-instance-${id}`;
-    containerEl.style.display = "none"; // hidden until switched to
-    container.appendChild(containerEl);
-
-    // Initialize xterm
-    const savedFontSizeStr = localStorage.getItem("terminalFontSize");
-    const fontSize = savedFontSizeStr !== null ? parseInt(savedFontSizeStr, 10) : 14;
-    const savedScrollbackStr = localStorage.getItem("terminalScrollback");
-    const scrollback = savedScrollbackStr !== null ? parseInt(savedScrollbackStr, 10) : 2000;
-
-    const term = new Terminal({
-        cursorBlink: true,
-        fontFamily: 'var(--font-mono)',
-        fontSize: fontSize,
-        scrollback: scrollback,
-        theme: {
-            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
-            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
-            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
-            selectionBackground: 'rgba(255, 255, 255, 0.15)'
-        }
-    });
-
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(containerEl);
-
-    try {
-        fitAddon.fit();
-    } catch (e) {
-        console.warn("Could not fit xterm immediately:", e);
-    }
-
-    // Spawn Backend PTY
-    const dims = fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
-    invoke("pty_spawn", {
-        id: id,
-        cols: dims.cols,
-        rows: dims.rows,
-        shell: shell
-    }).then(() => {
-        term.write("\r\n\x1b[1;36mNEURODECK Interactive Shell Started\x1b[0m\r\n");
-    }).catch(err => {
-        term.write(`\r\n\x1b[1;31mError starting PTY: ${err}\x1b[0m\r\n`);
-    });
-
-    term.onData(data => {
-        invoke("pty_write", { id: id, data: data }).catch(err => {
-            console.error("PTY Write error:", err);
-        });
-    });
-
-    const sessionObj = { id, shell, term, fitAddon, containerEl };
-    terminalSessions.push(sessionObj);
-
-    // Wire up Category B autocomplete if the function is already defined
-    if (typeof patchTerminalSessionWithAutocomplete === "function") {
-        patchTerminalSessionWithAutocomplete(sessionObj);
-    }
-
-    renderTerminalTabs();
-    switchTerminalSession(id);
-}
-
-function switchTerminalSession(id) {
-    const session = terminalSessions.find(s => s.id === id);
-    if (!session) return;
-
-    // Clear any pending autocomplete from the previous session
-    if (typeof clearAutocompleteGhost === "function") clearAutocompleteGhost();
-
-    activeTerminalSessionId = id;
-    ptySessionId = id; // update for backwards compatibility
-
-    // Update globals for resize handler
-    window.ptyTerminal = session.term;
-    window.ptyTerminalFitAddon = session.fitAddon;
-
-    // Toggle display of containers
-    terminalSessions.forEach(s => {
-        if (s.id === id) {
-            s.containerEl.style.display = "block";
-            // Refit
-            setTimeout(() => {
-                try {
-                    s.fitAddon.fit();
-                    const dims = s.fitAddon.proposeDimensions();
-                    if (dims) {
-                        invoke("pty_resize", { id: s.id, cols: dims.cols, rows: dims.rows }).catch(console.error);
-                    }
-                } catch (e) {}
-                s.term.focus();
-            }, 50);
-        } else {
-            s.containerEl.style.display = "none";
-        }
-    });
-
-    // Update tab bar buttons active state
-    const list = document.getElementById("terminal-tabs-list");
-    if (list) {
-        list.querySelectorAll(".terminal-tab").forEach(btn => {
-            const btnId = btn.getAttribute("data-session-id");
-            if (btnId === id) {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
-            }
-        });
-    }
-
-    // Update shell pills to match this session's shell
-    syncShellPillsForSession(session.shell);
-}
-
-function closeTerminalSession(id) {
-    if (terminalSessions.length <= 1) {
-        restartTerminalSession(id);
-        return;
-    }
-
-    const idx = terminalSessions.findIndex(s => s.id === id);
-    if (idx === -1) return;
-
-    const sessionObj = terminalSessions[idx];
-
-    // Kill backend process
-    invoke("pty_kill", { id: id }).catch(() => {});
-
-    // Dispose xterm
-    try {
-        sessionObj.term.dispose();
-    } catch (e) {}
-
-    // Remove container from DOM
-    sessionObj.containerEl.remove();
-
-    // Remove from array
-    terminalSessions.splice(idx, 1);
-
-    renderTerminalTabs();
-
-    // Switch to another active tab
-    if (activeTerminalSessionId === id) {
-        const nextActiveIdx = Math.max(0, idx - 1);
-        const nextSession = terminalSessions[nextActiveIdx];
-        if (nextSession) {
-            switchTerminalSession(nextSession.id);
-        }
-    }
-}
-
-function restartTerminalSession(id) {
-    const session = terminalSessions.find(s => s.id === id);
-    if (!session) return;
-
-    session.term.write("\r\n\x1b[1;33mRestarting shell session...\x1b[0m\r\n");
-    invoke("pty_kill", { id: id }).catch(() => {}).then(() => {
-        const dims = session.fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
-        invoke("pty_spawn", {
-            id: id,
-            cols: dims.cols,
-            rows: dims.rows,
-            shell: session.shell
-        }).then(() => {
-            session.term.write("\r\n\x1b[1;36mNEURODECK Interactive Shell Started\x1b[0m\r\n");
-        }).catch(err => {
-            session.term.write(`\r\n\x1b[1;31mError starting PTY: ${err}\x1b[0m\r\n`);
-        });
-    });
-}
-
-function renderTerminalTabs() {
-    const list = document.getElementById("terminal-tabs-list");
-    if (!list) return;
-
-    const SHELL_ICONS = {
-        "/bin/bash":     "$",
-        "/bin/zsh":      "%",
-        "/bin/fish":     "~",
-        "powershell.exe":"PS",
-        "cmd.exe":       ">",
-    };
-    list.innerHTML = terminalSessions.map((s, idx) => {
-        const icon  = s.shell ? (SHELL_ICONS[s.shell] || s.shell.replace(/.*[/\\]/, '').replace('.exe','').slice(0,3).toLowerCase()) : ">_";
-        const label = `${icon} ${idx + 1}`;
-        const activeClass = s.id === activeTerminalSessionId ? "active" : "";
-        return `
-            <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
-                <span>${label}</span>
-                <span class="terminal-tab-close" data-session-id="${s.id}">✕</span>
-            </div>
-        `;
-    }).join("");
-
-    // Tab clicks
-    list.querySelectorAll(".terminal-tab").forEach(tab => {
-        tab.onclick = () => {
-            const sid = tab.getAttribute("data-session-id");
-            switchTerminalSession(sid);
-        };
-    });
-
-    // Close clicks
-    list.querySelectorAll(".terminal-tab-close").forEach(closeBtn => {
-        closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            const sid = closeBtn.getAttribute("data-session-id");
-            closeTerminalSession(sid);
-        };
-    });
-}
-
-function initPtyTerminal() {
-    if (terminalSessions.length > 0) {
-        if (activeTerminalSessionId) {
-            switchTerminalSession(activeTerminalSessionId);
-        }
-        return;
-    }
-
-    const addBtn = document.getElementById("terminal-add-tab-btn");
-    if (addBtn) {
-        addBtn.onclick = () => {
-            createTerminalSession();
-        };
-    }
-
-    const reconnectBtn = document.getElementById("pty-reconnect-btn");
-    if (reconnectBtn) {
-        reconnectBtn.onclick = () => {
-            if (activeTerminalSessionId) restartTerminalSession(activeTerminalSessionId);
-        };
-    }
-
-    // Font size controls — apply to all live sessions immediately
-    const fontDecBtn = document.getElementById("term-font-dec-btn");
-    const fontIncBtn = document.getElementById("term-font-inc-btn");
-    function adjustFontSize(delta) {
-        const current = parseInt(localStorage.getItem("terminalFontSize") || "14", 10);
-        const next = Math.min(24, Math.max(8, current + delta));
-        localStorage.setItem("terminalFontSize", String(next));
-        terminalSessions.forEach(s => {
-            s.term.options.fontSize = next;
-            try { s.fitAddon.fit(); } catch (_) {}
-        });
-        const slider = document.getElementById("term-fontsize-slider");
-        if (slider) slider.value = String(next);
-    }
-    if (fontDecBtn) fontDecBtn.onclick = () => adjustFontSize(-1);
-    if (fontIncBtn) fontIncBtn.onclick = () => adjustFontSize(1);
-
-    // Clear screen — sends Ctrl+L to the active PTY
-    const clearBtn = document.getElementById("term-clear-btn");
-    if (clearBtn) {
-        clearBtn.onclick = () => {
-            if (activeTerminalSessionId) {
-                invoke("pty_write", { id: activeTerminalSessionId, data: "\x0C" }).catch(() => {});
-            }
-        };
-    }
-
-    createTerminalSession();
-}
-
-window.addEventListener("resize", () => {
-    // Resize all active terminal sessions to fit their respective windows
-    terminalSessions.forEach(s => {
-        try {
-            s.fitAddon.fit();
-            const dims = s.fitAddon.proposeDimensions();
-            if (dims) {
-                invoke("pty_resize", { id: s.id, cols: dims.cols, rows: dims.rows }).catch(err => {
-                    console.error("PTY resize error:", err);
-                });
-            }
-        } catch (e) {}
-    });
-});
-
-listen("pty_output", (event) => {
-    const payload = event.payload;
-    const session = terminalSessions.find(s => s.id === payload.id);
-    if (session) {
-        session.term.write(payload.data);
-    } else if (payload.id === sshSessionId && window.sshTerminal) {
-        window.sshTerminal.write(payload.data);
-        
-        const passInput = document.getElementById("ssh-pass-input");
-        const authType = document.getElementById("ssh-auth-type")?.value || "password";
-        if (authType === "password" && passInput && passInput.value) {
-            const lowerData = payload.data.toLowerCase();
-            if (lowerData.includes("password:") || (lowerData.includes("password") && lowerData.trim().endsWith(":"))) {
-                if (!window._sshPasswordSent) {
-                    window._sshPasswordSent = true;
-                    invoke("pty_write", { id: sshSessionId, data: passInput.value + "\n" }).catch(err => {
-                        console.error("SSH auto-password feeding failed:", err);
-                    });
-                }
-            }
-        }
-    }
-});
-
-listen("pty_exit", (event) => {
-    const id = event.payload;
-    const session = terminalSessions.find(s => s.id === id);
-    if (session) {
-        session.term.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");
-        addNotification("Shell Exited", "Session '" + id + "' has terminated.", "warning");
-    } else if (id === sshSessionId) {
-        window.sshTerminal?.write("\r\n\x1b[1;31m[SSH Session Disconnected]\x1b[0m\r\n");
-        setSshStatus(false, "Disconnected");
-        sshSessionId = null;
-        addNotification("SSH Disconnected", "SSH session has terminated.", "warning");
-    }
-});
-
-// ==========================================================================
-// CATEGORY B: SCREENSHOT VISION BRIDGE
-// ==========================================================================
-
-window.pendingScreenshot = null;
-
-(function initScreenshotVision() {
-    const screenshotBtn = document.getElementById("screenshot-btn");
-    if (!screenshotBtn) return;
-
-    screenshotBtn.addEventListener("click", async () => {
-        // If we already have an attachment, remove it
-        if (window.pendingScreenshot) {
-            window.pendingScreenshot = null;
-            const bar = document.getElementById("chat-attachment-bar");
-            if (bar) { bar.innerHTML = ""; bar.classList.add("hidden"); }
-            screenshotBtn.classList.remove("has-attachment");
-            return;
-        }
-
-        screenshotBtn.style.opacity = "0.5";
-        screenshotBtn.disabled = true;
-
-        try {
-            const result = await invoke("read_last_screenshot");
-            window.pendingScreenshot = result;
-
-            // Render thumbnail in attachment bar
-            const bar = document.getElementById("chat-attachment-bar");
-            if (bar) {
-                bar.classList.remove("hidden");
-                bar.innerHTML = "";
-
-                const preview = document.createElement("div");
-                preview.className = "chat-attachment-preview";
-                preview.title = result.path || "Screenshot";
-
-                const img = document.createElement("img");
-                img.src = `data:${result.mime};base64,${result.data}`;
-                img.alt = "Screenshot";
-
-                const removeBtn = document.createElement("button");
-                removeBtn.className = "chat-attachment-remove";
-                removeBtn.innerHTML = "✕";
-                removeBtn.title = "Remove attachment";
-                removeBtn.onclick = () => {
-                    window.pendingScreenshot = null;
-                    bar.innerHTML = "";
-                    bar.classList.add("hidden");
-                    screenshotBtn.classList.remove("has-attachment");
-                };
-
-                preview.appendChild(img);
-                preview.appendChild(removeBtn);
-                bar.appendChild(preview);
-            }
-
-            screenshotBtn.classList.add("has-attachment");
-
-            if (typeof addNotification === "function") {
-                addNotification("Screenshot attached", "Vision context added to next message.", "success");
-            }
-        } catch (err) {
-            console.error("[Screenshot] Error:", err);
-            if (typeof addNotification === "function") {
-                addNotification("Screenshot Error", String(err), "error");
-            }
-        } finally {
-            screenshotBtn.style.opacity = "";
-            screenshotBtn.disabled = false;
-        }
-    });
-})();
-
-// ==========================================================================
-// CATEGORY B: AI SHELL HISTORY SEARCH (Ctrl+H)
-// ==========================================================================
-
-let historySearchOpen = false;
-let historySearchResults = [];
-let historySearchSelectedIdx = -1;
-let historySearchDebounce = null;
-
-function openHistorySearch() {
-    const overlay = document.getElementById("history-search-overlay");
-    if (!overlay) return;
-    historySearchOpen = true;
-    historySearchSelectedIdx = -1;
-    historySearchResults = [];
-    overlay.classList.remove("hidden");
-    setTimeout(() => {
-        const input = document.getElementById("history-search-input");
-        if (input) { input.value = ""; input.focus(); }
-        const body = document.getElementById("history-search-body");
-        if (body) body.innerHTML = '<div class="history-empty-state">Start typing to search your shell history with AI</div>';
-    }, 30);
-}
-
-function closeHistorySearch() {
-    const overlay = document.getElementById("history-search-overlay");
-    if (overlay) overlay.classList.add("hidden");
-    historySearchOpen = false;
-    historySearchResults = [];
-    historySearchSelectedIdx = -1;
-}
-
-function renderHistoryResults(results) {
-    const body = document.getElementById("history-search-body");
-    if (!body) return;
-
-    if (results.length === 0) {
-        body.innerHTML = '<div class="history-empty-state">No matching commands found</div>';
-        historySearchSelectedIdx = -1;
-        return;
-    }
-
-    body.innerHTML = "";
-    results.forEach((cmd, idx) => {
-        const item = document.createElement("div");
-        item.className = "history-result-item" + (idx === historySearchSelectedIdx ? " selected" : "");
-        item.dataset.idx = idx;
-        item.innerHTML = `
-            <span class="history-result-rank">${idx + 1}</span>
-            <span class="history-result-cmd" title="${cmd.replace(/"/g, '&quot;')}">${cmd}</span>
-            <span class="history-result-insert-hint">↵ Insert</span>
-        `;
-        item.addEventListener("click", () => {
-            insertHistoryCommand(cmd);
-        });
-        item.addEventListener("mouseenter", () => {
-            historySearchSelectedIdx = idx;
-            updateHistorySelection();
-        });
-        body.appendChild(item);
-    });
-}
-
-function updateHistorySelection() {
-    const body = document.getElementById("history-search-body");
-    if (!body) return;
-    const items = body.querySelectorAll(".history-result-item");
-    items.forEach((item, idx) => {
-        item.classList.toggle("selected", idx === historySearchSelectedIdx);
-    });
-    // Scroll selected into view
-    if (historySearchSelectedIdx >= 0 && historySearchSelectedIdx < items.length) {
-        items[historySearchSelectedIdx].scrollIntoView({ block: "nearest" });
-    }
-}
-
-function insertHistoryCommand(cmd) {
-    // Insert into the active PTY terminal session
-    const activeSession = (typeof terminalSessions !== "undefined") ?
-        terminalSessions.find(s => s.id === activeTerminalSessionId) : null;
-
-    if (activeSession && activeSession.term) {
-        // Write the command to the active PTY terminal
-        invoke("pty_write", { id: activeSession.id, data: cmd }).catch(console.error);
-        closeHistorySearch();
-        // Switch to terminal view
-        const termTab = document.querySelector('.nav-tab[data-view="terminal"]');
-        if (termTab) termTab.click();
-        if (typeof addNotification === "function") {
-            addNotification("Command Inserted", `→ ${cmd.substring(0, 50)}${cmd.length > 50 ? '…' : ''}`, "success");
-        }
-    } else {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(cmd).then(() => {
-            if (typeof addNotification === "function") {
-                addNotification("Copied to Clipboard", "No active terminal. Command copied.", "info");
-            }
-        }).catch(() => {});
-        closeHistorySearch();
-    }
-}
-
-async function performHistorySearch(query) {
-    const statusEl = document.getElementById("history-search-status");
-    const body = document.getElementById("history-search-body");
-
-    if (!query.trim()) {
-        if (body) body.innerHTML = '<div class="history-empty-state">Start typing to search your shell history with AI</div>';
-        if (statusEl) statusEl.textContent = "Press Enter to search • Esc to close";
-        return;
-    }
-
-    if (body) body.innerHTML = '<div class="history-ai-loading">AI is searching history…</div>';
-    if (statusEl) statusEl.textContent = "Searching…";
-
-    try {
-        const results = await invoke("search_history_ai", { query });
-        historySearchResults = results;
-        historySearchSelectedIdx = results.length > 0 ? 0 : -1;
-        renderHistoryResults(results);
-        if (statusEl) statusEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} found`;
-        updateHistorySelection();
-    } catch (err) {
-        console.error("[History Search] Error:", err);
-        if (body) body.innerHTML = `<div class="history-empty-state" style="color:var(--error-color);">Error: ${err}</div>`;
-        if (statusEl) statusEl.textContent = "Error occurred";
-    }
-}
-
-// History search input event wiring (DOM already exists at this point)
-(function wireHistorySearchInput() {
-    const hsInput = document.getElementById("history-search-input");
-    if (hsInput) {
-        hsInput.addEventListener("keydown", (e) => {
-            if (!historySearchOpen) return;
-            if (e.key === "Escape") {
-                e.preventDefault();
-                closeHistorySearch();
-            } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (historySearchSelectedIdx >= 0 && historySearchResults[historySearchSelectedIdx]) {
-                    insertHistoryCommand(historySearchResults[historySearchSelectedIdx]);
-                } else {
-                    // Submit search
-                    clearTimeout(historySearchDebounce);
-                    performHistorySearch(hsInput.value);
-                }
-            } else if (e.key === "ArrowDown") {
-                e.preventDefault();
-                historySearchSelectedIdx = Math.min(historySearchSelectedIdx + 1, historySearchResults.length - 1);
-                updateHistorySelection();
-            } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                historySearchSelectedIdx = Math.max(historySearchSelectedIdx - 1, 0);
-                updateHistorySelection();
-            }
-        });
-
-        hsInput.addEventListener("input", () => {
-            clearTimeout(historySearchDebounce);
-            historySearchDebounce = setTimeout(() => {
-                performHistorySearch(hsInput.value);
-            }, 500);
-        });
-    }
-})();
-
-// Click outside to close
-document.addEventListener("click", (e) => {
-    if (!historySearchOpen) return;
-    const overlay = document.getElementById("history-search-overlay");
-    const panel = overlay && overlay.querySelector(".history-search-panel");
-    if (panel && !panel.contains(e.target)) {
-        closeHistorySearch();
-    }
-});
-
-// Global keyboard shortcut Ctrl+H from terminal view
-document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey && e.key === "h" && !historySearchOpen) {
-        // Only trigger if we're in the terminal view or terminal is focused
-        const terminalView = document.getElementById("view-terminal");
-        const isTerminalActive = terminalView && terminalView.classList.contains("active");
-        if (isTerminalActive) {
-            e.preventDefault();
-            openHistorySearch();
-        }
-    }
-    if (e.key === "Escape" && historySearchOpen) {
-        e.preventDefault();
-        closeHistorySearch();
-    }
-});
-
-// ==========================================================================
-// CATEGORY B: AI TERMINAL AUTOCOMPLETE (Ctrl+Space)
-// ==========================================================================
-
-let autocompleteGhostText = null;
-let autocompleteDebounce = null;
-let autocompleteActive = false;
-
-function clearAutocompleteGhost() {
-    autocompleteGhostText = null;
-    autocompleteActive = false;
-    const statusBar = document.getElementById("autocomplete-status-bar");
-    if (statusBar) statusBar.classList.remove("visible");
-}
-
-function showAutocompleteGhost(completion) {
-    if (!completion) { clearAutocompleteGhost(); return; }
-    autocompleteGhostText = completion;
-    autocompleteActive = true;
-
-    let statusBar = document.getElementById("autocomplete-status-bar");
-    if (!statusBar) {
-        statusBar = document.createElement("div");
-        statusBar.id = "autocomplete-status-bar";
-        statusBar.className = "autocomplete-status-bar";
-        const container = document.getElementById("pty-terminal-container");
-        if (container) container.appendChild(statusBar);
-    }
-    statusBar.innerHTML = `⚡ <strong>${completion}</strong><span class="ac-key-hint">→ Accept &nbsp; Esc Dismiss</span>`;
-    statusBar.classList.add("visible");
-}
-
-function triggerAutocomplete(sessionId, buffer) {
-    if (!buffer || !buffer.trim()) { clearAutocompleteGhost(); return; }
-    clearTimeout(autocompleteDebounce);
-    autocompleteDebounce = setTimeout(async () => {
-        try {
-            const completion = await invoke("shell_autocomplete", { buffer: buffer.trim() });
-            if (completion && completion.trim()) {
-                showAutocompleteGhost(completion);
-            } else {
-                clearAutocompleteGhost();
-            }
-        } catch (err) {
-            console.warn("[Autocomplete] Error:", err);
-            clearAutocompleteGhost();
-        }
-    }, 100);
-}
-
-// Hook into xterm onKey to intercept Ctrl+Space and RightArrow when ghost text is visible.
-// We patch createTerminalSession to add the key handler after session creation.
-const _origCreateTerminalSession = window.createTerminalSession;
-
-function patchTerminalSessionWithAutocomplete(session) {
-    if (!session || !session.term) return;
-    const term = session.term;
-
-    let currentLineBuffer = "";
-
-    // Track what's typed to maintain a local line buffer
-    term.onData((data) => {
-        // Handle special sequences
-        if (data === "\r" || data === "\n") {
-            currentLineBuffer = "";
-            clearAutocompleteGhost();
-            return;
-        }
-        if (data === "\x7f" || data === "\b") {
-            // Backspace
-            currentLineBuffer = currentLineBuffer.slice(0, -1);
-            clearAutocompleteGhost();
-            return;
-        }
-        if (data === "\x03" || data === "\x1b") {
-            // Ctrl+C or Escape
-            currentLineBuffer = "";
-            clearAutocompleteGhost();
-            return;
-        }
-        // Ctrl+Space (0x00 or \x00 in xterm key events)
-        if (data === "\x00" || data === " " && autocompleteActive) {
-            // Accept ghost text if active and space is pressed
-        }
-        // Printable chars
-        if (data.length === 1 && data.charCodeAt(0) >= 32) {
-            currentLineBuffer += data;
-            clearAutocompleteGhost();
-        }
-    });
-
-    // Override Ctrl+Space using the custom keyEventHandler
-    term.attachCustomKeyEventHandler((e) => {
-        // Ctrl+H: open AI history search — intercept before xterm sends 0x08 backspace to PTY
-        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
-            e.preventDefault();
-            if (typeof openHistorySearch === "function") openHistorySearch();
-            return false;
-        }
-
-        // Ctrl+Space: trigger autocomplete
-        if (e.ctrlKey && e.code === "Space" && e.type === "keydown") {
-            e.preventDefault();
-            triggerAutocomplete(session.id, currentLineBuffer);
-            return false;
-        }
-
-        // Right Arrow or Ctrl+Y: accept ghost completion
-        if (autocompleteActive && autocompleteGhostText && e.type === "keydown") {
-            if (e.code === "ArrowRight" || (e.ctrlKey && e.key === "y")) {
-                e.preventDefault();
-                const ghost = autocompleteGhostText;
-                clearAutocompleteGhost();
-                currentLineBuffer += ghost;
-                // Write the ghost text to the PTY
-                invoke("pty_write", { id: session.id, data: ghost }).catch(console.error);
-                return false;
-            }
-            // Escape: dismiss
-            if (e.code === "Escape") {
-                clearAutocompleteGhost();
-                return true; // Let xterm handle normally
-            }
-        }
-        return true; // Allow normal key processing
-    });
-}
-
-// ==========================================================================
-// SSH CLIENT SYSTEM
-// ==========================================================================
-
-let sshSessionId = null;
-
-function initSshTerminal() {
-    const container = document.getElementById("ssh-terminal-container");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const savedFontSize = parseInt(localStorage.getItem("terminalFontSize") || "14", 10);
-    const term = new Terminal({
-        cursorBlink: true,
-        fontFamily: 'var(--font-mono)',
-        fontSize: savedFontSize,
-        scrollback: 2000,
-        theme: {
-            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
-            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
-            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
-            selectionBackground: 'rgba(255, 255, 255, 0.15)'
-        }
-    });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(container);
-    window.sshTerminal = term;
-    window.sshTerminalFitAddon = fitAddon;
-    try { fitAddon.fit(); } catch (e) {}
-
-    term.attachCustomKeyEventHandler((e) => {
-        // Ctrl+H: open AI history search from SSH terminal too
-        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
-            e.preventDefault();
-            if (typeof openHistorySearch === "function") openHistorySearch();
-            return false;
-        }
-        return true;
-    });
-
-    term.onData(data => {
-        if (sshSessionId) {
-            invoke("pty_write", { id: sshSessionId, data }).catch(console.error);
-        }
-    });
-    term.write("\x1b[1;36mNEURODECK SSH Client\x1b[0m — Enter connection details and click Connect.\r\n");
-}
-
-function setSshStatus(connected, text) {
-    const dot = document.getElementById("ssh-status-dot");
-    const label = document.getElementById("ssh-status-text");
-    if (dot) {
-        dot.className = `ssh-status-dot ${connected ? "connected" : "disconnected"}`;
-    }
-    if (label) label.textContent = text;
-    const disconnectBtn = document.getElementById("ssh-disconnect-btn");
-    if (disconnectBtn) disconnectBtn.disabled = !connected;
-}
-
-function connectSsh() {
-    window._sshPasswordSent = false;
-    const host = document.getElementById("ssh-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
-    const user = document.getElementById("ssh-user-input")?.value.trim();
-    const authType = document.getElementById("ssh-auth-type")?.value || "password";
-    const keyPath = document.getElementById("ssh-key-path-input")?.value.trim();
-
-    if (!host || !user) {
-        window.sshTerminal?.write("\r\n\x1b[1;31mError: Host and Username are required.\x1b[0m\r\n");
-        return;
-    }
-
-    // Kill existing session
-    if (sshSessionId) {
-        invoke("pty_kill", { id: sshSessionId }).catch(() => {});
-        sshSessionId = null;
-    }
-
-    sshSessionId = "ssh_session_" + Date.now();
-    const dims = window.sshTerminalFitAddon?.proposeDimensions() || { cols: 80, rows: 24 };
-
-    // Use system ssh binary
-    const sshBin = "ssh";
-    const sshArgs = ["-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30", "-p", String(port)];
-    if (authType === "key" && keyPath) {
-        sshArgs.push("-i", keyPath);
-    }
-    sshArgs.push(`${user}@${host}`);
-
-    window.sshTerminal?.write(`\r\n\x1b[1;33mConnecting to ${user}@${host}:${port}...\x1b[0m\r\n`);
-    setSshStatus(false, `Connecting to ${host}...`);
-
-    invoke("pty_spawn", {
-        id: sshSessionId,
-        cols: dims.cols,
-        rows: dims.rows,
-        shell: sshBin,
-        args: sshArgs
-    }).then(() => {
-        setSshStatus(true, `${user}@${host}:${port}`);
-        addNotification("SSH Connected", "Connected to " + user + "@" + host + ".", "success");
-    }).catch(err => {
-        window.sshTerminal?.write(`\r\n\x1b[1;31mFailed to launch SSH: ${err}\x1b[0m\r\n`);
-        setSshStatus(false, "Connection failed");
-        sshSessionId = null;
-        addNotification("SSH Failed", "Could not connect to " + host + ".", "error");
-    });
-}
-
-document.getElementById("ssh-connect-btn")?.addEventListener("click", connectSsh);
-
-document.getElementById("ssh-disconnect-btn")?.addEventListener("click", () => {
-    if (sshSessionId) {
-        invoke("pty_kill", { id: sshSessionId }).catch(() => {});
-        sshSessionId = null;
-    }
-    window.sshTerminal?.write("\r\n\x1b[1;31m[Disconnected]\x1b[0m\r\n");
-    setSshStatus(false, "Disconnected");
-});
-
-// --- SSH Profile Management ---
-function getSshProfiles() {
-    try { return JSON.parse(localStorage.getItem("sshProfiles") || "[]"); } catch { return []; }
-}
-
-function saveSshProfiles(profiles) {
-    localStorage.setItem("sshProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "ssh", data: JSON.stringify(profiles) }).catch(() => {});
-    }
-}
-
-async function initSshProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
-    try {
-        const raw = await invoke("load_profiles", { key: "ssh" });
-        if (raw && raw !== "[]" && !localStorage.getItem("sshProfiles")) {
-            localStorage.setItem("sshProfiles", raw);
-        }
-    } catch (_) {}
-}
-
-function renderSshProfiles() {
-    const list = document.getElementById("ssh-profiles-list");
-    if (!list) return;
-    const profiles = getSshProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                <button class="canvas-btn ssh-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".ssh-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
-            const p = getSshProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("ssh-host-input").value = p.host || "";
-            document.getElementById("ssh-port-input").value = p.port || "22";
-            document.getElementById("ssh-user-input").value = p.user || "";
-            document.getElementById("ssh-auth-type").value = p.auth_type || "password";
-            document.getElementById("ssh-key-path-input").value = p.key_path || "";
-            document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("ssh-pass-input").value = "";
-        };
-    });
-
-    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getSshProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveSshProfiles(profiles);
-            renderSshProfiles();
-            renderSshProfilesSettings();
-        };
-    });
-}
-
-function renderSshProfilesSettings() {
-    const list = document.getElementById("settings-ssh-profiles-list");
-    if (!list) return;
-    const profiles = getSshProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-        </div>
-    `).join("");
-    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getSshProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveSshProfiles(profiles);
-            renderSshProfilesSettings();
-            renderSshProfiles();
-        };
-    });
-}
-
-document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ssh-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
-    const user = document.getElementById("ssh-user-input")?.value.trim();
-    const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
-    const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getSshProfiles();
-    profiles.push({ name, host, port, user, auth_type, key_path });
-    saveSshProfiles(profiles);
-    renderSshProfiles();
-});
-
-document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("sshProfiles");
-    renderSshProfiles();
-    renderSshProfilesSettings();
-});
-
-// Init SSH profiles on load
-renderSshProfiles();
-
-document.getElementById("ssh-auth-type")?.addEventListener("change", (e) => {
-    const isKey = e.target.value === "key";
-    const passGroup = document.getElementById("ssh-pass-group");
-    const keyPathGroup = document.getElementById("ssh-key-path-group");
-    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
-    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
-});
-
-// --- FTP Profile Management ---
-function getFtpProfiles() {
-    try { return JSON.parse(localStorage.getItem("ftpProfiles") || "[]"); } catch { return []; }
-}
-
-function saveFtpProfiles(profiles) {
-    localStorage.setItem("ftpProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "ftp", data: JSON.stringify(profiles) }).catch(() => {});
-    }
-}
-
-async function initFtpProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
-    try {
-        const raw = await invoke("load_profiles", { key: "ftp" });
-        if (raw && raw !== "[]" && !localStorage.getItem("ftpProfiles")) {
-            localStorage.setItem("ftpProfiles", raw);
-        }
-    } catch (_) {}
-}
-
-function renderFtpProfiles() {
-    const list = document.getElementById("ftp-profiles-list");
-    if (!list) return;
-    const profiles = getFtpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                <button class="canvas-btn ftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".ftp-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
-            const p = getFtpProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("ftp-host-input").value = p.host || "";
-            document.getElementById("ftp-port-input").value = p.port || "21";
-            document.getElementById("ftp-user-input").value = p.user || "";
-            document.getElementById("ftp-pass-input").value = "";
-            document.getElementById("ftp-path-input").value = p.path || "/";
-        };
-    });
-
-    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getFtpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveFtpProfiles(profiles);
-            renderFtpProfiles();
-            renderFtpProfilesSettings();
-        };
-    });
-}
-
-function renderFtpProfilesSettings() {
-    const list = document.getElementById("settings-ftp-profiles-list");
-    if (!list) return;
-    const profiles = getFtpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the FTP tab to add profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-        </div>
-    `).join("");
-    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getFtpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveFtpProfiles(profiles);
-            renderFtpProfilesSettings();
-            renderFtpProfiles();
-        };
-    });
-}
-
-document.getElementById("ftp-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getFtpProfiles();
-    profiles.push({ name, host, port, user, path });
-    saveFtpProfiles(profiles);
-    renderFtpProfiles();
-});
-
-document.getElementById("settings-clear-ftp-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("ftpProfiles");
-    renderFtpProfiles();
-    renderFtpProfilesSettings();
-});
-
-// Init FTP profiles on load
-renderFtpProfiles();
-
-// ==========================================================================
-// FTP CLIENT SYSTEM
-// ==========================================================================
-
-let ftpCurrentPath = "/";
-
-function renderFtpFiles(entries) {
-    const list = document.getElementById("ftp-file-list");
-    if (!list) return;
-    if (!entries || entries.length === 0) {
-        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
-        return;
-    }
-    list.innerHTML = entries.map(e => `
-        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
-            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
-            <span class="ftp-file-name">${e.name}</span>
-            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
-            ${!e.is_dir ? `<button class="canvas-btn ftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
-        </div>
-    `).join("");
-
-    // Directory navigation
-    list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
-        item.style.cursor = "pointer";
-        item.onclick = () => {
-            const name = item.getAttribute("data-name");
-            ftpCurrentPath = ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            loadFtpDir(ftpCurrentPath);
-        };
-    });
-
-    // Download buttons
-    list.querySelectorAll(".ftp-download-btn").forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const name = btn.getAttribute("data-name");
-            const remotePath = ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-            const host = document.getElementById("ftp-host-input")?.value.trim();
-            const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-            const user = document.getElementById("ftp-user-input")?.value.trim();
-            const pass = document.getElementById("ftp-pass-input")?.value;
-            setFtpStatus(`Downloading ${name}...`);
-            invoke("ftp_download_file", { host, port, user, password: pass, remotePath, localPath })
-                .then(() => {
-                    setFtpStatus(`Downloaded to ${localPath}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                    }
-                })
-                .catch(err => {
-                    setFtpStatus(`Download error: ${err}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                    }
-                });
-        };
-    });
-}
-
-function setFtpStatus(msg) {
-    const el = document.getElementById("ftp-status-text");
-    if (el) el.textContent = msg;
-}
-
-function loadFtpDir(path) {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const pass = document.getElementById("ftp-pass-input")?.value;
-    if (!host) return;
-
-    setFtpStatus("Loading...");
-    const cwdLabel = document.getElementById("ftp-cwd-label");
-    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
-
-    invoke("ftp_list_dir", { host, port, user, password: pass, path })
-        .then(entries => {
-            ftpCurrentPath = path;
-            renderFtpFiles(entries);
-            setFtpStatus(`Connected — ${entries.length} items`);
-        })
-        .catch(err => {
-            setFtpStatus(`Error: ${err}`);
-            const list = document.getElementById("ftp-file-list");
-            if (list) list.innerHTML = `<div class="ftp-empty-state" style="color:#ff6b6b;">Error: ${err}</div>`;
-        });
-}
-
-document.getElementById("ftp-connect-btn")?.addEventListener("click", () => {
-    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
-    loadFtpDir(path);
-});
-
-document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const pass = document.getElementById("ftp-pass-input")?.value;
-    const localPath = document.getElementById("ftp-local-path-input")?.value.trim();
-    const remotePath = document.getElementById("ftp-remote-dest-input")?.value.trim();
-    if (!host || !localPath || !remotePath) {
-        setFtpStatus("Fill in host, local path, and remote destination.");
-        return;
-    }
-    setFtpStatus("Uploading...");
-    invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
-        .then(() => {
-            setFtpStatus("Upload complete.");
-            if (typeof addNotification === "function") {
-                addNotification("FTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
-            }
-            loadFtpDir(ftpCurrentPath);
-        })
-        .catch(err => {
-            setFtpStatus(`Upload error: ${err}`);
-            if (typeof addNotification === "function") {
-                addNotification("FTP Upload Failed", `Failed to upload file: ${err}`, "error");
-            }
-        });
-});
-
-// ==========================================================================
-// SFTP CLIENT SYSTEM
-// ==========================================================================
-
-let sftpCurrentPath = "/";
-
-function renderSftpFiles(entries) {
-    const list = document.getElementById("sftp-file-list");
-    if (!list) return;
-    if (!entries || entries.length === 0) {
-        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
-        return;
-    }
-    list.innerHTML = entries.map(e => `
-        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
-            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
-            <span class="ftp-file-name">${e.name}</span>
-            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
-            ${!e.is_dir ? `<button class="canvas-btn sftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
-        </div>
-    `).join("");
-
-    // Directory navigation
-    list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
-        item.style.cursor = "pointer";
-        item.onclick = () => {
-            const name = item.getAttribute("data-name");
-            sftpCurrentPath = sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            loadSftpDir(sftpCurrentPath);
-        };
-    });
-
-    // Download buttons
-    list.querySelectorAll(".sftp-download-btn").forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const name = btn.getAttribute("data-name");
-            const remotePath = sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-            const host = document.getElementById("sftp-host-input")?.value.trim();
-            const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-            const user = document.getElementById("sftp-user-input")?.value.trim();
-            const authType = document.getElementById("sftp-auth-type")?.value || "password";
-            const pass = document.getElementById("sftp-pass-input")?.value;
-            const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
-            setSftpStatus(`Downloading ${name}...`);
-            invoke("sftp_download_file", { host, port, user, authType, password: pass, keyPath, remotePath, localPath })
-                .then(() => {
-                    setSftpStatus(`Downloaded to ${localPath}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                    }
-                })
-                .catch(err => {
-                    setSftpStatus(`Download error: ${err}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                    }
-                });
-        };
-    });
-}
-
-function setSftpStatus(msg) {
-    const el = document.getElementById("sftp-status-text");
-    if (el) el.textContent = msg;
-}
-
-function loadSftpDir(path) {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const authType = document.getElementById("sftp-auth-type")?.value || "password";
-    const pass = document.getElementById("sftp-pass-input")?.value;
-    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
-    if (!host) return;
-
-    setSftpStatus("Loading...");
-    const cwdLabel = document.getElementById("sftp-cwd-label");
-    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
-
-    invoke("sftp_list_dir", { host, port, user, authType, password: pass, keyPath, path })
-        .then(entries => {
-            sftpCurrentPath = path;
-            renderSftpFiles(entries);
-            setSftpStatus(`Connected — ${entries.length} items`);
-        })
-        .catch(err => {
-            setSftpStatus(`Error: ${err}`);
-            const list = document.getElementById("sftp-file-list");
-            if (list) list.innerHTML = `<div class="ftp-empty-state" style="color:#ff6b6b;">Error: ${err}</div>`;
-        });
-}
-
-document.getElementById("sftp-connect-btn")?.addEventListener("click", () => {
-    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
-    loadSftpDir(path);
-});
-
-document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const authType = document.getElementById("sftp-auth-type")?.value || "password";
-    const pass = document.getElementById("sftp-pass-input")?.value;
-    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
-    const localPath = document.getElementById("sftp-local-path-input")?.value.trim();
-    const remotePath = document.getElementById("sftp-remote-dest-input")?.value.trim();
-    if (!host || !localPath || !remotePath) {
-        setSftpStatus("Fill in host, local path, and remote destination.");
-        return;
-    }
-    setSftpStatus("Uploading...");
-    invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
-        .then(() => {
-            setSftpStatus("Upload complete.");
-            if (typeof addNotification === "function") {
-                addNotification("SFTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
-            }
-            loadSftpDir(sftpCurrentPath);
-        })
-        .catch(err => {
-            setSftpStatus(`Upload error: ${err}`);
-            if (typeof addNotification === "function") {
-                addNotification("SFTP Upload Failed", `Failed to upload file: ${err}`, "error");
-            }
-        });
-});
-
-// --- SFTP Profile Management ---
-function getSftpProfiles() {
-    try { return JSON.parse(localStorage.getItem("sftpProfiles") || "[]"); } catch { return []; }
-}
-
-const fn_sftp_save_profiles = (profiles) => {
-    localStorage.setItem("sftpProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "sftp", data: JSON.stringify(profiles) }).catch(() => {});
-    }
-};
-
-async function initSftpProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
-    try {
-        const raw = await invoke("load_profiles", { key: "sftp" });
-        if (raw && raw !== "[]" && !localStorage.getItem("sftpProfiles")) {
-            localStorage.setItem("sftpProfiles", raw);
-        }
-    } catch (_) {}
-}
-
-function renderSftpProfiles() {
-    const list = document.getElementById("sftp-profiles-list");
-    if (!list) return;
-    const profiles = getSftpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                <button class="canvas-btn sftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".sftp-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
-            const p = getSftpProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("sftp-host-input").value = p.host || "";
-            document.getElementById("sftp-port-input").value = p.port || "22";
-            document.getElementById("sftp-user-input").value = p.user || "";
-            document.getElementById("sftp-auth-type").value = p.auth_type || "password";
-            document.getElementById("sftp-key-path-input").value = p.key_path || "";
-            document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("sftp-pass-input").value = "";
-            document.getElementById("sftp-path-input").value = p.path || "/";
-        };
-    });
-
-    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getSftpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            fn_sftp_save_profiles(profiles);
-            renderSftpProfiles();
-            renderSftpProfilesSettings();
-        };
-    });
-}
-
-function renderSftpProfilesSettings() {
-    const list = document.getElementById("settings-sftp-profiles-list");
-    if (!list) return;
-    const profiles = getSftpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SFTP tab to add profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
-            </div>
-            <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
-        </div>
-    `).join("");
-    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getSftpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            fn_sftp_save_profiles(profiles);
-            renderSftpProfilesSettings();
-            renderSftpProfiles();
-        };
-    });
-}
-
-document.getElementById("sftp-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
-    const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
-    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getSftpProfiles();
-    profiles.push({ name, host, port, user, auth_type, key_path, path });
-    fn_sftp_save_profiles(profiles);
-    renderSftpProfiles();
-});
-
-document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("sftpProfiles");
-    renderSftpProfiles();
-    renderSftpProfilesSettings();
-});
-
-document.getElementById("sftp-auth-type")?.addEventListener("change", (e) => {
-    const isKey = e.target.value === "key";
-    const passGroup = document.getElementById("sftp-pass-group");
-    const keyPathGroup = document.getElementById("sftp-key-path-group");
-    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
-    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
-});
-
-// Init SFTP profiles on load
-renderSftpProfiles();
-
-// --- LIVE CODE CANVAS SYSTEM ---
-
-const CANVAS_EXT_MAP = {
-    html: 'index.html',
-    css: 'styles.css',
-    javascript: 'script.js',
-    markdown: 'README.md',
-    bash: 'script.sh',
-    python: 'script.py',
-    lua: 'plugin.lua'
-};
-
-function buildPreviewDoc(lang, code) {
-    switch (lang) {
-        case 'html':
-            return code;
-        case 'css':
-            return `<!DOCTYPE html><html><head><style>${code}</style></head><body><p style="color:#888;font-family:sans-serif;padding:1rem">CSS Preview — add HTML in the editor to see styled content.</p></body></html>`;
-        case 'javascript':
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem}pre{white-space:pre-wrap;word-break:break-all}</style></head><body><pre id="out"></pre><script>
-const _log=console.log.bind(console);
-const out=document.getElementById('out');
-console.log=(...a)=>{out.textContent+=a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ')+'\\n';_log(...a)};
-try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
-<\/script></body></html>`;
-        case 'markdown':
-            // Use marked from parent via postMessage isn't available in srcdoc — render inline
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body id="md"></body><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script><script>document.getElementById('md').innerHTML=marked.parse(${JSON.stringify(code)});<\/script></html>`;
-        default:
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem;white-space:pre-wrap}</style></head><body>Run this code in the Terminal tab (▶ Run is for HTML/CSS/JS/Markdown).\n\n${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
-    }
-}
-
-function renderCanvasPreview() {
-    const editor = document.getElementById("canvas-editor");
-    const frame = document.getElementById("canvas-preview-frame");
-    const outputPre = document.getElementById("canvas-preview-output");
-    if (!editor || !frame || !outputPre) return;
-    const lang = window.neurodeckCanvas.currentLang;
-    const code = editor.value;
-    window.neurodeckCanvas.currentCode = code;
-    
-    if (lang === 'python' || lang === 'bash') {
-        frame.style.display = 'none';
-        outputPre.style.display = 'block';
-        if (!outputPre.textContent || outputPre.textContent.startsWith("[Select '▶ Run'")) {
-            outputPre.textContent = `[Select '▶ Run' to execute this ${lang === 'python' ? 'Python' : 'Bash'} code]`;
-        }
-    } else {
-        frame.style.display = 'block';
-        outputPre.style.display = 'none';
-        frame.srcdoc = buildPreviewDoc(lang, code);
-    }
-}
-
-function loadCanvasCode(lang, content, fileName = "") {
-    window.neurodeckCanvas.activePluginFile = fileName;
-    const normalizedLang = lang.toLowerCase();
-    const mappedLang = ['js', 'javascript'].includes(normalizedLang) ? 'javascript'
-        : ['sh', 'shell', 'zsh', 'bash'].includes(normalizedLang) ? 'bash'
-        : ['md', 'markdown'].includes(normalizedLang) ? 'markdown'
-        : normalizedLang;
-
-    const select = document.getElementById("canvas-lang-select");
-    const editor = document.getElementById("canvas-editor");
-    const fileTitle = document.getElementById("canvas-file-title");
-
-    if (select) select.value = mappedLang in CANVAS_EXT_MAP ? mappedLang : 'html';
-    window.neurodeckCanvas.currentLang = select ? select.value : 'html';
-
-    if (editor) editor.value = content;
-    if (fileTitle) {
-        fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[window.neurodeckCanvas.currentLang] || 'untitled';
-    }
-
-    renderCanvasPreview();
-    if (typeof updateCanvasToolbarButtons === 'function') {
-        updateCanvasToolbarButtons();
-    }
-}
-
-function initCanvasView() {
-    const editor = document.getElementById("canvas-editor");
-    const select = document.getElementById("canvas-lang-select");
-    const runBtn = document.getElementById("canvas-run-btn");
-    const clearBtn = document.getElementById("canvas-clear-btn");
-    const copyBtn = document.getElementById("canvas-copy-btn");
-    const refreshBtn = document.getElementById("canvas-refresh-btn");
-    const fileTitle = document.getElementById("canvas-file-title");
-    const divider = document.getElementById("canvas-divider");
-    const split = document.getElementById("canvas-split");
-
-    if (!editor) return;
-
-    // Set initial language
-    window.neurodeckCanvas.currentLang = select ? select.value : 'html';
-
-    // Seed default HTML template
-    const defaultHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Live Preview</title>
-  <style>
-    body {
-      background: #0d0d0d;
-      color: #e0e0e0;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 { color: #7C3AED; }
-  </style>
-</head>
-<body>
-  <h1>Hello, NEURODECK</h1>
-  <p>Edit this code or send a block from the Chat tab.</p>
-</body>
-</html>`;
-    editor.value = defaultHTML;
-    window.neurodeckCanvas.currentCode = defaultHTML;
-    renderCanvasPreview();
-
-    // Live update with debounce
-    let debounceTimer = null;
-    editor.addEventListener("input", () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(renderCanvasPreview, 600);
-    });
-
-    // Ctrl+Enter to run immediately
-    editor.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.key === "Enter") {
-            e.preventDefault();
-            clearTimeout(debounceTimer);
-            renderCanvasPreview();
-        }
-        // Tab key inserts spaces instead of losing focus
-        if (e.key === "Tab") {
-            e.preventDefault();
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            editor.value = editor.value.substring(0, start) + "  " + editor.value.substring(end);
-            editor.selectionStart = editor.selectionEnd = start + 2;
-        }
-    });
-
-    if (select) {
-        select.addEventListener("change", () => {
-            window.neurodeckCanvas.currentLang = select.value;
-            if (fileTitle) {
-                fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[select.value] || 'untitled';
-            }
-            renderCanvasPreview();
-            if (typeof updateCanvasToolbarButtons === 'function') {
-                updateCanvasToolbarButtons();
-            }
-        });
-    }
-
-    if (runBtn) {
-        runBtn.onclick = () => {
-            clearTimeout(debounceTimer);
-            const lang = window.neurodeckCanvas.currentLang;
-            const code = editor.value;
-            const outputPre = document.getElementById("canvas-preview-output");
-
-            if (lang === 'python' || lang === 'bash') {
-                runBtn.textContent = "⚡ Running...";
-                runBtn.disabled = true;
-                if (outputPre) outputPre.textContent = "Executing code on system...\n";
-
-                invoke("agent_exec_code", { code: code, lang: lang })
-                    .then(res => {
-                        if (outputPre) outputPre.textContent = res;
-                        runBtn.textContent = "✓ Done";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    })
-                    .catch(err => {
-                        if (outputPre) outputPre.textContent = `Error executing code:\n${err}`;
-                        runBtn.textContent = "❌ Failed";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    });
-            } else if (lang === 'lua') {
-                runBtn.textContent = "⚡ Running...";
-                runBtn.disabled = true;
-                if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
-
-                invoke("execute_lua", { code: code })
-                    .then(() => {
-                        if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
-                        runBtn.textContent = "✓ Done";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    })
-                    .catch(err => {
-                        if (outputPre) outputPre.textContent = `Lua Error:\n${err}`;
-                        runBtn.textContent = "❌ Failed";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    });
-            } else {
-                renderCanvasPreview();
-                runBtn.textContent = "✓ Done";
-                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1200);
-            }
-        };
-    }
-
-    if (clearBtn) {
-        clearBtn.onclick = () => {
-            if (confirm("Clear the editor?")) {
-                editor.value = "";
-                window.neurodeckCanvas.currentCode = "";
-                const frame = document.getElementById("canvas-preview-frame");
-                if (frame) frame.srcdoc = "";
-            }
-        };
-    }
-
-    if (copyBtn) {
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(editor.value).then(() => {
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
-            });
-        };
-    }
-
-    if (refreshBtn) {
-        refreshBtn.onclick = () => renderCanvasPreview();
-    }
-
-    // Draggable divider for resizing panes
-    if (divider && split) {
-        let isDragging = false;
-        divider.addEventListener("mousedown", (e) => {
-            isDragging = true;
-            e.preventDefault();
-            document.body.style.cursor = "col-resize";
-            document.body.style.userSelect = "none";
-        });
-        document.addEventListener("mousemove", (e) => {
-            if (!isDragging) return;
-            const rect = split.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const totalW = rect.width;
-            const pct = Math.min(Math.max(offsetX / totalW * 100, 20), 80);
-            split.style.setProperty("--editor-pct", `${pct}%`);
-        });
-        document.addEventListener("mouseup", () => {
-            if (isDragging) {
-                isDragging = false;
-                document.body.style.cursor = "";
-                document.body.style.userSelect = "";
-            }
-        });
-    }
-}
+/* --- SEPARATOR --- */
 
 // --- STEAMOS TUNNEL SYSTEM ---
-let tunnelStatus = "offline";
+// let tunnelStatus = "offline"; (Moved to state.js)
 
 function logTunnel(direction, text) {
     const logContainer = document.getElementById("tunnel-log");
@@ -7346,8 +4190,8 @@ function checkTunnelServerStatus(silent = false) {
         try {
             const resp = JSON.parse(resStr);
             if (resp.type === "success") {
-                const oldStatus = tunnelStatus;
-                tunnelStatus = "online";
+                const oldStatus = state.tunnelStatus;
+                state.tunnelStatus = "online";
                 if (indicator) {
                     indicator.innerText = "ONLINE";
                     indicator.className = "tunnel-status-indicator online";
@@ -7356,8 +4200,8 @@ function checkTunnelServerStatus(silent = false) {
                     logTunnel("system", `Tunnel server is alive. Running as: ${resp.output.trim()}`);
                 }
             } else {
-                const oldStatus = tunnelStatus;
-                tunnelStatus = "offline";
+                const oldStatus = state.tunnelStatus;
+                state.tunnelStatus = "offline";
                 if (indicator) {
                     indicator.innerText = "OFFLINE";
                     indicator.className = "tunnel-status-indicator offline";
@@ -7367,8 +4211,8 @@ function checkTunnelServerStatus(silent = false) {
                 }
             }
         } catch(e) {
-            const oldStatus = tunnelStatus;
-            tunnelStatus = "offline";
+            const oldStatus = state.tunnelStatus;
+            state.tunnelStatus = "offline";
             if (indicator) {
                 indicator.innerText = "OFFLINE";
                 indicator.className = "tunnel-status-indicator offline";
@@ -7378,8 +4222,8 @@ function checkTunnelServerStatus(silent = false) {
             }
         }
     }).catch((err) => {
-        const oldStatus = tunnelStatus;
-        tunnelStatus = "offline";
+        const oldStatus = state.tunnelStatus;
+        state.tunnelStatus = "offline";
         if (indicator) {
             indicator.innerText = "OFFLINE";
             indicator.className = "tunnel-status-indicator offline";
@@ -7406,7 +4250,7 @@ function initTunnelClient() {
     
     if (toggleBtn) {
         toggleBtn.onclick = function() {
-            if (tunnelStatus === "offline") {
+            if (state.tunnelStatus === "offline") {
                 logTunnel("system", "Starting local loopback tunnel server...");
                 invoke("start_tunnel_server").then((msg) => {
                     logTunnel("received", msg);
@@ -7418,7 +4262,7 @@ function initTunnelClient() {
                 logTunnel("system", "Stopping local loopback tunnel server...");
                 invoke("stop_tunnel_server").then((msg) => {
                     logTunnel("received", msg);
-                    tunnelStatus = "offline";
+                    state.tunnelStatus = "offline";
                     const indicator = document.getElementById("tunnel-status-indicator");
                     if (indicator) {
                         indicator.innerText = "OFFLINE";
@@ -7526,8 +4370,8 @@ document.querySelectorAll(".share-inner-tab").forEach(tab => {
 });
 
 // --- LAN FILE SHARING SYSTEM ---
-let selectedPeerIp = null;
-let pendingTransferId = null;
+// let selectedPeerIp = null; (Moved to state.js)
+// let pendingTransferId = null; (Moved to state.js)
 
 function formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
@@ -7543,14 +4387,14 @@ function renderPeers(peers) {
     listEl.innerHTML = "";
     if (!peers || peers.length === 0) {
         listEl.innerHTML = `<div class="peer-item-empty">Scanning local network for active peers...</div>`;
-        selectedPeerIp = null;
+        state.selectedPeerIp = null;
         updateSendButtonState();
         return;
     }
     peers.forEach(peer => {
         const item = document.createElement("div");
         item.className = "peer-item";
-        if (peer.ip === selectedPeerIp) {
+        if (peer.ip === state.selectedPeerIp) {
             item.classList.add("selected");
         }
         item.innerHTML = `
@@ -7563,7 +4407,7 @@ function renderPeers(peers) {
         item.onclick = function() {
             document.querySelectorAll(".peer-item").forEach(el => el.classList.remove("selected"));
             item.classList.add("selected");
-            selectedPeerIp = peer.ip;
+            state.selectedPeerIp = peer.ip;
             updateSendButtonState();
         };
         listEl.appendChild(item);
@@ -7758,7 +4602,7 @@ function updateSendButtonState() {
     const pathInput = document.getElementById("share-filepath-input");
     if (sendBtn && pathInput) {
         const path = pathInput.value.trim();
-        sendBtn.disabled = !(selectedPeerIp && path);
+        sendBtn.disabled = !(state.selectedPeerIp && path);
     }
 }
 
@@ -7814,7 +4658,7 @@ function initFileShare() {
     // Listen for incoming transfer requests
     listen("transfer_incoming", (event) => {
         const transfer = event.payload;
-        pendingTransferId = transfer.id;
+        state.pendingTransferId = transfer.id;
         
         const modal = document.getElementById("transfer-modal");
         const modalPeer = document.getElementById("transfer-modal-peer");
@@ -7860,11 +4704,11 @@ function initFileShare() {
     // Setup modal button handlers
     if (acceptBtn) {
         acceptBtn.onclick = function() {
-            if (pendingTransferId) {
-                invoke("respond_to_transfer", { transferId: pendingTransferId, accept: true })
+            if (state.pendingTransferId) {
+                invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept: true })
                     .then(() => {
                         document.getElementById("transfer-modal").classList.remove("active");
-                        pendingTransferId = null;
+                        state.pendingTransferId = null;
                         invoke("get_active_transfers").then(renderTransfers);
                     })
                     .catch(err => {
@@ -7877,11 +4721,11 @@ function initFileShare() {
     
     if (rejectBtn) {
         rejectBtn.onclick = function() {
-            if (pendingTransferId) {
-                invoke("respond_to_transfer", { transferId: pendingTransferId, accept: false })
+            if (state.pendingTransferId) {
+                invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept: false })
                     .then(() => {
                         document.getElementById("transfer-modal").classList.remove("active");
-                        pendingTransferId = null;
+                        state.pendingTransferId = null;
                         invoke("get_active_transfers").then(renderTransfers);
                     })
                     .catch(err => {
@@ -7894,11 +4738,11 @@ function initFileShare() {
     
     if (closeXBtn) {
         closeXBtn.onclick = function() {
-            if (pendingTransferId) {
-                invoke("respond_to_transfer", { transferId: pendingTransferId, accept: false })
+            if (state.pendingTransferId) {
+                invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept: false })
                     .then(() => {
                         document.getElementById("transfer-modal").classList.remove("active");
-                        pendingTransferId = null;
+                        state.pendingTransferId = null;
                         invoke("get_active_transfers").then(renderTransfers);
                     });
             } else {
@@ -7944,10 +4788,10 @@ function initFileShare() {
         sendBtn.onclick = function() {
             if (pathInput) {
                 const path = pathInput.value.trim();
-                if (selectedPeerIp && path) {
+                if (state.selectedPeerIp && path) {
                     sendBtn.disabled = true;
                     sendBtn.innerText = "Initiating... ⏳";
-                    invoke("start_file_transfer", { peerIp: selectedPeerIp, filePath: path })
+                    invoke("start_file_transfer", { peerIp: state.selectedPeerIp, filePath: path })
                         .then(() => {
                             sendBtn.innerText = "Send File 🚀";
                             pathInput.value = "";
@@ -8926,826 +5770,13 @@ function updateCanvasToolbarButtons() {
 // Initialize Plugins Manager event handlers
 initPluginsManager();
 
-// --- CUSTOM PERSONA CREATOR SYSTEM ---
-function refreshSettingsPersonaDropdown() {
-    invoke("get_personas").then((personas) => {
-        let select = document.getElementById("persona-select");
-        if (!select) return;
-        select.innerHTML = "";
-        personas.forEach((p) => {
-            let option = document.createElement("option");
-            option.value = p;
-            option.innerText = p;
-            if (p === activePersona) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-    });
-}
 
-function loadCustomPersonas() {
-    const listEl = document.getElementById("settings-personas-list-custom");
-    if (!listEl) return;
-    
-    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>`;
-    
-    invoke("list_custom_personas").then((personas) => {
-        if (personas.length === 0) {
-            listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic; padding: 5px;">No custom personas found.</div>`;
-            return;
-        }
-        
-        listEl.innerHTML = personas.map((p) => {
-            return `
-                <div class="ssh-profile-item" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
-                    <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;">
-                        <span style="font-weight: 500; color: var(--foreground-color);">${p.name}</span>
-                        <span style="font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;" title="${p.prompt.replace(/"/g, '&quot;')}">${p.prompt}</span>
-                    </div>
-                    <button class="canvas-btn persona-delete-btn" data-name="${p.name}" style="padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);">✕</button>
-                </div>
-            `;
-        }).join("");
-        
-        // Wire delete button listeners
-        listEl.querySelectorAll(".persona-delete-btn").forEach(btn => {
-            btn.onclick = () => {
-                const name = btn.getAttribute("data-name");
-                if (confirm(`Are you sure you want to delete custom persona '${name}'?`)) {
-                    const statusEl = document.getElementById("settings-persona-status");
-                    if (statusEl) statusEl.innerText = "Deleting custom persona...";
-                    
-                    invoke("delete_custom_persona", { name }).then(() => {
-                        if (statusEl) statusEl.innerText = `Custom persona '${name}' deleted successfully.`;
-                        loadCustomPersonas();
-                        refreshSettingsPersonaDropdown();
-                    }).catch(err => {
-                        if (statusEl) statusEl.innerText = `Failed to delete: ${err}`;
-                    });
-                }
-            };
-        });
-    }).catch(err => {
-        listEl.innerHTML = `<div style="color: var(--error-color); padding: 5px;">Failed to load custom personas: ${err}</div>`;
-    });
-}
 
-function initCustomPersonas() {
-    const createBtn = document.getElementById("settings-persona-create-btn");
-    const nameInput = document.getElementById("settings-persona-name");
-    const promptInput = document.getElementById("settings-persona-prompt");
-    const statusEl = document.getElementById("settings-persona-status");
-
-    if (createBtn && nameInput && promptInput) {
-        createBtn.onclick = () => {
-            const name = nameInput.value.trim();
-            const prompt = promptInput.value.trim();
-
-            if (!name || !prompt) {
-                alert("Please enter a name and system prompt.");
-                return;
-            }
-
-            if (statusEl) statusEl.innerText = "Creating custom persona...";
-            createBtn.disabled = true;
-
-            invoke("add_custom_persona", { name, prompt }).then(() => {
-                if (statusEl) statusEl.innerText = `Persona '${name}' created successfully!`;
-                nameInput.value = "";
-                promptInput.value = "";
-                loadCustomPersonas();
-                refreshSettingsPersonaDropdown();
-            }).catch((err) => {
-                if (statusEl) statusEl.innerText = `Failed to create: ${err}`;
-            }).finally(() => {
-                createBtn.disabled = false;
-            });
-        };
-    }
-}
-
-// Initialize Custom Personas event handlers
-initCustomPersonas();
-
-// ==========================================================================
-// ==========================================================================
-// CUSTOM THEMES EDITOR (P22)
-// ==========================================================================
-
-(function initCustomThemes() {
-    const LS_KEY = "neurodeckCustomThemes";
-
-    function loadThemes() {
-        try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
-        catch (_) { return []; }
-    }
-
-    function saveThemes(themes) {
-        localStorage.setItem(LS_KEY, JSON.stringify(themes));
-        if (window.__TAURI_INTERNALS__) {
-            invoke("save_custom_themes", { data: JSON.stringify(themes) }).catch(() => {});
-        }
-    }
-
-    // Seed from disk if localStorage is empty
-    if (window.__TAURI_INTERNALS__) {
-        invoke("load_custom_themes").then(raw => {
-            if (raw && raw !== "[]" && !localStorage.getItem(LS_KEY)) {
-                localStorage.setItem(LS_KEY, raw);
-                refreshThemeSelect();
-            }
-        }).catch(() => {});
-    }
-
-    function applyThemeObj(t) {
-        applyThemeColors(t);
-        localStorage.setItem("selectedTheme", t.name);
-        const sel = document.getElementById("theme-select");
-        if (sel) sel.value = t.name;
-    }
-
-    function renderList() {
-        const container = document.getElementById("ct-list");
-        if (!container) return;
-        const themes = loadThemes();
-        if (themes.length === 0) {
-            container.innerHTML = '<div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>';
-            return;
-        }
-        container.innerHTML = "";
-        themes.forEach((t, idx) => {
-            const row = document.createElement("div");
-            row.style.cssText = "display:flex; align-items:center; gap:8px; padding:5px 6px; background:rgba(255,255,255,0.03); border-radius:4px;";
-
-            const swatch = document.createElement("div");
-            swatch.style.cssText = `width:16px; height:16px; border-radius:3px; background:${t.accent}; border:1px solid rgba(255,255,255,0.15); flex-shrink:0;`;
-
-            const name = document.createElement("span");
-            name.style.cssText = "flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-            name.textContent = t.name;
-
-            const applyBtn = document.createElement("button");
-            applyBtn.textContent = "Apply";
-            applyBtn.className = "send-prompt-btn";
-            applyBtn.style.cssText = "margin:0; height:22px; padding:0 8px; font-size:0.7rem; justify-content:center;";
-            applyBtn.onclick = () => {
-                applyThemeObj(t);
-                if (typeof addNotification === "function") {
-                    addNotification("Theme Applied", `"${t.name}" is now active.`, "success");
-                }
-            };
-
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "canvas-btn";
-            editBtn.style.cssText = "height:22px; padding:0 8px; font-size:0.7rem;";
-            editBtn.onclick = () => {
-                document.getElementById("ct-name").value = t.name;
-                document.getElementById("ct-bg").value = t.background;
-                document.getElementById("ct-fg").value = t.foreground;
-                document.getElementById("ct-accent").value = t.accent;
-                document.getElementById("ct-response").value = t.response;
-                document.getElementById("ct-warning").value = t.warning;
-                document.getElementById("ct-error").value = t.error;
-                updatePreview();
-                // Remove the old entry so saving replaces it
-                const themes2 = loadThemes();
-                themes2.splice(idx, 1);
-                saveThemes(themes2);
-                renderList();
-                refreshThemeSelect();
-            };
-
-            const delBtn = document.createElement("button");
-            delBtn.textContent = "✕";
-            delBtn.className = "canvas-btn";
-            delBtn.style.cssText = "height:22px; padding:0 6px; font-size:0.7rem; border-color:var(--error-color);";
-            delBtn.onclick = () => {
-                const themes2 = loadThemes();
-                themes2.splice(idx, 1);
-                saveThemes(themes2);
-                renderList();
-                refreshThemeSelect();
-                if (typeof addNotification === "function") {
-                    addNotification("Theme Deleted", `"${t.name}" removed.`, "info");
-                }
-            };
-
-            row.appendChild(swatch);
-            row.appendChild(name);
-            row.appendChild(applyBtn);
-            row.appendChild(editBtn);
-            row.appendChild(delBtn);
-            container.appendChild(row);
-        });
-    }
-
-    function refreshThemeSelect() {
-        // Rebuild the theme-select to include custom themes alongside hardcoded ones
-        invoke("get_themes").then(themes => {
-            const sel = document.getElementById("theme-select");
-            if (!sel) return;
-            const savedTheme = localStorage.getItem("selectedTheme");
-            sel.innerHTML = "";
-            // Hardcoded themes group
-            const group1 = document.createElement("optgroup");
-            group1.label = "Built-in";
-            themes.forEach(t => {
-                const opt = document.createElement("option");
-                opt.value = t;
-                opt.textContent = t;
-                if (t === savedTheme) opt.selected = true;
-                group1.appendChild(opt);
-            });
-            sel.appendChild(group1);
-            // Custom themes group
-            const customThemes = loadThemes();
-            if (customThemes.length > 0) {
-                const group2 = document.createElement("optgroup");
-                group2.label = "Custom";
-                customThemes.forEach(t => {
-                    const opt = document.createElement("option");
-                    opt.value = t.name;
-                    opt.textContent = t.name;
-                    if (t.name === savedTheme) opt.selected = true;
-                    group2.appendChild(opt);
-                });
-                sel.appendChild(group2);
-            }
-        }).catch(() => {});
-    }
-
-    function updatePreview() {
-        const map = {
-            "ct-preview-bg": "ct-bg",
-            "ct-preview-accent": "ct-accent",
-            "ct-preview-response": "ct-response",
-            "ct-preview-warning": "ct-warning",
-            "ct-preview-error": "ct-error",
-        };
-        Object.entries(map).forEach(([previewId, inputId]) => {
-            const el = document.getElementById(previewId);
-            const inp = document.getElementById(inputId);
-            if (el && inp) el.style.background = inp.value;
-        });
-    }
-
-    // Wire color picker preview
-    ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener("input", updatePreview);
-    });
-
-    // Save button
-    const saveBtn = document.getElementById("ct-save-btn");
-    if (saveBtn) {
-        saveBtn.addEventListener("click", () => {
-            const name = (document.getElementById("ct-name")?.value || "").trim();
-            if (!name) {
-                const s = document.getElementById("ct-status");
-                if (s) { s.textContent = "Enter a theme name."; setTimeout(() => { s.textContent = ""; }, 2000); }
-                return;
-            }
-            const theme = {
-                name,
-                background: document.getElementById("ct-bg")?.value || "#050505",
-                foreground: document.getElementById("ct-fg")?.value || "#D9F7FF",
-                accent: document.getElementById("ct-accent")?.value || "#00F0FF",
-                response: document.getElementById("ct-response")?.value || "#00FF88",
-                warning: document.getElementById("ct-warning")?.value || "#FFB000",
-                error: document.getElementById("ct-error")?.value || "#FF3C5A",
-            };
-            const themes = loadThemes().filter(t => t.name !== name); // replace if exists
-            themes.push(theme);
-            saveThemes(themes);
-            renderList();
-            refreshThemeSelect();
-            const s = document.getElementById("ct-status");
-            if (s) { s.textContent = `"${name}" saved!`; setTimeout(() => { s.textContent = ""; }, 2500); }
-            if (typeof addNotification === "function") {
-                addNotification("Theme Saved", `"${name}" added to custom themes.`, "success");
-            }
-        });
-    }
-
-    // Patch theme-select onchange to handle custom themes
-    const origOnchange = document.getElementById("theme-select")?.onchange;
-    const themeSelect = document.getElementById("theme-select");
-    if (themeSelect) {
-        themeSelect.onchange = function () {
-            const val = this.value;
-            const custom = loadThemes().find(t => t.name === val);
-            if (custom) {
-                applyThemeObj(custom);
-                localStorage.setItem("selectedTheme", val);
-            } else if (origOnchange) {
-                origOnchange.call(this);
-            } else {
-                invoke("set_theme", { name: val }).then(theme => {
-                    if (theme) {
-                        applyThemeColors(theme);
-                        localStorage.setItem("selectedTheme", val);
-                    }
-                });
-            }
-        };
-    }
-
-    // Expose helpers for the settings modal open handler
-    window._customThemes = { renderList, refreshThemeSelect };
-
-    // Init
-    renderList();
-    updatePreview();
-})();
-
-// ==========================================================================
-// MCP SERVER SETTINGS
-// ==========================================================================
-
-(function initMcpSettings() {
-    const startBtn = document.getElementById("mcp-start-btn");
-    const stopBtn  = document.getElementById("mcp-stop-btn");
-    const portInput = document.getElementById("mcp-port-input");
-    const statusLine = document.getElementById("mcp-status-line");
-    const toolsInfo = document.getElementById("mcp-tools-info");
-    const claudeConfig = document.getElementById("mcp-claude-config");
-    const configSnippet = document.getElementById("mcp-claude-config-snippet");
-
-    if (!startBtn) return;
-
-    function setRunningUI(port) {
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <a href="http://127.0.0.1:${port}" style="color: var(--accent-color); text-decoration: none;" onclick="return false;">http://127.0.0.1:${port}</a>`;
-        toolsInfo.style.display = "block";
-        claudeConfig.style.display = "block";
-        if (configSnippet) {
-            configSnippet.textContent = JSON.stringify({
-                mcpServers: {
-                    neurodeck: {
-                        url: `http://127.0.0.1:${port}/`
-                    }
-                }
-            }, null, 2);
-        }
-    }
-
-    function setStoppedUI() {
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        statusLine.textContent = "Server is not running.";
-        toolsInfo.style.display = "none";
-        claudeConfig.style.display = "none";
-    }
-
-    // Sync UI on settings modal open
-    document.getElementById("settings-btn") && document.getElementById("settings-btn").addEventListener("click", async () => {
-        try {
-            const status = await invoke("get_mcp_status");
-            if (status.running === "true") {
-                portInput.value = status.port || "13337";
-                setRunningUI(status.port);
-            } else {
-                setStoppedUI();
-            }
-        } catch (_) { setStoppedUI(); }
-    });
-
-    startBtn.addEventListener("click", async () => {
-        const port = parseInt(portInput.value, 10) || 13337;
-        startBtn.disabled = true;
-        statusLine.textContent = "Starting...";
-        try {
-            const msg = await invoke("start_mcp_server", { port });
-            setRunningUI(port);
-            if (typeof addNotification === "function") {
-                addNotification("MCP Server Started", `Listening on port ${port}. Add to Claude Desktop config.`, "success");
-            }
-        } catch (err) {
-            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-            startBtn.disabled = false;
-        }
-    });
-
-    stopBtn.addEventListener("click", async () => {
-        stopBtn.disabled = true;
-        try {
-            await invoke("stop_mcp_server");
-            setStoppedUI();
-            if (typeof addNotification === "function") {
-                addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
-            }
-        } catch (err) {
-            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-            stopBtn.disabled = false;
-        }
-    });
-
-    // Init state on load
-    invoke("get_mcp_status").then(status => {
-        if (status && status.running === "true") {
-            portInput.value = status.port || "13337";
-            setRunningUI(status.port);
-        } else {
-            setStoppedUI();
-        }
-    }).catch(() => setStoppedUI());
-})();
-
-// --- PERSONAL KNOWLEDGE BASE (RAG) SETTINGS ---
-(function initDocRag() {
-    const folderInput = document.getElementById("rag-folder-input");
-    const indexBtn = document.getElementById("rag-index-btn");
-    const clearBtn = document.getElementById("rag-clear-btn");
-    const progressContainer = document.getElementById("rag-progress-container");
-    const progressLabel = document.getElementById("rag-progress-label");
-    const progressPct = document.getElementById("rag-progress-pct");
-    const progressBar = document.getElementById("rag-progress-bar");
-    const statusLine = document.getElementById("rag-status-line");
-    const docCount = document.getElementById("rag-doc-count");
-
-    if (!indexBtn) return;
-
-    // Load current doc count on open
-    invoke("get_doc_count").then(count => {
-        if (docCount) docCount.innerText = count || 0;
-    }).catch(() => {});
-
-    // Listen for progress events
-    listen("doc_index_progress", (event) => {
-        let data;
-        try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; }
-        catch { return; }
-
-        const { indexed, total, file, done } = data;
-
-        if (progressContainer) progressContainer.style.display = "block";
-
-        if (done) {
-            if (progressLabel) progressLabel.innerText = "Complete!";
-            if (progressPct) progressPct.innerText = "100%";
-            if (progressBar) progressBar.style.width = "100%";
-            setTimeout(() => {
-                if (progressContainer) progressContainer.style.display = "none";
-                if (indexBtn) indexBtn.disabled = false;
-                invoke("get_doc_count").then(c => { if (docCount) docCount.innerText = c || 0; }).catch(() => {});
-            }, 1200);
-        } else {
-            const pct = total > 0 ? Math.round((indexed / total) * 100) : 0;
-            if (progressLabel) progressLabel.innerText = file ? `Indexing: ${file}` : `Indexing... (${indexed}/${total})`;
-            if (progressPct) progressPct.innerText = `${pct}%`;
-            if (progressBar) progressBar.style.width = `${pct}%`;
-        }
-    }).catch(() => {});
-
-    indexBtn.addEventListener("click", async () => {
-        const folder = folderInput ? folderInput.value.trim() : "";
-        if (!folder) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter a folder path to index.</span>`;
-            return;
-        }
-        indexBtn.disabled = true;
-        if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.7;">Starting indexer...</span>`;
-        if (progressContainer) progressContainer.style.display = "block";
-        if (progressBar) progressBar.style.width = "0%";
-        if (progressPct) progressPct.innerText = "0%";
-        if (progressLabel) progressLabel.innerText = "Scanning folder...";
-
-        try {
-            const result = await invoke("index_directory", { path: folder });
-            const count = typeof result === "number" ? `Indexed ${result} document${result !== 1 ? "s" : ""}.` : result;
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">${count}</span>`;
-            if (typeof addNotification === "function") {
-                addNotification("RAG Index Complete", count, "success");
-            }
-            invoke("get_doc_count").then(c => { if (docCount) docCount.innerText = c || 0; }).catch(() => {});
-        } catch (err) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-        } finally {
-            indexBtn.disabled = false;
-        }
-    });
-
-    clearBtn.addEventListener("click", async () => {
-        try {
-            const result = await invoke("clear_doc_index");
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--accent-color);">${result}</span>`;
-            if (docCount) docCount.innerText = "0";
-            if (typeof addNotification === "function") {
-                addNotification("RAG Index Cleared", "All indexed documents removed from memory.", "info");
-            }
-        } catch (err) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-        }
-    });
-})();
-
-// ==========================================================================
-// WHISPER OFFLINE STT SETTINGS (P17)
-// ==========================================================================
-(function initBmadInstaller() {
-    const targetInput = document.getElementById("bmad-target-dir");
-    const installBtn = document.getElementById("bmad-install-btn");
-    const docsBtn = document.getElementById("bmad-docs-btn");
-    const statusLine = document.getElementById("bmad-status-line");
-    if (!installBtn) return;
-
-    installBtn.onclick = async () => {
-        const dir = targetInput?.value?.trim();
-        if (!dir) {
-            statusLine.style.color = "var(--error-color)";
-            statusLine.textContent = "Error: Enter a target project directory path.";
-            return;
-        }
-        installBtn.disabled = true;
-        statusLine.style.color = "var(--accent-color)";
-        statusLine.textContent = "Installing BMAD framework files...";
-        try {
-            const msg = await invoke("install_bmad_to_dir", { targetDir: dir });
-            statusLine.style.color = "var(--response-color)";
-            statusLine.textContent = "✓ " + msg;
-            addNotification("BMAD Installed", `Framework installed to ${dir}`, "success");
-        } catch (err) {
-            statusLine.style.color = "var(--error-color)";
-            statusLine.textContent = "Error: " + err;
-        } finally {
-            installBtn.disabled = false;
-        }
-    };
-
-    if (docsBtn) {
-        docsBtn.onclick = () => invoke("open_external", { url: "https://bmadcode.com/" }).catch(() => {});
-    }
-})();
-
-(function initWhisperSettings() {
-    const binaryInput = document.getElementById("whisper-binary-input");
-    const modelInput = document.getElementById("whisper-model-input");
-    const saveBtn = document.getElementById("whisper-save-btn");
-    const testBtn = document.getElementById("whisper-test-btn");
-    const statusLine = document.getElementById("whisper-status-line");
-
-    if (!saveBtn) return;
-
-    // Load current config on modal open
-    invoke("get_whisper_status").then(status => {
-        if (status) {
-            if (binaryInput) binaryInput.value = status.binary || '';
-            if (modelInput) modelInput.value = status.model || '';
-            if (status.configured) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Whisper configured and ready.</span>`;
-            } else if (status.model) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">⚠ Model file not found at configured path.</span>`;
-            }
-        }
-    }).catch(() => {});
-
-    saveBtn.addEventListener("click", async () => {
-        const binary = binaryInput ? binaryInput.value.trim() : '';
-        const model = modelInput ? modelInput.value.trim() : '';
-        try {
-            await invoke("set_whisper_config", { binary, model });
-            const status = await invoke("get_whisper_status");
-            if (status.configured) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Saved. Whisper ready — mic button will use offline STT.</span>`;
-                if (typeof addNotification === "function") {
-                    addNotification("Whisper STT Configured", "Offline transcription is now active.", "success");
-                }
-            } else if (!status.model_exists) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but model file not found at that path.</span>`;
-            } else if (!status.binary_found) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but whisper binary not found. Check the path.</span>`;
-            } else {
-                if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Config saved.</span>`;
-            }
-        } catch (err) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-        }
-    });
-
-    testBtn.addEventListener("click", async () => {
-        if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Transcribing record.wav...</span>`;
-        testBtn.disabled = true;
-        try {
-            const text = await invoke("transcribe_audio_whisper");
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">Result: "${text}"</span>`;
-        } catch (err) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-        } finally {
-            testBtn.disabled = false;
-        }
-    });
-})();
-
-// ==========================================================================
-// CANVAS LIVE COLLABORATION (P19)
-// ==========================================================================
-(function initCanvasCollab() {
-    const collabBtn = document.getElementById("canvas-collab-btn");
-    const collabModal = document.getElementById("collab-modal");
-    const closeX = document.getElementById("close-collab-x");
-    const hostTabBtn = document.getElementById("collab-host-tab-btn");
-    const joinTabBtn = document.getElementById("collab-join-tab-btn");
-    const hostPanel = document.getElementById("collab-host-panel");
-    const joinPanel = document.getElementById("collab-join-panel");
-    const hostStartBtn = document.getElementById("collab-host-start-btn");
-    const joinStartBtn = document.getElementById("collab-join-start-btn");
-    const portInput = document.getElementById("collab-port-input");
-    const addrInput = document.getElementById("collab-addr-input");
-    const statusLine = document.getElementById("collab-status-line");
-    const activePanel = document.getElementById("collab-active-panel");
-    const hostWaiting = document.getElementById("collab-host-waiting");
-    const hostAddr = document.getElementById("collab-host-addr");
-    const stopBtn = document.getElementById("collab-stop-btn");
-
-    if (!collabBtn || !collabModal) return;
-
-    // Tab switching
-    function showTab(tab) {
-        const isHost = tab === 'host';
-        if (hostPanel) hostPanel.style.display = isHost ? '' : 'none';
-        if (joinPanel) joinPanel.style.display = isHost ? 'none' : '';
-        if (hostTabBtn) {
-            hostTabBtn.style.background = isHost ? 'rgba(0,229,255,0.1)' : '';
-            hostTabBtn.style.borderColor = isHost ? 'var(--accent-color)' : '';
-        }
-        if (joinTabBtn) {
-            joinTabBtn.style.background = isHost ? '' : 'rgba(0,229,255,0.1)';
-            joinTabBtn.style.borderColor = isHost ? '' : 'var(--accent-color)';
-        }
-    }
-    if (hostTabBtn) hostTabBtn.addEventListener("click", () => showTab('host'));
-    if (joinTabBtn) joinTabBtn.addEventListener("click", () => showTab('join'));
-
-    collabBtn.addEventListener("click", () => collabModal.classList.add("active"));
-    if (closeX) closeX.addEventListener("click", () => collabModal.classList.remove("active"));
-    collabModal.addEventListener("click", (e) => {
-        if (e.target === collabModal) collabModal.classList.remove("active");
-    });
-
-    const statusBar = document.getElementById("canvas-collab-status-bar");
-    const statusText = document.getElementById("canvas-collab-status-text");
-    const resyncBtn = document.getElementById("canvas-collab-resync-btn");
-
-    if (resyncBtn) {
-        resyncBtn.addEventListener("click", () => {
-            const editor = document.getElementById("canvas-editor");
-            if (editor) {
-                invoke("canvas_collab_send", {
-                    code: editor.value,
-                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
-                }).catch(() => {});
-            }
-        });
-    }
-
-    function setPeerConnected(peerInfo = '') {
-        if (activePanel) activePanel.style.display = '';
-        if (hostWaiting) hostWaiting.style.display = 'none';
-        if (statusLine) statusLine.innerHTML = '';
-        if (collabBtn) {
-            collabBtn.style.background = 'rgba(0,255,136,0.15)';
-            collabBtn.style.borderColor = 'var(--response-color)';
-        }
-        if (statusBar) statusBar.style.display = 'flex';
-        if (statusText) {
-            let label = "Collab Active: Syncing edits live";
-            if (peerInfo) {
-                label = `Collab Active: Connected to peer (${peerInfo})`;
-            } else if (addrInput && addrInput.value) {
-                label = `Collab Active: Connected to ${addrInput.value}`;
-            }
-            statusText.innerText = label;
-        }
-    }
-
-    function setDisconnected() {
-        if (activePanel) activePanel.style.display = 'none';
-        if (hostWaiting) hostWaiting.style.display = 'none';
-        if (collabBtn) {
-            collabBtn.style.background = '';
-            collabBtn.style.borderColor = '';
-        }
-        if (statusLine) statusLine.innerHTML = '';
-        if (statusBar) statusBar.style.display = 'none';
-    }
-
-    // Listen for collab events from Rust
-    listen("canvas_collab_event", (event) => {
-        const msg = event.payload || '';
-        if (msg.startsWith('peer_connected')) {
-            const peer = msg.includes(':') ? msg.split(':')[1] : '';
-            setPeerConnected(peer);
-            if (typeof addNotification === "function") {
-                addNotification("Collab Connected", "A peer joined your Canvas session.", "success");
-            }
-        } else if (msg === 'peer_disconnected') {
-            setDisconnected();
-            if (typeof addNotification === "function") {
-                addNotification("Collab Disconnected", "The peer has left the session.", "info");
-            }
-        } else if (msg.startsWith('error:')) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">${msg}</span>`;
-        }
-    }).catch(() => {});
-
-    // Listen for incoming canvas sync from peer
-    listen("canvas_sync", (event) => {
-        try {
-            const data = typeof event.payload === 'string'
-                ? JSON.parse(event.payload) : event.payload;
-            if (data.type === 'sync' && data.code !== undefined) {
-                const editor = document.getElementById("canvas-editor");
-                const langSelect = document.getElementById("canvas-lang-select");
-                if (editor) {
-                    // Suppress our own re-broadcast while updating
-                    editor.dataset.syncingFromPeer = '1';
-                    editor.value = data.code;
-                    editor.dataset.syncingFromPeer = '';
-                    // Fire input event so the preview updates
-                    editor.dispatchEvent(new Event('input'));
-                }
-                if (langSelect && data.lang && data.lang !== langSelect.value) {
-                    langSelect.value = data.lang;
-                    langSelect.dispatchEvent(new Event('change'));
-                }
-            }
-        } catch (e) {
-            console.warn('[Collab] Failed to parse canvas_sync:', e);
-        }
-    }).catch(() => {});
-
-    // Host: start session
-    if (hostStartBtn) {
-        hostStartBtn.addEventListener("click", async () => {
-            const port = parseInt(portInput?.value || '13338', 10);
-            hostStartBtn.disabled = true;
-            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Binding port ${port}...</span>`;
-            try {
-                const boundPort = await invoke("canvas_collab_host", { port });
-                if (hostWaiting) hostWaiting.style.display = '';
-                const lanIp = await invoke("get_lan_ip").catch(() => "your-lan-ip");
-                if (hostAddr) hostAddr.innerText = `${lanIp}:${boundPort}`;
-                if (statusLine) statusLine.innerHTML = '';
-            } catch (err) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-                hostStartBtn.disabled = false;
-            }
-        });
-    }
-
-    // Guest: join session
-    if (joinStartBtn) {
-        joinStartBtn.addEventListener("click", async () => {
-            const addr = addrInput?.value.trim() || '';
-            if (!addr) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter the host address first.</span>`;
-                return;
-            }
-            joinStartBtn.disabled = true;
-            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Connecting to ${addr}...</span>`;
-            try {
-                await invoke("canvas_collab_join", { addr });
-                setPeerConnected(addr);
-            } catch (err) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-                joinStartBtn.disabled = false;
-            }
-        });
-    }
-
-    // Stop session
-    if (stopBtn) {
-        stopBtn.addEventListener("click", async () => {
-            await invoke("canvas_collab_stop");
-            setDisconnected();
-            if (hostStartBtn) hostStartBtn.disabled = false;
-            if (joinStartBtn) joinStartBtn.disabled = false;
-        });
-    }
-
-    // Debounced canvas input → broadcast to peer
-    let collabDebounceTimer = null;
-    const canvasEditor = document.getElementById("canvas-editor");
-    if (canvasEditor) {
-        canvasEditor.addEventListener("input", () => {
-            if (canvasEditor.dataset.syncingFromPeer) return;
-            clearTimeout(collabDebounceTimer);
-            collabDebounceTimer = setTimeout(() => {
-                invoke("canvas_collab_send", {
-                    code: canvasEditor.value,
-                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
-                }).catch(() => {});
-            }, 300);
-        });
-    }
-})();
+/* --- SEPARATOR --- */
 
 // --- NOTIFICATION CENTER SYSTEM ---
-let notifications = [];
-let unreadNotifCount = 0;
+// let notifications = []; (Moved to state.js)
+// let unreadNotifCount = 0; (Moved to state.js)
 
 function addNotification(title, text, type = 'info') {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -9756,8 +5787,8 @@ function addNotification(title, text, type = 'info') {
         type, // 'info' | 'success' | 'warning' | 'error'
         time: timestamp
     };
-    notifications.unshift(notif); // Add to beginning
-    unreadNotifCount++;
+    state.notifications.unshift(notif); // Add to beginning
+    state.unreadNotifCount++;
     updateNotifBadge();
     
     // Create visual Toast
@@ -9792,8 +5823,8 @@ window.addNotification = addNotification; // Expose globally if needed
 function updateNotifBadge() {
     const badge = document.getElementById("notif-badge");
     if (!badge) return;
-    if (unreadNotifCount > 0) {
-        badge.innerText = unreadNotifCount;
+    if (state.unreadNotifCount > 0) {
+        badge.innerText = state.unreadNotifCount;
         badge.classList.remove("hidden");
     } else {
         badge.classList.add("hidden");
@@ -9804,12 +5835,12 @@ function renderNotificationsList() {
     const container = document.getElementById("notif-list-container");
     if (!container) return;
     
-    if (notifications.length === 0) {
-        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications.</div>`;
+    if (state.notifications.length === 0) {
+        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No state.notifications.</div>`;
         return;
     }
     
-    container.innerHTML = notifications.map(n => `
+    container.innerHTML = state.notifications.map(n => `
         <div class="notif-item ${n.type}">
             <div class="notif-item-header">
                 <span>${n.title}</span>
@@ -9830,7 +5861,7 @@ function initNotificationCenter() {
     if (notifBtn && notifModal) {
         notifBtn.onclick = () => {
             notifModal.classList.add("active");
-            unreadNotifCount = 0;
+            state.unreadNotifCount = 0;
             updateNotifBadge();
             renderNotificationsList();
         };
@@ -9845,8 +5876,8 @@ function initNotificationCenter() {
     
     if (clearAllBtn) {
         clearAllBtn.onclick = () => {
-            notifications = [];
-            unreadNotifCount = 0;
+            state.notifications = [];
+            state.unreadNotifCount = 0;
             updateNotifBadge();
             renderNotificationsList();
         };
@@ -9942,83 +5973,9 @@ function initGameContextPanel() {
     if (closeBtn) closeBtn.onclick = dismiss;
 }
 
-// --- FTP/SFTP DRAG AND DROP UPLOADS ---
-function initFtpSftpDragDrop() {
-    const ftpDropzone = document.getElementById("ftp-dropzone");
-    const ftpPathInput = document.getElementById("ftp-local-path-input");
-    const ftpRemoteDest = document.getElementById("ftp-remote-dest-input");
-    
-    if (ftpDropzone && ftpPathInput) {
-        ftpDropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.add("dragover");
-        });
-        
-        ftpDropzone.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.remove("dragover");
-        });
-        
-        ftpDropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.remove("dragover");
-            
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                const path = file.path || file.name;
-                ftpPathInput.value = path;
-                
-                if (ftpRemoteDest && !ftpRemoteDest.value.trim()) {
-                    ftpRemoteDest.value = "/" + file.name;
-                }
-                addNotification("FTP File Drop", `File local path set to: ${file.name}`, "info");
-            }
-        });
-    }
 
-    const sftpDropzone = document.getElementById("sftp-dropzone");
-    const sftpPathInput = document.getElementById("sftp-local-path-input");
-    const sftpRemoteDest = document.getElementById("sftp-remote-dest-input");
-    
-    if (sftpDropzone && sftpPathInput) {
-        sftpDropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.add("dragover");
-        });
-        
-        sftpDropzone.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.remove("dragover");
-        });
-        
-        sftpDropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.remove("dragover");
-            
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                const path = file.path || file.name;
-                sftpPathInput.value = path;
-                
-                if (sftpRemoteDest && !sftpRemoteDest.value.trim()) {
-                    sftpRemoteDest.value = "/" + file.name;
-                }
-                addNotification("SFTP File Drop", `File local path set to: ${file.name}`, "info");
-            }
-        });
-    }
-}
 
-// Initialize Sprint 5 modules
-initNotificationCenter();
-initGameContextPanel();
-initFtpSftpDragDrop();
+/* --- SEPARATOR --- */
 
 // --- PROMPT LAB (SPRINT 6/7) ---
 function initPromptLab() {
@@ -11339,7 +7296,7 @@ async function showOnboardingWizard() {
 (function initRadialTouchDismiss() {
     let lastTap = 0;
     document.addEventListener("touchend", (e) => {
-        if (!radialMenuVisible) return;
+        if (!state.radialMenuVisible) return;
         const t = Date.now();
         if (e.target.closest(".radial-item")) {
             // Single tap on a segment = activate it
@@ -11812,7 +7769,7 @@ async function showOnboardingWizard() {
     async function pollDiagnostics() {
         // 1. PTY Status
         const ptyDot = document.getElementById("diag-dot-pty");
-        const ptyOk = typeof terminalSessions !== 'undefined' && terminalSessions.length > 0;
+        const ptyOk = typeof state.terminalSessions !== 'undefined' && state.terminalSessions.length > 0;
         if (ptyDot) {
             ptyDot.className = ptyOk ? "diag-dot online" : "diag-dot offline";
         }

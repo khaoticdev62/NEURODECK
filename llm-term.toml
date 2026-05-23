@@ -1,7 +1,17 @@
+[theme]
+primary_color = "#00F0FF"
+secondary_color = "#FF0055"
+bg_color = "#050505"
+foreground_color = "#D9F7FF"
+response_color = "#00FF88"
+
 [llm]
 default_provider = "ollama"
 ollama_model = "llama3.2:1b"
 gemini_model = "gemini-1.5-flash"
-# Google OAuth2 Device Flow client ID — register at console.cloud.google.com
-# Required for the in-app "Sign in with Google" Gemini key flow.
+ollama_base_url = "http://localhost:11434"
 google_client_id = ""
+
+[stt]
+whisper_binary = ""
+whisper_model = ""

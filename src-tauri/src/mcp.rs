@@ -148,6 +148,43 @@ fn tool_list() -> Value {
     })
 }
 
+fn sanitize_mcp_path(path_str: &str) -> Result<std::path::PathBuf, String> {
+    let base_dir = std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let target_path = std::path::Path::new(path_str);
+    
+    let absolute_path = if target_path.is_absolute() {
+        target_path.to_path_buf()
+    } else {
+        base_dir.join(target_path)
+    };
+    
+    let canonical_path = match absolute_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            if let Some(parent) = absolute_path.parent() {
+                match parent.canonicalize() {
+                    Ok(p_can) => {
+                        let file_name = absolute_path.file_name().ok_or("Invalid filename")?;
+                        p_can.join(file_name)
+                    }
+                    Err(e) => return Err(format!("Invalid path directory: {}", e)),
+                }
+            } else {
+                return Err("Invalid path: no parent directory".to_string());
+            }
+        }
+    };
+    
+    let canonical_base = base_dir.canonicalize()
+        .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
+        
+    if canonical_path.starts_with(&canonical_base) {
+        Ok(canonical_path)
+    } else {
+        Err("Access denied: path escapes S-Term sandbox".to_string())
+    }
+}
+
 // ──────────────────────────────────────────────
 // Tool dispatch
 // ──────────────────────────────────────────────
@@ -270,27 +307,29 @@ async fn call_tool(
         }
 
         "read_file" => {
-            let path = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
-            let content = std::fs::read_to_string(path)
-                .map_err(|e| format!("Cannot read '{}': {}", path, e))?;
+            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
+            let safe_path = sanitize_mcp_path(path_str)?;
+            let content = std::fs::read_to_string(safe_path)
+                .map_err(|e| format!("Cannot read '{}': {}", path_str, e))?;
             Ok(json!({
                 "content": [{ "type": "text", "text": content }]
             }))
         }
 
         "write_file" => {
-            let path = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
+            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
             let content = args["content"].as_str().ok_or("Missing required arg: 'content'")?;
+            let safe_path = sanitize_mcp_path(path_str)?;
             // Create parent dirs if needed
-            if let Some(parent) = std::path::Path::new(path).parent() {
+            if let Some(parent) = safe_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            std::fs::write(path, content)
-                .map_err(|e| format!("Cannot write '{}': {}", path, e))?;
+            std::fs::write(safe_path, content)
+                .map_err(|e| format!("Cannot write '{}': {}", path_str, e))?;
             Ok(json!({
                 "content": [{
                     "type": "text",
-                    "text": format!("Wrote {} bytes to '{}'.", content.len(), path)
+                    "text": format!("Wrote {} bytes to '{}'.", content.len(), path_str)
                 }]
             }))
         }
@@ -337,12 +376,11 @@ async fn handle_connection(mut stream: tokio::net::TcpStream, provider: Arc<dyn 
     let header_section = &raw[..body_start];
     let body_str = raw[body_start..].trim_end_matches('\0');
 
-    // CORS preflight
+    // CORS preflight — respond without wildcard Access-Control-Allow-Origin headers to block browser execution
     if header_section.starts_with("OPTIONS ") {
         let _ = stream
             .write_all(
                 b"HTTP/1.1 200 OK\r\n\
-                  Access-Control-Allow-Origin: *\r\n\
                   Access-Control-Allow-Methods: POST, OPTIONS\r\n\
                   Access-Control-Allow-Headers: Content-Type\r\n\
                   Content-Length: 0\r\n\r\n",
@@ -410,7 +448,6 @@ async fn send_response(stream: &mut tokio::net::TcpStream, body: &Value) {
         "HTTP/1.1 200 OK\r\n\
          Content-Type: application/json\r\n\
          Content-Length: {}\r\n\
-         Access-Control-Allow-Origin: *\r\n\
          \r\n\
          {}",
         body_str.len(),
