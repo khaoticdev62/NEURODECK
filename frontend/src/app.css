@@ -5977,3 +5977,365 @@ body.crt-flicker-disabled .crt-flicker {
     border-radius: 1px;
     transition: width 0.3s;
 }
+
+
+/* =============================================================================
+   REMOTE CONTROL VIEW
+   ============================================================================= */
+
+#view-remote {
+    overflow: hidden;
+    background: var(--bg-color);
+}
+
+.remote-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    padding: 16px;
+    gap: 12px;
+}
+
+/* Header */
+.remote-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.remote-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.remote-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent-color);
+}
+
+.remote-subtitle {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.04em;
+}
+
+.remote-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    font-size: 0.72rem;
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.45);
+    transition: all 0.25s;
+}
+
+.remote-status-badge.remote-status-online {
+    border-color: rgba(0,230,118,0.4);
+    color: #00e676;
+}
+
+.remote-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: all 0.25s;
+}
+
+.remote-status-dot.remote-dot-online {
+    background: #00e676;
+    box-shadow: 0 0 6px #00e676;
+    animation: remote-pulse 2s infinite;
+}
+
+@keyframes remote-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Main grid */
+.remote-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.remote-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Section blocks */
+.remote-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.remote-section-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.35);
+    font-family: var(--font-mono, monospace);
+    font-weight: 600;
+}
+
+/* Server controls */
+.remote-server-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.remote-port-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.remote-field-label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    min-width: 34px;
+}
+
+.remote-port-input {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color, #e0e0e0);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    font-family: var(--font-mono, monospace);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.remote-port-input:focus {
+    border-color: var(--accent-color);
+}
+
+.remote-start-btn,
+.remote-stop-btn {
+    padding: 9px 14px;
+    border-radius: 7px;
+    border: none;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.remote-start-btn {
+    background: var(--accent-color, #00f0ff);
+    color: #000;
+}
+
+.remote-start-btn:hover { opacity: 0.88; }
+.remote-start-btn:active { transform: scale(0.97); }
+
+.remote-stop-btn {
+    background: rgba(255,85,85,0.15);
+    border: 1px solid rgba(255,85,85,0.4);
+    color: #ff5555;
+}
+
+.remote-stop-btn:hover { background: rgba(255,85,85,0.25); }
+
+/* QR code */
+.remote-qr-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background: #06080e;
+    border-radius: 8px;
+    border: 1px solid rgba(0,240,255,0.15);
+}
+
+.remote-qr-wrapper img,
+.remote-qr-wrapper canvas {
+    border-radius: 4px;
+}
+
+.remote-qr-fallback {
+    font-size: 0.65rem;
+    font-family: var(--font-mono, monospace);
+    color: var(--accent-color);
+    word-break: break-all;
+    text-align: center;
+    padding: 8px;
+}
+
+.remote-url-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.remote-url-text {
+    flex: 1;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.5);
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.remote-copy-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 4px 7px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.remote-copy-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.remote-pin-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.remote-pin-display {
+    font-family: var(--font-mono, monospace);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--accent-color);
+    text-shadow: 0 0 12px rgba(0,240,255,0.4);
+}
+
+/* Connection log */
+.remote-log {
+    flex: 1;
+    min-height: 160px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.remote-log::-webkit-scrollbar { width: 4px; }
+.remote-log::-webkit-scrollbar-track { background: transparent; }
+.remote-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.remote-log-entry {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.45);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.remote-log-entry.remote-log-success { color: #00e676; }
+.remote-log-entry.remote-log-error   { color: #ff5555; }
+.remote-log-entry.remote-log-warn    { color: #ffd600; }
+
+/* Stats row */
+.remote-stats-row {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.remote-stat {
+    flex: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+}
+
+.remote-stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.3);
+}
+
+.remote-stat-value {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+/* Instructions */
+.remote-instructions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(0,240,255,0.04);
+    border: 1px solid rgba(0,240,255,0.1);
+    border-radius: 8px;
+}
+
+.remote-instr-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.45;
+    flex: 1;
+}
+
+.remote-instr-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}

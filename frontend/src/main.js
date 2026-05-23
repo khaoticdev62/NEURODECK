@@ -749,6 +749,22 @@ if (!window.__TAURI_INTERNALS__) {
                 return { pty_ok: true, pty_details: 'Shell Subsystem active (Default: powershell.exe)', network_ok: true, network_details: 'Internet active (mock)', keychain_ok: true, keychain_details: 'Secure credential storage active (mock)' };
             case 'start_warpinator':
                 return null;
+            case 'start_remote_server': {
+                const port = args.port || 9090;
+                window._mockRemoteServer = { port, ip: '192.168.1.100', pin: '123456', running: true };
+                return { port, ip: '192.168.1.100', pin: '123456', url: `http://192.168.1.100:${port}/?pin=123456` };
+            }
+            case 'stop_remote_server':
+                window._mockRemoteServer = null;
+                return null;
+            case 'get_remote_server_info':
+                if (window._mockRemoteServer) {
+                    const rs = window._mockRemoteServer;
+                    return { running: true, port: rs.port, ip: rs.ip, pin: rs.pin, url: `http://${rs.ip}:${rs.port}/?pin=${rs.pin}`, connected: 0 };
+                }
+                return { running: false };
+            case 'remote_send_to_clients':
+                return null;
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -856,6 +872,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
                     <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
+                    <button class="nav-tab" data-view="remote">📱 Remote</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -1573,6 +1590,90 @@ document.querySelector('#app').innerHTML = `
                         <span id="memory-filtered-count">showing 0</span>
                     </div>
                 </div>
+
+                <!-- Remote Control View -->
+                <div class="view-content" id="view-remote">
+                    <div class="remote-container">
+                        <!-- Header -->
+                        <div class="remote-header">
+                            <div class="remote-header-left">
+                                <span class="remote-title">📱 Remote Control</span>
+                                <span class="remote-subtitle">Connect your iPhone via local Wi-Fi</span>
+                            </div>
+                            <div class="remote-header-right">
+                                <div class="remote-status-badge" id="remote-status-badge">
+                                    <span class="remote-status-dot" id="remote-status-dot"></span>
+                                    <span id="remote-status-text">Offline</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main grid -->
+                        <div class="remote-grid">
+                            <!-- Left: Server controls + QR -->
+                            <div class="remote-panel remote-panel-left">
+                                <div class="remote-section">
+                                    <div class="remote-section-label">Server</div>
+                                    <div class="remote-server-controls">
+                                        <div class="remote-port-row">
+                                            <label class="remote-field-label">Port</label>
+                                            <input type="number" id="remote-port-input" class="remote-port-input" value="9090" min="1024" max="65535">
+                                        </div>
+                                        <button class="remote-start-btn" id="remote-start-btn">▶ Start Server</button>
+                                        <button class="remote-stop-btn" id="remote-stop-btn" style="display:none">■ Stop Server</button>
+                                    </div>
+                                </div>
+
+                                <div class="remote-section" id="remote-qr-section" style="display:none">
+                                    <div class="remote-section-label">Scan to Connect</div>
+                                    <div class="remote-qr-wrapper">
+                                        <div id="remote-qr-canvas"></div>
+                                    </div>
+                                    <div class="remote-url-row">
+                                        <span class="remote-url-text" id="remote-url-text"></span>
+                                        <button class="remote-copy-btn" id="remote-copy-url-btn" title="Copy URL">📋</button>
+                                    </div>
+                                    <div class="remote-pin-row">
+                                        <span class="remote-field-label">PIN</span>
+                                        <span class="remote-pin-display" id="remote-pin-display">------</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Connection log + stats -->
+                            <div class="remote-panel remote-panel-right">
+                                <div class="remote-section">
+                                    <div class="remote-section-label">Connection Log</div>
+                                    <div class="remote-log" id="remote-log">
+                                        <div class="remote-log-entry remote-log-info">Remote Control ready. Start the server to begin.</div>
+                                    </div>
+                                </div>
+                                <div class="remote-stats-row" id="remote-stats-row" style="display:none">
+                                    <div class="remote-stat">
+                                        <span class="remote-stat-label">Clients</span>
+                                        <span class="remote-stat-value" id="remote-clients-count">0</span>
+                                    </div>
+                                    <div class="remote-stat">
+                                        <span class="remote-stat-label">IP</span>
+                                        <span class="remote-stat-value" id="remote-ip-display">--</span>
+                                    </div>
+                                    <div class="remote-stat">
+                                        <span class="remote-stat-label">Port</span>
+                                        <span class="remote-stat-value" id="remote-port-display">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="remote-instructions" id="remote-instructions">
+                            <div class="remote-instr-step"><span class="remote-instr-num">1</span><span>Ensure your iPhone is on the same Wi-Fi network as this device.</span></div>
+                            <div class="remote-instr-step"><span class="remote-instr-num">2</span><span>Start the server, then scan the QR code with your iPhone Camera app.</span></div>
+                            <div class="remote-instr-step"><span class="remote-instr-num">3</span><span>The NEURODECK Remote webapp opens in Safari — no install required.</span></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
 
@@ -4570,6 +4671,10 @@ listen("stream_chunk", function (event) {
             viewport.scrollTop = viewport.scrollHeight;
         }
     }
+    // Forward token to any connected remote clients
+    invoke("remote_send_to_clients", {
+        message: JSON.stringify({ type: "chat_token", text: chunk, done: false })
+    }).catch(() => {});
 });
 
 listen("stream_error", function (event) {
@@ -4607,7 +4712,12 @@ listen("stream_done", function () {
 
     currentAIMessage = null;
     currentAIText = "";
-    
+
+    // Notify remote clients that the AI response stream is complete
+    invoke("remote_send_to_clients", {
+        message: JSON.stringify({ type: "chat_token", text: "", done: true })
+    }).catch(() => {});
+
     // Refresh sessions sidebar list
     refreshSessionsList();
 
@@ -11825,3 +11935,204 @@ function initCtrlPromptPicker() {
 
 initCtrlPromptPicker();
 
+
+// =============================================================================
+// REMOTE CONTROL VIEW
+// =============================================================================
+
+(function initRemoteControl() {
+    var remoteRunning = false;
+
+    function el(id) { return document.getElementById(id); }
+
+    function remoteLog(msg, type) {
+        type = type || 'info';
+        var log = el('remote-log');
+        if (!log) return;
+        var entry = document.createElement('div');
+        entry.className = 'remote-log-entry remote-log-' + type;
+        var ts = new Date().toLocaleTimeString();
+        entry.textContent = '[' + ts + '] ' + msg;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function setServerUI(running, info) {
+        remoteRunning = running;
+        var startBtn = el('remote-start-btn');
+        var stopBtn  = el('remote-stop-btn');
+        var qrSec    = el('remote-qr-section');
+        var stats    = el('remote-stats-row');
+        var badge    = el('remote-status-badge');
+        var dot      = el('remote-status-dot');
+        var statusTx = el('remote-status-text');
+        if (running && info) {
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn)  stopBtn.style.display  = '';
+            if (qrSec)    qrSec.style.display    = '';
+            if (stats)    stats.style.display    = '';
+            if (badge)    badge.classList.add('remote-status-online');
+            if (dot)      dot.classList.add('remote-dot-online');
+            if (statusTx) statusTx.textContent   = 'Online';
+            var urlEl = el('remote-url-text');
+            var pinEl = el('remote-pin-display');
+            var ipEl  = el('remote-ip-display');
+            var prtEl = el('remote-port-display');
+            if (urlEl) urlEl.textContent = info.url;
+            if (pinEl) pinEl.textContent = info.pin;
+            if (ipEl)  ipEl.textContent  = info.ip;
+            if (prtEl) prtEl.textContent = info.port;
+            generateQR(info.url);
+        } else {
+            if (startBtn) startBtn.style.display = '';
+            if (stopBtn)  stopBtn.style.display  = 'none';
+            if (qrSec)    qrSec.style.display    = 'none';
+            if (stats)    stats.style.display    = 'none';
+            if (badge)    badge.classList.remove('remote-status-online');
+            if (dot)      dot.classList.remove('remote-dot-online');
+            if (statusTx) statusTx.textContent   = 'Offline';
+        }
+    }
+
+    function generateQR(url) {
+        var wrap = el('remote-qr-canvas');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        if (window.QRCode) {
+            new window.QRCode(wrap, { text: url, width: 180, height: 180, colorDark: '#00f0ff', colorLight: '#06080e' });
+            return;
+        }
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.onload = function() {
+            if (window.QRCode) {
+                new window.QRCode(wrap, { text: url, width: 180, height: 180, colorDark: '#00f0ff', colorLight: '#06080e' });
+            }
+        };
+        script.onerror = function() {
+            wrap.innerHTML = '<div class="remote-qr-fallback">' + url + '</div>';
+        };
+        document.head.appendChild(script);
+    }
+
+    async function startServer() {
+        var portInput = el('remote-port-input');
+        var port = parseInt(portInput ? portInput.value : '9090', 10) || 9090;
+        remoteLog('Starting server on port ' + port + '...');
+        try {
+            var info = await invoke('start_remote_server', { port: port });
+            setServerUI(true, info);
+            remoteLog('Server started: ' + info.url, 'success');
+            remoteLog('PIN: ' + info.pin, 'success');
+        } catch (err) {
+            remoteLog('Failed to start: ' + err, 'error');
+        }
+    }
+
+    async function stopServer() {
+        remoteLog('Stopping server...');
+        try {
+            await invoke('stop_remote_server');
+            setServerUI(false, null);
+            remoteLog('Server stopped.', 'warn');
+        } catch (err) {
+            remoteLog('Stop error: ' + err, 'error');
+        }
+    }
+
+    function wireButtons() {
+        var startBtn = el('remote-start-btn');
+        var stopBtn  = el('remote-stop-btn');
+        var copyBtn  = el('remote-copy-url-btn');
+        if (startBtn) startBtn.addEventListener('click', startServer);
+        if (stopBtn)  stopBtn.addEventListener('click', stopServer);
+        if (copyBtn) copyBtn.addEventListener('click', function() {
+            var urlEl = el('remote-url-text');
+            var url = urlEl && urlEl.textContent;
+            if (url) navigator.clipboard.writeText(url).then(function() { remoteLog('URL copied.'); });
+        });
+    }
+
+    listen('remote_client_connected', function(ev) {
+        var count = ev.payload;
+        var cel = el('remote-clients-count');
+        if (cel) cel.textContent = count;
+        remoteLog('Client connected (' + count + ' total)', 'success');
+    });
+
+    listen('remote_client_disconnected', function(ev) {
+        var count = ev.payload;
+        var cel = el('remote-clients-count');
+        if (cel) cel.textContent = count;
+        remoteLog('Client disconnected (' + count + ' remaining)', 'warn');
+    });
+
+    listen('remote_chat', function(ev) {
+        var text = ev.payload;
+        if (!text || !text.trim()) return;
+        remoteLog('Remote chat: ' + text.slice(0, 60));
+        var chatInput = document.getElementById('chat-input') || document.getElementById('user-input');
+        if (chatInput) {
+            chatInput.value = text;
+            var sendBtn = document.getElementById('send-btn') || document.getElementById('chat-send-btn');
+            if (sendBtn) sendBtn.click();
+        }
+    });
+
+    listen('remote_pty', function(ev) {
+        try {
+            var msg  = JSON.parse(ev.payload);
+            var id   = msg.id   || 'main_pty_session';
+            var data = msg.data;
+            if (data) invoke('pty_write', { id: id, data: data }).catch(function() {});
+        } catch (_) {}
+    });
+
+    listen('remote_navigate', function(ev) {
+        var view = ev.payload;
+        if (!view) return;
+        remoteLog('Remote navigate to: ' + view);
+        var tab = document.querySelector('.nav-tab[data-view="' + view + '"]');
+        if (tab) tab.click();
+    });
+
+    listen('remote_set_persona', function(ev) {
+        var name = ev.payload;
+        if (!name) return;
+        invoke('set_persona', { name: name }).catch(function() {});
+    });
+
+    listen('remote_persona_cycle', function(ev) {
+        var dir   = ev.payload;
+        var items = document.querySelectorAll('.persona-item');
+        if (!items.length) return;
+        var arr     = Array.from(items);
+        var current = arr.findIndex(function(i) { return i.classList.contains('active'); });
+        if (current < 0) current = 0;
+        var next = (current + dir + items.length) % items.length;
+        items[next].click();
+    });
+
+    listen('remote_theme_cycle', function() {
+        var btn = document.getElementById('theme-cycle-btn') ||
+                  document.querySelector('[data-action="cycle-theme"]');
+        if (btn) btn.click();
+    });
+
+    listen('remote_open_settings', function() {
+        var btn = document.getElementById('settings-btn') ||
+                  document.querySelector('.settings-toggle-btn');
+        if (btn) btn.click();
+    });
+
+    document.addEventListener('click', async function(e) {
+        var tab = e.target.closest('.nav-tab[data-view="remote"]');
+        if (!tab) return;
+        try {
+            var info = await invoke('get_remote_server_info');
+            setServerUI(info.running, info.running ? info : null);
+        } catch (_) {}
+    });
+
+    setTimeout(wireButtons, 500);
+})();

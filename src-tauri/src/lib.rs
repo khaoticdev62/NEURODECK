@@ -13,6 +13,7 @@ mod plugin_mgr;
 mod mcp;
 mod whisper;
 mod canvas_collab;
+mod remote_control;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -3201,7 +3202,11 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(Mutex::new(app_state))
-        .manage(pty_manager::PtyState { sessions: Mutex::new(HashMap::new()) })
+        .manage(pty_manager::PtyState {
+            sessions: Mutex::new(HashMap::new()),
+            remote_tx: Mutex::new(None),
+        })
+        .manage(remote_control::RemoteControlState::default())
         .manage(transfer::SharedTransferState(Arc::new(Mutex::new(transfer::TransferState::new()))))
         .setup(|app| {
             // Start file transfer services
@@ -3354,7 +3359,11 @@ pub fn run() {
             optimize_raw_prompt,
             generate_jpe_explanation_with_level,
             save_prompt_preset,
-            load_prompt_presets
+            load_prompt_presets,
+            remote_control::start_remote_server,
+            remote_control::stop_remote_server,
+            remote_control::get_remote_server_info,
+            remote_control::remote_send_to_clients
         ])
         .run(tauri::generate_context!())
 
