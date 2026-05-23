@@ -29,6 +29,13 @@ pub trait LlmProvider: Send + Sync {
         image_base64: Option<&str>,
         image_mime: Option<&str>,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>>;
+
+    /// Generate a single, non-streaming completion (useful for autocomplete)
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>>;
 }
 
 pub struct GeminiProvider {
@@ -426,6 +433,84 @@ impl LlmProvider for GeminiProvider {
             Err("No text returned from vision request".to_string())
         })
     }
+
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let api_key = match self.get_api_key() {
+            Ok(key) => key,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let model = self.model.clone();
+        let prompt_str = prompt.to_string();
+
+        Box::pin(async move {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+                model, api_key
+            );
+
+            // Gemini maxOutputTokens configuration
+            #[derive(Serialize)]
+            struct GeminiGenerationConfig {
+                #[serde(rename = "maxOutputTokens")]
+                max_output_tokens: u32,
+            }
+
+            #[derive(Serialize)]
+            struct GeminiOneshotRequest {
+                contents: Vec<GeminiContent>,
+                #[serde(rename = "generationConfig")]
+                generation_config: GeminiGenerationConfig,
+            }
+
+            let request_body = GeminiOneshotRequest {
+                contents: vec![GeminiContent {
+                    parts: vec![GeminiPart {
+                        text: Some(prompt_str),
+                        inline_data: None,
+                    }],
+                }],
+                generation_config: GeminiGenerationConfig {
+                    max_output_tokens: max_tokens,
+                },
+            };
+
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Request failed: {}", e))?;
+
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Gemini oneshot error ({}): {}", status, err_text));
+            }
+
+            let response_body = res.json::<GeminiResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            if let Some(candidates) = response_body.candidates {
+                if let Some(candidate) = candidates.first() {
+                    if let Some(content) = &candidate.content {
+                        if let Some(parts) = &content.parts {
+                            let text: String = parts.iter()
+                                .filter_map(|p| p.text.clone())
+                                .collect();
+                            return Ok(text);
+                        }
+                    }
+                }
+            }
+
+            Err("No text returned from oneshot request".to_string())
+        })
+    }
 }
 
 pub struct OllamaProvider {
@@ -572,6 +657,44 @@ impl LlmProvider for OllamaProvider {
             let response = res.json::<OllamaResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(response.response)
+        })
+    }
+
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        _max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let prompt_str = prompt.to_string();
+        let url = format!("{}/api/generate", self.base_url.trim_end_matches('/'));
+        let model = self.model.clone();
+        
+        Box::pin(async move {
+            let request_body = OllamaRequest {
+                model,
+                prompt: prompt_str,
+                system: "".to_string(), // No system prompt for autocomplete
+                stream: false,
+            };
+            
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Request failed: {}", e))?;
+                
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Ollama oneshot error ({}): {}", status, err_text));
+            }
+            
+            let response = res.json::<OllamaResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+                
             Ok(response.response)
         })
     }

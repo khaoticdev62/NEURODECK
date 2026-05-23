@@ -23,7 +23,7 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.11.2", features = [] }
 tauri-plugin-log = "2"
-reqwest = { version = "0.12", features = ["json", "stream"] }
+reqwest = { version = "0.12", features = ["json", "stream", "blocking"] }
 futures-util = "0.3"
 toml = "0.8"
 tokio = { version = "1", features = ["full"] }
@@ -48,5 +48,6 @@ tar = "0.4.40"
 tonic = "0.11"
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.4"
+walkdir = "2.3"
 
 

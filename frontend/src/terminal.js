@@ -229,11 +229,12 @@ function renderTerminalTabs() {
     };
     list.innerHTML = state.terminalSessions.map((s, idx) => {
         const icon  = s.shell ? (SHELL_ICONS[s.shell] || s.shell.replace(/.*[/\\]/, '').replace('.exe','').slice(0,3).toLowerCase()) : ">_";
-        const label = `${icon} ${idx + 1}`;
+        const defaultLabel = `${icon} ${idx + 1}`;
+        const label = s.name || defaultLabel;
         const activeClass = s.id === state.activeTerminalSessionId ? "active" : "";
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
-                <span>${label}</span>
+                <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${label}</span>
                 <span class="terminal-tab-close" data-session-id="${s.id}">✕</span>
             </div>
         `;
@@ -241,10 +242,34 @@ function renderTerminalTabs() {
 
     // Tab clicks
     list.querySelectorAll(".terminal-tab").forEach(tab => {
-        tab.onclick = () => {
+        tab.onclick = (e) => {
+            if (e.target.classList.contains("terminal-tab-close")) return;
+            if (e.target.tagName === "INPUT") return;
             const sid = tab.getAttribute("data-session-id");
             switchTerminalSession(sid);
         };
+    });
+
+    // Double-click tab label to rename
+    list.querySelectorAll(".terminal-tab-label").forEach(lbl => {
+        lbl.addEventListener("dblclick", (e) => {
+            e.stopPropagation();
+            const sid = lbl.getAttribute("data-session-id");
+            const session = state.terminalSessions.find(s => s.id === sid);
+            if (!session) return;
+            const input = document.createElement("input");
+            input.value = lbl.textContent;
+            input.style.cssText = "width:80px;background:rgba(0,0,0,0.6);border:1px solid var(--accent-color);color:inherit;border-radius:3px;padding:1px 4px;font-size:0.75rem;font-family:var(--font-mono);outline:none;";
+            lbl.replaceWith(input);
+            input.focus();
+            input.select();
+            const commit = () => { const n = input.value.trim(); if (n) session.name = n; renderTerminalTabs(); };
+            input.addEventListener("keydown", (ev) => {
+                if (ev.key === "Enter") { ev.preventDefault(); commit(); }
+                if (ev.key === "Escape") { renderTerminalTabs(); }
+            });
+            input.addEventListener("blur", commit);
+        });
     });
 
     // Close clicks
@@ -667,7 +692,7 @@ function triggerAutocomplete(sessionId, buffer) {
     clearTimeout(autocompleteDebounce);
     autocompleteDebounce = setTimeout(async () => {
         try {
-            const completion = await invoke("shell_autocomplete", { buffer: buffer.trim() });
+            const completion = await invoke("get_terminal_autocomplete", { partial: buffer.trim() });
             if (completion && completion.trim()) {
                 showAutocompleteGhost(completion);
             } else {
@@ -730,16 +755,16 @@ function patchTerminalSessionWithAutocomplete(session) {
             return false;
         }
 
-        // Ctrl+Space: trigger autocomplete
-        if (e.ctrlKey && e.code === "Space" && e.type === "keydown") {
+        // Tab: trigger autocomplete (if not already active)
+        if (e.code === "Tab" && !autocompleteActive && e.type === "keydown") {
             e.preventDefault();
             triggerAutocomplete(session.id, currentLineBuffer);
             return false;
         }
 
-        // Right Arrow or Ctrl+Y: accept ghost completion
+        // Right Arrow or Tab or Ctrl+Y: accept ghost completion
         if (autocompleteActive && autocompleteGhostText && e.type === "keydown") {
-            if (e.code === "ArrowRight" || (e.ctrlKey && e.key === "y")) {
+            if (e.code === "ArrowRight" || e.code === "Tab" || (e.ctrlKey && e.key === "y")) {
                 e.preventDefault();
                 const ghost = autocompleteGhostText;
                 clearAutocompleteGhost();
@@ -975,37 +1000,36 @@ function renderSshProfilesSettings() {
     });
 }
 
-document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ssh-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
-    const user = document.getElementById("ssh-user-input")?.value.trim();
-    const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
-    const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getSshProfiles();
-    profiles.push({ name, host, port, user, auth_type, key_path });
-    saveSshProfiles(profiles);
-    renderSshProfiles();
-});
+function initSshProfileListeners() {
+    document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () => {
+        const host = document.getElementById("ssh-host-input")?.value.trim();
+        const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
+        const user = document.getElementById("ssh-user-input")?.value.trim();
+        const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
+        const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
+        if (!host || !user) { alert("Enter host and username first."); return; }
+        const name = prompt("Profile name:", `${user}@${host}`);
+        if (!name) return;
+        const profiles = getSshProfiles();
+        profiles.push({ name, host, port, user, auth_type, key_path });
+        saveSshProfiles(profiles);
+        renderSshProfiles();
+    });
 
-document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("sshProfiles");
-    renderSshProfiles();
-    renderSshProfilesSettings();
-});
+    document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", () => {
+        localStorage.removeItem("sshProfiles");
+        renderSshProfiles();
+        renderSshProfilesSettings();
+    });
 
-// Init SSH profiles on load
-renderSshProfiles();
-
-document.getElementById("ssh-auth-type")?.addEventListener("change", (e) => {
-    const isKey = e.target.value === "key";
-    const passGroup = document.getElementById("ssh-pass-group");
-    const keyPathGroup = document.getElementById("ssh-key-path-group");
-    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
-    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
-});
+    document.getElementById("ssh-auth-type")?.addEventListener("change", (e) => {
+        const isKey = e.target.value === "key";
+        const passGroup = document.getElementById("ssh-pass-group");
+        const keyPathGroup = document.getElementById("ssh-key-path-group");
+        if (passGroup) passGroup.style.display = isKey ? "none" : "block";
+        if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
+    });
+}
 
 // --- FTP Profile Management ---
 function getFtpProfiles() {
@@ -1101,28 +1125,27 @@ function renderFtpProfilesSettings() {
     });
 }
 
-document.getElementById("ftp-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getFtpProfiles();
-    profiles.push({ name, host, port, user, path });
-    saveFtpProfiles(profiles);
-    renderFtpProfiles();
-});
+function initFtpProfileListeners() {
+    document.getElementById("ftp-save-profile-btn")?.addEventListener("click", () => {
+        const host = document.getElementById("ftp-host-input")?.value.trim();
+        const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+        const user = document.getElementById("ftp-user-input")?.value.trim();
+        const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
+        if (!host || !user) { alert("Enter host and username first."); return; }
+        const name = prompt("Profile name:", `${user}@${host}`);
+        if (!name) return;
+        const profiles = getFtpProfiles();
+        profiles.push({ name, host, port, user, path });
+        saveFtpProfiles(profiles);
+        renderFtpProfiles();
+    });
 
-document.getElementById("settings-clear-ftp-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("ftpProfiles");
-    renderFtpProfiles();
-    renderFtpProfilesSettings();
-});
-
-// Init FTP profiles on load
-renderFtpProfiles();
+    document.getElementById("settings-clear-ftp-profiles")?.addEventListener("click", () => {
+        localStorage.removeItem("ftpProfiles");
+        renderFtpProfiles();
+        renderFtpProfilesSettings();
+    });
+}
 
 // ==========================================================================
 // FTP CLIENT SYSTEM
@@ -1214,38 +1237,40 @@ function loadFtpDir(path) {
         });
 }
 
-document.getElementById("ftp-connect-btn")?.addEventListener("click", () => {
-    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
-    loadFtpDir(path);
-});
+function initFtpClientListeners() {
+    document.getElementById("ftp-connect-btn")?.addEventListener("click", () => {
+        const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
+        loadFtpDir(path);
+    });
 
-document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const pass = document.getElementById("ftp-pass-input")?.value;
-    const localPath = document.getElementById("ftp-local-path-input")?.value.trim();
-    const remotePath = document.getElementById("ftp-remote-dest-input")?.value.trim();
-    if (!host || !localPath || !remotePath) {
-        setFtpStatus("Fill in host, local path, and remote destination.");
-        return;
-    }
-    setFtpStatus("Uploading...");
-    invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
-        .then(() => {
-            setFtpStatus("Upload complete.");
-            if (typeof addNotification === "function") {
-                addNotification("FTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
-            }
-            loadFtpDir(state.ftpCurrentPath);
-        })
-        .catch(err => {
-            setFtpStatus(`Upload error: ${err}`);
-            if (typeof addNotification === "function") {
-                addNotification("FTP Upload Failed", `Failed to upload file: ${err}`, "error");
-            }
-        });
-});
+    document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
+        const host = document.getElementById("ftp-host-input")?.value.trim();
+        const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+        const user = document.getElementById("ftp-user-input")?.value.trim();
+        const pass = document.getElementById("ftp-pass-input")?.value;
+        const localPath = document.getElementById("ftp-local-path-input")?.value.trim();
+        const remotePath = document.getElementById("ftp-remote-dest-input")?.value.trim();
+        if (!host || !localPath || !remotePath) {
+            setFtpStatus("Fill in host, local path, and remote destination.");
+            return;
+        }
+        setFtpStatus("Uploading...");
+        invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
+            .then(() => {
+                setFtpStatus("Upload complete.");
+                if (typeof addNotification === "function") {
+                    addNotification("FTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
+                }
+                loadFtpDir(state.ftpCurrentPath);
+            })
+            .catch(err => {
+                setFtpStatus(`Upload error: ${err}`);
+                if (typeof addNotification === "function") {
+                    addNotification("FTP Upload Failed", `Failed to upload file: ${err}`, "error");
+                }
+            });
+    });
+}
 
 // ==========================================================================
 // SFTP CLIENT SYSTEM
@@ -1341,40 +1366,42 @@ function loadSftpDir(path) {
         });
 }
 
-document.getElementById("sftp-connect-btn")?.addEventListener("click", () => {
-    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
-    loadSftpDir(path);
-});
+function initSftpClientListeners() {
+    document.getElementById("sftp-connect-btn")?.addEventListener("click", () => {
+        const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
+        loadSftpDir(path);
+    });
 
-document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const authType = document.getElementById("sftp-auth-type")?.value || "password";
-    const pass = document.getElementById("sftp-pass-input")?.value;
-    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
-    const localPath = document.getElementById("sftp-local-path-input")?.value.trim();
-    const remotePath = document.getElementById("sftp-remote-dest-input")?.value.trim();
-    if (!host || !localPath || !remotePath) {
-        setSftpStatus("Fill in host, local path, and remote destination.");
-        return;
-    }
-    setSftpStatus("Uploading...");
-    invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
-        .then(() => {
-            setSftpStatus("Upload complete.");
-            if (typeof addNotification === "function") {
-                addNotification("SFTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
-            }
-            loadSftpDir(state.sftpCurrentPath);
-        })
-        .catch(err => {
-            setSftpStatus(`Upload error: ${err}`);
-            if (typeof addNotification === "function") {
-                addNotification("SFTP Upload Failed", `Failed to upload file: ${err}`, "error");
-            }
-        });
-});
+    document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
+        const host = document.getElementById("sftp-host-input")?.value.trim();
+        const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+        const user = document.getElementById("sftp-user-input")?.value.trim();
+        const authType = document.getElementById("sftp-auth-type")?.value || "password";
+        const pass = document.getElementById("sftp-pass-input")?.value;
+        const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+        const localPath = document.getElementById("sftp-local-path-input")?.value.trim();
+        const remotePath = document.getElementById("sftp-remote-dest-input")?.value.trim();
+        if (!host || !localPath || !remotePath) {
+            setSftpStatus("Fill in host, local path, and remote destination.");
+            return;
+        }
+        setSftpStatus("Uploading...");
+        invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
+            .then(() => {
+                setSftpStatus("Upload complete.");
+                if (typeof addNotification === "function") {
+                    addNotification("SFTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
+                }
+                loadSftpDir(state.sftpCurrentPath);
+            })
+            .catch(err => {
+                setSftpStatus(`Upload error: ${err}`);
+                if (typeof addNotification === "function") {
+                    addNotification("SFTP Upload Failed", `Failed to upload file: ${err}`, "error");
+                }
+            });
+    });
+}
 
 // --- SFTP Profile Management ---
 function getSftpProfiles() {
@@ -1473,38 +1500,37 @@ function renderSftpProfilesSettings() {
     });
 }
 
-document.getElementById("sftp-save-profile-btn")?.addEventListener("click", () => {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
-    const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
-    const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
-    if (!host || !user) { alert("Enter host and username first."); return; }
-    const name = prompt("Profile name:", `${user}@${host}`);
-    if (!name) return;
-    const profiles = getSftpProfiles();
-    profiles.push({ name, host, port, user, auth_type, key_path, path });
-    fn_sftp_save_profiles(profiles);
-    renderSftpProfiles();
-});
+function initSftpProfileListeners() {
+    document.getElementById("sftp-save-profile-btn")?.addEventListener("click", () => {
+        const host = document.getElementById("sftp-host-input")?.value.trim();
+        const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
+        const user = document.getElementById("sftp-user-input")?.value.trim();
+        const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
+        const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
+        const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
+        if (!host || !user) { alert("Enter host and username first."); return; }
+        const name = prompt("Profile name:", `${user}@${host}`);
+        if (!name) return;
+        const profiles = getSftpProfiles();
+        profiles.push({ name, host, port, user, auth_type, key_path, path });
+        fn_sftp_save_profiles(profiles);
+        renderSftpProfiles();
+    });
 
-document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", () => {
-    localStorage.removeItem("sftpProfiles");
-    renderSftpProfiles();
-    renderSftpProfilesSettings();
-});
+    document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", () => {
+        localStorage.removeItem("sftpProfiles");
+        renderSftpProfiles();
+        renderSftpProfilesSettings();
+    });
 
-document.getElementById("sftp-auth-type")?.addEventListener("change", (e) => {
-    const isKey = e.target.value === "key";
-    const passGroup = document.getElementById("sftp-pass-group");
-    const keyPathGroup = document.getElementById("sftp-key-path-group");
-    if (passGroup) passGroup.style.display = isKey ? "none" : "block";
-    if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
-});
-
-// Init SFTP profiles on load
-renderSftpProfiles();
+    document.getElementById("sftp-auth-type")?.addEventListener("change", (e) => {
+        const isKey = e.target.value === "key";
+        const passGroup = document.getElementById("sftp-pass-group");
+        const keyPathGroup = document.getElementById("sftp-key-path-group");
+        if (passGroup) passGroup.style.display = isKey ? "none" : "block";
+        if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
+    });
+}
 
 
 
@@ -1581,10 +1607,7 @@ function initFtpSftpDragDrop() {
     }
 }
 
-// Initialize Sprint 5 modules
-initNotificationCenter();
-initGameContextPanel();
-initFtpSftpDragDrop();
+// Initialize modules in main.js after DOM load
 
 
 
@@ -1632,4 +1655,16 @@ export function initTerminal() {
     initScreenshotVision();
     wireHistorySearchInput();
     initFtpSftpDragDrop();
+
+    // Profiles initial render
+    renderSshProfiles();
+    renderFtpProfiles();
+    renderSftpProfiles();
+
+    // Event listeners
+    initSshProfileListeners();
+    initFtpProfileListeners();
+    initFtpClientListeners();
+    initSftpClientListeners();
+    initSftpProfileListeners();
 }

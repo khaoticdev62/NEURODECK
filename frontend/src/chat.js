@@ -4,11 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 
 // Auto-growing Textarea Logic
-const inputElement = document.getElementById("user-input");
-inputElement.addEventListener("input", function() {
-    this.style.height = "auto";
-    this.style.height = (this.scrollHeight) + "px";
-});
+let inputElement = null;
 
 function updateMuteButtonUI() {
     let muteBtn = document.getElementById("mute-btn");
@@ -234,7 +230,7 @@ function finishRunningProcess(code) {
 }
 
 // Event listeners for send action
-inputElement.addEventListener("keydown", function (e) {
+function handleInputKeydown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSendAction();
@@ -243,9 +239,9 @@ inputElement.addEventListener("keydown", function (e) {
         e.preventDefault();
         invoke("kill_process").catch(err => console.error("Error killing process:", err));
     }
-});
+}
 
-document.getElementById("send-btn").onclick = handleSendAction;
+// Send button handler registered in initChat()
 
 // Custom Premium Markdown Code Header / Action Injection
 function formatCodeBlocks(container) {
@@ -568,9 +564,9 @@ listen("command_exit", function (event) {
 
 // Audio Recording Logic
 // let isRecording = false; (Moved to state.js)
-let micBtn = document.getElementById("mic-btn");
+let micBtn = null;
 
-micBtn.onclick = function() {
+function handleMicAction() {
     let chatViewport = document.getElementById("chat-viewport");
     let viewport = document.getElementById("chat-workspace");
     if (!state.isRecording) {
@@ -628,7 +624,7 @@ micBtn.onclick = function() {
             div.querySelector(".message-card").innerText = "System error stop recording/transcribing: " + err;
         });
     }
-};
+}
 
 // Sessions History Management (Sidebar UI)
 function refreshSessionsList() {
@@ -789,7 +785,7 @@ function startNewSession() {
     });
 }
 
-document.getElementById("new-chat-btn").onclick = startNewSession;
+// new-chat-btn handler registered in initChat()
 
 // Keydown shortcuts for Save/Load/Record/Mute
 // Backtick (`) — toggle radial menu for keyboard/desktop testing
@@ -1029,8 +1025,7 @@ listen("persona_changed", function(event) {
     }
 });
 
-// Persona and Theme selection change logic
-document.getElementById("persona-select").onchange = function() {
+function handlePersonaChange() {
     let val = this.value;
     invoke("set_persona", { name: val }).then((msg) => {
         state.activePersona = val;
@@ -1046,9 +1041,9 @@ document.getElementById("persona-select").onchange = function() {
         chatViewport.appendChild(div);
         viewport.scrollTop = viewport.scrollHeight;
     });
-};
+}
 
-document.getElementById("theme-select").onchange = function() {
+function handleThemeChange() {
     let val = this.value;
     invoke("set_theme", { name: val }).then((theme) => {
         if (theme) {
@@ -1068,7 +1063,7 @@ document.getElementById("theme-select").onchange = function() {
             viewport.scrollTop = viewport.scrollHeight;
         }
     });
-};
+}
 
 
 
@@ -1090,6 +1085,40 @@ export {
 };
 
 export function initChat() {
+    inputElement = document.getElementById("user-input");
+    if (inputElement) {
+        inputElement.addEventListener("input", function() {
+            this.style.height = "auto";
+            this.style.height = (this.scrollHeight) + "px";
+        });
+        inputElement.addEventListener("keydown", handleInputKeydown);
+    }
+
+    const sendBtn = document.getElementById("send-btn");
+    if (sendBtn) {
+        sendBtn.onclick = handleSendAction;
+    }
+
+    micBtn = document.getElementById("mic-btn");
+    if (micBtn) {
+        micBtn.onclick = handleMicAction;
+    }
+
+    const newChatBtn = document.getElementById("new-chat-btn");
+    if (newChatBtn) {
+        newChatBtn.onclick = startNewSession;
+    }
+
+    const personaSelect = document.getElementById("persona-select");
+    if (personaSelect) {
+        personaSelect.onchange = handlePersonaChange;
+    }
+
+    const themeSelect = document.getElementById("theme-select");
+    if (themeSelect) {
+        themeSelect.onchange = handleThemeChange;
+    }
+
     // Setup mute button listener and initial state
     const muteBtn = document.getElementById("mute-btn");
     if (muteBtn) {

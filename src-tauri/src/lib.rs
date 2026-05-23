@@ -14,6 +14,8 @@ mod mcp;
 mod whisper;
 mod canvas_collab;
 mod remote_control;
+mod autocomplete;
+mod doc_indexer;
 pub mod commands;
 use crate::commands::*;
 
@@ -774,6 +776,11 @@ pub fn run() {
             cancel_generation,
             execute_lua,
             export_session_markdown,
+            autocomplete::get_terminal_autocomplete,
+            doc_indexer::index_directory,
+            doc_indexer::get_indexed_docs,
+            doc_indexer::clear_doc_index,
+            doc_indexer::get_doc_count,
             pty_manager::pty_spawn,
             pty_manager::pty_write,
             pty_manager::pty_resize,
@@ -844,6 +851,7 @@ pub fn run() {
             set_whisper_config,
             get_whisper_status,
             transcribe_audio_whisper,
+            download_whisper_model,
             canvas_collab_host,
             canvas_collab_join,
             canvas_collab_send,

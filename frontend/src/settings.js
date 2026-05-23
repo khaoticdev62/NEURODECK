@@ -1,6 +1,17 @@
 import { state } from './state.js';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { 
+    restartTerminalSession, 
+    renderSshProfilesSettings, 
+    renderFtpProfilesSettings, 
+    renderSftpProfilesSettings 
+} from './terminal.js';
+
+let settingsOverlay = null;
+let settingsBtn = null;
+let closeSettings = null;
+let closeSettingsX = null;
 
 // ==========================================================================
 // SETTINGS AND PERSISTENCE IMPLEMENTATION
@@ -138,45 +149,35 @@ function applySettings() {
     }
 }
 
-// Render background gallery elements dynamically
-renderBackgroundGallery();
-
-// Initial application of settings on startup
-applySettings();
-
-// Focus the main input
-document.getElementById("user-input").focus();
-
-// Event listeners for settings controls
-document.getElementById("font-select").onchange = function() {
+function handleFontSelect() {
     localStorage.setItem("selectedFont", this.value);
     applySettings();
-};
+}
 
-document.getElementById("bg-url-input").oninput = function() {
+function handleBgUrlInput() {
     localStorage.setItem("bgUrl", this.value);
     applySettings();
-};
+}
 
-document.getElementById("bg-opacity-slider").oninput = function() {
+function handleBgOpacitySlider() {
     localStorage.setItem("bgOpacity", this.value);
     applySettings();
-};
+}
 
-document.getElementById("scanlines-toggle").onchange = function() {
+function handleScanlinesToggle() {
     localStorage.setItem("scanlinesEnabled", this.checked ? "true" : "false");
     applySettings();
-};
+}
 
-document.getElementById("flicker-toggle").onchange = function() {
+function handleFlickerToggle() {
     localStorage.setItem("flickerEnabled", this.checked ? "true" : "false");
     applySettings();
-};
+}
 
-document.getElementById("shell-select").onchange = function() {
+function handleShellSelect() {
     localStorage.setItem("selectedShell", this.value);
     applySettings();
-};
+}
 
 function toggleSettingsLlmGroups(provider) {
     const geminiGroup = document.getElementById("settings-gemini-group");
@@ -199,11 +200,11 @@ function toggleSettingsLlmGroups(provider) {
     }
 }
 
-document.getElementById("llm-provider-select")?.addEventListener("change", function() {
+function handleLlmProviderChange() {
     toggleSettingsLlmGroups(this.value);
-});
+}
 
-document.getElementById("settings-test-connection-btn")?.addEventListener("click", () => {
+function handleTestConnectionClick() {
     const provider = document.getElementById("llm-provider-select")?.value;
     const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
     const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
@@ -232,9 +233,9 @@ document.getElementById("settings-test-connection-btn")?.addEventListener("click
                 statusEl.innerText = `Error: ${err}`;
             }
         });
-});
+}
 
-document.getElementById("settings-save-llm-btn")?.addEventListener("click", () => {
+function handleSaveLlmClick() {
     const provider = document.getElementById("llm-provider-select")?.value;
     const geminiKey = document.getElementById("settings-gemini-key")?.value.trim();
     const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
@@ -274,67 +275,18 @@ document.getElementById("settings-save-llm-btn")?.addEventListener("click", () =
                 statusEl.innerText = `Save error: ${err}`;
             }
         });
-});
+}
 
 
-// Shell Switcher (terminal top bar)
-document.querySelectorAll(".term-shell-btn").forEach(pill => {
-    pill.onclick = function() {
-        const shell = this.getAttribute("data-shell");
-        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
-        this.classList.add("active");
-        localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
-        // Also sync the settings dropdown
-        const shellSelect = document.getElementById("shell-select");
-        if (shellSelect) {
-            const option = shellSelect.querySelector(`option[value="${shell}"]`);
-            if (option) shellSelect.value = shell;
-        }
-        // Update shell for the active session and restart it
-        if (state.activeTerminalSessionId) {
-            const session = state.terminalSessions.find(s => s.id === state.activeTerminalSessionId);
-            if (session) {
-                session.shell = shell === "default" ? null : shell;
-                restartTerminalSession(state.activeTerminalSessionId);
-            }
-        }
-    };
-});
+// Shell Switcher (terminal top bar) event handlers registered in initSettings()
 
-// Sync shell buttons on load
-(function syncShellPills() {
-    const saved = localStorage.getItem("selectedShell") || "default";
-    const pill = document.querySelector(`.term-shell-btn[data-shell="${saved}"]`);
-    if (pill) {
-        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
-        pill.classList.add("active");
-    }
-})();
-
-document.getElementById("custom-shell-input").oninput = function() {
-    localStorage.setItem("customShell", this.value);
-    applySettings();
-};
-
-document.getElementById("term-fontsize-slider").oninput = function() {
-    localStorage.setItem("terminalFontSize", this.value);
-    applySettings();
-};
-
-document.getElementById("term-scrollback-input").oninput = function() {
-    localStorage.setItem("terminalScrollback", this.value);
-    applySettings();
-};
+// Settings sliders and inputs registered in initSettings()
 
 
 
 
 
-// Settings Modal Event Listeners
-const settingsOverlay = document.getElementById("settings-overlay");
-const settingsBtn = document.getElementById("settings-btn");
-const closeSettings = document.getElementById("close-settings");
-const closeSettingsX = document.getElementById("close-settings-x");
+// Settings Modal Event Listeners registered in initSettings()
 
 // ── Apple TV sidebar nav ──────────────────────────────────────────────
 function initSettingsSidebar() {
@@ -349,8 +301,8 @@ function initSettingsSidebar() {
     });
 }
 
-settingsBtn.onclick = function() {
-    settingsOverlay.classList.add("active");
+function openSettingsModal() {
+    if (settingsOverlay) settingsOverlay.classList.add("active");
     
     // Clear status text
     const statusEl = document.getElementById("settings-llm-status");
@@ -386,17 +338,19 @@ settingsBtn.onclick = function() {
     // Populate themes
     invoke("get_themes").then((themes) => {
         let select = document.getElementById("theme-select");
-        select.innerHTML = "";
-        let savedTheme = localStorage.getItem("selectedTheme");
-        themes.forEach((t) => {
-            let option = document.createElement("option");
-            option.value = t;
-            option.innerText = t;
-            if (t === savedTheme) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
+        if (select) {
+            select.innerHTML = "";
+            let savedTheme = localStorage.getItem("selectedTheme");
+            themes.forEach((t) => {
+                let option = document.createElement("option");
+                option.value = t;
+                option.innerText = t;
+                if (t === savedTheme) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
     });
     
     renderSshProfilesSettings();
@@ -412,15 +366,7 @@ settingsBtn.onclick = function() {
         window._customThemes.renderList();
         window._customThemes.refreshThemeSelect();
     }
-};
-
-closeSettings.onclick = function() {
-    settingsOverlay.classList.remove("active");
-};
-
-closeSettingsX.onclick = function() {
-    settingsOverlay.classList.remove("active");
-};
+}
 
 
 
@@ -523,8 +469,7 @@ function initCustomPersonas() {
     }
 }
 
-// Initialize Custom Personas event handlers
-initCustomPersonas();
+// Initialize Custom Personas event handlers (called in initSettings)
 
 // ==========================================================================
 // ==========================================================================
@@ -984,8 +929,59 @@ function initWhisperSettings() {
     const saveBtn = document.getElementById("whisper-save-btn");
     const testBtn = document.getElementById("whisper-test-btn");
     const statusLine = document.getElementById("whisper-status-line");
+    const downloadBtn = document.getElementById("whisper-download-btn");
+    const modelSelect = document.getElementById("whisper-model-select");
+    const dlWrap = document.getElementById("whisper-dl-progress-wrap");
+    const dlLabel = document.getElementById("whisper-dl-label");
+    const dlPct = document.getElementById("whisper-dl-pct");
+    const dlBar = document.getElementById("whisper-dl-bar");
 
     if (!saveBtn) return;
+
+    // Wire download button
+    if (downloadBtn && modelSelect) {
+        downloadBtn.addEventListener("click", async () => {
+            const model = modelSelect.value;
+            downloadBtn.disabled = true;
+            if (dlWrap) dlWrap.style.display = "block";
+            if (dlLabel) dlLabel.textContent = `Downloading ggml-${model}.bin...`;
+            if (dlPct) dlPct.textContent = "0%";
+            if (dlBar) dlBar.style.width = "0%";
+            if (statusLine) statusLine.innerHTML = `<span style="opacity:0.6;">Downloading ${model}...</span>`;
+
+            const unlisten = await listen("whisper_download_progress", (event) => {
+                let data;
+                try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; }
+                catch { return; }
+                const { done, pct, path, skipped } = data;
+                if (dlPct) dlPct.textContent = `${pct || 0}%`;
+                if (dlBar) dlBar.style.width = `${pct || 0}%`;
+                if (done) {
+                    unlisten();
+                    if (dlWrap) dlWrap.style.display = "none";
+                    downloadBtn.disabled = false;
+                    if (path) {
+                        if (modelInput) modelInput.value = path;
+                        if (statusLine) statusLine.innerHTML = `<span style="color:var(--response-color);">✓ ${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span>`;
+                        if (typeof addNotification === "function") {
+                            addNotification("Whisper Model Ready", `ggml-${model}.bin downloaded.`, "success");
+                        }
+                    }
+                } else {
+                    if (dlLabel) dlLabel.textContent = skipped ? "Already downloaded" : `Downloading ggml-${model}.bin...`;
+                }
+            }).catch(() => () => {});
+
+            try {
+                await invoke("download_whisper_model", { model });
+            } catch (err) {
+                unlisten();
+                downloadBtn.disabled = false;
+                if (dlWrap) dlWrap.style.display = "none";
+                if (statusLine) statusLine.innerHTML = `<span style="color:var(--error-color);">Download failed: ${err}</span>`;
+            }
+        });
+    }
 
     // Load current config on modal open
     invoke("get_whisper_status").then(status => {
@@ -1055,12 +1051,122 @@ export {
 };
 
 export function initSettings() {
+    if (typeof renderBackgroundGallery === "function") {
+        renderBackgroundGallery();
+    }
     applySettings();
     initSettingsSidebar();
-    initCustomPersonas();
+
+    // Focus the main input
+    const userInput = document.getElementById("user-input");
+    if (userInput) userInput.focus();
+
+    // Wire listeners
+    const fontSelect = document.getElementById("font-select");
+    if (fontSelect) fontSelect.onchange = handleFontSelect;
+
+    const bgUrlInput = document.getElementById("bg-url-input");
+    if (bgUrlInput) bgUrlInput.oninput = handleBgUrlInput;
+
+    const bgOpacitySlider = document.getElementById("bg-opacity-slider");
+    if (bgOpacitySlider) bgOpacitySlider.oninput = handleBgOpacitySlider;
+
+    const scanlinesToggle = document.getElementById("scanlines-toggle");
+    if (scanlinesToggle) scanlinesToggle.onchange = handleScanlinesToggle;
+
+    const flickerToggle = document.getElementById("flicker-toggle");
+    if (flickerToggle) flickerToggle.onchange = handleFlickerToggle;
+
+    const shellSelect = document.getElementById("shell-select");
+    if (shellSelect) shellSelect.onchange = handleShellSelect;
+
+    document.getElementById("llm-provider-select")?.addEventListener("change", handleLlmProviderChange);
+    document.getElementById("settings-test-connection-btn")?.addEventListener("click", handleTestConnectionClick);
+    document.getElementById("settings-save-llm-btn")?.addEventListener("click", handleSaveLlmClick);
+
     initCustomThemes();
     initMcpSettings();
     initDocRag();
     initBmadInstaller();
     initWhisperSettings();
+
+    // Shell Switcher (terminal top bar)
+    document.querySelectorAll(".term-shell-btn").forEach(pill => {
+        pill.onclick = function() {
+            const shell = this.getAttribute("data-shell");
+            document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
+            this.classList.add("active");
+            localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
+            // Also sync the settings dropdown
+            const shellSelect = document.getElementById("shell-select");
+            if (shellSelect) {
+                const option = shellSelect.querySelector(`option[value="${shell}"]`);
+                if (option) shellSelect.value = shell;
+            }
+            // Update shell for the active session and restart it
+            if (state.activeTerminalSessionId) {
+                const session = state.terminalSessions.find(s => s.id === state.activeTerminalSessionId);
+                if (session) {
+                    session.shell = shell === "default" ? null : shell;
+                    restartTerminalSession(state.activeTerminalSessionId);
+                }
+            }
+        };
+    });
+
+    // Sync shell buttons on load
+    const savedShell = localStorage.getItem("selectedShell") || "default";
+    const pill = document.querySelector(`.term-shell-btn[data-shell="${savedShell}"]`);
+    if (pill) {
+        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+    }
+
+    const customShellInput = document.getElementById("custom-shell-input");
+    if (customShellInput) {
+        customShellInput.oninput = function() {
+            localStorage.setItem("customShell", this.value);
+            applySettings();
+        };
+    }
+
+    const termFontSizeSlider = document.getElementById("term-fontsize-slider");
+    if (termFontSizeSlider) {
+        termFontSizeSlider.oninput = function() {
+            localStorage.setItem("terminalFontSize", this.value);
+            applySettings();
+        };
+    }
+
+    const termScrollbackInput = document.getElementById("term-scrollback-input");
+    if (termScrollbackInput) {
+        termScrollbackInput.oninput = function() {
+            localStorage.setItem("terminalScrollback", this.value);
+            applySettings();
+        };
+    }
+
+    // Modal elements
+    settingsOverlay = document.getElementById("settings-overlay");
+    settingsBtn = document.getElementById("settings-btn");
+    closeSettings = document.getElementById("close-settings");
+    closeSettingsX = document.getElementById("close-settings-x");
+
+    if (settingsBtn) {
+        settingsBtn.onclick = openSettingsModal;
+    }
+
+    if (closeSettings) {
+        closeSettings.onclick = function() {
+            if (settingsOverlay) settingsOverlay.classList.remove("active");
+        };
+    }
+
+    if (closeSettingsX) {
+        closeSettingsX.onclick = function() {
+            if (settingsOverlay) settingsOverlay.classList.remove("active");
+        };
+    }
+
+    initCustomPersonas();
 }

@@ -722,6 +722,17 @@ if (!window.__TAURI_INTERNALS__) {
                 }
                 return 'This is a mock whisper transcription of the recorded audio.';
             }
+            case 'download_whisper_model': {
+                const m = args.model || 'base.en';
+                const mockPath = `/home/user/.local/share/neurodeck/models/ggml-${m}.bin`;
+                setTimeout(() => {
+                    [0,25,50,75,100].forEach((pct, i) => setTimeout(() => {
+                        window.__tauriListeners?.whisper_download_progress?.forEach(cb =>
+                            cb({ payload: { done: pct === 100, pct, path: pct === 100 ? mockPath : undefined } }));
+                    }, i * 200));
+                }, 100);
+                return mockPath;
+            }
             case 'canvas_collab_host': {
                 const port = args.port || 13338;
                 window._mockCollabActive = true;
@@ -1422,11 +1433,39 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Autonomous Coding Agent View -->
                 <div class="view-content" id="view-agent">
-                    <div class="agent-toolbar">
+                    <!-- Mode toggle -->
+                    <div class="agent-mode-bar">
+                        <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
+                        <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
+                    </div>
+
+                    <!-- Task mode toolbar -->
+                    <div class="agent-toolbar" id="agent-toolbar-task">
                         <input type="text" id="agent-task-input" class="agent-task-input" placeholder="Describe your task… e.g. Write a Python script that lists all .txt files in the current directory">
                         <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
                         <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
                         <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
+                    </div>
+
+                    <!-- Roundtable mode toolbar -->
+                    <div class="agent-toolbar hidden" id="agent-toolbar-roundtable">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
+                            <select id="rt-persona-a" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
+                                <option value="">Persona A…</option>
+                            </select>
+                            <select id="rt-persona-b" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
+                                <option value="">Persona B…</option>
+                            </select>
+                            <input type="text" id="rt-topic-input" class="agent-task-input" placeholder="Topic or question to debate…" style="flex:1;min-width:180px;">
+                            <select id="rt-rounds" class="agent-task-input" style="flex:0 0 auto;width:90px;padding:0 8px;" title="Number of rounds">
+                                <option value="2">2 rounds</option>
+                                <option value="3">3 rounds</option>
+                                <option value="4" selected>4 rounds</option>
+                                <option value="6">6 rounds</option>
+                            </select>
+                            <button class="agent-btn agent-btn-run" id="rt-start-btn">▶ Start</button>
+                            <button class="agent-btn agent-btn-stop hidden" id="rt-stop-btn">■ Stop</button>
+                        </div>
                     </div>
 
                     <div class="agent-body">
@@ -2159,12 +2198,31 @@ document.querySelector('#app').innerHTML = `
 
                         <div class="stv-group-label">Whisper STT</div>
                         <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">When configured, the 🎙️ button routes through whisper instead of the cloud API for fully offline transcription.</p>
-                            <div style="font-size:0.72rem;opacity:0.45;margin-bottom:12px;font-family:var(--font-mono);line-height:1.6;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:7px;border:1px solid rgba(255,255,255,0.06);">
-                                git clone https://github.com/ggerganov/whisper.cpp<br>
-                                cmake -B build &amp;&amp; cmake --build build<br>
-                                bash models/download-ggml-model.sh base.en
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">When configured, the 🎙️ button routes through whisper.cpp for fully offline transcription — no internet required.</p>
+
+                            <!-- Auto-download section -->
+                            <div class="stv-group-label" style="margin-bottom:8px;">Quick Download</div>
+                            <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+                                <select id="whisper-model-select" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:inherit;border-radius:6px;padding:6px 10px;font-size:0.8rem;">
+                                    <option value="base.en">base.en — 142 MB (recommended)</option>
+                                    <option value="tiny.en">tiny.en — 75 MB (fastest)</option>
+                                    <option value="small.en">small.en — 466 MB (accurate)</option>
+                                    <option value="medium.en">medium.en — 1.5 GB (best)</option>
+                                </select>
+                                <button class="stv-btn-primary" id="whisper-download-btn" style="white-space:nowrap;">⬇ Download</button>
                             </div>
+                            <div id="whisper-dl-progress-wrap" style="display:none;margin-bottom:10px;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;opacity:0.6;margin-bottom:4px;">
+                                    <span id="whisper-dl-label">Downloading...</span>
+                                    <span id="whisper-dl-pct">0%</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+                                    <div id="whisper-dl-bar" style="height:100%;width:0%;background:var(--accent-color);transition:width 0.3s;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Manual config -->
+                            <div class="stv-group-label" style="margin-bottom:8px;">Manual Config</div>
                             <div class="setting-field-group" style="margin-bottom:10px;">
                                 <label>Binary Path</label>
                                 <input type="text" id="whisper-binary-input" placeholder="whisper-cli  (or full path)">
@@ -3077,6 +3135,7 @@ function renderBackgroundGallery() {
     // Initial sync
     updateThemePreview();
 }
+window.renderBackgroundGallery = renderBackgroundGallery;
 
 
 
@@ -4083,18 +4142,13 @@ invoke("get_initial_state").then((initialState) => {
         });
     }
     
-    // Setup mute button listener and initial state
-    document.getElementById("mute-btn").onclick = function() {
-        toggleMute();
-    };
-    
-    
-    // Refresh sessions list on startup
-    refreshSessionsList();
-    
     // Initialize our sub-systems
+    initChat();
+    initSettings();
     initTerminal();
     initCanvas();
+    initNotificationCenter();
+    initGameContextPanel();
     initTunnelClient();
     initFileShare();
     initBrowser();
@@ -5224,6 +5278,154 @@ function initAgentView() {
         const canvasTab = document.querySelector('[data-view="canvas"]');
         if (canvasTab) canvasTab.click();
     };
+
+    // === ROUNDTABLE MODE ===
+    const modeBtns = document.querySelectorAll('.agent-mode-btn');
+    const toolbarTask = document.getElementById('agent-toolbar-task');
+    const toolbarRt = document.getElementById('agent-toolbar-roundtable');
+    const rtPersonaA = document.getElementById('rt-persona-a');
+    const rtPersonaB = document.getElementById('rt-persona-b');
+    const rtTopicInput = document.getElementById('rt-topic-input');
+    const rtRounds = document.getElementById('rt-rounds');
+    const rtStartBtn = document.getElementById('rt-start-btn');
+    const rtStopBtn = document.getElementById('rt-stop-btn');
+
+    if (!rtStartBtn) return;
+
+    let rtRunning = false;
+    let rtUnlistenChunk = null;
+    let rtUnlistenDone = null;
+
+    function populateRtPersonas() {
+        const personas = state.availablePersonas || [];
+        [rtPersonaA, rtPersonaB].forEach(sel => {
+            const saved = sel.value;
+            sel.innerHTML = '<option value="">Choose persona…</option>' +
+                personas.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            if (saved && personas.includes(saved)) sel.value = saved;
+        });
+    }
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const mode = btn.dataset.mode;
+            toolbarTask.classList.toggle('hidden', mode !== 'task');
+            toolbarRt.classList.toggle('hidden', mode !== 'roundtable');
+            if (mode === 'roundtable') {
+                invoke('get_personas').then(p => {
+                    state.availablePersonas = p;
+                    populateRtPersonas();
+                }).catch(() => populateRtPersonas());
+            }
+        });
+    });
+
+    function setRtRunning(on) {
+        rtRunning = on;
+        rtStartBtn.classList.toggle('hidden', on);
+        rtStopBtn.classList.toggle('hidden', !on);
+        rtPersonaA.disabled = on;
+        rtPersonaB.disabled = on;
+        rtTopicInput.disabled = on;
+        rtRounds.disabled = on;
+    }
+
+    function appendRtEntry(speaker) {
+        const empty = logEl.querySelector('.agent-empty-state');
+        if (empty) empty.remove();
+        const entry = document.createElement('div');
+        entry.className = 'agent-log-entry agent-log-info agent-log-rt-msg';
+        entry.innerHTML = `<span class="agent-log-icon">🗣</span>
+            <div class="agent-log-body">
+                <div class="agent-log-label">${escapeHtml(speaker)}</div>
+                <div class="agent-log-text rt-msg-text"></div>
+            </div>`;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+        return entry.querySelector('.rt-msg-text');
+    }
+
+    function cleanupRtListeners() {
+        if (rtUnlistenChunk) { rtUnlistenChunk(); rtUnlistenChunk = null; }
+        if (rtUnlistenDone) { rtUnlistenDone(); rtUnlistenDone = null; }
+    }
+
+    async function startRoundtable() {
+        const pA = rtPersonaA.value.trim();
+        const pB = rtPersonaB.value.trim();
+        const topic = rtTopicInput.value.trim();
+        const rounds = parseInt(rtRounds.value, 10) || 4;
+
+        if (!pA || !pB) {
+            addNotification('Roundtable', 'Select both personas before starting.', 'error');
+            return;
+        }
+        if (!topic) { rtTopicInput.focus(); return; }
+
+        setRtRunning(true);
+        logEl.innerHTML = '';
+
+        const cmd = `/discuss ${pA} ${pB} ${topic} rounds:${rounds}`;
+
+        let currentTextEl = null;
+        let currentSpeaker = 'Roundtable';
+        let pendingChunks = '';
+
+        rtUnlistenChunk = await listen('stream_chunk', (event) => {
+            const chunk = String(event.payload);
+            pendingChunks += chunk;
+
+            // Detect "**SpeakerName:**" pattern to start a new entry
+            const speakerPattern = /\*\*([^*]{1,40}):\*\*/g;
+            let lastIdx = 0;
+            let match;
+            while ((match = speakerPattern.exec(pendingChunks)) !== null) {
+                const before = pendingChunks.slice(lastIdx, match.index).trim();
+                if (before && currentTextEl) {
+                    currentTextEl.textContent += before;
+                }
+                currentSpeaker = match[1];
+                currentTextEl = appendRtEntry(currentSpeaker);
+                lastIdx = match.index + match[0].length;
+            }
+
+            const remaining = pendingChunks.slice(lastIdx);
+            if (remaining) {
+                if (!currentTextEl) {
+                    currentTextEl = appendRtEntry(currentSpeaker);
+                }
+                currentTextEl.textContent += remaining;
+                pendingChunks = '';
+            } else {
+                pendingChunks = '';
+            }
+
+            logEl.scrollTop = logEl.scrollHeight;
+        });
+
+        rtUnlistenDone = await listen('stream_done', () => {
+            cleanupRtListeners();
+            setRtRunning(false);
+            addNotification('Roundtable', 'Discussion complete.', 'success');
+        });
+
+        invoke('send_command', { prompt: cmd }).catch(e => {
+            appendLog('error', `Roundtable failed: ${e}`);
+            cleanupRtListeners();
+            setRtRunning(false);
+        });
+    }
+
+    rtStartBtn.addEventListener('click', () => { if (!rtRunning) startRoundtable(); });
+
+    rtStopBtn.addEventListener('click', () => {
+        invoke('cancel_generation').catch(() => {});
+        cleanupRtListeners();
+        setRtRunning(false);
+        appendLog('info', 'Roundtable stopped by user.');
+    });
 }
 
 // ==========================================================================

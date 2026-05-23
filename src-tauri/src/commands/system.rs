@@ -384,6 +384,86 @@ pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String,
     }
 }
 
+/// Download a GGML whisper model from HuggingFace into ~/.local/share/neurodeck/models/.
+/// Emits `whisper_download_progress` events: { done, pct, downloaded?, total?, path?, file? }
+#[tauri::command]
+pub async fn download_whisper_model(
+    model: String,
+    app_handle: AppHandle,
+) -> Result<String, String> {
+    const VALID: &[&str] = &["tiny.en", "base.en", "small.en", "medium.en", "tiny", "base", "small", "medium"];
+    if !VALID.contains(&model.as_str()) {
+        return Err(format!("Unknown model '{}'. Valid: tiny.en, base.en, small.en, medium.en", model));
+    }
+
+    let models_dir = get_home_dir()
+        .ok_or("Cannot determine home dir")?
+        .join(".local").join("share").join("neurodeck").join("models");
+    std::fs::create_dir_all(&models_dir).map_err(|e| format!("mkdir: {}", e))?;
+
+    let filename = format!("ggml-{}.bin", model);
+    let target = models_dir.join(&filename);
+
+    if target.exists() {
+        let path_str = target.to_string_lossy().to_string();
+        let _ = app_handle.emit("whisper_download_progress",
+            serde_json::json!({ "done": true, "pct": 100, "path": &path_str, "skipped": true }));
+        return Ok(path_str);
+    }
+
+    let url = format!(
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{}.bin",
+        model
+    );
+
+    let _ = app_handle.emit("whisper_download_progress",
+        serde_json::json!({ "done": false, "pct": 0, "file": &filename }));
+
+    let app2 = app_handle.clone();
+    let target2 = target.clone();
+    let file2 = filename.clone();
+
+    tokio::task::spawn_blocking(move || -> Result<String, String> {
+        use std::io::{Read, Write};
+
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(600))
+            .user_agent("neurodeck/1.1")
+            .build()
+            .map_err(|e| format!("HTTP client: {}", e))?;
+
+        let mut resp = client.get(&url).send()
+            .map_err(|e| format!("Request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            return Err(format!("HTTP {}: cannot download {}", resp.status(), file2));
+        }
+
+        let total = resp.content_length().unwrap_or(0);
+        let mut downloaded: u64 = 0;
+        let mut file = std::fs::File::create(&target2)
+            .map_err(|e| format!("Create file: {}", e))?;
+
+        let mut buf = [0u8; 65536];
+        loop {
+            let n = resp.read(&mut buf).map_err(|e| format!("Read: {}", e))?;
+            if n == 0 { break; }
+            file.write_all(&buf[..n]).map_err(|e| format!("Write: {}", e))?;
+            downloaded += n as u64;
+            let pct = if total > 0 { ((downloaded * 100) / total) as u8 } else { 0 };
+            let _ = app2.emit("whisper_download_progress",
+                serde_json::json!({ "done": false, "pct": pct, "downloaded": downloaded, "total": total }));
+        }
+
+        let path_str = target2.to_string_lossy().to_string();
+        let _ = app2.emit("whisper_download_progress",
+            serde_json::json!({ "done": true, "pct": 100, "path": &path_str }));
+        Ok(path_str)
+    })
+    .await
+    .map_err(|e| format!("Task: {}", e))?
+}
+
 fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
     std::fs::create_dir_all(dst).map_err(|e| format!("mkdir {}: {}", dst.display(), e))?;
     for entry in std::fs::read_dir(src).map_err(|e| format!("readdir {}: {}", src.display(), e))? {

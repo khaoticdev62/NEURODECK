@@ -2,16 +2,16 @@
 
 
 :root {
-    --bg-color: #06090c;
-    --fg-color: #e2e8f0;
-    --accent-color: #00F0FF;
-    --response-color: #00FF88;
-    --warning-color: #FFB000;
-    --error-color: #FF3C5A;
-    --muted-color: #1a242f;
-    --panel-bg: rgba(26, 36, 47, 0.25);
-    --border-color: rgba(255, 255, 255, 0.06);
-    --shadow-color: rgba(0, 0, 0, 0.3);
+    --bg-color: #0A0D10;
+    --fg-color: #E8F4FF;
+    --accent-color: #5EEBFF;
+    --response-color: #7CFFB2;
+    --warning-color: #FFC857;
+    --error-color: #FF5A6A;
+    --muted-color: #1A2230;
+    --panel-bg: rgba(17, 22, 28, 0.7);
+    --border-color: rgba(94, 235, 255, 0.15);
+    --shadow-color: rgba(0, 0, 0, 0.5);
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --font-display: 'Outfit', sans-serif;
@@ -2983,6 +2983,41 @@ body.crt-flicker-disabled .crt-flicker {
     overflow: hidden;
 }
 
+/* Mode toggle bar above agent toolbars */
+.agent-mode-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(4, 8, 14, 0.95);
+    flex-shrink: 0;
+}
+
+.agent-mode-btn {
+    flex: 1;
+    padding: 9px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.45);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.agent-mode-btn:hover {
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.agent-mode-btn.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+    background: rgba(0, 240, 255, 0.05);
+}
+
 .agent-toolbar {
     height: 56px;
     border-bottom: 1px solid var(--border-color);
@@ -2993,6 +3028,25 @@ body.crt-flicker-disabled .crt-flicker {
     padding: 0 14px;
     gap: 10px;
     flex-shrink: 0;
+}
+
+/* Roundtable toolbar needs auto-height for wrapping inputs */
+#agent-toolbar-roundtable {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 14px;
+}
+
+/* Roundtable log entries */
+.agent-log-rt-msg .agent-log-label {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+.agent-log-rt-msg .rt-msg-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
 }
 
 .agent-task-input {
