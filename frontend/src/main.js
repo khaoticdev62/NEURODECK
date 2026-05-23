@@ -464,6 +464,23 @@ if (!window.__TAURI_INTERNALS__) {
                 ).slice(0, 10);
                 return filtered.length > 0 ? filtered : mockHistory.slice(0, 5);
             }
+            case 'start_mcp_server': {
+                const port = args.port || 13337;
+                window._mockMcpRunning = true;
+                window._mockMcpPort = port;
+                return `MCP server started on http://127.0.0.1:${port}`;
+            }
+            case 'stop_mcp_server': {
+                window._mockMcpRunning = false;
+                return `MCP server on port ${window._mockMcpPort || 13337} stopped.`;
+            }
+            case 'get_mcp_status': {
+                const running = window._mockMcpRunning || false;
+                const port = window._mockMcpPort || 13337;
+                return running
+                    ? { running: 'true', port: String(port), url: `http://127.0.0.1:${port}` }
+                    : { running: 'false', port: String(port) };
+            }
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -1352,6 +1369,32 @@ document.querySelector('#app').innerHTML = `
                         <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">MANAGE CUSTOM PERSONAS</div>
                         <div id="settings-personas-list-custom" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
                             <div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>
+                        </div>
+                    </div>
+
+                    <!-- MCP Server section -->
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">MCP SERVER</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
+                            Expose NEURODECK as a <strong>Model Context Protocol</strong> server so Claude Desktop, Continue, or any MCP client can invoke tools (chat, run shell, run code, read/write files) directly.
+                        </div>
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="mcp-port-input">Port:</label>
+                            <input type="number" id="mcp-port-input" class="tunnel-text-input" value="13337" min="1024" max="65535" style="width: 100px; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <button class="send-prompt-btn" id="mcp-start-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Start MCP Server</button>
+                            <button class="canvas-btn" id="mcp-stop-btn" style="flex: 1; height: 32px; padding: 0;" disabled>Stop Server</button>
+                        </div>
+                        <div id="mcp-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
+                        <div id="mcp-tools-info" style="display: none; margin-top: 10px; padding: 8px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.15); border-radius: 4px; font-size: 0.78rem; font-family: var(--font-mono); line-height: 1.6;">
+                            <strong style="color: var(--accent-color);">Available Tools</strong><br>
+                            neurodeck_chat &nbsp;·&nbsp; run_shell &nbsp;·&nbsp; run_code<br>
+                            read_file &nbsp;·&nbsp; write_file &nbsp;·&nbsp; get_status
+                        </div>
+                        <div id="mcp-claude-config" style="display: none; margin-top: 10px;">
+                            <div style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 4px;">Add to Claude Desktop config (claude_desktop_config.json):</div>
+                            <pre id="mcp-claude-config-snippet" style="margin: 0; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.72rem; overflow-x: auto; white-space: pre; color: var(--response-color);"></pre>
                         </div>
                     </div>
                 </div>
@@ -6910,6 +6953,99 @@ function initCustomPersonas() {
 // Initialize Custom Personas event handlers
 initCustomPersonas();
 
+// ==========================================================================
+// MCP SERVER SETTINGS
+// ==========================================================================
+
+(function initMcpSettings() {
+    const startBtn = document.getElementById("mcp-start-btn");
+    const stopBtn  = document.getElementById("mcp-stop-btn");
+    const portInput = document.getElementById("mcp-port-input");
+    const statusLine = document.getElementById("mcp-status-line");
+    const toolsInfo = document.getElementById("mcp-tools-info");
+    const claudeConfig = document.getElementById("mcp-claude-config");
+    const configSnippet = document.getElementById("mcp-claude-config-snippet");
+
+    if (!startBtn) return;
+
+    function setRunningUI(port) {
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <a href="http://127.0.0.1:${port}" style="color: var(--accent-color); text-decoration: none;" onclick="return false;">http://127.0.0.1:${port}</a>`;
+        toolsInfo.style.display = "block";
+        claudeConfig.style.display = "block";
+        if (configSnippet) {
+            configSnippet.textContent = JSON.stringify({
+                mcpServers: {
+                    neurodeck: {
+                        url: `http://127.0.0.1:${port}/`
+                    }
+                }
+            }, null, 2);
+        }
+    }
+
+    function setStoppedUI() {
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusLine.textContent = "Server is not running.";
+        toolsInfo.style.display = "none";
+        claudeConfig.style.display = "none";
+    }
+
+    // Sync UI on settings modal open
+    document.getElementById("settings-btn") && document.getElementById("settings-btn").addEventListener("click", async () => {
+        try {
+            const status = await invoke("get_mcp_status");
+            if (status.running === "true") {
+                portInput.value = status.port || "13337";
+                setRunningUI(status.port);
+            } else {
+                setStoppedUI();
+            }
+        } catch (_) { setStoppedUI(); }
+    });
+
+    startBtn.addEventListener("click", async () => {
+        const port = parseInt(portInput.value, 10) || 13337;
+        startBtn.disabled = true;
+        statusLine.textContent = "Starting...";
+        try {
+            const msg = await invoke("start_mcp_server", { port });
+            setRunningUI(port);
+            if (typeof addNotification === "function") {
+                addNotification("MCP Server Started", `Listening on port ${port}. Add to Claude Desktop config.`, "success");
+            }
+        } catch (err) {
+            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+            startBtn.disabled = false;
+        }
+    });
+
+    stopBtn.addEventListener("click", async () => {
+        stopBtn.disabled = true;
+        try {
+            await invoke("stop_mcp_server");
+            setStoppedUI();
+            if (typeof addNotification === "function") {
+                addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
+            }
+        } catch (err) {
+            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+            stopBtn.disabled = false;
+        }
+    });
+
+    // Init state on load
+    invoke("get_mcp_status").then(status => {
+        if (status && status.running === "true") {
+            portInput.value = status.port || "13337";
+            setRunningUI(status.port);
+        } else {
+            setStoppedUI();
+        }
+    }).catch(() => setStoppedUI());
+})();
 
 // --- NOTIFICATION CENTER SYSTEM ---
 let notifications = [];

@@ -10,6 +10,7 @@ mod ftp;
 mod sftp;
 mod ollama_mgr;
 mod plugin_mgr;
+mod mcp;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -218,6 +219,8 @@ pub struct AppState {
     active_process_id: u64,
     cancel_stream_tx: Option<tokio::sync::oneshot::Sender<()>>,
     pub custom_personas: Vec<CustomPersona>,
+    mcp_abort: Option<tokio::task::AbortHandle>,
+    mcp_port: u16,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -2204,6 +2207,68 @@ async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>) -> 
     Ok(results)
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// MCP Server commands
+// ──────────────────────────────────────────────────────────────────────────
+
+#[tauri::command]
+async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap();
+        if app.mcp_abort.is_some() {
+            return Err(format!(
+                "MCP server is already running on port {}. Stop it first.",
+                app.mcp_port
+            ));
+        }
+        app.provider.clone()
+    };
+
+    let (bound_port, abort_handle) = mcp::start(port, provider).await?;
+
+    {
+        let mut app = state.lock().unwrap();
+        app.mcp_abort = Some(abort_handle);
+        app.mcp_port = bound_port;
+    }
+
+    Ok(format!(
+        "MCP server started on http://127.0.0.1:{}",
+        bound_port
+    ))
+}
+
+#[tauri::command]
+async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let mut app = state.lock().unwrap();
+    if let Some(handle) = app.mcp_abort.take() {
+        handle.abort();
+        let port = app.mcp_port;
+        app.mcp_port = 13337; // reset to default
+        Ok(format!("MCP server on port {} stopped.", port))
+    } else {
+        Err("MCP server is not running.".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
+    let app = state.lock().unwrap();
+    let mut result = HashMap::new();
+    if app.mcp_abort.is_some() {
+        result.insert("running".to_string(), "true".to_string());
+        result.insert("port".to_string(), app.mcp_port.to_string());
+        result.insert(
+            "url".to_string(),
+            format!("http://127.0.0.1:{}", app.mcp_port),
+        );
+    } else {
+        result.insert("running".to_string(), "false".to_string());
+        result.insert("port".to_string(), app.mcp_port.to_string());
+    }
+    result
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -2251,6 +2316,8 @@ pub fn run() {
         active_process_id: 0,
         cancel_stream_tx: None,
         custom_personas,
+        mcp_abort: None,
+        mcp_port: 13337,
     };
 
     tauri::Builder::default()
@@ -2357,7 +2424,10 @@ pub fn run() {
             plugin_mgr::reload_plugins,
             shell_autocomplete,
             read_last_screenshot,
-            search_history_ai
+            search_history_ai,
+            start_mcp_server,
+            stop_mcp_server,
+            get_mcp_status
         ])
         .run(tauri::generate_context!())
 
