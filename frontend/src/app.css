@@ -6477,6 +6477,96 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 /* ==========================================================================
+   TOUCHPAD CURSOR OVERLAY (Sprint C — right touchpad precision cursor)
+   ========================================================================== */
+#tp-cursor {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-color, #00F0FF);
+    background: rgba(0, 240, 255, 0.18);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.6), 0 0 2px rgba(0, 240, 255, 0.9) inset;
+    pointer-events: none;
+    z-index: 9990;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease, transform 0.05s linear;
+    opacity: 0;
+    /* Cross-hair inner lines */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#tp-cursor::before,
+#tp-cursor::after {
+    content: "";
+    position: absolute;
+    background: var(--accent-color, #00F0FF);
+    opacity: 0.7;
+}
+
+#tp-cursor::before {
+    width: 1px;
+    height: 8px;
+}
+
+#tp-cursor::after {
+    width: 8px;
+    height: 1px;
+}
+
+#tp-cursor.tp-visible {
+    opacity: 1;
+}
+
+#tp-cursor.tp-clicking {
+    transform: translate(-50%, -50%) scale(0.7);
+    background: rgba(0, 240, 255, 0.45);
+}
+
+/* Scroll mode indicator (left stick scroll active) */
+#tp-scroll-indicator {
+    position: fixed;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 52px;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    z-index: 9989;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+#tp-scroll-indicator.tp-visible {
+    opacity: 1;
+}
+
+.tp-scroll-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+}
+
+.tp-scroll-arrow-up {
+    border-bottom: 6px solid rgba(0, 240, 255, 0.7);
+}
+
+.tp-scroll-arrow-down {
+    border-top: 6px solid rgba(0, 240, 255, 0.7);
+}
+
+/* ==========================================================================
    VIRTUAL KEYBOARD OVERLAY (Sprint B — Steam Deck touch input)
    ========================================================================== */
 #vk-overlay {

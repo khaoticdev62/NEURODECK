@@ -1,0 +1,495 @@
+"controller_mappings"
+{
+	"version"		"3"
+	"revision"		"1"
+	"title"		"NEURODECK v1.0 — Official Profile"
+	"description"		"Right touchpad = precision OS cursor. Left touchpad = scroll wheel. L2 (hold) = 10-segment radial view menu. R2 = prompt picker. L1/R1 = cycle tabs. A = confirm. B = cancel/close. Start = settings."
+	"creator"		"0"
+	"prng_seed"		"0"
+	"controller_type"		"controller_neptune"
+	"controller_caps"		"0"
+
+	// -----------------------------------------------------------------------
+	// GROUP 0 — Face Buttons (A / B / X / Y)
+	// Pass through as raw xinput buttons so the Gamepad API in the browser
+	// sees them as gp.buttons[0..3].
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"0"
+		"mode"		"four_buttons"
+		"inputs"
+		{
+			"button_a"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button A" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"button_b"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button B" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"button_x"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button X" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"button_y"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button Y" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 1 — Left Joystick
+	// Pass through as xinput joystick → gp.axes[0] (X) / gp.axes[1] (Y).
+	// When L2 is held, NEURODECK reads these axes for radial menu selection.
+	// When L2 is up, NEURODECK uses them to scroll the active panel.
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"1"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button JOYSTICK_LEFT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_joystick"		"0"
+			"deadzone_inner_radius"		"3276"
+			"deadzone_outer_radius"		"32767"
+			"sensitivity"		"16384"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 2 — Right Joystick
+	// Pass through as xinput right joystick → gp.axes[2] (X) / gp.axes[3] (Y).
+	// NEURODECK Sprint C reads these axes to drive the touchpad cursor overlay
+	// when Steam Input does NOT have the right touchpad mapped as Mouse (group 8).
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"2"
+		"mode"		"joystick_move"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button JOYSTICK_RIGHT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_joystick"		"1"
+			"deadzone_inner_radius"		"2621"
+			"deadzone_outer_radius"		"32767"
+			"sensitivity"		"16384"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 3 — Left Trigger (L2)
+	// Analog pass-through → gp.buttons[6].value (0..1).
+	// NEURODECK shows the radial menu when value > 0.5.
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"3"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button TRIGGER_LEFT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"		"0"
+			"haptic_intensity"		"1"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 4 — Right Trigger (R2)
+	// Analog pass-through → gp.buttons[7].value (0..1).
+	// NEURODECK opens the Controller Prompt Picker on full press.
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"4"
+		"mode"		"trigger"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button TRIGGER_RIGHT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"		"1"
+			"haptic_intensity"		"1"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 5 — Shoulder Buttons (L1 / R1)
+	// L1 → gp.buttons[4]  (cycles tabs left / SSH profile navigate)
+	// R1 → gp.buttons[5]  (cycles tabs right)
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"5"
+		"mode"		"switches"
+		"inputs"
+		{
+			"left_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button SHOULDER_LEFT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"right_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button SHOULDER_RIGHT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"button_back_left"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button START" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"button_back_right"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button SELECT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 6 — D-Pad
+	// Pass through as xinput dpad → gp.buttons[12..15].
+	// NEURODECK uses dpad up/down for gamepad focus navigation.
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"6"
+		"mode"		"dpad"
+		"inputs"
+		{
+			"dpad_north"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button DPAD_UP" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"dpad_south"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button DPAD_DOWN" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"dpad_east"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button DPAD_RIGHT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"dpad_west"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button DPAD_LEFT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 7 — Left Touchpad → SCROLL WHEEL
+	// Vertical swipe scrolls the active content panel natively via OS events.
+	// Horizontal swipe sends left/right mouse wheel for horizontal scroll areas.
+	// Click passes through as button[14] (left stick click equivalent).
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"7"
+		"mode"		"scroll_wheel"
+		"inputs"
+		{
+			"scroll_clockwise"
+			{
+				"activators"
+				{
+					"Repeat"
+					{
+						"bindings"		{ "binding"		"mouse_wheel scroll_down" }
+					}
+				}
+			}
+			"scroll_counterclockwise"
+			{
+				"activators"
+				{
+					"Repeat"
+					{
+						"bindings"		{ "binding"		"mouse_wheel scroll_up" }
+					}
+				}
+			}
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button JOYSTICK_LEFT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"sensitivity"		"60"
+			"haptic_intensity"		"1"
+			"invert"		"0"
+			"digital_outputs_enabled"		"0"
+			"scroll_type"		"0"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 8 — Right Touchpad → ABSOLUTE MOUSE
+	// Steam converts right touchpad position to OS mouse cursor events.
+	// WebKit inside Tauri receives native mousemove/click events — no JS
+	// cursor overlay needed when running through Steam Game Mode.
+	// Sprint C's JS cursor overlay is the fallback for non-Steam launches.
+	// Right touchpad click → left mouse button (primary click).
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"8"
+		"mode"		"absolute_mouse"
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"mouse_button LEFT" }
+						"settings"		{ "haptic_intensity"		"2" }
+					}
+				}
+			}
+			"doubletap"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"mouse_button RIGHT" }
+						"settings"		{ "haptic_intensity"		"1" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"sensitivity"		"350"
+			"haptic_intensity"		"2"
+			"edge_binding_radius"		"0"
+			"edge_binding_invert"		"0"
+			"trackball"		"0"
+			"trackball_friction"		"0"
+			"rotation"		"0"
+			"mouse_smoothing"		"0"
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// GROUP 9 — Misc: Select / Start / Grip Buttons
+	// Start (9)  → gp.buttons[9]  — NEURODECK: toggle Settings modal
+	// Select (8) → gp.buttons[8]  — NEURODECK: run Canvas code
+	// L4 (17)    → gp.buttons[17] — NEURODECK: toggle Sidebar
+	// R4 (18)    → gp.buttons[18] — NEURODECK: toggle Context Drawer
+	// L5 (19)    → gp.buttons[19] — NEURODECK: clear Canvas
+	// R5 (20)    → gp.buttons[20] — NEURODECK: cycle Theme
+	// -----------------------------------------------------------------------
+	"group"
+	{
+		"id"		"9"
+		"mode"		"switches"
+		"inputs"
+		{
+			"button_start"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button START" }
+						"settings"		{ "haptic_intensity"		"1" }
+					}
+				}
+			}
+			"button_select"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button SELECT" }
+						"settings"		{ "haptic_intensity"		"1" }
+					}
+				}
+			}
+			"left_grip"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button LSTICK_TOUCH" }
+						"settings"		{ "haptic_intensity"		"1" }
+					}
+				}
+			}
+			"right_grip"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"		{ "binding"		"xinput_button RSTICK_TOUCH" }
+						"settings"		{ "haptic_intensity"		"1" }
+					}
+				}
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// PRESET — wires groups to their hardware sources
+	// -----------------------------------------------------------------------
+	"preset"
+	{
+		"id"		"0"
+		"name"		"Default"
+		"group_source_bindings"
+		{
+			"0"		"switch active"
+			"1"		"left_joystick active"
+			"2"		"right_joystick active"
+			"3"		"left_trigger active"
+			"4"		"right_trigger active"
+			"5"		"left_bumper active right_bumper active back_left active back_right active"
+			"6"		"dpad active"
+			"7"		"left_trackpad active"
+			"8"		"right_trackpad active"
+			"9"		"start active select active left_grip active right_grip active"
+		}
+	}
+}

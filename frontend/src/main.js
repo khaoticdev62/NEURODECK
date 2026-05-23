@@ -3336,6 +3336,99 @@ let previousGamepadState = {
     r2Held: false,
 };
 
+// Sprint C — Touchpad cursor state
+let tpCursorX = 640; // Start at screen center (1280/2)
+let tpCursorY = 400; // Start at screen center (800/2)
+let tpCursorVisible = false;
+let tpCursorHideTimer = null;
+let tpScrollVisible = false;
+let tpScrollHideTimer = null;
+const TP_SENSITIVITY   = 9;   // pixels per frame per axis unit
+const TP_DEADZONE      = 0.06; // ignore jitter below this magnitude
+const TP_SCROLL_SPEED  = 14;  // pixels per frame for left-stick scroll
+const TP_CURSOR_TIMEOUT = 2500; // ms idle before cursor fades
+
+function initTouchpadCursorDOM() {
+    const cursor = document.createElement("div");
+    cursor.id = "tp-cursor";
+    document.body.appendChild(cursor);
+
+    const scrollInd = document.createElement("div");
+    scrollInd.id = "tp-scroll-indicator";
+    scrollInd.innerHTML = `
+        <div class="tp-scroll-arrow tp-scroll-arrow-up"></div>
+        <div class="tp-scroll-arrow tp-scroll-arrow-down"></div>`;
+    document.body.appendChild(scrollInd);
+}
+initTouchpadCursorDOM();
+
+function moveTpCursor(dx, dy) {
+    tpCursorX = Math.max(0, Math.min(window.innerWidth  - 1, tpCursorX + dx));
+    tpCursorY = Math.max(0, Math.min(window.innerHeight - 1, tpCursorY + dy));
+    const el = document.getElementById("tp-cursor");
+    if (el) {
+        el.style.left = tpCursorX + "px";
+        el.style.top  = tpCursorY + "px";
+        el.classList.add("tp-visible");
+    }
+    tpCursorVisible = true;
+    clearTimeout(tpCursorHideTimer);
+    tpCursorHideTimer = setTimeout(() => {
+        const c = document.getElementById("tp-cursor");
+        if (c) c.classList.remove("tp-visible");
+        tpCursorVisible = false;
+    }, TP_CURSOR_TIMEOUT);
+}
+
+function tpClick(button = 0) {
+    const el = document.elementFromPoint(tpCursorX, tpCursorY);
+    if (!el) return;
+    const cursor = document.getElementById("tp-cursor");
+    if (cursor) {
+        cursor.classList.add("tp-clicking");
+        setTimeout(() => cursor.classList.remove("tp-clicking"), 120);
+    }
+    // Dispatch full pointer/mouse/click event chain
+    const opts = { bubbles: true, cancelable: true, clientX: tpCursorX, clientY: tpCursorY, button };
+    el.dispatchEvent(new PointerEvent("pointerdown", opts));
+    el.dispatchEvent(new MouseEvent("mousedown",     opts));
+    el.dispatchEvent(new PointerEvent("pointerup",   opts));
+    el.dispatchEvent(new MouseEvent("mouseup",       opts));
+    el.dispatchEvent(new MouseEvent("click",         opts));
+    // Focus text inputs on click
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable) {
+        el.focus();
+    }
+}
+
+function getActiveScrollContainer() {
+    // Returns the best scrollable container for the currently visible view
+    const views = ["chat-viewport","agent-log","memory-list","ftp-file-list","sftp-file-list","sidebar-history"];
+    for (const id of views) {
+        const el = document.getElementById(id);
+        if (el && el.offsetParent !== null && el.scrollHeight > el.clientHeight) return el;
+    }
+    // Fallback: any overflow-y element under cursor
+    return null;
+}
+
+function showTpScrollIndicator(active) {
+    const el = document.getElementById("tp-scroll-indicator");
+    if (!el) return;
+    if (active) {
+        el.classList.add("tp-visible");
+        clearTimeout(tpScrollHideTimer);
+        tpScrollHideTimer = setTimeout(() => {
+            el.classList.remove("tp-visible");
+            tpScrollVisible = false;
+        }, 1200);
+        tpScrollVisible = true;
+    } else {
+        el.classList.remove("tp-visible");
+        tpScrollVisible = false;
+    }
+}
+
 // Radial menu state
 let radialMenuVisible = false;
 let radialSelectedSegment = null;
@@ -3980,6 +4073,53 @@ function pollGamepads() {
         // L2 just released — activate selected and close
         activateRadialSegment(radialSelectedSegment);
         hideRadialMenu();
+    }
+
+    // === SPRINT C — RIGHT TOUCHPAD CURSOR (axes 2/3 = right stick / right touchpad) ===
+    // When Steam Input maps right touchpad as "Joystick", axes[2]/[3] carry relative deltas.
+    // When Steam Input maps as "Mouse", Steam handles it natively — these will be ~0 and
+    // the OS cursor is used instead. Either path is correct.
+    const rtX = gp.axes[2] || 0;
+    const rtY = gp.axes[3] || 0;
+    const rtMag = Math.sqrt(rtX * rtX + rtY * rtY);
+
+    if (rtMag > TP_DEADZONE && !l2Held) {
+        moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
+    }
+
+    // Right stick click (button[11] on Steam Deck) = click at cursor position
+    if (buttonPressed(11) && tpCursorVisible) {
+        tpClick(0);
+    }
+
+    // === SPRINT C — LEFT STICK SCROLL (axes 0/1 when NOT holding L2 for radial) ===
+    // L2 radial already consumes left stick when held, so only scroll when L2 is up.
+    const lsScrollX = gp.axes[0] || 0;
+    const lsScrollY = gp.axes[1] || 0;
+    const lsMag = Math.abs(lsScrollY);
+
+    if (!l2Held && lsMag > 0.2) {
+        const scrollEl = getActiveScrollContainer();
+        if (scrollEl) {
+            scrollEl.scrollTop += lsScrollY * TP_SCROLL_SPEED;
+            showTpScrollIndicator(true);
+        }
+    }
+
+    // B button (1) — also hides VK and cursor if visible (already handled above for overlays,
+    // but additionally dismiss cursor mode here)
+    if (buttonPressed(1) && tpCursorVisible) {
+        const c = document.getElementById("tp-cursor");
+        if (c) c.classList.remove("tp-visible");
+        tpCursorVisible = false;
+    }
+
+    // B button — toggle virtual keyboard (when nothing else consumed B)
+    if (buttonPressed(1) && !ctrlPromptVisible) {
+        const vkEl = document.getElementById("vk-overlay");
+        if (vkEl && vkEl.classList.contains("vk-visible")) {
+            if (window.hideVirtualKeyboard) window.hideVirtualKeyboard();
+        }
     }
 
     // Sync button state for next frame
