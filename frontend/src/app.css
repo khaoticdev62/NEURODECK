@@ -1400,7 +1400,6 @@ code {
    PTY TERMINAL VIEW STYLING
    ========================================================================== */
 #view-terminal {
-    display: flex;
     flex-direction: column;
     background: #030508;
     height: 100%;
