@@ -1,267 +1,310 @@
 # NEURODECK User Guide
 
-> **AI Terminal Interface for Steam Deck & SteamOS** — v0.1.0
+A plain-English walkthrough of every feature. No jargon, no assumed knowledge.
 
 ---
 
-## 🚀 Getting Started
+## What Is NEURODECK?
 
-When you launch NEURODECK, you'll see a three-panel layout:
+NEURODECK is a fullscreen AI-powered desktop app designed for the Steam Deck. Think of it as a command center that combines:
+- A chat interface to talk to an AI (like ChatGPT, but running locally or via Google Gemini)
+- A real terminal shell (like a Linux command prompt)
+- A code canvas where you can write and preview code live
+- An autonomous agent that can write and run code on your behalf
+- A file manager for your local network (transfer files between devices)
+- A memory system that remembers past conversations
 
-- **Left Sidebar** — Session history. Toggle with `☰` or `Ctrl+[` 
-- **Center Chat Workspace** — Main conversation area with AI
-- **Right Context Drawer** — Live metrics. Toggle with `📊`
-- **Settings Modal** — Press `⚙️` to switch personas and themes
-
-Type a message in the bottom input bar and press **Enter** to chat with the AI.
+Everything lives in one fullscreen window with tabs across the top.
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## First-Time Setup (Onboarding)
 
-| Shortcut | Action |
+When you launch NEURODECK for the first time — and no API key is saved — a setup wizard appears after the boot screen. It has 4 steps.
+
+### Step 1 — Choose Your AI Provider
+
+| Option | What It Means |
 |---|---|
-| `Enter` | Send message |
-| `Shift+Enter` | New line in input (multi-line prompts) |
-| `Ctrl+B` | **Execute pending Lua script** (last Lua block in chat) |
-| `Ctrl+S` | Save current session to `sessions/` |
-| `Ctrl+L` | Load latest saved session |
-| `Ctrl+N` | Start a new chat session |
-| `Ctrl+P` | Cycle to next AI persona |
-| `Ctrl+R` | Toggle voice recording (STT) |
-| `Ctrl+M` | Toggle Text-to-Speech (TTS) mute |
-| `Ctrl+C` | Kill running terminal process |
-| `Escape` | Cancel AI generation mid-stream |
+| **Gemini API Key** | Paste a Google Gemini API key. Fastest setup. Get one free at aistudio.google.com. |
+| **Google Login (QR)** | Scan a QR code with your phone to log in to Google. No key to copy/paste. |
+| **Ollama (Offline)** | Use a local AI model running on your machine. No internet required. |
 
----
+### Step 2 — Enter Your Credentials
+- **Gemini Key**: paste the key into the field and click **Verify & Save**. The app tests the connection and saves the key to your system's secure keychain (never stored in a plain text file).
+- **Google Login**: a QR code and a short code appear. Scan the QR with your phone, visit the link, enter the code, and approve. The app detects approval automatically and advances.
+- **Ollama**: enter the URL where Ollama is running (default: `http://localhost:11434`) and the model name (e.g. `llama3`). Click **Verify & Save** to test the connection.
 
-## 🛠️ Chat Commands
+### Step 3 — Pick a Persona & Theme
+Choose the AI's personality and the app's color scheme. Both can be changed anytime in Settings.
 
-Type these directly into the chat input:
+### Step 4 — System Check
+NEURODECK tests three things automatically:
 
-| Command | Description |
+| Check | What It Tests |
 |---|---|
-| `help` or `/help` | Show all commands, shortcuts, and Lua globals |
-| `/persona <name>` | Switch AI persona (Default, Developer, Cyberpunk) |
-| `/persona` | List all available personas |
-| `/discuss <p1> <p2> <topic>` | 4-turn AI roundtable between two personas |
-| `@file:<path>` | Embed a file's content directly into your prompt |
-| `/<plugin-command>` | Run any registered Lua plugin command (e.g. `/ip_lookup`) |
+| **PTY Shell** | Can the app open a real terminal? |
+| **Network** | Can it reach the internet? (Needed for Gemini) |
+| **Keychain** | Can it securely save credentials? |
 
-### Example: File Mention
-```
-@file:~/projects/main.py Explain what this code does
-```
-
-### Example: Roundtable
-```
-/discuss Developer Cyberpunk Should we rewrite this in Rust?
-```
+Click **Launch NEURODECK** once checks pass. If only Network fails, offline mode still works fine.
 
 ---
 
-## 🖥️ Terminal Command Execution
+## The Navigation Bar
 
-When the AI writes a shell/bash/powershell code block, you'll see an **Execute** button in the block header.
+Tabs across the top switch between views:
 
-- Click **Execute** → opens a live terminal console below the block
-- Output streams in real time
-- Click **Terminate** or press `Ctrl+C` to kill the process
-- The process's exit code is shown when done
-
-Supported languages: `bash`, `sh`, `zsh`, `shell`, `powershell`, `cmd`
-
----
-
-## 🌙 Lua Scripting
-
-Ask the AI to write a Lua script — any `lua` code block gets an **Execute** button.
-
-Press **`Ctrl+B`** to run the most recent Lua block in chat without clicking.
-
-### Built-in Lua Functions
-
-| Function | Description |
+| Tab | What It Does |
 |---|---|
-| `print(...)` | Streams output to the terminal console (real-time) |
-| `execute(cmd)` | Runs a shell command and returns its stdout+stderr |
-| `registerCommand(name, fn)` | Registers a `/name` chat command |
-| `registerHook(event, fn)` | Hooks into `onMessage` or `onAIResponse` events |
+| **Chat** | Talk to the AI. Main view. |
+| **Canvas** | Write and preview HTML/CSS/JS/Markdown live. |
+| **Terminal** | A real shell prompt. Runs bash or PowerShell. |
+| **SSH** | Connect to remote machines via SSH. |
+| **Tunnel** | Bridge SteamOS Game Mode to Desktop Mode. |
+| **Share** | Transfer files to/from other devices on your network. |
+| **Browser** | Built-in web browser. |
+| **Agent** | Autonomous AI that writes and runs code to complete tasks. |
+| **Memory** | View and manage things the AI has remembered. |
+| **Prompt Lab** | A workshop for crafting better AI prompts. |
 
-### Example: System Info Script
+---
+
+## Chat Tab
+
+This is where you talk to the AI.
+
+**Send a message**: type in the box at the bottom and press Enter or click **Send**.
+
+**Voice input**: click the microphone icon. Speak. The text appears automatically.
+
+**Attach an image**: click the image icon. The AI can describe what it sees (Gemini only — Ollama does not support image input).
+
+**Slash commands** — type `/` followed by a command name:
+
+| Command | What It Does |
+|---|---|
+| `/promptgen <task>` | Wraps your task in a Chain-of-Thought prompt instantly |
+| `/promptlab` | Lists all 7 available prompt formulas |
+| `/formula <name> <task>` | Applies a specific formula (e.g. `/formula AIDA write a product pitch`) |
+| `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary` | Switch to a BMAD team persona |
+| `/clear` | Clears the current chat history |
+
+**Change the AI persona**: click the persona name in the top bar. Personas change how the AI responds — Developer gives code-focused answers, Cyberpunk uses terminal slang, John behaves like a Product Manager, etc.
+
+**Session management**: each conversation is a session. The session ID is shown at the top left. Click the sessions button to start a new conversation or switch between saved ones.
+
+---
+
+## Terminal Tab
+
+A real shell running on your machine.
+
+- On Linux/SteamOS: runs bash
+- On Windows: runs PowerShell
+- Multiple terminal sessions can run at the same time
+- Click **+** to open a new session
+- Type `exit` to close a session
+- **AI autocomplete**: press Tab while typing a command to get an AI-suggested completion
+
+---
+
+## Canvas Tab
+
+A live code scratchpad.
+
+**Supported languages**:
+- **HTML/CSS/JavaScript** — renders live in a preview pane on the right as you type
+- **Markdown** — renders formatted text in the preview
+- **Python/Bash** — use the Agent tab to actually execute these (Canvas is editor-only)
+
+**Collaborate**: click **Host** to share your canvas with another NEURODECK user on the same network. Give them the IP address shown, and they click **Join**. Both users see edits in real time.
+
+---
+
+## Agent Tab
+
+Give the AI a task and it completes it by writing code, running it, reading the output, and iterating.
+
+**Example tasks**:
+- "Rename all .jpg files in ~/Downloads to lowercase"
+- "Write a Python script that finds duplicate files in a folder"
+- "Create a bash script that shows my top 10 largest files"
+
+The agent works in up to 5 steps. Each step shows its reasoning, the code it wrote, and the execution output. Click **Stop** to cancel.
+
+---
+
+## Memory Tab
+
+NEURODECK automatically saves facts from your conversations. This tab lets you:
+
+- **Search** — find memories by keyword
+- **Pin** — mark a memory as always-relevant (included in every AI context)
+- **Delete** — remove a memory
+- **Add** — manually save a fact
+
+The AI uses relevant memories automatically when you chat. You don't have to do anything — it just gets smarter over time.
+
+---
+
+## Prompt Lab Tab
+
+A tool for writing better AI prompts using proven copywriting and reasoning frameworks.
+
+### Available Formulas
+
+| Formula | Best Used For |
+|---|---|
+| **AIDA** | Persuasive writing — grabs attention then drives to action |
+| **SCQA** | Business problems — frames situation, tension, and solution |
+| **PASTOR** | Sales/pitch writing — emotional arc from pain to resolution |
+| **Chain of Thought** | Step-by-step reasoning — shows the AI's work |
+| **Tree of Thought** | Hard problems — explores multiple approaches before committing |
+| **PAS** | Quick problem framing — Problem, Agitate, Solve |
+| **Role + Constraints** | Expert persona with guardrails — clean, focused outputs |
+
+### How to Use
+1. Type your task in the **Task** field
+2. Select a formula from the dropdown
+3. Optionally fill in **Role**, **Context**, **Tone**, **Format**
+4. Click **Generate Prompt** — the finished prompt appears on the right
+5. Click **Explain (JPE)** for a plain-English breakdown of what the prompt does and why
+6. Click **Use in Chat** to send it to the AI immediately
+
+You can also use slash commands in the Terminal or Chat:
+- `/promptgen <task>` — quick Chain-of-Thought wrap
+- `/formula AIDA <task>` — apply any formula by name
+
+---
+
+## Share Tab (File Transfer)
+
+Transfer files to and from other devices on the same Wi-Fi network.
+
+### Sending a File
+1. Click **Pick File** and choose what to send
+2. Select a device from the **Discovered Peers** list
+3. Click **Send** — the other device gets a prompt to accept
+
+### Receiving a File
+Incoming transfers appear as a notification. Click **Accept** to save the file.
+
+### Warpinator Compatibility
+NEURODECK can exchange files with Linux machines running GNOME Warpinator (common on Ubuntu/Fedora). Both devices must be on the same network segment.
+
+### Group Code
+If peers aren't showing up, check that both devices have the same Group Code. The default is `NEURODECK`. Change it in the Share tab header.
+
+---
+
+## SSH Tab
+
+Connect to remote servers.
+
+1. Click **New Profile**
+2. Fill in: Host, Port (default 22), Username, Password or key path
+3. Click **Connect**
+4. A terminal opens connected to the remote machine
+
+Profiles are saved locally so you don't re-enter them.
+
+---
+
+## Browser Tab
+
+An in-app web browser. Useful for checking documentation, viewing web pages, or referencing local HTML files from Canvas — all without leaving NEURODECK.
+
+---
+
+## Settings (⚙️)
+
+Click the gear icon (top right) to open the settings panel:
+
+| Section | What You Can Change |
+|---|---|
+| **LLM Provider** | Switch between Gemini/Ollama, change the model, update API keys |
+| **Themes** | Pick a color scheme or build a custom one with hex values |
+| **Personas** | Create custom AI personalities with a name and system prompt |
+| **Whisper STT** | Set up offline speech recognition (requires whisper.cpp) |
+| **Plugins** | Enable/disable Lua plugins in the plugins/ folder |
+
+---
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|---|---|
+| `` ` `` (backtick) | Open the radial quick-switcher menu |
+| `Enter` | Send chat message |
+| `Tab` | AI autocomplete in terminal |
+| `Escape` | Close modals and overlays |
+
+### Steam Deck Gamepad
+| Button | Action |
+|---|---|
+| **L2** | Open radial menu |
+| **Right stick** | Navigate radial menu |
+| **A** | Select / confirm |
+| **B** | Back / cancel |
+
+---
+
+## Plugins
+
+NEURODECK loads every `.lua` file from the `plugins/` folder at startup.
+
+**Built-in plugins**:
+
+| Plugin | Commands |
+|---|---|
+| `bmad.lua` | `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary` |
+| `promptgen.lua` | `/promptlab`, `/promptgen`, `/formula` |
+| `ip_lookup.lua` | IP address lookup tools |
+| `auto_responder.lua` | Automated response hook triggers |
+
+**Writing a custom plugin** — create any `.lua` file in `plugins/`:
+
 ```lua
-print("=== System Info ===")
-local hostname = execute("hostname")
-print("Host: " .. hostname)
-local disk = execute("df -h / | tail -1")
-print("Disk: " .. disk)
-```
-
-### Example: Register a Custom Command
-```lua
-registerCommand("greet", function(args)
-    print("Hello, " .. (args ~= "" and args or "world") .. "!")
-    return "Greeted!"
+-- plugins/my_plugin.lua
+registerCommand("hello", function(args)
+    return "Hello! You said: " .. (args or "nothing")
 end)
--- Then type /greet Alice in chat
+print("[Plugin] Hello plugin loaded.")
 ```
 
----
-
-## 🔌 Plugin System
-
-Any `.lua` file in the `plugins/` directory is auto-loaded when NEURODECK starts.
-
-### Bundled Plugins
-
-**`plugins/ip_lookup.lua`** — registers `/ip_lookup`:
-```
-/ip_lookup
-→ Your public IP address is: 203.0.113.42
-```
-
-**`plugins/auto_responder.lua`** — hooks into `onMessage` and `onAIResponse` to log trigger words and response word counts to the terminal.
-
-### Creating Your Own Plugin
-
-Create `plugins/my_plugin.lua`:
-```lua
-registerCommand("status", function(args)
-    local mem = execute("free -h | grep Mem")
-    print("Memory: " .. mem)
-    return "Memory status printed."
-end)
-
-registerHook("onMessage", function(msg)
-    -- You can modify or log the user's message before it hits the AI
-    print("[MyPlugin] User said: " .. msg)
-    return msg  -- return (possibly modified) message
-end)
-
-print("[Plugin] my_plugin loaded.")
-```
+Use `/hello world` in the chat tab to invoke it.
 
 ---
 
-## 🎙️ Voice Input / Output
+## Troubleshooting
 
-### Speech-to-Text (STT)
-1. Click the `🎙️` microphone button (or `Ctrl+R`)
-2. Speak your message
-3. Click again to stop — the transcription fills the input box automatically
+**AI isn't responding**
+- Open Settings and verify the LLM provider is configured
+- For Gemini: click "Test Connection" — if it fails, your API key may be expired
+- For Ollama: run `ollama serve` in a terminal first, then retry
 
-> Requires `arecord` on Linux. On Windows, a simulated response is returned for testing.
+**Terminal is blank/unresponsive**
+- Click inside the terminal area and press Enter
+- If that doesn't work, switch to another tab and back — this re-attaches the PTY
 
-### Text-to-Speech (TTS)
-- AI responses are automatically read aloud (if not muted)
-- Click `🔊` / `🔇` or press `Ctrl+M` to toggle mute
-- TTS uses `espeak` on Linux and Windows Speech Synthesis on Windows
+**File transfers not finding peers**
+- Both devices must be on the same Wi-Fi network (not on different VLANs or subnets)
+- Check that the Group Code matches on both devices
+- Firewalls may block mDNS (port 5353) — try disabling briefly to test
 
----
+**Onboarding wizard keeps appearing**
+- Complete Step 2 (Verify & Save) to dismiss it permanently
+- To force-skip it, open DevTools console (`F12`) and run: `localStorage.setItem('neurodeck_onboarding_complete', 'true')`
 
-## 💾 Session Management
-
-Sessions are saved as JSON files in the `sessions/` directory.
-
-| Action | How |
-|---|---|
-| Save session | `Ctrl+S` or use the sidebar save button |
-| Load latest | `Ctrl+L` |
-| Browse sessions | Open the left sidebar (`☰`) |
-| Load a session | Click its name in the sidebar |
-| Delete a session | Click the 🗑️ icon next to it |
-| New session | `Ctrl+N` or **+ New Chat** button |
+**Boot screen takes a long time**
+- Usually caused by Ollama loading a large model. Wait 15–30 seconds.
+- If it never completes, close the app and check that your Ollama server is running
 
 ---
 
-## 🎭 Personas
+## Privacy & Data
 
-Switch the AI's personality via Settings (`⚙️`) or chat command:
-
-| Persona | Personality |
-|---|---|
-| **Default** | Helpful general assistant |
-| **Developer** | Expert software developer — concise code answers |
-| **Cyberpunk** | Edgy AI construct with terminal lingo |
-
-Cycle through personas with `Ctrl+P`.
-
----
-
-## 🎨 Themes
-
-Open Settings (`⚙️`) → Theme:
-
-| Theme | Style |
-|---|---|
-| **BLACKSITE** | Cyan on near-black, cyberpunk tactical |
-| **TERMINAL_GHOST** | Green terminal, classic hacker aesthetic |
-| **SYNTH_GRID** | Magenta/pink synthwave, neon grid |
-
----
-
-## 🧠 Vector Memory & RAG
-
-NEURODECK stores all conversations in a local vector database (`data/memory/`).
-
-- Past relevant messages are automatically retrieved and injected as context before each AI query
-- This gives the AI **long-term memory** across sessions
-- The Context Drawer (`📊`) shows memory status
-
-If memory is **Offline**, the database may have failed to initialize — check disk space and permissions in `data/memory/`.
-
----
-
-## 🎮 Steam Deck Game Mode
-
-### Adding to Steam
-1. Desktop Mode → Steam → **Library → Add a Game → Add a Non-Steam Game**
-2. Browse to: `~/Applications/neurodeck/neurodeck-launch.sh`
-3. Name it **NEURODECK** → Click **Add Selected Programs**
-4. Switch to Game Mode — NEURODECK appears in your library
-
-### Controller Navigation
-- **Right trackpad / joystick** → Scroll chat
-- **A button** → Confirm / Send (if Steam Input profile is active)
-- **Steam Button** → Return to Game Mode menu
-- The on-screen keyboard works natively with the trackpad
-
-### Gamescope
-The launch script automatically wraps the app in `gamescope -W 1280 -H 800 -f` for proper full-screen rendering at the Steam Deck's native resolution.
-
----
-
-## ⚙️ Configuration Reference (`llm-term.toml`)
-
-```toml
-[llm]
-default_provider = "gemini"         # "gemini" or "ollama"
-gemini_model = "gemini-2.0-flash"  # Gemini model name
-ollama_model = "llama3"            # Ollama model name
-ollama_base_url = "http://localhost:11434"
-```
-
-Set via environment variable:
-```bash
-export GEMINI_API_KEY="your-key"
-```
-
-Or save to `~/.config/neurodeck/env` — the install script does this automatically.
-
----
-
-## 🛠️ Troubleshooting
-
-| Issue | Solution |
-|---|---|
-| **AI not responding** | Check `GEMINI_API_KEY` is set; check network |
-| **Memory offline** | Ensure `data/memory/` exists and is writable |
-| **Voice not working** | Install `arecord` (`sudo pacman -S alsa-utils`) |
-| **TTS silent** | Install `espeak` (`sudo pacman -S espeak-ng`) |
-| **App not in Game Mode** | Add `neurodeck-launch.sh` as a Non-Steam game |
-| **RC.EXE error (Windows build)** | Add Windows SDK bin to PATH — see README |
-| **Lua script not running** | Check the terminal console for error messages |
-
----
-
-*For more information, see the [README](../README.md) or open an issue on GitHub.*
+- **API keys** are stored in your OS secure keychain — Windows Credential Manager, Linux Secret Service, or macOS Keychain. They are never written to a plain-text file.
+- **Chat history** is saved locally in `data/memory/chat_history.json`. Nothing is transmitted to external servers except the LLM API calls you make.
+- **No telemetry** — NEURODECK does not collect or transmit usage data.

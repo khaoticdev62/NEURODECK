@@ -8739,11 +8739,18 @@ initPromptLab();
 
 // Onboarding Wizard Implementation
 async function checkOnboarding() {
+    // Wait for the boot screen to finish before showing onboarding
+    await new Promise(resolve => {
+        if (!document.getElementById('boot-overlay')) {
+            resolve();
+        } else {
+            document.addEventListener('neurodeck-boot-complete', resolve, { once: true });
+        }
+    });
+
     try {
         const key = await invoke("get_gemini_api_key");
         const completed = localStorage.getItem("neurodeck_onboarding_complete");
-        
-        // If there's no API key (env or keychain) AND they haven't explicitly finished onboarding
         if (!key && completed !== "true") {
             showOnboardingWizard();
         }
@@ -8752,7 +8759,7 @@ async function checkOnboarding() {
     }
 }
 
-function showOnboardingWizard() {
+async function showOnboardingWizard() {
     // 1. Create onboarding overlay element
     const overlay = document.createElement("div");
     overlay.id = "onboarding-overlay";
@@ -9143,72 +9150,96 @@ function showOnboardingWizard() {
         }
     };
 
-    // Load Personas & Themes (Step 3)
+    // Load Personas & Themes (Step 3) — real data from backend
     const personaCarousel = document.getElementById("ob-persona-carousel");
     const themeGrid = document.getElementById("ob-theme-grid");
-    
-    // Load Personas
-    const defaultPersonas = [
-        { name: "Default", icon: "🤖", desc: "A standard helpful, polite assistant." },
-        { name: "Cyberpunk", icon: "⚡", desc: "An edgy AI construct with hacker jargon." },
-        { name: "Developer", icon: "💻", desc: "Focuses on clean code outputs and engineering detail." },
-        { name: "Sarcastic Hacker", icon: "🃏", desc: "A witty, sarcastic hacker archetype." }
-    ];
-    
-    personaCarousel.innerHTML = defaultPersonas.map(p => `
-        <div class="onboarding-persona-card ${p.name === selectedPersona ? 'active' : ''}" data-name="${p.name}">
-            <span class="onboarding-persona-icon">${p.icon}</span>
-            <span class="onboarding-persona-name">${p.name}</span>
-            <span class="onboarding-persona-desc">${p.desc}</span>
+
+    const personaIconMap = {
+        "Default": "🤖", "Developer": "💻", "Cyberpunk": "⚡",
+        "John": "📋", "Sally": "🎨", "Winston": "🏗️",
+        "Amelia": "🦾", "Paige": "📝", "Mary": "📊",
+        "Sarcastic Hacker": "🃏", "Elden Ring Scholar": "⚔️"
+    };
+    const personaDescMap = {
+        "Default": "Helpful, balanced assistant.",
+        "Developer": "Clean code, engineering precision.",
+        "Cyberpunk": "Terminal lingo, edgy AI construct.",
+        "John": "Product Manager — PRDs & user stories.",
+        "Sally": "UX Designer — elegant interfaces.",
+        "Winston": "System Architect — modular design.",
+        "Amelia": "Senior Dev — Rust & JS expert.",
+        "Paige": "Technical Writer — docs & wikis.",
+        "Mary": "Business Analyst — epics & acceptance criteria.",
+        "Sarcastic Hacker": "Witty, irreverent hacker archetype.",
+        "Elden Ring Scholar": "Lore-keeper of the Lands Between."
+    };
+
+    // Load personas from backend
+    let allPersonas = ["Default"];
+    try { allPersonas = await invoke("get_personas"); } catch (_) {}
+    personaCarousel.innerHTML = allPersonas.map(name => `
+        <div class="onboarding-persona-card ${name === selectedPersona ? 'active' : ''}" data-name="${name}">
+            <span class="onboarding-persona-icon">${personaIconMap[name] || '🤖'}</span>
+            <span class="onboarding-persona-name">${name}</span>
+            <span class="onboarding-persona-desc">${personaDescMap[name] || 'Custom persona.'}</span>
         </div>
     `).join('');
-    
+
     personaCarousel.querySelectorAll(".onboarding-persona-card").forEach(card => {
         card.onclick = async () => {
             personaCarousel.querySelectorAll(".onboarding-persona-card").forEach(c => c.classList.remove("active"));
             card.classList.add("active");
             selectedPersona = card.dataset.name;
-            
-            // Set persona in backend
-            try {
-                await invoke("set_persona", { name: selectedPersona });
-            } catch (e) {
-                console.error("Failed to set persona", e);
-            }
+            try { await invoke("set_persona", { name: selectedPersona }); } catch (e) { console.error("Failed to set persona", e); }
         };
     });
-    
-    // Load Themes
-    const defaultThemesList = [
-        { name: "BLACKSITE", colors: ["#00F0FF", "#050505", "#D9F7FF"] },
-        { name: "TERMINAL_GHOST", colors: ["#00FFCC", "#000000", "#00FF66"] },
-        { name: "SYNTH_GRID", colors: ["#FF00FF", "#0F0A1A", "#E0E0FF"] },
-        { name: "CYBER_PUNK", colors: ["#FF007F", "#0C0614", "#00FFFF"] }
-    ];
-    
-    themeGrid.innerHTML = defaultThemesList.map(t => `
-        <div class="onboarding-theme-card ${t.name === selectedThemeName ? 'active' : ''}" data-name="${t.name}">
-            <div style="font-weight: bold; margin-bottom: 4px;">${t.name}</div>
+
+    // Load themes from backend — fetch colors for swatches
+    let allThemeNames = ["BLACKSITE"];
+    try { allThemeNames = await invoke("get_themes"); } catch (_) {}
+
+    // Build theme color map by invoking set_theme for each (non-destructive read)
+    const themeColorCache = {};
+    for (const tname of allThemeNames) {
+        try {
+            const colors = await invoke("set_theme", { name: tname });
+            if (colors) themeColorCache[tname] = colors;
+        } catch (_) {}
+    }
+    // Restore the user's previously selected theme after the loop
+    const currentTheme = localStorage.getItem("selectedTheme") || "BLACKSITE";
+    if (themeColorCache[currentTheme]) {
+        const tc = themeColorCache[currentTheme];
+        document.documentElement.style.setProperty('--bg-color', tc.Background);
+        document.documentElement.style.setProperty('--accent-color', tc.Accent);
+        document.documentElement.style.setProperty('--response-color', tc.Response);
+    }
+
+    themeGrid.innerHTML = allThemeNames.map(tname => {
+        const tc = themeColorCache[tname] || {};
+        const accent = tc.Accent || '#00f0ff';
+        const bg = tc.Background || '#050505';
+        const fg = tc.Foreground || '#d9f7ff';
+        return `
+        <div class="onboarding-theme-card ${tname === selectedThemeName ? 'active' : ''}" data-name="${tname}">
+            <div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>
             <div class="onboarding-theme-swatch">
-                <span style="background: ${t.colors[0]}"></span>
-                <span style="background: ${t.colors[1]}"></span>
-                <span style="background: ${t.colors[2]}"></span>
+                <span style="background:${accent}"></span>
+                <span style="background:${bg}"></span>
+                <span style="background:${fg}"></span>
             </div>
-        </div>
-    `).join('');
-    
+        </div>`;
+    }).join('');
+
     themeGrid.querySelectorAll(".onboarding-theme-card").forEach(card => {
         card.onclick = async () => {
             themeGrid.querySelectorAll(".onboarding-theme-card").forEach(c => c.classList.remove("active"));
             card.classList.add("active");
             selectedThemeName = card.dataset.name;
             localStorage.setItem("selectedTheme", selectedThemeName);
-            
-            // Call set_theme in backend to get color values
             try {
                 const theme = await invoke("set_theme", { name: selectedThemeName });
                 if (theme) {
-                    // Update document custom properties live so theme changes instantly!
                     document.documentElement.style.setProperty('--bg-color', theme.Background);
                     document.documentElement.style.setProperty('--fg-color', theme.Foreground);
                     document.documentElement.style.setProperty('--accent-color', theme.Accent);
@@ -9216,9 +9247,7 @@ function showOnboardingWizard() {
                     document.documentElement.style.setProperty('--warning-color', theme.Warning);
                     document.documentElement.style.setProperty('--error-color', theme.Error);
                 }
-            } catch (e) {
-                console.error("Failed to apply theme live", e);
-            }
+            } catch (e) { console.error("Failed to apply theme live", e); }
         };
     });
 
@@ -9442,5 +9471,6 @@ function showOnboardingWizard() {
     overlay.classList.add('fade-out');
     await delay(680);
     overlay.remove();
+    document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
 })();
 
