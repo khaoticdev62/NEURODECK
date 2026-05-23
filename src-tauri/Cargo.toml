@@ -1,8 +1,8 @@
 [package]
 name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "1.0.0"
+description = "NEURODECK — AI Terminal Interface for Steam Deck"
+authors = ["khaoticdev62"]
 license = ""
 repository = ""
 edition = "2021"

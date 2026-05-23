@@ -49,7 +49,7 @@ npx tauri build
 
 # ── 3. Locate outputs ───────────────────────────────────────────────────────
 $binaryPath = "src-tauri/target/release/app.exe"
-$setupPath  = "src-tauri/target/release/bundle/nsis/neurodeck_0.1.0_x64-setup.exe"
+$setupPath  = "src-tauri/target/release/bundle/nsis/neurodeck_1.0.0_x64-setup.exe"
 
 if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found: $binaryPath" }
 if (-not (Test-Path $setupPath))  { Write-Error "Installer not found: $setupPath" }

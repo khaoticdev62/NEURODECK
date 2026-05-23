@@ -2,12 +2,12 @@
 
 # =============================================================================
 # NEURODECK Installation Script for SteamOS / Linux
-# Version: 0.1.0
+# Version: 1.0.0
 # =============================================================================
 
 set -e
 
-NEURODECK_VERSION="0.1.0"
+NEURODECK_VERSION="1.0.0"
 INSTALL_DIR="$HOME/Applications/neurodeck"
 DESKTOP_FILE="$HOME/.local/share/applications/neurodeck.desktop"
 AUTOSTART_FILE="$HOME/.config/autostart/neurodeck.desktop"
@@ -134,6 +134,21 @@ if [ -f "$INSTALL_DIR/launch_gamescope.sh" ]; then
 fi
 find "$INSTALL_DIR/scripts" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 print_ok "Config files copied"
+
+# --- Install voice / audio system dependencies (SteamOS/Arch) ---
+if $IS_STEAMOS; then
+    print_step "Installing voice and audio dependencies..."
+    if command -v pacman &> /dev/null; then
+        # arecord (alsa-utils) — required for microphone recording (Voice STT)
+        # espeak-ng — required for text-to-speech (Voice TTS)
+        # sshpass — required for SSH password authentication
+        sudo pacman -S --needed --noconfirm alsa-utils espeak-ng sshpass 2>/dev/null || \
+            print_warn "Could not install audio deps via pacman. Install manually: alsa-utils espeak-ng sshpass"
+        print_ok "Audio/voice dependencies installed"
+    else
+        print_warn "pacman not found — install manually: arecord (alsa-utils), espeak-ng, sshpass"
+    fi
+fi
 
 # --- Run Local LLM Setup (SteamOS/Linux specific) ---
 if $IS_STEAMOS; then
