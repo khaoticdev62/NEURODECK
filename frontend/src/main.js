@@ -82,6 +82,35 @@ window.neurodeckCanvas = {
     }
 };
 
+window.sanitizeHtml = function(html) {
+    if (!html) return '';
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const scripts = doc.querySelectorAll('script');
+        scripts.forEach(s => s.remove());
+        const allElements = doc.querySelectorAll('*');
+        allElements.forEach(el => {
+            const attrs = Array.from(el.attributes);
+            attrs.forEach(attr => {
+                const name = attr.name.toLowerCase();
+                if (name.startsWith('on')) {
+                    el.removeAttribute(attr.name);
+                } else if (name === 'href' || name === 'src' || name === 'action') {
+                    const val = attr.value.trim().toLowerCase();
+                    if (val.startsWith('javascript:') || val.startsWith('data:text/html')) {
+                        el.removeAttribute(attr.name);
+                    }
+                }
+            });
+        });
+        return doc.body.innerHTML;
+    } catch (e) {
+        console.error("HTML Sanitization failed:", e);
+        return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    }
+};
+
 window.applyThemeColors = function(theme) {
     if (!theme) return;
     const bg = theme.Background || theme.background || '#000000';
@@ -783,6 +812,27 @@ document.querySelector('#app').innerHTML = `
                 <div class="history-group-label">Recent Sessions</div>
                 <!-- Sessions will be loaded here -->
             </div>
+            <div class="sidebar-diagnostics" id="sidebar-diagnostics">
+                <div class="diag-header">SYSTEM DIAGNOSTICS</div>
+                <div class="diag-grid">
+                    <div class="diag-item" id="diag-pty" title="Shell / PTY Status">
+                        <span class="diag-dot offline" id="diag-dot-pty"></span>
+                        <span class="diag-label">PTY</span>
+                    </div>
+                    <div class="diag-item" id="diag-mdns" title="LAN Discovery / mDNS">
+                        <span class="diag-dot offline" id="diag-dot-mdns"></span>
+                        <span class="diag-label">LAN</span>
+                    </div>
+                    <div class="diag-item" id="diag-llm" title="LLM Provider Connectivity">
+                        <span class="diag-dot offline" id="diag-dot-llm"></span>
+                        <span class="diag-label">LLM</span>
+                    </div>
+                    <div class="diag-item" id="diag-collab" title="Collab Server Status">
+                        <span class="diag-dot offline" id="diag-dot-collab"></span>
+                        <span class="diag-label">COLLAB</span>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -900,6 +950,11 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
                     </div>
+                    <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
+                        <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
+                        <span id="canvas-collab-status-text" style="color:var(--response-color);">Collab Active: Syncing edits live</span>
+                        <button class="canvas-btn canvas-btn-sm" id="canvas-collab-resync-btn" style="margin-left: auto; padding: 2px 8px; font-size: 0.72rem;">Force Resync 🔄</button>
+                    </div>
                     <div class="canvas-split" id="canvas-split">
                         <div class="canvas-editor-pane" id="canvas-editor-pane">
                             <div class="canvas-pane-header">
@@ -921,25 +976,26 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Interactive PTY Terminal View -->
                 <div class="view-content" id="view-terminal">
-                    <div class="terminal-toolbar">
-                        <div class="shell-switcher">
-                            <span class="terminal-info">Shell:</span>
-                            <div class="shell-pill-group" id="shell-pill-group">
-                                <button class="shell-pill active" data-shell="default">Default</button>
-                                <button class="shell-pill" data-shell="/bin/bash">Bash</button>
-                                <button class="shell-pill" data-shell="/bin/zsh">Zsh</button>
-                                <button class="shell-pill" data-shell="/bin/fish">Fish</button>
-                                <button class="shell-pill" data-shell="powershell.exe">PS</button>
-                                <button class="shell-pill" data-shell="cmd.exe">CMD</button>
-                            </div>
+                    <!-- Unified top bar: session tabs + shell selector + actions in one row -->
+                    <div class="term-topbar">
+                        <div class="term-session-tabs" id="terminal-tabs-list"></div>
+                        <button class="term-new-tab-btn" id="terminal-add-tab-btn" title="New Tab">+</button>
+                        <div class="term-topbar-sep"></div>
+                        <div class="term-shell-group" id="shell-pill-group">
+                            <button class="term-shell-btn active" data-shell="default" title="Default Shell">&gt;_</button>
+                            <button class="term-shell-btn" data-shell="/bin/bash" title="Bash">bash</button>
+                            <button class="term-shell-btn" data-shell="/bin/zsh" title="Zsh">zsh</button>
+                            <button class="term-shell-btn" data-shell="/bin/fish" title="Fish">fish</button>
+                            <button class="term-shell-btn" data-shell="powershell.exe" title="PowerShell">PS</button>
+                            <button class="term-shell-btn" data-shell="cmd.exe" title="CMD">cmd</button>
                         </div>
-                        <div class="terminal-toolbar-actions">
-                            <button class="canvas-btn" id="pty-reconnect-btn">↺ Restart</button>
+                        <div class="term-topbar-sep"></div>
+                        <div class="term-actions">
+                            <button class="term-action-btn" id="term-font-dec-btn" title="Decrease Font Size">A-</button>
+                            <button class="term-action-btn" id="term-font-inc-btn" title="Increase Font Size">A+</button>
+                            <button class="term-action-btn" id="term-clear-btn" title="Clear Screen">⌫</button>
+                            <button class="term-action-btn" id="pty-reconnect-btn" title="Restart Shell">↺</button>
                         </div>
-                    </div>
-                    <div class="terminal-tab-bar" id="terminal-tab-bar">
-                        <div class="terminal-tab-list" id="terminal-tabs-list"></div>
-                        <button class="terminal-tab-add" id="terminal-add-tab-btn">+ New Tab</button>
                     </div>
                     <div id="pty-terminal-container"></div>
                 </div>
@@ -1735,19 +1791,28 @@ document.querySelector('#app').innerHTML = `
 
                         <div class="stv-group-label">Background</div>
                         <div class="stv-card">
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Custom Image URL</label>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <span style="font-size:0.8rem; opacity:0.6; text-transform:uppercase; letter-spacing:0.05em; font-family:var(--font-mono);">Visual Atmosphere</span>
+                                <div style="display:flex; gap:6px;">
+                                    <button class="stv-btn-ghost bg-tab-btn active" id="bg-tab-live" style="font-size:0.7rem; padding:0 8px; height:24px; border-radius:4px;">Live Animated</button>
+                                    <button class="stv-btn-ghost bg-tab-btn" id="bg-tab-static" style="font-size:0.7rem; padding:0 8px; height:24px; border-radius:4px;">Static Presets</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Live backgrounds grid -->
+                            <div id="bg-gallery-live" class="bg-gallery-grid"></div>
+                            
+                            <!-- Static backgrounds grid -->
+                            <div id="bg-gallery-static" class="bg-gallery-grid" style="display:none;"></div>
+
+                            <div class="setting-field-group" style="margin-top:12px; margin-bottom:10px;">
+                                <label>Custom Wallpaper URL</label>
                                 <input type="text" id="bg-url-input" placeholder="https://…">
                             </div>
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Cyber Abstract</button>
-                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Neon Grid</button>
-                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Sci-Fi HUD</button>
-                                <button class="stv-btn-ghost bg-preset-btn" data-url="" style="font-size:0.72rem;padding:0 10px;height:28px;">None</button>
-                            </div>
+                            
                             <div class="stv-slider-row">
                                 <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Opacity</span>
-                                <input type="range" id="bg-opacity-slider" min="0" max="50" value="10">
+                                <input type="range" id="bg-opacity-slider" min="0" max="100" value="10">
                                 <span class="stv-slider-val" id="bg-opacity-val">10%</span>
                             </div>
                         </div>
@@ -2126,12 +2191,678 @@ document.querySelector('#app').innerHTML = `
         <!-- Toast Notifications Container -->
         <div class="toast-container" id="toast-container"></div>
     </div>
-    <div class="app-background-image" id="app-background-image"></div>
+    <div class="app-background-container" id="app-background-container">
+        <div class="app-background-image" id="app-background-image"></div>
+        <canvas class="app-background-canvas" id="app-background-canvas"></canvas>
+        <div class="app-background-css" id="app-background-css"></div>
+    </div>
     <div class="crt-overlay crt-flicker"></div>
 `;
 
-const inputElement = document.getElementById("user-input");
-inputElement.focus();
+// ==========================================================================
+// LIVE & STATIC BACKGROUNDS SYSTEM
+// ==========================================================================
+const LIVE_BACKGROUNDS = [
+    { id: "matrix", name: "Matrix Rain", desc: "Digital rain streaming in accent color", preview: "linear-gradient(180deg, #050505 0%, rgba(0, 255, 136, 0.15) 100%)" },
+    { id: "starfield", name: "Starfield Warp", desc: "Hyperspace travel through stars", preview: "radial-gradient(circle, rgba(255,255,255,0.15) 10%, #050505 90%)" },
+    { id: "particles", name: "Quantum Net", desc: "Drifting nodes with interactive links", preview: "radial-gradient(circle at 30% 20%, rgba(0, 240, 255, 0.15) 0%, #050505 80%)" },
+    { id: "grid", name: "Synthwave Grid", desc: "Retro-futuristic perspective grid", preview: "linear-gradient(0deg, rgba(255, 0, 255, 0.15) 0%, #050505 60%)" },
+    { id: "radar", name: "Tactical HUD", desc: "Military scanlines & radar telemetry", preview: "radial-gradient(circle, transparent 50%, rgba(0, 240, 255, 0.1) 90%), #050505" },
+    { id: "circuit", name: "Cyber Circuit", desc: "Glowing cybernetic trace paths", preview: "linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, #050505 100%)" },
+    { id: "wave", name: "Digital Wave", desc: "Flowing harmonic data streams", preview: "linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%), #050505" },
+    { id: "ascii", name: "Console Stream", desc: "Scrolling terminal kernel logs", preview: "linear-gradient(180deg, #000000 0%, rgba(0, 255, 136, 0.08) 100%)" },
+    { id: "css-nebula", name: "Cosmic Nebula", desc: "CSS dynamic cosmic gas clouds", preview: "radial-gradient(circle at top right, rgba(168, 85, 247, 0.2), transparent), radial-gradient(circle at bottom left, rgba(0, 240, 255, 0.2), #050505)" },
+    { id: "css-aurora", name: "Aurora Borealis", desc: "CSS hardware-accelerated polar lights", preview: "linear-gradient(220deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 240, 255, 0.15) 50%, #050505 100%)" },
+];
+
+const STATIC_BACKGROUNDS = [
+    { id: "cyber-alley", name: "Neo-Tokyo Alley", url: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1920", desc: "Moody cyberpunk night street neon lights" },
+    { id: "sci-fi-hud", name: "Tactical HUD", url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=1920", desc: "Glowing interface telemetry blueprint" },
+    { id: "cyber-sun", name: "Synthwave Sunset", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920", desc: "Neon-pink and cyan liquid sun abstract" },
+    { id: "deep-nebula", name: "Helix Nebula", url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1920", desc: "Cosmic colors and stars in deep space" },
+    { id: "liquid-metal", name: "Fluid Mercury", url: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?q=80&w=1920", desc: "Liquid glass and colorful chrome refract" },
+    { id: "neon-grid", name: "Neon Mesh", url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1920", desc: "Bright abstract cyber grid wires" },
+    { id: "green-circuit", name: "Cyber Board", url: "https://images.unsplash.com/photo-1601987177651-8edfe6c20009?q=80&w=1920", desc: "Glowing circuit nodes macro shot" },
+    { id: "datacenter", name: "Server Terminal", url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1920", desc: "Faint rack LEDs in dark server corridor" },
+    { id: "mech-bay", name: "Industrial Deck", url: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1920", desc: "Heavy mechanical structural framing" },
+    { id: "cyber-rain", name: "Code Grid", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920", desc: "Abstract green terminal data streams" },
+];
+
+class LiveBackgroundManager {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.animationFrameId = null;
+        this.currentType = null;
+        this.resizeHandler = null;
+        this.mouseHandler = null;
+        this.particles = [];
+        this.angle = 0;
+        this.lastTime = 0;
+        this.mouseX = -9999;
+        this.mouseY = -9999;
+
+        // Bind
+        this.loop = this.loop.bind(this);
+        this.resize = this.resize.bind(this);
+        this.mousemove = this.mousemove.bind(this);
+    }
+
+    init() {
+        this.canvas = document.getElementById("app-background-canvas");
+        if (!this.canvas) return;
+        this.ctx = this.canvas.getContext("2d");
+
+        this.resizeHandler = () => this.resize();
+        this.mouseHandler = (e) => this.mousemove(e);
+
+        window.addEventListener("resize", this.resizeHandler);
+        window.addEventListener("mousemove", this.mouseHandler);
+        this.resize();
+    }
+
+    resize() {
+        if (this.canvas) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            if (this.currentType) {
+                this.setupCanvasBackground(this.currentType);
+            }
+        }
+    }
+
+    mousemove(e) {
+        this.mouseX = e.clientX;
+        this.mouseY = e.clientY;
+    }
+
+    destroy() {
+        this.stop();
+        if (this.resizeHandler) {
+            window.removeEventListener("resize", this.resizeHandler);
+        }
+        if (this.mouseHandler) {
+            window.removeEventListener("mousemove", this.mouseHandler);
+        }
+    }
+
+    stop() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        if (this.ctx && this.canvas) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        this.currentType = null;
+        this.particles = [];
+        
+        const cssEl = document.getElementById("app-background-css");
+        if (cssEl) {
+            cssEl.style.opacity = "0";
+            cssEl.className = "app-background-css";
+        }
+        if (this.canvas) {
+            this.canvas.style.opacity = "0";
+        }
+    }
+
+    start(type) {
+        if (this.currentType === type) {
+            const opacity = parseFloat(localStorage.getItem("bgOpacity") || "10") / 100;
+            const canvasEl = document.getElementById("app-background-canvas");
+            const cssEl = document.getElementById("app-background-css");
+            if (canvasEl) canvasEl.style.opacity = opacity.toString();
+            if (cssEl) cssEl.style.opacity = opacity.toString();
+            return;
+        }
+
+        this.stop();
+        if (!this.canvas) this.init();
+
+        this.currentType = type;
+        this.lastTime = performance.now();
+
+        const cssEl = document.getElementById("app-background-css");
+        const canvasEl = document.getElementById("app-background-canvas");
+        const opacity = parseFloat(localStorage.getItem("bgOpacity") || "10") / 100;
+
+        if (type.startsWith("css-")) {
+            if (cssEl) {
+                cssEl.className = "app-background-css " + type;
+                cssEl.style.opacity = opacity.toString();
+            }
+        } else {
+            if (canvasEl) {
+                canvasEl.style.opacity = opacity.toString();
+                this.setupCanvasBackground(type);
+                this.animationFrameId = requestAnimationFrame(this.loop);
+            }
+        }
+    }
+
+    setupCanvasBackground(type) {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        this.particles = [];
+        this.angle = 0;
+
+        if (type === "matrix") {
+            const columns = Math.floor(w / 16) + 1;
+            this.particles = Array(columns).fill(0).map(() => Math.random() * -h);
+        } else if (type === "starfield") {
+            const numStars = 100;
+            this.particles = Array(numStars).fill(0).map(() => ({
+                x: Math.random() * w - w / 2,
+                y: Math.random() * h - h / 2,
+                z: Math.random() * w,
+                color: Math.random() > 0.5 ? "var(--accent-color)" : "var(--response-color)"
+            }));
+        } else if (type === "particles") {
+            const numParticles = 60;
+            this.particles = Array(numParticles).fill(0).map(() => ({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
+                r: Math.random() * 2 + 1
+            }));
+        } else if (type === "grid") {
+            this.angle = 0;
+        } else if (type === "radar") {
+            this.particles = Array(15).fill(0).map(() => ({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                size: Math.random() * 2 + 1,
+                alpha: Math.random(),
+                speed: 0.005 + Math.random() * 0.01,
+                label: `NODE_0x${Math.floor(Math.random()*256).toString(16).toUpperCase()}`
+            }));
+        } else if (type === "circuit") {
+            const numLines = 8;
+            this.particles = Array(numLines).fill(0).map(() => this.createCircuitLine(w, h));
+        } else if (type === "wave") {
+            this.angle = 0;
+        } else if (type === "ascii") {
+            const linesCount = Math.floor(h / 20) + 2;
+            this.particles = Array(linesCount).fill(0).map((_, i) => ({
+                text: this.getRandomLogText(),
+                y: i * 20 + Math.random() * 15,
+                speed: 0.5 + Math.random() * 1.5,
+                alpha: 0.15 + Math.random() * 0.35
+            }));
+        }
+    }
+
+    createCircuitLine(w, h) {
+        const startX = Math.random() * w;
+        const startY = Math.random() * h;
+        const angle = (Math.floor(Math.random() * 8) * Math.PI / 4);
+        return {
+            points: [{ x: startX, y: startY }],
+            dirX: Math.cos(angle),
+            dirY: Math.sin(angle),
+            growSpeed: 2 + Math.random() * 2,
+            stepsRemaining: Math.floor(Math.random() * 15) + 10,
+            alpha: 1.0,
+            color: Math.random() > 0.4 ? "var(--accent-color)" : "var(--response-color)"
+        };
+    }
+
+    getRandomLogText() {
+        const logs = [
+            `[OK] Kernel initialized. Boot time: 0.342s`,
+            `[SYSTEM] pci 0000:00:01.0: [1002:163f] type 00 class 0x030000`,
+            `[DISK] sd 0:0:0:0: [sda] 1000215216 sectors (512 GB SSD)`,
+            `[FS] Ext4-fs (sda8): mounted filesystem with ordered data mode`,
+            `[DAEMON] systemd[1]: Started Steam Deck Controller Daemon`,
+            `[AI] neurodeck-daemon: Initializing Gemini Core connection...`,
+            `[AI] neurodeck-daemon: IPC channel secure (auth=keychain)`,
+            `[TELEMETRY] memory load stable (12.8 GB / 16.0 GB)`,
+            `[TELEMETRY] CPU load: 12% | GPU load: 8% | Temp: 58C`,
+            `[NETWORK] wlan0: connection established to LAN_DECK_GRID`,
+            `[TUNNEL] ssh-tunnel: tunnel service running on port 2222`,
+            `[OLLAMA] Service active: listing model presets...`,
+            `[DAEMON] Game Mode compositor handshake complete`,
+            `[DAEMON] Battery state: discharging (98% remaining)`,
+            `[DAEMON] Controller layout mapped: STEAM_INPUT_VDF`,
+            `[SYSTEM] Memory pages optimized. Swap file size increased (4GB)`,
+            `[SECURE] Keychain initialized. Cryptographic credentials loaded.`
+        ];
+        return logs[Math.floor(Math.random() * logs.length)];
+    }
+
+    loop(time) {
+        if (!this.ctx || !this.canvas || !this.currentType) return;
+
+        const delta = time - this.lastTime;
+        if (delta < 33.3) {
+            this.animationFrameId = requestAnimationFrame(this.loop);
+            return;
+        }
+        this.lastTime = time;
+
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        this.draw(w, h);
+
+        this.animationFrameId = requestAnimationFrame(this.loop);
+    }
+
+    draw(w, h) {
+        const type = this.currentType;
+        const ctx = this.ctx;
+
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF';
+        const responseColor = getComputedStyle(document.documentElement).getPropertyValue('--response-color').trim() || '#00FF88';
+
+        if (type === "matrix") {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+            ctx.fillRect(0, 0, w, h);
+            ctx.font = "14px monospace";
+            
+            for (let i = 0; i < this.particles.length; i++) {
+                const char = String.fromCharCode(33 + Math.floor(Math.random() * 93));
+                const x = i * 16;
+                const y = this.particles[i];
+                
+                ctx.fillStyle = "#ffffff";
+                ctx.fillText(char, x, y);
+                
+                ctx.fillStyle = accentColor;
+                ctx.fillText(char, x, y - 14);
+                
+                this.particles[i] += 14;
+                if (this.particles[i] > h && Math.random() > 0.98) {
+                    this.particles[i] = 0;
+                }
+            }
+        } else if (type === "starfield") {
+            ctx.fillStyle = "#050505";
+            ctx.fillRect(0, 0, w, h);
+            
+            const cx = w / 2;
+            const cy = h / 2;
+            const speed = 4;
+            
+            for (let i = 0; i < this.particles.length; i++) {
+                let star = this.particles[i];
+                
+                const px = (star.x / star.z) * cx + cx;
+                const py = (star.y / star.z) * cy + cy;
+                
+                star.z -= speed;
+                if (star.z <= 0) {
+                    star.x = Math.random() * w - cx;
+                    star.y = Math.random() * h - cy;
+                    star.z = w;
+                    continue;
+                }
+                
+                const nx = (star.x / star.z) * cx + cx;
+                const ny = (star.y / star.z) * cy + cy;
+                
+                if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
+                    const alpha = 1 - star.z / w;
+                    ctx.strokeStyle = star.color.startsWith("var") ? (star.color.includes("accent") ? accentColor : responseColor) : star.color;
+                    ctx.lineWidth = alpha * 2;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(nx, ny);
+                    ctx.stroke();
+                }
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "particles") {
+            ctx.clearRect(0, 0, w, h);
+            
+            for (let i = 0; i < this.particles.length; i++) {
+                let p = this.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                if (p.x < 0 || p.x > w) p.vx *= -1;
+                if (p.y < 0 || p.y > h) p.vy *= -1;
+                
+                if (this.mouseX > 0 && this.mouseY > 0) {
+                    const dx = p.x - this.mouseX;
+                    const dy = p.y - this.mouseY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 120) {
+                        const force = (120 - dist) / 120;
+                        p.x += (dx / dist) * force * 2;
+                        p.y += (dy / dist) * force * 2;
+                    }
+                }
+                
+                ctx.fillStyle = accentColor;
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.strokeStyle = accentColor;
+            for (let i = 0; i < this.particles.length; i++) {
+                let p1 = this.particles[i];
+                for (let j = i + 1; j < this.particles.length; j++) {
+                    let p2 = this.particles[j];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 100) {
+                        ctx.globalAlpha = (100 - dist) / 100 * 0.15;
+                        ctx.lineWidth = 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "grid") {
+            ctx.clearRect(0, 0, w, h);
+            
+            const horizon = h * 0.45;
+            const gridHeight = h - horizon;
+            
+            this.angle = (this.angle + 0.8) % 40;
+            
+            const glowGrad = ctx.createLinearGradient(0, horizon - 50, 0, horizon + 50);
+            glowGrad.addColorStop(0, "transparent");
+            glowGrad.addColorStop(0.5, responseColor + "1a");
+            glowGrad.addColorStop(1, "transparent");
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, horizon - 50, w, 100);
+            
+            ctx.strokeStyle = responseColor;
+            ctx.globalAlpha = 0.3;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, horizon);
+            ctx.lineTo(w, horizon);
+            ctx.stroke();
+            
+            const numVerts = 30;
+            for (let i = 0; i <= numVerts; i++) {
+                const xTop = (w / numVerts) * i;
+                const xBottom = w/2 + (xTop - w/2) * 3;
+                ctx.strokeStyle = accentColor;
+                ctx.globalAlpha = 0.12;
+                ctx.beginPath();
+                ctx.moveTo(xTop, horizon);
+                ctx.lineTo(xBottom, h);
+                ctx.stroke();
+            }
+            
+            const speedRatio = this.angle / 40;
+            const numHoriz = 12;
+            for (let i = 0; i < numHoriz; i++) {
+                const ratio = (i + speedRatio) / numHoriz;
+                const y = horizon + Math.pow(ratio, 2.5) * gridHeight;
+                const alpha = Math.pow(ratio, 1.5) * 0.25;
+                ctx.strokeStyle = accentColor;
+                ctx.globalAlpha = alpha;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "radar") {
+            ctx.clearRect(0, 0, w, h);
+            
+            const cx = w * 0.75;
+            const cy = h * 0.6;
+            const maxRadius = Math.min(w, h) * 0.45;
+            
+            this.angle = (this.angle + 0.005) % (Math.PI * 2);
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(this.angle);
+            const radarSweep = ctx.createRadialGradient(0, 0, 10, 0, 0, maxRadius);
+            radarSweep.addColorStop(0, responseColor + "33");
+            radarSweep.addColorStop(1, "transparent");
+            ctx.fillStyle = radarSweep;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, maxRadius, -0.4, 0);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 1;
+            for (let r = 50; r <= maxRadius; r += 80) {
+                ctx.globalAlpha = 0.08;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = accentColor;
+                ctx.font = "8px monospace";
+                ctx.fillText(`R_${r}KM`, cx + r + 3, cy - 3);
+            }
+            
+            ctx.strokeStyle = accentColor;
+            ctx.globalAlpha = 0.06;
+            ctx.beginPath();
+            ctx.moveTo(cx - maxRadius, cy);
+            ctx.lineTo(cx + maxRadius, cy);
+            ctx.moveTo(cx, cy - maxRadius);
+            ctx.lineTo(cx, cy + maxRadius);
+            ctx.stroke();
+            
+            ctx.font = "8px monospace";
+            for (let i = 0; i < this.particles.length; i++) {
+                let node = this.particles[i];
+                node.alpha += node.speed;
+                if (node.alpha > 1 || node.alpha < 0) {
+                    node.speed *= -1;
+                }
+                
+                ctx.fillStyle = responseColor;
+                ctx.globalAlpha = node.alpha * 0.3;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = accentColor;
+                ctx.globalAlpha = node.alpha * 0.2;
+                ctx.fillText(node.label, node.x + 6, node.y + 3);
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "circuit") {
+            ctx.clearRect(0, 0, w, h);
+            ctx.lineWidth = 1.2;
+            
+            for (let i = 0; i < this.particles.length; i++) {
+                let line = this.particles[i];
+                
+                if (line.points.length > 0 && line.stepsRemaining > 0) {
+                    let lastPt = line.points[line.points.length - 1];
+                    line.stepsRemaining--;
+                    const nextX = lastPt.x + line.dirX * line.growSpeed;
+                    const nextY = lastPt.y + line.dirY * line.growSpeed;
+                    line.points.push({ x: nextX, y: nextY });
+                    
+                    if (line.stepsRemaining <= 0 && Math.random() > 0.3 && line.points.length < 80) {
+                        line.stepsRemaining = Math.floor(Math.random() * 15) + 10;
+                        const angle = (Math.floor(Math.random() * 8) * Math.PI / 4);
+                        line.dirX = Math.cos(angle);
+                        line.dirY = Math.sin(angle);
+                    }
+                }
+                
+                if (line.points.length > 1) {
+                    ctx.strokeStyle = line.color.startsWith("var") ? (line.color.includes("accent") ? accentColor : responseColor) : line.color;
+                    ctx.globalAlpha = line.alpha * 0.15;
+                    ctx.beginPath();
+                    ctx.moveTo(line.points[0].x, line.points[0].y);
+                    for (let j = 1; j < line.points.length; j++) {
+                        ctx.lineTo(line.points[j].x, line.points[j].y);
+                    }
+                    ctx.stroke();
+                    
+                    const head = line.points[line.points.length - 1];
+                    ctx.fillStyle = line.color.startsWith("var") ? (line.color.includes("accent") ? accentColor : responseColor) : line.color;
+                    ctx.globalAlpha = line.alpha * 0.4;
+                    ctx.beginPath();
+                    ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                line.alpha -= 0.001;
+                if (line.alpha <= 0 || (line.points.length >= 80 && line.stepsRemaining <= 0)) {
+                    this.particles[i] = this.createCircuitLine(w, h);
+                }
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "wave") {
+            ctx.clearRect(0, 0, w, h);
+            this.angle += 0.02;
+            
+            const waveConfigs = [
+                { amp: 40, freq: 0.003, phase: this.angle, color: accentColor, opacity: 0.1 },
+                { amp: 25, freq: 0.005, phase: this.angle * 1.5, color: responseColor, opacity: 0.08 },
+                { amp: 15, freq: 0.008, phase: this.angle * 0.8, color: '#A855F7', opacity: 0.06 }
+            ];
+            
+            for (let c = 0; c < waveConfigs.length; c++) {
+                const config = waveConfigs[c];
+                ctx.strokeStyle = config.color;
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = config.opacity;
+                
+                ctx.beginPath();
+                const midY = h / 2 + Math.sin(config.phase * 0.2) * 50;
+                ctx.moveTo(0, midY);
+                
+                for (let x = 0; x < w; x += 10) {
+                    const y = midY + Math.sin(x * config.freq + config.phase) * config.amp * Math.sin(x / w * Math.PI);
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+        } else if (type === "ascii") {
+            ctx.fillStyle = "#020305";
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.font = "12px monospace";
+            ctx.fillStyle = accentColor;
+            
+            for (let i = 0; i < this.particles.length; i++) {
+                const line = this.particles[i];
+                
+                ctx.globalAlpha = line.alpha;
+                ctx.fillText(line.text, 15, line.y);
+                
+                line.y -= line.speed;
+                if (line.y < -20) {
+                    line.y = h + 20;
+                    line.text = this.getRandomLogText();
+                    line.speed = 0.5 + Math.random() * 1.5;
+                    line.alpha = 0.15 + Math.random() * 0.35;
+                }
+            }
+            ctx.globalAlpha = 1.0;
+        }
+    }
+}
+
+window.liveBgManager = new LiveBackgroundManager();
+
+function renderBackgroundGallery() {
+    const liveContainer = document.getElementById("bg-gallery-live");
+    const staticContainer = document.getElementById("bg-gallery-static");
+    if (!liveContainer || !staticContainer) return;
+
+    function createCard(bg, isLive) {
+        const card = document.createElement("div");
+        card.className = "bg-gallery-card";
+        card.setAttribute("data-id", bg.id);
+        if (!isLive) card.setAttribute("data-url", bg.url);
+
+        const preview = document.createElement("div");
+        preview.className = "bg-gallery-card-preview";
+        if (isLive) {
+            preview.style.background = bg.preview;
+        } else if (bg.url) {
+            preview.style.backgroundImage = `url('${bg.url}')`;
+        } else {
+            preview.style.background = "#050505";
+        }
+
+        const title = document.createElement("div");
+        title.className = "bg-gallery-card-title";
+        title.innerText = bg.name;
+
+        const desc = document.createElement("div");
+        desc.className = "bg-gallery-card-desc";
+        desc.innerText = bg.desc;
+
+        card.appendChild(preview);
+        card.appendChild(title);
+        card.appendChild(desc);
+
+        card.onclick = function() {
+            document.querySelectorAll(".bg-gallery-card").forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+
+            const url = isLive ? `live:${bg.id}` : bg.url;
+            const bgUrlInput = document.getElementById("bg-url-input");
+            if (bgUrlInput) {
+                bgUrlInput.value = url;
+            }
+            localStorage.setItem("bgUrl", url);
+            applySettings();
+        };
+
+        return card;
+    }
+
+    liveContainer.innerHTML = "";
+    staticContainer.innerHTML = "";
+
+    const noneLiveCard = createCard({ id: "", name: "None (Solid Black)", desc: "Deep matte black battery-saver mode", preview: "#050505" }, true);
+    liveContainer.appendChild(noneLiveCard);
+
+    LIVE_BACKGROUNDS.forEach(bg => {
+        liveContainer.appendChild(createCard(bg, true));
+    });
+
+    const noneStaticCard = createCard({ id: "", name: "None (Solid Black)", url: "", desc: "Deep matte black battery-saver mode" }, false);
+    staticContainer.appendChild(noneStaticCard);
+
+    STATIC_BACKGROUNDS.forEach(bg => {
+        staticContainer.appendChild(createCard(bg, false));
+    });
+
+    const tabLive = document.getElementById("bg-tab-live");
+    const tabStatic = document.getElementById("bg-tab-static");
+    
+    if (tabLive && tabStatic) {
+        tabLive.onclick = function() {
+            tabLive.classList.add("active");
+            tabStatic.classList.remove("active");
+            liveContainer.style.display = "grid";
+            staticContainer.style.display = "none";
+        };
+        tabStatic.onclick = function() {
+            tabStatic.classList.add("active");
+            tabLive.classList.remove("active");
+            staticContainer.style.display = "grid";
+            liveContainer.style.display = "none";
+        };
+    }
+}
 
 // ==========================================================================
 // SETTINGS AND PERSISTENCE IMPLEMENTATION
@@ -2145,30 +2876,65 @@ function applySettings() {
     fontClasses.forEach(cls => document.body.classList.remove(cls));
     document.body.classList.add(`font-${font}`);
 
-    // 2. Custom Background URL
+    // 2. Custom Background URL & Live backgrounds setup
     const bgUrl = localStorage.getItem("bgUrl") || "";
     const bgUrlInput = document.getElementById("bg-url-input");
     if (bgUrlInput) bgUrlInput.value = bgUrl;
-    
-    const bgImgEl = document.getElementById("app-background-image");
-    if (bgImgEl) {
-        if (bgUrl) {
-            bgImgEl.style.backgroundImage = `url('${bgUrl}')`;
-        } else {
-            bgImgEl.style.backgroundImage = "none";
-        }
-    }
 
-    // 3. Background Opacity
+    const bgImgEl = document.getElementById("app-background-image");
     const opacityValStr = localStorage.getItem("bgOpacity");
     const opacity = opacityValStr !== null ? parseInt(opacityValStr, 10) : 10;
+    
     const bgOpacitySlider = document.getElementById("bg-opacity-slider");
     if (bgOpacitySlider) bgOpacitySlider.value = opacity;
     const bgOpacityVal = document.getElementById("bg-opacity-val");
     if (bgOpacityVal) bgOpacityVal.innerText = `${opacity}%`;
-    if (bgImgEl) {
-        bgImgEl.style.opacity = bgUrl ? (opacity / 100).toString() : "0";
+
+    if (bgUrl.startsWith("live:")) {
+        const liveType = bgUrl.substring(5);
+        if (bgImgEl) {
+            bgImgEl.style.backgroundImage = "none";
+            bgImgEl.style.opacity = "0";
+        }
+        if (window.liveBgManager) {
+            window.liveBgManager.start(liveType);
+        }
+    } else {
+        if (window.liveBgManager) {
+            window.liveBgManager.stop();
+        }
+        if (bgImgEl) {
+            if (bgUrl) {
+                bgImgEl.style.backgroundImage = `url('${bgUrl}')`;
+                bgImgEl.style.opacity = (opacity / 100).toString();
+            } else {
+                bgImgEl.style.backgroundImage = "none";
+                bgImgEl.style.opacity = "0";
+            }
+        }
     }
+
+    // Highlight active card in gallery
+    document.querySelectorAll(".bg-gallery-card").forEach(c => {
+        const cardId = c.getAttribute("data-id");
+        const cardUrl = c.getAttribute("data-url");
+        let isActive = false;
+        if (bgUrl.startsWith("live:")) {
+            const liveType = bgUrl.substring(5);
+            isActive = (cardId === liveType && (cardUrl === null || cardUrl === undefined));
+        } else {
+            if (!bgUrl) {
+                isActive = (!cardUrl && !cardId);
+            } else {
+                isActive = (cardUrl === bgUrl);
+            }
+        }
+        if (isActive) {
+            c.classList.add("active");
+        } else {
+            c.classList.remove("active");
+        }
+    });
 
     // 4. CRT Scanlines (default to false / disabled for "remove crt animation")
     const scanlinesStr = localStorage.getItem("scanlinesEnabled");
@@ -2234,8 +3000,14 @@ function applySettings() {
     }
 }
 
+// Render background gallery elements dynamically
+renderBackgroundGallery();
+
 // Initial application of settings on startup
 applySettings();
+
+// Focus the main input
+document.getElementById("user-input").focus();
 
 // Event listeners for settings controls
 document.getElementById("font-select").onchange = function() {
@@ -2367,11 +3139,11 @@ document.getElementById("settings-save-llm-btn")?.addEventListener("click", () =
 });
 
 
-// Shell Switcher Pills (terminal toolbar)
-document.querySelectorAll(".shell-pill").forEach(pill => {
+// Shell Switcher (terminal top bar)
+document.querySelectorAll(".term-shell-btn").forEach(pill => {
     pill.onclick = function() {
         const shell = this.getAttribute("data-shell");
-        document.querySelectorAll(".shell-pill").forEach(p => p.classList.remove("active"));
+        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
         this.classList.add("active");
         localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
         // Also sync the settings dropdown
@@ -2380,7 +3152,6 @@ document.querySelectorAll(".shell-pill").forEach(pill => {
             const option = shellSelect.querySelector(`option[value="${shell}"]`);
             if (option) shellSelect.value = shell;
         }
-        
         // Update shell for the active session and restart it
         if (activeTerminalSessionId) {
             const session = terminalSessions.find(s => s.id === activeTerminalSessionId);
@@ -2392,12 +3163,12 @@ document.querySelectorAll(".shell-pill").forEach(pill => {
     };
 });
 
-// Sync shell pills on load
+// Sync shell buttons on load
 (function syncShellPills() {
     const saved = localStorage.getItem("selectedShell") || "default";
-    const pill = document.querySelector(`.shell-pill[data-shell="${saved}"]`);
+    const pill = document.querySelector(`.term-shell-btn[data-shell="${saved}"]`);
     if (pill) {
-        document.querySelectorAll(".shell-pill").forEach(p => p.classList.remove("active"));
+        document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
         pill.classList.add("active");
     }
 })();
@@ -2417,17 +3188,7 @@ document.getElementById("term-scrollback-input").oninput = function() {
     applySettings();
 };
 
-document.querySelectorAll(".bg-preset-btn").forEach(btn => {
-    btn.onclick = function() {
-        const url = this.getAttribute("data-url");
-        const bgUrlInput = document.getElementById("bg-url-input");
-        if (bgUrlInput) {
-            bgUrlInput.value = url;
-            localStorage.setItem("bgUrl", url);
-            applySettings();
-        }
-    };
-});
+
 
 // ==========================================================================
 // STEAM DECK CONTROLLER (GAMEPAD API) INPUT WIRING
@@ -3039,13 +3800,7 @@ function cycleTheme() {
         
         invoke("set_theme", { name: nextTheme }).then((theme) => {
             if (theme) {
-                document.documentElement.style.setProperty('--bg-color', theme.Background);
-                document.documentElement.style.setProperty('--fg-color', theme.Foreground);
-                document.documentElement.style.setProperty('--accent-color', theme.Accent);
-                document.documentElement.style.setProperty('--response-color', theme.Response);
-                document.documentElement.style.setProperty('--warning-color', theme.Warning);
-                document.documentElement.style.setProperty('--error-color', theme.Error);
-                
+                applyThemeColors(theme);
                 localStorage.setItem("selectedTheme", nextTheme);
                 
                 const themeSelect = document.getElementById("theme-select");
@@ -3719,7 +4474,7 @@ listen("stream_chunk", function (event) {
 
         const msgCard = currentAIMessage.querySelector(".message-card");
         if (msgCard) {
-            msgCard.innerHTML = marked.parse(currentAIText);
+            msgCard.innerHTML = window.sanitizeHtml(marked.parse(currentAIText));
             formatCodeBlocks(msgCard);
         }
         
@@ -3752,7 +4507,7 @@ listen("stream_done", function () {
     if (currentAIMessage) {
         const msgCard = currentAIMessage.querySelector(".message-card");
         if (msgCard) {
-            msgCard.innerHTML = marked.parse(currentAIText);
+            msgCard.innerHTML = window.sanitizeHtml(marked.parse(currentAIText));
             formatCodeBlocks(msgCard);
         }
     }
@@ -3951,7 +4706,7 @@ function loadSession(sid) {
                 div.className = "message ai";
                 div.innerHTML = `
                     <div class="message-card">
-                        ${marked.parse(msgStr.substring(4))}
+                        ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
                     </div>
                 `;
                 formatCodeBlocks(div);
@@ -4130,7 +4885,7 @@ window.addEventListener("keydown", function(e) {
                     div.className = "message ai";
                     div.innerHTML = `
                         <div class="message-card">
-                            ${marked.parse(msgStr.substring(4))}
+                            ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
                         </div>
                     `;
                     formatCodeBlocks(div);
@@ -4276,13 +5031,7 @@ document.getElementById("theme-select").onchange = function() {
     let val = this.value;
     invoke("set_theme", { name: val }).then((theme) => {
         if (theme) {
-            document.documentElement.style.setProperty('--bg-color', theme.Background);
-            document.documentElement.style.setProperty('--fg-color', theme.Foreground);
-            document.documentElement.style.setProperty('--accent-color', theme.Accent);
-            document.documentElement.style.setProperty('--response-color', theme.Response);
-            document.documentElement.style.setProperty('--warning-color', theme.Warning);
-            document.documentElement.style.setProperty('--error-color', theme.Error);
-            
+            applyThemeColors(theme);
             localStorage.setItem("selectedTheme", val);
             
             let chatViewport = document.getElementById("chat-viewport");
@@ -4371,12 +5120,7 @@ invoke("get_initial_state").then((state) => {
     if (savedTheme) {
         invoke("set_theme", { name: savedTheme }).then((theme) => {
             if (theme) {
-                document.documentElement.style.setProperty('--bg-color', theme.Background);
-                document.documentElement.style.setProperty('--fg-color', theme.Foreground);
-                document.documentElement.style.setProperty('--accent-color', theme.Accent);
-                document.documentElement.style.setProperty('--response-color', theme.Response);
-                document.documentElement.style.setProperty('--warning-color', theme.Warning);
-                document.documentElement.style.setProperty('--error-color', theme.Error);
+                applyThemeColors(theme);
             }
         });
     }
@@ -4482,13 +5226,8 @@ function getActiveShellPath() {
 
 function syncShellPillsForSession(shell) {
     const targetShell = shell || "default";
-    document.querySelectorAll(".shell-pill").forEach(p => {
-        const dataShell = p.getAttribute("data-shell");
-        if (dataShell === targetShell) {
-            p.classList.add("active");
-        } else {
-            p.classList.remove("active");
-        }
+    document.querySelectorAll(".term-shell-btn").forEach(p => {
+        p.classList.toggle("active", p.getAttribute("data-shell") === targetShell);
     });
 }
 
@@ -4523,10 +5262,10 @@ function createTerminalSession(shellPath) {
         fontSize: fontSize,
         scrollback: scrollback,
         theme: {
-            background: '#000000',
-            foreground: '#e2e8f0',
-            cursor: '#00F0FF',
-            selectionBackground: 'rgba(0, 240, 255, 0.3)'
+            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
+            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
+            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
+            selectionBackground: 'rgba(255, 255, 255, 0.15)'
         }
     });
 
@@ -4683,11 +5422,16 @@ function renderTerminalTabs() {
     const list = document.getElementById("terminal-tabs-list");
     if (!list) return;
 
+    const SHELL_ICONS = {
+        "/bin/bash":     "$",
+        "/bin/zsh":      "%",
+        "/bin/fish":     "~",
+        "powershell.exe":"PS",
+        "cmd.exe":       ">",
+    };
     list.innerHTML = terminalSessions.map((s, idx) => {
-        const shellName = s.shell
-            ? s.shell.replace(/.*[/\\]/, '').replace('.exe','').toUpperCase().slice(0,6)
-            : 'DEFAULT';
-        const label = `${shellName} ${idx + 1}`;
+        const icon  = s.shell ? (SHELL_ICONS[s.shell] || s.shell.replace(/.*[/\\]/, '').replace('.exe','').slice(0,3).toLowerCase()) : ">_";
+        const label = `${icon} ${idx + 1}`;
         const activeClass = s.id === activeTerminalSessionId ? "active" : "";
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
@@ -4733,8 +5477,33 @@ function initPtyTerminal() {
     const reconnectBtn = document.getElementById("pty-reconnect-btn");
     if (reconnectBtn) {
         reconnectBtn.onclick = () => {
+            if (activeTerminalSessionId) restartTerminalSession(activeTerminalSessionId);
+        };
+    }
+
+    // Font size controls — apply to all live sessions immediately
+    const fontDecBtn = document.getElementById("term-font-dec-btn");
+    const fontIncBtn = document.getElementById("term-font-inc-btn");
+    function adjustFontSize(delta) {
+        const current = parseInt(localStorage.getItem("terminalFontSize") || "14", 10);
+        const next = Math.min(24, Math.max(8, current + delta));
+        localStorage.setItem("terminalFontSize", String(next));
+        terminalSessions.forEach(s => {
+            s.term.options.fontSize = next;
+            try { s.fitAddon.fit(); } catch (_) {}
+        });
+        const slider = document.getElementById("term-fontsize-slider");
+        if (slider) slider.value = String(next);
+    }
+    if (fontDecBtn) fontDecBtn.onclick = () => adjustFontSize(-1);
+    if (fontIncBtn) fontIncBtn.onclick = () => adjustFontSize(1);
+
+    // Clear screen — sends Ctrl+L to the active PTY
+    const clearBtn = document.getElementById("term-clear-btn");
+    if (clearBtn) {
+        clearBtn.onclick = () => {
             if (activeTerminalSessionId) {
-                restartTerminalSession(activeTerminalSessionId);
+                invoke("pty_write", { id: activeTerminalSessionId, data: "\x0C" }).catch(() => {});
             }
         };
     }
@@ -4764,6 +5533,20 @@ listen("pty_output", (event) => {
         session.term.write(payload.data);
     } else if (payload.id === sshSessionId && window.sshTerminal) {
         window.sshTerminal.write(payload.data);
+        
+        const passInput = document.getElementById("ssh-pass-input");
+        const authType = document.getElementById("ssh-auth-type")?.value || "password";
+        if (authType === "password" && passInput && passInput.value) {
+            const lowerData = payload.data.toLowerCase();
+            if (lowerData.includes("password:") || (lowerData.includes("password") && lowerData.trim().endsWith(":"))) {
+                if (!window._sshPasswordSent) {
+                    window._sshPasswordSent = true;
+                    invoke("pty_write", { id: sshSessionId, data: passInput.value + "\n" }).catch(err => {
+                        console.error("SSH auto-password feeding failed:", err);
+                    });
+                }
+            }
+        }
     }
 });
 
@@ -5195,10 +5978,10 @@ function initSshTerminal() {
         fontSize: savedFontSize,
         scrollback: 2000,
         theme: {
-            background: '#000000',
-            foreground: '#e2e8f0',
-            cursor: '#00F0FF',
-            selectionBackground: 'rgba(0, 240, 255, 0.3)'
+            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
+            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
+            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
+            selectionBackground: 'rgba(255, 255, 255, 0.15)'
         }
     });
     const fitAddon = new FitAddon();
@@ -5238,6 +6021,7 @@ function setSshStatus(connected, text) {
 }
 
 function connectSsh() {
+    window._sshPasswordSent = false;
     const host = document.getElementById("ssh-host-input")?.value.trim();
     const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
     const user = document.getElementById("ssh-user-input")?.value.trim();
@@ -6466,9 +7250,14 @@ function renderTransfers(transfers) {
         listEl.innerHTML = `<div class="transfer-item-empty">No active or past transfers in this session.</div>`;
         return;
     }
+
+    if (!window.activeTransfersMap) window.activeTransfersMap = new Map();
+    window.activeTransfersMap.clear();
+
     transfers.sort((a, b) => b.id.localeCompare(a.id));
 
     transfers.forEach(t => {
+        window.activeTransfersMap.set(t.id, t);
         const item = document.createElement("div");
         item.className = "transfer-item";
         item.id = `transfer-${t.id}`;
@@ -6530,11 +7319,87 @@ function renderTransfers(transfers) {
             </div>
             <div class="transfer-meta">
                 <span>${t.direction === "Incoming" ? "From" : "To"}: ${t.peer_name || t.peer_ip}</span>
-                <span>${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}</span>
+                <span class="transfer-stats-text">${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}</span>
             </div>
         `;
         listEl.appendChild(item);
     });
+}
+
+function updateTransferCardProgress(transferId, progress) {
+    if (!window.activeTransfersMap) return;
+    const t = window.activeTransfersMap.get(transferId);
+    if (!t) {
+        invoke("get_active_transfers").then(renderTransfers);
+        return;
+    }
+
+    t.progress = progress;
+    if (t.status === "Pending" || t.status === "Accepted") {
+        t.status = "Transferring";
+    }
+
+    const item = document.getElementById(`transfer-${transferId}`);
+    if (!item) return;
+
+    const statusEl = item.querySelector(".transfer-status");
+    if (statusEl) {
+        statusEl.className = `transfer-status ${t.status.toLowerCase()}`;
+        statusEl.innerText = t.status;
+    }
+
+    const percent = t.size > 0 ? Math.min(100, Math.round((progress / t.size) * 100)) : 0;
+    
+    const barEl = item.querySelector(".transfer-progress-bar-fill");
+    if (barEl) {
+        barEl.style.width = `${percent}%`;
+        if (t.status === "Completed") {
+            barEl.className = "transfer-progress-bar-fill completed";
+        } else if (t.status === "Failed" || t.status === "Rejected") {
+            barEl.className = "transfer-progress-bar-fill failed";
+        }
+    }
+
+    const pctEl = item.querySelector(".transfer-percent");
+    if (pctEl) {
+        pctEl.innerText = `${percent}%`;
+    }
+
+    let speedText = "";
+    let etaText = "";
+    if (t.status === "Transferring") {
+        const now = Date.now();
+        let record = window.transferProgressMap.get(t.id);
+        if (!record) {
+            record = { lastProgress: progress, lastTime: now, currentSpeed: 0 };
+            window.transferProgressMap.set(t.id, record);
+        } else {
+            let elapsed = (now - record.lastTime) / 1000;
+            if (elapsed >= 0.5) {
+                let delta = progress - record.lastProgress;
+                if (delta >= 0) {
+                    let instantSpeed = delta / elapsed;
+                    record.currentSpeed = record.currentSpeed ? (record.currentSpeed * 0.7 + instantSpeed * 0.3) : instantSpeed;
+                }
+                record.lastProgress = progress;
+                record.lastTime = now;
+            }
+        }
+        if (record.currentSpeed > 0) {
+            speedText = ` | ${formatBytes(record.currentSpeed)}/s`;
+            let remaining = t.size - progress;
+            let eta = remaining / record.currentSpeed;
+            etaText = ` | ETA: ${formatDuration(eta)}`;
+        } else {
+            speedText = ` | 0 B/s`;
+            etaText = ` | ETA: Unknown`;
+        }
+    }
+
+    const statsEl = item.querySelector(".transfer-stats-text");
+    if (statsEl) {
+        statsEl.innerText = `${formatBytes(progress)} / ${formatBytes(t.size)}${speedText}${etaText}`;
+    }
 }
 
 function updateSendButtonState() {
@@ -6620,8 +7485,13 @@ function initFileShare() {
     });
     
     // Listen for transfer progress and completions
-    listen("transfer_progress", () => {
-        invoke("get_active_transfers").then(renderTransfers);
+    listen("transfer_progress", (event) => {
+        if (event && event.payload) {
+            const [transferId, progress] = event.payload;
+            updateTransferCardProgress(transferId, progress);
+        } else {
+            invoke("get_active_transfers").then(renderTransfers);
+        }
     });
     listen("transfer_completed", (event) => {
         if (typeof addNotification === "function") {
@@ -7838,12 +8708,7 @@ initCustomPersonas();
     }
 
     function applyThemeObj(t) {
-        document.documentElement.style.setProperty("--bg-color", t.background);
-        document.documentElement.style.setProperty("--fg-color", t.foreground);
-        document.documentElement.style.setProperty("--accent-color", t.accent);
-        document.documentElement.style.setProperty("--response-color", t.response);
-        document.documentElement.style.setProperty("--warning-color", t.warning);
-        document.documentElement.style.setProperty("--error-color", t.error);
+        applyThemeColors(t);
         localStorage.setItem("selectedTheme", t.name);
         const sel = document.getElementById("theme-select");
         if (sel) sel.value = t.name;
@@ -8028,12 +8893,7 @@ initCustomPersonas();
             } else {
                 invoke("set_theme", { name: val }).then(theme => {
                     if (theme) {
-                        document.documentElement.style.setProperty("--bg-color", theme.Background);
-                        document.documentElement.style.setProperty("--fg-color", theme.Foreground);
-                        document.documentElement.style.setProperty("--accent-color", theme.Accent);
-                        document.documentElement.style.setProperty("--response-color", theme.Response);
-                        document.documentElement.style.setProperty("--warning-color", theme.Warning);
-                        document.documentElement.style.setProperty("--error-color", theme.Error);
+                        applyThemeColors(theme);
                         localStorage.setItem("selectedTheme", val);
                     }
                 });
@@ -8372,13 +9232,39 @@ initCustomPersonas();
         if (e.target === collabModal) collabModal.classList.remove("active");
     });
 
-    function setPeerConnected() {
+    const statusBar = document.getElementById("canvas-collab-status-bar");
+    const statusText = document.getElementById("canvas-collab-status-text");
+    const resyncBtn = document.getElementById("canvas-collab-resync-btn");
+
+    if (resyncBtn) {
+        resyncBtn.addEventListener("click", () => {
+            const editor = document.getElementById("canvas-editor");
+            if (editor) {
+                invoke("canvas_collab_send", {
+                    code: editor.value,
+                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
+                }).catch(() => {});
+            }
+        });
+    }
+
+    function setPeerConnected(peerInfo = '') {
         if (activePanel) activePanel.style.display = '';
         if (hostWaiting) hostWaiting.style.display = 'none';
         if (statusLine) statusLine.innerHTML = '';
         if (collabBtn) {
             collabBtn.style.background = 'rgba(0,255,136,0.15)';
             collabBtn.style.borderColor = 'var(--response-color)';
+        }
+        if (statusBar) statusBar.style.display = 'flex';
+        if (statusText) {
+            let label = "Collab Active: Syncing edits live";
+            if (peerInfo) {
+                label = `Collab Active: Connected to peer (${peerInfo})`;
+            } else if (addrInput && addrInput.value) {
+                label = `Collab Active: Connected to ${addrInput.value}`;
+            }
+            statusText.innerText = label;
         }
     }
 
@@ -8390,13 +9276,15 @@ initCustomPersonas();
             collabBtn.style.borderColor = '';
         }
         if (statusLine) statusLine.innerHTML = '';
+        if (statusBar) statusBar.style.display = 'none';
     }
 
     // Listen for collab events from Rust
     listen("canvas_collab_event", (event) => {
         const msg = event.payload || '';
         if (msg.startsWith('peer_connected')) {
-            setPeerConnected();
+            const peer = msg.includes(':') ? msg.split(':')[1] : '';
+            setPeerConnected(peer);
             if (typeof addNotification === "function") {
                 addNotification("Collab Connected", "A peer joined your Canvas session.", "success");
             }
@@ -8467,7 +9355,7 @@ initCustomPersonas();
             if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Connecting to ${addr}...</span>`;
             try {
                 await invoke("canvas_collab_join", { addr });
-                setPeerConnected();
+                setPeerConnected(addr);
             } catch (err) {
                 if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
                 joinStartBtn.disabled = false;
@@ -9805,12 +10693,7 @@ async function showOnboardingWizard() {
             try {
                 const theme = await invoke("set_theme", { name: selectedThemeName });
                 if (theme) {
-                    document.documentElement.style.setProperty('--bg-color', theme.Background);
-                    document.documentElement.style.setProperty('--fg-color', theme.Foreground);
-                    document.documentElement.style.setProperty('--accent-color', theme.Accent);
-                    document.documentElement.style.setProperty('--response-color', theme.Response);
-                    document.documentElement.style.setProperty('--warning-color', theme.Warning);
-                    document.documentElement.style.setProperty('--error-color', theme.Error);
+                    applyThemeColors(theme);
                 }
             } catch (e) { console.error("Failed to apply theme live", e); }
         };
@@ -10047,5 +10930,68 @@ async function showOnboardingWizard() {
         if (overlay && overlay.parentNode) overlay.remove();
         document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
     }
+})();
+
+// ==========================================================================
+// SYSTEM DIAGNOSTICS POLLING LOOP (P6)
+// ==========================================================================
+(function initDiagnostics() {
+    async function pollDiagnostics() {
+        // 1. PTY Status
+        const ptyDot = document.getElementById("diag-dot-pty");
+        const ptyOk = typeof terminalSessions !== 'undefined' && terminalSessions.length > 0;
+        if (ptyDot) {
+            ptyDot.className = ptyOk ? "diag-dot online" : "diag-dot offline";
+        }
+
+        // 2. LAN Discovery / mDNS Status
+        const mdnsDot = document.getElementById("diag-dot-mdns");
+        let mdnsOk = false;
+        try {
+            await invoke("get_discovered_peers");
+            mdnsOk = true;
+        } catch (e) {
+            mdnsOk = false;
+        }
+        if (mdnsDot) {
+            mdnsDot.className = mdnsOk ? "diag-dot online" : "diag-dot offline";
+        }
+
+        // 3. LLM Provider Connectivity
+        const llmDot = document.getElementById("diag-dot-llm");
+        let llmOk = false;
+        try {
+            const config = await invoke("get_config");
+            const provider = config?.llm?.default_provider || 'gemini';
+            if (provider === 'gemini') {
+                llmOk = navigator.onLine;
+            } else if (provider === 'ollama') {
+                const url = config?.llm?.ollama_base_url || 'http://localhost:11434';
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 1200);
+                const response = await fetch(`${url}/api/tags`, { signal: controller.signal });
+                clearTimeout(id);
+                llmOk = response.ok;
+            }
+        } catch (e) {
+            llmOk = false;
+        }
+        if (llmDot) {
+            llmDot.className = llmOk ? "diag-dot online" : "diag-dot offline";
+        }
+
+        // 4. Collaboration Server Status
+        const collabDot = document.getElementById("diag-dot-collab");
+        const collabOk = !!(window._mockCollabActive);
+        if (collabDot) {
+            collabDot.className = collabOk ? "diag-dot online" : "diag-dot offline";
+        }
+    }
+
+    // Wait for the boot sequence to complete before starting polling
+    document.addEventListener('neurodeck-boot-complete', () => {
+        pollDiagnostics();
+        setInterval(pollDiagnostics, 5000);
+    });
 })();
 
