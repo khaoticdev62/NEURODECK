@@ -1336,6 +1336,54 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="settings-clear-sftp-profiles" style="margin-top:8px;">Clear All SFTP Profiles</button>
                     </div>
                     
+                    <!-- Custom Themes section -->
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">CUSTOM THEMES</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div class="setting-field-group" style="margin-bottom: 8px;">
+                            <label for="ct-name">Theme Name:</label>
+                            <input type="text" id="ct-name" class="tunnel-text-input" placeholder="e.g. Vapor Wave" style="width:100%; box-sizing:border-box; margin:0;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Background</label>
+                                <input type="color" id="ct-bg" value="#050505" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Foreground</label>
+                                <input type="color" id="ct-fg" value="#D9F7FF" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Accent</label>
+                                <input type="color" id="ct-accent" value="#00F0FF" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Response</label>
+                                <input type="color" id="ct-response" value="#00FF88" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Warning</label>
+                                <input type="color" id="ct-warning" value="#FFB000" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:3px;">
+                                <label style="font-size:0.75rem; opacity:0.7;">Error</label>
+                                <input type="color" id="ct-error" value="#FF3C5A" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            </div>
+                        </div>
+                        <div id="ct-preview" style="height:20px; border-radius:4px; margin-bottom:10px; display:flex; overflow:hidden;">
+                            <div id="ct-preview-bg" style="flex:2; background:#050505;"></div>
+                            <div id="ct-preview-accent" style="flex:1; background:#00F0FF;"></div>
+                            <div id="ct-preview-response" style="flex:1; background:#00FF88;"></div>
+                            <div id="ct-preview-warning" style="flex:0.5; background:#FFB000;"></div>
+                            <div id="ct-preview-error" style="flex:0.5; background:#FF3C5A;"></div>
+                        </div>
+                        <button class="send-prompt-btn" id="ct-save-btn" style="margin:0 0 12px 0; height:32px; justify-content:center; padding:0 12px; width:100%;">Save Theme</button>
+                        <div id="ct-status" style="font-size:0.75rem; margin-bottom:8px; font-family:var(--font-mono); color:var(--response-color); min-height:14px;"></div>
+                        <div style="font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:var(--accent-color);">SAVED CUSTOM THEMES</div>
+                        <div id="ct-list" style="display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto; font-family:var(--font-mono); font-size:0.8rem;">
+                            <div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>
+                        </div>
+                    </div>
+
                     <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">PLUGINS MANAGER</div>
                     <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
                         <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">LUA PLUGINS</div>
@@ -2209,8 +2257,19 @@ function pollGamepads() {
         }
     }
 
-    // L1 (4) / R1 (5) - Cycle tabs left / right
+    // L1 (4) / R1 (5) - Cycle tabs; when SSH tab active, also load focused SSH profile
     if (buttonPressed(4) || buttonPressed(5)) {
+        const sshView = document.getElementById("view-ssh");
+        if (sshView && sshView.classList.contains("active")) {
+            // L1 in SSH: load the currently D-pad-focused profile (A-button equivalent)
+            // R1 in SSH: same — pressing either loads the selected profile
+            const focused = document.querySelector("#sidebar-ssh-profiles .ssh-profile-item.gamepad-focused");
+            if (focused) {
+                focused.click();
+            } else {
+                // Fall through to tab cycling below
+            }
+        }
         const tabs = Array.from(document.querySelectorAll(".nav-tab"));
         const activeTabIdx = tabs.findIndex(tab => tab.classList.contains("active"));
         if (activeTabIdx !== -1) {
@@ -2248,11 +2307,39 @@ function pollGamepads() {
         }
     }
 
-    // D-pad Up (12) / Down (13) - Move focus index
-    if (buttonPressed(12)) {
-        updateGamepadFocus(gamepadFocusIndex - 1);
-    } else if (buttonPressed(13)) {
-        updateGamepadFocus(gamepadFocusIndex + 1);
+    // D-pad Up (12) / Down (13)
+    // When Share tab is active: cycle inner tabs (LAN / SFTP / FTP)
+    // When SSH tab is active: cycle saved profile list items
+    // Otherwise: move gamepad focus index
+    if (buttonPressed(12) || buttonPressed(13)) {
+        const shareView = document.getElementById("view-share");
+        const sshView = document.getElementById("view-ssh");
+        const goUp = buttonPressed(12);
+        if (shareView && shareView.classList.contains("active")) {
+            const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+            const activeIdx = subtabs.findIndex(t => t.classList.contains("active"));
+            if (activeIdx !== -1) {
+                const nextIdx = goUp
+                    ? (activeIdx - 1 + subtabs.length) % subtabs.length
+                    : (activeIdx + 1) % subtabs.length;
+                subtabs[nextIdx].click();
+            }
+        } else if (sshView && sshView.classList.contains("active")) {
+            const profileItems = Array.from(document.querySelectorAll("#sidebar-ssh-profiles .ssh-profile-item"));
+            if (profileItems.length > 0) {
+                const selectedIdx = profileItems.findIndex(el => el.classList.contains("gamepad-focused"));
+                const nextIdx = goUp
+                    ? Math.max(0, (selectedIdx === -1 ? profileItems.length - 1 : selectedIdx - 1))
+                    : Math.min(profileItems.length - 1, (selectedIdx === -1 ? 0 : selectedIdx + 1));
+                profileItems.forEach(el => el.classList.remove("gamepad-focused"));
+                profileItems[nextIdx].classList.add("gamepad-focused");
+                profileItems[nextIdx].scrollIntoView({ block: "nearest" });
+            } else {
+                updateGamepadFocus(goUp ? gamepadFocusIndex - 1 : gamepadFocusIndex + 1);
+            }
+        } else {
+            updateGamepadFocus(goUp ? gamepadFocusIndex - 1 : gamepadFocusIndex + 1);
+        }
     }
 
     // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
@@ -2531,6 +2618,10 @@ settingsBtn.onclick = function() {
     }
     if (typeof loadCustomPersonas === 'function') {
         loadCustomPersonas();
+    }
+    if (window._customThemes) {
+        window._customThemes.renderList();
+        window._customThemes.refreshThemeSelect();
     }
 };
 
@@ -6969,6 +7060,235 @@ function initCustomPersonas() {
 
 // Initialize Custom Personas event handlers
 initCustomPersonas();
+
+// ==========================================================================
+// ==========================================================================
+// CUSTOM THEMES EDITOR (P22)
+// ==========================================================================
+
+(function initCustomThemes() {
+    const LS_KEY = "neurodeckCustomThemes";
+
+    function loadThemes() {
+        try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+        catch (_) { return []; }
+    }
+
+    function saveThemes(themes) {
+        localStorage.setItem(LS_KEY, JSON.stringify(themes));
+    }
+
+    function applyThemeObj(t) {
+        document.documentElement.style.setProperty("--bg-color", t.background);
+        document.documentElement.style.setProperty("--fg-color", t.foreground);
+        document.documentElement.style.setProperty("--accent-color", t.accent);
+        document.documentElement.style.setProperty("--response-color", t.response);
+        document.documentElement.style.setProperty("--warning-color", t.warning);
+        document.documentElement.style.setProperty("--error-color", t.error);
+        localStorage.setItem("selectedTheme", t.name);
+        const sel = document.getElementById("theme-select");
+        if (sel) sel.value = t.name;
+    }
+
+    function renderList() {
+        const container = document.getElementById("ct-list");
+        if (!container) return;
+        const themes = loadThemes();
+        if (themes.length === 0) {
+            container.innerHTML = '<div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>';
+            return;
+        }
+        container.innerHTML = "";
+        themes.forEach((t, idx) => {
+            const row = document.createElement("div");
+            row.style.cssText = "display:flex; align-items:center; gap:8px; padding:5px 6px; background:rgba(255,255,255,0.03); border-radius:4px;";
+
+            const swatch = document.createElement("div");
+            swatch.style.cssText = `width:16px; height:16px; border-radius:3px; background:${t.accent}; border:1px solid rgba(255,255,255,0.15); flex-shrink:0;`;
+
+            const name = document.createElement("span");
+            name.style.cssText = "flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+            name.textContent = t.name;
+
+            const applyBtn = document.createElement("button");
+            applyBtn.textContent = "Apply";
+            applyBtn.className = "send-prompt-btn";
+            applyBtn.style.cssText = "margin:0; height:22px; padding:0 8px; font-size:0.7rem; justify-content:center;";
+            applyBtn.onclick = () => {
+                applyThemeObj(t);
+                if (typeof addNotification === "function") {
+                    addNotification("Theme Applied", `"${t.name}" is now active.`, "success");
+                }
+            };
+
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "Edit";
+            editBtn.className = "canvas-btn";
+            editBtn.style.cssText = "height:22px; padding:0 8px; font-size:0.7rem;";
+            editBtn.onclick = () => {
+                document.getElementById("ct-name").value = t.name;
+                document.getElementById("ct-bg").value = t.background;
+                document.getElementById("ct-fg").value = t.foreground;
+                document.getElementById("ct-accent").value = t.accent;
+                document.getElementById("ct-response").value = t.response;
+                document.getElementById("ct-warning").value = t.warning;
+                document.getElementById("ct-error").value = t.error;
+                updatePreview();
+                // Remove the old entry so saving replaces it
+                const themes2 = loadThemes();
+                themes2.splice(idx, 1);
+                saveThemes(themes2);
+                renderList();
+                refreshThemeSelect();
+            };
+
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "✕";
+            delBtn.className = "canvas-btn";
+            delBtn.style.cssText = "height:22px; padding:0 6px; font-size:0.7rem; border-color:var(--error-color);";
+            delBtn.onclick = () => {
+                const themes2 = loadThemes();
+                themes2.splice(idx, 1);
+                saveThemes(themes2);
+                renderList();
+                refreshThemeSelect();
+                if (typeof addNotification === "function") {
+                    addNotification("Theme Deleted", `"${t.name}" removed.`, "info");
+                }
+            };
+
+            row.appendChild(swatch);
+            row.appendChild(name);
+            row.appendChild(applyBtn);
+            row.appendChild(editBtn);
+            row.appendChild(delBtn);
+            container.appendChild(row);
+        });
+    }
+
+    function refreshThemeSelect() {
+        // Rebuild the theme-select to include custom themes alongside hardcoded ones
+        invoke("get_themes").then(themes => {
+            const sel = document.getElementById("theme-select");
+            if (!sel) return;
+            const savedTheme = localStorage.getItem("selectedTheme");
+            sel.innerHTML = "";
+            // Hardcoded themes group
+            const group1 = document.createElement("optgroup");
+            group1.label = "Built-in";
+            themes.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t;
+                opt.textContent = t;
+                if (t === savedTheme) opt.selected = true;
+                group1.appendChild(opt);
+            });
+            sel.appendChild(group1);
+            // Custom themes group
+            const customThemes = loadThemes();
+            if (customThemes.length > 0) {
+                const group2 = document.createElement("optgroup");
+                group2.label = "Custom";
+                customThemes.forEach(t => {
+                    const opt = document.createElement("option");
+                    opt.value = t.name;
+                    opt.textContent = t.name;
+                    if (t.name === savedTheme) opt.selected = true;
+                    group2.appendChild(opt);
+                });
+                sel.appendChild(group2);
+            }
+        }).catch(() => {});
+    }
+
+    function updatePreview() {
+        const map = {
+            "ct-preview-bg": "ct-bg",
+            "ct-preview-accent": "ct-accent",
+            "ct-preview-response": "ct-response",
+            "ct-preview-warning": "ct-warning",
+            "ct-preview-error": "ct-error",
+        };
+        Object.entries(map).forEach(([previewId, inputId]) => {
+            const el = document.getElementById(previewId);
+            const inp = document.getElementById(inputId);
+            if (el && inp) el.style.background = inp.value;
+        });
+    }
+
+    // Wire color picker preview
+    ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", updatePreview);
+    });
+
+    // Save button
+    const saveBtn = document.getElementById("ct-save-btn");
+    if (saveBtn) {
+        saveBtn.addEventListener("click", () => {
+            const name = (document.getElementById("ct-name")?.value || "").trim();
+            if (!name) {
+                const s = document.getElementById("ct-status");
+                if (s) { s.textContent = "Enter a theme name."; setTimeout(() => { s.textContent = ""; }, 2000); }
+                return;
+            }
+            const theme = {
+                name,
+                background: document.getElementById("ct-bg")?.value || "#050505",
+                foreground: document.getElementById("ct-fg")?.value || "#D9F7FF",
+                accent: document.getElementById("ct-accent")?.value || "#00F0FF",
+                response: document.getElementById("ct-response")?.value || "#00FF88",
+                warning: document.getElementById("ct-warning")?.value || "#FFB000",
+                error: document.getElementById("ct-error")?.value || "#FF3C5A",
+            };
+            const themes = loadThemes().filter(t => t.name !== name); // replace if exists
+            themes.push(theme);
+            saveThemes(themes);
+            renderList();
+            refreshThemeSelect();
+            const s = document.getElementById("ct-status");
+            if (s) { s.textContent = `"${name}" saved!`; setTimeout(() => { s.textContent = ""; }, 2500); }
+            if (typeof addNotification === "function") {
+                addNotification("Theme Saved", `"${name}" added to custom themes.`, "success");
+            }
+        });
+    }
+
+    // Patch theme-select onchange to handle custom themes
+    const origOnchange = document.getElementById("theme-select")?.onchange;
+    const themeSelect = document.getElementById("theme-select");
+    if (themeSelect) {
+        themeSelect.onchange = function () {
+            const val = this.value;
+            const custom = loadThemes().find(t => t.name === val);
+            if (custom) {
+                applyThemeObj(custom);
+                localStorage.setItem("selectedTheme", val);
+            } else if (origOnchange) {
+                origOnchange.call(this);
+            } else {
+                invoke("set_theme", { name: val }).then(theme => {
+                    if (theme) {
+                        document.documentElement.style.setProperty("--bg-color", theme.Background);
+                        document.documentElement.style.setProperty("--fg-color", theme.Foreground);
+                        document.documentElement.style.setProperty("--accent-color", theme.Accent);
+                        document.documentElement.style.setProperty("--response-color", theme.Response);
+                        document.documentElement.style.setProperty("--warning-color", theme.Warning);
+                        document.documentElement.style.setProperty("--error-color", theme.Error);
+                        localStorage.setItem("selectedTheme", val);
+                    }
+                });
+            }
+        };
+    }
+
+    // Expose helpers for the settings modal open handler
+    window._customThemes = { renderList, refreshThemeSelect };
+
+    // Init
+    renderList();
+    updatePreview();
+})();
 
 // ==========================================================================
 // MCP SERVER SETTINGS

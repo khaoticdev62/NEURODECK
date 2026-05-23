@@ -32,7 +32,10 @@
 | Plugin Manager UI | ✅ list/toggle/install from URL/new plugin/reload in Settings modal |
 | Ollama Model Manager | ✅ list models, pull with progress bar, delete — in Settings modal |
 | Custom Personas | ✅ Create name+prompt, delete, persisted to `data/personas.json` |
-| Custom Themes | ❌ 4 hardcoded themes; no user editor |
+| Custom Themes | ✅ Color-picker editor in Settings; saved to localStorage; integrated into theme-select dropdown |
+| FTP Drag-Drop (P12) | ✅ `#ftp-dropzone` + `#sftp-dropzone` fully wired; populates local path + remote dest on drop |
+| D-Pad Inner Nav (P21) | ✅ D-pad Up/Down cycles Share inner tabs; SSH view D-pad Up/Down highlights profiles; L1/R1 loads focused profile |
+| AI Shell History (P15) | ✅ Ctrl+H opens overlay; xterm.js interception fixed; full keyboard nav + PTY paste |
 
 ---
 
