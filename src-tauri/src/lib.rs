@@ -2828,6 +2828,7 @@ async fn index_directory(
         let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total }));
     }
 
+    let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total, "done": true }));
     Ok(indexed)
 }
 

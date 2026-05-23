@@ -9275,14 +9275,16 @@ initCustomPersonas();
 
         try {
             const result = await invoke("index_directory", { path: folder });
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">${result}</span>`;
+            const count = typeof result === "number" ? `Indexed ${result} document${result !== 1 ? "s" : ""}.` : result;
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">${count}</span>`;
             if (typeof addNotification === "function") {
-                addNotification("RAG Index Complete", result, "success");
+                addNotification("RAG Index Complete", count, "success");
             }
+            invoke("get_doc_count").then(c => { if (docCount) docCount.innerText = c || 0; }).catch(() => {});
         } catch (err) {
-            indexBtn.disabled = false;
-            if (progressContainer) progressContainer.style.display = "none";
             if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+        } finally {
+            indexBtn.disabled = false;
         }
     });
 
