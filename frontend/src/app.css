@@ -5249,6 +5249,117 @@ body.crt-flicker-disabled .crt-flicker {
     color: var(--error-color, #FF3C5A);
 }
 
+/* Onboarding Enhanced — Stats Row */
+.ob-stats-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin: 16px 0 14px;
+}
+
+.ob-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 240, 255, 0.06);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 18px;
+    min-width: 80px;
+}
+
+.ob-stat-number {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent-color, #00F0FF);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.ob-stat-label {
+    font-size: 0.62rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* Onboarding Enhanced — Tag Pills */
+.ob-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin: 10px 0 0;
+}
+
+.ob-tag {
+    font-size: 0.65rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--accent-color, #00F0FF);
+    background: rgba(0, 240, 255, 0.07);
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+}
+
+/* Onboarding Enhanced — Feature Tour Grid */
+.ob-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.ob-feature-card {
+    background: rgba(0, 240, 255, 0.04);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+    cursor: default;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: ob-card-in 0.35s ease forwards;
+}
+
+.ob-feature-card:hover {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.45);
+    transform: translateY(-2px);
+}
+
+@keyframes ob-card-in {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ob-feature-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.ob-feature-name {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-color, #00F0FF);
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ob-feature-desc {
+    font-size: 0.6rem;
+    opacity: 0.65;
+    line-height: 1.4;
+    display: block;
+}
+
 /* Warpinator UI Custom Enhancements */
 .cancel-transfer-btn {
     background: transparent;
