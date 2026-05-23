@@ -3804,6 +3804,9 @@ function switchTerminalSession(id) {
     const session = terminalSessions.find(s => s.id === id);
     if (!session) return;
 
+    // Clear any pending autocomplete from the previous session
+    if (typeof clearAutocompleteGhost === "function") clearAutocompleteGhost();
+
     activeTerminalSessionId = id;
     ptySessionId = id; // update for backwards compatibility
 

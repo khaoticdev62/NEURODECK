@@ -19,6 +19,16 @@ pub trait LlmProvider: Send + Sync {
         &self,
         text: &str,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>>;
+
+    /// Send a chat message with an optional base64-encoded image attachment.
+    /// Returns the model's full text response (non-streaming).
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+        image_base64: Option<&str>,
+        image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>>;
 }
 
 pub struct GeminiProvider {
@@ -322,6 +332,95 @@ impl LlmProvider for GeminiProvider {
             Err("No embedding values returned".to_string())
         })
     }
+
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+        image_base64: Option<&str>,
+        image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let api_key = match self.get_api_key() {
+            Ok(key) => key,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let model = self.model.clone();
+        let prompt_str = prompt.to_string();
+        let sys_str = system_prompt.to_string();
+        let img_b64 = image_base64.map(|s| s.to_string());
+        let img_mime = image_mime.map(|s| s.to_string()).unwrap_or_else(|| "image/jpeg".to_string());
+
+        Box::pin(async move {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+                model, api_key
+            );
+
+            // Build parts: optionally include image first, then text prompt
+            let mut parts: Vec<GeminiPart> = Vec::new();
+            if let Some(b64) = img_b64 {
+                parts.push(GeminiPart {
+                    text: None,
+                    inline_data: Some(GeminiInlineData {
+                        mime_type: img_mime,
+                        data: b64,
+                    }),
+                });
+            }
+            parts.push(GeminiPart {
+                text: Some(prompt_str),
+                inline_data: None,
+            });
+
+            let system_instruction = if !sys_str.is_empty() {
+                Some(GeminiSystemInstruction {
+                    parts: vec![GeminiPart {
+                        text: Some(sys_str),
+                        inline_data: None,
+                    }],
+                })
+            } else {
+                None
+            };
+
+            let request_body = GeminiRequest {
+                contents: vec![GeminiContent { parts }],
+                system_instruction,
+            };
+
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Request failed: {}", e))?;
+
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Gemini vision error ({}): {}", status, err_text));
+            }
+
+            let response_body = res.json::<GeminiResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            if let Some(candidates) = response_body.candidates {
+                if let Some(candidate) = candidates.first() {
+                    if let Some(content) = &candidate.content {
+                        if let Some(parts) = &content.parts {
+                            let text: String = parts.iter()
+                                .filter_map(|p| p.text.clone())
+                                .collect();
+                            return Ok(text);
+                        }
+                    }
+                }
+            }
+
+            Err("No text returned from vision request".to_string())
+        })
+    }
 }
 
 pub struct OllamaProvider {
@@ -432,6 +531,43 @@ impl LlmProvider for OllamaProvider {
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
         Box::pin(async move {
             Err("Embeddings not supported by Ollama provider yet".to_string())
+        })
+    }
+
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+        _image_base64: Option<&str>,
+        _image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let prompt_str = prompt.to_string();
+        let sys_str = system_prompt.to_string();
+        let url = format!("{}/api/generate", self.base_url.trim_end_matches('/'));
+        let model = self.model.clone();
+        Box::pin(async move {
+            // Text-only for Ollama (no vision support); system prompt forwarded
+            let request_body = OllamaRequest {
+                model,
+                prompt: prompt_str,
+                system: sys_str,
+                stream: false,
+            };
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Ollama error ({}): {}", status, err_text));
+            }
+            let response = res.json::<OllamaResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            Ok(response.response)
         })
     }
 }
