@@ -1,4 +1,4 @@
-# package_release.ps1 — Package and optionally sign NEURODECK release artifacts
+# package_release.ps1 - Package and optionally sign NEURODECK release artifacts
 #
 # CODE SIGNING (optional but required to avoid Windows SmartScreen):
 #   Set $env:NEURODECK_CERT_THUMBPRINT to your certificate thumbprint before running.
@@ -48,8 +48,8 @@ Write-Output "Building Tauri app in release mode..."
 npx tauri build
 
 # ── 3. Locate outputs ───────────────────────────────────────────────────────
-$binaryPath = "src-tauri/target/release/app.exe"
-$setupPath  = "src-tauri/target/release/bundle/nsis/neurodeck_1.0.0_x64-setup.exe"
+$binaryPath = "target/release/app.exe"
+$setupPath  = "target/release/bundle/nsis/neurodeck_1.0.0_x64-setup.exe"
 
 if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found: $binaryPath" }
 if (-not (Test-Path $setupPath))  { Write-Error "Installer not found: $setupPath" }
@@ -57,7 +57,7 @@ if (-not (Test-Path $setupPath))  { Write-Error "Installer not found: $setupPath
 # ── 4. Sign the installer (before copying) ──────────────────────────────────
 if (-not $canSign) {
     Write-Warning "==================================================================="
-    Write-Warning "UNSIGNED BUILD — Windows SmartScreen will block first-run for users."
+    Write-Warning "UNSIGNED BUILD - Windows SmartScreen will block first-run for users."
     Write-Warning "Set NEURODECK_CERT_THUMBPRINT to enable signing."
     Write-Warning "==================================================================="
 }
@@ -99,5 +99,5 @@ Write-Output "  Installer: neurodeck_installer.exe"
 if ($canSign) {
     Write-Output "  Signed:    YES (cert $certThumbprint)"
 } else {
-    Write-Output "  Signed:    NO  — set NEURODECK_CERT_THUMBPRINT for signed builds"
+    Write-Output "  Signed:    NO  - set NEURODECK_CERT_THUMBPRINT for signed builds"
 }
