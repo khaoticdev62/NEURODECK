@@ -414,6 +414,12 @@ if (!window.__TAURI_INTERNALS__) {
                 return "MOCK_GEMINI_API_KEY";
             case 'test_llm_connection':
                 return "Mock LLM Connection Successful!";
+            case 'open_external':
+            case 'open_url':
+                console.log("[Mock] open_external:", args?.url);
+                return;
+            case 'install_bmad_to_dir':
+                return `BMAD installed to ${args?.targetDir} (_bmad/ + .claude/skills/ with 44 skill sets) [MOCK]`;
             case 'get_context_stats':
                 return {
                     active_model: "llama2 (mock)",
@@ -1241,7 +1247,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             
                             <!-- Active IFrame -->
-                            <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+                            <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"></iframe>
 
                             <!-- Blocked / Error Screen -->
                             <div class="browser-blocked-screen hidden" id="browser-blocked-screen">
@@ -1494,319 +1500,400 @@ document.querySelector('#app').innerHTML = `
             </div>
         </aside>
 
-        <!-- Settings Modal Overlay -->
+        <!-- Settings Modal Overlay — Apple TV Style -->
         <div class="settings-overlay" id="settings-overlay">
             <div class="settings-modal-card">
-                <div class="settings-modal-header">
-                    <h3>SETTINGS</h3>
-                    <button class="sidebar-toggle-btn" id="close-settings-x">✕</button>
-                </div>
-                <div class="settings-modal-content" style="max-height: 70vh; overflow-y: auto;">
-                    <div class="ssh-panel-header" style="margin-top: 0; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">LLM PROVIDER CONFIGURATION</div>
-                    <div class="setting-field-group">
-                        <label for="llm-provider-select">LLM Provider:</label>
-                        <select id="llm-provider-select" class="canvas-lang-select" style="width:100%; box-sizing:border-box; background:#1a242f; color:#e2e8f0; border:1px solid var(--border-color); border-radius:4px; padding:6px;">
-                            <option value="gemini">Google Gemini</option>
-                            <option value="ollama">Ollama (Local/Remote)</option>
-                        </select>
+
+                <!-- ── Sidebar nav ── -->
+                <nav class="stv-sidebar">
+                    <div class="stv-sidebar-brand">
+                        <div class="stv-sidebar-brand-title">NEURODECK</div>
+                        <div class="stv-sidebar-brand-sub">SYSTEM PREFERENCES</div>
                     </div>
-                    <div class="setting-field-group" id="settings-gemini-group">
-                        <label for="settings-gemini-key">Gemini API Key:</label>
-                        <input type="password" id="settings-gemini-key" class="tunnel-text-input" placeholder="Enter Gemini API key" style="width:100%; box-sizing:border-box;">
-                        <label for="settings-gemini-model" style="margin-top: 8px;">Gemini Model:</label>
-                        <input type="text" id="settings-gemini-model" class="tunnel-text-input" placeholder="gemini-1.5-flash" style="width:100%; box-sizing:border-box;">
-                    </div>
-                    <div class="setting-field-group" id="settings-ollama-group" style="display: none;">
-                        <label for="settings-ollama-url">Ollama Base URL:</label>
-                        <input type="text" id="settings-ollama-url" class="tunnel-text-input" placeholder="http://localhost:11434" style="width:100%; box-sizing:border-box;">
-                        <label for="settings-ollama-model" style="margin-top: 8px;">Ollama Model:</label>
-                        <input type="text" id="settings-ollama-model" class="tunnel-text-input" placeholder="llama2" style="width:100%; box-sizing:border-box;">
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button class="canvas-btn" id="settings-test-connection-btn" style="flex: 1; height: 32px; padding: 0;">Test Connection</button>
-                        <button class="send-prompt-btn" id="settings-save-llm-btn" style="margin: 0; flex: 1; height: 32px; padding: 0; justify-content: center;">Save & Apply</button>
-                    </div>
-                    <div id="settings-llm-status" style="font-size: 0.8rem; margin-top: -12px; margin-bottom: 15px; opacity: 0.8; font-family: var(--font-mono); min-height: 15px;"></div>
-                    
-                    <!-- Ollama Models section -->
-                    <div id="settings-ollama-models-section" style="display: none; border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">OLLAMA MODELS</div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="settings-ollama-pull-input" class="tunnel-text-input" placeholder="e.g. llama3.2" style="flex: 1; margin: 0; box-sizing: border-box;">
-                            <button class="send-prompt-btn" id="settings-ollama-pull-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 12px;">Pull Model</button>
-                        </div>
-                        <div id="settings-ollama-pull-progress-container" style="display: none; margin-bottom: 10px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; font-family: var(--font-mono);">
-                                <span id="settings-ollama-pull-status">Downloading...</span>
-                                <span id="settings-ollama-pull-percent">0%</span>
-                            </div>
-                            <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
-                                <div id="settings-ollama-pull-bar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.1s ease;"></div>
+                    <button class="stv-nav-item active" data-panel="sp-general"><span class="stv-nav-icon">⚡</span> General</button>
+                    <button class="stv-nav-item" data-panel="sp-ai"><span class="stv-nav-icon">🤖</span> AI Model</button>
+                    <button class="stv-nav-item" data-panel="sp-appearance"><span class="stv-nav-icon">🎨</span> Appearance</button>
+                    <button class="stv-nav-item" data-panel="sp-terminal"><span class="stv-nav-icon">⌨️</span> Terminal</button>
+                    <button class="stv-nav-item" data-panel="sp-extensions"><span class="stv-nav-icon">🧩</span> Extensions</button>
+                    <button class="stv-nav-item" data-panel="sp-memory"><span class="stv-nav-icon">🧠</span> Memory</button>
+                    <button class="stv-nav-item" data-panel="sp-network"><span class="stv-nav-icon">🌐</span> Network</button>
+                    <button class="stv-nav-item" data-panel="sp-voice"><span class="stv-nav-icon">🎙️</span> Voice</button>
+                    <div class="stv-nav-spacer"></div>
+                </nav>
+
+                <!-- ── Content panels ── -->
+                <div class="stv-content-area">
+
+                    <!-- ░ General ░ -->
+                    <div class="settings-panel active" id="sp-general">
+                        <p class="stv-section-title">General</p>
+                        <p class="stv-section-sub">Persona, theme, font, and display preferences.</p>
+
+                        <div class="stv-group-label">AI Persona</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">Active Persona</span>
+                                <select id="persona-select" style="flex:1;"></select>
                             </div>
                         </div>
-                        <div id="settings-ollama-models-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
-                            <div style="opacity: 0.5; font-style: italic;">Loading models...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="ssh-panel-header" style="margin-top: 15px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">SYSTEM PREFERENCES</div>
-                    <div class="setting-field-group">
-                        <label for="persona-select">Persona:</label>
-                        <select id="persona-select"></select>
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="theme-select">Theme:</label>
-                        <select id="theme-select"></select>
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="font-select">Font Style:</label>
-                        <select id="font-select">
-                            <option value="inter">Inter (Modern Clean)</option>
-                            <option value="outfit">Outfit (Premium Rounded)</option>
-                            <option value="jetbrains">JetBrains Mono (Sleek Coding)</option>
-                            <option value="vt323">VT323 (Retro Phosphor)</option>
-                            <option value="sharetech">Share Tech Mono (Futuristic Sci-Fi)</option>
-                            <option value="orbitron">Orbitron (Gamer HUD)</option>
-                            <option value="pressstart">Press Start 2P (8-Bit Arcade)</option>
-                        </select>
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="shell-select">Terminal Shell:</label>
-                        <select id="shell-select">
-                            <option value="default">Default</option>
-                            <option value="/bin/bash">/bin/bash</option>
-                            <option value="/bin/zsh">/bin/zsh</option>
-                            <option value="/bin/sh">/bin/sh</option>
-                            <option value="powershell.exe">powershell.exe</option>
-                            <option value="cmd.exe">cmd.exe</option>
-                            <option value="custom">Custom...</option>
-                        </select>
-                    </div>
-                    <div class="setting-field-group" id="custom-shell-group" style="display: none;">
-                        <label for="custom-shell-input">Custom Shell Path:</label>
-                        <input type="text" id="custom-shell-input" class="tunnel-text-input" placeholder="/bin/zsh" style="width:100%; box-sizing:border-box;">
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="term-fontsize-slider">Terminal Font Size (<span id="term-fontsize-val">14px</span>):</label>
-                        <input type="range" id="term-fontsize-slider" min="10" max="24" value="14" step="1" style="width: 100%; accent-color: var(--accent-color);">
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="term-scrollback-input">Terminal Scrollback Limit:</label>
-                        <input type="number" id="term-scrollback-input" min="500" max="10000" value="2000" class="tunnel-text-input" style="width:100%; box-sizing:border-box;">
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="bg-url-input">Custom Background URL:</label>
-                        <input type="text" id="bg-url-input" class="tunnel-text-input" placeholder="https://example.com/image.jpg" style="width:100%; box-sizing:border-box;">
-                    </div>
-                    <div class="setting-field-group">
-                        <label>Background Presets:</label>
-                        <div class="preset-bgs" style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-                            <button class="canvas-btn bg-preset-btn" data-url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800" style="padding: 4px 8px; font-size: 0.75rem;">Cyber Abstract</button>
-                            <button class="canvas-btn bg-preset-btn" data-url="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=800" style="padding: 4px 8px; font-size: 0.75rem;">Neon Grid</button>
-                            <button class="canvas-btn bg-preset-btn" data-url="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800" style="padding: 4px 8px; font-size: 0.75rem;">Sci-Fi HUD</button>
-                            <button class="canvas-btn bg-preset-btn" data-url="" style="padding: 4px 8px; font-size: 0.75rem;">None</button>
-                        </div>
-                    </div>
-                    <div class="setting-field-group">
-                        <label for="bg-opacity-slider">Background Opacity (<span id="bg-opacity-val">10%</span>):</label>
-                        <input type="range" id="bg-opacity-slider" min="0" max="50" value="10" style="width: 100%; accent-color: var(--accent-color);">
-                    </div>
-                    <div class="setting-field-group" style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
-                        <label style="margin-bottom:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" id="scanlines-toggle" style="accent-color: var(--accent-color);">
-                            CRT Scanlines
-                        </label>
-                        <label style="margin-bottom:0; display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" id="flicker-toggle" style="accent-color: var(--accent-color);">
-                            CRT Flicker
-                        </label>
-                    </div>
-                    <div class="setting-field-group" style="margin-top: 20px;">
-                        <label>SSH Saved Profiles</label>
-                        <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list">
-                            <div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>
-                        </div>
-                        <button class="canvas-btn" id="settings-clear-ssh-profiles" style="margin-top:8px;">Clear All SSH Profiles</button>
-                    </div>
-                    <div class="setting-field-group" style="margin-top: 20px;">
-                        <label>FTP Saved Profiles</label>
-                        <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list">
-                            <div class="ssh-no-profiles">No saved profiles. Use the FTP tab to add profiles.</div>
-                        </div>
-                        <button class="canvas-btn" id="settings-clear-ftp-profiles" style="margin-top:8px;">Clear All FTP Profiles</button>
-                    </div>
-                    <div class="setting-field-group" style="margin-top: 20px;">
-                        <label>SFTP Saved Profiles</label>
-                        <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list">
-                            <div class="ssh-no-profiles">No saved profiles. Use the SFTP tab to add profiles.</div>
-                        </div>
-                        <button class="canvas-btn" id="settings-clear-sftp-profiles" style="margin-top:8px;">Clear All SFTP Profiles</button>
-                    </div>
-                    
-                    <!-- Custom Themes section -->
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">CUSTOM THEMES</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div class="setting-field-group" style="margin-bottom: 8px;">
-                            <label for="ct-name">Theme Name:</label>
-                            <input type="text" id="ct-name" class="tunnel-text-input" placeholder="e.g. Vapor Wave" style="width:100%; box-sizing:border-box; margin:0;">
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Background</label>
-                                <input type="color" id="ct-bg" value="#050505" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+
+                        <div class="stv-group-label">Theme &amp; Font</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">Color Theme</span>
+                                <select id="theme-select" style="flex:1;"></select>
                             </div>
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Foreground</label>
-                                <input type="color" id="ct-fg" value="#D9F7FF" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Accent</label>
-                                <input type="color" id="ct-accent" value="#00F0FF" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Response</label>
-                                <input type="color" id="ct-response" value="#00FF88" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Warning</label>
-                                <input type="color" id="ct-warning" value="#FFB000" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:3px;">
-                                <label style="font-size:0.75rem; opacity:0.7;">Error</label>
-                                <input type="color" id="ct-error" value="#FF3C5A" style="width:100%; height:30px; border:1px solid var(--border-color); border-radius:4px; background:none; cursor:pointer; padding:2px;">
+                            <div class="stv-row">
+                                <span class="stv-row-label">UI Font</span>
+                                <select id="font-select" style="flex:1;">
+                                    <option value="inter">Inter (Modern Clean)</option>
+                                    <option value="outfit">Outfit (Premium Rounded)</option>
+                                    <option value="jetbrains">JetBrains Mono (Sleek Coding)</option>
+                                    <option value="vt323">VT323 (Retro Phosphor)</option>
+                                    <option value="sharetech">Share Tech Mono (Futuristic Sci-Fi)</option>
+                                    <option value="orbitron">Orbitron (Gamer HUD)</option>
+                                    <option value="pressstart">Press Start 2P (8-Bit Arcade)</option>
+                                </select>
                             </div>
                         </div>
-                        <div id="ct-preview" style="height:20px; border-radius:4px; margin-bottom:10px; display:flex; overflow:hidden;">
-                            <div id="ct-preview-bg" style="flex:2; background:#050505;"></div>
-                            <div id="ct-preview-accent" style="flex:1; background:#00F0FF;"></div>
-                            <div id="ct-preview-response" style="flex:1; background:#00FF88;"></div>
-                            <div id="ct-preview-warning" style="flex:0.5; background:#FFB000;"></div>
-                            <div id="ct-preview-error" style="flex:0.5; background:#FF3C5A;"></div>
-                        </div>
-                        <button class="send-prompt-btn" id="ct-save-btn" style="margin:0 0 12px 0; height:32px; justify-content:center; padding:0 12px; width:100%;">Save Theme</button>
-                        <div id="ct-status" style="font-size:0.75rem; margin-bottom:8px; font-family:var(--font-mono); color:var(--response-color); min-height:14px;"></div>
-                        <div style="font-weight:bold; font-size:0.85rem; margin-bottom:8px; color:var(--accent-color);">SAVED CUSTOM THEMES</div>
-                        <div id="ct-list" style="display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto; font-family:var(--font-mono); font-size:0.8rem;">
-                            <div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>
+
+                        <div class="stv-group-label">CRT Effects</div>
+                        <div class="stv-card">
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Scanlines</div><div class="stv-toggle-desc">Overlay horizontal CRT scan-line texture</div></div>
+                                <input type="checkbox" id="scanlines-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Screen Flicker</div><div class="stv-toggle-desc">Subtle phosphor flicker animation</div></div>
+                                <input type="checkbox" id="flicker-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">PLUGINS MANAGER</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">LUA PLUGINS</div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="settings-plugin-install-url" class="tunnel-text-input" placeholder="Enter raw Lua plugin URL" style="flex: 1; margin: 0; box-sizing: border-box;">
-                            <button class="send-prompt-btn" id="settings-plugin-install-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 12px;">Install</button>
+                    <!-- ░ AI Model ░ -->
+                    <div class="settings-panel" id="sp-ai">
+                        <p class="stv-section-title">AI Model</p>
+                        <p class="stv-section-sub">Configure your LLM provider, credentials, and local models.</p>
+
+                        <div class="stv-group-label">Provider</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">LLM Provider</span>
+                                <select id="llm-provider-select" style="flex:1;">
+                                    <option value="gemini">Google Gemini</option>
+                                    <option value="ollama">Ollama (Local / Remote)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                            <button class="canvas-btn" id="settings-plugin-new-btn" style="flex: 1; padding: 4px 8px; font-size: 0.75rem;">+ New Plugin</button>
-                            <button class="canvas-btn" id="settings-plugin-reload-btn" style="flex: 1; padding: 4px 8px; font-size: 0.75rem;">↺ Reload Plugins</button>
+
+                        <div class="stv-group-label">Gemini Credentials</div>
+                        <div class="stv-card" id="settings-gemini-group">
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>API Key</label>
+                                <input type="password" id="settings-gemini-key" placeholder="AIzaSy…">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:0;">
+                                <label>Model ID</label>
+                                <input type="text" id="settings-gemini-model" placeholder="gemini-1.5-flash">
+                            </div>
                         </div>
-                        <div id="settings-plugin-status" style="font-size: 0.75rem; margin-bottom: 8px; font-family: var(--font-mono); color: var(--response-color); min-height: 15px;"></div>
-                        <div id="settings-plugins-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
-                            <div style="opacity: 0.5; font-style: italic;">Loading plugins...</div>
+
+                        <div class="stv-group-label" style="display:none;" id="stv-ollama-label">Ollama Server</div>
+                        <div class="stv-card" id="settings-ollama-group" style="display:none;">
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>Base URL</label>
+                                <input type="text" id="settings-ollama-url" placeholder="http://localhost:11434">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:0;">
+                                <label>Model Name</label>
+                                <input type="text" id="settings-ollama-model" placeholder="llama3.2:1b">
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">MY CUSTOM PERSONAS</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">ADD CUSTOM PERSONA</div>
-                        <div class="setting-field-group" style="margin-bottom: 8px;">
-                            <label for="settings-persona-name">Name:</label>
-                            <input type="text" id="settings-persona-name" class="tunnel-text-input" placeholder="e.g. GamerBot" style="width: 100%; box-sizing: border-box; margin: 0;">
+
+                        <div style="display:flex;gap:10px;margin:14px 0 4px;">
+                            <button class="stv-btn-ghost" id="settings-test-connection-btn" style="flex:1;">Test Connection</button>
+                            <button class="stv-btn-primary" id="settings-save-llm-btn" style="flex:1;">Save &amp; Apply</button>
                         </div>
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="settings-persona-prompt">System Prompt:</label>
-                            <textarea id="settings-persona-prompt" class="tunnel-text-input" placeholder="e.g. You are a retro gamer bot..." rows="3" style="width: 100%; box-sizing: border-box; resize: vertical; margin: 0; font-family: inherit; font-size: inherit; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #e2e8f0; border-radius: 4px; padding: 6px;"></textarea>
-                        </div>
-                        <button class="send-prompt-btn" id="settings-persona-create-btn" style="margin: 0 0 12px 0; height: 32px; justify-content: center; padding: 0 12px; width: 100%;">Create Persona</button>
-                        <div id="settings-persona-status" style="font-size: 0.75rem; margin-bottom: 8px; font-family: var(--font-mono); color: var(--response-color); min-height: 15px;"></div>
-                        <div style="font-weight: bold; font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-color);">MANAGE CUSTOM PERSONAS</div>
-                        <div id="settings-personas-list-custom" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
-                            <div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>
+                        <div id="settings-llm-status" class="stv-status-line"></div>
+
+                        <div class="stv-group-label">Local Models</div>
+                        <div class="stv-card" id="settings-ollama-models-section" style="display:none;">
+                            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                                <input type="text" id="settings-ollama-pull-input" placeholder="e.g. llama3.2:1b" style="flex:1;">
+                                <button class="stv-btn-primary" id="settings-ollama-pull-btn">Pull</button>
+                            </div>
+                            <div id="settings-ollama-pull-progress-container" style="display:none;margin-bottom:10px;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;font-family:var(--font-mono);">
+                                    <span id="settings-ollama-pull-status">Downloading…</span>
+                                    <span id="settings-ollama-pull-percent">0%</span>
+                                </div>
+                                <div class="stv-progress-bar"><div id="settings-ollama-pull-bar" class="stv-progress-fill" style="width:0%;"></div></div>
+                            </div>
+                            <div id="settings-ollama-models-list" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
+                                <span style="opacity:0.4;font-style:italic;">Loading models…</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- MCP Server section -->
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">MCP SERVER</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
-                            Expose NEURODECK as a <strong>Model Context Protocol</strong> server so Claude Desktop, Continue, or any MCP client can invoke tools (chat, run shell, run code, read/write files) directly.
-                        </div>
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="mcp-port-input">Port:</label>
-                            <input type="number" id="mcp-port-input" class="tunnel-text-input" value="13337" min="1024" max="65535" style="width: 100px; box-sizing: border-box; margin: 0;">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <button class="send-prompt-btn" id="mcp-start-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Start MCP Server</button>
-                            <button class="canvas-btn" id="mcp-stop-btn" style="flex: 1; height: 32px; padding: 0;" disabled>Stop Server</button>
-                        </div>
-                        <div id="mcp-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
-                        <div id="mcp-tools-info" style="display: none; margin-top: 10px; padding: 8px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.15); border-radius: 4px; font-size: 0.78rem; font-family: var(--font-mono); line-height: 1.6;">
-                            <strong style="color: var(--accent-color);">Available Tools</strong><br>
-                            neurodeck_chat &nbsp;·&nbsp; run_shell &nbsp;·&nbsp; run_code<br>
-                            read_file &nbsp;·&nbsp; write_file &nbsp;·&nbsp; get_status
-                        </div>
-                        <div id="mcp-claude-config" style="display: none; margin-top: 10px;">
-                            <div style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 4px;">Add to Claude Desktop config (claude_desktop_config.json):</div>
-                            <pre id="mcp-claude-config-snippet" style="margin: 0; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.72rem; overflow-x: auto; white-space: pre; color: var(--response-color);"></pre>
-                        </div>
-                    </div>
-                    <!-- Personal Knowledge Base section -->
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">PERSONAL KNOWLEDGE BASE</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
-                            Index a local folder of text files (.txt, .md, .rst, .log) into the RAG vector memory so the AI can reference your documents during chat.
-                        </div>
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="rag-folder-input">Folder Path:</label>
-                            <input type="text" id="rag-folder-input" class="tunnel-text-input" placeholder="/home/deck/notes" style="flex: 1; box-sizing: border-box; margin: 0;">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
-                            <button class="send-prompt-btn" id="rag-index-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Index Folder</button>
-                            <button class="canvas-btn" id="rag-clear-btn" style="flex: 0 0 auto; height: 32px; padding: 0 14px;">Clear Index</button>
-                        </div>
-                        <div id="rag-progress-container" style="display: none; margin-bottom: 8px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px; font-family: var(--font-mono);">
-                                <span id="rag-progress-label">Indexing...</span>
-                                <span id="rag-progress-pct">0%</span>
+                    <!-- ░ Appearance ░ -->
+                    <div class="settings-panel" id="sp-appearance">
+                        <p class="stv-section-title">Appearance</p>
+                        <p class="stv-section-sub">Background, custom themes, and visual tuning.</p>
+
+                        <div class="stv-group-label">Background</div>
+                        <div class="stv-card">
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Custom Image URL</label>
+                                <input type="text" id="bg-url-input" placeholder="https://…">
                             </div>
-                            <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
-                                <div id="rag-progress-bar" style="height: 100%; width: 0%; background: var(--accent-color); transition: width 0.2s;"></div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Cyber Abstract</button>
+                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Neon Grid</button>
+                                <button class="stv-btn-ghost bg-preset-btn" data-url="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800" style="font-size:0.72rem;padding:0 10px;height:28px;">Sci-Fi HUD</button>
+                                <button class="stv-btn-ghost bg-preset-btn" data-url="" style="font-size:0.72rem;padding:0 10px;height:28px;">None</button>
+                            </div>
+                            <div class="stv-slider-row">
+                                <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Opacity</span>
+                                <input type="range" id="bg-opacity-slider" min="0" max="50" value="10">
+                                <span class="stv-slider-val" id="bg-opacity-val">10%</span>
                             </div>
                         </div>
-                        <div id="rag-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
-                        <div style="margin-top: 8px; font-size: 0.78rem; opacity: 0.6;">Documents indexed: <span id="rag-doc-count" style="color: var(--accent-color); font-family: var(--font-mono);">0</span></div>
+
+                        <div class="stv-group-label">Custom Theme Builder</div>
+                        <div class="stv-card">
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Theme Name</label>
+                                <input type="text" id="ct-name" placeholder="e.g. Vapor Wave">
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Background</label><input type="color" id="ct-bg" value="#050505" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Foreground</label><input type="color" id="ct-fg" value="#D9F7FF" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Accent</label><input type="color" id="ct-accent" value="#00F0FF" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Response</label><input type="color" id="ct-response" value="#00FF88" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Warning</label><input type="color" id="ct-warning" value="#FFB000" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Error</label><input type="color" id="ct-error" value="#FF3C5A" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
+                            </div>
+                            <div id="ct-preview" style="height:16px;border-radius:6px;margin-bottom:10px;display:flex;overflow:hidden;">
+                                <div id="ct-preview-bg" style="flex:2;background:#050505;"></div>
+                                <div id="ct-preview-accent" style="flex:1;background:#00F0FF;"></div>
+                                <div id="ct-preview-response" style="flex:1;background:#00FF88;"></div>
+                                <div id="ct-preview-warning" style="flex:0.5;background:#FFB000;"></div>
+                                <div id="ct-preview-error" style="flex:0.5;background:#FF3C5A;"></div>
+                            </div>
+                            <button class="stv-btn-primary" id="ct-save-btn" style="width:100%;justify-content:center;">Save Theme</button>
+                            <div id="ct-status" class="stv-status-line"></div>
+                            <div class="stv-group-label" style="margin-top:14px;">Saved Custom Themes</div>
+                            <div id="ct-list" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
+                                <span style="opacity:0.4;font-style:italic;">No custom themes yet.</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Whisper STT section -->
-                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">WHISPER OFFLINE STT</div>
-                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
-                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
-                            Use <strong>whisper.cpp</strong> for fully offline, on-device speech recognition. When configured, the 🎙️ mic button routes through whisper instead of the cloud API.
+                    <!-- ░ Terminal ░ -->
+                    <div class="settings-panel" id="sp-terminal">
+                        <p class="stv-section-title">Terminal</p>
+                        <p class="stv-section-sub">Shell, display, and saved connection profiles.</p>
+
+                        <div class="stv-group-label">Shell &amp; Display</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">Shell</span>
+                                <select id="shell-select" style="flex:1;">
+                                    <option value="default">Default</option>
+                                    <option value="/bin/bash">/bin/bash</option>
+                                    <option value="/bin/zsh">/bin/zsh</option>
+                                    <option value="/bin/sh">/bin/sh</option>
+                                    <option value="powershell.exe">powershell.exe</option>
+                                    <option value="cmd.exe">cmd.exe</option>
+                                    <option value="custom">Custom…</option>
+                                </select>
+                            </div>
+                            <div id="custom-shell-group" style="display:none;">
+                                <input type="text" id="custom-shell-input" placeholder="/bin/zsh" style="width:100%;margin-top:8px;">
+                            </div>
+                            <div class="stv-slider-row" style="margin-top:12px;">
+                                <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Font Size</span>
+                                <input type="range" id="term-fontsize-slider" min="10" max="24" value="14" step="1">
+                                <span class="stv-slider-val" id="term-fontsize-val">14px</span>
+                            </div>
+                            <div class="stv-row" style="margin-top:10px;">
+                                <span class="stv-row-label">Scrollback</span>
+                                <input type="number" id="term-scrollback-input" min="500" max="10000" value="2000" style="flex:1;">
+                            </div>
                         </div>
-                        <div style="font-size: 0.75rem; opacity: 0.55; margin-bottom: 10px; font-family: var(--font-mono); line-height: 1.5; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 3px;">
-                            Install: <span style="color: var(--accent-color);">git clone https://github.com/ggerganov/whisper.cpp &amp;&amp; cmake -B build &amp;&amp; cmake --build build</span><br>
-                            Model:&nbsp;&nbsp; <span style="color: var(--accent-color);">bash models/download-ggml-model.sh base.en</span>
+
+                        <div class="stv-group-label">SSH Profiles</div>
+                        <div class="stv-card">
+                            <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                            </div>
+                            <button class="stv-btn-ghost" id="settings-clear-ssh-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SSH Profiles</button>
                         </div>
-                        <div class="setting-field-group" style="margin-bottom: 8px;">
-                            <label for="whisper-binary-input" style="min-width: 70px;">Binary:</label>
-                            <input type="text" id="whisper-binary-input" class="tunnel-text-input" placeholder="whisper-cli  (or full path)" style="flex: 1; box-sizing: border-box; margin: 0;">
+
+                        <div class="stv-group-label">FTP Profiles</div>
+                        <div class="stv-card">
+                            <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                            </div>
+                            <button class="stv-btn-ghost" id="settings-clear-ftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All FTP Profiles</button>
                         </div>
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="whisper-model-input" style="min-width: 70px;">Model:</label>
-                            <input type="text" id="whisper-model-input" class="tunnel-text-input" placeholder="/path/to/ggml-base.en.bin" style="flex: 1; box-sizing: border-box; margin: 0;">
+
+                        <div class="stv-group-label">SFTP Profiles</div>
+                        <div class="stv-card">
+                            <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                            </div>
+                            <button class="stv-btn-ghost" id="settings-clear-sftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SFTP Profiles</button>
                         </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <button class="send-prompt-btn" id="whisper-save-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Save Config</button>
-                            <button class="canvas-btn" id="whisper-test-btn" style="flex: 1; height: 32px; padding: 0;">Test Transcription</button>
-                        </div>
-                        <div id="whisper-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
                     </div>
-                </div>
-                <div class="settings-modal-footer">
-                    <button class="settings-close-btn" id="close-settings">Close</button>
-                </div>
+
+                    <!-- ░ Extensions ░ -->
+                    <div class="settings-panel" id="sp-extensions">
+                        <p class="stv-section-title">Extensions</p>
+                        <p class="stv-section-sub">Lua plugins and the BMAD AI framework installer.</p>
+
+                        <div class="stv-group-label">Lua Plugins</div>
+                        <div class="stv-card">
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <input type="text" id="settings-plugin-install-url" placeholder="Raw URL to .lua plugin" style="flex:1;">
+                                <button class="stv-btn-primary" id="settings-plugin-install-btn">Install</button>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <button class="stv-btn-ghost" id="settings-plugin-new-btn" style="flex:1;font-size:0.75rem;">+ New Plugin</button>
+                                <button class="stv-btn-ghost" id="settings-plugin-reload-btn" style="flex:1;font-size:0.75rem;">↺ Reload All</button>
+                            </div>
+                            <div id="settings-plugin-status" class="stv-status-line"></div>
+                            <div id="settings-plugins-list" style="display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
+                                <span style="opacity:0.4;font-style:italic;">Loading…</span>
+                            </div>
+                        </div>
+
+                        <div class="stv-group-label">BMAD Method v6.7.1</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Installs <code style="color:var(--accent-color);">_bmad/</code> + <code style="color:var(--accent-color);">.claude/skills/</code> (44 Claude Code skills) into any project — no Node.js required.</p>
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Project Directory</label>
+                                <input type="text" id="bmad-target-dir" placeholder="/home/deck/myproject  or  C:\Projects\myapp">
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button class="stv-btn-primary" id="bmad-install-btn" style="flex:1;">Install BMAD</button>
+                                <button class="stv-btn-ghost" id="bmad-docs-btn">Docs ↗</button>
+                            </div>
+                            <div id="bmad-status-line" class="stv-status-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- ░ Memory ░ -->
+                    <div class="settings-panel" id="sp-memory">
+                        <p class="stv-section-title">Memory</p>
+                        <p class="stv-section-sub">RAG knowledge base and custom AI personas.</p>
+
+                        <div class="stv-group-label">Personal Knowledge Base</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Index a local folder of .txt / .md / .rst files so the AI can reference them during chat.</p>
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Folder Path</label>
+                                <input type="text" id="rag-folder-input" placeholder="/home/deck/notes">
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <button class="stv-btn-primary" id="rag-index-btn" style="flex:1;">Index Folder</button>
+                                <button class="stv-btn-ghost" id="rag-clear-btn">Clear Index</button>
+                            </div>
+                            <div id="rag-progress-container" style="display:none;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;font-family:var(--font-mono);">
+                                    <span id="rag-progress-label">Indexing…</span><span id="rag-progress-pct">0%</span>
+                                </div>
+                                <div class="stv-progress-bar"><div id="rag-progress-bar" class="stv-progress-fill" style="width:0%;"></div></div>
+                            </div>
+                            <div id="rag-status-line" class="stv-status-line"></div>
+                            <p style="margin:8px 0 0;font-size:0.73rem;opacity:0.5;">Documents indexed: <span id="rag-doc-count" style="color:var(--accent-color);font-family:var(--font-mono);">0</span></p>
+                        </div>
+
+                        <div class="stv-group-label">Custom Personas</div>
+                        <div class="stv-card">
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Name</label>
+                                <input type="text" id="settings-persona-name" placeholder="e.g. GamerBot">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>System Prompt</label>
+                                <textarea id="settings-persona-prompt" placeholder="You are a retro gamer bot…" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:var(--fg-color);border-radius:8px;padding:9px 12px;font-family:var(--font-sans);font-size:0.83rem;outline:none;"></textarea>
+                            </div>
+                            <button class="stv-btn-primary" id="settings-persona-create-btn" style="width:100%;justify-content:center;margin-bottom:10px;">Create Persona</button>
+                            <div id="settings-persona-status" class="stv-status-line"></div>
+                            <div id="settings-personas-list-custom" style="display:flex;flex-direction:column;gap:5px;max-height:130px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
+                                <span style="opacity:0.4;font-style:italic;">No custom personas.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ░ Network ░ -->
+                    <div class="settings-panel" id="sp-network">
+                        <p class="stv-section-title">Network</p>
+                        <p class="stv-section-sub">MCP server and remote connection settings.</p>
+
+                        <div class="stv-group-label">MCP Server</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Expose NEURODECK as a <strong>Model Context Protocol</strong> server so Claude Desktop or any MCP client can invoke tools directly.</p>
+                            <div class="stv-row" style="margin-bottom:12px;">
+                                <span class="stv-row-label">Port</span>
+                                <input type="number" id="mcp-port-input" value="13337" min="1024" max="65535" style="width:100px;">
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <button class="stv-btn-primary" id="mcp-start-btn" style="flex:1;">Start MCP Server</button>
+                                <button class="stv-btn-ghost" id="mcp-stop-btn" style="flex:1;" disabled>Stop Server</button>
+                            </div>
+                            <div id="mcp-status-line" class="stv-status-line"></div>
+                            <div id="mcp-tools-info" style="display:none;margin-top:10px;padding:10px;background:rgba(0,240,255,0.04);border:1px solid rgba(0,240,255,0.12);border-radius:8px;font-size:0.75rem;font-family:var(--font-mono);line-height:1.7;">
+                                <strong style="color:var(--accent-color);">Available Tools</strong><br>
+                                neurodeck_chat &nbsp;·&nbsp; run_shell &nbsp;·&nbsp; run_code<br>read_file &nbsp;·&nbsp; write_file &nbsp;·&nbsp; get_status
+                            </div>
+                            <div id="mcp-claude-config" style="display:none;margin-top:10px;">
+                                <p style="font-size:0.72rem;opacity:0.5;margin:0 0 4px;">Add to claude_desktop_config.json:</p>
+                                <pre id="mcp-claude-config-snippet" style="margin:0;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:7px;font-size:0.7rem;overflow-x:auto;white-space:pre;color:var(--response-color);"></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ░ Voice ░ -->
+                    <div class="settings-panel" id="sp-voice">
+                        <p class="stv-section-title">Voice</p>
+                        <p class="stv-section-sub">Offline speech-to-text via whisper.cpp.</p>
+
+                        <div class="stv-group-label">Whisper STT</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">When configured, the 🎙️ button routes through whisper instead of the cloud API for fully offline transcription.</p>
+                            <div style="font-size:0.72rem;opacity:0.45;margin-bottom:12px;font-family:var(--font-mono);line-height:1.6;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:7px;border:1px solid rgba(255,255,255,0.06);">
+                                git clone https://github.com/ggerganov/whisper.cpp<br>
+                                cmake -B build &amp;&amp; cmake --build build<br>
+                                bash models/download-ggml-model.sh base.en
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Binary Path</label>
+                                <input type="text" id="whisper-binary-input" placeholder="whisper-cli  (or full path)">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>Model Path</label>
+                                <input type="text" id="whisper-model-input" placeholder="/path/to/ggml-base.en.bin">
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button class="stv-btn-primary" id="whisper-save-btn" style="flex:1;">Save Config</button>
+                                <button class="stv-btn-ghost" id="whisper-test-btn" style="flex:1;">Test Transcription</button>
+                            </div>
+                            <div id="whisper-status-line" class="stv-status-line"></div>
+                        </div>
+                    </div>
+
+                </div><!-- end stv-content-area -->
+
+                <!-- Close button (floating) -->
+                <button class="stv-close-btn" id="close-settings-x">✕</button>
+                <!-- Legacy close (hidden — JS still binds to it) -->
+                <button id="close-settings" style="display:none;"></button>
+
+                <!-- [legacy content removed — all IDs now live in panels above] -->
+                <div class="settings-modal-content" style="display:none;"></div>
+                <div class="settings-modal-footer"></div>
             </div>
         </div>
 
@@ -2091,14 +2178,17 @@ document.getElementById("shell-select").onchange = function() {
 function toggleSettingsLlmGroups(provider) {
     const geminiGroup = document.getElementById("settings-gemini-group");
     const ollamaGroup = document.getElementById("settings-ollama-group");
+    const ollamaLabel = document.getElementById("stv-ollama-label");
     const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
     if (provider === "gemini") {
         if (geminiGroup) geminiGroup.style.display = "block";
         if (ollamaGroup) ollamaGroup.style.display = "none";
+        if (ollamaLabel) ollamaLabel.style.display = "none";
         if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
     } else {
         if (geminiGroup) geminiGroup.style.display = "none";
         if (ollamaGroup) ollamaGroup.style.display = "block";
+        if (ollamaLabel) ollamaLabel.style.display = "block";
         if (ollamaModelsSec) {
             ollamaModelsSec.style.display = "block";
             refreshOllamaModels();
@@ -2967,6 +3057,19 @@ const settingsOverlay = document.getElementById("settings-overlay");
 const settingsBtn = document.getElementById("settings-btn");
 const closeSettings = document.getElementById("close-settings");
 const closeSettingsX = document.getElementById("close-settings-x");
+
+// ── Apple TV sidebar nav ──────────────────────────────────────────────
+(function initSettingsSidebar() {
+    document.querySelectorAll(".stv-nav-item").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll(".stv-nav-item").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".settings-panel").forEach(p => p.classList.remove("active"));
+            btn.classList.add("active");
+            const panel = document.getElementById(btn.dataset.panel);
+            if (panel) panel.classList.add("active");
+        };
+    });
+})();
 
 settingsBtn.onclick = function() {
     settingsOverlay.classList.add("active");
@@ -4488,7 +4591,10 @@ function renderTerminalTabs() {
     if (!list) return;
 
     list.innerHTML = terminalSessions.map((s, idx) => {
-        const label = `Shell ${idx + 1}`;
+        const shellName = s.shell
+            ? s.shell.replace(/.*[/\\]/, '').replace('.exe','').toUpperCase().slice(0,6)
+            : 'DEFAULT';
+        const label = `${shellName} ${idx + 1}`;
         const activeClass = s.id === activeTerminalSessionId ? "active" : "";
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
@@ -6649,11 +6755,11 @@ function initBrowser() {
                 iframe.classList.remove("hidden");
                 showProgress();
 
-                // Timeout fallback: if iframe doesn't fire load in 12s, assume it's blocked
+                // Timeout fallback: if iframe doesn't fire load in 8s, assume it's blocked
                 loadTimeout = setTimeout(() => {
                     hideProgress(false);
                     showBlockedScreen(url);
-                }, 12000);
+                }, 8000);
 
                 iframe.src = url;
             }
@@ -6680,10 +6786,27 @@ function initBrowser() {
     if (iframe) {
         iframe.addEventListener("load", () => {
             // load fires even on about:blank, so guard against that
-            if (iframe.src && iframe.src !== "about:blank" && iframe.src !== window.location.href) {
-                clearTimeout(loadTimeout);
-                hideProgress(true);
-            }
+            if (!iframe.src || iframe.src === "about:blank" || iframe.src === window.location.href) return;
+            clearTimeout(loadTimeout);
+
+            // Detect X-Frame-Options / CSP block: the load event fires but the
+            // WebView renders an empty document.  Give the renderer one tick to
+            // settle, then check whether we can read any body content.
+            setTimeout(() => {
+                try {
+                    const doc = iframe.contentDocument;
+                    // Accessible empty doc = blocked (site sent X-Frame-Options: DENY)
+                    if (doc && doc.body !== null && doc.body.innerHTML.trim() === '') {
+                        hideProgress(false);
+                        showBlockedScreen(browserHistory[browserHistoryIndex]);
+                    } else {
+                        hideProgress(true);
+                    }
+                } catch (_) {
+                    // SecurityError = cross-origin content actually rendered — all good
+                    hideProgress(true);
+                }
+            }, 150);
         });
         iframe.addEventListener("error", () => {
             clearTimeout(loadTimeout);
@@ -6732,7 +6855,7 @@ function initBrowser() {
                 loadTimeout = setTimeout(() => {
                     hideProgress(false);
                     showBlockedScreen(currentUrl);
-                }, 12000);
+                }, 8000);
                 iframe.classList.remove("hidden");
                 iframe.src = currentUrl;
             }
@@ -8059,6 +8182,41 @@ initCustomPersonas();
 // ==========================================================================
 // WHISPER OFFLINE STT SETTINGS (P17)
 // ==========================================================================
+(function initBmadInstaller() {
+    const targetInput = document.getElementById("bmad-target-dir");
+    const installBtn = document.getElementById("bmad-install-btn");
+    const docsBtn = document.getElementById("bmad-docs-btn");
+    const statusLine = document.getElementById("bmad-status-line");
+    if (!installBtn) return;
+
+    installBtn.onclick = async () => {
+        const dir = targetInput?.value?.trim();
+        if (!dir) {
+            statusLine.style.color = "var(--error-color)";
+            statusLine.textContent = "Error: Enter a target project directory path.";
+            return;
+        }
+        installBtn.disabled = true;
+        statusLine.style.color = "var(--accent-color)";
+        statusLine.textContent = "Installing BMAD framework files...";
+        try {
+            const msg = await invoke("install_bmad_to_dir", { targetDir: dir });
+            statusLine.style.color = "var(--response-color)";
+            statusLine.textContent = "✓ " + msg;
+            addNotification("BMAD Installed", `Framework installed to ${dir}`, "success");
+        } catch (err) {
+            statusLine.style.color = "var(--error-color)";
+            statusLine.textContent = "Error: " + err;
+        } finally {
+            installBtn.disabled = false;
+        }
+    };
+
+    if (docsBtn) {
+        docsBtn.onclick = () => invoke("open_external", { url: "https://bmadcode.com/" }).catch(() => {});
+    }
+})();
+
 (function initWhisperSettings() {
     const binaryInput = document.getElementById("whisper-binary-input");
     const modelInput = document.getElementById("whisper-model-input");
@@ -8739,21 +8897,19 @@ initPromptLab();
 
 // Onboarding Wizard Implementation
 async function checkOnboarding() {
-    // Wait for the boot screen to finish before showing onboarding
+    // Wait for the boot screen to finish — hard timeout (8s) so we never block forever
     await new Promise(resolve => {
-        if (!document.getElementById('boot-overlay')) {
-            resolve();
-        } else {
-            document.addEventListener('neurodeck-boot-complete', resolve, { once: true });
-        }
+        if (!document.getElementById('boot-overlay')) { resolve(); return; }
+        const timer = setTimeout(resolve, 8000);
+        document.addEventListener('neurodeck-boot-complete', () => { clearTimeout(timer); resolve(); }, { once: true });
     });
 
     try {
-        const key = await invoke("get_gemini_api_key");
         const completed = localStorage.getItem("neurodeck_onboarding_complete");
-        if (!key && completed !== "true") {
-            showOnboardingWizard();
-        }
+        if (completed === "true") return; // Already done — skip
+        let hasKey = false;
+        try { hasKey = !!(await invoke("get_gemini_api_key")); } catch (_) {}
+        if (!hasKey) showOnboardingWizard();
     } catch (e) {
         console.error("Failed to check onboarding state:", e);
     }
@@ -8831,21 +8987,36 @@ async function showOnboardingWizard() {
                     
                     <!-- Ollama Container -->
                     <div id="container-ollama" class="provider-setup-container" style="display: none;">
+                        <div id="ob-ollama-install-banner" style="display:none;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.4);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:0.75rem;">
+                            <strong style="color:#ffaa00">Ollama not detected</strong><br>
+                            <span style="opacity:0.85">Ollama must be installed and running before NEURODECK can use it locally.</span><br>
+                            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="onboarding-btn primary" id="ob-btn-install-ollama" style="font-size:0.72rem;padding:5px 12px;">Download Ollama Installer</button>
+                                <button class="onboarding-btn secondary" id="ob-btn-recheck-ollama" style="font-size:0.72rem;padding:5px 12px;">Re-check</button>
+                            </div>
+                        </div>
                         <div class="onboarding-input-wrapper">
                             <label for="ob-ollama-url">OLLAMA BASE URL</label>
                             <input type="text" id="ob-ollama-url" class="onboarding-input" value="http://localhost:11434">
                         </div>
                         <div class="onboarding-input-wrapper">
                             <label for="ob-ollama-model">OLLAMA MODEL NAME</label>
-                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="llama3" placeholder="e.g. llama3, mistral, codegemma">
+                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="llama3.2:1b" placeholder="e.g. llama3.2:1b, mistral, codegemma">
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:4px;align-items:center;flex-wrap:wrap;">
+                            <button class="onboarding-btn secondary" id="ob-btn-pull-model" style="font-size:0.72rem;padding:5px 12px;">Pull Model Now</button>
+                            <span id="ob-pull-status" style="font-size:0.7rem;opacity:0.75;"></span>
                         </div>
                     </div>
                     
                     <div class="onboarding-log-viewport" id="ob-validation-log">
                         <div class="onboarding-log-line">[SYS] Awaiting input credentials...</div>
                     </div>
-                    
-                    <button class="onboarding-btn primary" id="ob-btn-verify" style="margin-left: auto;">Verify & Save</button>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+                        <button class="onboarding-btn secondary" id="ob-btn-skip-setup" style="opacity:0.7;font-size:0.72rem;">Skip — Configure Later</button>
+                        <button class="onboarding-btn primary" id="ob-btn-verify">Verify & Save</button>
+                    </div>
                 </div>
 
                 <!-- Slide 3: Persona & Theme Selection -->
@@ -8934,6 +9105,7 @@ async function showOnboardingWizard() {
     const btnNext = document.getElementById("ob-btn-next");
     const choiceCards = document.querySelectorAll(".onboarding-choice-card");
     const btnVerify = document.getElementById("ob-btn-verify");
+    const btnSkipSetup = document.getElementById("ob-btn-skip-setup");
     const logViewport = document.getElementById("ob-validation-log");
     
     // Step navigation handler
@@ -8963,7 +9135,9 @@ async function showOnboardingWizard() {
         } else {
             btnNext.innerText = "Next";
             btnNext.classList.remove("primary");
-            btnNext.disabled = (currentStep === 2 && !isProviderVerified);
+            // Ollama & skip don't require live verification to advance
+            const needsVerify = currentStep === 2 && !isProviderVerified && selectedProvider !== "ollama";
+            btnNext.disabled = needsVerify;
         }
     }
     
@@ -8998,26 +9172,106 @@ async function showOnboardingWizard() {
         }
     };
     
+    // Skip-setup button — bypass step 2 entirely
+    btnSkipSetup.onclick = () => {
+        logViewport.innerHTML = `<div class="onboarding-log-line" style="color:var(--warning-color)">[SYS] Provider setup skipped. Configure via Settings → LLM Config later.</div>`;
+        isProviderVerified = true;
+        btnNext.disabled = false;
+        btnNext.click();
+    };
+
     // Provider card selections
     choiceCards.forEach(card => {
         card.onclick = () => {
             choiceCards.forEach(c => c.classList.remove("active"));
             card.classList.add("active");
             selectedProvider = card.dataset.provider;
-            
+
             // Toggle provider config DOM displays
             document.getElementById("container-gemini-key").style.display = selectedProvider === "gemini-key" ? "block" : "none";
             document.getElementById("container-gemini-oauth").style.display = selectedProvider === "gemini-oauth" ? "block" : "none";
             document.getElementById("container-ollama").style.display = selectedProvider === "ollama" ? "block" : "none";
-            
-            // Reset verification state since they changed provider selection
-            isProviderVerified = false;
-            btnNext.disabled = true;
-            
+
+            // Ollama doesn't need live verification — unlock Next immediately
+            if (selectedProvider === "ollama") {
+                isProviderVerified = false; // will be unlocked by verify or via save-anyway path
+                btnNext.disabled = false; // allow skip directly for Ollama
+            } else {
+                isProviderVerified = false;
+                btnNext.disabled = true;
+            }
+
             // Reset verification log
             logViewport.innerHTML = `<div class="onboarding-log-line">[SYS] Awaiting input credentials for ${selectedProvider.toUpperCase()}...</div>`;
+
+            // Auto-detect Ollama when that card is selected
+            if (selectedProvider === "ollama") checkOllamaInstalled();
         };
     });
+
+    async function checkOllamaInstalled() {
+        const banner = document.getElementById("ob-ollama-install-banner");
+        if (!banner) return;
+        banner.style.display = "none";
+        try {
+            await invoke("test_llm_connection", {
+                provider: "ollama",
+                model: document.getElementById("ob-ollama-model").value.trim() || "llama3.2:1b",
+                url: document.getElementById("ob-ollama-url").value.trim() || "http://localhost:11434",
+                key: null
+            });
+            // Reachable — hide banner
+        } catch (_) {
+            banner.style.display = "block";
+        }
+    }
+
+    // Ollama install + recheck buttons
+    const btnInstallOllama = document.getElementById("ob-btn-install-ollama");
+    const btnRecheckOllama = document.getElementById("ob-btn-recheck-ollama");
+    if (btnInstallOllama) {
+        btnInstallOllama.onclick = () => {
+            try { invoke("open_external", { url: "https://ollama.com/download" }); } catch (_) {}
+            appendLog(logViewport, "Opening Ollama download page... Install it, run 'ollama serve', then click Re-check.");
+        };
+    }
+    if (btnRecheckOllama) {
+        btnRecheckOllama.onclick = () => checkOllamaInstalled();
+    }
+
+    // Pull model button — streams progress via ollama_pull_progress event
+    const btnPullModel = document.getElementById("ob-btn-pull-model");
+    const pullStatus = document.getElementById("ob-pull-status");
+    if (btnPullModel) {
+        btnPullModel.onclick = async () => {
+            const url = document.getElementById("ob-ollama-url").value.trim() || "http://localhost:11434";
+            const model = document.getElementById("ob-ollama-model").value.trim() || "llama3.2:1b";
+            btnPullModel.disabled = true;
+            if (pullStatus) pullStatus.textContent = "Starting pull...";
+            appendLog(logViewport, `Pulling model '${model}' from Ollama registry. This may take a while...`);
+            try {
+                // Listen for streaming progress
+                const unlisten = await window.__TAURI_INTERNALS__?.event?.listen?.("ollama_pull_progress", (ev) => {
+                    const p = ev.payload;
+                    if (pullStatus) {
+                        const pct = p.total ? Math.round((p.completed || 0) / p.total * 100) : 0;
+                        pullStatus.textContent = p.status === "success" ? "Done!" : `${p.status}${p.total ? ` ${pct}%` : ''}`;
+                    }
+                    if (p.status === "success") {
+                        appendLog(logViewport, `Model '${model}' pulled successfully. Ready to use.`);
+                        btnPullModel.disabled = false;
+                        checkOllamaInstalled();
+                        if (unlisten) unlisten();
+                    }
+                });
+                await invoke("ollama_pull_model", { baseUrl: url, model });
+            } catch (err) {
+                appendLog(logViewport, `Pull failed: ${err}. Ensure Ollama is running ('ollama serve').`, true);
+                btnPullModel.disabled = false;
+                if (pullStatus) pullStatus.textContent = "Failed";
+            }
+        };
+    }
 
     // Logging helpers
     function appendLog(viewport, text, isError = false) {
@@ -9124,7 +9378,18 @@ async function showOnboardingWizard() {
             }
             
             appendLog(logViewport, `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`);
-            
+
+            // Always save config — Ollama may not be running yet (that's OK)
+            try {
+                await invoke("set_config", { key: "llm.default_provider", value: "ollama" });
+                await invoke("set_config", { key: "llm.ollama_base_url", value: urlInput });
+                await invoke("set_config", { key: "llm.ollama_model", value: modelInput });
+                appendLog(logViewport, "Ollama configuration saved.");
+            } catch (saveErr) {
+                appendLog(logViewport, `Config save error: ${saveErr}`, true);
+            }
+
+            // Soft connectivity test — warn but don't block
             try {
                 const status = await invoke("test_llm_connection", {
                     provider: "ollama",
@@ -9132,21 +9397,14 @@ async function showOnboardingWizard() {
                     url: urlInput,
                     key: null
                 });
-                
-                appendLog(logViewport, status);
-                
-                // Save configuration updates
-                await invoke("set_config", { key: "llm.default_provider", value: "ollama" });
-                await invoke("set_config", { key: "llm.ollama_base_url", value: urlInput });
-                await invoke("set_config", { key: "llm.ollama_model", value: modelInput });
-                
-                appendLog(logViewport, "Ollama settings saved successfully.");
-                isProviderVerified = true;
-                btnNext.disabled = false;
-            } catch (err) {
-                appendLog(logViewport, `Ollama validation failed: ${err}`, true);
-                appendLog(logViewport, "Note: Make sure your local Ollama server is running and the model is pulled.", true);
+                appendLog(logViewport, `Connection test: ${status}`);
+            } catch (_) {
+                appendLog(logViewport, "WARNING: Ollama not reachable right now. Start it before chatting.", false);
+                appendLog(logViewport, "Config saved. You can start Ollama after launch.", false);
             }
+
+            isProviderVerified = true;
+            btnNext.disabled = false;
         }
     };
 
@@ -9345,7 +9603,13 @@ async function showOnboardingWizard() {
     const progressFill = document.getElementById('boot-progress-fill');
     const progressPct = document.getElementById('boot-progress-pct');
     const progressLabel = document.getElementById('boot-progress-label-text');
-    if (!overlay || !logScroll) return;
+    const _delay = ms => new Promise(r => setTimeout(r, ms));
+    // Guarantee event fires even on early return or unexpected error
+    if (!overlay || !logScroll) {
+        document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
+        return;
+    }
+    try {
 
     // Dynamic step count — each addLine() call increments step automatically
     const TOTAL_STEPS = 22;
@@ -9468,9 +9732,13 @@ async function showOnboardingWizard() {
     setProgress(100, 'NEURODECK ONLINE');
     await delay(950);
 
-    overlay.classList.add('fade-out');
-    await delay(680);
-    overlay.remove();
-    document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
+        overlay.classList.add('fade-out');
+        await delay(680);
+    } catch(err) {
+        console.error('[Boot] Sequence error:', err);
+    } finally {
+        if (overlay && overlay.parentNode) overlay.remove();
+        document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
+    }
 })();
 

@@ -917,16 +917,81 @@ fn export_session_markdown(id: String) -> Result<String, String> {
     Ok(format!("Session exported to {}", file_path.to_string_lossy()))
 }
 
+fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
+    std::fs::create_dir_all(dst).map_err(|e| format!("mkdir {}: {}", dst.display(), e))?;
+    for entry in std::fs::read_dir(src).map_err(|e| format!("readdir {}: {}", src.display(), e))? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+            copy_dir_recursive(&src_path, &dst_path)?;
+        } else {
+            std::fs::copy(&src_path, &dst_path)
+                .map_err(|e| format!("copy {} → {}: {}", src_path.display(), dst_path.display(), e))?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn install_bmad_to_dir(
+    app_handle: AppHandle,
+    target_dir: String,
+) -> Result<String, String> {
+    let resource_dir = app_handle
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Cannot resolve resource dir: {}", e))?;
+
+    let bmad_source = resource_dir.join("bmad-bundle");
+
+    // Dev fallback: look relative to project root
+    let bmad_source = if bmad_source.exists() {
+        bmad_source
+    } else {
+        let dev_path = std::path::PathBuf::from("../assets/bmad-bundle");
+        if dev_path.exists() { dev_path } else {
+            return Err("BMAD bundle not found. Please reinstall NEURODECK.".to_string());
+        }
+    };
+
+    let target = std::path::PathBuf::from(&target_dir);
+    if !target.exists() {
+        return Err(format!("Target directory does not exist: {}", target_dir));
+    }
+
+    copy_dir_recursive(&bmad_source, &target)
+        .map_err(|e| format!("BMAD install failed: {}", e))?;
+
+    Ok(format!(
+        "BMAD installed to {}  (_bmad/ + .claude/skills/ with 44 skill sets)",
+        target_dir
+    ))
+}
+
 #[tauri::command]
 fn open_external(url: String) -> Result<(), String> {
+    // Basic sanity check: only allow http/https to prevent arbitrary command execution
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("Only http/https URLs are supported".into());
+    }
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("cmd")
-            .args(&["/c", "start", &url])
+        // Use explorer.exe instead of `cmd /c start` to avoid cmd shell metacharacter
+        // injection: `&` in query strings is interpreted as a command separator by cmd.
+        std::process::Command::new("explorer.exe")
+            .arg(&url)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
         std::process::Command::new("xdg-open")
             .arg(&url)
@@ -2893,13 +2958,23 @@ pub fn run() {
             // Initialize Lua state
             let lua_engine = lua::LuaEngine::new(app.handle().clone())
                 .expect("Failed to initialize Lua engine");
-            
+
+            // Resolve plugins dir: resource_dir (installed) → ./plugins (dev)
+            let plugins_dir = app.path().resource_dir()
+                .map(|p| p.join("plugins"))
+                .unwrap_or_else(|_| std::path::PathBuf::from("./plugins"));
+            let plugins_dir = if plugins_dir.exists() {
+                plugins_dir
+            } else {
+                std::path::PathBuf::from("./plugins")
+            };
+
             // Create directories if they don't exist
-            let _ = std::fs::create_dir_all("./plugins");
+            let _ = std::fs::create_dir_all(&plugins_dir);
             let _ = std::fs::create_dir_all("./scripts");
 
             // Load plugins on startup
-            if let Err(e) = lua_engine.load_plugins("./plugins") {
+            if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
                 println!("Error loading plugins: {}", e);
             }
 
@@ -2953,6 +3028,7 @@ pub fn run() {
             transfer::set_group_code,
             transfer::get_group_code,
             open_external,
+            install_bmad_to_dir,
             get_game_context,
             agent_step,
             agent_exec_code,
