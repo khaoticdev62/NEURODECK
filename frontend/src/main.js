@@ -514,6 +514,52 @@ if (!window.__TAURI_INTERNALS__) {
                 window._mockGameNotes[args.appId] = args.content;
                 return null;
             }
+            case 'set_whisper_config':
+                window._mockWhisperBinary = args.binary || '';
+                window._mockWhisperModel = args.model || '';
+                return null;
+            case 'get_whisper_status': {
+                const configured = !!(window._mockWhisperModel);
+                return {
+                    configured,
+                    binary: window._mockWhisperBinary || '',
+                    model: window._mockWhisperModel || '',
+                    model_exists: configured,
+                    binary_found: configured,
+                };
+            }
+            case 'transcribe_audio_whisper': {
+                if (!window._mockWhisperModel) {
+                    throw 'Whisper model path not set. Configure it in Settings → Whisper STT.';
+                }
+                return 'This is a mock whisper transcription of the recorded audio.';
+            }
+            case 'canvas_collab_host': {
+                const port = args.port || 13338;
+                window._mockCollabActive = true;
+                window._mockCollabPort = port;
+                window._mockCollabRole = 'host';
+                return port;
+            }
+            case 'canvas_collab_join': {
+                window._mockCollabActive = true;
+                window._mockCollabRole = 'guest';
+                window._mockCollabAddr = args.addr;
+                // Simulate peer connecting after a short delay
+                setTimeout(() => {
+                    invoke('plugin:event|emit', {
+                        event: 'canvas_collab_event',
+                        payload: 'peer_connected:mock_peer'
+                    });
+                }, 800);
+                return null;
+            }
+            case 'canvas_collab_send':
+                console.log('[Mock Collab] Sent:', args.lang, args.code?.substring(0, 40));
+                return null;
+            case 'canvas_collab_stop':
+                window._mockCollabActive = false;
+                return null;
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -652,6 +698,7 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="canvas-run-btn">▶ Run</button>
                         <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
                         <button class="canvas-btn" id="canvas-clear-btn">Clear</button>
+                        <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
                     </div>
                     <div class="canvas-split" id="canvas-split">
@@ -1504,9 +1551,80 @@ document.querySelector('#app').innerHTML = `
                         <div id="rag-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
                         <div style="margin-top: 8px; font-size: 0.78rem; opacity: 0.6;">Documents indexed: <span id="rag-doc-count" style="color: var(--accent-color); font-family: var(--font-mono);">0</span></div>
                     </div>
+
+                    <!-- Whisper STT section -->
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">WHISPER OFFLINE STT</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
+                            Use <strong>whisper.cpp</strong> for fully offline, on-device speech recognition. When configured, the 🎙️ mic button routes through whisper instead of the cloud API.
+                        </div>
+                        <div style="font-size: 0.75rem; opacity: 0.55; margin-bottom: 10px; font-family: var(--font-mono); line-height: 1.5; padding: 6px 8px; background: rgba(0,0,0,0.2); border-radius: 3px;">
+                            Install: <span style="color: var(--accent-color);">git clone https://github.com/ggerganov/whisper.cpp &amp;&amp; cmake -B build &amp;&amp; cmake --build build</span><br>
+                            Model:&nbsp;&nbsp; <span style="color: var(--accent-color);">bash models/download-ggml-model.sh base.en</span>
+                        </div>
+                        <div class="setting-field-group" style="margin-bottom: 8px;">
+                            <label for="whisper-binary-input" style="min-width: 70px;">Binary:</label>
+                            <input type="text" id="whisper-binary-input" class="tunnel-text-input" placeholder="whisper-cli  (or full path)" style="flex: 1; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="whisper-model-input" style="min-width: 70px;">Model:</label>
+                            <input type="text" id="whisper-model-input" class="tunnel-text-input" placeholder="/path/to/ggml-base.en.bin" style="flex: 1; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <button class="send-prompt-btn" id="whisper-save-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Save Config</button>
+                            <button class="canvas-btn" id="whisper-test-btn" style="flex: 1; height: 32px; padding: 0;">Test Transcription</button>
+                        </div>
+                        <div id="whisper-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
+                    </div>
                 </div>
                 <div class="settings-modal-footer">
                     <button class="settings-close-btn" id="close-settings">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Collaboration Modal -->
+        <div class="settings-overlay" id="collab-modal">
+            <div class="settings-modal-card" style="max-width: 400px;">
+                <div class="settings-modal-header">
+                    <h3>🤝 LIVE CANVAS COLLAB</h3>
+                    <button class="sidebar-toggle-btn" id="close-collab-x">✕</button>
+                </div>
+                <div class="settings-modal-content">
+                    <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 14px; line-height: 1.5;">
+                        Share your Canvas session with another NEURODECK instance on the same LAN. Both sides see edits in real time.
+                    </div>
+                    <!-- Tab toggle -->
+                    <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+                        <button class="canvas-btn" id="collab-host-tab-btn" style="flex: 1; background: rgba(0,229,255,0.1); border-color: var(--accent-color);">Host Session</button>
+                        <button class="canvas-btn" id="collab-join-tab-btn" style="flex: 1;">Join Session</button>
+                    </div>
+                    <!-- Host panel -->
+                    <div id="collab-host-panel">
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="collab-port-input">Port:</label>
+                            <input type="number" id="collab-port-input" class="tunnel-text-input" value="13338" min="1024" max="65535" style="width: 100px; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <button class="send-prompt-btn" id="collab-host-start-btn" style="width: 100%; margin: 0 0 10px;">Start Hosting</button>
+                        <div id="collab-host-waiting" style="display: none; font-size: 0.8rem; padding: 8px; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; font-family: var(--font-mono);">
+                            Waiting for peer... Share this address with your collaborator:<br>
+                            <span id="collab-host-addr" style="color: var(--accent-color);"></span>
+                        </div>
+                    </div>
+                    <!-- Join panel -->
+                    <div id="collab-join-panel" style="display: none;">
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="collab-addr-input">Host Address:</label>
+                            <input type="text" id="collab-addr-input" class="tunnel-text-input" placeholder="192.168.1.5:13338" style="flex: 1; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <button class="send-prompt-btn" id="collab-join-start-btn" style="width: 100%; margin: 0 0 10px;">Connect</button>
+                    </div>
+                    <!-- Status / active session -->
+                    <div id="collab-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
+                    <div id="collab-active-panel" style="display: none; margin-top: 10px; padding: 8px; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; font-size: 0.8rem;">
+                        <span style="color: var(--response-color);">✓ Peer connected</span> — edits are syncing live.
+                        <button class="canvas-btn" id="collab-stop-btn" style="display: block; width: 100%; margin-top: 8px; border-color: var(--error-color); color: var(--error-color);">Disconnect</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1995,6 +2113,7 @@ function getGamepadFocusableElements() {
         "#view-canvas.active #canvas-clear-btn",
         "#view-canvas.active #canvas-copy-btn",
         "#view-canvas.active #canvas-lang-select",
+        "#view-canvas.active #canvas-collab-btn",
         
         // Terminal View
         "#view-terminal.active #pty-reconnect-btn",
@@ -7530,6 +7649,243 @@ initCustomPersonas();
             if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
         }
     });
+})();
+
+// ==========================================================================
+// WHISPER OFFLINE STT SETTINGS (P17)
+// ==========================================================================
+(function initWhisperSettings() {
+    const binaryInput = document.getElementById("whisper-binary-input");
+    const modelInput = document.getElementById("whisper-model-input");
+    const saveBtn = document.getElementById("whisper-save-btn");
+    const testBtn = document.getElementById("whisper-test-btn");
+    const statusLine = document.getElementById("whisper-status-line");
+
+    if (!saveBtn) return;
+
+    // Load current config on modal open
+    invoke("get_whisper_status").then(status => {
+        if (status) {
+            if (binaryInput) binaryInput.value = status.binary || '';
+            if (modelInput) modelInput.value = status.model || '';
+            if (status.configured) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Whisper configured and ready.</span>`;
+            } else if (status.model) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">⚠ Model file not found at configured path.</span>`;
+            }
+        }
+    }).catch(() => {});
+
+    saveBtn.addEventListener("click", async () => {
+        const binary = binaryInput ? binaryInput.value.trim() : '';
+        const model = modelInput ? modelInput.value.trim() : '';
+        try {
+            await invoke("set_whisper_config", { binary, model });
+            const status = await invoke("get_whisper_status");
+            if (status.configured) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Saved. Whisper ready — mic button will use offline STT.</span>`;
+                if (typeof addNotification === "function") {
+                    addNotification("Whisper STT Configured", "Offline transcription is now active.", "success");
+                }
+            } else if (!status.model_exists) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but model file not found at that path.</span>`;
+            } else if (!status.binary_found) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but whisper binary not found. Check the path.</span>`;
+            } else {
+                if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Config saved.</span>`;
+            }
+        } catch (err) {
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+        }
+    });
+
+    testBtn.addEventListener("click", async () => {
+        if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Transcribing record.wav...</span>`;
+        testBtn.disabled = true;
+        try {
+            const text = await invoke("transcribe_audio_whisper");
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">Result: "${text}"</span>`;
+        } catch (err) {
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+        } finally {
+            testBtn.disabled = false;
+        }
+    });
+})();
+
+// ==========================================================================
+// CANVAS LIVE COLLABORATION (P19)
+// ==========================================================================
+(function initCanvasCollab() {
+    const collabBtn = document.getElementById("canvas-collab-btn");
+    const collabModal = document.getElementById("collab-modal");
+    const closeX = document.getElementById("close-collab-x");
+    const hostTabBtn = document.getElementById("collab-host-tab-btn");
+    const joinTabBtn = document.getElementById("collab-join-tab-btn");
+    const hostPanel = document.getElementById("collab-host-panel");
+    const joinPanel = document.getElementById("collab-join-panel");
+    const hostStartBtn = document.getElementById("collab-host-start-btn");
+    const joinStartBtn = document.getElementById("collab-join-start-btn");
+    const portInput = document.getElementById("collab-port-input");
+    const addrInput = document.getElementById("collab-addr-input");
+    const statusLine = document.getElementById("collab-status-line");
+    const activePanel = document.getElementById("collab-active-panel");
+    const hostWaiting = document.getElementById("collab-host-waiting");
+    const hostAddr = document.getElementById("collab-host-addr");
+    const stopBtn = document.getElementById("collab-stop-btn");
+
+    if (!collabBtn || !collabModal) return;
+
+    // Tab switching
+    function showTab(tab) {
+        const isHost = tab === 'host';
+        if (hostPanel) hostPanel.style.display = isHost ? '' : 'none';
+        if (joinPanel) joinPanel.style.display = isHost ? 'none' : '';
+        if (hostTabBtn) {
+            hostTabBtn.style.background = isHost ? 'rgba(0,229,255,0.1)' : '';
+            hostTabBtn.style.borderColor = isHost ? 'var(--accent-color)' : '';
+        }
+        if (joinTabBtn) {
+            joinTabBtn.style.background = isHost ? '' : 'rgba(0,229,255,0.1)';
+            joinTabBtn.style.borderColor = isHost ? '' : 'var(--accent-color)';
+        }
+    }
+    if (hostTabBtn) hostTabBtn.addEventListener("click", () => showTab('host'));
+    if (joinTabBtn) joinTabBtn.addEventListener("click", () => showTab('join'));
+
+    collabBtn.addEventListener("click", () => collabModal.classList.add("active"));
+    if (closeX) closeX.addEventListener("click", () => collabModal.classList.remove("active"));
+    collabModal.addEventListener("click", (e) => {
+        if (e.target === collabModal) collabModal.classList.remove("active");
+    });
+
+    function setPeerConnected() {
+        if (activePanel) activePanel.style.display = '';
+        if (hostWaiting) hostWaiting.style.display = 'none';
+        if (statusLine) statusLine.innerHTML = '';
+        if (collabBtn) {
+            collabBtn.style.background = 'rgba(0,255,136,0.15)';
+            collabBtn.style.borderColor = 'var(--response-color)';
+        }
+    }
+
+    function setDisconnected() {
+        if (activePanel) activePanel.style.display = 'none';
+        if (hostWaiting) hostWaiting.style.display = 'none';
+        if (collabBtn) {
+            collabBtn.style.background = '';
+            collabBtn.style.borderColor = '';
+        }
+        if (statusLine) statusLine.innerHTML = '';
+    }
+
+    // Listen for collab events from Rust
+    listen("canvas_collab_event", (event) => {
+        const msg = event.payload || '';
+        if (msg.startsWith('peer_connected')) {
+            setPeerConnected();
+            if (typeof addNotification === "function") {
+                addNotification("Collab Connected", "A peer joined your Canvas session.", "success");
+            }
+        } else if (msg === 'peer_disconnected') {
+            setDisconnected();
+            if (typeof addNotification === "function") {
+                addNotification("Collab Disconnected", "The peer has left the session.", "info");
+            }
+        } else if (msg.startsWith('error:')) {
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">${msg}</span>`;
+        }
+    }).catch(() => {});
+
+    // Listen for incoming canvas sync from peer
+    listen("canvas_sync", (event) => {
+        try {
+            const data = typeof event.payload === 'string'
+                ? JSON.parse(event.payload) : event.payload;
+            if (data.type === 'sync' && data.code !== undefined) {
+                const editor = document.getElementById("canvas-editor");
+                const langSelect = document.getElementById("canvas-lang-select");
+                if (editor) {
+                    // Suppress our own re-broadcast while updating
+                    editor.dataset.syncingFromPeer = '1';
+                    editor.value = data.code;
+                    editor.dataset.syncingFromPeer = '';
+                    // Fire input event so the preview updates
+                    editor.dispatchEvent(new Event('input'));
+                }
+                if (langSelect && data.lang && data.lang !== langSelect.value) {
+                    langSelect.value = data.lang;
+                    langSelect.dispatchEvent(new Event('change'));
+                }
+            }
+        } catch (e) {
+            console.warn('[Collab] Failed to parse canvas_sync:', e);
+        }
+    }).catch(() => {});
+
+    // Host: start session
+    if (hostStartBtn) {
+        hostStartBtn.addEventListener("click", async () => {
+            const port = parseInt(portInput?.value || '13338', 10);
+            hostStartBtn.disabled = true;
+            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Binding port ${port}...</span>`;
+            try {
+                const boundPort = await invoke("canvas_collab_host", { port });
+                if (hostWaiting) hostWaiting.style.display = '';
+                if (hostAddr) hostAddr.innerText = `<your-lan-ip>:${boundPort}`;
+                if (statusLine) statusLine.innerHTML = '';
+            } catch (err) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+                hostStartBtn.disabled = false;
+            }
+        });
+    }
+
+    // Guest: join session
+    if (joinStartBtn) {
+        joinStartBtn.addEventListener("click", async () => {
+            const addr = addrInput?.value.trim() || '';
+            if (!addr) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter the host address first.</span>`;
+                return;
+            }
+            joinStartBtn.disabled = true;
+            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Connecting to ${addr}...</span>`;
+            try {
+                await invoke("canvas_collab_join", { addr });
+                setPeerConnected();
+            } catch (err) {
+                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+                joinStartBtn.disabled = false;
+            }
+        });
+    }
+
+    // Stop session
+    if (stopBtn) {
+        stopBtn.addEventListener("click", async () => {
+            await invoke("canvas_collab_stop");
+            setDisconnected();
+            if (hostStartBtn) hostStartBtn.disabled = false;
+            if (joinStartBtn) joinStartBtn.disabled = false;
+        });
+    }
+
+    // Debounced canvas input → broadcast to peer
+    let collabDebounceTimer = null;
+    const canvasEditor = document.getElementById("canvas-editor");
+    if (canvasEditor) {
+        canvasEditor.addEventListener("input", () => {
+            if (canvasEditor.dataset.syncingFromPeer) return;
+            clearTimeout(collabDebounceTimer);
+            collabDebounceTimer = setTimeout(() => {
+                invoke("canvas_collab_send", {
+                    code: canvasEditor.value,
+                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
+                }).catch(() => {});
+            }, 300);
+        });
+    }
 })();
 
 // --- NOTIFICATION CENTER SYSTEM ---

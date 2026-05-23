@@ -11,6 +11,8 @@ mod sftp;
 mod ollama_mgr;
 mod plugin_mgr;
 mod mcp;
+mod whisper;
+mod canvas_collab;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -221,6 +223,12 @@ pub struct AppState {
     pub custom_personas: Vec<CustomPersona>,
     mcp_abort: Option<tokio::task::AbortHandle>,
     mcp_port: u16,
+    // P17 — Whisper.cpp offline STT
+    whisper_binary: String,
+    whisper_model: String,
+    // P19 — Live Canvas Collab
+    collab_abort: Option<tokio::task::AbortHandle>,
+    collab_tx: Option<tokio::sync::mpsc::Sender<String>>,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -665,6 +673,52 @@ fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
     }
 }
 
+// ──────────────────────────────────────────────
+// P17 — Whisper.cpp offline STT
+// ──────────────────────────────────────────────
+
+#[tauri::command]
+fn set_whisper_config(state: State<'_, Mutex<AppState>>, binary: String, model: String) {
+    let mut app = state.lock().unwrap();
+    app.whisper_binary = binary;
+    app.whisper_model = model;
+}
+
+#[tauri::command]
+fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
+    let app = state.lock().unwrap();
+    let model_exists = !app.whisper_model.is_empty()
+        && std::path::Path::new(&app.whisper_model).exists();
+    let available = whisper::is_available(&app.whisper_binary);
+    serde_json::json!({
+        "configured": model_exists && available,
+        "binary": &app.whisper_binary,
+        "model": &app.whisper_model,
+        "model_exists": model_exists,
+        "binary_found": available,
+    })
+}
+
+/// Transcribe `record.wav` (the last recorded audio) using whisper.cpp.
+/// Falls back gracefully with an error if not configured.
+#[tauri::command]
+async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let (binary, model) = {
+        let app = state.lock().unwrap();
+        (app.whisper_binary.clone(), app.whisper_model.clone())
+    };
+    if model.is_empty() {
+        return Err(
+            "Whisper model path not set. Configure it in Settings → Whisper STT.".to_string(),
+        );
+    }
+    tokio::task::spawn_blocking(move || {
+        whisper::transcribe("record.wav", &binary, &model)
+    })
+    .await
+    .map_err(|e| format!("Thread error: {}", e))?
+}
+
 #[tauri::command]
 async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let record_child = {
@@ -679,17 +733,34 @@ async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, Str
 
     let audio_data = std::fs::read("record.wav");
     if let Ok(data) = audio_data {
+        // Try whisper.cpp first if model is configured and file exists
+        let (whisper_binary, whisper_model) = {
+            let app = state.lock().unwrap();
+            (app.whisper_binary.clone(), app.whisper_model.clone())
+        };
+        if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
+            let bin = whisper_binary.clone();
+            let mdl = whisper_model.clone();
+            let result = tokio::task::spawn_blocking(move || {
+                crate::whisper::transcribe("record.wav", &bin, &mdl)
+            })
+            .await;
+            if let Ok(Ok(text)) = result {
+                return Ok(text);
+            }
+            // Whisper failed — fall through to cloud provider
+        }
+
         let provider = {
             let app = state.lock().unwrap();
             app.provider.clone()
         };
-
         match provider.transcribe_audio(&data).await {
             Ok(text) => Ok(text),
             Err(e) => Err(format!("Error transcribing: {}", e)),
         }
     } else {
-        // Simulated voice output on Windows
+        // Simulated voice output on Windows / no audio file
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         Ok("Hello AI, how are you today? (Simulated)".to_string())
     }
@@ -2404,6 +2475,91 @@ fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> 
     result
 }
 
+// ──────────────────────────────────────────────
+// P19 — Live Canvas Collaboration
+// ──────────────────────────────────────────────
+
+/// Start the host collab session. Returns the actual bound port.
+#[tauri::command]
+async fn canvas_collab_host(
+    port: u16,
+    state: State<'_, Mutex<AppState>>,
+    app: AppHandle,
+) -> Result<u16, String> {
+    // Stop any existing session first
+    {
+        let mut s = state.lock().unwrap();
+        if let Some(abort) = s.collab_abort.take() {
+            abort.abort();
+        }
+        s.collab_tx = None;
+    }
+
+    let (bound_port, session) = canvas_collab::host(port, app).await?;
+
+    let mut s = state.lock().unwrap();
+    s.collab_abort = Some(session.abort_handle);
+    s.collab_tx = Some(session.tx);
+
+    Ok(bound_port)
+}
+
+/// Connect to a host's collab session. `addr` = "IP:port", e.g. "192.168.1.5:13338".
+#[tauri::command]
+async fn canvas_collab_join(
+    addr: String,
+    state: State<'_, Mutex<AppState>>,
+    app: AppHandle,
+) -> Result<(), String> {
+    {
+        let mut s = state.lock().unwrap();
+        if let Some(abort) = s.collab_abort.take() {
+            abort.abort();
+        }
+        s.collab_tx = None;
+    }
+
+    let session = canvas_collab::join(&addr, app).await?;
+
+    let mut s = state.lock().unwrap();
+    s.collab_abort = Some(session.abort_handle);
+    s.collab_tx = Some(session.tx);
+
+    Ok(())
+}
+
+/// Broadcast the current canvas state to the connected peer.
+#[tauri::command]
+async fn canvas_collab_send(
+    code: String,
+    lang: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    let tx = {
+        let s = state.lock().unwrap();
+        s.collab_tx.clone()
+    };
+    if let Some(tx) = tx {
+        let payload = serde_json::json!({ "type": "sync", "code": code, "lang": lang });
+        tx.send(payload.to_string())
+            .await
+            .map_err(|_| "Collab channel closed".to_string())?;
+        Ok(())
+    } else {
+        Err("No active collab session".to_string())
+    }
+}
+
+/// Stop the active collab session.
+#[tauri::command]
+fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
+    let mut s = state.lock().unwrap();
+    if let Some(abort) = s.collab_abort.take() {
+        abort.abort();
+    }
+    s.collab_tx = None;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -2453,6 +2609,10 @@ pub fn run() {
         custom_personas,
         mcp_abort: None,
         mcp_port: 13337,
+        whisper_binary: String::new(),
+        whisper_model: String::new(),
+        collab_abort: None,
+        collab_tx: None,
     };
 
     tauri::Builder::default()
@@ -2567,7 +2727,14 @@ pub fn run() {
             save_game_note,
             start_mcp_server,
             stop_mcp_server,
-            get_mcp_status
+            get_mcp_status,
+            set_whisper_config,
+            get_whisper_status,
+            transcribe_audio_whisper,
+            canvas_collab_host,
+            canvas_collab_join,
+            canvas_collab_send,
+            canvas_collab_stop
         ])
         .run(tauri::generate_context!())
 
