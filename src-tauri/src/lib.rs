@@ -970,6 +970,118 @@ async fn install_bmad_to_dir(
 }
 
 #[tauri::command]
+async fn browser_open(
+    app: AppHandle,
+    url: String,
+    viewport_x: f64,
+    viewport_y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
+
+    let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+
+    let main_win = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    let scale = main_win.scale_factor().map_err(|e| e.to_string())?;
+    let inner_pos = main_win.inner_position().map_err(|e| e.to_string())?;
+    let screen_x = inner_pos.x as f64 / scale + viewport_x;
+    let screen_y = inner_pos.y as f64 / scale + viewport_y;
+
+    if let Some(win) = app.get_webview_window("browser-view") {
+        win.set_position(LogicalPosition::new(screen_x, screen_y))
+            .map_err(|e| e.to_string())?;
+        win.set_size(LogicalSize::new(width, height))
+            .map_err(|e| e.to_string())?;
+        win.navigate(nav_url).map_err(|e| e.to_string())?;
+        win.show().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let builder = WebviewWindowBuilder::new(
+        &app,
+        "browser-view",
+        WebviewUrl::External(nav_url),
+    )
+    .title("NEURODECK Browser")
+    .decorations(false)
+    .position(screen_x, screen_y)
+    .inner_size(width, height)
+    .skip_taskbar(true);
+
+    let builder = builder.parent(&main_win).map_err(|e| e.to_string())?;
+
+    builder.build().map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn browser_navigate(app: AppHandle, url: String) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("browser-view") {
+        let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+        win.navigate(nav_url).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn browser_hide(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("browser-view") {
+        win.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn browser_show(
+    app: AppHandle,
+    viewport_x: f64,
+    viewport_y: f64,
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    use tauri::{LogicalPosition, LogicalSize};
+
+    let main_win = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    let scale = main_win.scale_factor().map_err(|e| e.to_string())?;
+    let inner_pos = main_win.inner_position().map_err(|e| e.to_string())?;
+    let screen_x = inner_pos.x as f64 / scale + viewport_x;
+    let screen_y = inner_pos.y as f64 / scale + viewport_y;
+
+    if let Some(win) = app.get_webview_window("browser-view") {
+        win.set_position(LogicalPosition::new(screen_x, screen_y))
+            .map_err(|e| e.to_string())?;
+        win.set_size(LogicalSize::new(width, height))
+            .map_err(|e| e.to_string())?;
+        win.show().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn browser_get_url(app: AppHandle) -> String {
+    app.get_webview_window("browser-view")
+        .and_then(|win| win.url().ok())
+        .map(|u| u.to_string())
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+fn browser_exec(app: AppHandle, js: String) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("browser-view") {
+        win.eval(&js).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn open_external(url: String) -> Result<(), String> {
     // Basic sanity check: only allow http/https to prevent arbitrary command execution
     if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -2238,6 +2350,147 @@ async fn generate_jpe_explanation(prompt_text: String, state: State<'_, Mutex<Ap
     Ok(result.trim().to_string())
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct PromptSchema {
+    pub persona: String,
+    pub task: String,
+    pub context: String,
+    pub tone: String,
+    pub constraints: String,
+    pub format: String,
+}
+
+#[tauri::command]
+async fn assemble_prompt_via_lua_cmd(
+    persona: String,
+    task: String,
+    context: String,
+    tone: String,
+    constraints: String,
+    format: String,
+    examples: String,
+    formula: String,
+    lua_state: State<'_, LuaState>,
+) -> Result<String, String> {
+    let engine = lua_state.0.lock().unwrap();
+    engine.assemble_prompt(
+        &persona,
+        &task,
+        &context,
+        &tone,
+        &constraints,
+        &format,
+        &examples,
+        &formula,
+    )
+}
+
+#[tauri::command]
+async fn optimize_raw_prompt(
+    raw_text: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<PromptSchema, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.provider.clone()
+    };
+    
+    if raw_text.trim().is_empty() {
+        return Err("Input draft cannot be empty".to_string());
+    }
+
+    let system_prompt = "You are an expert prompt engineer. The user will provide a rough draft of a task or prompt. Your job is to decompose it into a structured prompt schema.\n\
+Return ONLY a valid JSON object matching this schema, with no other text, markdown formatting, or explanations. If a field cannot be inferred, return an empty string.\n\n\
+JSON Schema:\n\
+{\n\
+  \"persona\": \"the assumed persona or role of the AI (e.g. 'You are a senior python engineer')\",\n\
+  \"task\": \"the core objective or query (e.g. 'write a python function to merge lists')\",\n\
+  \"context\": \"any background context, target audience, or domain specific details\",\n\
+  \"tone\": \"the tone/style (e.g. 'concise', 'educational')\",\n\
+  \"constraints\": \"specific constraints, rules, limits (e.g. 'no third party libraries', 'max 100 words')\",\n\
+  \"format\": \"the expected output structure or format (e.g. 'markdown table', 'code block')\"\n\
+}";
+
+    let result = provider.chat_with_image(&raw_text, system_prompt, None, None).await?;
+    
+    // Clean JSON markdown codeblocks if returned
+    let cleaned = result.trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+
+    let schema: PromptSchema = serde_json::from_str(cleaned)
+        .map_err(|e| format!("Failed to parse LLM response into prompt schema: {}. Raw response: {}", e, result))?;
+
+    Ok(schema)
+}
+
+#[tauri::command]
+async fn generate_jpe_explanation_with_level(
+    prompt_text: String,
+    reading_level: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.provider.clone()
+    };
+
+    if prompt_text.trim().is_empty() {
+        return Ok(String::new());
+    }
+
+    let tone_instruction = match reading_level.to_lowercase().as_str() {
+        "grade8" => "simple, grade-8 reading level language suitable for children or non-experts",
+        "grade12" => "clear, standard grade-12 reading level language",
+        "executive" => "high-level, executive business summary style, focusing on outcomes and ROI",
+        "technical" => "highly technical and analytical language, dissecting parameter weights and prompt structure details",
+        _ => "simple, grade-8 reading level language",
+    };
+
+    let system_prompt = format!(
+        "You are a prompt engineering expert. Your task is to explain the intent of the following prompt in Just Plain English (JPE), so that anyone can understand it. Use {}. Summarize the role, the task, the constraints, and the expected format concisely. Do not evaluate the prompt, just explain what it asks the AI to do.",
+        tone_instruction
+    );
+
+    let query = format!("Explain the following prompt in simple English, step by step:\n\n{}", prompt_text);
+
+    let result = provider.chat_with_image(&query, &system_prompt, None, None).await?;
+    Ok(result.trim().to_string())
+}
+
+#[tauri::command]
+fn save_prompt_preset(name: String, schema_json: String) -> Result<(), String> {
+    let _ = std::fs::create_dir_all("./data");
+    let path = std::path::Path::new("./data/prompt_presets.json");
+    
+    let mut presets = if path.exists() {
+        let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default()
+    } else {
+        std::collections::HashMap::new()
+    };
+    
+    presets.insert(name, schema_json);
+    
+    let serialized = serde_json::to_string_pretty(&presets).map_err(|e| e.to_string())?;
+    std::fs::write(path, serialized).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>, String> {
+    let path = std::path::Path::new("./data/prompt_presets.json");
+    if !path.exists() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let presets = serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default();
+    Ok(presets)
+}
+
+
 /// AI-powered terminal autocomplete.
 /// Takes the current terminal input buffer and returns suggested completion suffix.
 #[tauri::command]
@@ -3028,6 +3281,12 @@ pub fn run() {
             transfer::set_group_code,
             transfer::get_group_code,
             open_external,
+            browser_open,
+            browser_navigate,
+            browser_hide,
+            browser_show,
+            browser_get_url,
+            browser_exec,
             install_bmad_to_dir,
             get_game_context,
             agent_step,
@@ -3090,7 +3349,12 @@ pub fn run() {
             close_splashscreen,
             start_oauth_flow,
             poll_oauth_token,
-            run_onboarding_diagnostics
+            run_onboarding_diagnostics,
+            assemble_prompt_via_lua_cmd,
+            optimize_raw_prompt,
+            generate_jpe_explanation_with_level,
+            save_prompt_preset,
+            load_prompt_presets
         ])
         .run(tauri::generate_context!())
 

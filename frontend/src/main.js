@@ -70,7 +70,6 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
-// Initialize global neurodeckCanvas namespace early to avoid TDZ issues
 window.neurodeckCanvas = {
     currentLang: 'html',
     currentCode: '',
@@ -80,6 +79,36 @@ window.neurodeckCanvas = {
         } else {
             console.warn("loadCanvasCode is not defined yet.");
         }
+    }
+};
+
+window.applyThemeColors = function(theme) {
+    if (!theme) return;
+    const bg = theme.Background || theme.background || '#000000';
+    const fg = theme.Foreground || theme.foreground || '#e2e8f0';
+    const accent = theme.Accent || theme.accent || '#00F0FF';
+    const response = theme.Response || theme.response || '#00FF88';
+    const warning = theme.Warning || theme.warning || '#FFB000';
+    const error = theme.Error || theme.error || '#FF3C5A';
+
+    document.documentElement.style.setProperty('--bg-color', bg);
+    document.documentElement.style.setProperty('--fg-color', fg);
+    document.documentElement.style.setProperty('--accent-color', accent);
+    document.documentElement.style.setProperty('--response-color', response);
+    document.documentElement.style.setProperty('--warning-color', warning);
+    document.documentElement.style.setProperty('--error-color', error);
+
+    const xtermTheme = {
+        background: bg,
+        foreground: fg,
+        cursor: accent,
+        selectionBackground: 'rgba(255, 255, 255, 0.15)'
+    };
+    if (window.ptyTerminal) {
+        window.ptyTerminal.options.theme = xtermTheme;
+    }
+    if (window.sshTerminal) {
+        window.sshTerminal.options.theme = xtermTheme;
     }
 };
 
@@ -284,6 +313,15 @@ if (!window.__TAURI_INTERNALS__) {
             case 'open_external':
                 console.log(`[Mock Browser] Opening external URL: ${args.url}`);
                 return "ok";
+            case 'browser_open':
+            case 'browser_navigate':
+            case 'browser_hide':
+            case 'browser_show':
+            case 'browser_exec':
+                console.log(`[Mock] ${cmd}:`, args);
+                return "ok";
+            case 'browser_get_url':
+                return "https://html.duckduckgo.com/html/";
             case 'get_game_context':
                 return {
                     name: "Elden Ring",
@@ -333,6 +371,26 @@ if (!window.__TAURI_INTERNALS__) {
                 return null;
             case 'get_group_code':
                 return window._mockGroupCode || "DEFAULT";
+            case 'assemble_prompt_via_lua_cmd':
+                // Simple JS concatenation fallback for browser mock mode
+                return `**Role/Persona:**\n${args.persona}\n\n**Task/Objective:**\n${args.task}\n\n**Context/Background:**\n${args.context}\n\n**Tone:**\n${args.tone}\n\n**Constraints:**\n${args.constraints}\n\n**Output Format:**\n${args.format}\n\n[Formula Applied: ${args.formula.toUpperCase()}]`;
+            case 'optimize_raw_prompt':
+                return {
+                    persona: "You are an expert software engineer.",
+                    task: args.raw_text || "Create a hello world program.",
+                    context: "Target environment: S-Term system.",
+                    tone: "Precise and direct.",
+                    constraints: "- Do not use third party dependencies.\n- Write highly performant code.",
+                    format: "Markdown code block only."
+                };
+            case 'generate_jpe_explanation_with_level':
+                return `[JPE Summary - Target Style: ${args.reading_level.toUpperCase()}]\nThis prompt instructs the AI to adopt the role of "${args.reading_level}" and solve the task: "${args.prompt_text.substring(0, 50)}...". It mandates that all specified constraints and formatted structures be strictly followed.`;
+            case 'save_prompt_preset':
+                if (!window._mockPresets) window._mockPresets = {};
+                window._mockPresets[args.name] = args.schema_json;
+                return null;
+            case 'load_prompt_presets':
+                return window._mockPresets || {};
             case 'ollama_list_models':
                 return [
                     { name: "llama2:latest", size: 3791823901, modified_at: "2026-05-23T01:21:46Z" },
@@ -1309,19 +1367,37 @@ document.querySelector('#app').innerHTML = `
                         <div class="prompt-lab-form">
                             <div class="prompt-lab-header">
                                 <h3>Prompt Generator</h3>
-                                <select id="pl-template-select" class="pl-dropdown">
-                                    <option value="">Load Template...</option>
-                                    <option value="game">Endless Runner Game Concept</option>
-                                    <option value="app">To-Do List App Features</option>
-                                    <option value="script">Lua Scripting Template</option>
-                                </select>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="pl-template-select" class="pl-dropdown" style="max-width: 140px;">
+                                        <option value="">Load Preset...</option>
+                                        <option value="game">Endless Runner Game Concept</option>
+                                        <option value="app">To-Do List App Features</option>
+                                        <option value="script">Lua Scripting Template</option>
+                                    </select>
+                                    <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display: none; width: 100px; padding: 4px 8px; font-size: 0.8rem; background: rgba(0,0,0,0.3);">
+                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display: none; font-size: 0.75rem;">💾 Save</button>
+                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size: 0.75rem;" title="Save Custom Preset">💾 Save Current</button>
+                                </div>
                             </div>
+                            
+                            <!-- Quality/Strength Meter -->
+                            <div class="pl-strength-container" style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <label style="font-size: 0.7rem; font-weight: bold; text-transform: uppercase; color: rgba(255,255,255,0.5); margin: 0; letter-spacing: 0.5px; white-space: nowrap;">Strength:</label>
+                                <div class="pl-strength-bar-bg" style="flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                                    <div id="pl-strength-bar-fill" style="width: 0%; height: 100%; background: var(--error-color); transition: all 0.3s ease;"></div>
+                                </div>
+                                <span id="pl-strength-label" style="font-size: 0.7rem; font-weight: bold; color: var(--error-color); white-space: nowrap;">Weak (0/5)</span>
+                            </div>
+
                             <div class="pl-field">
                                 <label>Persona / Role</label>
                                 <input type="text" id="pl-persona" placeholder="e.g. You are a creative game designer.">
                             </div>
                             <div class="pl-field">
-                                <label>Task / Objective</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <label style="margin: 0;">Task / Objective</label>
+                                    <button class="agent-btn agent-btn-sm" id="pl-optimize-ai-btn" style="padding: 2px 6px; font-size: 0.7rem;" title="AI Decompose & Optimize">AI Optimize ⚡</button>
+                                </div>
                                 <input type="text" id="pl-task" placeholder="e.g. Design an endless runner game.">
                             </div>
                             <div class="pl-field">
@@ -1352,7 +1428,14 @@ document.querySelector('#app').innerHTML = `
                                         <option value="default">Role + Constraints + Examples</option>
                                         <option value="aida">AIDA (Attention, Interest, Desire, Action)</option>
                                         <option value="scqa">SCQA (Situation, Complication, Question, Answer)</option>
+                                        <option value="pastor">PASTOR (Problem, Amplify, Story, Transformation, Offer, Response)</option>
+                                        <option value="pas">PAS (Problem, Agitate, Solution)</option>
+                                        <option value="cot">CoT (Chain of Thought / Step-by-Step)</option>
+                                        <option value="tot">ToT (Tree of Thought / Reasoning Paths)</option>
                                     </select>
+                                    <div id="pl-formula-info" class="pl-formula-info" style="margin-top: 8px; font-size: 0.75rem; color: rgba(255,255,255,0.45); line-height: 1.35; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; border-left: 2px solid var(--accent-color);">
+                                        Default: Standard prompt construction focusing on Persona, Objective, Constraints, and Examples.
+                                    </div>
                                 </div>
                             </div>
                             <button class="pl-btn-primary" id="pl-generate-btn">⚡ Generate Prompt</button>
@@ -1366,6 +1449,8 @@ document.querySelector('#app').innerHTML = `
                                     <div class="pl-actions">
                                         <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">📋 Copy</button>
                                         <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">💬 Send to Chat</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">📄 JSON</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Automation Macro">⚙️ Lua Script</button>
                                     </div>
                                 </div>
                                 <textarea id="pl-result-prompt" class="pl-result-textarea" readonly placeholder="Your generated prompt will appear here..."></textarea>
@@ -1373,7 +1458,15 @@ document.querySelector('#app').innerHTML = `
                             
                             <div class="pl-output-section jpe-section">
                                 <div class="pl-output-header">
-                                    <span>Just Plain English (JPE) Explanation</span>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span>JPE Explanation</span>
+                                        <select id="pl-jpe-level-select" class="pl-dropdown" style="padding: 2px 4px; font-size: 0.75rem; background: rgba(0,0,0,0.2);">
+                                            <option value="grade8">Grade 8 (Simple)</option>
+                                            <option value="grade12">Grade 12 (Standard)</option>
+                                            <option value="executive">Executive</option>
+                                            <option value="technical">Technical</option>
+                                        </select>
+                                    </div>
                                     <div class="pl-actions">
                                         <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain Prompt with LLM">🔍 Explain in JPE</button>
                                         <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">📋 Copy</button>
@@ -6653,172 +6746,175 @@ function initFileShare() {
 
 // --- BUILT-IN WEB BROWSER SYSTEM ---
 function initBrowser() {
-    const iframe = document.getElementById("browser-iframe");
-    const homeScreen = document.getElementById("browser-home-screen");
-    const urlInput = document.getElementById("browser-url-input");
-    const clearBtn = document.getElementById("browser-url-clear-btn");
-    const goBtn = document.getElementById("browser-go-btn");
-    const openExtBtn = document.getElementById("browser-open-ext-btn");
-    const progressBar = document.getElementById("browser-progress-bar");
-    const blockedScreen = document.getElementById("browser-blocked-screen");
-    const blockedUrlDisplay = document.getElementById("blocked-url-display");
-    const blockedOpenExtBtn = document.getElementById("blocked-open-ext-btn");
-
-    const backBtn = document.getElementById("browser-back-btn");
-    const forwardBtn = document.getElementById("browser-forward-btn");
-    const refreshBtn = document.getElementById("browser-refresh-btn");
-    const homeBtn = document.getElementById("browser-home-btn");
-
+    const urlInput    = document.getElementById("browser-url-input");
+    const clearBtn    = document.getElementById("browser-url-clear-btn");
+    const goBtn       = document.getElementById("browser-go-btn");
+    const openExtBtn  = document.getElementById("browser-open-ext-btn");
+    const homeScreen  = document.getElementById("browser-home-screen");
+    const backBtn     = document.getElementById("browser-back-btn");
+    const forwardBtn  = document.getElementById("browser-forward-btn");
+    const refreshBtn  = document.getElementById("browser-refresh-btn");
+    const homeBtn     = document.getElementById("browser-home-btn");
     const homeSearchInput = document.getElementById("browser-home-search-input");
-    const homeSearchBtn = document.getElementById("browser-home-search-btn");
-    const speedDialCards = document.querySelectorAll(".speed-dial-card");
+    const homeSearchBtn   = document.getElementById("browser-home-search-btn");
+    const speedDialCards  = document.querySelectorAll(".speed-dial-card");
 
-    // Navigation state
-    let browserHistory = ["neurodeck://home"];
-    let browserHistoryIndex = 0;
-    let loadTimeout = null;
+    // Permanently hide the old iframe — the native window replaces it
+    const oldIframe = document.getElementById("browser-iframe");
+    if (oldIframe) oldIframe.style.display = "none";
+    const blockedScreen = document.getElementById("browser-blocked-screen");
+    if (blockedScreen) blockedScreen.style.display = "none";
 
-    // --- Progress bar helpers ---
-    function showProgress() {
-        if (!progressBar) return;
-        progressBar.classList.remove("hidden", "progress-done");
-        void progressBar.offsetWidth; // force reflow to restart animation
-        progressBar.classList.add("progress-loading");
-    }
-
-    function hideProgress(success = true) {
-        if (!progressBar) return;
-        progressBar.classList.remove("progress-loading");
-        if (success) {
-            progressBar.classList.add("progress-done");
-            setTimeout(() => {
-                progressBar.classList.add("hidden");
-                progressBar.classList.remove("progress-done");
-            }, 400);
-        } else {
-            progressBar.classList.add("hidden");
-        }
-    }
-
-    // --- Blocked screen ---
-    function showBlockedScreen(url) {
-        if (iframe) iframe.classList.add("hidden");
-        if (blockedScreen) blockedScreen.classList.remove("hidden");
-        if (blockedUrlDisplay) blockedUrlDisplay.textContent = url;
-    }
-
-    function hideBlockedScreen() {
-        if (blockedScreen) blockedScreen.classList.add("hidden");
-    }
+    // State
+    let browserWindowOpen  = false;
+    let currentUrl         = "neurodeck://home";
+    let syncInterval       = null;   // URL + position polling
+    let lastRect           = null;
 
     // --- URL parsing ---
     function parseUrlOrSearch(input) {
         const trimmed = input.trim();
         if (!trimmed) return "neurodeck://home";
         if (/^[a-zA-Z0-9+.-]+:\/\//.test(trimmed)) return trimmed;
-        const isDomain = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(trimmed) ||
-                         /^localhost(:\d+)?(\/.*)?$/.test(trimmed) ||
-                         /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?(\/.*)?$/.test(trimmed);
+        const isDomain =
+            /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(trimmed) ||
+            /^localhost(:\d+)?(\/.*)?$/.test(trimmed) ||
+            /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed);
         return isDomain
-            ? 'https://' + trimmed
-            : 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(trimmed);
+            ? "https://" + trimmed
+            : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(trimmed);
     }
 
-    function updateNavButtons() {
-        if (backBtn) backBtn.disabled = (browserHistoryIndex <= 0);
-        if (forwardBtn) forwardBtn.disabled = (browserHistoryIndex >= browserHistory.length - 1);
+    // Returns the browser viewport area in logical CSS pixels, viewport-relative.
+    // The native browser window is positioned by Rust using these + the Tauri
+    // window's inner_position(), so we never need window.screenX/Y.
+    function getViewportRect() {
+        const view = document.getElementById("view-browser");
+        if (!view) return null;
+        const toolbar = view.querySelector(".browser-toolbar");
+        const toolbarH = toolbar ? toolbar.getBoundingClientRect().height : 52;
+        const r = view.getBoundingClientRect();
+        return {
+            x: r.left,
+            y: r.top + toolbarH,
+            width:  r.width,
+            height: r.height - toolbarH,
+        };
     }
 
-    function openInExternal(url) {
-        const resolved = parseUrlOrSearch(url);
-        if (!resolved || resolved === "neurodeck://home") return;
-        invoke("open_external", { url: resolved }).catch(err => {
-            console.error("Failed to open external url:", err);
-        });
+    function rectsEqual(a, b) {
+        return a && b &&
+            a.x === b.x && a.y === b.y &&
+            a.width === b.width && a.height === b.height;
     }
 
-    function loadPage(url) {
-        clearTimeout(loadTimeout);
-        hideBlockedScreen();
+    // --- Home screen visibility ---
+    function showHome() {
+        if (homeScreen) homeScreen.classList.remove("hidden");
+        if (urlInput) urlInput.value = "";
+        currentUrl = "neurodeck://home";
+    }
+
+    function hideHome() {
+        if (homeScreen) homeScreen.classList.add("hidden");
+    }
+
+    // --- Navigation ---
+    async function navigateTo(raw) {
+        const url = parseUrlOrSearch(raw);
 
         if (url === "neurodeck://home") {
-            hideProgress(false);
-            if (iframe) {
-                iframe.classList.add("hidden");
-                iframe.src = "about:blank";
+            currentUrl = "neurodeck://home";
+            if (browserWindowOpen) {
+                await invoke("browser_hide").catch(() => {});
             }
-            if (homeScreen) homeScreen.classList.remove("hidden");
-            if (urlInput) urlInput.value = "";
-        } else {
-            if (homeScreen) homeScreen.classList.add("hidden");
-            if (iframe) {
-                iframe.classList.remove("hidden");
-                showProgress();
-
-                // Timeout fallback: if iframe doesn't fire load in 8s, assume it's blocked
-                loadTimeout = setTimeout(() => {
-                    hideProgress(false);
-                    showBlockedScreen(url);
-                }, 8000);
-
-                iframe.src = url;
-            }
-            if (urlInput) urlInput.value = url;
+            showHome();
+            return;
         }
-        updateNavButtons();
+
+        currentUrl = url;
+        if (urlInput) urlInput.value = url;
+
+        const r = getViewportRect();
+        if (!r) return;
+
+        try {
+            if (browserWindowOpen) {
+                await invoke("browser_navigate", { url });
+            } else {
+                await invoke("browser_open", {
+                    url,
+                    viewportX: r.x, viewportY: r.y,
+                    width: r.width, height: r.height,
+                });
+                browserWindowOpen = true;
+                hideHome();
+            }
+        } catch (e) {
+            console.error("[Browser] Navigation error:", e);
+        }
     }
 
-    function navigateTo(url, addToHistory = true) {
-        const targetUrl = parseUrlOrSearch(url);
-        if (addToHistory) {
-            if (browserHistoryIndex < browserHistory.length - 1) {
-                browserHistory = browserHistory.slice(0, browserHistoryIndex + 1);
-            }
-            if (browserHistory[browserHistoryIndex] !== targetUrl) {
-                browserHistory.push(targetUrl);
-                browserHistoryIndex = browserHistory.length - 1;
-            }
-        }
-        loadPage(targetUrl);
-    }
-
-    // --- Iframe load/error events ---
-    if (iframe) {
-        iframe.addEventListener("load", () => {
-            // load fires even on about:blank, so guard against that
-            if (!iframe.src || iframe.src === "about:blank" || iframe.src === window.location.href) return;
-            clearTimeout(loadTimeout);
-
-            // Detect X-Frame-Options / CSP block: the load event fires but the
-            // WebView renders an empty document.  Give the renderer one tick to
-            // settle, then check whether we can read any body content.
-            setTimeout(() => {
-                try {
-                    const doc = iframe.contentDocument;
-                    // Accessible empty doc = blocked (site sent X-Frame-Options: DENY)
-                    if (doc && doc.body !== null && doc.body.innerHTML.trim() === '') {
-                        hideProgress(false);
-                        showBlockedScreen(browserHistory[browserHistoryIndex]);
-                    } else {
-                        hideProgress(true);
-                    }
-                } catch (_) {
-                    // SecurityError = cross-origin content actually rendered — all good
-                    hideProgress(true);
+    // --- Sync interval: URL readback + reposition on move/resize ---
+    function startSync() {
+        if (syncInterval) return;
+        syncInterval = setInterval(async () => {
+            // Reposition if view moved or resized
+            if (browserWindowOpen) {
+                const r = getViewportRect();
+                if (r && !rectsEqual(r, lastRect)) {
+                    lastRect = r;
+                    await invoke("browser_show", {
+                        viewportX: r.x, viewportY: r.y,
+                        width: r.width, height: r.height,
+                    }).catch(() => {});
                 }
-            }, 150);
-        });
-        iframe.addEventListener("error", () => {
-            clearTimeout(loadTimeout);
-            hideProgress(false);
-            showBlockedScreen(browserHistory[browserHistoryIndex]);
+
+                // Sync URL back to address bar
+                try {
+                    const liveUrl = await invoke("browser_get_url");
+                    if (liveUrl && liveUrl !== currentUrl && document.activeElement !== urlInput) {
+                        currentUrl = liveUrl;
+                        if (urlInput) urlInput.value = liveUrl;
+                    }
+                } catch (_) {}
+            }
+        }, 250);
+    }
+
+    function stopSync() {
+        if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
+        lastRect = null;
+    }
+
+    // --- Tab activation / deactivation ---
+    const browserTab = document.querySelector('.nav-tab[data-view="browser"]');
+    if (browserTab) {
+        browserTab.addEventListener("click", async () => {
+            if (browserWindowOpen && currentUrl !== "neurodeck://home") {
+                const r = getViewportRect();
+                if (r) {
+                    await invoke("browser_show", {
+                        viewportX: r.x, viewportY: r.y,
+                        width: r.width, height: r.height,
+                    }).catch(() => {});
+                }
+            }
+            startSync();
         });
     }
+
+    document.querySelectorAll('.nav-tab:not([data-view="browser"])').forEach(tab => {
+        tab.addEventListener("click", () => {
+            if (browserWindowOpen) invoke("browser_hide").catch(() => {});
+            stopSync();
+        });
+    });
 
     // --- Toolbar button events ---
     if (goBtn && urlInput) {
         goBtn.onclick = () => navigateTo(urlInput.value);
-        urlInput.addEventListener("keydown", (e) => {
+        urlInput.addEventListener("keydown", e => {
             if (e.key === "Enter") navigateTo(urlInput.value);
         });
     }
@@ -6829,63 +6925,37 @@ function initBrowser() {
 
     if (backBtn) {
         backBtn.onclick = () => {
-            if (browserHistoryIndex > 0) {
-                browserHistoryIndex--;
-                loadPage(browserHistory[browserHistoryIndex]);
-            }
+            if (browserWindowOpen)
+                invoke("browser_exec", { js: "window.history.back()" }).catch(() => {});
         };
     }
 
     if (forwardBtn) {
         forwardBtn.onclick = () => {
-            if (browserHistoryIndex < browserHistory.length - 1) {
-                browserHistoryIndex++;
-                loadPage(browserHistory[browserHistoryIndex]);
-            }
+            if (browserWindowOpen)
+                invoke("browser_exec", { js: "window.history.forward()" }).catch(() => {});
         };
     }
 
     if (refreshBtn) {
         refreshBtn.onclick = () => {
-            const currentUrl = browserHistory[browserHistoryIndex];
-            if (currentUrl !== "neurodeck://home" && iframe) {
-                hideBlockedScreen();
-                showProgress();
-                clearTimeout(loadTimeout);
-                loadTimeout = setTimeout(() => {
-                    hideProgress(false);
-                    showBlockedScreen(currentUrl);
-                }, 8000);
-                iframe.classList.remove("hidden");
-                iframe.src = currentUrl;
-            }
+            if (browserWindowOpen)
+                invoke("browser_exec", { js: "window.location.reload()" }).catch(() => {});
         };
     }
 
-    if (homeBtn) {
-        homeBtn.onclick = () => navigateTo("neurodeck://home");
-    }
+    if (homeBtn) homeBtn.onclick = () => navigateTo("neurodeck://home");
 
     if (openExtBtn) {
         openExtBtn.onclick = () => {
-            const currentUrl = urlInput?.value.trim() || browserHistory[browserHistoryIndex];
-            if (currentUrl && currentUrl !== "neurodeck://home") {
-                openInExternal(currentUrl);
+            const url = urlInput?.value.trim() || currentUrl;
+            const parsed = parseUrlOrSearch(url);
+            if (parsed && parsed !== "neurodeck://home") {
+                invoke("open_external", { url: parsed }).catch(() => {});
             }
         };
     }
 
-    // Blocked screen "Open Ext" button
-    if (blockedOpenExtBtn) {
-        blockedOpenExtBtn.onclick = () => {
-            const currentUrl = browserHistory[browserHistoryIndex];
-            if (currentUrl && currentUrl !== "neurodeck://home") {
-                openInExternal(currentUrl);
-            }
-        };
-    }
-
-    // Speed dial cards
     speedDialCards.forEach(card => {
         card.onclick = () => {
             const url = card.getAttribute("data-url");
@@ -6893,52 +6963,32 @@ function initBrowser() {
         };
     });
 
-    // Home screen search
     if (homeSearchBtn && homeSearchInput) {
         homeSearchBtn.onclick = () => {
-            const query = homeSearchInput.value.trim();
-            if (query) navigateTo(query);
+            const q = homeSearchInput.value.trim();
+            if (q) navigateTo(q);
         };
-        homeSearchInput.addEventListener("keydown", (e) => {
+        homeSearchInput.addEventListener("keydown", e => {
             if (e.key === "Enter") {
-                const query = homeSearchInput.value.trim();
-                if (query) navigateTo(query);
+                const q = homeSearchInput.value.trim();
+                if (q) navigateTo(q);
             }
         });
     }
 
-    // --- Browser keyboard shortcuts (scoped to browser view being active) ---
-    document.addEventListener("keydown", (e) => {
-        const browserView = document.getElementById("view-browser");
-        if (!browserView?.classList.contains("active")) return;
+    // --- Keyboard shortcuts ---
+    document.addEventListener("keydown", e => {
+        const bv = document.getElementById("view-browser");
+        if (!bv?.classList.contains("active")) return;
 
-        // F5: Refresh current page
-        if (e.key === "F5") {
-            e.preventDefault();
-            if (refreshBtn) refreshBtn.click();
-        }
-
-        // Ctrl+L / Cmd+L: Focus and select URL bar
+        if (e.key === "F5") { e.preventDefault(); if (refreshBtn) refreshBtn.click(); }
         if ((e.ctrlKey || e.metaKey) && e.key === "l") {
             e.preventDefault();
             if (urlInput) { urlInput.focus(); urlInput.select(); }
         }
-
-        // Alt+Left: Back
-        if (e.altKey && e.key === "ArrowLeft") {
-            e.preventDefault();
-            if (backBtn && !backBtn.disabled) backBtn.click();
-        }
-
-        // Alt+Right: Forward
-        if (e.altKey && e.key === "ArrowRight") {
-            e.preventDefault();
-            if (forwardBtn && !forwardBtn.disabled) forwardBtn.click();
-        }
+        if (e.altKey && e.key === "ArrowLeft")  { e.preventDefault(); if (backBtn)    backBtn.click(); }
+        if (e.altKey && e.key === "ArrowRight") { e.preventDefault(); if (forwardBtn) forwardBtn.click(); }
     });
-
-    // Initialize
-    loadPage("neurodeck://home");
 }
 
 // ==========================================================================
@@ -8737,6 +8787,7 @@ function initPromptLab() {
     const sendChatBtn = document.getElementById("pl-send-chat-btn");
     const copyJpeBtn = document.getElementById("pl-copy-jpe-btn");
     
+    // Form fields
     const personaInput = document.getElementById("pl-persona");
     const taskInput = document.getElementById("pl-task");
     const contextInput = document.getElementById("pl-context");
@@ -8751,8 +8802,167 @@ function initPromptLab() {
     const templateSelect = document.getElementById("pl-template-select");
     const advancedToggle = document.getElementById("pl-advanced-toggle");
     const advancedFields = document.getElementById("pl-advanced-fields");
+
+    // New Fields & Buttons
+    const optimizeAiBtn = document.getElementById("pl-optimize-ai-btn");
+    const jpeLevelSelect = document.getElementById("pl-jpe-level-select");
+    const savePresetBtn = document.getElementById("pl-save-preset-btn");
+    const togglePresetInputBtn = document.getElementById("pl-toggle-preset-input-btn");
+    const presetNameInput = document.getElementById("pl-preset-name");
+    const exportJsonBtn = document.getElementById("pl-export-json-btn");
+    const exportLuaBtn = document.getElementById("pl-export-lua-btn");
+    const strengthBarFill = document.getElementById("pl-strength-bar-fill");
+    const strengthLabel = document.getElementById("pl-strength-label");
     
     if (!generateBtn) return; // View not in DOM
+
+    let loadedCustomPresets = {};
+
+    // Live Quality/Strength Scoring
+    function updatePromptStrength() {
+        let score = 0;
+        if (personaInput.value.trim().length > 5) score++;
+        if (taskInput.value.trim().length > 5) score++;
+        if (contextInput.value.trim().length > 5) score++;
+        if (toneInput.value.trim().length > 2) score++;
+        if (constraintsInput.value.trim().length > 5 || formatInput.value.trim().length > 5) score++;
+
+        const percentage = (score / 5) * 100;
+        if (strengthBarFill) {
+            strengthBarFill.style.width = percentage + "%";
+            
+            // Color updates
+            if (score <= 2) {
+                strengthBarFill.style.background = "var(--error-color)";
+                if (strengthLabel) {
+                    strengthLabel.style.color = "var(--error-color)";
+                    strengthLabel.textContent = `Weak (${score}/5)`;
+                }
+            } else if (score <= 4) {
+                strengthBarFill.style.background = "var(--accent-color)";
+                if (strengthLabel) {
+                    strengthLabel.style.color = "var(--accent-color)";
+                    strengthLabel.textContent = `Moderate (${score}/5)`;
+                }
+            } else {
+                strengthBarFill.style.background = "var(--response-color)";
+                if (strengthLabel) {
+                    strengthLabel.style.color = "var(--response-color)";
+                    strengthLabel.textContent = `Optimized (${score}/5) ✨`;
+                }
+            }
+        }
+    }
+
+    // Load custom presets on startup
+    function refreshCustomPresets() {
+        invoke("load_prompt_presets")
+            .then(presets => {
+                loadedCustomPresets = presets;
+                // Keep the default static options
+                templateSelect.innerHTML = `
+                    <option value="">Load Preset...</option>
+                    <option value="game">Endless Runner Game Concept</option>
+                    <option value="app">To-Do List App Features</option>
+                    <option value="script">Lua Scripting Template</option>
+                `;
+                // Append custom ones
+                Object.keys(presets).forEach(name => {
+                    const opt = document.createElement("option");
+                    opt.value = `custom_${name}`;
+                    opt.textContent = name;
+                    templateSelect.appendChild(opt);
+                });
+            })
+            .catch(err => console.error("Error loading presets:", err));
+    }
+
+    refreshCustomPresets();
+
+    // Toggle save preset UI
+    if (togglePresetInputBtn) {
+        togglePresetInputBtn.addEventListener("click", () => {
+            if (presetNameInput.style.display === "none") {
+                presetNameInput.style.display = "block";
+                savePresetBtn.style.display = "block";
+                togglePresetInputBtn.textContent = "Cancel";
+            } else {
+                presetNameInput.style.display = "none";
+                savePresetBtn.style.display = "none";
+                presetNameInput.value = "";
+                togglePresetInputBtn.textContent = "💾 Save Current";
+            }
+        });
+    }
+
+    // Save Preset handler
+    if (savePresetBtn) {
+        savePresetBtn.addEventListener("click", () => {
+            const name = presetNameInput.value.trim();
+            if (!name) {
+                addNotification("Prompt Lab Error", "Please enter a preset name.", "error");
+                return;
+            }
+
+            const schema = {
+                persona: personaInput.value.trim(),
+                task: taskInput.value.trim(),
+                context: contextInput.value.trim(),
+                tone: toneInput.value.trim(),
+                constraints: constraintsInput.value.trim(),
+                format: formatInput.value.trim(),
+                examples: examplesInput.value.trim(),
+                formula: formulaSelect.value
+            };
+
+            invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(schema) })
+                .then(() => {
+                    addNotification("Prompt Lab", `Preset "${name}" saved!`, "success");
+                    presetNameInput.style.display = "none";
+                    savePresetBtn.style.display = "none";
+                    presetNameInput.value = "";
+                    togglePresetInputBtn.textContent = "💾 Save Current";
+                    refreshCustomPresets();
+                })
+                .catch(err => {
+                    addNotification("Prompt Lab Error", "Failed to save preset: " + err, "error");
+                });
+        });
+    }
+
+    // AI Optimize handler
+    if (optimizeAiBtn) {
+        optimizeAiBtn.addEventListener("click", async () => {
+            const currentTask = taskInput.value.trim();
+            if (!currentTask) {
+                addNotification("Prompt Lab Error", "Provide a rough task description in the Task field first.", "error");
+                return;
+            }
+
+            optimizeAiBtn.disabled = true;
+            const originalText = optimizeAiBtn.textContent;
+            optimizeAiBtn.textContent = "Optimizing...";
+
+            try {
+                const schema = await invoke("optimize_raw_prompt", { rawText: currentTask });
+                personaInput.value = schema.persona;
+                taskInput.value = schema.task;
+                contextInput.value = schema.context;
+                toneInput.value = schema.tone;
+                constraintsInput.value = schema.constraints;
+                formatInput.value = schema.format;
+
+                addNotification("Prompt Lab", "AI Optimization completed!", "success");
+                assemblePrompt();
+                updatePromptStrength();
+            } catch (err) {
+                addNotification("Prompt Lab Error", "Optimization failed: " + err, "error");
+            } finally {
+                optimizeAiBtn.disabled = false;
+                optimizeAiBtn.textContent = originalText;
+            }
+        });
+    }
 
     // Progressive Disclosure Toggle
     advancedToggle.addEventListener("click", () => {
@@ -8761,16 +8971,40 @@ function initPromptLab() {
             ? "⚙️ Advanced Options" : "⚙️ Hide Advanced Options";
     });
     
-    // Templates
+    // Templates Change handler
     templateSelect.addEventListener("change", (e) => {
         const val = e.target.value;
-        if (val === "game") {
+        if (!val) return;
+
+        if (val.startsWith("custom_")) {
+            const name = val.substring(7);
+            const schemaStr = loadedCustomPresets[name];
+            if (schemaStr) {
+                try {
+                    const schema = JSON.parse(schemaStr);
+                    personaInput.value = schema.persona || "";
+                    taskInput.value = schema.task || "";
+                    contextInput.value = schema.context || "";
+                    toneInput.value = schema.tone || "";
+                    constraintsInput.value = schema.constraints || "";
+                    formatInput.value = schema.format || "";
+                    examplesInput.value = schema.examples || "";
+                    formulaSelect.value = schema.formula || "default";
+                    assemblePrompt();
+                    updatePromptStrength();
+                } catch (err) {
+                    console.error("Failed to parse custom preset:", err);
+                }
+            }
+        } else if (val === "game") {
             personaInput.value = "You are a creative game designer.";
             taskInput.value = "Design an endless runner game concept for mobile devices.";
             contextInput.value = "Target audience: kids, ages 8-14. Theme: Cyberpunk.";
             toneInput.value = "Upbeat, energetic, and concise.";
             constraintsInput.value = "- List 3 unique gameplay mechanics\n- Max 150 words total";
             formatInput.value = "JSON with keys: title, mechanics, art_style";
+            examplesInput.value = "";
+            formulaSelect.value = "default";
         } else if (val === "app") {
             personaInput.value = "You are an expert product manager.";
             taskInput.value = "Create a feature list for a minimalist To-Do list app.";
@@ -8778,6 +9012,8 @@ function initPromptLab() {
             toneInput.value = "Professional and structured.";
             constraintsInput.value = "- Exactly 5 features\n- Each feature should have a short name and 1 sentence description";
             formatInput.value = "Markdown bulleted list";
+            examplesInput.value = "";
+            formulaSelect.value = "default";
         } else if (val === "script") {
             personaInput.value = "You are a senior Lua developer.";
             taskInput.value = "Write a Lua script that parses a string and extracts all email addresses.";
@@ -8785,45 +9021,41 @@ function initPromptLab() {
             toneInput.value = "Technical and precise.";
             constraintsInput.value = "- Include code comments explaining the regex\n- Must be a single function `extract_emails(text)`";
             formatInput.value = "Lua code block only";
+            examplesInput.value = "";
+            formulaSelect.value = "default";
         }
+        assemblePrompt();
+        updatePromptStrength();
     });
 
-    // Prompt Assembly Logic
-    function assemblePrompt() {
-        let promptParts = [];
+    // Prompt Assembly Logic using Lua Engine backend
+    async function assemblePrompt() {
+        const persona = personaInput.value;
+        const task = taskInput.value;
+        const context = contextInput.value;
+        const tone = toneInput.value;
+        const constraints = constraintsInput.value;
+        const format = formatInput.value;
+        const examples = examplesInput.value;
         const formula = formulaSelect.value;
         
-        if (personaInput.value.trim()) {
-            promptParts.push(`**Role/Persona:**\n${personaInput.value.trim()}`);
+        try {
+            const assembled = await invoke("assemble_prompt_via_lua_cmd", {
+                persona, task, context, tone, constraints, format, examples, formula
+            });
+            resultPrompt.value = assembled;
+        } catch (err) {
+            console.error("Lua assembly failed:", err);
+            // Fallback to simple js concatenation
+            let promptParts = [];
+            if (persona.trim()) promptParts.push(`**Role/Persona:**\n${persona.trim()}`);
+            if (task.trim()) promptParts.push(`**Task/Objective:**\n${task.trim()}`);
+            if (context.trim()) promptParts.push(`**Context/Background:**\n${context.trim()}`);
+            if (tone.trim()) promptParts.push(`**Tone/Style:**\n${tone.trim()}`);
+            if (constraints.trim()) promptParts.push(`**Constraints:**\n${constraints.trim()}`);
+            if (format.trim()) promptParts.push(`**Output Format:**\n${format.trim()}`);
+            resultPrompt.value = promptParts.join("\n\n");
         }
-        if (taskInput.value.trim()) {
-            promptParts.push(`**Task/Objective:**\n${taskInput.value.trim()}`);
-        }
-        if (contextInput.value.trim()) {
-            promptParts.push(`**Context/Background:**\n${contextInput.value.trim()}`);
-        }
-        
-        // Handle formulas
-        if (formula === "aida") {
-            promptParts.push("**Structure:** Use the AIDA framework (Attention, Interest, Desire, Action).");
-        } else if (formula === "scqa") {
-            promptParts.push("**Structure:** Use the SCQA framework (Situation, Complication, Question, Answer).");
-        }
-        
-        if (toneInput.value.trim()) {
-            promptParts.push(`**Tone/Style:**\n${toneInput.value.trim()}`);
-        }
-        if (constraintsInput.value.trim()) {
-            promptParts.push(`**Constraints:**\n${constraintsInput.value.trim()}`);
-        }
-        if (formatInput.value.trim()) {
-            promptParts.push(`**Output Format:**\n${formatInput.value.trim()}`);
-        }
-        if (examplesInput.value.trim()) {
-            promptParts.push(`**Examples:**\n${examplesInput.value.trim()}`);
-        }
-        
-        resultPrompt.value = promptParts.join("\n\n");
     }
 
     generateBtn.addEventListener("click", () => {
@@ -8833,10 +9065,35 @@ function initPromptLab() {
     
     // Auto-update on blur or select change
     [personaInput, taskInput, contextInput, toneInput, constraintsInput, formatInput, examplesInput, formulaSelect].forEach(el => {
-        el.addEventListener("change", assemblePrompt);
+        el.addEventListener("input", () => {
+            assemblePrompt();
+            updatePromptStrength();
+        });
+        el.addEventListener("change", () => {
+            assemblePrompt();
+            updatePromptStrength();
+        });
     });
 
-    // Tauri JPE call
+    const formulaInfo = document.getElementById("pl-formula-info");
+    const formulaDescriptions = {
+        "default": "Default: Standard prompt construction focusing on Persona, Objective, Constraints, and Examples.",
+        "aida": "AIDA: Attention, Interest, Desire, Action. Ideal for persuasive copywriting, marketing messages, and engaging content.",
+        "scqa": "SCQA: Situation, Complication, Question, Answer. Excellent for consulting, structured analysis, and diagnostic problem solving.",
+        "pastor": "PASTOR: Problem, Amplify, Story, Transformation, Offer, Response. Highly effective for landing pages and value-based pitches.",
+        "pas": "PAS: Problem, Agitate, Solution. A classic, punchy copywriting framework for quick conversion and highlighting pain points.",
+        "cot": "CoT: Chain of Thought. Guides the AI to decompose complex reasoning tasks step-by-step. Excellent for logic and coding.",
+        "tot": "ToT: Tree of Thought. Forces the AI to branch, self-evaluate, and search paths. Best for complex design and strategic planning."
+    };
+
+    if (formulaSelect && formulaInfo) {
+        formulaSelect.addEventListener("change", () => {
+            const desc = formulaDescriptions[formulaSelect.value] || "Select a formula to apply structured copywriting/reasoning flow.";
+            formulaInfo.textContent = desc;
+        });
+    }
+
+    // Tauri JPE call supporting reading level
     explainBtn.addEventListener("click", async () => {
         const text = resultPrompt.value.trim();
         if (!text) {
@@ -8847,8 +9104,10 @@ function initPromptLab() {
         resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation via AI...</span>`;
         explainBtn.disabled = true;
         
+        const readingLevel = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
+        
         try {
-            const explanation = await invoke("generate_jpe_explanation", { promptText: text });
+            const explanation = await invoke("generate_jpe_explanation_with_level", { promptText: text, readingLevel });
             resultJpe.innerHTML = `<div class="jpe-content">${explanation.replace(/\n/g, '<br>')}</div>`;
         } catch (err) {
             console.error("JPE error:", err);
@@ -8892,6 +9151,54 @@ function initPromptLab() {
             }
         }
     });
+
+    // Export JSON handler
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", () => {
+            if (!resultPrompt.value.trim()) {
+                addNotification("Prompt Lab Error", "Generate a prompt first to export.", "error");
+                return;
+            }
+            const schema = {
+                persona: personaInput.value.trim(),
+                task: taskInput.value.trim(),
+                context: contextInput.value.trim(),
+                tone: toneInput.value.trim(),
+                constraints: constraintsInput.value.trim(),
+                format: formatInput.value.trim(),
+                examples: examplesInput.value.trim(),
+                formula: formulaSelect.value,
+                assembled_prompt: resultPrompt.value
+            };
+            const jsonStr = JSON.stringify(schema, null, 2);
+            navigator.clipboard.writeText(jsonStr);
+            addNotification("Prompt Lab", "Assembled JSON Schema copied to clipboard.", "success");
+        });
+    }
+
+    // Export Lua Automation Script handler (runs prompt automatically in S-Term Agent tab)
+    if (exportLuaBtn) {
+        exportLuaBtn.addEventListener("click", () => {
+            if (!resultPrompt.value.trim()) {
+                addNotification("Prompt Lab Error", "Generate a prompt first to export.", "error");
+                return;
+            }
+            const escapedPrompt = resultPrompt.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+            const luaScript = `-- S-Term Prompt Lab Automation Macro\n` +
+                              `-- Generated on ${new Date().toISOString()}\n\n` +
+                              `local prompt = "${escapedPrompt}"\n\n` +
+                              `print("[Automation] Executing Prompt Lab macro in S-Term...")\n` +
+                              `-- Send the prompt to the active LLM provider and fetch the response\n` +
+                              `local response = sendPrompt(prompt)\n` +
+                              `print("[Automation] AI Response:")\n` +
+                              `print(response)\n`;
+            
+            navigator.clipboard.writeText(luaScript);
+            addNotification("Prompt Lab", "Lua automation macro copied to clipboard.", "success");
+        });
+    }
+
+    updatePromptStrength();
 }
 initPromptLab();
 
