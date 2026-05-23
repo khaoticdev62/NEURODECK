@@ -11118,6 +11118,406 @@ async function showOnboardingWizard() {
 }
 
 // ==========================================================================
+// SPRINT A — TOUCH SCROLL & TAP POLISH
+// ==========================================================================
+(function initTouchScroll() {
+    // Selectors for every overflow-y:auto container in the app
+    const SCROLL_SELECTORS = [
+        "#chat-viewport",
+        "#sidebar-history",
+        "#agent-log",
+        "#memory-list",
+        "#ftp-file-list",
+        "#sftp-file-list",
+        "#transfer-log",
+        ".onboarding-log-viewport",
+        ".ob-diagnostic-log",
+        ".onboarding-carousel",
+        ".settings-content",
+        ".memory-doc-list",
+        ".prompt-lab-output",
+    ];
+
+    function attachTouchScroll(el) {
+        if (!el || el._touchScrollAttached) return;
+        el._touchScrollAttached = true;
+        let startY = 0;
+        let startScrollTop = 0;
+        let velocityY = 0;
+        let lastY = 0;
+        let lastT = 0;
+        let momentumId = null;
+
+        el.addEventListener("touchstart", (e) => {
+            if (momentumId) { cancelAnimationFrame(momentumId); momentumId = null; }
+            startY = e.touches[0].clientY;
+            startScrollTop = el.scrollTop;
+            lastY = startY;
+            lastT = Date.now();
+            velocityY = 0;
+        }, { passive: true });
+
+        el.addEventListener("touchmove", (e) => {
+            const dy = startY - e.touches[0].clientY;
+            el.scrollTop = startScrollTop + dy;
+            const now = Date.now();
+            const dt = now - lastT || 1;
+            velocityY = (lastY - e.touches[0].clientY) / dt;
+            lastY = e.touches[0].clientY;
+            lastT = now;
+        }, { passive: true });
+
+        el.addEventListener("touchend", () => {
+            // Momentum fling
+            let v = velocityY * 16; // pixels per frame at ~60fps
+            function fling() {
+                if (Math.abs(v) < 0.5) return;
+                el.scrollTop += v;
+                v *= 0.92;
+                momentumId = requestAnimationFrame(fling);
+            }
+            fling();
+        }, { passive: true });
+    }
+
+    // Attach to all known scroll containers after DOM is ready
+    function attach() {
+        SCROLL_SELECTORS.forEach(sel => {
+            document.querySelectorAll(sel).forEach(attachTouchScroll);
+        });
+    }
+
+    // Run on load and again after a short delay (for dynamically created elements)
+    document.addEventListener("DOMContentLoaded", attach);
+    setTimeout(attach, 2500);
+
+    // Expose so dynamically created containers can opt-in
+    window._attachTouchScroll = attachTouchScroll;
+})();
+
+// Double-tap on radial backdrop closes the menu
+(function initRadialTouchDismiss() {
+    let lastTap = 0;
+    document.addEventListener("touchend", (e) => {
+        if (!radialMenuVisible) return;
+        const t = Date.now();
+        if (e.target.closest(".radial-item")) {
+            // Single tap on a segment = activate it
+            const seg = e.target.closest(".radial-item");
+            if (seg) {
+                const idx = parseInt(seg.dataset.segment, 10);
+                activateRadialSegment(idx);
+                hideRadialMenu();
+            }
+            return;
+        }
+        if (t - lastTap < 300) {
+            hideRadialMenu();
+        }
+        lastTap = t;
+    }, { passive: true });
+})();
+
+// ==========================================================================
+// SPRINT B — VIRTUAL KEYBOARD OVERLAY
+// ==========================================================================
+(function initVirtualKeyboard() {
+    // Track whether last input event was a touch (vs physical key)
+    let lastInputWasTouch = false;
+    document.addEventListener("touchstart", () => { lastInputWasTouch = true; }, { passive: true });
+    document.addEventListener("keydown",    () => { lastInputWasTouch = false; });
+
+    // Modifier state
+    let vkShift = false;
+    let vkCtrl  = false;
+    let vkAlt   = false;
+    let vkCapsLock = false;
+
+    // Current target input element
+    let vkTarget = null;
+
+    // Key layout definition
+    // Each row is an array of [displayNormal, displayShifted, keyCode, keyValue]
+    // Special keys: type "special", value = action name
+    const ROWS = [
+        // Number row
+        [
+            ["1","!","Digit1","1"], ["2","@","Digit2","2"], ["3","#","Digit3","3"],
+            ["4","$","Digit4","4"], ["5","%","Digit5","5"], ["6","^","Digit6","6"],
+            ["7","&","Digit7","7"], ["8","*","Digit8","8"], ["9","(","Digit9","9"],
+            ["0",")","Digit0","0"], ["-","_","Minus","-"], ["=","+","Equal","="],
+            { type:"special", label:"⌫", action:"Backspace", cls:"vk-wide" },
+        ],
+        // QWERTY row
+        [
+            { type:"special", label:"Tab", action:"Tab", cls:"vk-wide" },
+            ["q","Q","KeyQ","q"], ["w","W","KeyW","w"], ["e","E","KeyE","e"],
+            ["r","R","KeyR","r"], ["t","T","KeyT","t"], ["y","Y","KeyY","y"],
+            ["u","U","KeyU","u"], ["i","I","KeyI","i"], ["o","O","KeyO","o"],
+            ["p","P","KeyP","p"], ["[","{","BracketLeft","["], ["]","}","BracketRight","]"],
+            ["\\","|","Backslash","\\"],
+        ],
+        // ASDF row
+        [
+            { type:"special", label:"Caps", action:"CapsLock", cls:"vk-wide vk-mod", id:"vk-caps" },
+            ["a","A","KeyA","a"], ["s","S","KeyS","s"], ["d","D","KeyD","d"],
+            ["f","F","KeyF","f"], ["g","G","KeyG","g"], ["h","H","KeyH","h"],
+            ["j","J","KeyJ","j"], ["k","K","KeyK","k"], ["l","L","KeyL","l"],
+            [";",":","Semicolon",";"], ["'","\"","Quote","'"],
+            { type:"special", label:"↵", action:"Enter", cls:"vk-xwide" },
+        ],
+        // ZXCV row
+        [
+            { type:"special", label:"⇧", action:"Shift", cls:"vk-xwide vk-mod", id:"vk-shift" },
+            ["z","Z","KeyZ","z"], ["x","X","KeyX","x"], ["c","C","KeyC","c"],
+            ["v","V","KeyV","v"], ["b","B","KeyB","b"], ["n","N","KeyN","n"],
+            ["m","M","KeyM","m"], [",","<","Comma",","], [".",">" ,"Period","."],
+            ["/","?","Slash","/"],
+            { type:"special", label:"⇧", action:"Shift", cls:"vk-xwide vk-mod" },
+        ],
+        // Bottom strip
+        [
+            { type:"special", label:"Ctrl",  action:"Ctrl",  cls:"vk-wide vk-mod", id:"vk-ctrl" },
+            { type:"special", label:"Alt",   action:"Alt",   cls:"vk-wide vk-mod", id:"vk-alt"  },
+            { type:"special", label:"Space", action:"Space", cls:"vk-space" },
+            { type:"special", label:"←",    action:"ArrowLeft",  cls:"vk-wide" },
+            { type:"special", label:"→",    action:"ArrowRight", cls:"vk-wide" },
+            { type:"special", label:"↑",    action:"ArrowUp",    cls:"" },
+            { type:"special", label:"↓",    action:"ArrowDown",  cls:"" },
+            { type:"special", label:"Esc",   action:"Escape", cls:"vk-wide" },
+        ],
+    ];
+
+    function buildKeyboard() {
+        // Build overlay HTML
+        const overlay = document.createElement("div");
+        overlay.id = "vk-overlay";
+        overlay.setAttribute("role", "toolbar");
+        overlay.setAttribute("aria-label", "Virtual Keyboard");
+
+        // Dismiss bar
+        const dismissBar = document.createElement("div");
+        dismissBar.className = "vk-dismiss-bar";
+        const dismissBtn = document.createElement("button");
+        dismissBtn.className = "vk-dismiss-btn";
+        dismissBtn.textContent = "⌄ Hide Keyboard";
+        dismissBtn.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            hideVirtualKeyboard();
+        });
+        dismissBar.appendChild(dismissBtn);
+        overlay.appendChild(dismissBar);
+
+        ROWS.forEach(row => {
+            const rowEl = document.createElement("div");
+            rowEl.className = "vk-row";
+
+            row.forEach(key => {
+                const btn = document.createElement("button");
+                btn.className = "vk-key";
+
+                if (key.type === "special") {
+                    btn.classList.add(...(key.cls || "").split(" ").filter(Boolean));
+                    btn.textContent = key.label;
+                    if (key.id) btn.id = key.id;
+                    btn.dataset.action = key.action;
+                } else {
+                    btn.dataset.normal = key[0];
+                    btn.dataset.shifted = key[1];
+                    btn.dataset.code   = key[2];
+                    btn.dataset.value  = key[3];
+                    btn.textContent = key[0];
+                }
+
+                // Use pointerdown so response is instant, prevent focus steal
+                btn.addEventListener("pointerdown", (e) => {
+                    e.preventDefault();
+                    btn.classList.add("vk-pressed");
+                    handleKeyPress(btn);
+                });
+                btn.addEventListener("pointerup",   () => btn.classList.remove("vk-pressed"));
+                btn.addEventListener("pointerleave", () => btn.classList.remove("vk-pressed"));
+
+                rowEl.appendChild(btn);
+            });
+
+            overlay.appendChild(rowEl);
+        });
+
+        document.body.appendChild(overlay);
+
+        // Attach touch scroll to overlay itself (for very small screens)
+        overlay.addEventListener("touchmove", e => e.stopPropagation(), { passive: true });
+    }
+
+    function handleKeyPress(btn) {
+        const action = btn.dataset.action;
+
+        // Handle modifier toggles
+        if (action === "Shift") {
+            vkShift = !vkShift;
+            updateModifierVisuals();
+            return;
+        }
+        if (action === "CapsLock") {
+            vkCapsLock = !vkCapsLock;
+            updateModifierVisuals();
+            return;
+        }
+        if (action === "Ctrl") {
+            vkCtrl = !vkCtrl;
+            updateModifierVisuals();
+            return;
+        }
+        if (action === "Alt") {
+            vkAlt = !vkAlt;
+            updateModifierVisuals();
+            return;
+        }
+
+        // Determine target element — fallback to document.activeElement
+        const target = vkTarget || document.activeElement;
+        if (!target) return;
+
+        if (action) {
+            // Special key — dispatch real KeyboardEvent
+            dispatchKey(target, action, action);
+        } else {
+            // Character key
+            const shifted = vkShift !== vkCapsLock; // XOR: caps inverts shift
+            const char = shifted ? btn.dataset.shifted : btn.dataset.normal;
+            const code = btn.dataset.code;
+
+            dispatchKey(target, code, char);
+
+            // Also insert character directly for inputs/textareas
+            insertCharAtCursor(target, char);
+
+            // Auto-release shift after one character (sticky shift behaviour)
+            if (vkShift) {
+                vkShift = false;
+                updateModifierVisuals();
+            }
+        }
+
+        // Keep focus on target
+        if (target && target.focus) target.focus();
+    }
+
+    function dispatchKey(target, code, key) {
+        const opts = {
+            key,
+            code,
+            bubbles: true,
+            cancelable: true,
+            shiftKey: vkShift,
+            ctrlKey: vkCtrl,
+            altKey: vkAlt,
+        };
+        target.dispatchEvent(new KeyboardEvent("keydown", opts));
+        target.dispatchEvent(new KeyboardEvent("keypress", opts));
+        target.dispatchEvent(new KeyboardEvent("keyup", opts));
+    }
+
+    function insertCharAtCursor(el, char) {
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+            const start = el.selectionStart ?? el.value.length;
+            const end   = el.selectionEnd   ?? el.value.length;
+            if (char === "Backspace") {
+                el.value = el.value.slice(0, Math.max(0, start - 1)) + el.value.slice(end);
+                el.setSelectionRange(Math.max(0, start - 1), Math.max(0, start - 1));
+            } else if (char.length === 1) {
+                el.value = el.value.slice(0, start) + char + el.value.slice(end);
+                el.setSelectionRange(start + 1, start + 1);
+            }
+            // Trigger input event so React/Vue/Svelte state syncs (and our own handlers)
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+        } else if (el.isContentEditable) {
+            // ContentEditable — let the KeyboardEvent handle it naturally
+        }
+    }
+
+    function updateModifierVisuals() {
+        // Update shifted labels on character keys
+        const isShifted = vkShift !== vkCapsLock;
+        document.querySelectorAll("#vk-overlay .vk-key[data-normal]").forEach(btn => {
+            btn.textContent = isShifted ? btn.dataset.shifted : btn.dataset.normal;
+        });
+        // Toggle active class on modifier keys
+        const shiftBtns  = document.querySelectorAll("#vk-overlay [data-action='Shift']");
+        const capsBtns   = document.querySelectorAll("#vk-overlay [data-action='CapsLock']");
+        const ctrlBtns   = document.querySelectorAll("#vk-overlay [data-action='Ctrl']");
+        const altBtns    = document.querySelectorAll("#vk-overlay [data-action='Alt']");
+        shiftBtns.forEach(b => b.classList.toggle("vk-active", vkShift));
+        capsBtns.forEach(b  => b.classList.toggle("vk-active", vkCapsLock));
+        ctrlBtns.forEach(b  => b.classList.toggle("vk-active", vkCtrl));
+        altBtns.forEach(b   => b.classList.toggle("vk-active", vkAlt));
+    }
+
+    function showVirtualKeyboard(targetEl) {
+        vkTarget = targetEl;
+        const overlay = document.getElementById("vk-overlay");
+        if (overlay) overlay.classList.add("vk-visible");
+    }
+
+    function hideVirtualKeyboard() {
+        vkTarget = null;
+        const overlay = document.getElementById("vk-overlay");
+        if (overlay) overlay.classList.remove("vk-visible");
+        // Reset one-shot modifiers
+        vkShift = false;
+        vkCtrl  = false;
+        vkAlt   = false;
+        updateModifierVisuals();
+    }
+
+    function shouldShowKeyboard() {
+        // Only show in touch context — not when physical keyboard is in use
+        return lastInputWasTouch;
+    }
+
+    // Trigger keyboard on focus for inputs/textareas in touch mode
+    function initTriggers() {
+        // Use event delegation on document — covers dynamically added inputs
+        document.addEventListener("focusin", (e) => {
+            const el = e.target;
+            const isTextInput = (
+                (el.tagName === "INPUT" && !["button","submit","reset","checkbox","radio","file","range"].includes(el.type)) ||
+                el.tagName === "TEXTAREA" ||
+                el.isContentEditable
+            );
+            if (isTextInput && shouldShowKeyboard()) {
+                showVirtualKeyboard(el);
+            }
+        });
+
+        document.addEventListener("focusout", (e) => {
+            // Only hide if focus moves outside of the virtual keyboard itself
+            setTimeout(() => {
+                const active = document.activeElement;
+                const vkEl = document.getElementById("vk-overlay");
+                if (vkEl && vkEl.contains(active)) return; // focus went to a key button
+                // Check if new active element is still a text input
+                const stillInput = active && (
+                    (active.tagName === "INPUT" && !["button","submit","reset","checkbox","radio","file","range"].includes(active.type)) ||
+                    active.tagName === "TEXTAREA" ||
+                    active.isContentEditable
+                );
+                if (!stillInput) hideVirtualKeyboard();
+            }, 100);
+        });
+    }
+
+    // Build keyboard DOM and wire triggers after page load
+    buildKeyboard();
+    initTriggers();
+
+    // Expose for programmatic control (e.g., gamepad B button could toggle)
+    window.showVirtualKeyboard = showVirtualKeyboard;
+    window.hideVirtualKeyboard = hideVirtualKeyboard;
+})();
+
+// ==========================================================================
 // CINEMATIC BOOT SEQUENCE
 // ==========================================================================
 (async function runBootSequence() {

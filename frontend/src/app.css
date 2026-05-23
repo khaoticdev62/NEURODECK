@@ -30,6 +30,10 @@ body {
     overflow: hidden;
     position: relative;
     -webkit-font-smoothing: antialiased;
+    /* Eliminate 300ms tap delay on all touch targets */
+    touch-action: manipulation;
+    /* Remove WebKit tap flash on touch */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Subtle background digital grid and scanlines */
@@ -1365,6 +1369,7 @@ code {
     top: 0;
     left: 0;
     flex-direction: column;
+    touch-action: manipulation;
 }
 
 .view-content.active {
@@ -6469,4 +6474,110 @@ body.crt-flicker-disabled .crt-flicker {
     font-size: 0.9rem;
     flex-shrink: 0;
     margin-top: 1px;
+}
+
+/* ==========================================================================
+   VIRTUAL KEYBOARD OVERLAY (Sprint B — Steam Deck touch input)
+   ========================================================================== */
+#vk-overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 8500;
+    background: rgba(8, 8, 12, 0.97);
+    border-top: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
+    padding: 6px 4px 8px;
+    box-sizing: border-box;
+    transform: translateY(100%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    /* Do not intercept scroll on the main content */
+    touch-action: manipulation;
+}
+
+#vk-overlay.vk-visible {
+    transform: translateY(0);
+}
+
+.vk-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+.vk-key {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(0, 240, 255, 0.18);
+    border-radius: 5px;
+    color: var(--fg-color, #D9F7FF);
+    font-size: 0.72rem;
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 30px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    transition: background 0.1s, border-color 0.1s, transform 0.08s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+
+.vk-key:active,
+.vk-key.vk-pressed {
+    background: rgba(0, 240, 255, 0.22);
+    border-color: var(--accent-color, #00F0FF);
+    transform: scale(0.93);
+}
+
+/* Modifier keys */
+.vk-key.vk-mod {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: rgba(0, 240, 255, 0.3);
+    color: var(--accent-color, #00F0FF);
+    font-size: 0.65rem;
+}
+
+.vk-key.vk-mod.vk-active {
+    background: rgba(0, 240, 255, 0.25);
+    border-color: var(--accent-color, #00F0FF);
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+/* Wide keys */
+.vk-key.vk-space  { min-width: 160px; flex: 1; max-width: 240px; }
+.vk-key.vk-wide   { min-width: 52px; }
+.vk-key.vk-xwide  { min-width: 68px; }
+
+/* Accent color for symbol row */
+.vk-key.vk-sym {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.65rem;
+}
+
+/* Dismiss handle */
+.vk-dismiss-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 6px 4px;
+}
+
+.vk-dismiss-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.6rem;
+    font-family: inherit;
+    padding: 2px 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    letter-spacing: 0.06em;
 }
