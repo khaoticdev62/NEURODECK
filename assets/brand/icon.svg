@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Glow filter for the N mark -->
+    <filter id="glow-strong" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur1"/>
+      <feGaussianBlur stdDeviation="18" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Background gradient -->
+    <radialGradient id="bg-grad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#0a1015"/>
+      <stop offset="100%" stop-color="#020406"/>
+    </radialGradient>
+    <!-- Cyan glow gradient for strokes -->
+    <linearGradient id="stroke-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="50%" stop-color="#00d4e8"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+    <!-- Node fill gradient -->
+    <radialGradient id="node-grad" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0066aa"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#bg-grad)"/>
+
+  <!-- Subtle grid lines -->
+  <g opacity="0.06" stroke="#00f0ff" stroke-width="1">
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="384" y1="0" x2="384" y2="512"/>
+  </g>
+
+  <!-- Circuit trace underlay — horizontal connectors -->
+  <g opacity="0.18" stroke="#00f0ff" stroke-width="1.5" fill="none">
+    <line x1="64" y1="148" x2="152" y2="148"/>
+    <line x1="360" y1="148" x2="448" y2="148"/>
+    <line x1="64" y1="364" x2="152" y2="364"/>
+    <line x1="360" y1="364" x2="448" y2="364"/>
+    <line x1="64" y1="256" x2="100" y2="256"/>
+    <line x1="412" y1="256" x2="448" y2="256"/>
+    <!-- Small circuit junction dots -->
+    <circle cx="100" cy="256" r="3"/>
+    <circle cx="412" cy="256" r="3"/>
+    <circle cx="64" cy="148" r="2"/>
+    <circle cx="64" cy="364" r="2"/>
+    <circle cx="448" cy="148" r="2"/>
+    <circle cx="448" cy="364" r="2"/>
+  </g>
+
+  <!-- ══ N LETTERFORM — circuit path construction ══ -->
+
+  <!-- Left vertical stroke -->
+  <line x1="152" y1="148" x2="152" y2="364"
+        stroke="url(#stroke-grad)" stroke-width="22"
+        stroke-linecap="round" filter="url(#glow-soft)"/>
+
+  <!-- Right vertical stroke -->
+  <line x1="360" y1="148" x2="360" y2="364"
+        stroke="url(#stroke-grad)" stroke-width="22"
+        stroke-linecap="round" filter="url(#glow-soft)"/>
+
+  <!-- Diagonal stroke (top-left → bottom-right) -->
+  <line x1="152" y1="148" x2="360" y2="364"
+        stroke="url(#stroke-grad)" stroke-width="22"
+        stroke-linecap="round" filter="url(#glow-soft)"/>
+
+  <!-- ══ GLOW LAYER — rendered on top for bloom effect ══ -->
+  <line x1="152" y1="148" x2="152" y2="364"
+        stroke="#00f0ff" stroke-width="4" opacity="0.9"
+        stroke-linecap="round" filter="url(#glow-strong)"/>
+  <line x1="360" y1="148" x2="360" y2="364"
+        stroke="#00f0ff" stroke-width="4" opacity="0.9"
+        stroke-linecap="round" filter="url(#glow-strong)"/>
+  <line x1="152" y1="148" x2="360" y2="364"
+        stroke="#00f0ff" stroke-width="4" opacity="0.9"
+        stroke-linecap="round" filter="url(#glow-strong)"/>
+
+  <!-- ══ NODE DOTS at junction points ══ -->
+  <!-- Top-left node -->
+  <circle cx="152" cy="148" r="16" fill="url(#node-grad)" filter="url(#glow-strong)"/>
+  <circle cx="152" cy="148" r="7" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Top-right node -->
+  <circle cx="360" cy="148" r="16" fill="url(#node-grad)" filter="url(#glow-strong)"/>
+  <circle cx="360" cy="148" r="7" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Bottom-left node -->
+  <circle cx="152" cy="364" r="16" fill="url(#node-grad)" filter="url(#glow-strong)"/>
+  <circle cx="152" cy="364" r="7" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Bottom-right node -->
+  <circle cx="360" cy="364" r="16" fill="url(#node-grad)" filter="url(#glow-strong)"/>
+  <circle cx="360" cy="364" r="7" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Center diagonal midpoint node (neural synapse) -->
+  <circle cx="256" cy="256" r="12" fill="url(#node-grad)" filter="url(#glow-strong)"/>
+  <circle cx="256" cy="256" r="5" fill="#ffffff" opacity="0.9"/>
+
+  <!-- ══ CORNER accent marks ══ -->
+  <g stroke="#00f0ff" stroke-width="2.5" fill="none" opacity="0.5">
+    <!-- Top-left corner -->
+    <polyline points="72,100 72,72 100,72"/>
+    <!-- Top-right corner -->
+    <polyline points="412,72 440,72 440,100"/>
+    <!-- Bottom-left corner -->
+    <polyline points="72,412 72,440 100,440"/>
+    <!-- Bottom-right corner -->
+    <polyline points="440,412 440,440 412,440"/>
+  </g>
+
+  <!-- ══ VERSION/BUILD dot — bottom right accent ══ -->
+  <circle cx="420" cy="420" r="5" fill="#ff0055" opacity="0.8"/>
+  <circle cx="420" cy="420" r="9" fill="none" stroke="#ff0055" stroke-width="1.5" opacity="0.4"/>
+</svg>

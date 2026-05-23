@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 160" width="820" height="160">
+  <defs>
+    <filter id="logo-glow" x="-10%" y="-40%" width="120%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="node-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bg" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#0a1015"/>
+      <stop offset="100%" stop-color="#030507"/>
+    </radialGradient>
+    <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+    <radialGradient id="ng" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#005588"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="160" rx="16" fill="url(#bg)"/>
+
+  <!-- Grid underlay -->
+  <g opacity="0.04" stroke="#00f0ff" stroke-width="1">
+    <line x1="0" y1="40" x2="820" y2="40"/>
+    <line x1="0" y1="80" x2="820" y2="80"/>
+    <line x1="0" y1="120" x2="820" y2="120"/>
+  </g>
+
+  <!-- ══ ICON MARK (scaled to 100px, offset 30px) ══ -->
+  <!-- Left vertical -->
+  <line x1="50" y1="32" x2="50" y2="128" stroke="url(#sg)" stroke-width="8" stroke-linecap="round" filter="url(#logo-glow)"/>
+  <!-- Right vertical -->
+  <line x1="110" y1="32" x2="110" y2="128" stroke="url(#sg)" stroke-width="8" stroke-linecap="round" filter="url(#logo-glow)"/>
+  <!-- Diagonal -->
+  <line x1="50" y1="32" x2="110" y2="128" stroke="url(#sg)" stroke-width="8" stroke-linecap="round" filter="url(#logo-glow)"/>
+  <!-- Nodes -->
+  <circle cx="50" cy="32" r="7" fill="url(#ng)" filter="url(#node-glow)"/>
+  <circle cx="50" cy="32" r="3" fill="#fff" opacity="0.95"/>
+  <circle cx="110" cy="32" r="7" fill="url(#ng)" filter="url(#node-glow)"/>
+  <circle cx="110" cy="32" r="3" fill="#fff" opacity="0.95"/>
+  <circle cx="50" cy="128" r="7" fill="url(#ng)" filter="url(#node-glow)"/>
+  <circle cx="50" cy="128" r="3" fill="#fff" opacity="0.95"/>
+  <circle cx="110" cy="128" r="7" fill="url(#ng)" filter="url(#node-glow)"/>
+  <circle cx="110" cy="128" r="3" fill="#fff" opacity="0.95"/>
+  <circle cx="80" cy="80" r="5" fill="url(#ng)" filter="url(#node-glow)"/>
+  <circle cx="80" cy="80" r="2.5" fill="#fff" opacity="0.9"/>
+  <!-- Corner brackets -->
+  <g stroke="#00f0ff" stroke-width="1.5" fill="none" opacity="0.45">
+    <polyline points="20,24 20,14 30,14"/>
+    <polyline points="130,14 140,14 140,24"/>
+    <polyline points="20,136 20,146 30,146"/>
+    <polyline points="140,136 140,146 130,146"/>
+  </g>
+
+  <!-- Separator line -->
+  <line x1="158" y1="24" x2="158" y2="136" stroke="#00f0ff" stroke-width="1" opacity="0.2"/>
+
+  <!-- ══ WORDMARK ══ -->
+  <!-- NEURODECK — primary -->
+  <text x="178" y="88"
+        font-family="'JetBrains Mono', 'Courier New', monospace"
+        font-size="52"
+        font-weight="700"
+        letter-spacing="6"
+        fill="#00f0ff"
+        filter="url(#logo-glow)">NEURODECK</text>
+
+  <!-- Tagline -->
+  <text x="180" y="118"
+        font-family="'JetBrains Mono', 'Courier New', monospace"
+        font-size="13"
+        font-weight="400"
+        letter-spacing="4"
+        fill="#00f0ff"
+        opacity="0.45">AI TERMINAL OS  ·  STEAM DECK NATIVE</text>
+
+  <!-- Version tag -->
+  <rect x="672" y="28" width="60" height="18" rx="3" fill="#ff0055" opacity="0.15"/>
+  <rect x="672" y="28" width="60" height="18" rx="3" fill="none" stroke="#ff0055" stroke-width="1" opacity="0.5"/>
+  <text x="702" y="41"
+        font-family="'JetBrains Mono', monospace"
+        font-size="10"
+        font-weight="600"
+        text-anchor="middle"
+        fill="#ff0055"
+        opacity="0.9">v1.0.0</text>
+</svg>
