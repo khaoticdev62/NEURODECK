@@ -4,7 +4,7 @@
   "project":        "neurodeck",
   "version":        "1.1.0",
   "codename":       "Thoth",
-  "stamped_at_utc": "2026-05-23T21:01:26Z",
+  "stamped_at_utc": "2026-05-23T21:39:40Z",
   "checks": {
     "meta_json_present":   true,
     "schema_valid":        true,
