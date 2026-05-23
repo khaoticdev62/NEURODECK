@@ -143,10 +143,12 @@ if (!window.__TAURI_INTERNALS__) {
             case 'send_command': {
                 // Simulate AI response stream
                 const text = args.prompt;
-                
+
                 // Let's create a simulated response depending on user prompt
                 let reply = `I received your command: "${text}".\n\nHere is some code execution output:`;
-                if (text.startsWith('/persona')) {
+                if (args.imageBase64) {
+                    reply = `**[Vision Mock]** I can see the attached screenshot.\n\nYou asked: "${text}"\n\nIn production this calls Gemini Vision to analyze the image.`;
+                } else if (text.startsWith('/persona')) {
                     reply = `Persona command executed successfully. Active persona updated.`;
                 } else if (text.startsWith('/discuss')) {
                     reply = `Roundtable discussion initiated:\n\n**Amelia (Dev)**: Let's refactor the process stream.\n**Winston (Architect)**: Make sure the IPC channels are secure.\n**Sally (UX)**: Ensure the console feels fluid.`;
@@ -2606,13 +2608,13 @@ function sendMessage() {
     // Scroll workspace
     viewport.scrollTop = viewport.scrollHeight;
     
-    // Call Tauri backend — the existing `send_command` receives the full prompt;
-    // if vision is needed we prepend a system note about the attached image.
-    let effectivePrompt = text;
+    // Call Tauri backend — pass image data directly when a screenshot is attached
+    const invokeArgs = { prompt: text };
     if (attachment) {
-        effectivePrompt = `[User attached a screenshot]\n${text}`;
+        invokeArgs.imageBase64 = attachment.data;
+        invokeArgs.imageMime = attachment.mime;
     }
-    invoke('send_command', { prompt: effectivePrompt }).catch((err) => {
+    invoke('send_command', invokeArgs).catch((err) => {
         let errorMsg = document.createElement("div");
         errorMsg.className = "message system error";
         errorMsg.innerHTML = `

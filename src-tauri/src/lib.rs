@@ -368,13 +368,33 @@ fn detect_game() -> (String, String, bool) {
     }
 }
 
+fn get_game_details(app_id: &str, name: &str) -> (String, String) {
+    match app_id {
+        "1091500" => ("Cyberpunk 2077".to_string(), "Action RPG. Recommended Settings: Steam Deck Preset, FSR Enabled (Quality), cap at 30 or 40FPS. Common tweaks: Use Proton Experimental to resolve audio crackling or crash-on-launch issues.".to_string()),
+        "1174180" => ("Red Dead Redemption 2".to_string(), "Action-Adventure. Recommended Settings: Medium/Low mix, FSR Ultra Quality. Common tweaks: Switch from Vulkan to DX12 API in graphics settings if experiencing graphics memory leak crashes.".to_string()),
+        "1887720" => ("Hades II".to_string(), "Action Rogue-like. Recommended Settings: High settings, Native resolution. Extremely well optimized (90FPS+ on Steam Deck OLED). No special troubleshooting needed.".to_string()),
+        "1145360" => ("Hades".to_string(), "Action Rogue-like. Recommended Settings: Native resolution. Extremely well optimized. No special troubleshooting needed.".to_string()),
+        "1245620" => ("Elden Ring".to_string(), "Action RPG / Souls-like. Recommended Settings: Medium settings, 800p, Lock at 30FPS for visual stability. Common tweaks: Use Proton Experimental and enable CryoUtilities swap file increase to resolve open world stutters.".to_string()),
+        "228970" => ("SteamOS / Desktop".to_string(), "Steam Deck OS interface and Desktop utility tools.".to_string()),
+        _ => {
+            if name.is_empty() {
+                ("Unknown Game".to_string(), "No specific Steam Deck settings profile found. Use default Proton settings.".to_string())
+            } else {
+                (name.to_string(), format!("Steam Deck settings recommendations: Match resolution to 1280x800, use FSR if framerate drops below 30, and run with Proton Experimental if startup issues occur."))
+            }
+        }
+    }
+}
+
 #[tauri::command]
 fn get_game_context() -> HashMap<String, String> {
     let (name, app_id, is_running) = detect_game();
     let mut map = HashMap::new();
+    let (_, notes) = get_game_details(&app_id, &name);
     map.insert("name".to_string(), name);
     map.insert("app_id".to_string(), app_id);
     map.insert("is_running".to_string(), is_running.to_string());
+    map.insert("notes".to_string(), notes);
     map
 }
 
@@ -990,6 +1010,8 @@ async fn cancel_generation(state: State<'_, Mutex<AppState>>) -> Result<(), Stri
 #[tauri::command]
 async fn send_command(
     prompt: String,
+    image_base64: Option<String>,
+    image_mime: Option<String>,
     app_handle: AppHandle,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
@@ -1101,10 +1123,10 @@ async fn send_command(
     if !game_name.is_empty() {
         let state_label = if game_running { "currently playing" } else { "recently played" };
         let id_note = if game_id.is_empty() { String::new() } else { format!(" (Steam AppID: {})", game_id) };
+        let (_, notes) = get_game_details(&game_id, &game_name);
         system_prompt.push_str(&format!(
-            " The user is {} the game: {}{}.{}",
-            state_label, game_name, id_note,
-            " Provide game-relevant tips or context when appropriate."
+            "\n\n[Active SteamOS Game Context]\nThe user is {} the game: {}{}.\nSteam Deck Optimization Notes: {}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.",
+            state_label, game_name, id_note, notes
         ));
     }
 
@@ -1353,19 +1375,22 @@ async fn send_command(
         app.cancel_stream_tx = Some(cancel_tx);
     }
 
-    // Start streaming
-    let mut stream = provider.stream_response(&full_prompt, &system_prompt);
     let mut full_response = String::new();
 
-    while let Some(chunk_res) = stream.next().await {
-        if cancel_rx.try_recv().is_ok() {
-            let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
-            break;
-        }
-        match chunk_res {
-            Ok(chunk) => {
-                full_response.push_str(&chunk);
-                let _ = app_handle.emit("stream_chunk", chunk);
+    if let Some(ref b64) = image_base64 {
+        // Vision path: non-streaming chat_with_image
+        let mime_str = image_mime.as_deref().unwrap_or("image/png");
+        let vision_prompt = if full_prompt.starts_with("[User attached a screenshot]") {
+            // Strip the prefix we added in JS; the image speaks for itself
+            prompt.clone()
+        } else {
+            full_prompt.clone()
+        };
+
+        match provider.chat_with_image(&vision_prompt, &system_prompt, Some(b64.as_str()), Some(mime_str)).await {
+            Ok(response) => {
+                full_response = response.clone();
+                let _ = app_handle.emit("stream_chunk", response);
             }
             Err(e) => {
                 let _ = app_handle.emit("stream_error", e);
@@ -1374,6 +1399,30 @@ async fn send_command(
                     app.cancel_stream_tx = None;
                 }
                 return Ok(());
+            }
+        }
+    } else {
+        // Normal streaming path
+        let mut stream = provider.stream_response(&full_prompt, &system_prompt);
+
+        while let Some(chunk_res) = stream.next().await {
+            if cancel_rx.try_recv().is_ok() {
+                let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
+                break;
+            }
+            match chunk_res {
+                Ok(chunk) => {
+                    full_response.push_str(&chunk);
+                    let _ = app_handle.emit("stream_chunk", chunk);
+                }
+                Err(e) => {
+                    let _ = app_handle.emit("stream_error", e);
+                    {
+                        let mut app = state.lock().unwrap();
+                        app.cancel_stream_tx = None;
+                    }
+                    return Ok(());
+                }
             }
         }
     }
@@ -1900,6 +1949,261 @@ fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, 
     })
 }
 
+// ============================================================
+// CATEGORY B COMMANDS
+// ============================================================
+
+/// AI-powered terminal autocomplete.
+/// Takes the current terminal input buffer and returns suggested completion suffix.
+#[tauri::command]
+async fn shell_autocomplete(buffer: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap();
+        app.provider.clone()
+    };
+
+    if buffer.trim().is_empty() {
+        return Ok(String::new());
+    }
+
+    let system_prompt = "You are a Unix/Linux shell autocomplete daemon. The user has partially typed a shell command. You must return ONLY the remaining characters needed to complete the most likely command — nothing else. No explanations, no punctuation, no newlines. If the input already looks complete or you cannot determine a sensible completion, return an empty string.";
+
+    let prompt = format!("Complete this shell command: {}", buffer);
+
+    // Use chat_with_image (text-only, no image) for a single-shot non-streaming response
+    let result = provider.chat_with_image(&prompt, system_prompt, None, None).await?;
+
+    // Clean the result: strip any leading text the model may have added
+    let completion = result.trim().to_string();
+
+    // Safety check: completion should be short and not contain the original buffer
+    if completion.len() > 200 || completion.contains('\n') {
+        return Ok(String::new());
+    }
+
+    Ok(completion)
+}
+
+/// Read the most recent screenshot from Steam or system Pictures directories.
+/// Returns a map with keys: `path`, `data` (base64), `mime`.
+#[tauri::command]
+async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
+    let mut candidate_dirs: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let home_path = PathBuf::from(&home);
+
+            // SteamOS screenshot dirs: ~/.local/share/Steam/userdata/*/760/remote/*/screenshots/
+            let userdata = home_path.join(".local/share/Steam/userdata");
+            if let Ok(entries) = std::fs::read_dir(&userdata) {
+                for entry in entries.flatten() {
+                    let remote_760 = entry.path().join("760/remote");
+                    if let Ok(game_entries) = std::fs::read_dir(&remote_760) {
+                        for game_entry in game_entries.flatten() {
+                            let ss_dir = game_entry.path().join("screenshots");
+                            if ss_dir.is_dir() {
+                                candidate_dirs.push(ss_dir);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // XDG Pictures/Screenshots
+            for rel in &["Pictures/Screenshots", "Pictures"] {
+                let p = home_path.join(rel);
+                if p.is_dir() {
+                    candidate_dirs.push(p);
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows: %USERPROFILE%\Pictures\Screenshots
+        if let Ok(userprofile) = std::env::var("USERPROFILE") {
+            let p = PathBuf::from(&userprofile).join("Pictures\\Screenshots");
+            if p.is_dir() {
+                candidate_dirs.push(p);
+            }
+        }
+        // Steam on Windows
+        for steam_root in &[
+            r"C:\Program Files (x86)\Steam\userdata",
+            r"C:\Program Files\Steam\userdata",
+        ] {
+            let steam_path = PathBuf::from(steam_root);
+            if let Ok(entries) = std::fs::read_dir(&steam_path) {
+                for entry in entries.flatten() {
+                    let remote_760 = entry.path().join("760\\remote");
+                    if let Ok(game_entries) = std::fs::read_dir(&remote_760) {
+                        for game_entry in game_entries.flatten() {
+                            let ss_dir = game_entry.path().join("screenshots");
+                            if ss_dir.is_dir() {
+                                candidate_dirs.push(ss_dir);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if candidate_dirs.is_empty() {
+        return Err("No screenshot directories found".to_string());
+    }
+
+    // Find the most recently modified image file across all candidate dirs
+    let image_extensions = ["png", "jpg", "jpeg", "webp", "bmp"];
+    let mut best_path: Option<PathBuf> = None;
+    let mut best_modified = std::time::SystemTime::UNIX_EPOCH;
+
+    for dir in &candidate_dirs {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let ext = path.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_lowercase())
+                    .unwrap_or_default();
+                if !image_extensions.contains(&ext.as_str()) {
+                    continue;
+                }
+                if let Ok(meta) = std::fs::metadata(&path) {
+                    if let Ok(modified) = meta.modified() {
+                        if modified > best_modified {
+                            best_modified = modified;
+                            best_path = Some(path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let path = best_path.ok_or_else(|| "No screenshot files found".to_string())?;
+
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .unwrap_or_else(|| "png".to_string());
+
+    let mime = match ext.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "bmp" => "image/bmp",
+        _ => "image/png",
+    };
+
+    let data = std::fs::read(&path)
+        .map_err(|e| format!("Failed to read screenshot: {}", e))?;
+
+    use base64::prelude::*;
+    let b64 = BASE64_STANDARD.encode(&data);
+
+    let mut result = HashMap::new();
+    result.insert("path".to_string(), path.to_string_lossy().to_string());
+    result.insert("data".to_string(), b64);
+    result.insert("mime".to_string(), mime.to_string());
+
+    Ok(result)
+}
+
+/// AI-powered shell history search.
+/// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
+#[tauri::command]
+async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
+    let provider = {
+        let app = state.lock().unwrap();
+        app.provider.clone()
+    };
+
+    // Collect history from common shell history files
+    let mut history_lines: Vec<String> = Vec::new();
+
+    let history_files = {
+        let mut files: Vec<PathBuf> = Vec::new();
+
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(home) = std::env::var("HOME") {
+                let home_path = PathBuf::from(&home);
+                for rel in &[".bash_history", ".zsh_history", ".local/share/fish/fish_history"] {
+                    let p = home_path.join(rel);
+                    if p.exists() {
+                        files.push(p);
+                    }
+                }
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // PowerShell history
+            if let Ok(appdata) = std::env::var("APPDATA") {
+                let ps_history = PathBuf::from(&appdata)
+                    .join("Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt");
+                if ps_history.exists() {
+                    files.push(ps_history);
+                }
+            }
+        }
+
+        files
+    };
+
+    for file in &history_files {
+        if let Ok(content) = std::fs::read_to_string(file) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                // Skip zsh history metadata lines (": 1234567890:0;")
+                if trimmed.is_empty() || trimmed.starts_with(": ") {
+                    continue;
+                }
+                // For zsh history, extract the actual command after the semicolon
+                let cmd = if let Some(semi) = trimmed.find(';') {
+                    trimmed[semi + 1..].trim().to_string()
+                } else {
+                    trimmed.to_string()
+                };
+                if !cmd.is_empty() {
+                    history_lines.push(cmd);
+                }
+            }
+        }
+    }
+
+    if history_lines.is_empty() {
+        // Return a helpful empty result (not an error)
+        return Ok(Vec::new());
+    }
+
+    // Deduplicate while preserving order (most recent wins)
+    history_lines.reverse();
+    let mut seen = std::collections::HashSet::new();
+    history_lines.retain(|line| seen.insert(line.clone()));
+
+    // Take at most 150 entries to keep the prompt manageable
+    let history_sample: Vec<String> = history_lines.into_iter().take(150).collect();
+
+    let history_text = history_sample.join("\n");
+    let system_prompt = "You are a shell history search assistant. The user provides a natural-language search query and a list of past shell commands. You must return ONLY the 10 most relevant commands from the list, ordered from most to least relevant. Return exactly one command per line, with no numbering, commentary, or extra text. If fewer than 10 commands are relevant, return only the relevant ones.";
+    let prompt = format!("Search query: \"{}\"\n\nShell history:\n{}", query, history_text);
+
+    let raw = provider.chat_with_image(&prompt, system_prompt, None, None).await?;
+
+    let results: Vec<String> = raw.lines()
+        .map(|l| l.trim().to_string())
+        .filter(|l| !l.is_empty())
+        .take(10)
+        .collect();
+
+    Ok(results)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -2050,7 +2354,10 @@ pub fn run() {
             plugin_mgr::install_plugin,
             plugin_mgr::read_plugin,
             plugin_mgr::save_plugin,
-            plugin_mgr::reload_plugins
+            plugin_mgr::reload_plugins,
+            shell_autocomplete,
+            read_last_screenshot,
+            search_history_ai
         ])
         .run(tauri::generate_context!())
 
