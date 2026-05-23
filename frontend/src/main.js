@@ -4413,6 +4413,13 @@ function patchTerminalSessionWithAutocomplete(session) {
 
     // Override Ctrl+Space using the custom keyEventHandler
     term.attachCustomKeyEventHandler((e) => {
+        // Ctrl+H: open AI history search — intercept before xterm sends 0x08 backspace to PTY
+        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
+            e.preventDefault();
+            if (typeof openHistorySearch === "function") openHistorySearch();
+            return false;
+        }
+
         // Ctrl+Space: trigger autocomplete
         if (e.ctrlKey && e.code === "Space" && e.type === "keydown") {
             e.preventDefault();
@@ -4471,6 +4478,16 @@ function initSshTerminal() {
     window.sshTerminal = term;
     window.sshTerminalFitAddon = fitAddon;
     try { fitAddon.fit(); } catch (e) {}
+
+    term.attachCustomKeyEventHandler((e) => {
+        // Ctrl+H: open AI history search from SSH terminal too
+        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
+            e.preventDefault();
+            if (typeof openHistorySearch === "function") openHistorySearch();
+            return false;
+        }
+        return true;
+    });
 
     term.onData(data => {
         if (sshSessionId) {
