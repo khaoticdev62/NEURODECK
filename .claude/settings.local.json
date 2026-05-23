@@ -12,7 +12,18 @@
       "mcp__plugin_playwright_playwright__browser_select_option",
       "mcp__plugin_playwright_playwright__browser_console_messages",
       "Bash(cargo build:*)",
-      "Bash(cargo clean:*)"
+      "Bash(cargo clean:*)",
+      "Bash(gh repo:*)",
+      "Bash(\"C:/Users/thecr/Desktop/S-Term/frontend/src/app.css\")",
+      "Bash(find C:UsersthecrDesktopS-Term.agent -name *.json -o -name *.toml -o -name personas* -o -name teams* -o -name agents* -o -name workflows*)",
+      "Bash(node -e \":*)",
+      "Bash(ollama pull:*)",
+      "Bash(ollama list:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/thecr/Desktop/S-Term/**)",
+      "Bash(done)",
+      "Bash(cargo check:*)"
     ]
   }
 }

@@ -189,6 +189,16 @@ if (!window.__TAURI_INTERNALS__) {
                 return "ok";
             case 'pty_spawn':
                 return { id: args.id || "main_pty_session" };
+            case 'ftp_test_connection':
+                return "Connected. Current directory: /";
+            case 'ftp_list_dir':
+                return [
+                    { name: "documents", is_dir: true, size: 0 },
+                    { name: "readme.txt", is_dir: false, size: 1024 },
+                ];
+            case 'ftp_download_file':
+            case 'ftp_upload_file':
+                return null;
             case 'get_discovered_peers':
                 return [];
             case 'get_active_transfers':
@@ -258,6 +268,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab active" data-view="chat">💬 Chat</button>
                     <button class="nav-tab" data-view="canvas">🎨 Canvas</button>
                     <button class="nav-tab" data-view="terminal">💻 Terminal</button>
+                    <button class="nav-tab" data-view="ssh">🔑 SSH</button>
                     <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
                     <button class="nav-tab" data-view="share">📤 Share</button>
                     <button class="nav-tab" data-view="browser">🌐 Browser</button>
@@ -351,10 +362,65 @@ document.querySelector('#app').innerHTML = `
                 <!-- Interactive PTY Terminal View -->
                 <div class="view-content" id="view-terminal">
                     <div class="terminal-toolbar">
-                        <span class="terminal-info">Interactive PTY Session</span>
-                        <button class="canvas-btn" id="pty-reconnect-btn">Restart Shell</button>
+                        <div class="shell-switcher">
+                            <span class="terminal-info">Shell:</span>
+                            <div class="shell-pill-group" id="shell-pill-group">
+                                <button class="shell-pill active" data-shell="default">Default</button>
+                                <button class="shell-pill" data-shell="/bin/bash">Bash</button>
+                                <button class="shell-pill" data-shell="/bin/zsh">Zsh</button>
+                                <button class="shell-pill" data-shell="/bin/fish">Fish</button>
+                                <button class="shell-pill" data-shell="powershell.exe">PS</button>
+                                <button class="shell-pill" data-shell="cmd.exe">CMD</button>
+                            </div>
+                        </div>
+                        <div class="terminal-toolbar-actions">
+                            <button class="canvas-btn" id="pty-reconnect-btn">↺ Restart</button>
+                        </div>
                     </div>
                     <div id="pty-terminal-container"></div>
+                </div>
+
+                <!-- SSH Client View -->
+                <div class="view-content" id="view-ssh">
+                    <div class="ssh-layout">
+                        <div class="ssh-sidebar">
+                            <div class="ssh-panel-header">SSH Connection</div>
+                            <div class="setting-field-group">
+                                <label>Host / IP</label>
+                                <input type="text" id="ssh-host-input" class="tunnel-text-input" placeholder="192.168.1.100" style="width:100%;box-sizing:border-box;">
+                            </div>
+                            <div class="ssh-row-fields">
+                                <div class="setting-field-group" style="flex:0 0 80px;">
+                                    <label>Port</label>
+                                    <input type="number" id="ssh-port-input" class="tunnel-text-input" value="22" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group" style="flex:1;">
+                                    <label>Username</label>
+                                    <input type="text" id="ssh-user-input" class="tunnel-text-input" placeholder="deck" style="width:100%;box-sizing:border-box;">
+                                </div>
+                            </div>
+                            <div class="setting-field-group">
+                                <label>Password</label>
+                                <input type="password" id="ssh-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
+                            </div>
+                            <button class="send-prompt-btn" id="ssh-connect-btn" style="width:100%;margin-top:8px;">Connect</button>
+                            <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
+                            <div class="ssh-profiles-list" id="ssh-profiles-list">
+                                <div class="ssh-no-profiles">No saved profiles.</div>
+                            </div>
+                            <button class="canvas-btn" id="ssh-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
+                        </div>
+                        <div class="ssh-terminal-area">
+                            <div class="ssh-status-bar">
+                                <span class="ssh-status-dot disconnected" id="ssh-status-dot">●</span>
+                                <span id="ssh-status-text">Not connected</span>
+                                <div style="margin-left:auto;display:flex;gap:8px;">
+                                    <button class="canvas-btn" id="ssh-disconnect-btn">Disconnect</button>
+                                </div>
+                            </div>
+                            <div id="ssh-terminal-container"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SteamOS Tunnel View -->
@@ -401,36 +467,91 @@ document.querySelector('#app').innerHTML = `
                     </div>
                 </div>
 
-                <!-- LAN File Sharing View -->
+                <!-- LAN File Sharing / SFTP / FTP View -->
                 <div class="view-content" id="view-share">
-                    <div class="share-grid">
-                        <div class="share-panel">
-                            <h3>LAN Discovery & Sending</h3>
-                            <p class="share-desc">Discovers S-Term instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
-                            
-                            <div class="setting-field-group">
-                                <label>Active Peers on LAN</label>
-                                <div class="peers-list" id="share-peers-list">
-                                    <div class="peer-item-empty">Scanning local network for active peers...</div>
+                    <div class="share-inner-tabs">
+                        <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
+                        <button class="share-inner-tab" data-panel="ftp">📁 FTP</button>
+                    </div>
+
+                    <!-- LAN Panel -->
+                    <div class="share-panel-section active" id="share-panel-lan">
+                        <div class="share-grid">
+                            <div class="share-panel">
+                                <h3>LAN Discovery & Sending</h3>
+                                <p class="share-desc">Discovers S-Term instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
+                                <div class="setting-field-group">
+                                    <label>Active Peers on LAN</label>
+                                    <div class="peers-list" id="share-peers-list">
+                                        <div class="peer-item-empty">Scanning local network for active peers...</div>
+                                    </div>
+                                </div>
+                                <div class="setting-field-group" style="margin-top: 15px;">
+                                    <label>Drag & Drop File or Select Path</label>
+                                    <div class="share-dropzone" id="share-dropzone">
+                                        <div class="dropzone-text">Drag files here or click to select a file</div>
+                                    </div>
+                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top: 8px; width: 100%; box-sizing: border-box;">
+                                </div>
+                                <button class="send-prompt-btn" id="share-send-btn" style="margin-top: 15px; width: 100%;" disabled>Send File 🚀</button>
+                            </div>
+                            <div class="share-panel">
+                                <h3>File Transfer Queue</h3>
+                                <p class="share-desc">Active and historical file transfers. Files are saved to Downloads/neurodeck_transfers/.</p>
+                                <div class="transfers-list" id="share-transfers-list">
+                                    <div class="transfer-item-empty">No active or past transfers in this session.</div>
                                 </div>
                             </div>
-                            
-                            <div class="setting-field-group" style="margin-top: 15px;">
-                                <label>Drag & Drop File or Select Path</label>
-                                <div class="share-dropzone" id="share-dropzone">
-                                    <div class="dropzone-text">Drag files here or click to select a file</div>
-                                </div>
-                                <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top: 8px; width: 100%; box-sizing: border-box;">
-                            </div>
-                            
-                            <button class="send-prompt-btn" id="share-send-btn" style="margin-top: 15px; width: 100%;" disabled>Send File 🚀</button>
                         </div>
-                        
-                        <div class="share-panel">
-                            <h3>File Transfer Queue</h3>
-                            <p class="share-desc">Active and historical file transfers. Files are saved to Downloads/neurodeck_transfers/.</p>
-                            <div class="transfers-list" id="share-transfers-list">
-                                <div class="transfer-item-empty">No active or past transfers in this session.</div>
+                    </div>
+
+                    <!-- FTP Panel -->
+                    <div class="share-panel-section" id="share-panel-ftp">
+                        <div class="ftp-layout">
+                            <div class="ftp-sidebar">
+                                <div class="ssh-panel-header">FTP Connection</div>
+                                <div class="setting-field-group">
+                                    <label>Host / IP</label>
+                                    <input type="text" id="ftp-host-input" class="tunnel-text-input" placeholder="ftp.example.com" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="ssh-row-fields">
+                                    <div class="setting-field-group" style="flex:0 0 80px;">
+                                        <label>Port</label>
+                                        <input type="number" id="ftp-port-input" class="tunnel-text-input" value="21" style="width:100%;box-sizing:border-box;">
+                                    </div>
+                                    <div class="setting-field-group" style="flex:1;">
+                                        <label>Username</label>
+                                        <input type="text" id="ftp-user-input" class="tunnel-text-input" placeholder="anonymous" style="width:100%;box-sizing:border-box;">
+                                    </div>
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Password</label>
+                                    <input type="password" id="ftp-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Remote Path</label>
+                                    <input type="text" id="ftp-path-input" class="tunnel-text-input" value="/" placeholder="/" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <button class="send-prompt-btn" id="ftp-connect-btn" style="width:100%;margin-top:8px;">Connect & List</button>
+                                <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
+                                <div class="setting-field-group">
+                                    <label>Local File Path</label>
+                                    <input type="text" id="ftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Remote Destination</label>
+                                    <input type="text" id="ftp-remote-dest-input" class="tunnel-text-input" placeholder="/uploads/file.txt" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <button class="canvas-btn" id="ftp-upload-btn" style="width:100%;margin-top:8px;">⬆ Upload</button>
+                            </div>
+                            <div class="ftp-browser">
+                                <div class="ftp-browser-header">
+                                    <span id="ftp-cwd-label">📁 /</span>
+                                    <span id="ftp-status-text" class="ftp-status">Disconnected</span>
+                                </div>
+                                <div class="ftp-file-list" id="ftp-file-list">
+                                    <div class="ftp-empty-state">Connect to an FTP server to browse files.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -734,6 +855,13 @@ document.querySelector('#app').innerHTML = `
                             CRT Flicker
                         </label>
                     </div>
+                    <div class="setting-field-group" style="margin-top: 20px;">
+                        <label>SSH Saved Profiles</label>
+                        <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list">
+                            <div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>
+                        </div>
+                        <button class="canvas-btn" id="settings-clear-ssh-profiles" style="margin-top:8px;">Clear All SSH Profiles</button>
+                    </div>
                 </div>
                 <div class="settings-modal-footer">
                     <button class="settings-close-btn" id="close-settings">Close</button>
@@ -914,6 +1042,33 @@ document.getElementById("shell-select").onchange = function() {
     localStorage.setItem("selectedShell", this.value);
     applySettings();
 };
+
+// Shell Switcher Pills (terminal toolbar)
+document.querySelectorAll(".shell-pill").forEach(pill => {
+    pill.onclick = function() {
+        const shell = this.getAttribute("data-shell");
+        document.querySelectorAll(".shell-pill").forEach(p => p.classList.remove("active"));
+        this.classList.add("active");
+        localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
+        // Also sync the settings dropdown
+        const shellSelect = document.getElementById("shell-select");
+        if (shellSelect) {
+            const option = shellSelect.querySelector(`option[value="${shell}"]`);
+            if (option) shellSelect.value = shell;
+        }
+        initPtyTerminal();
+    };
+});
+
+// Sync shell pills on load
+(function syncShellPills() {
+    const saved = localStorage.getItem("selectedShell") || "default";
+    const pill = document.querySelector(`.shell-pill[data-shell="${saved}"]`);
+    if (pill) {
+        document.querySelectorAll(".shell-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+    }
+})();
 
 document.getElementById("custom-shell-input").oninput = function() {
     localStorage.setItem("customShell", this.value);
@@ -2729,6 +2884,19 @@ navTabs.forEach(tab => {
                 }
             }, 50);
         }
+        if (targetView === "ssh") {
+            if (!window.sshTerminal) {
+                initSshTerminal();
+            }
+            setTimeout(() => {
+                try {
+                    window.sshTerminalFitAddon?.fit();
+                } catch (e) {}
+            }, 50);
+        }
+        if (targetView === "share") {
+            renderSshProfilesSettings();
+        }
     };
 });
 
@@ -2824,6 +2992,8 @@ listen("pty_output", (event) => {
     const payload = event.payload;
     if (payload.id === ptySessionId && window.ptyTerminal) {
         window.ptyTerminal.write(payload.data);
+    } else if (payload.id === sshSessionId && window.sshTerminal) {
+        window.sshTerminal.write(payload.data);
     }
 });
 
@@ -2831,6 +3001,10 @@ listen("pty_exit", (event) => {
     const id = event.payload;
     if (id === ptySessionId && window.ptyTerminal) {
         window.ptyTerminal.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");
+    } else if (id === sshSessionId) {
+        window.sshTerminal?.write("\r\n\x1b[1;31m[SSH Session Disconnected]\x1b[0m\r\n");
+        setSshStatus(false, "Disconnected");
+        sshSessionId = null;
     }
 });
 
@@ -2840,6 +3014,315 @@ if (ptyReconnectBtn) {
         initPtyTerminal();
     };
 }
+
+// ==========================================================================
+// SSH CLIENT SYSTEM
+// ==========================================================================
+
+let sshSessionId = null;
+
+function initSshTerminal() {
+    const container = document.getElementById("ssh-terminal-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const savedFontSize = parseInt(localStorage.getItem("terminalFontSize") || "14", 10);
+    const term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'var(--font-mono)',
+        fontSize: savedFontSize,
+        scrollback: 2000,
+        theme: {
+            background: '#000000',
+            foreground: '#e2e8f0',
+            cursor: '#00F0FF',
+            selectionBackground: 'rgba(0, 240, 255, 0.3)'
+        }
+    });
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(container);
+    window.sshTerminal = term;
+    window.sshTerminalFitAddon = fitAddon;
+    try { fitAddon.fit(); } catch (e) {}
+
+    term.onData(data => {
+        if (sshSessionId) {
+            invoke("pty_write", { id: sshSessionId, data }).catch(console.error);
+        }
+    });
+    term.write("\x1b[1;36mNEURODECK SSH Client\x1b[0m — Enter connection details and click Connect.\r\n");
+}
+
+function setSshStatus(connected, text) {
+    const dot = document.getElementById("ssh-status-dot");
+    const label = document.getElementById("ssh-status-text");
+    if (dot) {
+        dot.className = `ssh-status-dot ${connected ? "connected" : "disconnected"}`;
+    }
+    if (label) label.textContent = text;
+    const disconnectBtn = document.getElementById("ssh-disconnect-btn");
+    if (disconnectBtn) disconnectBtn.disabled = !connected;
+}
+
+function connectSsh() {
+    const host = document.getElementById("ssh-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
+    const user = document.getElementById("ssh-user-input")?.value.trim();
+
+    if (!host || !user) {
+        window.sshTerminal?.write("\r\n\x1b[1;31mError: Host and Username are required.\x1b[0m\r\n");
+        return;
+    }
+
+    // Kill existing session
+    if (sshSessionId) {
+        invoke("pty_kill", { id: sshSessionId }).catch(() => {});
+        sshSessionId = null;
+    }
+
+    sshSessionId = "ssh_session_" + Date.now();
+    const dims = window.sshTerminalFitAddon?.proposeDimensions() || { cols: 80, rows: 24 };
+
+    // Use system ssh binary
+    const sshBin = "ssh";
+    const sshArgs = ["-o", "StrictHostKeyChecking=no", "-p", String(port), `${user}@${host}`];
+
+    window.sshTerminal?.write(`\r\n\x1b[1;33mConnecting to ${user}@${host}:${port}...\x1b[0m\r\n`);
+    setSshStatus(false, `Connecting to ${host}...`);
+
+    invoke("pty_spawn", {
+        id: sshSessionId,
+        cols: dims.cols,
+        rows: dims.rows,
+        shell: sshBin,
+        args: sshArgs
+    }).then(() => {
+        setSshStatus(true, `${user}@${host}:${port}`);
+    }).catch(err => {
+        window.sshTerminal?.write(`\r\n\x1b[1;31mFailed to launch SSH: ${err}\x1b[0m\r\n`);
+        setSshStatus(false, "Connection failed");
+        sshSessionId = null;
+    });
+}
+
+document.getElementById("ssh-connect-btn")?.addEventListener("click", connectSsh);
+
+document.getElementById("ssh-disconnect-btn")?.addEventListener("click", () => {
+    if (sshSessionId) {
+        invoke("pty_kill", { id: sshSessionId }).catch(() => {});
+        sshSessionId = null;
+    }
+    window.sshTerminal?.write("\r\n\x1b[1;31m[Disconnected]\x1b[0m\r\n");
+    setSshStatus(false, "Disconnected");
+});
+
+// --- SSH Profile Management ---
+function getSshProfiles() {
+    try { return JSON.parse(localStorage.getItem("sshProfiles") || "[]"); } catch { return []; }
+}
+
+function saveSshProfiles(profiles) {
+    localStorage.setItem("sshProfiles", JSON.stringify(profiles));
+}
+
+function renderSshProfiles() {
+    const list = document.getElementById("ssh-profiles-list");
+    if (!list) return;
+    const profiles = getSshProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item" data-index="${i}">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <div class="ssh-profile-actions">
+                <button class="canvas-btn ssh-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
+                <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            </div>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".ssh-profile-load-btn").forEach(btn => {
+        btn.onclick = () => {
+            const p = getSshProfiles()[parseInt(btn.getAttribute("data-index"))];
+            if (!p) return;
+            document.getElementById("ssh-host-input").value = p.host;
+            document.getElementById("ssh-port-input").value = p.port;
+            document.getElementById("ssh-user-input").value = p.user;
+            document.getElementById("ssh-pass-input").value = "";
+        };
+    });
+
+    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getSshProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            saveSshProfiles(profiles);
+            renderSshProfiles();
+            renderSshProfilesSettings();
+        };
+    });
+}
+
+function renderSshProfilesSettings() {
+    const list = document.getElementById("settings-ssh-profiles-list");
+    if (!list) return;
+    const profiles = getSshProfiles();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${p.name}</span>
+                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+            </div>
+            <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+        </div>
+    `).join("");
+    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
+        btn.onclick = () => {
+            const profiles = getSshProfiles();
+            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            saveSshProfiles(profiles);
+            renderSshProfilesSettings();
+            renderSshProfiles();
+        };
+    });
+}
+
+document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () => {
+    const host = document.getElementById("ssh-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
+    const user = document.getElementById("ssh-user-input")?.value.trim();
+    if (!host || !user) { alert("Enter host and username first."); return; }
+    const name = prompt("Profile name:", `${user}@${host}`);
+    if (!name) return;
+    const profiles = getSshProfiles();
+    profiles.push({ name, host, port, user });
+    saveSshProfiles(profiles);
+    renderSshProfiles();
+});
+
+document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", () => {
+    localStorage.removeItem("sshProfiles");
+    renderSshProfiles();
+    renderSshProfilesSettings();
+});
+
+// Init SSH profiles on load
+renderSshProfiles();
+
+// ==========================================================================
+// FTP CLIENT SYSTEM
+// ==========================================================================
+
+let ftpCurrentPath = "/";
+
+function renderFtpFiles(entries) {
+    const list = document.getElementById("ftp-file-list");
+    if (!list) return;
+    if (!entries || entries.length === 0) {
+        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
+        return;
+    }
+    list.innerHTML = entries.map(e => `
+        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
+            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
+            <span class="ftp-file-name">${e.name}</span>
+            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
+            ${!e.is_dir ? `<button class="canvas-btn ftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
+        </div>
+    `).join("");
+
+    // Directory navigation
+    list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
+        item.style.cursor = "pointer";
+        item.onclick = () => {
+            const name = item.getAttribute("data-name");
+            ftpCurrentPath = ftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            loadFtpDir(ftpCurrentPath);
+        };
+    });
+
+    // Download buttons
+    list.querySelectorAll(".ftp-download-btn").forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const name = btn.getAttribute("data-name");
+            const remotePath = ftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+            const host = document.getElementById("ftp-host-input")?.value.trim();
+            const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+            const user = document.getElementById("ftp-user-input")?.value.trim();
+            const pass = document.getElementById("ftp-pass-input")?.value;
+            setFtpStatus(`Downloading ${name}...`);
+            invoke("ftp_download_file", { host, port, user, password: pass, remotePath, localPath })
+                .then(() => setFtpStatus(`Downloaded to ${localPath}`))
+                .catch(err => setFtpStatus(`Download error: ${err}`));
+        };
+    });
+}
+
+function setFtpStatus(msg) {
+    const el = document.getElementById("ftp-status-text");
+    if (el) el.textContent = msg;
+}
+
+function loadFtpDir(path) {
+    const host = document.getElementById("ftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+    const user = document.getElementById("ftp-user-input")?.value.trim();
+    const pass = document.getElementById("ftp-pass-input")?.value;
+    if (!host) return;
+
+    setFtpStatus("Loading...");
+    const cwdLabel = document.getElementById("ftp-cwd-label");
+    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
+
+    invoke("ftp_list_dir", { host, port, user, password: pass, path })
+        .then(entries => {
+            ftpCurrentPath = path;
+            renderFtpFiles(entries);
+            setFtpStatus(`Connected — ${entries.length} items`);
+        })
+        .catch(err => {
+            setFtpStatus(`Error: ${err}`);
+            const list = document.getElementById("ftp-file-list");
+            if (list) list.innerHTML = `<div class="ftp-empty-state" style="color:#ff6b6b;">Error: ${err}</div>`;
+        });
+}
+
+document.getElementById("ftp-connect-btn")?.addEventListener("click", () => {
+    const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
+    loadFtpDir(path);
+});
+
+document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
+    const host = document.getElementById("ftp-host-input")?.value.trim();
+    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
+    const user = document.getElementById("ftp-user-input")?.value.trim();
+    const pass = document.getElementById("ftp-pass-input")?.value;
+    const localPath = document.getElementById("ftp-local-path-input")?.value.trim();
+    const remotePath = document.getElementById("ftp-remote-dest-input")?.value.trim();
+    if (!host || !localPath || !remotePath) {
+        setFtpStatus("Fill in host, local path, and remote destination.");
+        return;
+    }
+    setFtpStatus("Uploading...");
+    invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
+        .then(() => {
+            setFtpStatus("Upload complete.");
+            loadFtpDir(ftpCurrentPath);
+        })
+        .catch(err => setFtpStatus(`Upload error: ${err}`));
+});
 
 // --- LIVE CODE CANVAS SYSTEM ---
 
@@ -3228,6 +3711,18 @@ function initTunnelClient() {
         checkTunnelServerStatus(true);
     }, 5000);
 }
+
+// --- SHARE INNER TAB SWITCHING ---
+document.querySelectorAll(".share-inner-tab").forEach(tab => {
+    tab.onclick = function() {
+        const panel = this.getAttribute("data-panel");
+        document.querySelectorAll(".share-inner-tab").forEach(t => t.classList.remove("active"));
+        this.classList.add("active");
+        document.querySelectorAll(".share-panel-section").forEach(s => s.classList.remove("active"));
+        const el = document.getElementById(`share-panel-${panel}`);
+        if (el) el.classList.add("active");
+    };
+});
 
 // --- LAN FILE SHARING SYSTEM ---
 let selectedPeerIp = null;

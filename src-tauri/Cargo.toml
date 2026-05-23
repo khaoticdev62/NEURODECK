@@ -37,5 +37,6 @@ portable-pty = "0.8"
 tokio-util = { version = "0.7", features = ["codec"] }
 rand = "0.8"
 anyhow = "1.0"
+suppaftp = "6"
 
 

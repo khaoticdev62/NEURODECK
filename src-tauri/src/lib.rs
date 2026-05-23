@@ -6,6 +6,7 @@ mod lua;
 mod pty_manager;
 mod tunnel;
 mod transfer;
+mod ftp;
 
 
 use std::collections::HashMap;
@@ -1645,7 +1646,11 @@ pub fn run() {
             memory_list_all,
             memory_delete,
             memory_pin,
-            memory_add_fact
+            memory_add_fact,
+            ftp::ftp_list_dir,
+            ftp::ftp_download_file,
+            ftp::ftp_upload_file,
+            ftp::ftp_test_connection
         ])
         .run(tauri::generate_context!())
 

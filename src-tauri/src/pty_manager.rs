@@ -29,6 +29,7 @@ pub fn pty_spawn(
     cols: u16,
     rows: u16,
     shell: Option<String>,
+    args: Option<Vec<String>>,
     app_handle: AppHandle,
     state: State<'_, PtyState>,
 ) -> Result<(), String> {
@@ -44,7 +45,12 @@ pub fn pty_spawn(
     let has_custom_shell = !primary_shell.is_empty();
 
     let spawn_result = if has_custom_shell {
-        let cmd = CommandBuilder::new(&primary_shell);
+        let mut cmd = CommandBuilder::new(&primary_shell);
+        if let Some(ref arg_list) = args {
+            for arg in arg_list {
+                cmd.arg(arg);
+            }
+        }
         pair.slave.spawn_command(cmd)
     } else {
         let cmd_name = if cfg!(target_os = "windows") {
