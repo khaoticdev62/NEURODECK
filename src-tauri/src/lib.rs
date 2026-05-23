@@ -1529,7 +1529,13 @@ pub fn run() {
         std::process::exit(0);
     }
 
-    let config = config::load_config("llm-term.toml");
+    // Resolve config path: prefer ../llm-term.toml (project root) over ./llm-term.toml (src-tauri/)
+    let config_path = if std::path::Path::new("../llm-term.toml").exists() {
+        "../llm-term.toml"
+    } else {
+        "llm-term.toml"
+    };
+    let config = config::load_config(config_path);
     
     let provider: Arc<dyn LlmProvider> = if std::env::var("GEMINI_API_KEY").is_ok()
         || config.llm.default_provider == "gemini" 

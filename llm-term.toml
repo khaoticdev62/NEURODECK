@@ -1,4 +1,4 @@
 [llm]
 default_provider = "ollama"
-ollama_model = "llama3.1:8b"
+ollama_model = "llama3.2:1b"
 gemini_model = "gemini-1.5-flash"
