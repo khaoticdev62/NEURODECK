@@ -1,36 +1,30 @@
 {
   "kfms_version": "1.0",
-
   "project": {
-    "name":        "NEURODECK",
-    "id":          "neurodeck",
+    "name": "NEURODECK",
+    "id": "neurodeck",
     "description": "AI-powered terminal OS for Steam Deck — LLM chat, live canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 window.",
-    "repo":        "https://github.com/khaoticdev62/NEURODECK"
+    "repo": "https://github.com/khaoticdev62/NEURODECK"
   },
-
   "version": "1.1.0",
-
   "codename": {
-    "name":           "Thoth",
-    "minor_line":     1,
+    "name": "Thoth",
+    "minor_line": 1,
     "registry_index": 1
   },
-
   "tag": "v1.1.0-thoth",
-
   "build": {
-    "git_sha":      "eea6ffd5f1275dd1d6425c5e5c624481d924e1df",
-    "git_tag":      "v1.1.0",
-    "built_at_utc": "2026-05-23T21:01:26Z",
-    "dirty":        false
+    "git_sha": "fdfc82528d9a4b87a1db1276cd321f12036c2aaf",
+    "git_tag": null,
+    "built_at_utc": "2026-05-23T21:39:11Z",
+    "dirty": true
   },
-
   "studio": {
     "name": "Khaotic Labs",
     "governance": {
       "codename_unique_per_major": true,
-      "no_secrets_in_build":       true,
-      "loose_zone":                ".loose/"
+      "no_secrets_in_build": true,
+      "loose_zone": ".loose/"
     }
   }
 }
