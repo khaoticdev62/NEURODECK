@@ -2208,6 +2208,141 @@ async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>) -> 
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// P18: Local Document RAG
+// ──────────────────────────────────────────────────────────────────────────
+
+fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
+    let extensions = ["txt", "md", "rs", "py", "js", "ts", "json", "toml", "yaml", "yml", "csv", "log"];
+    if collected.len() >= max {
+        return;
+    }
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        if collected.len() >= max {
+            break;
+        }
+        let path = entry.path();
+        if path.is_dir() {
+            // Skip hidden directories
+            if path.file_name().map(|n| n.to_string_lossy().starts_with('.')).unwrap_or(false) {
+                continue;
+            }
+            collect_text_files(&path, collected, max);
+        } else if path.is_file() {
+            let ext = path.extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.to_lowercase())
+                .unwrap_or_default();
+            if extensions.contains(&ext.as_str()) {
+                // Skip files > 100 KB
+                if let Ok(meta) = std::fs::metadata(&path) {
+                    if meta.len() <= 102_400 {
+                        collected.push(path);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
+async fn index_directory(
+    path: String,
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<usize, String> {
+    let (provider, mem_db) = {
+        let app = state.lock().unwrap();
+        (app.provider.clone(), app.mem_db.clone())
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let dir = PathBuf::from(&path);
+    if !dir.is_dir() {
+        return Err(format!("'{}' is not a directory", path));
+    }
+
+    let mut files: Vec<PathBuf> = Vec::new();
+    collect_text_files(&dir, &mut files, 500);
+
+    let total = files.len();
+    let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": 0, "total": total }));
+
+    let mut indexed = 0usize;
+    for file in files {
+        let content = match std::fs::read_to_string(&file) {
+            Ok(c) if !c.trim().is_empty() => c,
+            _ => continue,
+        };
+        // Truncate to 4 KB for embedding to stay within token limits
+        let snippet: String = content.chars().take(4096).collect();
+        let file_path_str = file.to_string_lossy().to_string();
+
+        if let Ok(embedding) = provider.generate_embedding(&snippet).await {
+            let mut metadata = HashMap::new();
+            metadata.insert("namespace".to_string(), "docs".to_string());
+            metadata.insert("file".to_string(), file_path_str.clone());
+            metadata.insert("role".to_string(), "document".to_string());
+            let id = format!("doc::{}", file_path_str);
+            let _ = db.store_message(id, snippet, embedding, metadata);
+            indexed += 1;
+        }
+        let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total }));
+    }
+
+    Ok(indexed)
+}
+
+#[tauri::command]
+fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
+    let app = state.lock().unwrap();
+    if let Some(ref db) = app.mem_db {
+        db.count_by_namespace("docs")
+    } else {
+        Ok(0)
+    }
+}
+
+#[tauri::command]
+fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
+    let app = state.lock().unwrap();
+    if let Some(ref db) = app.mem_db {
+        db.delete_by_namespace("docs")
+    } else {
+        Ok(0)
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// P20: Game Session Notes
+// ──────────────────────────────────────────────────────────────────────────
+
+fn game_notes_path(app_id: &str) -> PathBuf {
+    PathBuf::from("./data/game_notes").join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
+}
+
+#[tauri::command]
+fn get_game_notes(app_id: String) -> Result<String, String> {
+    let path = game_notes_path(&app_id);
+    if path.exists() {
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read notes: {}", e))
+    } else {
+        Ok(String::new())
+    }
+}
+
+#[tauri::command]
+fn save_game_note(app_id: String, content: String) -> Result<(), String> {
+    let path = game_notes_path(&app_id);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {}", e))?;
+    }
+    std::fs::write(&path, &content).map_err(|e| format!("Failed to write notes: {}", e))
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // MCP Server commands
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -2425,6 +2560,11 @@ pub fn run() {
             shell_autocomplete,
             read_last_screenshot,
             search_history_ai,
+            index_directory,
+            get_doc_count,
+            clear_doc_index,
+            get_game_notes,
+            save_game_note,
             start_mcp_server,
             stop_mcp_server,
             get_mcp_status

@@ -112,6 +112,25 @@ impl MemoryDB {
         self.store_message(id, content, vec![], metadata)
     }
 
+    pub fn count_by_namespace(&self, namespace: &str) -> Result<usize, String> {
+        let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        Ok(records.iter().filter(|r| r.metadata.get("namespace").map(|v| v.as_str()) == Some(namespace)).count())
+    }
+
+    pub fn delete_by_namespace(&self, namespace: &str) -> Result<usize, String> {
+        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let before = records.len();
+        records.retain(|r| r.metadata.get("namespace").map(|v| v.as_str()) != Some(namespace));
+        let removed = before - records.len();
+        if removed > 0 {
+            let serialized = serde_json::to_string_pretty(&*records)
+                .map_err(|e| format!("Failed to serialize: {}", e))?;
+            fs::write(&self.file_path, serialized)
+                .map_err(|e| format!("Failed to write: {}", e))?;
+        }
+        Ok(removed)
+    }
+
     pub fn search(&self, query_embedding: &[f32], limit: usize) -> Result<Vec<MemoryRecord>, String> {
         let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
         

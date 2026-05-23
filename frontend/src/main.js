@@ -481,6 +481,39 @@ if (!window.__TAURI_INTERNALS__) {
                     ? { running: 'true', port: String(port), url: `http://127.0.0.1:${port}` }
                     : { running: 'false', port: String(port) };
             }
+            case 'index_directory': {
+                // Simulate progress events then return count
+                const total = 4;
+                for (let i = 1; i <= total; i++) {
+                    setTimeout(() => {
+                        invoke('plugin:event|emit', {
+                            event: 'doc_index_progress',
+                            payload: JSON.stringify({ indexed: i, total, file: `mock_doc_${i}.txt` })
+                        });
+                    }, 300 * i);
+                }
+                setTimeout(() => {
+                    invoke('plugin:event|emit', {
+                        event: 'doc_index_progress',
+                        payload: JSON.stringify({ indexed: total, total, done: true })
+                    });
+                }, 300 * (total + 1));
+                return `Indexed ${total} documents (mock).`;
+            }
+            case 'get_doc_count':
+                return window._mockDocCount || 0;
+            case 'clear_doc_index':
+                window._mockDocCount = 0;
+                return 'Document index cleared (mock).';
+            case 'get_game_notes': {
+                const appId = args.appId || '';
+                return window._mockGameNotes?.[appId] || '';
+            }
+            case 'save_game_note': {
+                if (!window._mockGameNotes) window._mockGameNotes = {};
+                window._mockGameNotes[args.appId] = args.content;
+                return null;
+            }
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -1445,6 +1478,32 @@ document.querySelector('#app').innerHTML = `
                             <pre id="mcp-claude-config-snippet" style="margin: 0; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.72rem; overflow-x: auto; white-space: pre; color: var(--response-color);"></pre>
                         </div>
                     </div>
+                    <!-- Personal Knowledge Base section -->
+                    <div class="ssh-panel-header" style="margin-top: 25px; margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">PERSONAL KNOWLEDGE BASE</div>
+                    <div style="border: 1px solid rgba(255,255,255,0.06); padding: 10px; border-radius: 4px; margin-bottom: 20px; background: rgba(0,0,0,0.15);">
+                        <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px; line-height: 1.5;">
+                            Index a local folder of text files (.txt, .md, .rst, .log) into the RAG vector memory so the AI can reference your documents during chat.
+                        </div>
+                        <div class="setting-field-group" style="margin-bottom: 10px;">
+                            <label for="rag-folder-input">Folder Path:</label>
+                            <input type="text" id="rag-folder-input" class="tunnel-text-input" placeholder="/home/deck/notes" style="flex: 1; box-sizing: border-box; margin: 0;">
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+                            <button class="send-prompt-btn" id="rag-index-btn" style="margin: 0; height: 32px; justify-content: center; padding: 0 14px; flex: 1;">Index Folder</button>
+                            <button class="canvas-btn" id="rag-clear-btn" style="flex: 0 0 auto; height: 32px; padding: 0 14px;">Clear Index</button>
+                        </div>
+                        <div id="rag-progress-container" style="display: none; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px; font-family: var(--font-mono);">
+                                <span id="rag-progress-label">Indexing...</span>
+                                <span id="rag-progress-pct">0%</span>
+                            </div>
+                            <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                <div id="rag-progress-bar" style="height: 100%; width: 0%; background: var(--accent-color); transition: width 0.2s;"></div>
+                            </div>
+                        </div>
+                        <div id="rag-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
+                        <div style="margin-top: 8px; font-size: 0.78rem; opacity: 0.6;">Documents indexed: <span id="rag-doc-count" style="color: var(--accent-color); font-family: var(--font-mono);">0</span></div>
+                    </div>
                 </div>
                 <div class="settings-modal-footer">
                     <button class="settings-close-btn" id="close-settings">Close</button>
@@ -1511,6 +1570,9 @@ document.querySelector('#app').innerHTML = `
                     </div>
                     <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">INJECTED AI PROMPT CONTEXT</div>
                     <textarea id="game-context-prompt-view" class="tunnel-text-input" readonly style="width: 100%; box-sizing: border-box; resize: none; height: 100px; font-family: var(--font-mono); font-size: 0.72rem; background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 8px;" placeholder="No active context injected."></textarea>
+                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">MY SESSION NOTES</div>
+                    <textarea id="game-session-notes" class="tunnel-text-input" style="width: 100%; box-sizing: border-box; resize: vertical; height: 90px; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(0,0,0,0.25); border-color: rgba(0,229,255,0.2); color: var(--foreground-color); padding: 8px;" placeholder="Personal notes for this game (auto-saved)..."></textarea>
+                    <div id="game-notes-save-indicator" style="font-size: 0.72rem; opacity: 0; text-align: right; font-family: var(--font-mono); color: var(--response-color); margin-top: 3px; transition: opacity 0.4s;">Saved</div>
                 </div>
                 <div class="settings-modal-footer">
                     <button class="settings-close-btn" id="close-game-context" style="margin-left: auto;">Close</button>
@@ -7384,6 +7446,92 @@ initCustomPersonas();
     }).catch(() => setStoppedUI());
 })();
 
+// --- PERSONAL KNOWLEDGE BASE (RAG) SETTINGS ---
+(function initDocRag() {
+    const folderInput = document.getElementById("rag-folder-input");
+    const indexBtn = document.getElementById("rag-index-btn");
+    const clearBtn = document.getElementById("rag-clear-btn");
+    const progressContainer = document.getElementById("rag-progress-container");
+    const progressLabel = document.getElementById("rag-progress-label");
+    const progressPct = document.getElementById("rag-progress-pct");
+    const progressBar = document.getElementById("rag-progress-bar");
+    const statusLine = document.getElementById("rag-status-line");
+    const docCount = document.getElementById("rag-doc-count");
+
+    if (!indexBtn) return;
+
+    // Load current doc count on open
+    invoke("get_doc_count").then(count => {
+        if (docCount) docCount.innerText = count || 0;
+    }).catch(() => {});
+
+    // Listen for progress events
+    listen("doc_index_progress", (event) => {
+        let data;
+        try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; }
+        catch { return; }
+
+        const { indexed, total, file, done } = data;
+
+        if (progressContainer) progressContainer.style.display = "block";
+
+        if (done) {
+            if (progressLabel) progressLabel.innerText = "Complete!";
+            if (progressPct) progressPct.innerText = "100%";
+            if (progressBar) progressBar.style.width = "100%";
+            setTimeout(() => {
+                if (progressContainer) progressContainer.style.display = "none";
+                if (indexBtn) indexBtn.disabled = false;
+                invoke("get_doc_count").then(c => { if (docCount) docCount.innerText = c || 0; }).catch(() => {});
+            }, 1200);
+        } else {
+            const pct = total > 0 ? Math.round((indexed / total) * 100) : 0;
+            if (progressLabel) progressLabel.innerText = file ? `Indexing: ${file}` : `Indexing... (${indexed}/${total})`;
+            if (progressPct) progressPct.innerText = `${pct}%`;
+            if (progressBar) progressBar.style.width = `${pct}%`;
+        }
+    }).catch(() => {});
+
+    indexBtn.addEventListener("click", async () => {
+        const folder = folderInput ? folderInput.value.trim() : "";
+        if (!folder) {
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter a folder path to index.</span>`;
+            return;
+        }
+        indexBtn.disabled = true;
+        if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.7;">Starting indexer...</span>`;
+        if (progressContainer) progressContainer.style.display = "block";
+        if (progressBar) progressBar.style.width = "0%";
+        if (progressPct) progressPct.innerText = "0%";
+        if (progressLabel) progressLabel.innerText = "Scanning folder...";
+
+        try {
+            const result = await invoke("index_directory", { path: folder });
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">${result}</span>`;
+            if (typeof addNotification === "function") {
+                addNotification("RAG Index Complete", result, "success");
+            }
+        } catch (err) {
+            indexBtn.disabled = false;
+            if (progressContainer) progressContainer.style.display = "none";
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+        }
+    });
+
+    clearBtn.addEventListener("click", async () => {
+        try {
+            const result = await invoke("clear_doc_index");
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--accent-color);">${result}</span>`;
+            if (docCount) docCount.innerText = "0";
+            if (typeof addNotification === "function") {
+                addNotification("RAG Index Cleared", "All indexed documents removed from memory.", "info");
+            }
+        } catch (err) {
+            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+        }
+    });
+})();
+
 // --- NOTIFICATION CENTER SYSTEM ---
 let notifications = [];
 let unreadNotifCount = 0;
@@ -7510,12 +7658,13 @@ function initGameContextPanel() {
                 const notesEl = document.getElementById("game-context-notes");
                 const headerImg = document.getElementById("game-context-header");
                 const promptView = document.getElementById("game-context-prompt-view");
-                
+                const sessionNotesEl = document.getElementById("game-session-notes");
+
                 const name = ctx.name || "None Detected";
                 const appId = ctx.app_id || "-";
                 const isRunning = ctx.is_running === "true";
                 const notes = ctx.notes || "No optimization profile found.";
-                
+
                 if (nameEl) nameEl.innerText = name;
                 if (appidEl) appidEl.innerText = appId;
                 if (statusEl) {
@@ -7523,7 +7672,7 @@ function initGameContextPanel() {
                     statusEl.style.color = isRunning ? "var(--response-color)" : "rgba(255,255,255,0.4)";
                 }
                 if (notesEl) notesEl.innerText = notes;
-                
+
                 if (headerImg) {
                     if (appId !== "-") {
                         headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
@@ -7532,16 +7681,46 @@ function initGameContextPanel() {
                         headerImg.style.display = "none";
                     }
                 }
-                
+
                 if (promptView) {
                     promptView.value = `[Active SteamOS Game Context]\nThe user is currently playing the game: ${name} (Steam AppID: ${appId}).\nSteam Deck Optimization Notes: ${notes}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.`;
                 }
-                
+
+                // Load persisted session notes for this game
+                if (sessionNotesEl && appId !== "-") {
+                    invoke("get_game_notes", { appId }).then(savedNotes => {
+                        sessionNotesEl.value = savedNotes || "";
+                        // Store the current appId so the blur handler can reference it
+                        sessionNotesEl.dataset.appId = appId;
+                    }).catch(() => {
+                        sessionNotesEl.value = "";
+                        sessionNotesEl.dataset.appId = appId;
+                    });
+                }
+
                 gameModal.classList.add("active");
             }).catch(err => {
                 console.error("Error loading game context panel:", err);
             });
         };
+    }
+
+    // Auto-save game session notes on blur
+    const sessionNotesEl = document.getElementById("game-session-notes");
+    const saveIndicator = document.getElementById("game-notes-save-indicator");
+    if (sessionNotesEl) {
+        sessionNotesEl.addEventListener("blur", () => {
+            const appId = sessionNotesEl.dataset.appId;
+            if (!appId || appId === "-") return;
+            invoke("save_game_note", { appId, content: sessionNotesEl.value }).then(() => {
+                if (saveIndicator) {
+                    saveIndicator.style.opacity = "1";
+                    setTimeout(() => { saveIndicator.style.opacity = "0"; }, 1500);
+                }
+            }).catch(err => {
+                console.error("Failed to save game note:", err);
+            });
+        });
     }
     
     const dismiss = () => {
