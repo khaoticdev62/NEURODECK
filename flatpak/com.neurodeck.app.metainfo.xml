@@ -71,6 +71,21 @@
   </screenshots>
 
   <releases>
+    <release version="1.1.0" date="2026-05-23">
+      <description>
+        <p>v1.1.0 — Touch and Onboarding Update.</p>
+        <ul>
+          <li>Full Steam Deck touchscreen support: touch-action, tap-highlight suppression, momentum scroll on all panels</li>
+          <li>Virtual keyboard overlay: full QWERTY slide-up panel for touch-only use in Game Mode</li>
+          <li>Touchpad cursor overlay: crosshair driven by right touchpad axes, R3 click, left-stick scroll</li>
+          <li>Steam Input VDF profile: right touchpad as OS cursor, left touchpad as scroll wheel</li>
+          <li>Onboarding wizard expanded to 5 steps with Feature Tour grid and animated stat counters</li>
+          <li>Diagnostics expanded to 6 checks: PTY, Network, Keychain, Audio, SSH, TTS</li>
+          <li>Flatpak bundle: build_flatpak.sh + manifest for SteamOS distribution</li>
+          <li>README overhauled with JPE explanations, ASCII banner, badge row, architecture diagram</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-05-23">
       <description>
         <p>Initial v1.0.0 release.</p>

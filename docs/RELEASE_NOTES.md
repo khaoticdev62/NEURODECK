@@ -1,12 +1,82 @@
-# NEURODECK v1.0.0 — Release Notes
+# NEURODECK Release Notes
+
+---
+
+## v1.1.0 — Touch & Onboarding Update
+
+**Release Date:** 2026-05-23
+**Platform:** Windows (installer + ZIP), Linux / SteamOS (install.sh), Linux (Flatpak)
+
+### What's New in v1.1.0
+
+#### Steam Deck Touch Controls (4-sprint implementation)
+Full native touch support for Steam Deck's 1280×800 touchscreen and both touchpads.
+
+**Sprint A — Touch Polish**
+- `touch-action: manipulation` applied globally (body + all view containers) — eliminates the 300ms tap delay that affected every button and input
+- `-webkit-tap-highlight-color: transparent` globally — removes WebKit's tap flash overlay
+- `initTouchScroll()` — momentum-based touch scroll on all 13 overflow containers (chat, sidebar history, agent log, memory list, FTP/SFTP file lists, onboarding logs, settings content). Includes fling physics on release
+- Radial menu touch: single tap on a segment activates the view and closes the menu; double-tap on the backdrop dismisses it
+
+**Sprint B — Virtual Keyboard Overlay**
+- Full QWERTY keyboard panel slides up from the bottom of the screen when any text input is focused via touch
+- 5 rows: number row, QWERTY, ASDF, ZXCV, bottom strip (Ctrl / Alt / Space / arrow keys / Esc)
+- Shift, CapsLock, Ctrl, Alt are sticky modifier keys with visual active state
+- Shift auto-releases after one character (standard mobile keyboard UX)
+- Zero-latency response via `pointerdown` events (not `click`)
+- Dispatches real `KeyboardEvent` to the target so all existing `keydown` handlers fire correctly
+- `window.showVirtualKeyboard` / `hideVirtualKeyboard` exposed for external control
+- B button dismisses the keyboard
+
+**Sprint C — Touchpad Cursor Overlay (non-Steam fallback)**
+- Crosshair cursor overlay (`#tp-cursor`) driven by `gp.axes[2]`/`[3]` (right stick / right touchpad in joystick mode)
+- Cursor auto-fades after 2.5 seconds idle, reappears on any axis movement
+- R3 click (`buttons[11]`) dispatches a full `pointerdown → mousedown → pointerup → mouseup → click` chain on the element under the cursor
+- Scale-pulse click animation for tactile feedback
+- Left stick when L2 is not held scrolls the active panel container
+- Scroll indicator (`#tp-scroll-indicator`) appears briefly during scroll
+
+**Sprint D — Steam Input VDF Profile**
+- `assets/steam_input/neurodeck_gamepad.vdf` — official Steam Input profile for Steam Deck Game Mode
+- Right touchpad → `absolute_mouse`: Steam converts to OS cursor events; WebKit receives native `mousemove`/`click` (no JS overlay needed when Steam is running)
+- Right touchpad tap → left mouse click; double-tap → right mouse click
+- Left touchpad → `scroll_wheel`: all overflow containers scroll natively via OS events
+- All face buttons, triggers, bumpers, grip buttons, d-pad → xinput pass-through (Gamepad API unchanged)
+- `docs/steam_input_guide.md` fully rewritten with two-layer architecture, full mapping table, VDF install instructions, radial segment map, troubleshooting reference
+
+#### Enhanced Onboarding Wizard
+Rebuilt from 4 steps to 5 with richer content and expanded diagnostics.
+
+- **Step 1 — Welcome**: Animated stat counters (22 features / 10 views / 1 Deck) + feature tag pills replacing static text
+- **Step 2 (NEW) — Feature Tour**: Staggered-entrance grid showing all 10 NEURODECK views with JPE descriptions
+- **Step 3 — Provider Auth**: Provider choice cards (Gemini Key / OAuth / Ollama) now on this slide alongside the config inputs
+- **Step 4 — Persona & Theme**: Unchanged
+- **Step 5 — Diagnostics**: Expanded from 3 checks to 6 — adds Audio/arecord, SSH binary, TTS/espeak. Soft-pass on optional checks (audio/SSH/TTS non-blocking); hard-pass required on PTY + Keychain only
+
+#### Flatpak Distribution
+- `flatpak/com.neurodeck.app.yml` — Flatpak manifest using `org.freedesktop.Platform` 23.08 with `rust-stable` + `node20` SDK extensions
+- `flatpak/com.neurodeck.app.metainfo.xml` — AppStream metadata
+- `flatpak/com.neurodeck.app.desktop` — XDG desktop entry
+- `build_flatpak.sh` — end-to-end build script that auto-installs missing runtimes, builds via `flatpak-builder`, and exports `neurodeck.flatpak`
+- Bundle install: `flatpak install --user neurodeck.flatpak` → run: `flatpak run com.neurodeck.app`
+
+#### README Overhaul
+- ASCII art banner, badge row (License, Rust 1.77.2, Tauri v2, Platform, LLM, Version)
+- JPE (Just Plain English) explanations throughout — no jargon without a plain-English definition
+- Architecture diagram with IPC bridge explanation
+- RAG memory plain-English callout
+- All 10 views documented in plain English
+- Quick Start (4 commands), build targets for all platforms
+
+---
+
+## v1.0.0 — Initial Release
 
 **Release Date:** 2026-05-23
 **Platform:** Windows (installer + ZIP), Linux / SteamOS (install.sh)
 **Minimum Resolution:** 1280×800
 
----
-
-## What Is NEURODECK?
+### What Is NEURODECK?
 
 NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered terminal OS. It runs fullscreen in both Desktop Mode and Game Mode, with full gamepad navigation, and combines:
 
@@ -22,197 +92,95 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
 - Gamepad radial menu (10 views)
 - BMAD multi-agent persona system
 
----
+### v1.0.0 Feature Summary
 
-## v1.0.0 Feature Summary
-
-### AI & LLM
+#### AI & LLM
 - **Chat** — Streaming responses from Gemini (flash/pro) or local Ollama models
 - **RAG Memory** — Every message searches a cosine-similarity vector DB; top-3 relevant memories are injected into context automatically
 - **Vision / OCR** — Attach a Steam screenshot or system screenshot; Gemini Vision analyzes it inline (Gemini provider only)
 - **Game-Aware Mode** — Detects most recently played Steam game, injects optimization notes and game context into LLM system prompt
 - **Persona System** — 9 built-in BMAD personas (`/john`, `/sally`, `/dev`, etc.) + custom persona creator in Settings
 
-### Terminal
+#### Terminal
 - **Multi-PTY** — Up to 5 simultaneous terminal sessions with tab switching
 - **AI Autocomplete** — `Ctrl+Space` in any PTY session triggers LLM ghost-text completion; `→` accepts, `Esc` dismisses
 - **AI History Search** — `Ctrl+H` opens semantic search over `~/.bash_history` / `~/.zsh_history` / fish history
 - **SSH Tab** — Full SSH client, password + key auth, `ConnectTimeout=30` guard
 
-### Canvas
-- Live HTML/CSS/JS preview in embedded WebView
-- Python, Bash, Lua code execution with output capture
-- Live collaboration over LAN (host binds TCP port, peer connects by IP:port)
-- Screenshot → Canvas for AI-assisted editing
+#### Canvas
+- **Live Preview** — HTML/CSS/JS renders live in the canvas WebView as you type
+- **Language Support** — Python, Bash, Lua execution via Agent; HTML/CSS/JS live preview natively
+- **LAN Collaboration** — Host or join a canvas collaboration session over TCP; real-time sync
 
-### File Transfer
-- **FTP** — Browse, upload (streaming, no OOM on large files), download
-- **SFTP** — Full file browser backed by system `sftp` binary
-- **LAN P2P** — mDNS peer discovery + direct TCP transfer; Warpinator-compatible gRPC server
-- **Drag-Drop** — Drop files onto FTP/SFTP panels to upload
+#### Memory & RAG
+- **Vector DB** — Cosine-similarity vector store; persists to `data/memory/chat_history.json`
+- **Document Indexing** — Point at any local folder; indexes `.txt`, `.md`, and code files as embeddings
+- **RAG Search** — Natural-language search over all indexed documents from the Memory tab
 
-### Remote Control (iPhone)
-- Starts an axum WebSocket server on a configurable port
-- Generates QR code containing `ws://<lan-ip>:<port>?pin=<6-digit-pin>`
-- Embedded mobile webapp loads in Safari — no App Store install
-- Supports: send chat message, run shell command, switch view, PTY output stream
+#### File Operations
+- **FTP Browser** — Connect to any FTP server; browse, download, upload (streaming — no OOM on large files)
+- **SFTP Browser** — Same UI over SSH; supports password and key auth
+- **LAN Transfer** — mDNS peer discovery + P2P file transfer; Warpinator gRPC server included
 
-### Knowledge & Memory
-- **Vector Memory DB** — Store, search, delete memory entries; cosine similarity; persists to `data/memory/chat_history.json`
-- **Local Document RAG** — Index any local folder (`.txt`, `.md`, `.rs`, `.py`, `.js`, `.json`, `.toml`, `.yaml`, `.csv`); documents are chunked and embedded alongside chat memory; progress bar in Settings → Memory
-- **MCP Server** — Expose NEURODECK as a Model Context Protocol server; connect from Claude Desktop or any MCP client
+#### Remote & Connectivity
+- **iPhone Remote** — Start a WebSocket server from the Remote tab; scan QR code with Safari; send commands from your phone
+- **Tunnel** — TCP loopback bridge between SteamOS Desktop Mode and Game Mode
 
-### Voice
-- **STT** — `arecord` → Gemini cloud transcription on Linux; Whisper.cpp offline path when configured
-- **TTS** — `espeak`/`espeak-ng` text-to-speech
-- **Whisper STT** — Configure binary + model in Settings → Voice; mic button routes through offline transcription when model file exists
+#### Gamepad & Navigation
+- **Radial Menu** — L2 (hold) opens a 10-segment radial menu; left stick selects the view; release to navigate
+- **D-pad Navigation** — Navigate focusable elements in any view
+- **Grip Buttons** — L4 toggles sidebar; R4 toggles context drawer; L5 clears canvas; R5 cycles theme
+- **Controller Prompt Picker** — R2 opens a searchable prompt template library
 
-### Gamepad Navigation
-- **Radial Menu** — L2 trigger (or backtick on keyboard) opens 10-segment radial ring: Chat, Canvas, Terminal, SSH, Tunnel, Browser, Agent, Memory, Share, Remote
-- **D-Pad** — Navigate inner tabs within each view
-- **Left Stick** — Select radial segment, navigate list items
-- **A/Cross** — Confirm; **B/Circle** — Back/cancel
-- **Controller Prompt Picker** — Gamepad-navigable quick-prompt overlay for common LLM tasks
+#### Platform
+- **Themes** — 6 built-in + custom: BLACKSITE, TERMINAL_GHOST, SYNTH_GRID, CYBER_PUNK, MILITARY, OBSIDIAN
+- **Whisper.cpp STT** — Offline speech-to-text (Linux only via `arecord`)
+- **espeak TTS** — Offline text-to-speech for AI responses
+- **Lua Plugin API** — Drop `.lua` files in `plugins/`; auto-loaded at startup; `registerCommand`, `registerHook`, `setPersona` globals
+- **BMAD Agent Framework** — Multi-agent sprint execution with Lua persona plugins
+- **MCP Server** — NEURODECK as a tool server for Claude Desktop
+- **Cinematic Boot Screen** — Animated boot sequence showing real system state
 
-### Settings & Config
-- API key entry (Gemini) and OAuth 2.0 Device Flow sign-in
-- OS keychain storage for Gemini keys (Windows Credential Manager / Linux Secret Service)
-- Theme editor — 8 built-in themes + custom theme creator
-- Persona editor
-- Whisper STT configuration
-- RAG folder indexer
-- Ollama model manager (list, pull, delete models)
-- Plugin manager (enable/disable Lua plugins)
-- MCP server toggle
-- BMAD agent framework installer
+### System Requirements
 
----
-
-## Installation
-
-### SteamOS / Linux
-
-```bash
-chmod +x install.sh
-./install.sh
-```
-
-The installer:
-- Installs `alsa-utils` (`arecord`), `espeak-ng`, and `sshpass` via pacman (SteamOS/Arch)
-- Copies the binary to `~/Applications/neurodeck/`
-- Creates a `.desktop` launcher and a `neurodeck-launch.sh` wrapper
-- Prompts for your Gemini API key and saves it to `~/.config/neurodeck/env`
-- Configures Ollama (if `scripts/setup_ollama.sh` is present)
-- Configures the SteamOS Desktop Mode tunnel daemon (if `scripts/setup_tunnel.sh` is present)
-
-**Add to Steam Game Mode:**
-1. Desktop Mode → Steam → Library → Add a Game → Add a Non-Steam Game
-2. Browse to `~/Applications/neurodeck/neurodeck-launch.sh`
-3. Rename to `NEURODECK`, click Add
-4. Switch to Game Mode — NEURODECK appears in your library
-
-### Windows
-
-Run `neurodeck_installer.exe` (NSIS installer). Sets up the app at `%LocalAppData%\NEURODECK\`.
-
-Or extract `neurodeck_win_release.zip` and run `neurodeck.exe` directly.
-
-**Note:** Voice STT/TTS is Linux-only. Whisper STT works on Windows if you build whisper.cpp from source.
-
----
-
-## System Requirements
-
-| Requirement | Value |
+| Component | Minimum |
 |---|---|
-| Steam Deck / SteamOS | Primary target (SteamOS 3.x / Arch) |
-| Linux (other) | Supported; install audio deps manually |
-| Windows | Supported; voice features unavailable |
-| RAM | 512 MB minimum; 1 GB recommended (for Ollama + LLM context) |
-| Disk | 50 MB app + model storage for Whisper/Ollama |
-| Internet | Required for Gemini API; optional for Ollama (fully offline) |
+| Platform | Steam Deck (SteamOS 3.x), Linux (Wayland/X11), Windows 10+ |
+| Resolution | 1280×800 |
+| RAM | 2 GB available |
+| Storage | 200 MB for app + dependencies |
+| Network | Required for Gemini; optional for Ollama |
 
----
+### Installation
 
-## Configuration
-
-Edit `llm-term.toml` (in the install directory):
-
-```toml
-[llm]
-default_provider = "gemini"          # or "ollama"
-model = "gemini-1.5-flash"
-ollama_url = "http://127.0.0.1:11434"
-google_client_id = ""                # Required for OAuth Gemini sign-in
-```
-
-Set your Gemini API key:
+**SteamOS / Linux:**
 ```bash
-export GEMINI_API_KEY="your-key-here"
-# Or use: Settings → API Key → Save to OS Keychain
+chmod +x install.sh && ./install.sh
 ```
 
-For fully offline use, set `default_provider = "ollama"` and install Ollama:
+**Windows:**
+Run `neurodeck_installer.exe` (unsigned — Windows SmartScreen will prompt on first run; click "More info → Run anyway").
+
+**Flatpak (Linux, v1.1.0+):**
 ```bash
-curl -fsSL https://ollama.ai/install.sh | sh
-ollama pull llama3.2
+chmod +x build_flatpak.sh && ./build_flatpak.sh
+flatpak install --user neurodeck.flatpak
+flatpak run com.neurodeck.app
 ```
 
----
+### Known Limitations (v1.0.0)
 
-## Whisper STT Setup (Optional)
-
-```bash
-git clone https://github.com/ggerganov/whisper.cpp
-cd whisper.cpp
-cmake -B build && cmake --build build -j4
-bash models/download-ggml-model.sh base.en
-```
-
-Then in NEURODECK Settings → Voice:
-- Binary: `./whisper.cpp/build/bin/whisper-cli`
-- Model: `./whisper.cpp/models/ggml-base.en.bin`
-
----
-
-## Known Limitations (v1.0)
-
-| Limitation | Details |
+| Area | Limitation |
 |---|---|
-| Voice STT/TTS — Linux only | `arecord` and `espeak` not available on Windows; Whisper path works cross-platform |
-| Local doc RAG — Gemini only | `generate_embedding` not implemented for Ollama; Gemini API key required |
-| Vision (screenshot → chat) — Gemini only | Ollama does not process image attachments; warning shown in chat |
-| SSH history search — reads bash + zsh + fish | Fish history format differs from bash; entries may parse with minor noise |
-| Canvas Python/Bash Run — hint only | Run button shows execution note; actual execution happens in the Agent tab |
-| Game detection — most recently played, not currently running | `is_running` detection via `pgrep` requires the game process name to match ACF manifest |
-| Canvas Collab — manual IP:port | No automatic peer discovery; share `<your-lan-ip>:13338` with collaborator |
-| SSH/FTP profiles saved to localStorage | Will be migrated to disk-persisted JSON in v1.1 |
+| STT | Windows `start_recording` returns mock text — `arecord` is Linux-only |
+| Canvas Run | Python/Bash "Run" button shows a hint but doesn't execute — use Agent tab instead |
+| Context Drawer | Toggle exists, content panel is empty (planned: active session stats) |
+| SSH radial | SSH and Remote tabs not yet in the radial menu segments |
+| Warpinator | Requires both devices to be on the same LAN subnet |
 
----
+### Changelog
 
-## Post-v1.0 Roadmap
-
-- Ollama embedding support for offline RAG
-- SSH/FTP/SFTP profiles migrated from localStorage to disk
-- Canvas Python/Bash execution wired to Run button (not just Agent tab)
-- Whisper model download button in Settings
-- SteamDB / community game optimization notes
-- Multi-window support (canvas in secondary window)
-
----
-
-## Changelog
-
-### v1.0.0 (2026-05-23)
-- Full 22-feature production release (P1–P22)
-- Remote Control: iPhone WebSocket + QR pairing + embedded Safari webapp
-- AI Terminal Autocomplete (`Ctrl+Space` ghost text)
-- Local Document RAG (index any folder, 500-file limit, 4 KB chunk, progress bar)
-- Radial Menu expanded to 10 segments — SSH and Remote added
-- FTP: streaming download/upload (no OOM on large files)
-- SSH: `ConnectTimeout=30` prevents hung reader threads
-- Code signing support in `package_release.ps1` (`NEURODECK_CERT_THUMBPRINT`)
-- Controller Prompt Picker extracted to `ctrl_prompt.js` ES module
-- Remote Control view extracted to `remote_control_view.js` ES module
-- install.sh: auto-install `alsa-utils`, `espeak-ng`, `sshpass` on SteamOS
-- Version: bumped from 0.1.0 → 1.0.0 throughout
+- Initial v1.0.0 release
+- 22 features shipped across 10 views
+- Flatpak manifest included (build on SteamOS)
+- Windows NSIS installer + ZIP artifact
