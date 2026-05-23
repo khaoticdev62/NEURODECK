@@ -142,6 +142,49 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ---
 
+## KFMS v1.0 — Khaotic Foundation Metadata Standard
+
+Version governance for this project. One Egyptian god codename per MINOR version line.
+
+### Codename Assignment
+```
+REGISTRY[MINOR] = codename
+tag format      = v{semver}-{codename_lower}
+
+current: v1.1.x → Thoth  (MINOR=1, index 1)
+next:    v1.2.x → Ra     (MINOR=2, index 2)
+```
+
+### Key Files
+| File | Purpose |
+|---|---|
+| `infra/meta/meta.json` | Primary KFMS metadata — version, codename, build SHA, governance flags |
+| `infra/meta/meta.schema.json` | JSON Schema draft-07 — CI enforces this on every `meta.json` change |
+| `infra/meta/CODENAME_REGISTRY.md` | Full 20-god codename table with status and assignment |
+| `infra/telemetry/health.json` | BMAD orchestration readiness — 5 boolean checks must all be `true` |
+| `scripts/khaotic-init.sh` | Bootstrap utility: `sweep` / `stamp` / `validate` / `status` |
+
+### KFMS CLI
+```bash
+./scripts/khaotic-init.sh sweep     # Move loose root files → .loose/inbox/ (non-destructive)
+./scripts/khaotic-init.sh stamp     # Re-stamp build block (git SHA, tag, timestamp, dirty flag)
+./scripts/khaotic-init.sh validate  # Validate meta.json structure + governance rules
+./scripts/khaotic-init.sh status    # Print KFMS health summary
+```
+
+### CI Workflows (`.github/workflows/`)
+- `validate-meta-schema.yml` — schema validation on `meta.json` change; runs `ajv` + `khaotic-init.sh validate`
+- `validate-codename.yml` — verifies codename maps to correct MINOR, tag format correct, no collision within MAJOR
+- `verify-telemetry.yml` — verifies `health.json` presence, all 5 checks true, no version/codename drift from `meta.json`
+
+### Rules When Bumping Versions
+- **PATCH bump** (1.1.x): run `./scripts/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
+- **MINOR bump** (1.2.0): update `meta.json` with new version, `codename.name = "Ra"`, `registry_index = 2`, `minor_line = 2`, `tag = "v1.2.0-ra"`. Update `health.json` version/codename to match.
+- **MAJOR bump** (2.0.0): all codenames reset to index 0 → Anubis.
+- Loose files at the root: run `sweep` before committing to keep the root clean.
+
+---
+
 ## Dev Commands
 
 ```bash
