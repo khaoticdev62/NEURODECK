@@ -411,7 +411,7 @@ fn get_game_context() -> HashMap<String, String> {
 
 #[tauri::command]
 fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut initial = HashMap::new();
     
     let model_name = if app.config.llm.default_provider == "gemini" {
@@ -489,7 +489,7 @@ async fn execute_command_stream(
 ) -> Result<(), String> {
     // 1. Kill any existing running process.
     let proc_id = {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(kill_tx) = app.kill_tx.take() {
             let _ = kill_tx.send(());
         }
@@ -504,7 +504,7 @@ async fn execute_command_stream(
 
     // Store them in AppState
     {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.process_stdin_tx = Some(stdin_tx);
         app.kill_tx = Some(kill_tx);
     }
@@ -530,7 +530,7 @@ async fn execute_command_stream(
             let err_msg = format!("Failed to spawn process: {}", e);
             let _ = app_handle.emit("command_stderr", format!("{}\n", err_msg));
             let _ = app_handle.emit("command_exit", 1);
-            let mut app = state.lock().unwrap();
+            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
             if app.active_process_id == proc_id {
                 app.process_stdin_tx = None;
                 app.kill_tx = None;
@@ -622,7 +622,7 @@ async fn execute_command_stream(
 #[tauri::command]
 async fn write_to_process(input: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.process_stdin_tx.clone()
     };
 
@@ -637,7 +637,7 @@ async fn write_to_process(input: String, state: State<'_, Mutex<AppState>>) -> R
 #[tauri::command]
 async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.kill_tx.take()
     };
 
@@ -651,7 +651,7 @@ async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
 
 #[tauri::command]
 fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     
     if cfg!(target_os = "linux") {
         match std::process::Command::new("arecord")
@@ -669,7 +669,7 @@ fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
             Err(e) => format!("Error starting recording: {}", e),
         }
     } else {
-        "Recording simulated on Windows.".to_string()
+        "Voice recording is only supported on Linux/SteamOS. Use Whisper STT with a pre-recorded WAV, or configure a Gemini API key for cloud transcription.".to_string()
     }
 }
 
@@ -678,15 +678,28 @@ fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
 // ──────────────────────────────────────────────
 
 #[tauri::command]
-fn set_whisper_config(state: State<'_, Mutex<AppState>>, binary: String, model: String) {
-    let mut app = state.lock().unwrap();
-    app.whisper_binary = binary;
-    app.whisper_model = model;
+fn set_whisper_config(
+    state: State<'_, Mutex<AppState>>,
+    binary: String,
+    model: String,
+) -> Result<(), String> {
+    let mut app = state.lock().map_err(|_| "State lock error".to_string())?;
+    app.whisper_binary = binary.clone();
+    app.whisper_model = model.clone();
+    app.config.stt.whisper_binary = binary;
+    app.config.stt.whisper_model = model;
+    let config = app.config.clone();
+    drop(app);
+    let path = get_config_path();
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    config::save_config(&path, &config)
 }
 
 #[tauri::command]
 fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let model_exists = !app.whisper_model.is_empty()
         && std::path::Path::new(&app.whisper_model).exists();
     let available = whisper::is_available(&app.whisper_binary);
@@ -704,7 +717,7 @@ fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
 #[tauri::command]
 async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let (binary, model) = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         (app.whisper_binary.clone(), app.whisper_model.clone())
     };
     if model.is_empty() {
@@ -722,7 +735,7 @@ async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Result<S
 #[tauri::command]
 async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let record_child = {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.record_child.take()
     };
 
@@ -735,7 +748,7 @@ async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, Str
     if let Ok(data) = audio_data {
         // Try whisper.cpp first if model is configured and file exists
         let (whisper_binary, whisper_model) = {
-            let app = state.lock().unwrap();
+            let app = state.lock().unwrap_or_else(|e| e.into_inner());
             (app.whisper_binary.clone(), app.whisper_model.clone())
         };
         if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
@@ -752,7 +765,7 @@ async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, Str
         }
 
         let provider = {
-            let app = state.lock().unwrap();
+            let app = state.lock().unwrap_or_else(|e| e.into_inner());
             app.provider.clone()
         };
         match provider.transcribe_audio(&data).await {
@@ -760,15 +773,13 @@ async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, Str
             Err(e) => Err(format!("Error transcribing: {}", e)),
         }
     } else {
-        // Simulated voice output on Windows / no audio file
-        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        Ok("Hello AI, how are you today? (Simulated)".to_string())
+        Err("No audio recording found. Start recording first with the mic button, or configure Whisper STT in Settings.".to_string())
     }
 }
 
 #[tauri::command]
 fn get_personas(state: State<'_, Mutex<AppState>>) -> Vec<String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut list: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
     for cp in &app.custom_personas {
         list.push(cp.name.clone());
@@ -783,7 +794,7 @@ fn get_themes() -> Vec<String> {
 
 #[tauri::command]
 fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     let is_valid = PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
     if is_valid {
         app.active_persona = name.clone();
@@ -795,7 +806,7 @@ fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
 
 #[tauri::command]
 fn list_custom_personas(state: State<'_, Mutex<AppState>>) -> Result<Vec<CustomPersona>, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     Ok(app.custom_personas.clone())
 }
 
@@ -820,7 +831,7 @@ fn add_custom_persona(name: String, prompt: String, state: State<'_, Mutex<AppSt
         return Err(format!("Persona '{}' clashes with a built-in persona", name_trimmed));
     }
 
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
 
     if app.custom_personas.iter().any(|p| p.name.to_lowercase() == name_trimmed.to_lowercase()) {
         return Err(format!("Persona '{}' already exists", name_trimmed));
@@ -842,7 +853,7 @@ fn add_custom_persona(name: String, prompt: String, state: State<'_, Mutex<AppSt
 
 #[tauri::command]
 fn delete_custom_persona(name: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
 
     let initial_len = app.custom_personas.len();
     app.custom_personas.retain(|p| p.name != name);
@@ -878,7 +889,7 @@ fn set_theme(name: String) -> Option<HashMap<String, String>> {
 
 #[tauri::command]
 fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let session = Session {
         id: app.session_id.clone(),
         created_at: Utc::now(),
@@ -950,7 +961,7 @@ fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<Stri
 
     let session = load_session(latest_file)?;
     
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.messages = session.messages.clone();
     app.session_id = session.id.clone();
 
@@ -1001,7 +1012,7 @@ fn load_session_by_id(id: String, state: State<'_, Mutex<AppState>>) -> Result<H
 
     let session = load_session(file_path)?;
     
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.messages = session.messages.clone();
     app.session_id = session.id.clone();
 
@@ -1031,7 +1042,7 @@ fn delete_session(id: String) -> Result<(), String> {
 
 #[tauri::command]
 fn new_session(state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     let new_id = Utc::now().format("%Y%m%d-%H%M%S").to_string();
     app.session_id = new_id.clone();
     app.messages.clear();
@@ -1072,7 +1083,7 @@ async fn speak_text(text: String) -> Result<(), String> {
 #[tauri::command]
 async fn cancel_generation(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.cancel_stream_tx.take()
     };
     if let Some(tx) = tx {
@@ -1151,7 +1162,7 @@ async fn send_command(
 
     // 1. Gather variables from state
     let (provider, active_persona, messages_len, session_id, mem_db, custom_personas) = {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.messages.push(format!("User: {}", prompt));
         (
             app.provider.clone(),
@@ -1254,7 +1265,7 @@ async fn send_command(
         if parts.len() == 1 {
             let mut available_personas: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
             let (active, custom_list) = {
-                let app = state.lock().unwrap();
+                let app = state.lock().unwrap_or_else(|e| e.into_inner());
                 (app.active_persona.clone(), app.custom_personas.clone())
             };
             for cp in custom_list {
@@ -1270,7 +1281,7 @@ async fn send_command(
             return Ok(());
         } else {
             let name = parts[1..].join(" ");
-            let mut app = state.lock().unwrap();
+            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
             let is_valid = PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
             if is_valid {
                 app.active_persona = name.clone();
@@ -1297,7 +1308,7 @@ async fn send_command(
             let topic = caps.get(3).unwrap().as_str().to_string();
 
             let (has_p1, has_p2, custom_list) = {
-                let app = state.lock().unwrap();
+                let app = state.lock().unwrap_or_else(|e| e.into_inner());
                 let has1 = PERSONAS.iter().any(|p| p.0 == p1) || app.custom_personas.iter().any(|p| p.name == p1);
                 let has2 = PERSONAS.iter().any(|p| p.0 == p2) || app.custom_personas.iter().any(|p| p.name == p2);
                 (has1, has2, app.custom_personas.clone())
@@ -1327,7 +1338,7 @@ async fn send_command(
 
             let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
             {
-                let mut app = state.lock().unwrap();
+                let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                 app.cancel_stream_tx = Some(cancel_tx);
             }
 
@@ -1336,7 +1347,7 @@ async fn send_command(
                     let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
                     let _ = app_handle.emit("stream_done", ());
                     {
-                        let mut app = state.lock().unwrap();
+                        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                         app.cancel_stream_tx = None;
                     }
                     return Ok(());
@@ -1347,7 +1358,7 @@ async fn send_command(
                     .find(|p| p.0 == current_speaker)
                     .map(|p| p.1.clone())
                     .or_else(|| {
-                        let app = state.lock().unwrap();
+                        let app = state.lock().unwrap_or_else(|e| e.into_inner());
                         app.custom_personas.iter().find(|p| p.name == current_speaker).map(|p| p.prompt.clone())
                     })
                     .unwrap_or_default();
@@ -1372,7 +1383,7 @@ async fn send_command(
                         let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
                         let _ = app_handle.emit("stream_done", ());
                         {
-                            let mut app = state.lock().unwrap();
+                            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                             app.cancel_stream_tx = None;
                         }
                         return Ok(());
@@ -1385,7 +1396,7 @@ async fn send_command(
                         Err(e) => {
                             let _ = app_handle.emit("stream_error", format!("Error in debate turn {}: {}", turn, e));
                             {
-                                let mut app = state.lock().unwrap();
+                                let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                                 app.cancel_stream_tx = None;
                             }
                             return Ok(());
@@ -1396,7 +1407,7 @@ async fn send_command(
                 discussion_history.push_str(&format!("{}: {}\n\n", current_speaker, turn_response));
 
                 {
-                    let mut app = state.lock().unwrap();
+                    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                     app.messages.push(format!("{}: {}", current_speaker, turn_response));
                 }
 
@@ -1404,7 +1415,7 @@ async fn send_command(
             }
 
             {
-                let mut app = state.lock().unwrap();
+                let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                 app.cancel_stream_tx = None;
             }
             let _ = app_handle.emit("stream_done", ());
@@ -1445,7 +1456,7 @@ async fn send_command(
 
     let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.cancel_stream_tx = Some(cancel_tx);
     }
 
@@ -1469,7 +1480,7 @@ async fn send_command(
             Err(e) => {
                 let _ = app_handle.emit("stream_error", e);
                 {
-                    let mut app = state.lock().unwrap();
+                    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                     app.cancel_stream_tx = None;
                 }
                 return Ok(());
@@ -1492,7 +1503,7 @@ async fn send_command(
                 Err(e) => {
                     let _ = app_handle.emit("stream_error", e);
                     {
-                        let mut app = state.lock().unwrap();
+                        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                         app.cancel_stream_tx = None;
                     }
                     return Ok(());
@@ -1503,13 +1514,13 @@ async fn send_command(
 
     // Clean up cancel channel
     {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.cancel_stream_tx = None;
     }
 
     // Append AI response to state
     {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.messages.push(format!("AI: {}", full_response));
     }
 
@@ -1554,7 +1565,7 @@ struct MemoryRecordFrontend {
 #[tauri::command]
 fn memory_list_all(state: State<'_, Mutex<AppState>>) -> Result<Vec<MemoryRecordFrontend>, String> {
     let mem_db = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
@@ -1569,7 +1580,7 @@ fn memory_list_all(state: State<'_, Mutex<AppState>>) -> Result<Vec<MemoryRecord
 #[tauri::command]
 fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mem_db = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
@@ -1579,7 +1590,7 @@ fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), St
 #[tauri::command]
 fn memory_pin(id: String, pinned: bool, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mem_db = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
@@ -1592,7 +1603,7 @@ fn memory_add_fact(content: String, state: State<'_, Mutex<AppState>>) -> Result
         return Err("Fact content cannot be empty".to_string());
     }
     let mem_db = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
@@ -1620,7 +1631,7 @@ async fn agent_step(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<String, String> {
     let provider = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
     };
 
@@ -1778,10 +1789,31 @@ fn load_env_file() {
 }
 
 fn get_config_path() -> PathBuf {
-    if std::path::Path::new("../llm-term.toml").exists() {
-        PathBuf::from("../llm-term.toml")
+    // Resolution order:
+    // 1. ../llm-term.toml  — tauri dev (working dir = src-tauri/)
+    // 2. ./llm-term.toml   — deployed binary next to config
+    // 3. ~/.config/neurodeck/llm-term.toml — user config dir (production install)
+    let candidates: &[PathBuf] = &[
+        PathBuf::from("../llm-term.toml"),
+        PathBuf::from("./llm-term.toml"),
+        user_config_dir().join("llm-term.toml"),
+    ];
+    for p in candidates {
+        if p.exists() {
+            return p.clone();
+        }
+    }
+    // Default for a fresh install — will be created on first save
+    user_config_dir().join("llm-term.toml")
+}
+
+fn user_config_dir() -> PathBuf {
+    if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home).join(".config").join("neurodeck")
+    } else if let Ok(up) = std::env::var("USERPROFILE") {
+        PathBuf::from(up).join(".config").join("neurodeck")
     } else {
-        PathBuf::from("llm-term.toml")
+        PathBuf::from(".")
     }
 }
 
@@ -1800,7 +1832,7 @@ fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
 
 #[tauri::command]
 fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut config = app.config.clone();
 
     match key.as_str() {
@@ -1822,13 +1854,13 @@ fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>) -> 
 
 #[tauri::command]
 fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     Ok(app.config.clone())
 }
 
 #[tauri::command]
 fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     
     if let Some(home) = get_home_dir() {
         let env_dir = home.join(".config").join("neurodeck");
@@ -1930,7 +1962,7 @@ struct ContextStats {
 
 #[tauri::command]
 fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     
     let active_provider = app.config.llm.default_provider.clone();
     let active_model = if active_provider == "gemini" {
@@ -2032,7 +2064,7 @@ fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, 
 #[tauri::command]
 async fn shell_autocomplete(buffer: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let provider = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
     };
 
@@ -2191,7 +2223,7 @@ async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 #[tauri::command]
 async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
     let provider = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
     };
 
@@ -2326,7 +2358,7 @@ async fn index_directory(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<usize, String> {
     let (provider, mem_db) = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         (app.provider.clone(), app.mem_db.clone())
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
@@ -2368,7 +2400,7 @@ async fn index_directory(
 
 #[tauri::command]
 fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref db) = app.mem_db {
         db.count_by_namespace("docs")
     } else {
@@ -2378,7 +2410,7 @@ fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
 
 #[tauri::command]
 fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref db) = app.mem_db {
         db.delete_by_namespace("docs")
     } else {
@@ -2420,7 +2452,7 @@ fn save_game_note(app_id: String, content: String) -> Result<(), String> {
 #[tauri::command]
 async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let provider = {
-        let app = state.lock().unwrap();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
             return Err(format!(
                 "MCP server is already running on port {}. Stop it first.",
@@ -2433,7 +2465,7 @@ async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Resul
     let (bound_port, abort_handle) = mcp::start(port, provider).await?;
 
     {
-        let mut app = state.lock().unwrap();
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mcp_abort = Some(abort_handle);
         app.mcp_port = bound_port;
     }
@@ -2446,7 +2478,7 @@ async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Resul
 
 #[tauri::command]
 async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let mut app = state.lock().unwrap();
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = app.mcp_abort.take() {
         handle.abort();
         let port = app.mcp_port;
@@ -2459,7 +2491,7 @@ async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, St
 
 #[tauri::command]
 fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
-    let app = state.lock().unwrap();
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut result = HashMap::new();
     if app.mcp_abort.is_some() {
         result.insert("running".to_string(), "true".to_string());
@@ -2476,6 +2508,69 @@ fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> 
 }
 
 // ──────────────────────────────────────────────
+// §4 Production — Profile & Theme Persistence
+// ──────────────────────────────────────────────
+
+/// Persist a profile list to `./data/profiles/<key>.json`.
+/// `key` must be one of: "ssh", "ftp", "sftp"
+#[tauri::command]
+fn save_profiles(key: String, data: String) -> Result<(), String> {
+    let allowed = ["ssh", "ftp", "sftp"];
+    if !allowed.contains(&key.as_str()) {
+        return Err(format!("Invalid profile key: {}", key));
+    }
+    let dir = std::path::Path::new("./data/profiles");
+    std::fs::create_dir_all(dir).map_err(|e| format!("Cannot create profiles dir: {}", e))?;
+    let path = dir.join(format!("{}.json", key));
+    std::fs::write(&path, &data).map_err(|e| format!("Cannot save profiles: {}", e))
+}
+
+/// Load a profile list from `./data/profiles/<key>.json`.
+/// Returns `"[]"` if the file does not exist.
+#[tauri::command]
+fn load_profiles(key: String) -> String {
+    let allowed = ["ssh", "ftp", "sftp"];
+    if !allowed.contains(&key.as_str()) {
+        return "[]".to_string();
+    }
+    let path = std::path::Path::new("./data/profiles").join(format!("{}.json", key));
+    std::fs::read_to_string(&path).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Persist custom themes to `./data/themes/custom.json`.
+#[tauri::command]
+fn save_custom_themes(data: String) -> Result<(), String> {
+    let dir = std::path::Path::new("./data/themes");
+    std::fs::create_dir_all(dir).map_err(|e| format!("Cannot create themes dir: {}", e))?;
+    std::fs::write(dir.join("custom.json"), &data)
+        .map_err(|e| format!("Cannot save themes: {}", e))
+}
+
+/// Load custom themes from disk. Returns `"[]"` if not found.
+#[tauri::command]
+fn load_custom_themes() -> String {
+    std::fs::read_to_string("./data/themes/custom.json")
+        .unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Return this machine's primary LAN IP address (best-effort).
+#[tauri::command]
+fn get_lan_ip() -> String {
+    // Connect a UDP socket to a public IP — no data is sent; OS picks the right interface
+    match std::net::UdpSocket::bind("0.0.0.0:0") {
+        Ok(sock) => {
+            if sock.connect("8.8.8.8:80").is_ok() {
+                if let Ok(addr) = sock.local_addr() {
+                    return addr.ip().to_string();
+                }
+            }
+            "unknown".to_string()
+        }
+        Err(_) => "unknown".to_string(),
+    }
+}
+
+// ──────────────────────────────────────────────
 // P19 — Live Canvas Collaboration
 // ──────────────────────────────────────────────
 
@@ -2488,7 +2583,7 @@ async fn canvas_collab_host(
 ) -> Result<u16, String> {
     // Stop any existing session first
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(abort) = s.collab_abort.take() {
             abort.abort();
         }
@@ -2497,7 +2592,7 @@ async fn canvas_collab_host(
 
     let (bound_port, session) = canvas_collab::host(port, app).await?;
 
-    let mut s = state.lock().unwrap();
+    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     s.collab_abort = Some(session.abort_handle);
     s.collab_tx = Some(session.tx);
 
@@ -2512,7 +2607,7 @@ async fn canvas_collab_join(
     app: AppHandle,
 ) -> Result<(), String> {
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(abort) = s.collab_abort.take() {
             abort.abort();
         }
@@ -2521,7 +2616,7 @@ async fn canvas_collab_join(
 
     let session = canvas_collab::join(&addr, app).await?;
 
-    let mut s = state.lock().unwrap();
+    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     s.collab_abort = Some(session.abort_handle);
     s.collab_tx = Some(session.tx);
 
@@ -2536,7 +2631,7 @@ async fn canvas_collab_send(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
     let tx = {
-        let s = state.lock().unwrap();
+        let s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.collab_tx.clone()
     };
     if let Some(tx) = tx {
@@ -2553,7 +2648,7 @@ async fn canvas_collab_send(
 /// Stop the active collab session.
 #[tauri::command]
 fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
-    let mut s = state.lock().unwrap();
+    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(abort) = s.collab_abort.take() {
         abort.abort();
     }
@@ -2594,6 +2689,9 @@ pub fn run() {
         Err(_) => Vec::new(),
     };
 
+    let whisper_binary = config.stt.whisper_binary.clone();
+    let whisper_model  = config.stt.whisper_model.clone();
+
     let app_state = AppState {
         provider,
         config,
@@ -2609,8 +2707,8 @@ pub fn run() {
         custom_personas,
         mcp_abort: None,
         mcp_port: 13337,
-        whisper_binary: String::new(),
-        whisper_model: String::new(),
+        whisper_binary,
+        whisper_model,
         collab_abort: None,
         collab_tx: None,
     };
@@ -2734,7 +2832,12 @@ pub fn run() {
             canvas_collab_host,
             canvas_collab_join,
             canvas_collab_send,
-            canvas_collab_stop
+            canvas_collab_stop,
+            save_profiles,
+            load_profiles,
+            save_custom_themes,
+            load_custom_themes,
+            get_lan_ip
         ])
         .run(tauri::generate_context!())
 

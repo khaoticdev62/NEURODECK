@@ -62,12 +62,33 @@ impl Default for LlmConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SttConfig {
+    /// Path to whisper-cli binary, or empty to auto-detect from PATH.
+    #[serde(default)]
+    pub whisper_binary: String,
+    /// Absolute path to GGML model file (e.g. ggml-base.en.bin).
+    #[serde(default)]
+    pub whisper_model: String,
+}
+
+impl Default for SttConfig {
+    fn default() -> Self {
+        Self {
+            whisper_binary: String::new(),
+            whisper_model: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub theme: ThemeConfig,
     #[serde(default)]
     pub llm: LlmConfig,
+    #[serde(default)]
+    pub stt: SttConfig,
 }
 
 pub fn load_config<P: AsRef<Path>>(path: P) -> Config {

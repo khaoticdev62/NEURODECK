@@ -560,6 +560,23 @@ if (!window.__TAURI_INTERNALS__) {
             case 'canvas_collab_stop':
                 window._mockCollabActive = false;
                 return null;
+            case 'save_profiles': {
+                if (!window._mockProfiles) window._mockProfiles = {};
+                window._mockProfiles[args.key] = args.data;
+                return null;
+            }
+            case 'load_profiles': {
+                if (!window._mockProfiles) return '[]';
+                return window._mockProfiles[args.key] || '[]';
+            }
+            case 'save_custom_themes': {
+                window._mockCustomThemes = args.data;
+                return null;
+            }
+            case 'load_custom_themes':
+                return window._mockCustomThemes || '[]';
+            case 'get_lan_ip':
+                return '192.168.1.100';
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -2923,6 +2940,21 @@ function sendMessage() {
     // Scroll workspace
     viewport.scrollTop = viewport.scrollHeight;
     
+    // Warn user if they attach a screenshot while Ollama is the active provider
+    if (attachment) {
+        const provSel = document.getElementById("llm-provider-select");
+        if (provSel && provSel.value === "ollama") {
+            const warn = document.createElement("div");
+            warn.className = "message system";
+            warn.innerHTML = `<div class="message-card" style="border-color:var(--warning-color)">
+                ⚠️ <strong>Vision not supported with Ollama.</strong>
+                The screenshot attachment will be ignored. Switch to Gemini in Settings to use vision.
+            </div>`;
+            chatViewport.appendChild(warn);
+            viewport.scrollTop = viewport.scrollHeight;
+        }
+    }
+
     // Call Tauri backend — pass image data directly when a screenshot is attached
     const invokeArgs = { prompt: text };
     if (attachment) {
@@ -4001,9 +4033,15 @@ navTabs.forEach(tab => {
             }, 50);
         }
         if (targetView === "share") {
-            renderSshProfilesSettings();
-            renderFtpProfiles();
-            renderSftpProfiles();
+            Promise.all([
+                initSshProfilesFromDisk(),
+                initFtpProfilesFromDisk(),
+                initSftpProfilesFromDisk(),
+            ]).then(() => {
+                renderSshProfilesSettings();
+                renderFtpProfiles();
+                renderSftpProfiles();
+            });
         }
     };
 });
@@ -4847,6 +4885,19 @@ function getSshProfiles() {
 
 function saveSshProfiles(profiles) {
     localStorage.setItem("sshProfiles", JSON.stringify(profiles));
+    if (window.__TAURI_INTERNALS__) {
+        invoke("save_profiles", { key: "ssh", data: JSON.stringify(profiles) }).catch(() => {});
+    }
+}
+
+async function initSshProfilesFromDisk() {
+    if (!window.__TAURI_INTERNALS__) return;
+    try {
+        const raw = await invoke("load_profiles", { key: "ssh" });
+        if (raw && raw !== "[]" && !localStorage.getItem("sshProfiles")) {
+            localStorage.setItem("sshProfiles", raw);
+        }
+    } catch (_) {}
 }
 
 function renderSshProfiles() {
@@ -4962,6 +5013,19 @@ function getFtpProfiles() {
 
 function saveFtpProfiles(profiles) {
     localStorage.setItem("ftpProfiles", JSON.stringify(profiles));
+    if (window.__TAURI_INTERNALS__) {
+        invoke("save_profiles", { key: "ftp", data: JSON.stringify(profiles) }).catch(() => {});
+    }
+}
+
+async function initFtpProfilesFromDisk() {
+    if (!window.__TAURI_INTERNALS__) return;
+    try {
+        const raw = await invoke("load_profiles", { key: "ftp" });
+        if (raw && raw !== "[]" && !localStorage.getItem("ftpProfiles")) {
+            localStorage.setItem("ftpProfiles", raw);
+        }
+    } catch (_) {}
 }
 
 function renderFtpProfiles() {
@@ -5318,7 +5382,20 @@ function getSftpProfiles() {
 
 const fn_sftp_save_profiles = (profiles) => {
     localStorage.setItem("sftpProfiles", JSON.stringify(profiles));
+    if (window.__TAURI_INTERNALS__) {
+        invoke("save_profiles", { key: "sftp", data: JSON.stringify(profiles) }).catch(() => {});
+    }
 };
+
+async function initSftpProfilesFromDisk() {
+    if (!window.__TAURI_INTERNALS__) return;
+    try {
+        const raw = await invoke("load_profiles", { key: "sftp" });
+        if (raw && raw !== "[]" && !localStorage.getItem("sftpProfiles")) {
+            localStorage.setItem("sftpProfiles", raw);
+        }
+    } catch (_) {}
+}
 
 function renderSftpProfiles() {
     const list = document.getElementById("sftp-profiles-list");
@@ -7257,6 +7334,19 @@ initCustomPersonas();
 
     function saveThemes(themes) {
         localStorage.setItem(LS_KEY, JSON.stringify(themes));
+        if (window.__TAURI_INTERNALS__) {
+            invoke("save_custom_themes", { data: JSON.stringify(themes) }).catch(() => {});
+        }
+    }
+
+    // Seed from disk if localStorage is empty
+    if (window.__TAURI_INTERNALS__) {
+        invoke("load_custom_themes").then(raw => {
+            if (raw && raw !== "[]" && !localStorage.getItem(LS_KEY)) {
+                localStorage.setItem(LS_KEY, raw);
+                refreshThemeSelect();
+            }
+        }).catch(() => {});
     }
 
     function applyThemeObj(t) {
@@ -7832,7 +7922,8 @@ initCustomPersonas();
             try {
                 const boundPort = await invoke("canvas_collab_host", { port });
                 if (hostWaiting) hostWaiting.style.display = '';
-                if (hostAddr) hostAddr.innerText = `<your-lan-ip>:${boundPort}`;
+                const lanIp = await invoke("get_lan_ip").catch(() => "your-lan-ip");
+                if (hostAddr) hostAddr.innerText = `${lanIp}:${boundPort}`;
                 if (statusLine) statusLine.innerHTML = '';
             } catch (err) {
                 if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
