@@ -811,6 +811,14 @@ function initDocRag() {
 
     if (!indexBtn) return;
 
+    // Warn if Ollama is active (embeddings require Gemini)
+    const provSel = document.getElementById("llm-provider-select");
+    if (provSel && provSel.value === "ollama") {
+        if (statusLine) statusLine.innerHTML =
+            `<span style="color:var(--warning-color);">⚠️ Document RAG requires Gemini (for embeddings). Switch provider in LLM Settings.</span>`;
+        indexBtn.disabled = true;
+    }
+
     // Load current doc count on open
     invoke("get_doc_count").then(count => {
         if (docCount) docCount.innerText = count || 0;

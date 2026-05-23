@@ -32,6 +32,7 @@ export const state = {
     tpScrollVisible: false,
     tpScrollHideTimer: null,
     radialSelectedSegment: null,
+    activeProvider: "gemini",
     tunnelStatus: "offline",
     selectedPeerIp: null,
     pendingTransferId: null

@@ -4114,6 +4114,7 @@ invoke("get_initial_state").then((initialState) => {
 
     state.currentSessionId = initialState.session_id;
     state.activePersona = initialState.active_persona || "Default";
+    state.activeProvider = initialState.provider || "gemini";
     
     // Initial Context Drawer metrics load
     updateContextDrawer();
