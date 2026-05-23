@@ -3346,11 +3346,13 @@ const RADIAL_SEGMENTS = [
     { icon: "💬", label: "Chat",     view: "chat"     },
     { icon: "🎨", label: "Canvas",   view: "canvas"   },
     { icon: "💻", label: "Terminal", view: "terminal" },
+    { icon: "🔑", label: "SSH",      view: "ssh"      },
     { icon: "🔗", label: "Tunnel",   view: "tunnel"   },
     { icon: "🌐", label: "Browser",  view: "browser"  },
     { icon: "🤖", label: "Agent",    view: "agent"    },
     { icon: "🧠", label: "Memory",   view: "memory"   },
     { icon: "📤", label: "Share",    view: "share"    },
+    { icon: "📱", label: "Remote",   view: "remote"   },
 ];
 
 function getGamepadFocusableElements() {
@@ -3512,11 +3514,13 @@ function initRadialMenu() {
     overlay.className = "radial-menu";
     overlay.setAttribute("aria-hidden", "true");
 
-    // Build SVG pie ring — 8 sectors of 45° each
+    // Build SVG pie ring — 10 sectors of 36° each
     const R_OUTER = 130;
     const R_INNER = 52;
     const CX = 150;
     const CY = 150;
+    const SEG_COUNT = RADIAL_SEGMENTS.length;
+    const SEG_DEG = 360 / SEG_COUNT;
 
     function polarToXY(angleDeg, r) {
         const rad = (angleDeg - 90) * Math.PI / 180;
@@ -3525,8 +3529,8 @@ function initRadialMenu() {
 
     let svgPaths = "";
     RADIAL_SEGMENTS.forEach((seg, i) => {
-        const startAngle = i * 45 - 22.5;
-        const endAngle = startAngle + 45;
+        const startAngle = i * SEG_DEG - SEG_DEG / 2;
+        const endAngle = startAngle + SEG_DEG;
         const p1 = polarToXY(startAngle, R_INNER);
         const p2 = polarToXY(startAngle, R_OUTER);
         const p3 = polarToXY(endAngle, R_OUTER);
@@ -3539,7 +3543,7 @@ function initRadialMenu() {
     const LABEL_R = 105;
     let items = "";
     RADIAL_SEGMENTS.forEach((seg, i) => {
-        const angleDeg = i * 45;
+        const angleDeg = i * SEG_DEG;
         const rad = (angleDeg - 90) * Math.PI / 180;
         const x = CX + LABEL_R * Math.cos(rad);
         const y = CY + LABEL_R * Math.sin(rad);
@@ -3587,9 +3591,10 @@ function getRadialSegmentFromStick(x, y) {
     // atan2(x, -y) gives 0=up, increasing clockwise
     let angle = Math.atan2(x, -y) * 180 / Math.PI;
     if (angle < 0) angle += 360;
-    // Offset by half-segment (22.5°) so segments are centered on cardinal/diagonal directions
-    angle = (angle + 22.5) % 360;
-    return Math.floor(angle / 45) % 8;
+    // Offset by half-segment so segments are centered on cardinal/diagonal directions
+    const segDeg = 360 / RADIAL_SEGMENTS.length;
+    angle = (angle + segDeg / 2) % 360;
+    return Math.floor(angle / segDeg) % RADIAL_SEGMENTS.length;
 }
 
 function updateRadialDisplay(segIdx) {
