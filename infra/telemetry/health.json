@@ -1,0 +1,15 @@
+{
+  "status":         "retrofitted",
+  "kfms_version":   "1.0",
+  "project":        "neurodeck",
+  "version":        "1.1.0",
+  "codename":       "Thoth",
+  "stamped_at_utc": "2026-05-23T21:01:26Z",
+  "checks": {
+    "meta_json_present":   true,
+    "schema_valid":        true,
+    "tag_format_correct":  true,
+    "loose_zone_isolated": true,
+    "no_secrets_in_build": true
+  }
+}

@@ -1,0 +1,126 @@
+# KFMS v1.0 — Codename Governance Validation
+#
+# What this enforces:
+#   1. Codename is from the approved KFMS registry (no joke names, no custom strings).
+#   2. Codename maps correctly to the MINOR version line (registry_index = MINOR).
+#   3. Tag format is v{semver}-{codename_lower} — consistent with the SemVer in meta.json.
+#   4. No codename collision within the same MAJOR line (checked via git tag history).
+#
+# Runs on push to main/master and all pull requests.
+
+name: Validate KFMS Codename Governance
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "infra/meta/meta.json"
+  pull_request:
+    paths:
+      - "infra/meta/meta.json"
+
+jobs:
+  validate-codename:
+    name: Codename alignment and collision check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for tag collision check)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse meta.json fields
+        id: meta
+        run: |
+          VERSION=$(python3  -c "import json; d=json.load(open('infra/meta/meta.json')); print(d['version'])")
+          CODENAME=$(python3 -c "import json; d=json.load(open('infra/meta/meta.json')); print(d['codename']['name'])")
+          REG_IDX=$(python3  -c "import json; d=json.load(open('infra/meta/meta.json')); print(d['codename']['registry_index'])")
+          MINOR_LINE=$(python3 -c "import json; d=json.load(open('infra/meta/meta.json')); print(d['codename']['minor_line'])")
+          TAG=$(python3      -c "import json; d=json.load(open('infra/meta/meta.json')); print(d['tag'])")
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          echo "version=$VERSION"     >> "$GITHUB_OUTPUT"
+          echo "codename=$CODENAME"   >> "$GITHUB_OUTPUT"
+          echo "reg_idx=$REG_IDX"     >> "$GITHUB_OUTPUT"
+          echo "minor_line=$MINOR_LINE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"             >> "$GITHUB_OUTPUT"
+          echo "major=$MAJOR"         >> "$GITHUB_OUTPUT"
+          echo "minor=$MINOR"         >> "$GITHUB_OUTPUT"
+
+      - name: Verify codename is from approved registry
+        run: |
+          REGISTRY="Anubis Thoth Ra Isis Osiris Horus Bastet Sekhmet Ptah Hathor Set Sobek Khonsu Maat Amun Nephthys Atum Anuket Khepri Taweret"
+          CODENAME="${{ steps.meta.outputs.codename }}"
+          if ! echo "$REGISTRY" | grep -qw "$CODENAME"; then
+            echo "FAIL: '$CODENAME' is not in the approved KFMS codename registry."
+            echo "Approved names: $REGISTRY"
+            exit 1
+          fi
+          echo "PASS: '$CODENAME' is in the approved registry."
+
+      - name: Verify codename maps to correct MINOR line
+        run: |
+          python3 << 'EOF'
+          import sys
+          REGISTRY = ["Anubis","Thoth","Ra","Isis","Osiris","Horus","Bastet","Sekhmet",
+                      "Ptah","Hathor","Set","Sobek","Khonsu","Maat","Amun","Nephthys",
+                      "Atum","Anuket","Khepri","Taweret"]
+          codename   = "${{ steps.meta.outputs.codename }}"
+          minor      = int("${{ steps.meta.outputs.minor }}")
+          reg_idx    = int("${{ steps.meta.outputs.reg_idx }}")
+          minor_line = int("${{ steps.meta.outputs.minor_line }}")
+
+          # Registry index must equal MINOR version number
+          expected_idx = minor
+          if expected_idx >= len(REGISTRY):
+              print(f"FAIL: MINOR={minor} exceeds registry size ({len(REGISTRY)}). Add more codenames.")
+              sys.exit(1)
+          expected_codename = REGISTRY[expected_idx]
+          if codename != expected_codename:
+              print(f"FAIL: MINOR={minor} must use codename '{expected_codename}', got '{codename}'.")
+              sys.exit(1)
+          if reg_idx != expected_idx:
+              print(f"FAIL: registry_index must be {expected_idx} for '{codename}', got {reg_idx}.")
+              sys.exit(1)
+          if minor_line != minor:
+              print(f"FAIL: minor_line must be {minor}, got {minor_line}.")
+              sys.exit(1)
+          print(f"PASS: Codename '{codename}' correctly assigned to MINOR={minor} (index {reg_idx}).")
+          EOF
+
+      - name: Verify tag format
+        run: |
+          EXPECTED_TAG="v${{ steps.meta.outputs.version }}-$(echo '${{ steps.meta.outputs.codename }}' | tr '[:upper:]' '[:lower:]')"
+          ACTUAL_TAG="${{ steps.meta.outputs.tag }}"
+          if [[ "$ACTUAL_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "FAIL: tag must be '$EXPECTED_TAG', got '$ACTUAL_TAG'."
+            exit 1
+          fi
+          echo "PASS: Tag format correct — '$ACTUAL_TAG'."
+
+      - name: Check codename collision within MAJOR line
+        run: |
+          MAJOR="${{ steps.meta.outputs.major }}"
+          CODENAME_LOWER="$(echo '${{ steps.meta.outputs.codename }}' | tr '[:upper:]' '[:lower:]')"
+          CURRENT_VERSION="${{ steps.meta.outputs.version }}"
+          CURRENT_MINOR="${{ steps.meta.outputs.minor }}"
+
+          echo "Scanning git tags for codename collisions in MAJOR=$MAJOR line..."
+          COLLISION=false
+          while IFS= read -r tag; do
+            # Match tags like v{MAJOR}.X.Y-{codename}
+            if echo "$tag" | grep -qE "^v${MAJOR}\.[0-9]+\.[0-9]+-${CODENAME_LOWER}$"; then
+              # Extract minor from colliding tag
+              OTHER_MINOR=$(echo "$tag" | sed -E "s/^v${MAJOR}\.([0-9]+)\..*/\1/")
+              if [[ "$OTHER_MINOR" != "$CURRENT_MINOR" ]]; then
+                echo "FAIL: Codename '$CODENAME_LOWER' already used in tag '$tag' (MINOR=$OTHER_MINOR)."
+                echo "Each MINOR line within a MAJOR must have a unique codename."
+                COLLISION=true
+              fi
+            fi
+          done < <(git tag --list "v${MAJOR}.*")
+
+          if $COLLISION; then
+            exit 1
+          fi
+          echo "PASS: No codename collisions in MAJOR=$MAJOR line."

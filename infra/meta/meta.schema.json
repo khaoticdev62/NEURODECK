@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://khaoticdev62/kfms/meta.schema.json",
+  "title": "KFMS Meta Schema v1.0",
+  "description": "Khaotic Foundation Metadata Standard — enforced on every repository in the studio.",
+  "type": "object",
+  "required": ["kfms_version", "project", "version", "codename", "tag", "build", "studio"],
+  "additionalProperties": false,
+  "properties": {
+    "kfms_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Version of the KFMS schema this file conforms to."
+    },
+    "project": {
+      "type": "object",
+      "required": ["name", "id", "description", "repo"],
+      "additionalProperties": false,
+      "properties": {
+        "name":        { "type": "string", "minLength": 1 },
+        "id":          { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "Slug — lowercase alphanumeric + hyphens only." },
+        "description": { "type": "string", "minLength": 1 },
+        "repo":        { "type": "string", "format": "uri" }
+      }
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+      "description": "Strict SemVer MAJOR.MINOR.PATCH. No pre-release suffixes in this field."
+    },
+    "codename": {
+      "type": "object",
+      "required": ["name", "minor_line", "registry_index"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "Anubis","Thoth","Ra","Isis","Osiris","Horus",
+            "Bastet","Sekhmet","Ptah","Hathor","Set","Sobek",
+            "Khonsu","Maat","Amun","Nephthys","Atum",
+            "Anuket","Khepri","Taweret"
+          ],
+          "description": "One codename per MINOR line. Patches inherit the MINOR codename."
+        },
+        "minor_line": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "MINOR version number this codename is assigned to."
+        },
+        "registry_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 19,
+          "description": "Position in the canonical KFMS codename registry (0 = Anubis)."
+        }
+      }
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)-(anubis|thoth|ra|isis|osiris|horus|bastet|sekhmet|ptah|hathor|set|sobek|khonsu|maat|amun|nephthys|atum|anuket|khepri|taweret)$",
+      "description": "Canonical release tag: v{semver}-{codename_lower}. Example: v1.1.0-thoth"
+    },
+    "build": {
+      "type": "object",
+      "required": ["git_sha", "git_tag", "built_at_utc", "dirty"],
+      "additionalProperties": false,
+      "properties": {
+        "git_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Full 40-character git commit SHA. Never abbreviated."
+        },
+        "git_tag": {
+          "type": ["string", "null"],
+          "description": "Exact git tag at this commit, or null if not on a tag."
+        },
+        "built_at_utc": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "description": "ISO 8601 UTC timestamp of when this meta.json was stamped."
+        },
+        "dirty": {
+          "type": "boolean",
+          "description": "True if the working tree had uncommitted changes at stamp time."
+        }
+      }
+    },
+    "studio": {
+      "type": "object",
+      "required": ["name", "governance"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "governance": {
+          "type": "object",
+          "required": ["codename_unique_per_major", "no_secrets_in_build", "loose_zone"],
+          "additionalProperties": false,
+          "properties": {
+            "codename_unique_per_major": { "type": "boolean" },
+            "no_secrets_in_build":       { "type": "boolean" },
+            "loose_zone":                { "type": "string", "description": "Path to scratch isolation directory." }
+          }
+        }
+      }
+    }
+  }
+}

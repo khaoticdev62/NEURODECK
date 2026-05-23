@@ -1,0 +1,121 @@
+# KFMS v1.0 — Telemetry Health File Verification
+#
+# What this enforces:
+#   1. infra/telemetry/health.json is present (required by BMAD orchestration).
+#   2. health.json has the required fields: status, kfms_version, project, version,
+#      codename, stamped_at_utc, checks.
+#   3. health.json.version matches meta.json.version (drift detection).
+#   4. All checks in health.json.checks are true.
+#
+# Runs on every push and pull request.
+
+name: Verify KFMS Telemetry Health
+
+on:
+  push:
+    paths:
+      - "infra/telemetry/health.json"
+      - "infra/meta/meta.json"
+  pull_request:
+    paths:
+      - "infra/telemetry/health.json"
+      - "infra/meta/meta.json"
+
+jobs:
+  verify-telemetry:
+    name: health.json presence and integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify health.json exists
+        run: |
+          test -f infra/telemetry/health.json || \
+            (echo "FAIL: infra/telemetry/health.json is missing. BMAD orchestration requires this file." && exit 1)
+          echo "PASS: health.json is present."
+
+      - name: Validate health.json structure and fields
+        run: |
+          python3 << 'EOF'
+          import json, sys
+
+          with open("infra/telemetry/health.json") as f:
+              h = json.load(f)
+
+          REQUIRED_FIELDS = ["status", "kfms_version", "project", "version",
+                             "codename", "stamped_at_utc", "checks"]
+          REQUIRED_CHECKS = ["meta_json_present", "schema_valid",
+                             "tag_format_correct", "loose_zone_isolated",
+                             "no_secrets_in_build"]
+
+          errors = []
+
+          for field in REQUIRED_FIELDS:
+              if field not in h:
+                  errors.append(f"health.json missing required field: '{field}'")
+
+          if "checks" in h:
+              for chk in REQUIRED_CHECKS:
+                  if chk not in h["checks"]:
+                      errors.append(f"health.json.checks missing: '{chk}'")
+                  elif h["checks"][chk] is not True:
+                      errors.append(f"health.json.checks.{chk} is not true (value: {h['checks'][chk]})")
+
+          if h.get("kfms_version") != "1.0":
+              errors.append(f"health.json.kfms_version must be '1.0', got '{h.get('kfms_version')}'")
+
+          if errors:
+              for e in errors:
+                  print(f"  ERROR: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          print("PASS: health.json structure is valid.")
+          print(f"  status:     {h.get('status')}")
+          print(f"  version:    {h.get('version')}")
+          print(f"  codename:   {h.get('codename')}")
+          print(f"  stamped_at: {h.get('stamped_at_utc')}")
+          EOF
+
+      - name: Verify health.json version matches meta.json version
+        run: |
+          python3 << 'EOF'
+          import json, sys
+
+          with open("infra/telemetry/health.json") as f:
+              health = json.load(f)
+          with open("infra/meta/meta.json") as f:
+              meta = json.load(f)
+
+          if health.get("version") != meta.get("version"):
+              print(f"FAIL: Version drift detected.", file=sys.stderr)
+              print(f"  health.json.version = '{health.get('version')}'", file=sys.stderr)
+              print(f"  meta.json.version   = '{meta.get('version')}'",   file=sys.stderr)
+              print(f"  Run: ./scripts/khaotic-init.sh stamp", file=sys.stderr)
+              sys.exit(1)
+
+          if health.get("codename") != meta.get("codename", {}).get("name"):
+              print(f"FAIL: Codename drift detected.", file=sys.stderr)
+              print(f"  health.json.codename = '{health.get('codename')}'",              file=sys.stderr)
+              print(f"  meta.json.codename   = '{meta.get('codename',{}).get('name')}'", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"PASS: health.json and meta.json are in sync (v{meta.get('version')}).")
+          EOF
+
+      - name: BMAD orchestration readiness summary
+        run: |
+          echo ""
+          echo "================================"
+          echo "  KFMS TELEMETRY: READY"
+          echo "================================"
+          python3 -c "
+          import json
+          with open('infra/telemetry/health.json') as f: h = json.load(f)
+          print(f\"  Project:  {h.get('project')}\")
+          print(f\"  Version:  {h.get('version')}\")
+          print(f\"  Codename: {h.get('codename')}\")
+          print(f\"  Status:   {h.get('status')}\")
+          print(f\"  Stamped:  {h.get('stamped_at_utc')}\")
+          "
+          echo "================================"

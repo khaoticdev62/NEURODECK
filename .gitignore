@@ -1,0 +1,6 @@
+
+# KFMS loose zone — scratch files, never committed
+.loose/*
+!.loose/
+!.loose/inbox/
+!.loose/inbox/.gitkeep

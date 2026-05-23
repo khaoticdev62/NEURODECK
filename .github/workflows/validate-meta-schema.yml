@@ -1,0 +1,49 @@
+# KFMS v1.0 — meta.json Schema Validation
+# Runs on every push and pull request.
+# Fails the build if infra/meta/meta.json does not conform to infra/meta/meta.schema.json.
+
+name: Validate KFMS Meta Schema
+
+on:
+  push:
+    paths:
+      - "infra/meta/meta.json"
+      - "infra/meta/meta.schema.json"
+      - "scripts/khaotic-init.sh"
+  pull_request:
+    paths:
+      - "infra/meta/meta.json"
+      - "infra/meta/meta.schema.json"
+
+jobs:
+  validate-meta:
+    name: Validate meta.json against KFMS schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required files exist
+        run: |
+          echo "Checking for required KFMS files..."
+          test -f infra/meta/meta.json       || (echo "FAIL: infra/meta/meta.json is missing"        && exit 1)
+          test -f infra/meta/meta.schema.json || (echo "FAIL: infra/meta/meta.schema.json is missing" && exit 1)
+          echo "OK: Both files present."
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: Validate meta.json against schema
+        run: |
+          echo "Running JSON Schema validation..."
+          ajv validate \
+            -s infra/meta/meta.schema.json \
+            -d infra/meta/meta.json \
+            --spec=draft7 \
+            --strict=false
+          echo "PASS: meta.json is schema-valid."
+
+      - name: Run khaotic-init validate (structural checks)
+        run: |
+          chmod +x scripts/khaotic-init.sh
+          ./scripts/khaotic-init.sh validate
