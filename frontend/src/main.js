@@ -2188,6 +2188,28 @@ document.querySelector('#app').innerHTML = `
         </div>
 
 
+        <!-- Controller Prompt Picker Overlay -->
+        <div class="ctrl-prompt-overlay" id="ctrl-prompt-overlay" aria-hidden="true">
+            <div class="ctrl-prompt-modal">
+                <div class="ctrl-prompt-header">
+                    <span class="ctrl-prompt-title">&#x25B6; PROMPT LIBRARY</span>
+                    <div class="ctrl-prompt-search-wrap">
+                        <input type="text" id="ctrl-prompt-search" class="ctrl-prompt-search" placeholder="Search prompts..." autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="ctrl-prompt-hint">B=Close &nbsp; A=Send &nbsp; L1/R1=Category &nbsp; &#x2191;&#x2193;=Navigate</div>
+                </div>
+                <div class="ctrl-prompt-body">
+                    <div class="ctrl-prompt-categories" id="ctrl-prompt-cats"></div>
+                    <div class="ctrl-prompt-list-wrap">
+                        <div class="ctrl-prompt-list" id="ctrl-prompt-list"></div>
+                    </div>
+                </div>
+                <div class="ctrl-prompt-footer">
+                    <div class="ctrl-prompt-preview" id="ctrl-prompt-preview">Select a prompt to preview it here.</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast Notifications Container -->
         <div class="toast-container" id="toast-container"></div>
     </div>
@@ -3205,6 +3227,10 @@ let previousGamepadState = {
 let radialMenuVisible = false;
 let radialSelectedSegment = null;
 
+// Controller Prompt Picker state (declared here so pollGamepads can reference it)
+let ctrlPromptVisible = false;
+let ctrlPromptTemplateMode = false;
+
 const RADIAL_SEGMENTS = [
     { icon: "💬", label: "Chat",     view: "chat"     },
     { icon: "🎨", label: "Canvas",   view: "canvas"   },
@@ -3217,6 +3243,9 @@ const RADIAL_SEGMENTS = [
 ];
 
 function getGamepadFocusableElements() {
+    // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
+    if (ctrlPromptVisible) return [];
+
     // If notifications modal is open, focus only notif modal elements
     const notifModal = document.getElementById("notif-modal");
     if (notifModal && notifModal.classList.contains("active")) {
@@ -3513,22 +3542,40 @@ function pollGamepads() {
         return isPressed && !wasPressed;
     }
 
-    // A Button (0) - Click active element
+    // A Button (0) - Click active element / confirm prompt picker
     if (buttonPressed(0)) {
-        const els = getGamepadFocusableElements();
-        const activeEl = els[gamepadFocusIndex];
-        if (activeEl) {
-            activeEl.click();
-            if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") {
-                activeEl.focus();
+        if (ctrlPromptVisible) {
+            if (ctrlPromptTemplateMode) {
+                confirmTemplateAndSend();
+            } else {
+                confirmCtrlPrompt();
             }
         } else {
-            updateGamepadFocus(0);
+            const els = getGamepadFocusableElements();
+            const activeEl = els[gamepadFocusIndex];
+            if (activeEl) {
+                activeEl.click();
+                if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") {
+                    activeEl.focus();
+                }
+            } else {
+                updateGamepadFocus(0);
+            }
         }
     }
 
-    // B Button (1) - Close overlays/menus
+    // B Button (1) - Close overlays/menus (ctrl prompt picker takes priority)
     if (buttonPressed(1)) {
+        if (ctrlPromptVisible) {
+            if (ctrlPromptTemplateMode) {
+                exitTemplateMode();
+            } else {
+                closeCtrlPromptOverlay();
+            }
+            // skip normal B handling
+        }
+    }
+    if (buttonPressed(1) && !ctrlPromptVisible) {
         const settingsOverlay = document.getElementById("settings-overlay");
         const transferModal = document.getElementById("transfer-modal");
         const inspectDrawer = document.getElementById("inspect-drawer");
@@ -3565,8 +3612,20 @@ function pollGamepads() {
         }
     }
 
-    // X Button (2) - Go to Chat tab and focus input
-    if (buttonPressed(2)) {
+    // R2 (7) when NOT in share view → toggle Controller Prompt Picker
+    if (buttonPressed(7)) {
+        const shareView = document.getElementById("view-share");
+        if (!(shareView && shareView.classList.contains("active"))) {
+            if (ctrlPromptVisible) {
+                ctrlPromptTemplateMode ? exitTemplateMode() : closeCtrlPromptOverlay();
+            } else {
+                openCtrlPromptOverlay();
+            }
+        }
+    }
+
+    // X Button (2) - Go to Chat tab and focus input (blocked when prompt picker open)
+    if (buttonPressed(2) && !ctrlPromptVisible) {
         const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
         if (chatTab) {
             chatTab.click();
@@ -3584,8 +3643,8 @@ function pollGamepads() {
         }, 50);
     }
 
-    // Y Button (3) - Cycle active persona
-    if (buttonPressed(3)) {
+    // Y Button (3) - Cycle active persona (blocked when prompt picker open)
+    if (buttonPressed(3) && !ctrlPromptVisible) {
         if (availablePersonas && availablePersonas.length > 0) {
             const currentIdx = availablePersonas.indexOf(activePersona);
             const nextIdx = (currentIdx + 1) % availablePersonas.length;
@@ -3609,8 +3668,13 @@ function pollGamepads() {
         }
     }
 
+    // L1 (4) / R1 (5) - When prompt overlay: switch categories; else cycle app tabs
+    if ((buttonPressed(4) || buttonPressed(5)) && ctrlPromptVisible) {
+        navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
+    }
+
     // L1 (4) / R1 (5) - Cycle tabs; when SSH tab active, also load focused SSH profile
-    if (buttonPressed(4) || buttonPressed(5)) {
+    if ((buttonPressed(4) || buttonPressed(5)) && !ctrlPromptVisible) {
         const sshView = document.getElementById("view-ssh");
         if (sshView && sshView.classList.contains("active")) {
             // L1 in SSH: load the currently D-pad-focused profile (A-button equivalent)
@@ -3639,16 +3703,16 @@ function pollGamepads() {
         }
     }
 
-    // Select Button (8) - Run Canvas Code
-    if (buttonPressed(8)) {
+    // Select Button (8) - Run Canvas Code (blocked when prompt picker open)
+    if (buttonPressed(8) && !ctrlPromptVisible) {
         const runBtn = document.getElementById("canvas-run-btn");
         if (runBtn) {
             runBtn.click();
         }
     }
 
-    // Start Button (9) - Toggle settings modal
-    if (buttonPressed(9)) {
+    // Start Button (9) - Toggle settings modal (blocked when prompt picker open)
+    if (buttonPressed(9) && !ctrlPromptVisible) {
         const settingsOverlay = document.getElementById("settings-overlay");
         if (settingsOverlay) {
             if (settingsOverlay.classList.contains("active")) {
@@ -3660,10 +3724,21 @@ function pollGamepads() {
     }
 
     // D-pad Up (12) / Down (13)
+    // When ctrl prompt visible: navigate list or template placeholders
     // When Share tab is active: cycle inner tabs (LAN / SFTP / FTP)
     // When SSH tab is active: cycle saved profile list items
     // Otherwise: move gamepad focus index
     if (buttonPressed(12) || buttonPressed(13)) {
+        const goUp = buttonPressed(12);
+        if (ctrlPromptVisible) {
+            if (ctrlPromptTemplateMode) {
+                navigateTemplatePlaceholder(goUp ? -1 : 1);
+            } else {
+                navigateCtrlPromptList(goUp ? -1 : 1);
+            }
+        }
+    }
+    if ((buttonPressed(12) || buttonPressed(13)) && !ctrlPromptVisible) {
         const shareView = document.getElementById("view-share");
         const sshView = document.getElementById("view-ssh");
         const goUp = buttonPressed(12);
@@ -3694,8 +3769,18 @@ function pollGamepads() {
         }
     }
 
+    // D-pad Left (14) / Right (15) - when prompt overlay: cycle category or placeholder; else normal
+    if ((buttonPressed(14) || buttonPressed(15)) && ctrlPromptVisible) {
+        const goLeft = buttonPressed(14);
+        if (ctrlPromptTemplateMode) {
+            cycleTemplatePlaceholder(goLeft ? -1 : 1);
+        } else {
+            navigateCtrlPromptCat(goLeft ? -1 : 1);
+        }
+    }
+
     // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
-    if (buttonPressed(14) || buttonPressed(15)) {
+    if ((buttonPressed(14) || buttonPressed(15)) && !ctrlPromptVisible) {
         const els = getGamepadFocusableElements();
         const activeEl = els[gamepadFocusIndex];
         const handled = activeEl && (() => {
@@ -3993,6 +4078,7 @@ closeSettingsX.onclick = function() {
 };
 
 // Auto-growing Textarea Logic
+const inputElement = document.getElementById("user-input");
 inputElement.addEventListener("input", function() {
     this.style.height = "auto";
     this.style.height = (this.scrollHeight) + "px";
@@ -10994,4 +11080,406 @@ async function showOnboardingWizard() {
         setInterval(pollDiagnostics, 5000);
     });
 })();
+
+// ==========================================================================
+// CONTROLLER PROMPT PICKER SYSTEM
+// ==========================================================================
+
+const CTRL_PROMPT_CATS = [
+    { id: "quick",     icon: "⚡", label: "Quick" },
+    { id: "code",      icon: "💻", label: "Code" },
+    { id: "analysis",  icon: "🔍", label: "Analysis" },
+    { id: "creative",  icon: "🎨", label: "Creative" },
+    { id: "technical", icon: "⚙️", label: "Technical" },
+    { id: "roleplay",  icon: "🎭", label: "Roleplay" },
+    { id: "custom",    icon: "⭐", label: "Custom" },
+];
+
+const CTRL_PROMPT_LIBRARY = [
+    // Quick
+    { id: "q1",  cat: "quick",     icon: "⚡", title: "Explain This",      text: "Explain this in simple terms: [TOPIC]", tags: ["explain","simple","eli5"] },
+    { id: "q2",  cat: "quick",     icon: "⚡", title: "Fix This Bug",       text: "Find and fix the bug in this code:\n\n[CODE]", tags: ["bug","fix","debug"] },
+    { id: "q3",  cat: "quick",     icon: "⚡", title: "Summarise",          text: "Summarise the following in 3 bullet points:\n\n[TEXT]", tags: ["summary","tldr","bullets"] },
+    { id: "q4",  cat: "quick",     icon: "⚡", title: "What's Wrong?",      text: "What's wrong with this? Give a direct answer:\n\n[CONTENT]", tags: ["review","problem","critique"] },
+    { id: "q5",  cat: "quick",     icon: "⚡", title: "Continue Writing",   text: "Continue writing from where this left off, matching the tone exactly:\n\n[TEXT]", tags: ["continue","writing","generate"] },
+    // Code
+    { id: "c1",  cat: "code",      icon: "💻", title: "Review Code",        text: "Review this [LANGUAGE] code for bugs, performance issues, and security vulnerabilities. Be concise:\n\n[CODE]", tags: ["review","security","performance"] },
+    { id: "c2",  cat: "code",      icon: "💻", title: "Refactor",           text: "Refactor this code to be cleaner and more maintainable. Keep the same logic:\n\n[CODE]", tags: ["refactor","clean","maintainable"] },
+    { id: "c3",  cat: "code",      icon: "💻", title: "Write Tests",        text: "Write comprehensive unit tests for this [LANGUAGE] function:\n\n[CODE]", tags: ["tests","unit","tdd"] },
+    { id: "c4",  cat: "code",      icon: "💻", title: "Explain Algorithm",  text: "Explain how this algorithm works step by step, then analyse its time and space complexity:\n\n[CODE]", tags: ["algorithm","complexity","explain"] },
+    { id: "c5",  cat: "code",      icon: "💻", title: "Convert Language",   text: "Convert this code from [FROM_LANG] to [TO_LANG], maintaining all logic:\n\n[CODE]", tags: ["convert","translate","port"] },
+    { id: "c6",  cat: "code",      icon: "💻", title: "Add Error Handling", text: "Add robust error handling to this code without changing core logic:\n\n[CODE]", tags: ["errors","robust","handling"] },
+    { id: "c7",  cat: "code",      icon: "💻", title: "Optimise",           text: "Optimise this code for maximum performance. Explain each change:\n\n[CODE]", tags: ["optimise","performance","speed"] },
+    { id: "c8",  cat: "code",      icon: "💻", title: "Document",           text: "Write clear documentation and inline comments for this [LANGUAGE] code:\n\n[CODE]", tags: ["docs","comments","documentation"] },
+    // Analysis
+    { id: "a1",  cat: "analysis",  icon: "🔍", title: "Break It Down",      text: "Break this down into its core components and explain each one:\n\n[TOPIC]", tags: ["breakdown","components","analyse"] },
+    { id: "a2",  cat: "analysis",  icon: "🔍", title: "Pros & Cons",        text: "List the pros and cons of [TOPIC]. Be balanced and thorough.", tags: ["pros","cons","comparison"] },
+    { id: "a3",  cat: "analysis",  icon: "🔍", title: "Root Cause",         text: "Perform a root cause analysis on this problem:\n\n[PROBLEM]", tags: ["root","cause","problem","diagnosis"] },
+    { id: "a4",  cat: "analysis",  icon: "🔍", title: "Compare Options",    text: "Compare [OPTION_A] vs [OPTION_B] across these dimensions: performance, cost, maintainability, scalability.", tags: ["compare","versus","options"] },
+    { id: "a5",  cat: "analysis",  icon: "🔍", title: "Security Audit",     text: "Perform a security audit on this. Identify threat vectors, vulnerabilities, and recommended mitigations:\n\n[CONTENT]", tags: ["security","audit","threats","vulnerabilities"] },
+    { id: "a6",  cat: "analysis",  icon: "🔍", title: "Architecture Review",text: "Review this architecture. Identify bottlenecks, single points of failure, and scalability concerns:\n\n[DESCRIPTION]", tags: ["architecture","review","scalability"] },
+    // Creative
+    { id: "cr1", cat: "creative",  icon: "🎨", title: "Write a Story",      text: "Write a short [GENRE] story about [CHARACTER] who must [CHALLENGE]. Make it compelling.", tags: ["story","fiction","narrative"] },
+    { id: "cr2", cat: "creative",  icon: "🎨", title: "Brainstorm Ideas",   text: "Brainstorm 10 creative ideas for [TOPIC]. Be original and think outside the box.", tags: ["brainstorm","ideas","creative"] },
+    { id: "cr3", cat: "creative",  icon: "🎨", title: "Write Marketing Copy",text: "Write compelling marketing copy for [PRODUCT]. Target audience: [AUDIENCE]. Tone: [TONE].", tags: ["marketing","copy","persuasive"] },
+    { id: "cr4", cat: "creative",  icon: "🎨", title: "Improve Writing",    text: "Improve this writing. Make it more engaging, clear, and impactful. Keep the core message:\n\n[TEXT]", tags: ["improve","writing","edit","polish"] },
+    { id: "cr5", cat: "creative",  icon: "🎨", title: "Write a Poem",       text: "Write a [STYLE] poem about [TOPIC]. Make it evocative and memorable.", tags: ["poem","poetry","verse"] },
+    // Technical
+    { id: "t1",  cat: "technical", icon: "⚙️", title: "Design System",      text: "Design a system architecture for [SYSTEM]. Include components, data flow, and tech stack recommendations.", tags: ["architecture","design","system"] },
+    { id: "t2",  cat: "technical", icon: "⚙️", title: "API Design",         text: "Design a RESTful API for [SERVICE]. Include endpoints, request/response schemas, and auth strategy.", tags: ["api","rest","endpoints","design"] },
+    { id: "t3",  cat: "technical", icon: "⚙️", title: "Database Schema",    text: "Design a database schema for [APPLICATION]. Include tables, relationships, indexes, and justify your choices.", tags: ["database","schema","sql","design"] },
+    { id: "t4",  cat: "technical", icon: "⚙️", title: "Deploy Strategy",    text: "Outline a deployment strategy for [APPLICATION] targeting [ENVIRONMENT]. Include CI/CD, monitoring, and rollback plan.", tags: ["deploy","devops","cicd","infrastructure"] },
+    { id: "t5",  cat: "technical", icon: "⚙️", title: "Performance Profile",text: "Identify performance bottlenecks in this system and suggest concrete optimisations:\n\n[DESCRIPTION]", tags: ["performance","bottleneck","profiling"] },
+    { id: "t6",  cat: "technical", icon: "⚙️", title: "Tech Stack Advice",  text: "Recommend the best tech stack for [PROJECT_TYPE]. Consider: team size [TEAM_SIZE], scale [SCALE], budget constraints.", tags: ["stack","technology","recommend"] },
+    // Roleplay
+    { id: "r1",  cat: "roleplay",  icon: "🎭", title: "Senior Engineer",    text: "You are a senior software engineer with 15 years of experience. Review my approach and give frank, expert feedback:\n\n[APPROACH]", tags: ["senior","engineer","expert","review"] },
+    { id: "r2",  cat: "roleplay",  icon: "🎭", title: "Socratic Teacher",   text: "You are a Socratic teacher. Guide me to discover the answer through questions. Topic: [TOPIC]", tags: ["teacher","socratic","learning","guide"] },
+    { id: "r3",  cat: "roleplay",  icon: "🎭", title: "Devil's Advocate",   text: "Play devil's advocate on this position and make the strongest possible counter-argument:\n\n[POSITION]", tags: ["devils","advocate","counter","debate"] },
+    { id: "r4",  cat: "roleplay",  icon: "🎭", title: "Code Reviewer",      text: "You are a strict code reviewer. Be direct and critical. Do not soften feedback. Review this:\n\n[CODE]", tags: ["review","strict","code","feedback"] },
+    { id: "r5",  cat: "roleplay",  icon: "🎭", title: "Product Manager",    text: "As a product manager, assess this feature request from a user impact and engineering effort perspective:\n\n[FEATURE]", tags: ["product","manager","feature","prioritise"] },
+];
+
+// Usage tracking (weight bumped per selection)
+function getCtrlPromptUsage() {
+    try { return JSON.parse(localStorage.getItem("ctrlPromptUsage") || "{}"); } catch { return {}; }
+}
+
+function bumpCtrlPromptUsage(id) {
+    const usage = getCtrlPromptUsage();
+    usage[id] = { uses: ((usage[id] && usage[id].uses) || 0) + 1, lastUsed: Date.now() };
+    localStorage.setItem("ctrlPromptUsage", JSON.stringify(usage));
+}
+
+// Overlay state (ctrlPromptVisible and ctrlPromptTemplateMode declared near gamepad state above)
+let ctrlPromptCatIdx = 0;
+let ctrlPromptListIdx = 0;
+let ctrlPromptFiltered = [];
+let ctrlPromptTemplateParts = [];   // [{type:"text"|"placeholder", value, options, optIdx}]
+let ctrlPromptPlaceholderIdx = 0;
+
+// Prefix trie filter — returns prompts matching query across title+tags+text
+function filterCtrlPrompts(query, catId) {
+    const q = query.trim().toLowerCase();
+    const usage = getCtrlPromptUsage();
+    let pool = (catId === "custom")
+        ? getCustomCtrlPrompts()
+        : (catId === "all" ? CTRL_PROMPT_LIBRARY : CTRL_PROMPT_LIBRARY.filter(p => p.cat === catId));
+    if (q) {
+        pool = pool.filter(p =>
+            p.title.toLowerCase().includes(q) ||
+            p.text.toLowerCase().includes(q) ||
+            (p.tags && p.tags.some(t => t.includes(q)))
+        );
+    }
+    return pool.slice().sort((a, b) => {
+        const ua = (usage[a.id] && usage[a.id].uses) || 0;
+        const ub = (usage[b.id] && usage[b.id].uses) || 0;
+        return ub - ua;
+    });
+}
+
+function getCustomCtrlPrompts() {
+    try { return JSON.parse(localStorage.getItem("ctrlCustomPrompts") || "[]"); } catch { return []; }
+}
+
+// Render categories sidebar
+function renderCtrlPromptCats() {
+    const container = document.getElementById("ctrl-prompt-cats");
+    if (!container) return;
+    const usage = getCtrlPromptUsage();
+    const allCats = [{ id: "all", icon: "🗂️", label: "All" }, ...CTRL_PROMPT_CATS];
+    container.innerHTML = allCats.map((cat, i) => {
+        const count = cat.id === "all"
+            ? CTRL_PROMPT_LIBRARY.length + getCustomCtrlPrompts().length
+            : cat.id === "custom"
+                ? getCustomCtrlPrompts().length
+                : CTRL_PROMPT_LIBRARY.filter(p => p.cat === cat.id).length;
+        return `<button class="ctrl-prompt-cat-btn${i === ctrlPromptCatIdx ? " active" : ""}" data-catidx="${i}">
+            <span class="ctrl-prompt-cat-icon">${cat.icon}</span>
+            <span>${cat.label}</span>
+            <span class="ctrl-prompt-cat-count">${count}</span>
+        </button>`;
+    }).join("");
+    container.querySelectorAll(".ctrl-prompt-cat-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            ctrlPromptCatIdx = parseInt(btn.dataset.catidx, 10);
+            ctrlPromptListIdx = 0;
+            renderCtrlPromptCats();
+            renderCtrlPromptList();
+        });
+    });
+}
+
+// Render prompt list for current category + search
+function renderCtrlPromptList() {
+    const searchEl = document.getElementById("ctrl-prompt-search");
+    const query = searchEl ? searchEl.value : "";
+    const allCats = [{ id: "all" }, ...CTRL_PROMPT_CATS];
+    const catId = allCats[ctrlPromptCatIdx] ? allCats[ctrlPromptCatIdx].id : "all";
+    ctrlPromptFiltered = filterCtrlPrompts(query, catId);
+
+    const container = document.getElementById("ctrl-prompt-list");
+    if (!container) return;
+
+    if (ctrlPromptFiltered.length === 0) {
+        container.innerHTML = `<div class="ctrl-prompt-empty">No prompts found. Type to search all categories.</div>`;
+        updateCtrlPromptPreview(null);
+        return;
+    }
+
+    if (ctrlPromptListIdx >= ctrlPromptFiltered.length) ctrlPromptListIdx = 0;
+
+    const usage = getCtrlPromptUsage();
+    const maxUses = Math.max(1, ...Object.values(usage).map(u => u.uses || 0));
+
+    container.innerHTML = ctrlPromptFiltered.map((p, i) => {
+        const uses = (usage[p.id] && usage[p.id].uses) || 0;
+        const usePct = Math.round((uses / maxUses) * 100);
+        const hasTemplate = p.text.includes("[");
+        return `<div class="ctrl-prompt-row${i === ctrlPromptListIdx ? " focused" : ""}" data-idx="${i}">
+            <div class="ctrl-prompt-row-icon">${p.icon || "📝"}</div>
+            <div class="ctrl-prompt-row-content">
+                <div class="ctrl-prompt-row-title">${p.title}${hasTemplate ? ' <span style="font-size:0.6rem;opacity:0.5;font-weight:400">[template]</span>' : ""}</div>
+                <div class="ctrl-prompt-row-text">${p.text.replace(/\n/g, " ").slice(0, 80)}${p.text.length > 80 ? "…" : ""}</div>
+            </div>
+            <div class="ctrl-prompt-row-meta">
+                ${uses > 0 ? `<div class="ctrl-prompt-row-uses">${uses}x</div>` : ""}
+                ${uses > 0 ? `<div class="ctrl-prompt-usage-bar"><div class="ctrl-prompt-usage-fill" style="width:${usePct}%"></div></div>` : ""}
+                ${p.tags && p.tags[0] ? `<div class="ctrl-prompt-row-tag">${p.tags[0]}</div>` : ""}
+            </div>
+        </div>`;
+    }).join("");
+
+    container.querySelectorAll(".ctrl-prompt-row").forEach(row => {
+        row.addEventListener("click", () => {
+            ctrlPromptListIdx = parseInt(row.dataset.idx, 10);
+            updateCtrlPromptPreview(ctrlPromptFiltered[ctrlPromptListIdx]);
+            renderCtrlPromptList();
+            confirmCtrlPrompt();
+        });
+        row.addEventListener("mouseenter", () => {
+            ctrlPromptListIdx = parseInt(row.dataset.idx, 10);
+            updateCtrlPromptPreview(ctrlPromptFiltered[ctrlPromptListIdx]);
+            renderCtrlPromptList();
+        });
+    });
+
+    // Scroll focused row into view
+    const focusedRow = container.querySelector(".ctrl-prompt-row.focused");
+    if (focusedRow) focusedRow.scrollIntoView({ block: "nearest" });
+
+    updateCtrlPromptPreview(ctrlPromptFiltered[ctrlPromptListIdx]);
+}
+
+function updateCtrlPromptPreview(prompt) {
+    const el = document.getElementById("ctrl-prompt-preview");
+    if (!el) return;
+    if (!prompt) { el.textContent = "Select a prompt to preview it here."; return; }
+    el.textContent = prompt.text;
+}
+
+// Navigate list up/down
+function navigateCtrlPromptList(delta) {
+    if (ctrlPromptFiltered.length === 0) return;
+    ctrlPromptListIdx = (ctrlPromptListIdx + delta + ctrlPromptFiltered.length) % ctrlPromptFiltered.length;
+    renderCtrlPromptList();
+}
+
+// Navigate category
+function navigateCtrlPromptCat(delta) {
+    const total = CTRL_PROMPT_CATS.length + 1; // +1 for "all"
+    ctrlPromptCatIdx = (ctrlPromptCatIdx + delta + total) % total;
+    ctrlPromptListIdx = 0;
+    renderCtrlPromptCats();
+    renderCtrlPromptList();
+}
+
+// Parse template placeholders: "Write a [GENRE] story about [CHARACTER]"
+function parseTemplateText(text) {
+    const parts = [];
+    const re = /\[([A-Z_0-9]+)\]/g;
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+        if (m.index > last) parts.push({ type: "text", value: text.slice(last, m.index) });
+        parts.push({ type: "placeholder", name: m[1], value: m[1], options: getPlaceholderOptions(m[1]), optIdx: 0 });
+        last = m.index + m[0].length;
+    }
+    if (last < text.length) parts.push({ type: "text", value: text.slice(last) });
+    return parts;
+}
+
+const PLACEHOLDER_OPTIONS = {
+    LANGUAGE:   ["JavaScript", "Python", "Rust", "Go", "TypeScript", "C++", "Java", "Bash"],
+    FROM_LANG:  ["JavaScript", "Python", "Rust", "Go", "TypeScript", "C++"],
+    TO_LANG:    ["Rust", "Go", "Python", "JavaScript", "TypeScript", "C++"],
+    GENRE:      ["cyberpunk", "fantasy", "sci-fi", "horror", "thriller", "romance", "mystery"],
+    TONE:       ["professional", "casual", "humorous", "authoritative", "empathetic"],
+    STYLE:      ["haiku", "sonnet", "free verse", "limerick", "ballad"],
+    SCALE:      ["startup (< 1k users)", "mid-scale (< 100k users)", "large-scale (1M+ users)"],
+    TEAM_SIZE:  ["solo developer", "small team (2-5)", "medium team (5-20)", "large team (20+)"],
+    ENVIRONMENT:["AWS", "GCP", "Azure", "bare-metal", "Kubernetes", "Docker Compose", "Vercel"],
+};
+
+function getPlaceholderOptions(name) {
+    return PLACEHOLDER_OPTIONS[name] || [];
+}
+
+function getTemplateFilled() {
+    return ctrlPromptTemplateParts.map(p => {
+        if (p.type === "text") return p.value;
+        return p.options.length > 0 ? p.options[p.optIdx] : `[${p.name}]`;
+    }).join("");
+}
+
+function renderTemplateModeFooter() {
+    const footer = document.querySelector(".ctrl-prompt-footer");
+    const placeholders = ctrlPromptTemplateParts.filter(p => p.type === "placeholder");
+    const current = placeholders[ctrlPromptPlaceholderIdx];
+    if (!current || !footer) return;
+
+    footer.innerHTML = `<div class="ctrl-prompt-template-bar">
+        <span class="ctrl-prompt-template-label">&#x25B6; Fill: [${current.name}]</span>
+        <span class="ctrl-prompt-template-value">${current.options.length > 0 ? current.options[current.optIdx] : "(type below)"}</span>
+        <span class="ctrl-prompt-template-hint">&#x2190;&#x2192;=Cycle &nbsp; &#x2191;&#x2193;=Next Field &nbsp; A=Confirm Send &nbsp; B=Cancel</span>
+    </div>`;
+}
+
+function enterTemplateMode(prompt) {
+    ctrlPromptTemplateParts = parseTemplateText(prompt.text);
+    const placeholders = ctrlPromptTemplateParts.filter(p => p.type === "placeholder");
+    if (placeholders.length === 0) {
+        // No placeholders — send directly
+        sendCtrlPromptToChat(prompt.text, prompt.id);
+        return;
+    }
+    ctrlPromptTemplateMode = true;
+    ctrlPromptPlaceholderIdx = 0;
+    renderTemplateModeFooter();
+}
+
+function cycleTemplatePlaceholder(delta) {
+    const placeholders = ctrlPromptTemplateParts.filter(p => p.type === "placeholder");
+    const current = placeholders[ctrlPromptPlaceholderIdx];
+    if (!current || current.options.length === 0) return;
+    current.optIdx = (current.optIdx + delta + current.options.length) % current.options.length;
+    current.value = current.options[current.optIdx];
+    renderTemplateModeFooter();
+}
+
+function navigateTemplatePlaceholder(delta) {
+    const placeholders = ctrlPromptTemplateParts.filter(p => p.type === "placeholder");
+    if (placeholders.length === 0) return;
+    ctrlPromptPlaceholderIdx = (ctrlPromptPlaceholderIdx + delta + placeholders.length) % placeholders.length;
+    renderTemplateModeFooter();
+}
+
+function confirmTemplateAndSend() {
+    const filled = getTemplateFilled();
+    const prompt = ctrlPromptFiltered[ctrlPromptListIdx];
+    sendCtrlPromptToChat(filled, prompt ? prompt.id : null);
+    exitTemplateMode();
+}
+
+function exitTemplateMode() {
+    ctrlPromptTemplateMode = false;
+    ctrlPromptTemplateParts = [];
+    // Restore normal preview footer
+    const footer = document.querySelector(".ctrl-prompt-footer");
+    if (footer) footer.innerHTML = `<div class="ctrl-prompt-preview" id="ctrl-prompt-preview">Select a prompt to preview it here.</div>`;
+}
+
+// Send prompt text to chat input and switch to chat view
+function sendCtrlPromptToChat(text, promptId) {
+    if (promptId) bumpCtrlPromptUsage(promptId);
+    closeCtrlPromptOverlay();
+    // Navigate to chat view
+    const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+    if (chatTab && !chatTab.classList.contains("active")) chatTab.click();
+    setTimeout(() => {
+        const input = document.getElementById("user-input");
+        if (input) {
+            input.value = text;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.focus();
+            // Auto-resize textarea
+            input.style.height = "auto";
+            input.style.height = Math.min(input.scrollHeight, 200) + "px";
+        }
+    }, 80);
+}
+
+// Confirm current selection — enter template mode if has placeholders, else send
+function confirmCtrlPrompt() {
+    const prompt = ctrlPromptFiltered[ctrlPromptListIdx];
+    if (!prompt) return;
+    if (prompt.text.includes("[")) {
+        enterTemplateMode(prompt);
+    } else {
+        sendCtrlPromptToChat(prompt.text, prompt.id);
+    }
+}
+
+function openCtrlPromptOverlay() {
+    ctrlPromptVisible = true;
+    ctrlPromptListIdx = 0;
+    ctrlPromptCatIdx = 0;
+    ctrlPromptTemplateMode = false;
+    const overlay = document.getElementById("ctrl-prompt-overlay");
+    if (overlay) {
+        overlay.classList.add("active");
+        overlay.setAttribute("aria-hidden", "false");
+    }
+    renderCtrlPromptCats();
+    renderCtrlPromptList();
+    // Focus search for keyboard users
+    setTimeout(() => {
+        const searchEl = document.getElementById("ctrl-prompt-search");
+        if (searchEl) searchEl.focus();
+    }, 50);
+}
+
+function closeCtrlPromptOverlay() {
+    ctrlPromptVisible = false;
+    ctrlPromptTemplateMode = false;
+    const overlay = document.getElementById("ctrl-prompt-overlay");
+    if (overlay) {
+        overlay.classList.remove("active");
+        overlay.setAttribute("aria-hidden", "true");
+    }
+}
+
+function initCtrlPromptPicker() {
+    // Keyboard shortcut: Ctrl+Shift+P
+    document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === "P") {
+            e.preventDefault();
+            ctrlPromptVisible ? closeCtrlPromptOverlay() : openCtrlPromptOverlay();
+        }
+        if (!ctrlPromptVisible) return;
+        if (e.key === "Escape") { closeCtrlPromptOverlay(); return; }
+        if (e.key === "ArrowDown") { e.preventDefault(); ctrlPromptTemplateMode ? navigateTemplatePlaceholder(1) : navigateCtrlPromptList(1); }
+        if (e.key === "ArrowUp") { e.preventDefault(); ctrlPromptTemplateMode ? navigateTemplatePlaceholder(-1) : navigateCtrlPromptList(-1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); ctrlPromptTemplateMode ? cycleTemplatePlaceholder(-1) : navigateCtrlPromptCat(-1); }
+        if (e.key === "ArrowRight") { e.preventDefault(); ctrlPromptTemplateMode ? cycleTemplatePlaceholder(1) : navigateCtrlPromptCat(1); }
+        if (e.key === "Enter") { e.preventDefault(); ctrlPromptTemplateMode ? confirmTemplateAndSend() : confirmCtrlPrompt(); }
+    });
+
+    // Search input live filter
+    document.addEventListener("input", (e) => {
+        if (e.target && e.target.id === "ctrl-prompt-search") {
+            ctrlPromptListIdx = 0;
+            renderCtrlPromptList();
+        }
+    });
+
+    // Click-outside to close
+    const overlay = document.getElementById("ctrl-prompt-overlay");
+    if (overlay) {
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closeCtrlPromptOverlay();
+        });
+    }
+}
+
+initCtrlPromptPicker();
 
