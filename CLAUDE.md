@@ -46,7 +46,23 @@ All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All r
 | `memory.rs` | Cosine-similarity vector DB; persists to `data/memory/chat_history.json` |
 | `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
-| `transfer.rs` | LAN P2P file transfer; uses mDNS-style peer discovery |
+| `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
+| `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
+
+### Infrastructure Crate (`infrastructure/`)
+A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
+
+| Module | What It Owns |
+|---|---|
+| `secrets.rs` | OS keychain (keyring 2.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
+| `oauth.rs` | Google OAuth2 Device Flow — `request_device_code` → `poll_for_token`; reads `google_client_id` from config |
+| `warpinator.rs` | Warpinator-compatible gRPC server (tonic 0.11); `WarpinatorCallbacks` trait; `start_warpinator_service(callbacks, port)` |
+
+**Key infrastructure quirks:**
+- `keyring` is pinned to `2.3` — uses `delete_password()` NOT `delete_credential()` (that's 3.x API)
+- `tonic-build` 0.11 uses `.compile()` not `.compile_protos()` — `build.rs` uses `unsafe { set_var("PROTOC", ...) }`
+- `reqwest` 0.12 without `form` feature has no `.form()` method — use manual URL encoding with `Content-Type: application/x-www-form-urlencoded`
+- `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
 Memory context injection is live in `send_command` (lib.rs ~line 1030): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
@@ -100,6 +116,8 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **The config path `../llm-term.toml` fallback** was added because the binary's working directory during `tauri dev` is `src-tauri/`, not the project root. Four copies of `llm-term.toml` exist across the project (`root`, `src-tauri/`, `assets/`, `dist/`). Only `src-tauri/llm-term.toml` is read at runtime. This is load-bearing — don't remove the path check.
 
+- **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
+
 - **Canvas Python/Bash "run" does nothing** — the Run button for non-HTML canvas languages shows a "run hint" message but does not execute code. The Agent tab is what actually runs Python/Bash. This is intentional-ish but confusing — it's flagged in `ANTIGRAVITY_HANDOFF.md` as a must-fix.
 
 - **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
@@ -113,6 +131,14 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The radial menu segments are hardcoded to the original 8 views — the new SSH tab is not in the radial menu yet.
 
 - **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field. The mock IPC shim does not need updating for this since it ignores extra args.
+
+- **Prompt Lab tab** (`#view-prompt-lab`) was added by the Google Antigravity automated sprint. It exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
+
+- **Cinematic boot screen** (`#boot-overlay`) runs as an IIFE at the bottom of `main.js`. It calls `list_plugins`, `get_config`, `get_personas`, `get_themes`, `get_doc_count`, and `get_context_stats` during startup to show real system state. It fades out and is removed from the DOM after completion — it does NOT block app initialization.
+
+- **Onboarding wizard** (`#onboarding-modal`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("onboardingDone")`.
+
+- **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 
 ---
 

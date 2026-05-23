@@ -2,3 +2,6 @@
 default_provider = "ollama"
 ollama_model = "llama3.2:1b"
 gemini_model = "gemini-1.5-flash"
+# Google OAuth2 Device Flow client ID — register at console.cloud.google.com
+# Required for the in-app "Sign in with Google" Gemini key flow.
+google_client_id = ""

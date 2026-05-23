@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "src-tauri",
+    "core",
+    "infrastructure"
+, "bootstrapper"]
+resolver = "2"

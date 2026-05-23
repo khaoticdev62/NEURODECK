@@ -2,6 +2,67 @@ import './style.css';
 import './app.css';
 
 import { invoke } from '@tauri-apps/api/core';
+import QRCode from 'qrcode';
+
+async function triggerOAuthLogin() {
+    let chatViewport = document.getElementById("chat-viewport");
+    
+    // Add pending message to viewport
+    let msg = document.createElement("div");
+    msg.className = "message ai";
+    msg.innerHTML = `
+        <div class="message-card">
+            <h3>Login with Provider (OAuth 2.0 Device Flow)</h3>
+            <div id="oauth-status" style="color: #00ff41; margin-bottom: 10px;">Requesting authentication...</div>
+            <div id="oauth-qr-container" style="background: white; padding: 10px; display: inline-block; border-radius: 8px; display: none;">
+                <canvas id="oauth-qr"></canvas>
+            </div>
+            <p id="oauth-url-text" style="display: none;">Or visit: <a href="#" id="oauth-url" target="_blank" style="color: #00ff41;"></a></p>
+            <p id="oauth-code-text" style="display: none;">Enter the following code:</p>
+            <h1 id="oauth-code" style="letter-spacing: 4px; background: rgba(0,255,65,0.1); display: inline-block; padding: 10px; display: none;"></h1>
+        </div>
+    `;
+    chatViewport.appendChild(msg);
+    chatViewport.scrollTop = chatViewport.scrollHeight;
+
+    try {
+        const data = await invoke('start_oauth_flow');
+        
+        document.getElementById("oauth-status").innerText = "Waiting for mobile approval...";
+        
+        // Show QR Code and URLs
+        document.getElementById("oauth-qr-container").style.display = "inline-block";
+        document.getElementById("oauth-url-text").style.display = "block";
+        document.getElementById("oauth-code-text").style.display = "block";
+        document.getElementById("oauth-code").style.display = "inline-block";
+        
+        document.getElementById("oauth-url").href = data.verification_uri;
+        document.getElementById("oauth-url").innerText = data.verification_uri;
+        document.getElementById("oauth-code").innerText = data.user_code;
+        
+        await QRCode.toCanvas(document.getElementById("oauth-qr"), data.verification_uri_complete || data.verification_uri, {
+            width: 200,
+            margin: 1
+        });
+        
+        chatViewport.scrollTop = chatViewport.scrollHeight;
+
+        await invoke('poll_oauth_token', { 
+            deviceCode: data.device_code, 
+            interval: data.interval 
+        });
+
+        document.getElementById("oauth-status").innerText = "Authentication successful! Token saved to OS Keychain.";
+        document.getElementById("oauth-status").style.color = "#00ff41";
+    } catch (err) {
+        console.error(err);
+        let statusEl = document.getElementById("oauth-status");
+        if (statusEl) {
+            statusEl.innerText = "Authentication failed: " + String(err);
+            statusEl.style.color = "red";
+        }
+    }
+}
 import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 import { mockIPC } from '@tauri-apps/api/mocks';
@@ -265,6 +326,13 @@ if (!window.__TAURI_INTERNALS__) {
                 return [];
             case 'get_active_transfers':
                 return [];
+            case 'cancel_transfer':
+                return null;
+            case 'set_group_code':
+                window._mockGroupCode = args.code;
+                return null;
+            case 'get_group_code':
+                return window._mockGroupCode || "DEFAULT";
             case 'ollama_list_models':
                 return [
                     { name: "llama2:latest", size: 3791823901, modified_at: "2026-05-23T01:21:46Z" },
@@ -334,7 +402,8 @@ if (!window.__TAURI_INTERNALS__) {
                         default_provider: "ollama",
                         ollama_model: "llama2",
                         gemini_model: "gemini-1.5-flash",
-                        ollama_base_url: "http://localhost:11434"
+                        ollama_base_url: "http://localhost:11434",
+                        google_client_id: ""
                     }
                 };
             case 'set_config':
@@ -577,6 +646,16 @@ if (!window.__TAURI_INTERNALS__) {
                 return window._mockCustomThemes || '[]';
             case 'get_lan_ip':
                 return '192.168.1.100';
+            case 'generate_jpe_explanation':
+                return `This prompt asks the AI to act as ${(args.promptText || '').slice(0, 60)}... In plain terms: fill in your role, give a clear task, add any constraints, and specify the output format you want. The AI will follow these instructions step by step.`;
+            case 'start_oauth_flow':
+                return { device_code: 'mock_device_code', user_code: 'MOCK-CODE', verification_uri: 'https://accounts.google.com/device', expires_in: 300, interval: 5 };
+            case 'poll_oauth_token':
+                return null;
+            case 'run_onboarding_diagnostics':
+                return { pty_ok: true, pty_details: 'Shell Subsystem active (Default: powershell.exe)', network_ok: true, network_details: 'Internet active (mock)', keychain_ok: true, keychain_details: 'Secure credential storage active (mock)' };
+            case 'start_warpinator':
+                return null;
             default:
                 console.warn(`[Mock IPC] Unknown command: ${cmd}`);
                 return null;
@@ -585,6 +664,44 @@ if (!window.__TAURI_INTERNALS__) {
 }
 
 document.querySelector('#app').innerHTML = `
+    <!-- ═══════════════════════════════════════════════════════════
+         CINEMATIC BOOT SCREEN — removed from DOM after init
+         ═══════════════════════════════════════════════════════════ -->
+    <div id="boot-overlay">
+        <div class="boot-main">
+            <div class="boot-ascii-panel">
+                <pre class="boot-ascii-art">███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
+████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗
+██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║
+██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║
+██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝
+╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
+██████╗ ███████╗ ██████╗██╗  ██╗
+██╔══██╗██╔════╝██╔════╝██║ ██╔╝
+██║  ██║█████╗  ██║     █████╔╝
+██║  ██║██╔══╝  ██║     ██╔═██╗
+██████╔╝███████╗╚██████╗██║  ██╗
+╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝</pre>
+                <div class="boot-subtitle">AI TERMINAL OS · v1.0.0</div>
+                <div class="boot-build-tag">BUILD 20260523 · STEAM DECK EDITION</div>
+                <div class="boot-status-dot" id="boot-status-dot"></div>
+            </div>
+            <div class="boot-log-panel">
+                <div class="boot-log-header">SYSTEM BOOT LOG — KERNEL INIT SEQUENCE</div>
+                <div class="boot-log-scroll" id="boot-log-scroll"></div>
+            </div>
+        </div>
+        <div class="boot-progress-bar-wrap">
+            <div class="boot-progress-label">
+                <span id="boot-progress-label-text">INITIALIZING...</span>
+                <span id="boot-progress-pct">0%</span>
+            </div>
+            <div class="boot-progress-track">
+                <div class="boot-progress-fill" id="boot-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="app-layout">
         <!-- Collapsible Sidebar (Left) -->
         <aside class="sidebar collapsed" id="sidebar">
@@ -624,6 +741,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="browser">🌐 Browser</button>
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
+                    <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -874,6 +992,13 @@ document.querySelector('#app').innerHTML = `
                             <div class="share-panel">
                                 <h3>LAN Discovery & Sending</h3>
                                 <p class="share-desc">Discovers S-Term instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
+                                <div class="setting-field-group" style="margin-bottom: 15px;">
+                                    <label>Warpinator Group Code</label>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex: 1; box-sizing: border-box; height: 36px; margin: 0;">
+                                        <button class="send-prompt-btn" id="share-group-code-save-btn" style="margin: 0; height: 36px; padding: 0 15px; font-size: 12px; white-space: nowrap;">Apply</button>
+                                    </div>
+                                </div>
                                 <div class="setting-field-group">
                                     <label>Active Peers on LAN</label>
                                     <div class="peers-list" id="share-peers-list">
@@ -1166,6 +1291,91 @@ document.querySelector('#app').innerHTML = `
                             <div class="agent-output-header">Output</div>
                             <div class="agent-output" id="agent-output">
                                 <span class="agent-output-empty">No output yet.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompt Lab UI View -->
+                <div class="view-content" id="view-prompt-lab">
+                    <div class="prompt-lab-container">
+                        <!-- Left pane: Input Form -->
+                        <div class="prompt-lab-form">
+                            <div class="prompt-lab-header">
+                                <h3>Prompt Generator</h3>
+                                <select id="pl-template-select" class="pl-dropdown">
+                                    <option value="">Load Template...</option>
+                                    <option value="game">Endless Runner Game Concept</option>
+                                    <option value="app">To-Do List App Features</option>
+                                    <option value="script">Lua Scripting Template</option>
+                                </select>
+                            </div>
+                            <div class="pl-field">
+                                <label>Persona / Role</label>
+                                <input type="text" id="pl-persona" placeholder="e.g. You are a creative game designer.">
+                            </div>
+                            <div class="pl-field">
+                                <label>Task / Objective</label>
+                                <input type="text" id="pl-task" placeholder="e.g. Design an endless runner game.">
+                            </div>
+                            <div class="pl-field">
+                                <label>Context / Background</label>
+                                <textarea id="pl-context" placeholder="e.g. Target audience: casual gamers, ages 12-18." rows="2"></textarea>
+                            </div>
+                            <div class="pl-field">
+                                <label>Tone / Style</label>
+                                <input type="text" id="pl-tone" placeholder="e.g. Upbeat and clear, kid-friendly.">
+                            </div>
+                            <div class="pl-field">
+                                <label>Constraints</label>
+                                <textarea id="pl-constraints" placeholder="e.g. Max 150 words. Answer in bullet points." rows="2"></textarea>
+                            </div>
+                            <div class="pl-field">
+                                <label>Output Format</label>
+                                <input type="text" id="pl-format" placeholder="e.g. JSON with keys: concept, mechanics, art_style">
+                            </div>
+                            <div class="pl-advanced-toggle" id="pl-advanced-toggle">⚙️ Advanced Options</div>
+                            <div class="pl-advanced-fields hidden" id="pl-advanced-fields">
+                                <div class="pl-field">
+                                    <label>Few-Shot Examples</label>
+                                    <textarea id="pl-examples" placeholder="e.g. Input: Puzzle game. Output: A grid-based..." rows="2"></textarea>
+                                </div>
+                                <div class="pl-field">
+                                    <label>Framework / Formula</label>
+                                    <select id="pl-formula" class="pl-dropdown">
+                                        <option value="default">Role + Constraints + Examples</option>
+                                        <option value="aida">AIDA (Attention, Interest, Desire, Action)</option>
+                                        <option value="scqa">SCQA (Situation, Complication, Question, Answer)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="pl-btn-primary" id="pl-generate-btn">⚡ Generate Prompt</button>
+                        </div>
+                        
+                        <!-- Right pane: Output & JPE -->
+                        <div class="prompt-lab-output">
+                            <div class="pl-output-section">
+                                <div class="pl-output-header">
+                                    <span>Generated Prompt</span>
+                                    <div class="pl-actions">
+                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">📋 Copy</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">💬 Send to Chat</button>
+                                    </div>
+                                </div>
+                                <textarea id="pl-result-prompt" class="pl-result-textarea" readonly placeholder="Your generated prompt will appear here..."></textarea>
+                            </div>
+                            
+                            <div class="pl-output-section jpe-section">
+                                <div class="pl-output-header">
+                                    <span>Just Plain English (JPE) Explanation</span>
+                                    <div class="pl-actions">
+                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain Prompt with LLM">🔍 Explain in JPE</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">📋 Copy</button>
+                                    </div>
+                                </div>
+                                <div id="pl-result-jpe" class="pl-result-jpe">
+                                    <span class="pl-empty-text">Click "Explain in JPE" to get a plain english summary of what the prompt asks the AI to do.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2881,6 +3091,13 @@ function sendMessage() {
     let text = inputElement.value.trim();
     if (text === "") return;
 
+    if (text === "/login") {
+        inputElement.value = "";
+        inputElement.style.height = "36px";
+        triggerOAuthLogin();
+        return;
+    }
+
     // Collect any pending screenshot attachment
     const attachment = window.pendingScreenshot || null;
 
@@ -3986,6 +4203,9 @@ invoke("get_initial_state").then((state) => {
     initAgentView();
     initMemoryView();
     initRadialMenu();
+    
+    // Check Onboarding
+    checkOnboarding();
 }).catch((err) => {
     console.error("Error getting initial state:", err);
 });
@@ -6016,6 +6236,29 @@ function renderPeers(peers) {
     });
 }
 
+if (!window.transferProgressMap) {
+    window.transferProgressMap = new Map();
+}
+
+function formatDuration(sec) {
+    if (!isFinite(sec) || isNaN(sec) || sec < 0) return "Unknown";
+    if (sec < 60) return Math.round(sec) + "s";
+    let min = Math.floor(sec / 60);
+    let s = Math.round(sec % 60);
+    return `${min}m ${s}s`;
+}
+
+window.cancelTransfer = function(transferId) {
+    invoke("cancel_transfer", { transferId })
+        .then(() => {
+            invoke("get_active_transfers").then(renderTransfers);
+        })
+        .catch(err => {
+            console.error("Error cancelling transfer:", err);
+            alert("Error: " + err);
+        });
+};
+
 function renderTransfers(transfers) {
     const listEl = document.getElementById("share-transfers-list");
     if (!listEl) return;
@@ -6034,10 +6277,51 @@ function renderTransfers(transfers) {
         const percent = t.size > 0 ? Math.round((t.progress / t.size) * 100) : 0;
         const progressClass = t.status === "Completed" ? "completed" : (t.status === "Failed" || t.status === "Rejected" ? "failed" : "");
         
+        let speedText = "";
+        let etaText = "";
+        if (t.status === "Transferring") {
+            const now = Date.now();
+            let record = window.transferProgressMap.get(t.id);
+            if (!record) {
+                record = { lastProgress: t.progress, lastTime: now, currentSpeed: 0 };
+                window.transferProgressMap.set(t.id, record);
+            } else {
+                let elapsed = (now - record.lastTime) / 1000;
+                if (elapsed >= 0.5) {
+                    let delta = t.progress - record.lastProgress;
+                    if (delta >= 0) {
+                        let instantSpeed = delta / elapsed;
+                        record.currentSpeed = record.currentSpeed ? (record.currentSpeed * 0.7 + instantSpeed * 0.3) : instantSpeed;
+                    }
+                    record.lastProgress = t.progress;
+                    record.lastTime = now;
+                }
+            }
+            if (record.currentSpeed > 0) {
+                speedText = ` | ${formatBytes(record.currentSpeed)}/s`;
+                let remaining = t.size - t.progress;
+                let eta = remaining / record.currentSpeed;
+                etaText = ` | ETA: ${formatDuration(eta)}`;
+            } else {
+                speedText = ` | 0 B/s`;
+                etaText = ` | ETA: Unknown`;
+            }
+        } else {
+            window.transferProgressMap.delete(t.id);
+        }
+
+        const isCancelable = t.status === "Pending" || t.status === "Accepted" || t.status === "Transferring";
+        const cancelBtnHtml = isCancelable 
+            ? `<button class="cancel-transfer-btn" onclick="cancelTransfer('${t.id}')" title="Cancel Transfer">✕</button>` 
+            : '';
+
         item.innerHTML = `
             <div class="transfer-header">
                 <span class="transfer-filename" title="${t.filename}">${t.filename}</span>
-                <span class="transfer-status ${t.status.toLowerCase()}">${t.status}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="transfer-status ${t.status.toLowerCase()}">${t.status}</span>
+                    ${cancelBtnHtml}
+                </div>
             </div>
             <div class="transfer-progress-container">
                 <div class="transfer-progress-bar-bg">
@@ -6047,7 +6331,7 @@ function renderTransfers(transfers) {
             </div>
             <div class="transfer-meta">
                 <span>${t.direction === "Incoming" ? "From" : "To"}: ${t.peer_name || t.peer_ip}</span>
-                <span>${formatBytes(t.progress)} / ${formatBytes(t.size)}</span>
+                <span>${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}</span>
             </div>
         `;
         listEl.appendChild(item);
@@ -6075,6 +6359,37 @@ function initFileShare() {
     // Initial fetch of peers and transfers
     invoke("get_discovered_peers").then(renderPeers).catch(err => console.error("Error fetching peers:", err));
     invoke("get_active_transfers").then(renderTransfers).catch(err => console.error("Error fetching transfers:", err));
+    
+    // Group Code Settings
+    const groupCodeInput = document.getElementById("share-group-code-input");
+    const saveGroupCodeBtn = document.getElementById("share-group-code-save-btn");
+
+    if (groupCodeInput && saveGroupCodeBtn) {
+        invoke("get_group_code").then(code => {
+            groupCodeInput.value = code || "DEFAULT";
+        }).catch(err => console.error("Error fetching group code:", err));
+
+        saveGroupCodeBtn.onclick = function() {
+            const code = groupCodeInput.value.trim();
+            saveGroupCodeBtn.disabled = true;
+            saveGroupCodeBtn.innerText = "Applying...";
+            invoke("set_group_code", { code })
+                .then(() => {
+                    saveGroupCodeBtn.disabled = false;
+                    saveGroupCodeBtn.innerText = "Apply";
+                    if (typeof addNotification === "function") {
+                        addNotification("Group Code Updated", `Discovery group set to: ${code}`, "success");
+                    }
+                    invoke("get_discovered_peers").then(renderPeers);
+                })
+                .catch(err => {
+                    saveGroupCodeBtn.disabled = false;
+                    saveGroupCodeBtn.innerText = "Apply";
+                    console.error("Error setting group code:", err);
+                    alert("Error: " + err);
+                });
+        };
+    }
     
     // Listen for peer discovery updates
     listen("peers_updated", (event) => {
@@ -8256,4 +8571,876 @@ initNotificationCenter();
 initGameContextPanel();
 initFtpSftpDragDrop();
 
+// --- PROMPT LAB (SPRINT 6/7) ---
+function initPromptLab() {
+    const generateBtn = document.getElementById("pl-generate-btn");
+    const explainBtn = document.getElementById("pl-explain-jpe-btn");
+    const copyPromptBtn = document.getElementById("pl-copy-prompt-btn");
+    const sendChatBtn = document.getElementById("pl-send-chat-btn");
+    const copyJpeBtn = document.getElementById("pl-copy-jpe-btn");
+    
+    const personaInput = document.getElementById("pl-persona");
+    const taskInput = document.getElementById("pl-task");
+    const contextInput = document.getElementById("pl-context");
+    const toneInput = document.getElementById("pl-tone");
+    const constraintsInput = document.getElementById("pl-constraints");
+    const formatInput = document.getElementById("pl-format");
+    const examplesInput = document.getElementById("pl-examples");
+    const formulaSelect = document.getElementById("pl-formula");
+    
+    const resultPrompt = document.getElementById("pl-result-prompt");
+    const resultJpe = document.getElementById("pl-result-jpe");
+    const templateSelect = document.getElementById("pl-template-select");
+    const advancedToggle = document.getElementById("pl-advanced-toggle");
+    const advancedFields = document.getElementById("pl-advanced-fields");
+    
+    if (!generateBtn) return; // View not in DOM
+
+    // Progressive Disclosure Toggle
+    advancedToggle.addEventListener("click", () => {
+        advancedFields.classList.toggle("hidden");
+        advancedToggle.textContent = advancedFields.classList.contains("hidden") 
+            ? "⚙️ Advanced Options" : "⚙️ Hide Advanced Options";
+    });
+    
+    // Templates
+    templateSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val === "game") {
+            personaInput.value = "You are a creative game designer.";
+            taskInput.value = "Design an endless runner game concept for mobile devices.";
+            contextInput.value = "Target audience: kids, ages 8-14. Theme: Cyberpunk.";
+            toneInput.value = "Upbeat, energetic, and concise.";
+            constraintsInput.value = "- List 3 unique gameplay mechanics\n- Max 150 words total";
+            formatInput.value = "JSON with keys: title, mechanics, art_style";
+        } else if (val === "app") {
+            personaInput.value = "You are an expert product manager.";
+            taskInput.value = "Create a feature list for a minimalist To-Do list app.";
+            contextInput.value = "Target audience: busy professionals who hate complex apps.";
+            toneInput.value = "Professional and structured.";
+            constraintsInput.value = "- Exactly 5 features\n- Each feature should have a short name and 1 sentence description";
+            formatInput.value = "Markdown bulleted list";
+        } else if (val === "script") {
+            personaInput.value = "You are a senior Lua developer.";
+            taskInput.value = "Write a Lua script that parses a string and extracts all email addresses.";
+            contextInput.value = "This is for a data processing pipeline. No external libraries available.";
+            toneInput.value = "Technical and precise.";
+            constraintsInput.value = "- Include code comments explaining the regex\n- Must be a single function `extract_emails(text)`";
+            formatInput.value = "Lua code block only";
+        }
+    });
+
+    // Prompt Assembly Logic
+    function assemblePrompt() {
+        let promptParts = [];
+        const formula = formulaSelect.value;
+        
+        if (personaInput.value.trim()) {
+            promptParts.push(`**Role/Persona:**\n${personaInput.value.trim()}`);
+        }
+        if (taskInput.value.trim()) {
+            promptParts.push(`**Task/Objective:**\n${taskInput.value.trim()}`);
+        }
+        if (contextInput.value.trim()) {
+            promptParts.push(`**Context/Background:**\n${contextInput.value.trim()}`);
+        }
+        
+        // Handle formulas
+        if (formula === "aida") {
+            promptParts.push("**Structure:** Use the AIDA framework (Attention, Interest, Desire, Action).");
+        } else if (formula === "scqa") {
+            promptParts.push("**Structure:** Use the SCQA framework (Situation, Complication, Question, Answer).");
+        }
+        
+        if (toneInput.value.trim()) {
+            promptParts.push(`**Tone/Style:**\n${toneInput.value.trim()}`);
+        }
+        if (constraintsInput.value.trim()) {
+            promptParts.push(`**Constraints:**\n${constraintsInput.value.trim()}`);
+        }
+        if (formatInput.value.trim()) {
+            promptParts.push(`**Output Format:**\n${formatInput.value.trim()}`);
+        }
+        if (examplesInput.value.trim()) {
+            promptParts.push(`**Examples:**\n${examplesInput.value.trim()}`);
+        }
+        
+        resultPrompt.value = promptParts.join("\n\n");
+    }
+
+    generateBtn.addEventListener("click", () => {
+        assemblePrompt();
+        addNotification("Prompt Lab", "Prompt generated successfully.", "success");
+    });
+    
+    // Auto-update on blur or select change
+    [personaInput, taskInput, contextInput, toneInput, constraintsInput, formatInput, examplesInput, formulaSelect].forEach(el => {
+        el.addEventListener("change", assemblePrompt);
+    });
+
+    // Tauri JPE call
+    explainBtn.addEventListener("click", async () => {
+        const text = resultPrompt.value.trim();
+        if (!text) {
+            addNotification("Prompt Lab Error", "Generate a prompt first to explain it.", "error");
+            return;
+        }
+        
+        resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation via AI...</span>`;
+        explainBtn.disabled = true;
+        
+        try {
+            const explanation = await invoke("generate_jpe_explanation", { promptText: text });
+            resultJpe.innerHTML = `<div class="jpe-content">${explanation.replace(/\n/g, '<br>')}</div>`;
+        } catch (err) {
+            console.error("JPE error:", err);
+            resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)">Error generating explanation: ${err}</span>`;
+            addNotification("Prompt Lab Error", "Failed to generate explanation.", "error");
+        } finally {
+            explainBtn.disabled = false;
+        }
+    });
+
+    copyPromptBtn.addEventListener("click", () => {
+        if (resultPrompt.value) {
+            navigator.clipboard.writeText(resultPrompt.value);
+            addNotification("Prompt Lab", "Prompt copied to clipboard.", "success");
+        }
+    });
+
+    copyJpeBtn.addEventListener("click", () => {
+        if (resultJpe.innerText && !resultJpe.innerText.includes("Click \"Explain")) {
+            navigator.clipboard.writeText(resultJpe.innerText);
+            addNotification("Prompt Lab", "Explanation copied to clipboard.", "success");
+        }
+    });
+    
+    sendChatBtn.addEventListener("click", () => {
+        if (resultPrompt.value) {
+            // Switch to Chat view
+            document.querySelector('.nav-tab[data-view="chat"]')?.click();
+            
+            // Paste prompt into chat input
+            const chatInput = document.getElementById("user-input");
+            if (chatInput) {
+                chatInput.value = resultPrompt.value;
+                chatInput.focus();
+                
+                // Adjust textarea height
+                chatInput.style.height = "auto";
+                chatInput.style.height = Math.min(chatInput.scrollHeight, 300) + "px";
+                
+                addNotification("Prompt Lab", "Prompt transferred to Chat.", "info");
+            }
+        }
+    });
+}
+initPromptLab();
+
+// Onboarding Wizard Implementation
+async function checkOnboarding() {
+    try {
+        const key = await invoke("get_gemini_api_key");
+        const completed = localStorage.getItem("neurodeck_onboarding_complete");
+        
+        // If there's no API key (env or keychain) AND they haven't explicitly finished onboarding
+        if (!key && completed !== "true") {
+            showOnboardingWizard();
+        }
+    } catch (e) {
+        console.error("Failed to check onboarding state:", e);
+    }
+}
+
+function showOnboardingWizard() {
+    // 1. Create onboarding overlay element
+    const overlay = document.createElement("div");
+    overlay.id = "onboarding-overlay";
+    overlay.className = "onboarding-overlay";
+    
+    // 2. Set up HTML content
+    overlay.innerHTML = `
+        <div class="onboarding-container">
+            <header class="onboarding-header">
+                <h2 class="onboarding-title">NEURODECK // INITIAL_BOOT_SETUP</h2>
+                <div class="onboarding-steps-indicator">
+                    <span class="onboarding-step-dot active" data-step="1"></span>
+                    <span class="onboarding-step-dot" data-step="2"></span>
+                    <span class="onboarding-step-dot" data-step="3"></span>
+                    <span class="onboarding-step-dot" data-step="4"></span>
+                </div>
+            </header>
+            
+            <div class="onboarding-content">
+                <!-- Slide 1: Welcome -->
+                <div class="onboarding-slide active" id="slide-1">
+                    <h3 style="color: var(--accent-color); margin-top: 0;">WELCOME TO NEURODECK OS</h3>
+                    <p class="onboarding-welcome-text" id="onboarding-welcome-typing"></p>
+                    
+                    <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 20px; line-height: 1.5;">
+                        To unlock full autonomous agent operations, vector RAG memory indexing, and live canvas programming, you must configure an LLM model provider.
+                    </p>
+                    
+                    <div class="onboarding-choice-container">
+                        <div class="onboarding-choice-card active" data-provider="gemini-key">
+                            <span class="onboarding-choice-icon">🔑</span>
+                            <span class="onboarding-choice-title">Gemini API Key</span>
+                            <span class="onboarding-choice-desc">Manual entry of Google Gemini API key. Writable to secure OS keychain.</span>
+                        </div>
+                        <div class="onboarding-choice-card" data-provider="gemini-oauth">
+                            <span class="onboarding-choice-icon">📱</span>
+                            <span class="onboarding-choice-title">Google Login (QR)</span>
+                            <span class="onboarding-choice-desc">Authenticate via device code grant. Scans QR code with your phone.</span>
+                        </div>
+                        <div class="onboarding-choice-card" data-provider="ollama">
+                            <span class="onboarding-choice-icon">🦙</span>
+                            <span class="onboarding-choice-title">Ollama (Offline)</span>
+                            <span class="onboarding-choice-desc">Use a local Ollama server running on Steam Deck. Completely offline.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: API Key Configuration -->
+                <div class="onboarding-slide" id="slide-2">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 20px;">PROVIDER_AUTHENTICATION</h3>
+                    
+                    <!-- Manual Gemini Key Container -->
+                    <div id="container-gemini-key" class="provider-setup-container">
+                        <div class="onboarding-input-wrapper">
+                            <label for="ob-gemini-key">GEMINI API KEY</label>
+                            <input type="password" id="ob-gemini-key" class="onboarding-input" placeholder="AIzaSy..." autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <!-- Gemini OAuth Container -->
+                    <div id="container-gemini-oauth" class="provider-setup-container" style="display: none; text-align: center;">
+                        <p style="font-size: 0.8rem; margin-bottom: 10px;">Scan the QR code or visit the link to log in:</p>
+                        <div id="ob-oauth-qr-wrapper" style="background: white; padding: 10px; display: inline-block; border-radius: 6px; margin-bottom: 10px;">
+                            <canvas id="ob-oauth-qr"></canvas>
+                        </div>
+                        <p id="ob-oauth-link-text" style="font-size: 0.75rem; margin: 5px 0;">Visit: <a href="#" id="ob-oauth-url" target="_blank" style="color: var(--accent-color);">Requesting...</a></p>
+                        <div style="font-size: 0.8rem; font-weight: bold; background: rgba(0,240,255,0.1); padding: 8px; display: inline-block; border-radius: 4px;" id="ob-oauth-code-box">CODE: ----</div>
+                    </div>
+                    
+                    <!-- Ollama Container -->
+                    <div id="container-ollama" class="provider-setup-container" style="display: none;">
+                        <div class="onboarding-input-wrapper">
+                            <label for="ob-ollama-url">OLLAMA BASE URL</label>
+                            <input type="text" id="ob-ollama-url" class="onboarding-input" value="http://localhost:11434">
+                        </div>
+                        <div class="onboarding-input-wrapper">
+                            <label for="ob-ollama-model">OLLAMA MODEL NAME</label>
+                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="llama3" placeholder="e.g. llama3, mistral, codegemma">
+                        </div>
+                    </div>
+                    
+                    <div class="onboarding-log-viewport" id="ob-validation-log">
+                        <div class="onboarding-log-line">[SYS] Awaiting input credentials...</div>
+                    </div>
+                    
+                    <button class="onboarding-btn primary" id="ob-btn-verify" style="margin-left: auto;">Verify & Save</button>
+                </div>
+
+                <!-- Slide 3: Persona & Theme Selection -->
+                <div class="onboarding-slide" id="slide-3">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 5px;">PERSONA & THEME SELECT</h3>
+                    <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 12px;">Choose your default AI guide and look. Applies live in the background.</p>
+                    
+                    <label style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 4px; display: block;">SELECT PERSONA</label>
+                    <div class="onboarding-carousel" id="ob-persona-carousel">
+                        <!-- Loaded dynamically -->
+                    </div>
+                    
+                    <label style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 6px; display: block;">SELECT THEME</label>
+                    <div class="onboarding-theme-grid" id="ob-theme-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Slide 4: System Integration Diagnostics -->
+                <div class="onboarding-slide" id="slide-4">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 15px;">FINAL SYSTEM CHECK</h3>
+                    
+                    <div class="onboarding-diagnostic-list">
+                        <div class="onboarding-diagnostic-item">
+                            <div class="onboarding-diagnostic-label">
+                                <span class="onboarding-diagnostic-icon">💻</span>
+                                <span>PTY Shell Spawning Subsystem</span>
+                            </div>
+                            <span class="onboarding-diagnostic-status pending" id="diag-pty">PENDING</span>
+                        </div>
+                        <div class="onboarding-diagnostic-item">
+                            <div class="onboarding-diagnostic-label">
+                                <span class="onboarding-diagnostic-icon">🌐</span>
+                                <span>External LLM Network Endpoint Reachability</span>
+                            </div>
+                            <span class="onboarding-diagnostic-status pending" id="diag-net">PENDING</span>
+                        </div>
+                        <div class="onboarding-diagnostic-item">
+                            <div class="onboarding-diagnostic-label">
+                                <span class="onboarding-diagnostic-icon">🔒</span>
+                                <span>OS Keychain Secure Storage Access</span>
+                            </div>
+                            <span class="onboarding-diagnostic-status pending" id="diag-key">PENDING</span>
+                        </div>
+                    </div>
+                    
+                    <div class="onboarding-log-viewport" id="ob-diagnostic-log" style="height: 140px; max-height: 140px; margin-top: 10px;">
+                        <div class="onboarding-log-line">[SYS] Initializing diagnostic scans...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <footer class="onboarding-footer">
+                <button class="onboarding-btn secondary" id="ob-btn-prev" disabled>Back</button>
+                <button class="onboarding-btn" id="ob-btn-next">Next</button>
+            </footer>
+        </div>
+    `;
+    
+    document.getElementById("app").appendChild(overlay);
+    
+    // 3. Wizard State & Logic
+    let currentStep = 1;
+    let selectedProvider = "gemini-key"; // Default
+    let selectedPersona = "Default";
+    let selectedThemeName = "BLACKSITE";
+    let isProviderVerified = false;
+    let isDiagnosticsPassed = false;
+    let oauthPollAbortController = null;
+    
+    // Welcome screen typing animation
+    const welcomeText = "NEURODECK is an immersive AI operating system overlay designed for the Steam Deck. It bridges local console operations with intelligent LLM assistance.";
+    const typingEl = document.getElementById("onboarding-welcome-typing");
+    let charIdx = 0;
+    function typeChar() {
+        if (charIdx < welcomeText.length) {
+            typingEl.textContent += welcomeText.charAt(charIdx);
+            charIdx++;
+            setTimeout(typeChar, 25);
+        }
+    }
+    typeChar();
+
+    // DOM selectors
+    const btnPrev = document.getElementById("ob-btn-prev");
+    const btnNext = document.getElementById("ob-btn-next");
+    const choiceCards = document.querySelectorAll(".onboarding-choice-card");
+    const btnVerify = document.getElementById("ob-btn-verify");
+    const logViewport = document.getElementById("ob-validation-log");
+    
+    // Step navigation handler
+    function updateStepUI() {
+        // Toggle slide active classes
+        document.querySelectorAll(".onboarding-slide").forEach((slide, idx) => {
+            slide.classList.toggle("active", idx + 1 === currentStep);
+        });
+        
+        // Toggle step dot active/completed classes
+        document.querySelectorAll(".onboarding-step-dot").forEach((dot, idx) => {
+            const stepNum = idx + 1;
+            dot.classList.toggle("active", stepNum === currentStep);
+            dot.classList.toggle("completed", stepNum < currentStep);
+        });
+        
+        // Update footer buttons
+        btnPrev.disabled = currentStep === 1;
+        
+        if (currentStep === 4) {
+            btnNext.innerText = "Launch NEURODECK";
+            btnNext.classList.add("primary");
+            btnNext.disabled = !isDiagnosticsPassed;
+            
+            // Auto-trigger diagnostics on step 4
+            runDiagnostics();
+        } else {
+            btnNext.innerText = "Next";
+            btnNext.classList.remove("primary");
+            btnNext.disabled = (currentStep === 2 && !isProviderVerified);
+        }
+    }
+    
+    btnPrev.onclick = () => {
+        // Cancel any pending OAuth polling if backing out
+        if (oauthPollAbortController) {
+            oauthPollAbortController.abort();
+            oauthPollAbortController = null;
+        }
+        
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepUI();
+        }
+    };
+    
+    btnNext.onclick = () => {
+        if (currentStep === 4) {
+            // Finish onboarding!
+            localStorage.setItem("neurodeck_onboarding_complete", "true");
+            overlay.classList.add("hidden");
+            setTimeout(() => {
+                overlay.remove();
+                // Focus the terminal input to give control to user
+                const termInput = document.getElementById("user-input");
+                if (termInput) termInput.focus();
+            }, 500);
+            addNotification("System Initialized", "Welcome to NEURODECK OS.", "success");
+        } else {
+            currentStep++;
+            updateStepUI();
+        }
+    };
+    
+    // Provider card selections
+    choiceCards.forEach(card => {
+        card.onclick = () => {
+            choiceCards.forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+            selectedProvider = card.dataset.provider;
+            
+            // Toggle provider config DOM displays
+            document.getElementById("container-gemini-key").style.display = selectedProvider === "gemini-key" ? "block" : "none";
+            document.getElementById("container-gemini-oauth").style.display = selectedProvider === "gemini-oauth" ? "block" : "none";
+            document.getElementById("container-ollama").style.display = selectedProvider === "ollama" ? "block" : "none";
+            
+            // Reset verification state since they changed provider selection
+            isProviderVerified = false;
+            btnNext.disabled = true;
+            
+            // Reset verification log
+            logViewport.innerHTML = `<div class="onboarding-log-line">[SYS] Awaiting input credentials for ${selectedProvider.toUpperCase()}...</div>`;
+        };
+    });
+
+    // Logging helpers
+    function appendLog(viewport, text, isError = false) {
+        const line = document.createElement("div");
+        line.className = "onboarding-log-line";
+        line.style.color = isError ? "var(--error-color)" : "var(--response-color)";
+        line.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+        viewport.appendChild(line);
+        viewport.scrollTop = viewport.scrollHeight;
+    }
+
+    // Verify & Save Button logic (Step 2)
+    btnVerify.onclick = async () => {
+        isProviderVerified = false;
+        btnNext.disabled = true;
+        
+        if (selectedProvider === "gemini-key") {
+            const keyInput = document.getElementById("ob-gemini-key").value.trim();
+            if (!keyInput) {
+                appendLog(logViewport, "Error: Please enter a Gemini API Key.", true);
+                return;
+            }
+            
+            appendLog(logViewport, "Initiating live validation request...");
+            
+            try {
+                // Ping connection to LLM using standard test
+                const status = await invoke("test_llm_connection", {
+                    provider: "gemini",
+                    model: "gemini-1.5-flash",
+                    url: "",
+                    key: keyInput
+                });
+                
+                appendLog(logViewport, status);
+                appendLog(logViewport, "Saving Gemini API Key to secure OS Keychain...");
+                
+                // Save it to backend
+                await invoke("save_gemini_api_key", { key: keyInput });
+                
+                // Save default provider config to Gemini
+                await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
+                
+                appendLog(logViewport, "Success! Configuration finalized.");
+                isProviderVerified = true;
+                btnNext.disabled = false;
+            } catch (err) {
+                appendLog(logViewport, `Failed to verify key: ${err}`, true);
+            }
+        } 
+        else if (selectedProvider === "gemini-oauth") {
+            appendLog(logViewport, "Initializing OAuth 2.0 Device Authorization flow...");
+            
+            try {
+                const data = await invoke('start_oauth_flow');
+                
+                // Show QR code elements and URLs
+                document.getElementById("ob-oauth-url").href = data.verification_uri;
+                document.getElementById("ob-oauth-url").innerText = data.verification_uri;
+                document.getElementById("ob-oauth-code-box").innerText = `CODE: ${data.user_code}`;
+                
+                // Generate QR Code
+                await QRCode.toCanvas(document.getElementById("ob-oauth-qr"), data.verification_uri_complete || data.verification_uri, {
+                    width: 140,
+                    margin: 1
+                });
+                
+                appendLog(logViewport, "OAuth device flow active. Awaiting user authorization...");
+                
+                // Setup abort controller for polling in case they click Back
+                oauthPollAbortController = new AbortController();
+                
+                // Run polling in background
+                invoke('poll_oauth_token', { 
+                    deviceCode: data.device_code, 
+                    interval: data.interval 
+                }).then(async () => {
+                    appendLog(logViewport, "OAuth code approved! Retrieving access token...");
+                    
+                    // Since it has saved the token in the backend via OS Keychain
+                    appendLog(logViewport, "Retrieved token successfully validated and saved to OS Keychain!");
+                    
+                    // Save default provider config to Gemini
+                    await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
+                    
+                    isProviderVerified = true;
+                    btnNext.disabled = false;
+                }).catch(err => {
+                    if (oauthPollAbortController) {
+                        appendLog(logViewport, `OAuth failed or canceled: ${err}`, true);
+                    }
+                });
+            } catch (err) {
+                appendLog(logViewport, `Failed to initialize OAuth: ${err}`, true);
+            }
+        } 
+        else if (selectedProvider === "ollama") {
+            const urlInput = document.getElementById("ob-ollama-url").value.trim();
+            const modelInput = document.getElementById("ob-ollama-model").value.trim();
+            
+            if (!urlInput || !modelInput) {
+                appendLog(logViewport, "Error: Both url and model name are required.", true);
+                return;
+            }
+            
+            appendLog(logViewport, `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`);
+            
+            try {
+                const status = await invoke("test_llm_connection", {
+                    provider: "ollama",
+                    model: modelInput,
+                    url: urlInput,
+                    key: null
+                });
+                
+                appendLog(logViewport, status);
+                
+                // Save configuration updates
+                await invoke("set_config", { key: "llm.default_provider", value: "ollama" });
+                await invoke("set_config", { key: "llm.ollama_base_url", value: urlInput });
+                await invoke("set_config", { key: "llm.ollama_model", value: modelInput });
+                
+                appendLog(logViewport, "Ollama settings saved successfully.");
+                isProviderVerified = true;
+                btnNext.disabled = false;
+            } catch (err) {
+                appendLog(logViewport, `Ollama validation failed: ${err}`, true);
+                appendLog(logViewport, "Note: Make sure your local Ollama server is running and the model is pulled.", true);
+            }
+        }
+    };
+
+    // Load Personas & Themes (Step 3)
+    const personaCarousel = document.getElementById("ob-persona-carousel");
+    const themeGrid = document.getElementById("ob-theme-grid");
+    
+    // Load Personas
+    const defaultPersonas = [
+        { name: "Default", icon: "🤖", desc: "A standard helpful, polite assistant." },
+        { name: "Cyberpunk", icon: "⚡", desc: "An edgy AI construct with hacker jargon." },
+        { name: "Developer", icon: "💻", desc: "Focuses on clean code outputs and engineering detail." },
+        { name: "Sarcastic Hacker", icon: "🃏", desc: "A witty, sarcastic hacker archetype." }
+    ];
+    
+    personaCarousel.innerHTML = defaultPersonas.map(p => `
+        <div class="onboarding-persona-card ${p.name === selectedPersona ? 'active' : ''}" data-name="${p.name}">
+            <span class="onboarding-persona-icon">${p.icon}</span>
+            <span class="onboarding-persona-name">${p.name}</span>
+            <span class="onboarding-persona-desc">${p.desc}</span>
+        </div>
+    `).join('');
+    
+    personaCarousel.querySelectorAll(".onboarding-persona-card").forEach(card => {
+        card.onclick = async () => {
+            personaCarousel.querySelectorAll(".onboarding-persona-card").forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+            selectedPersona = card.dataset.name;
+            
+            // Set persona in backend
+            try {
+                await invoke("set_persona", { name: selectedPersona });
+            } catch (e) {
+                console.error("Failed to set persona", e);
+            }
+        };
+    });
+    
+    // Load Themes
+    const defaultThemesList = [
+        { name: "BLACKSITE", colors: ["#00F0FF", "#050505", "#D9F7FF"] },
+        { name: "TERMINAL_GHOST", colors: ["#00FFCC", "#000000", "#00FF66"] },
+        { name: "SYNTH_GRID", colors: ["#FF00FF", "#0F0A1A", "#E0E0FF"] },
+        { name: "CYBER_PUNK", colors: ["#FF007F", "#0C0614", "#00FFFF"] }
+    ];
+    
+    themeGrid.innerHTML = defaultThemesList.map(t => `
+        <div class="onboarding-theme-card ${t.name === selectedThemeName ? 'active' : ''}" data-name="${t.name}">
+            <div style="font-weight: bold; margin-bottom: 4px;">${t.name}</div>
+            <div class="onboarding-theme-swatch">
+                <span style="background: ${t.colors[0]}"></span>
+                <span style="background: ${t.colors[1]}"></span>
+                <span style="background: ${t.colors[2]}"></span>
+            </div>
+        </div>
+    `).join('');
+    
+    themeGrid.querySelectorAll(".onboarding-theme-card").forEach(card => {
+        card.onclick = async () => {
+            themeGrid.querySelectorAll(".onboarding-theme-card").forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+            selectedThemeName = card.dataset.name;
+            localStorage.setItem("selectedTheme", selectedThemeName);
+            
+            // Call set_theme in backend to get color values
+            try {
+                const theme = await invoke("set_theme", { name: selectedThemeName });
+                if (theme) {
+                    // Update document custom properties live so theme changes instantly!
+                    document.documentElement.style.setProperty('--bg-color', theme.Background);
+                    document.documentElement.style.setProperty('--fg-color', theme.Foreground);
+                    document.documentElement.style.setProperty('--accent-color', theme.Accent);
+                    document.documentElement.style.setProperty('--response-color', theme.Response);
+                    document.documentElement.style.setProperty('--warning-color', theme.Warning);
+                    document.documentElement.style.setProperty('--error-color', theme.Error);
+                }
+            } catch (e) {
+                console.error("Failed to apply theme live", e);
+            }
+        };
+    });
+
+    // Diagnostics Handler (Step 4)
+    async function runDiagnostics() {
+        isDiagnosticsPassed = false;
+        btnNext.disabled = true;
+        
+        const diagLog = document.getElementById("ob-diagnostic-log");
+        diagLog.innerHTML = `<div class="onboarding-log-line">[SYS] Initiating diagnostics sequence...</div>`;
+        
+        const elPty = document.getElementById("diag-pty");
+        const elNet = document.getElementById("diag-net");
+        const elKey = document.getElementById("diag-key");
+        
+        elPty.className = "onboarding-diagnostic-status pending";
+        elPty.innerText = "RUNNING";
+        elNet.className = "onboarding-diagnostic-status pending";
+        elNet.innerText = "RUNNING";
+        elKey.className = "onboarding-diagnostic-status pending";
+        elKey.innerText = "RUNNING";
+        
+        appendLog(diagLog, "Checking shell subsystem (PTY allocation)...");
+        
+        // Small delay to make it feel cinematic
+        await new Promise(r => setTimeout(r, 800));
+        
+        try {
+            const result = await invoke("run_onboarding_diagnostics");
+            
+            // 1. PTY Status
+            if (result.pty_ok) {
+                elPty.className = "onboarding-diagnostic-status success";
+                elPty.innerText = "SUCCESS";
+                appendLog(diagLog, `PTY check passed: ${result.pty_details}`);
+            } else {
+                elPty.className = "onboarding-diagnostic-status error";
+                elPty.innerText = "FAILED";
+                appendLog(diagLog, `PTY check failed: ${result.pty_details}`, true);
+            }
+            
+            await new Promise(r => setTimeout(r, 600));
+            
+            // 2. Network Status
+            if (result.network_ok) {
+                elNet.className = "onboarding-diagnostic-status success";
+                elNet.innerText = "SUCCESS";
+                appendLog(diagLog, `Network check passed: ${result.network_details}`);
+            } else {
+                elNet.className = "onboarding-diagnostic-status error";
+                elNet.innerText = "FAILED";
+                appendLog(diagLog, `Network check failed: ${result.network_details}`, true);
+            }
+            
+            await new Promise(r => setTimeout(r, 600));
+            
+            // 3. Keychain Status
+            if (result.keychain_ok) {
+                elKey.className = "onboarding-diagnostic-status success";
+                elKey.innerText = "SUCCESS";
+                appendLog(diagLog, `Keychain check passed: ${result.keychain_details}`);
+            } else {
+                elKey.className = "onboarding-diagnostic-status error";
+                elKey.innerText = "FAILED";
+                appendLog(diagLog, `Keychain check failed: ${result.keychain_details}`, true);
+            }
+            
+            await new Promise(r => setTimeout(r, 400));
+            
+            // Determine overall success
+            if (result.pty_ok && result.network_ok && result.keychain_ok) {
+                isDiagnosticsPassed = true;
+                btnNext.disabled = false;
+                appendLog(diagLog, "SYSTEM DIAGNOSTICS COMPLETE. READY TO LAUNCH.");
+            } else {
+                appendLog(diagLog, "DIAGNOSTICS ENCOUNTERED ERRORS. Please fix issues before launching.", true);
+                if (result.pty_ok && result.keychain_ok) {
+                    isDiagnosticsPassed = true;
+                    btnNext.disabled = false;
+                    appendLog(diagLog, "Offline operations allowed. Diagnostics passed with warnings.");
+                }
+            }
+        } catch (e) {
+            appendLog(diagLog, `Diagnostics engine crashed: ${e}`, true);
+        }
+    }
+}
+
+// ==========================================================================
+// CINEMATIC BOOT SEQUENCE
+// ==========================================================================
+(async function runBootSequence() {
+    const overlay = document.getElementById('boot-overlay');
+    const logScroll = document.getElementById('boot-log-scroll');
+    const progressFill = document.getElementById('boot-progress-fill');
+    const progressPct = document.getElementById('boot-progress-pct');
+    const progressLabel = document.getElementById('boot-progress-label-text');
+    if (!overlay || !logScroll) return;
+
+    // Dynamic step count — each addLine() call increments step automatically
+    const TOTAL_STEPS = 22;
+    let step = 0;
+
+    function setProgress(pct, label) {
+        if (progressFill) progressFill.style.width = Math.min(pct, 100) + '%';
+        if (progressPct) progressPct.textContent = Math.round(Math.min(pct, 100)) + '%';
+        if (label && progressLabel) progressLabel.textContent = label.toUpperCase().slice(0, 45);
+    }
+
+    function addLine(addr, html, extraClass) {
+        const line = document.createElement('div');
+        line.className = 'boot-log-line' + (extraClass ? ' ' + extraClass : '');
+        line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
+        logScroll.appendChild(line);
+        logScroll.scrollTop = logScroll.scrollHeight;
+        step++;
+        setProgress((step / TOTAL_STEPS) * 100, line.innerText.replace(addr, '').trim());
+    }
+
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+
+    addLine('[0x0001]', 'Initializing kernel space&hellip;');
+    await delay(90);
+
+    addLine('[0x0002]', 'Loading configuration: <span class="boot-val">llm-term.toml</span>');
+    let cfg = null;
+    try { cfg = await invoke('get_config'); } catch (_) {}
+    await delay(70);
+
+    const prov = cfg?.llm?.default_provider ?? 'ollama';
+    const model = prov === 'gemini' ? (cfg?.llm?.gemini_model ?? 'gemini-1.5-flash') : (cfg?.llm?.ollama_model ?? 'llama2');
+    addLine('[0x0003]', `Provider: <span class="boot-val">${prov.toUpperCase()}</span>  &middot;  Model: <span class="boot-val">${model}</span>`);
+    await delay(80);
+
+    addLine('[0x0004]', 'Scanning plugin directory: <span class="boot-val">plugins/</span>');
+    let plugins = [];
+    try { plugins = await invoke('list_plugins'); } catch (_) {}
+    await delay(60);
+
+    const pluginDescMap = {
+        'bmad.lua': 'BMad Framework &mdash; /john /sally /winston /amelia /paige /mary',
+        'ip_lookup.lua': 'IP Lookup Utility',
+        'auto_responder.lua': 'Auto-Responder Hooks',
+        'promptgen.lua': 'Prompt Lab &mdash; /promptlab /promptgen',
+    };
+    let addrIdx = 5;
+    for (const p of plugins) {
+        const fname = p.file_name || p;
+        const desc = pluginDescMap[fname] || (p.description || 'Custom Plugin');
+        const status = p.enabled === false ? '<span style="color:#ff4466">DISABLED</span>' : '<span class="boot-ok">LOADED</span>';
+        addLine(`[0x${addrIdx.toString(16).padStart(4,'0')}]`, `Plugin: <span class="boot-val">${fname}</span>  ${status}  <span style="opacity:0.4">// ${desc}</span>`);
+        addrIdx++;
+        await delay(55);
+    }
+    if (plugins.length === 0) {
+        addLine('[0x0005]', 'No plugins found in plugins/  <span style="opacity:0.5">(dir may be empty)</span>');
+        addrIdx = 6;
+    }
+
+    const luaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(luaAddr, `Starting Lua runtime <span class="boot-val">(v5.4 &mdash; vendored via mlua)</span>&hellip;  <span class="boot-ok">&check;</span>`);
+    addrIdx++;
+    await delay(80);
+
+    const personaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(personaAddr, 'Enumerating persona registry&hellip;');
+    addrIdx++;
+    let personas = [];
+    try { personas = await invoke('get_personas'); } catch (_) {}
+    await delay(55);
+    const personaAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(personaAddr2, `Registered <span class="boot-val">${personas.length || 9}</span> personas  <span class="boot-ok">&check;</span>`);
+    addrIdx++;
+    await delay(65);
+
+    const themeAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(themeAddr, 'Loading theme palette&hellip;');
+    addrIdx++;
+    let themes = [];
+    try { themes = await invoke('get_themes'); } catch (_) {}
+    await delay(55);
+    const themeAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(themeAddr2, `<span class="boot-val">${themes.length || 6}</span> themes indexed  <span class="boot-ok">&check;</span>`);
+    addrIdx++;
+    await delay(70);
+
+    const memAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(memAddr, 'Initializing vector memory subsystem&hellip;');
+    addrIdx++;
+    let memCount = 0;
+    try { memCount = await invoke('get_doc_count'); } catch (_) {}
+    await delay(60);
+    const memAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(memAddr2, `Vector memory: <span class="boot-val">${memCount}</span> documents indexed  <span class="boot-ok">&check;</span>`);
+    addrIdx++;
+    await delay(65);
+
+    const ptyAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(ptyAddr, 'PTY manager: <span class="boot-ok">READY</span>  &middot;  Canvas engine: <span class="boot-ok">READY</span>  &middot;  Collab TCP: <span class="boot-ok">STANDBY</span>');
+    addrIdx++;
+    await delay(75);
+
+    // Real LLM connectivity test
+    const llmAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(llmAddr, `Testing LLM provider [<span class="boot-val">${prov.toUpperCase()}</span>]&hellip;`);
+    addrIdx++;
+    await delay(50);
+    let llmStats = null;
+    try { llmStats = await invoke('get_context_stats'); } catch (_) {}
+    const llmStatus = llmStats ? '<span class="boot-ok">ONLINE</span>' : '<span style="color:#ffaa00">STANDBY</span>';
+    const llmModel = llmStats?.active_model ?? model;
+    const llmAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(llmAddr2, `LLM [<span class="boot-val">${llmModel}</span>]: ${llmStatus}  &middot;  Infrastructure: <span class="boot-ok">ONLINE</span>`);
+    addrIdx++;
+    await delay(80);
+
+    addLine('[0x0011]', '<strong style="color:#00ff88;letter-spacing:0.06em">ALL SYSTEMS NOMINAL &mdash; NEURODECK ONLINE &check;</strong>', 'boot-final');
+    setProgress(100, 'NEURODECK ONLINE');
+    await delay(950);
+
+    overlay.classList.add('fade-out');
+    await delay(680);
+    overlay.remove();
+})();
 

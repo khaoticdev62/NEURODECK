@@ -44,6 +44,10 @@ pub struct LlmConfig {
     pub gemini_model: String,
     #[serde(default = "default_ollama_base_url")]
     pub ollama_base_url: String,
+    /// Google OAuth2 client ID for device flow (Gemini API key auth).
+    /// Register at console.cloud.google.com → APIs & Services → Credentials.
+    #[serde(default)]
+    pub google_client_id: String,
 }
 
 fn default_provider() -> String { "ollama".to_string() }
@@ -58,6 +62,7 @@ impl Default for LlmConfig {
             ollama_model: default_ollama_model(),
             gemini_model: default_gemini_model(),
             ollama_base_url: default_ollama_base_url(),
+            google_client_id: String::new(),
         }
     }
 }

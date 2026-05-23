@@ -1622,6 +1622,49 @@ struct AgentHistoryEntry {
     content: String,
 }
 
+#[tauri::command]
+async fn start_oauth_flow(state: State<'_, Mutex<AppState>>) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
+    let client_id = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.config.llm.google_client_id.clone()
+    };
+    if client_id.is_empty() {
+        return Err("google_client_id is not set in llm-term.toml. Add google_client_id = \"your-client-id\" under [llm].".to_string());
+    }
+    let config = neurodeck_infrastructure::oauth::OAuthConfig {
+        client_id,
+        ..neurodeck_infrastructure::oauth::OAuthConfig::default()
+    };
+    neurodeck_infrastructure::oauth::request_device_code(&config).await
+}
+
+#[tauri::command]
+async fn poll_oauth_token(device_code: String, interval: u64, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let client_id = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.config.llm.google_client_id.clone()
+    };
+    let config = if client_id.is_empty() {
+        neurodeck_infrastructure::oauth::OAuthConfig::default()
+    } else {
+        neurodeck_infrastructure::oauth::OAuthConfig {
+            client_id,
+            ..neurodeck_infrastructure::oauth::OAuthConfig::default()
+        }
+    };
+    let token = neurodeck_infrastructure::oauth::poll_for_token(&config, &device_code, interval).await?;
+    
+    // Save to OS Keychain
+    neurodeck_infrastructure::secrets::save_gemini_api_key(&token)?;
+    
+    // Update active provider
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    std::env::set_var("GEMINI_API_KEY", &token);
+    app.provider = create_provider(&app.config);
+    
+    Ok(())
+}
+
 /// Call the LLM with the agent system prompt, collect the full response, and
 /// return the raw text. The frontend parses the JSON step from the text.
 #[tauri::command]
@@ -1818,9 +1861,10 @@ fn user_config_dir() -> PathBuf {
 }
 
 fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
-    if std::env::var("GEMINI_API_KEY").is_ok()
-        || config.llm.default_provider == "gemini" 
-    {
+    let has_gemini_key = std::env::var("GEMINI_API_KEY").is_ok()
+        || neurodeck_infrastructure::secrets::get_gemini_api_key().is_ok();
+        
+    if has_gemini_key || config.llm.default_provider == "gemini" {
         Arc::new(GeminiProvider::new(config.llm.gemini_model.clone()))
     } else {
         Arc::new(OllamaProvider::new(
@@ -1840,6 +1884,7 @@ fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>) -> 
         "llm.ollama_model" => config.llm.ollama_model = value,
         "llm.gemini_model" => config.llm.gemini_model = value,
         "llm.ollama_base_url" => config.llm.ollama_base_url = value,
+        "llm.google_client_id" => config.llm.google_client_id = value,
         _ => return Err(format!("Unknown config key: {}", key)),
     }
 
@@ -1862,36 +1907,10 @@ fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, Strin
 fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     
-    if let Some(home) = get_home_dir() {
-        let env_dir = home.join(".config").join("neurodeck");
-        std::fs::create_dir_all(&env_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
-        let env_path = env_dir.join("env");
-        
-        let mut new_content = String::new();
-        let mut key_written = false;
-        
-        if env_path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&env_path) {
-                for line in content.lines() {
-                    let trimmed = line.trim();
-                    if trimmed.starts_with("GEMINI_API_KEY=") {
-                        new_content.push_str(&format!("GEMINI_API_KEY={}\n", key));
-                        key_written = true;
-                    } else if !trimmed.is_empty() {
-                        new_content.push_str(line);
-                        new_content.push('\n');
-                    }
-                }
-            }
-        }
-        
-        if !key_written {
-            new_content.push_str(&format!("GEMINI_API_KEY={}\n", key));
-        }
-        
-        std::fs::write(&env_path, new_content).map_err(|e| format!("Failed to write env file: {}", e))?;
-    }
+    // Phase 4: OS keychain secret management
+    neurodeck_infrastructure::secrets::save_gemini_api_key(&key)?;
     
+    // Keep it in env for legacy provider compat during transition
     std::env::set_var("GEMINI_API_KEY", &key);
     app.provider = create_provider(&app.config);
     Ok(())
@@ -1899,7 +1918,83 @@ fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result
 
 #[tauri::command]
 fn get_gemini_api_key() -> Result<String, String> {
-    Ok(std::env::var("GEMINI_API_KEY").unwrap_or_default())
+    // Phase 4: OS keychain secret management
+    match neurodeck_infrastructure::secrets::get_gemini_api_key() {
+        Ok(key) => Ok(key),
+        Err(_) => Ok(std::env::var("GEMINI_API_KEY").unwrap_or_default()) // fallback to env
+    }
+}
+
+#[derive(serde::Serialize)]
+struct DiagnosticResult {
+    pty_ok: bool,
+    pty_details: String,
+    network_ok: bool,
+    network_details: String,
+    keychain_ok: bool,
+    keychain_details: String,
+}
+
+#[tauri::command]
+async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
+    // 1. Check PTY access
+    let pty_ok = std::panic::catch_unwind(|| {
+        let pty_system = portable_pty::native_pty_system();
+        pty_system.openpty(portable_pty::PtySize {
+            rows: 24,
+            cols: 80,
+            pixel_width: 0,
+            pixel_height: 0,
+        }).is_ok()
+    }).unwrap_or(false);
+    
+    let pty_details = if pty_ok {
+        let shell = if cfg!(target_os = "windows") { "powershell.exe" } else { "bash" };
+        format!("Shell Subsystem active (Default: {})", shell)
+    } else {
+        "Failed to open PTY device".to_string()
+    };
+
+    // 2. Check Network status
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .map_err(|e| e.to_string())?;
+        
+    let network_res = client.get("https://generativelanguage.googleapis.com/")
+        .send()
+        .await;
+        
+    let (network_ok, network_details) = match network_res {
+        Ok(_) => (true, "Gemini API endpoint reachable".to_string()),
+        Err(e) => {
+            if client.get("https://www.google.com").send().await.is_ok() {
+                (true, "Internet active, but Gemini endpoint restricted".to_string())
+            } else {
+                (false, format!("Network unreachable: {}", e))
+            }
+        }
+    };
+
+    // 3. Check Keychain access
+    let keychain_res = std::panic::catch_unwind(|| {
+        neurodeck_infrastructure::secrets::test_keychain_access()
+    });
+
+    let (keychain_ok, keychain_details) = match keychain_res {
+        Ok(Ok(())) => (true, "Secure credential storage active".to_string()),
+        Ok(Err(e)) => (false, format!("Keychain error: {}", e)),
+        Err(_) => (false, "Panic while accessing keyring".to_string()),
+    };
+
+    Ok(DiagnosticResult {
+        pty_ok,
+        pty_details,
+        network_ok,
+        network_details,
+        keychain_ok,
+        keychain_details,
+    })
 }
 
 #[tauri::command]
@@ -2058,6 +2153,25 @@ fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, 
 // ============================================================
 // CATEGORY B COMMANDS
 // ============================================================
+
+/// Explains a generated prompt in Just Plain English (JPE).
+#[tauri::command]
+async fn generate_jpe_explanation(prompt_text: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.provider.clone()
+    };
+
+    if prompt_text.trim().is_empty() {
+        return Ok(String::new());
+    }
+
+    let system_prompt = "You are a prompt engineering expert. Your task is to explain the intent of the following prompt in Just Plain English (JPE), so that anyone can understand it. Use simple, grade-8 reading level language. Summarize the role, the task, the constraints, and the expected format concisely. Do not evaluate the prompt, just explain what it asks the AI to do.";
+    let query = format!("Explain the following prompt in simple English, step by step:\n\n{}", prompt_text);
+
+    let result = provider.chat_with_image(&query, system_prompt, None, None).await?;
+    Ok(result.trim().to_string())
+}
 
 /// AI-powered terminal autocomplete.
 /// Takes the current terminal input buffer and returns suggested completion suffix.
@@ -2645,6 +2759,37 @@ async fn canvas_collab_send(
     }
 }
 
+use neurodeck_core::ipc::{Intent, StatePatch};
+
+#[tauri::command]
+async fn dispatch_action(
+    action: Intent,
+    app_handle: AppHandle,
+    _state: State<'_, Mutex<AppState>>
+) -> Result<(), String> {
+    // Phase 2 implementation of strictly typed Event Bus.
+    // Legacy commands will slowly migrate here.
+    tracing::info!("Received Intent: {:?}", action);
+
+    match action {
+        Intent::StartTerminal { id, shell } => {
+            // Future hexagonal adapter logic here
+            tracing::info!("StartTerminal called for id {} with shell {:?}", id, shell);
+            // Example of broadcasting a state patch:
+            let patch = StatePatch::TerminalOutput { 
+                id: id.clone(), 
+                data: format!("Initializing terminal {}...\n", id) 
+            };
+            let _ = app_handle.emit("state_patch", patch);
+        },
+        _ => {
+            tracing::warn!("Intent not fully handled yet in backend migration: {:?}", action);
+        }
+    }
+    
+    Ok(())
+}
+
 /// Stop the active collab session.
 #[tauri::command]
 fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
@@ -2655,8 +2800,31 @@ fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
     s.collab_tx = None;
 }
 
+#[tauri::command]
+async fn close_splashscreen(window: tauri::Window) {
+    // Close splashscreen
+    if let Some(splashscreen) = window.get_webview_window("splashscreen") {
+        splashscreen.close().unwrap_or_default();
+    }
+    // Show main window
+    if let Some(main_window) = window.get_webview_window("main") {
+        main_window.show().unwrap_or_default();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize tracing
+    let log_dir = user_config_dir().join("logs");
+    let _ = std::fs::create_dir_all(&log_dir);
+    let file_appender = tracing_appender::rolling::daily(log_dir, "neurodeck.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_ansi(false)
+        .init();
+    tracing::info!("Starting NEURODECK...");
+
     let args: Vec<String> = std::env::args().collect();
     if args.contains(&"--tunnel".to_string()) || args.contains(&"--daemon".to_string()) {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
@@ -2738,13 +2906,13 @@ pub fn run() {
             // Manage LuaState
             app.manage(LuaState(Mutex::new(lua_engine)));
 
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+            // if cfg!(debug_assertions) {
+            //     app.handle().plugin(
+            //         tauri_plugin_log::Builder::default()
+            //             .level(log::LevelFilter::Info)
+            //             .build(),
+            //     )?;
+            // }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -2781,6 +2949,9 @@ pub fn run() {
             transfer::respond_to_transfer,
             transfer::get_discovered_peers,
             transfer::get_active_transfers,
+            transfer::cancel_transfer,
+            transfer::set_group_code,
+            transfer::get_group_code,
             open_external,
             get_game_context,
             agent_step,
@@ -2818,6 +2989,7 @@ pub fn run() {
             shell_autocomplete,
             read_last_screenshot,
             search_history_ai,
+            generate_jpe_explanation,
             index_directory,
             get_doc_count,
             clear_doc_index,
@@ -2835,9 +3007,14 @@ pub fn run() {
             canvas_collab_stop,
             save_profiles,
             load_profiles,
+            dispatch_action,
             save_custom_themes,
             load_custom_themes,
-            get_lan_ip
+            get_lan_ip,
+            close_splashscreen,
+            start_oauth_flow,
+            poll_oauth_token,
+            run_onboarding_diagnostics
         ])
         .run(tauri::generate_context!())
 
