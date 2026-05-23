@@ -1,5 +1,4 @@
-use suppaftp::FtpStream;
-use std::io::Cursor;
+use suppaftp::{FtpStream, FtpError};
 
 fn to_string_err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -72,8 +71,15 @@ pub async fn ftp_download_file(
         let mut stream = FtpStream::connect(&addr).map_err(to_string_err)?;
         stream.login(&user, &password).map_err(to_string_err)?;
 
-        let cursor: Cursor<Vec<u8>> = stream.retr_as_buffer(&remote_path).map_err(to_string_err)?;
-        std::fs::write(&local_path, cursor.into_inner()).map_err(to_string_err)?;
+        // Stream directly to disk — avoids loading the entire file into RAM.
+        // retr_as_buffer would OOM on files > ~500 MB.
+        stream.retr(&remote_path, |reader| {
+            let mut file = std::fs::File::create(&local_path)
+                .map_err(|e| FtpError::ConnectionError(e))?;
+            std::io::copy(reader, &mut file)
+                .map_err(|e| FtpError::ConnectionError(e))?;
+            Ok(())
+        }).map_err(to_string_err)?;
 
         stream.quit().ok();
         Ok(())
@@ -96,9 +102,9 @@ pub async fn ftp_upload_file(
         let mut stream = FtpStream::connect(&addr).map_err(to_string_err)?;
         stream.login(&user, &password).map_err(to_string_err)?;
 
-        let data = std::fs::read(&local_path).map_err(to_string_err)?;
-        let mut cursor = Cursor::new(data);
-        stream.put_file(&remote_path, &mut cursor).map_err(to_string_err)?;
+        // Open the file as a stream so large files are not loaded into RAM.
+        let mut file = std::fs::File::open(&local_path).map_err(to_string_err)?;
+        stream.put_file(&remote_path, &mut file).map_err(to_string_err)?;
 
         stream.quit().ok();
         Ok(())

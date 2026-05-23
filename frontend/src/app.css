@@ -6339,3 +6339,23 @@ body.crt-flicker-disabled .crt-flicker {
     flex-shrink: 0;
     margin-top: 1px;
 }
+
+.remote-security-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,214,0,0.06);
+    border: 1px solid rgba(255,214,0,0.2);
+    border-radius: 7px;
+    font-size: 0.72rem;
+    color: rgba(255,214,0,0.7);
+    line-height: 1.45;
+    flex-shrink: 0;
+}
+
+.remote-security-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}

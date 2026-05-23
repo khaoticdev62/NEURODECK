@@ -1,86 +1,103 @@
-# package_release.ps1 - PowerShell script to package NEURODECK release artifacts
+# package_release.ps1 — Package and optionally sign NEURODECK release artifacts
+#
+# CODE SIGNING (optional but required to avoid Windows SmartScreen):
+#   Set $env:NEURODECK_CERT_THUMBPRINT to your certificate thumbprint before running.
+#   Example: $env:NEURODECK_CERT_THUMBPRINT = "ABCDEF1234567890..."
+#   Get thumbprint: Get-ChildItem Cert:\CurrentUser\My | Select Thumbprint,Subject
+#
+#   To obtain a cert for testing: New-SelfSignedCertificate -Type CodeSigning ...
+#   For distribution: purchase an EV Code Signing certificate from DigiCert / Sectigo.
 
 $ErrorActionPreference = "Stop"
 
 Write-Output "=== Starting NEURODECK Release Packaging ==="
 
-# 1. Clean previous build artifacts
-if (Test-Path "neurodeck_win_release.zip") {
-    Write-Output "Removing old release zip..."
-    Remove-Item "neurodeck_win_release.zip" -Force
+# ── Signing configuration ───────────────────────────────────────────────────
+$certThumbprint = $env:NEURODECK_CERT_THUMBPRINT
+$signtool = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\x64\signtool.exe"
+if (-not (Test-Path $signtool)) {
+    $signtool = "${env:ProgramFiles}\Windows Kits\10\bin\x64\signtool.exe"
 }
-if (Test-Path "neurodeck_installer.exe") {
-    Write-Output "Removing old installer..."
-    Remove-Item "neurodeck_installer.exe" -Force
+$canSign = ($certThumbprint -and (Test-Path $signtool))
+
+function Sign-File {
+    param([string]$FilePath)
+    if (-not $canSign) {
+        Write-Warning "Skipping signing for $FilePath (no cert thumbprint or signtool not found)."
+        return
+    }
+    Write-Output "Signing: $FilePath"
+    & $signtool sign `
+        /sha1 $certThumbprint `
+        /tr http://timestamp.digicert.com `
+        /td sha256 `
+        /fd sha256 `
+        "$FilePath"
+    if ($LASTEXITCODE -ne 0) {
+        throw "signtool failed for $FilePath (exit $LASTEXITCODE)"
+    }
 }
 
-# 2. Build the Tauri application in release mode
+# ── 1. Clean previous artifacts ─────────────────────────────────────────────
+foreach ($f in @("neurodeck_win_release.zip", "neurodeck_installer.exe")) {
+    if (Test-Path $f) { Remove-Item $f -Force }
+}
+
+# ── 2. Build in release mode ────────────────────────────────────────────────
 Write-Output "Building Tauri app in release mode..."
 npx tauri build
 
-# 3. Locate compiled outputs
+# ── 3. Locate outputs ───────────────────────────────────────────────────────
 $binaryPath = "src-tauri/target/release/app.exe"
-$setupPath = "src-tauri/target/release/bundle/nsis/neurodeck_0.1.0_x64-setup.exe"
+$setupPath  = "src-tauri/target/release/bundle/nsis/neurodeck_0.1.0_x64-setup.exe"
 
-if (-not (Test-Path $binaryPath)) {
-    Write-Error "Failed to find compiled application binary at $binaryPath"
-}
-if (-not (Test-Path $setupPath)) {
-    Write-Error "Failed to find setup installer at $setupPath"
-}
+if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found: $binaryPath" }
+if (-not (Test-Path $setupPath))  { Write-Error "Installer not found: $setupPath" }
 
-# 4. Create staging directory
+# ── 4. Sign the installer (before copying) ──────────────────────────────────
+if (-not $canSign) {
+    Write-Warning "==================================================================="
+    Write-Warning "UNSIGNED BUILD — Windows SmartScreen will block first-run for users."
+    Write-Warning "Set NEURODECK_CERT_THUMBPRINT to enable signing."
+    Write-Warning "==================================================================="
+}
+Sign-File $setupPath
+
+# ── 5. Stage release files ──────────────────────────────────────────────────
 $stagingDir = "neurodeck-win-release"
-if (Test-Path $stagingDir) {
-    Remove-Item $stagingDir -Recurse -Force
-}
+if (Test-Path $stagingDir) { Remove-Item $stagingDir -Recurse -Force }
 $null = New-Item -ItemType Directory -Path $stagingDir
 
-# 5. Copy and rename executable
 Write-Output "Staging release files..."
 Copy-Item $binaryPath "$stagingDir/neurodeck.exe"
+Sign-File "$stagingDir/neurodeck.exe"
 
-# Copy scripts and plugins and BMad directories
-if (Test-Path "scripts") {
-    Copy-Item -Recurse "scripts" "$stagingDir/scripts"
-}
-if (Test-Path "plugins") {
-    Copy-Item -Recurse "plugins" "$stagingDir/plugins"
-}
-if (Test-Path "_bmad") {
-    Copy-Item -Recurse "_bmad" "$stagingDir/_bmad"
-}
-if (Test-Path ".agents") {
-    Copy-Item -Recurse ".agents" "$stagingDir/.agents"
+foreach ($dir in @("scripts", "plugins", "_bmad", ".agents")) {
+    if (Test-Path $dir) { Copy-Item -Recurse $dir "$stagingDir/$dir" }
 }
 
-# Copy configurations (copy config as template)
-Copy-Item "llm-term.toml" "$stagingDir/llm-term.toml.template"
+Copy-Item "llm-term.toml"    "$stagingDir/llm-term.toml.template"
 Copy-Item "custom_style.json" "$stagingDir/custom_style.json"
-
-# Copy scripts
-Copy-Item "install.sh" "$stagingDir/install.sh"
+Copy-Item "install.sh"        "$stagingDir/install.sh"
 Copy-Item "launch_gamescope.sh" "$stagingDir/launch_gamescope.sh"
+Copy-Item "README.md"         "$stagingDir/README.md"
+if (Test-Path "ROADMAP.md") { Copy-Item "ROADMAP.md" "$stagingDir/ROADMAP.md" }
+if (Test-Path "docs")        { Copy-Item -Recurse "docs" "$stagingDir/docs" }
 
-# Copy documentation
-Copy-Item "README.md" "$stagingDir/README.md"
-Copy-Item "ROADMAP.md" "$stagingDir/ROADMAP.md"
-if (Test-Path "docs") {
-    Copy-Item -Recurse "docs" "$stagingDir/docs"
-}
-
-# 6. Compress staging folder to zip
-Write-Output "Creating release zip archive..."
+# ── 6. Compress ─────────────────────────────────────────────────────────────
+Write-Output "Creating release zip..."
 Compress-Archive -Path $stagingDir -DestinationPath "neurodeck_win_release.zip" -Force
-
-# 7. Clean up staging folder
-Write-Output "Cleaning up staging directory..."
 Remove-Item $stagingDir -Recurse -Force
 
-# 8. Copy setup installer to root workspace for convenience
-Write-Output "Copying installer to root..."
+# ── 7. Copy signed installer to root ────────────────────────────────────────
 Copy-Item $setupPath "neurodeck_installer.exe"
 
+Write-Output ""
 Write-Output "=== Packaging Complete ==="
-Write-Output "Created release archive: neurodeck_win_release.zip"
-Write-Output "Created setup installer: neurodeck_installer.exe"
+Write-Output "  Archive:   neurodeck_win_release.zip"
+Write-Output "  Installer: neurodeck_installer.exe"
+if ($canSign) {
+    Write-Output "  Signed:    YES (cert $certThumbprint)"
+} else {
+    Write-Output "  Signed:    NO  — set NEURODECK_CERT_THUMBPRINT for signed builds"
+}
