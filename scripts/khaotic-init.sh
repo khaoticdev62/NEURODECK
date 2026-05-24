@@ -9,6 +9,7 @@
 #   ./scripts/khaotic-init.sh validate         — validate meta.json and derived artifact consistency
 #   ./scripts/khaotic-init.sh status           — print current KFMS health summary
 #   ./scripts/khaotic-init.sh doctor           — print release-readiness and blocker summary
+#   ./scripts/khaotic-init.sh release-plan     — run release gates and print ship/no-ship summary
 #   ./scripts/khaotic-init.sh bump patch       — bump PATCH and refresh derived artifacts
 #   ./scripts/khaotic-init.sh bump minor       — bump MINOR/codename and refresh derived artifacts
 #   ./scripts/khaotic-init.sh bump major       — bump MAJOR and reset codename line
@@ -75,6 +76,51 @@ PY_BIN="$(resolve_python || true)"
 
 require_python() {
   [[ -n "${PY_BIN:-}" ]] || die "python3 or python is required for KFMS commands."
+}
+
+resolve_command_path() {
+  local tool="$1"
+  local candidate=""
+  if candidate="$(command -v "$tool" 2>/dev/null)"; then
+    echo "$candidate"
+    return 0
+  fi
+  if candidate="$(command -v "${tool}.exe" 2>/dev/null)"; then
+    echo "$candidate"
+    return 0
+  fi
+  if candidate="$(command -v "${tool}.cmd" 2>/dev/null)"; then
+    echo "$candidate"
+    return 0
+  fi
+  if command -v cmd.exe >/dev/null 2>&1; then
+    candidate="$(cmd.exe /c where "$tool" 2>/dev/null | tr -d '\r' | head -n 1 || true)"
+    if [[ -n "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+is_wsl_shell() {
+  [[ -n "${WSL_INTEROP:-}" ]] || [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null
+}
+
+is_windows_host_tool_path() {
+  local tool_path="$1"
+  [[ "$tool_path" == /mnt/* ]] || [[ "$tool_path" =~ \.(exe|cmd)$ ]]
+}
+
+run_release_gate() {
+  local workdir="$1"
+  local log_path="$2"
+  local gate_cmd="$3"
+
+  (
+    cd "$workdir"
+    eval "$gate_cmd"
+  ) >"$log_path" 2>&1
 }
 
 count_loose_root_files() {
@@ -452,7 +498,7 @@ cmd_status() {
   require_python
   echo ""
   echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${CY}║  KHAOTIC LABS — KFMS v1.0 STATUS        ║${NC}"
+  echo -e "${CY}║  KHAOTIC LABS — KFMS v1.0 STATUS         ║${NC}"
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
 
   if [[ -f "$META" ]]; then
@@ -567,7 +613,7 @@ cmd_doctor() {
 
   echo ""
   echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${CY}║  KHAOTIC LABS — KFMS DOCTOR             ║${NC}"
+  echo -e "${CY}║  KHAOTIC LABS — KFMS DOCTOR              ║${NC}"
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
   if (( score >= 85 )); then
     ok "release readiness score → ${score}/100"
@@ -597,7 +643,12 @@ cmd_doctor() {
 cmd_release_plan() {
   require_python
   local score="" validation_ok="" plan_snapshot_ok="" workspace_state="" loose_root_count="" diff_check_ok=""
-  local blockers=() line key value release_state
+  local blockers=() line key value release_state exit_code=0
+  local cargo_check_status="skipped" cargo_test_status="skipped" frontend_build_status="skipped"
+  local release_score_adjustment=0
+  local logs_dir="$ROOT/.loose/inbox/kfms-release-logs"
+  local cargo_bin="" npm_bin=""
+  mkdir -p "$logs_dir"
 
   while IFS= read -r line; do
     key="${line%%=*}"
@@ -613,7 +664,68 @@ cmd_release_plan() {
     esac
   done < <(evaluate_release_readiness)
 
-  if (( score >= 85 )) && [[ "$validation_ok" == "true" ]] && [[ "$plan_snapshot_ok" == "true" ]] && [[ "$diff_check_ok" == "true" ]] && [[ "$workspace_state" == "clean" ]] && [[ "$loose_root_count" == "0" ]]; then
+  info "Running release gates..."
+
+  if [[ -f "$ROOT/src-tauri/Cargo.toml" ]]; then
+    cargo_bin="$(resolve_command_path cargo || true)"
+    if [[ -n "$cargo_bin" ]]; then
+      if is_wsl_shell && is_windows_host_tool_path "$cargo_bin"; then
+        cargo_check_status="host-shell-required"
+        cargo_test_status="host-shell-required"
+        release_score_adjustment=$((release_score_adjustment - 30))
+        blockers+=("cargo is only available as a Windows-host tool from this shell. Run release-plan from PowerShell to execute Rust gates.")
+      else
+        if run_release_gate "$ROOT/src-tauri" "$logs_dir/cargo-check.log" "\"$cargo_bin\" check"; then
+          cargo_check_status="pass"
+        else
+          cargo_check_status="fail"
+          release_score_adjustment=$((release_score_adjustment - 25))
+          blockers+=("cargo check failed. See .loose/inbox/kfms-release-logs/cargo-check.log")
+        fi
+
+        if run_release_gate "$ROOT/src-tauri" "$logs_dir/cargo-test.log" "\"$cargo_bin\" test"; then
+          cargo_test_status="pass"
+        else
+          cargo_test_status="fail"
+          release_score_adjustment=$((release_score_adjustment - 25))
+          blockers+=("cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log")
+        fi
+      fi
+    else
+      cargo_check_status="missing-tool"
+      cargo_test_status="missing-tool"
+      release_score_adjustment=$((release_score_adjustment - 30))
+      blockers+=("cargo is not installed, so Rust release gates could not run.")
+    fi
+  fi
+
+  if [[ -f "$ROOT/frontend/package.json" ]]; then
+    npm_bin="$(resolve_command_path npm || true)"
+    if [[ -n "$npm_bin" ]]; then
+      if is_wsl_shell && is_windows_host_tool_path "$npm_bin"; then
+        frontend_build_status="host-shell-required"
+        release_score_adjustment=$((release_score_adjustment - 20))
+        blockers+=("npm is only available as a Windows-host tool from this shell. Run release-plan from PowerShell to execute the frontend build gate.")
+      else
+        if run_release_gate "$ROOT" "$logs_dir/frontend-build.log" "\"$npm_bin\" run --prefix frontend build"; then
+          frontend_build_status="pass"
+        else
+          frontend_build_status="fail"
+          release_score_adjustment=$((release_score_adjustment - 20))
+          blockers+=("frontend build failed. See .loose/inbox/kfms-release-logs/frontend-build.log")
+        fi
+      fi
+    else
+      frontend_build_status="missing-tool"
+      release_score_adjustment=$((release_score_adjustment - 20))
+      blockers+=("npm is not installed, so the frontend release gate could not run.")
+    fi
+  fi
+
+  score=$((score + release_score_adjustment))
+  (( score < 0 )) && score=0
+
+  if (( score >= 85 )) && [[ "$validation_ok" == "true" ]] && [[ "$plan_snapshot_ok" == "true" ]] && [[ "$diff_check_ok" == "true" ]] && [[ "$workspace_state" == "clean" ]] && [[ "$loose_root_count" == "0" ]] && [[ "$cargo_check_status" == "pass" ]] && [[ "$cargo_test_status" == "pass" ]] && [[ "$frontend_build_status" == "pass" ]]; then
     release_state="GO"
   elif (( score >= 60 )); then
     release_state="HOLD"
@@ -623,14 +735,15 @@ cmd_release_plan() {
 
   echo ""
   echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${CY}║  KHAOTIC LABS — KFMS RELEASE PLAN       ║${NC}"
+  echo -e "${CY}║  KHAOTIC LABS — KFMS RELEASE PLAN        ║${NC}"
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
   if [[ "$release_state" == "GO" ]]; then
     ok "release decision → ${release_state}"
   elif [[ "$release_state" == "HOLD" ]]; then
     warn "release decision → ${release_state}"
   else
-    die "release decision → ${release_state}"
+    warn "release decision → ${release_state}"
+    exit_code=1
   fi
   ok "readiness score  → ${score}/100"
   ok "metadata         → $( [[ "$validation_ok" == "true" ]] && echo aligned || echo blocked )"
@@ -638,6 +751,9 @@ cmd_release_plan() {
   ok "diff hygiene     → $( [[ "$diff_check_ok" == "true" ]] && echo pass || echo fail )"
   ok "workspace state  → ${workspace_state}"
   ok "loose root files → ${loose_root_count}"
+  ok "cargo check      → ${cargo_check_status}"
+  ok "cargo test       → ${cargo_test_status}"
+  ok "frontend build   → ${frontend_build_status}"
 
   echo ""
   if [[ "${#blockers[@]}" -eq 0 ]]; then
@@ -650,6 +766,7 @@ cmd_release_plan() {
     done
   fi
   echo ""
+  return "$exit_code"
 }
 
 cmd_bump() {
@@ -762,7 +879,7 @@ case "$CMD" in
     echo "    validate        Validate meta.json and derived artifacts"
     echo "    status          Print KFMS health summary"
     echo "    doctor          Print release-readiness and blocker summary"
-    echo "    release-plan    Print ship/no-ship decision with blockers"
+    echo "    release-plan    Run build/test gates and print ship/no-ship decision"
     echo "    bump patch      Bump PATCH and refresh derived artifacts"
     echo "    bump minor      Bump MINOR/codename and refresh derived artifacts"
     echo "    bump major      Bump MAJOR and reset codename line"
