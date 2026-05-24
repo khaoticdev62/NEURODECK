@@ -531,6 +531,9 @@ print(
 )
 PYEOF
 )
+    health_status="${health_status//$'\r'/}"
+    workspace="${workspace//$'\r'/}"
+    dirty="${dirty//$'\r'/}"
     ok "meta.json  → v${ver:-?} | ${codename:-?} | ${tag:-?}"
     ok "build      → dirty=${dirty:-?} | workspace=${workspace:-?} | stamped=${stamped:-?}"
     if [[ "$health_status" == "healthy" ]]; then
