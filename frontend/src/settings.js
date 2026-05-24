@@ -18,10 +18,10 @@ let closeSettingsX = null;
 // ==========================================================================
 function applySettings() {
     // 1. Font Style
-    const font = localStorage.getItem("selectedFont") || "inter";
+    const font = localStorage.getItem("selectedFont") || "spacegrotesk";
     const fontSelect = document.getElementById("font-select");
     if (fontSelect) fontSelect.value = font;
-    const fontClasses = ["font-inter", "font-outfit", "font-jetbrains", "font-vt323", "font-sharetech", "font-orbitron", "font-pressstart"];
+    const fontClasses = ["font-spacegrotesk", "font-syne", "font-inter", "font-outfit", "font-jetbrains", "font-vt323", "font-sharetech", "font-orbitron", "font-pressstart"];
     fontClasses.forEach(cls => document.body.classList.remove(cls));
     document.body.classList.add(`font-${font}`);
 

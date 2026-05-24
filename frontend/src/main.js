@@ -1442,6 +1442,8 @@ document.querySelector('#app').innerHTML = `
                             <div class="stv-row">
                                 <span class="stv-row-label">UI Font</span>
                                 <select id="font-select" style="flex:1;">
+                                    <option value="spacegrotesk">Space Grotesk (Default — AI Terminal)</option>
+                                    <option value="syne">Syne (Brand Display)</option>
                                     <option value="inter">Inter (Modern Clean)</option>
                                     <option value="outfit">Outfit (Premium Rounded)</option>
                                     <option value="jetbrains">JetBrains Mono (Sleek Coding)</option>
