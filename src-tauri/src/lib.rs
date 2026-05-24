@@ -529,10 +529,9 @@ pub(crate) fn user_config_dir() -> PathBuf {
 }
 
 pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
-    let has_gemini_key = std::env::var("GEMINI_API_KEY").is_ok()
-        || neurodeck_infrastructure::secrets::get_gemini_api_key().is_ok();
-        
-    if has_gemini_key || config.llm.default_provider == "gemini" {
+    // User-configured default_provider takes precedence over env vars.
+    // The GEMINI_API_KEY env var is only a key source, not a provider selector.
+    if config.llm.default_provider == "gemini" {
         Arc::new(GeminiProvider::new(config.llm.gemini_model.clone()))
     } else {
         Arc::new(OllamaProvider::new(
@@ -540,6 +539,70 @@ pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
             config.llm.ollama_base_url.clone(),
         ))
     }
+}
+
+/// Build a provider Arc directly from an AgentConfig.
+pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmProvider> {
+    if agent.provider == "gemini" {
+        Arc::new(GeminiProvider::new(agent.model.clone()))
+    } else {
+        Arc::new(OllamaProvider::new(agent.model.clone(), agent.base_url.clone()))
+    }
+}
+
+/// Seed default agent profiles when none exist in config.
+pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
+    let ollama_url = "http://localhost:11434".to_string();
+    vec![
+        config::AgentConfig {
+            id: "gemini-flash-lite".into(),
+            name: "Flash Lite".into(),
+            provider: "gemini".into(),
+            model: "gemini-2.0-flash-lite".into(),
+            base_url: String::new(),
+            description: "Fastest cloud model — best for quick chat and low-latency tasks.".into(),
+        },
+        config::AgentConfig {
+            id: "gemini-flash".into(),
+            name: "Flash".into(),
+            provider: "gemini".into(),
+            model: "gemini-2.0-flash".into(),
+            base_url: String::new(),
+            description: "Best all-around cloud model — code, analysis, multi-step reasoning.".into(),
+        },
+        config::AgentConfig {
+            id: "gemini-pro".into(),
+            name: "Pro".into(),
+            provider: "gemini".into(),
+            model: "gemini-1.5-pro".into(),
+            base_url: String::new(),
+            description: "Highest intelligence — complex research, long context (1M tokens).".into(),
+        },
+        config::AgentConfig {
+            id: "local-gemma2b".into(),
+            name: "Gemma 2B".into(),
+            provider: "ollama".into(),
+            model: "gemma2:2b".into(),
+            base_url: ollama_url.clone(),
+            description: "Best quality-per-RAM local model. ~20-30 tok/s on Steam Deck. Offline.".into(),
+        },
+        config::AgentConfig {
+            id: "local-llama1b".into(),
+            name: "Llama 1B".into(),
+            provider: "ollama".into(),
+            model: "llama3.2:1b".into(),
+            base_url: ollama_url.clone(),
+            description: "Ultra-fast local. ~50 tok/s on Steam Deck. Basic tasks. Offline.".into(),
+        },
+        config::AgentConfig {
+            id: "local-phi35".into(),
+            name: "Phi 3.5 Mini".into(),
+            provider: "ollama".into(),
+            model: "phi3.5:mini".into(),
+            base_url: ollama_url,
+            description: "Microsoft compact reasoning model. Strong for code. Offline.".into(),
+        },
+    ]
 }
 
 
@@ -659,8 +722,29 @@ pub fn run() {
     load_env_file();
 
     let config_path = get_config_path();
-    let config = config::load_config(&config_path);
-    
+    let mut config = config::load_config(&config_path);
+
+    // Seed default agent profiles on first run
+    if config.llm.agents.is_empty() {
+        config.llm.agents = default_agents();
+        // Set active agent to match the current configured provider/model
+        let target_provider = config.llm.default_provider.clone();
+        let target_model = if target_provider == "gemini" {
+            config.llm.gemini_model.clone()
+        } else {
+            config.llm.ollama_model.clone()
+        };
+        config.llm.active_agent_id = config.llm.agents.iter()
+            .find(|a| a.provider == target_provider && a.model == target_model)
+            .map(|a| a.id.clone())
+            .unwrap_or_else(|| config.llm.agents[0].id.clone());
+        let _ = config::save_config(&config_path, &config);
+    } else if config.llm.active_agent_id.is_empty() {
+        config.llm.active_agent_id = config.llm.agents
+            .first().map(|a| a.id.clone()).unwrap_or_default();
+        let _ = config::save_config(&config_path, &config);
+    }
+
     let provider = create_provider(&config);
 
     let mem_db = match MemoryDB::init("./data/memory") {
@@ -800,6 +884,12 @@ pub fn run() {
             get_game_context,
             agent_step,
             agent_exec_code,
+            list_agents,
+            get_active_agent_id,
+            switch_agent,
+            add_agent,
+            delete_agent,
+            get_recommended_models,
             memory_list_all,
             memory_delete,
             memory_pin,

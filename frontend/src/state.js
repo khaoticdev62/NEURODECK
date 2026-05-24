@@ -33,6 +33,8 @@ export const state = {
     tpScrollHideTimer: null,
     radialSelectedSegment: null,
     activeProvider: "gemini",
+    activeAgentId: "",
+    agents: [],
     tunnelStatus: "offline",
     selectedPeerIp: null,
     pendingTransferId: null

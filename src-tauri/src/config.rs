@@ -2,6 +2,19 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+/// A named agent profile — a saved combination of provider + model.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentConfig {
+    pub id: String,
+    pub name: String,
+    pub provider: String,  // "gemini" | "ollama"
+    pub model: String,
+    #[serde(default = "default_ollama_base_url")]
+    pub base_url: String,
+    #[serde(default)]
+    pub description: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfig {
     #[serde(default = "default_primary_color")]
@@ -48,6 +61,12 @@ pub struct LlmConfig {
     /// Register at console.cloud.google.com → APIs & Services → Credentials.
     #[serde(default)]
     pub google_client_id: String,
+    /// ID of the currently-active named agent profile.
+    #[serde(default)]
+    pub active_agent_id: String,
+    /// Named agent profiles (provider + model combos).
+    #[serde(default)]
+    pub agents: Vec<AgentConfig>,
 }
 
 fn default_provider() -> String { "ollama".to_string() }
@@ -63,6 +82,8 @@ impl Default for LlmConfig {
             gemini_model: default_gemini_model(),
             ollama_base_url: default_ollama_base_url(),
             google_client_id: String::new(),
+            active_agent_id: String::new(),
+            agents: Vec::new(),
         }
     }
 }

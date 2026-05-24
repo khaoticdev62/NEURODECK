@@ -32,6 +32,7 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
 
     initial.insert("model".to_string(), model_name.clone());
     initial.insert("provider".to_string(), app.config.llm.default_provider.clone());
+    initial.insert("active_agent_id".to_string(), app.config.llm.active_agent_id.clone());
     initial.insert("session_id".to_string(), app.session_id.clone());
     initial.insert("active_persona".to_string(), app.active_persona.clone());
     initial.insert(

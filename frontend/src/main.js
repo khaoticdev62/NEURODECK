@@ -307,7 +307,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <div class="top-nav-right">
-                    <span class="model-selector-indicator" id="model-name">[ MODEL: GEMINI ]</span>
+                    <button class="model-selector-indicator" id="model-name" title="Switch Agent (Ctrl+Shift+M)" onclick="toggleAgentSwitcher()">[ MODEL: GEMINI ]</button>
                     <span class="game-context-badge hidden" id="game-badge" title="Steam game detected">
                         <span class="game-badge-dot" id="game-badge-dot"></span>
                         <span id="game-badge-name"></span>
@@ -321,6 +321,64 @@ document.querySelector('#app').innerHTML = `
                     <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
                 </div>
             </header>
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 AGENT SWITCHER PANEL — drops down from model-name button
+                 ═══════════════════════════════════════════════════════════ -->
+            <div id="agent-switcher-panel" class="agent-switcher-panel hidden">
+                <div class="agent-switcher-header">
+                    <span class="agent-switcher-title">⚡ Agent Switch</span>
+                    <div class="agent-switcher-tabs">
+                        <button class="agent-tab active" data-atab="agents">Agents</button>
+                        <button class="agent-tab" data-atab="recommended">Steam Deck Best</button>
+                        <button class="agent-tab" data-atab="custom">+ Custom</button>
+                    </div>
+                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()">✕</button>
+                </div>
+                <div class="agent-tab-body" id="agent-tab-agents">
+                    <div class="agent-card-grid" id="agent-card-grid">
+                        <!-- Populated by renderAgentSwitcher() -->
+                    </div>
+                </div>
+                <div class="agent-tab-body hidden" id="agent-tab-recommended">
+                    <div class="agent-rec-grid" id="agent-rec-grid">
+                        <!-- Populated by renderRecommendedModels() -->
+                    </div>
+                </div>
+                <div class="agent-tab-body hidden" id="agent-tab-custom">
+                    <div class="agent-custom-form">
+                        <div class="agent-form-row">
+                            <label>ID (slug)</label>
+                            <input id="new-agent-id" type="text" placeholder="my-agent" maxlength="40" />
+                        </div>
+                        <div class="agent-form-row">
+                            <label>Name</label>
+                            <input id="new-agent-name" type="text" placeholder="My Agent" maxlength="30" />
+                        </div>
+                        <div class="agent-form-row">
+                            <label>Provider</label>
+                            <select id="new-agent-provider">
+                                <option value="gemini">Gemini (Cloud)</option>
+                                <option value="ollama">Ollama (Local)</option>
+                            </select>
+                        </div>
+                        <div class="agent-form-row">
+                            <label>Model</label>
+                            <input id="new-agent-model" type="text" placeholder="gemini-2.0-flash" />
+                        </div>
+                        <div class="agent-form-row" id="new-agent-url-row" style="display:none">
+                            <label>Base URL</label>
+                            <input id="new-agent-url" type="text" placeholder="http://localhost:11434" />
+                        </div>
+                        <div class="agent-form-row">
+                            <label>Description</label>
+                            <input id="new-agent-desc" type="text" placeholder="Optional description" maxlength="120" />
+                        </div>
+                        <div class="agent-form-status" id="new-agent-status"></div>
+                        <button class="agent-save-btn" onclick="handleAddAgent()">Save Agent</button>
+                    </div>
+                </div>
+            </div>
 
             <div class="view-container">
                 <!-- Chat View -->
@@ -3583,6 +3641,23 @@ invoke("get_initial_state").then((initialState) => {
     state.currentSessionId = initialState.session_id;
     state.activePersona = initialState.active_persona || "Default";
     state.activeProvider = initialState.provider || "gemini";
+    state.activeAgentId = initialState.active_agent_id || "";
+
+    // Load agent list and render switcher
+    invoke("list_agents").then(agents => {
+        state.agents = agents;
+        renderAgentSwitcher();
+    }).catch(() => {});
+
+    // React to agent_changed events from backend
+    listen("agent_changed", (event) => {
+        const agent = event.payload;
+        state.activeAgentId = agent.id;
+        state.activeProvider = agent.provider;
+        const modelNameEl = document.getElementById("model-name");
+        if (modelNameEl) modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
+        renderAgentSwitcher();
+    });
     
     // Initial Context Drawer metrics load
     updateContextDrawer();
@@ -5521,6 +5596,208 @@ function renderNotificationsList() {
         </div>
     `).join("");
 }
+
+// ============================================================================
+// AGENT SWITCHER
+// ============================================================================
+
+const TIER_LABEL = {
+    "fast": "⚡ Fast",
+    "balanced": "⚖️ Balanced",
+    "smart": "🧠 Smart",
+    "local-fast": "🖥️ Local Fast",
+    "local-balanced": "🖥️ Local",
+    "local-smart": "🖥️ Local Smart",
+};
+
+const PROVIDER_BADGE = {
+    "gemini": "☁️ Gemini",
+    "ollama": "🏠 Ollama",
+};
+
+function toggleAgentSwitcher() {
+    const panel = document.getElementById("agent-switcher-panel");
+    if (!panel) return;
+    const isHidden = panel.classList.contains("hidden");
+    if (isHidden) {
+        panel.classList.remove("hidden");
+        renderAgentSwitcher();
+        renderRecommendedModels();
+    } else {
+        panel.classList.add("hidden");
+    }
+}
+
+function renderAgentSwitcher() {
+    const grid = document.getElementById("agent-card-grid");
+    if (!grid) return;
+    const agents = state.agents;
+    if (!agents.length) {
+        grid.innerHTML = `<div class="agent-empty">No agents configured. Use the Custom tab to add one.</div>`;
+        return;
+    }
+    grid.innerHTML = agents.map(agent => {
+        const active = agent.id === state.activeAgentId;
+        const provLabel = PROVIDER_BADGE[agent.provider] || agent.provider;
+        return `
+        <div class="agent-card ${active ? "active" : ""}" onclick="activateAgent('${window.escapeHtml(agent.id)}')">
+            <div class="agent-card-top">
+                <span class="agent-card-name">${window.escapeHtml(agent.name)}</span>
+                <span class="agent-provider-badge agent-provider-${window.escapeHtml(agent.provider)}">${window.escapeHtml(provLabel)}</span>
+            </div>
+            <div class="agent-card-model">${window.escapeHtml(agent.model)}</div>
+            <div class="agent-card-desc">${window.escapeHtml(agent.description)}</div>
+            ${active ? '<div class="agent-card-active-chip">ACTIVE</div>' : ''}
+            ${!active ? `<button class="agent-card-delete" title="Delete agent" onclick="event.stopPropagation(); deleteAgentById('${window.escapeHtml(agent.id)}')">✕</button>` : ''}
+        </div>`;
+    }).join("");
+}
+
+function renderRecommendedModels() {
+    const grid = document.getElementById("agent-rec-grid");
+    if (!grid) return;
+    grid.innerHTML = `<div class="agent-rec-loading">Loading recommendations…</div>`;
+    invoke("get_recommended_models").then(models => {
+        grid.innerHTML = models.map(m => {
+            const tierLabel = TIER_LABEL[m.tier] || m.tier;
+            const vramStr = m.vram_mb > 0 ? `${m.vram_mb} MB RAM` : "Cloud";
+            const deckBadge = m.steam_deck_ok ? '<span class="agent-deck-badge">✅ Deck OK</span>' : '<span class="agent-deck-badge warn">⚠️ Heavy</span>';
+            const tags = (m.tags || []).filter(t => ["recommended", "long-context", "multilingual", "code"].includes(t))
+                .map(t => `<span class="agent-tag">${window.escapeHtml(t)}</span>`).join("");
+            return `
+            <div class="agent-rec-card" onclick="instantiateRecommended('${window.escapeHtml(m.provider)}', '${window.escapeHtml(m.model)}', '${window.escapeHtml(m.name)}')">
+                <div class="agent-rec-top">
+                    <span class="agent-rec-name">${window.escapeHtml(m.name)}</span>
+                    <span class="agent-tier-badge">${window.escapeHtml(tierLabel)}</span>
+                </div>
+                <div class="agent-rec-meta">
+                    <span class="agent-provider-badge agent-provider-${window.escapeHtml(m.provider)}">${window.escapeHtml(PROVIDER_BADGE[m.provider] || m.provider)}</span>
+                    <span class="agent-vram">${window.escapeHtml(vramStr)}</span>
+                    ${deckBadge}
+                </div>
+                <div class="agent-rec-desc">${window.escapeHtml(m.description)}</div>
+                <div class="agent-rec-tags">${tags}</div>
+                <div class="agent-rec-model-id">${window.escapeHtml(m.model)}</div>
+            </div>`;
+        }).join("");
+    }).catch(() => {
+        grid.innerHTML = `<div class="agent-empty">Failed to load recommendations.</div>`;
+    });
+}
+
+function activateAgent(id) {
+    invoke("switch_agent", { id }).then(agent => {
+        state.activeAgentId = agent.id;
+        state.activeProvider = agent.provider;
+        renderAgentSwitcher();
+        const modelNameEl = document.getElementById("model-name");
+        if (modelNameEl) modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
+        pushNotification("Agent switched", `Now using ${agent.name} (${agent.model})`, "info");
+    }).catch(err => pushNotification("Agent switch failed", err, "error"));
+}
+
+function deleteAgentById(id) {
+    invoke("delete_agent", { id }).then(() => {
+        state.agents = state.agents.filter(a => a.id !== id);
+        renderAgentSwitcher();
+    }).catch(err => pushNotification("Delete failed", err, "error"));
+}
+
+function instantiateRecommended(provider, model, name) {
+    // Build a slug from the model name
+    const id = model.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-").toLowerCase();
+    const existing = state.agents.find(a => a.id === id || a.model === model);
+    if (existing) {
+        activateAgent(existing.id);
+        return;
+    }
+    const ollamaUrl = "http://localhost:11434";
+    const agent = {
+        id,
+        name,
+        provider,
+        model,
+        base_url: provider === "ollama" ? ollamaUrl : "",
+        description: "",
+    };
+    invoke("add_agent", { agent }).then(() => {
+        invoke("list_agents").then(agents => {
+            state.agents = agents;
+            activateAgent(id);
+        });
+    }).catch(err => pushNotification("Add agent failed", err, "error"));
+}
+
+// Agent custom form — show/hide URL field by provider
+document.addEventListener("change", (e) => {
+    if (e.target.id === "new-agent-provider") {
+        const urlRow = document.getElementById("new-agent-url-row");
+        if (urlRow) urlRow.style.display = e.target.value === "ollama" ? "" : "none";
+    }
+});
+
+function handleAddAgent() {
+    const id = document.getElementById("new-agent-id")?.value.trim() || "";
+    const name = document.getElementById("new-agent-name")?.value.trim() || "";
+    const provider = document.getElementById("new-agent-provider")?.value || "gemini";
+    const model = document.getElementById("new-agent-model")?.value.trim() || "";
+    const base_url = document.getElementById("new-agent-url")?.value.trim() || "http://localhost:11434";
+    const description = document.getElementById("new-agent-desc")?.value.trim() || "";
+    const statusEl = document.getElementById("new-agent-status");
+
+    if (!id || !name || !model) {
+        if (statusEl) { statusEl.className = "agent-form-status error"; statusEl.innerText = "ID, Name, and Model are required."; }
+        return;
+    }
+
+    invoke("add_agent", { agent: { id, name, provider, model, base_url, description } }).then(() => {
+        invoke("list_agents").then(agents => {
+            state.agents = agents;
+            renderAgentSwitcher();
+            if (statusEl) { statusEl.className = "agent-form-status ok"; statusEl.innerText = `Agent "${name}" added.`; }
+            // Clear form
+            ["new-agent-id","new-agent-name","new-agent-model","new-agent-url","new-agent-desc"]
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+        });
+    }).catch(err => {
+        if (statusEl) { statusEl.className = "agent-form-status error"; statusEl.innerText = err; }
+    });
+}
+
+// Tab switching inside agent switcher panel
+document.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-atab]");
+    if (!tab) return;
+    const panel = document.getElementById("agent-switcher-panel");
+    if (!panel || !panel.contains(tab)) return;
+    const target = tab.dataset.atab;
+    panel.querySelectorAll(".agent-tab").forEach(t => t.classList.toggle("active", t.dataset.atab === target));
+    panel.querySelectorAll(".agent-tab-body").forEach(b => b.classList.add("hidden"));
+    const body = document.getElementById(`agent-tab-${target}`);
+    if (body) body.classList.remove("hidden");
+    if (target === "recommended") renderRecommendedModels();
+});
+
+// Close agent switcher on Escape or click outside
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        const panel = document.getElementById("agent-switcher-panel");
+        if (panel && !panel.classList.contains("hidden")) panel.classList.add("hidden");
+    }
+    if (e.ctrlKey && e.shiftKey && e.key === "M") {
+        e.preventDefault();
+        toggleAgentSwitcher();
+    }
+});
+
+document.addEventListener("click", (e) => {
+    const panel = document.getElementById("agent-switcher-panel");
+    const modelBtn = document.getElementById("model-name");
+    if (!panel || panel.classList.contains("hidden")) return;
+    if (!panel.contains(e.target) && e.target !== modelBtn) {
+        panel.classList.add("hidden");
+    }
+});
 
 function initNotificationCenter() {
     const notifBtn = document.getElementById("notif-btn");

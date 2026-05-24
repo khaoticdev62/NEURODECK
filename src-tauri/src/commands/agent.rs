@@ -1,8 +1,201 @@
 use crate::*;
+use crate::config::AgentConfig;
 use std::process::Stdio;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 use futures_util::StreamExt;
 use std::sync::Mutex;
+
+// ─── Multi-Agent Switching ────────────────────────────────────────────────────
+
+#[derive(serde::Serialize, Clone, Debug)]
+pub struct RecommendedModel {
+    pub provider: String,
+    pub model: String,
+    pub name: String,
+    pub tier: String,        // "fast" | "balanced" | "smart" | "local-fast" | "local-balanced"
+    pub vram_mb: u32,        // 0 for cloud models
+    pub steam_deck_ok: bool,
+    pub description: String,
+    pub tags: Vec<String>,
+}
+
+#[tauri::command]
+pub fn list_agents(state: State<'_, Mutex<AppState>>) -> Vec<AgentConfig> {
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
+    app.config.llm.agents.clone()
+}
+
+#[tauri::command]
+pub fn get_active_agent_id(state: State<'_, Mutex<AppState>>) -> String {
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
+    app.config.llm.active_agent_id.clone()
+}
+
+#[tauri::command]
+pub fn switch_agent(
+    id: String,
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<AgentConfig, String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+
+    let agent = app.config.llm.agents.iter()
+        .find(|a| a.id == id)
+        .cloned()
+        .ok_or_else(|| format!("Agent '{}' not found", id))?;
+
+    app.provider = provider_from_agent(&agent);
+    app.config.llm.active_agent_id = id.clone();
+    // Keep legacy single-provider fields in sync for get_context_stats
+    app.config.llm.default_provider = agent.provider.clone();
+    if agent.provider == "gemini" {
+        app.config.llm.gemini_model = agent.model.clone();
+    } else {
+        app.config.llm.ollama_model = agent.model.clone();
+        app.config.llm.ollama_base_url = agent.base_url.clone();
+    }
+
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
+
+    app_handle.emit("agent_changed", &agent).map_err(|e| e.to_string())?;
+    Ok(agent)
+}
+
+#[tauri::command]
+pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let id = agent.id.trim().to_string();
+    if id.is_empty() {
+        return Err("Agent ID cannot be empty".into());
+    }
+    if !id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        return Err("Agent ID may only contain letters, numbers, hyphens, and underscores".into());
+    }
+    if agent.name.trim().is_empty() {
+        return Err("Agent name cannot be empty".into());
+    }
+    if agent.provider != "gemini" && agent.provider != "ollama" {
+        return Err("Provider must be 'gemini' or 'ollama'".into());
+    }
+
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    if app.config.llm.agents.iter().any(|a| a.id == id) {
+        return Err(format!("Agent '{}' already exists", id));
+    }
+
+    app.config.llm.agents.push(AgentConfig { id, ..agent });
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_agent(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+
+    let initial = app.config.llm.agents.len();
+    app.config.llm.agents.retain(|a| a.id != id);
+    if app.config.llm.agents.len() == initial {
+        return Err(format!("Agent '{}' not found", id));
+    }
+
+    // Fall back to first remaining agent if we deleted the active one
+    if app.config.llm.active_agent_id == id {
+        app.config.llm.active_agent_id = app.config.llm.agents
+            .first().map(|a| a.id.clone()).unwrap_or_default();
+    }
+
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_recommended_models() -> Vec<RecommendedModel> {
+    let ollama = "ollama".to_string();
+    let gemini = "gemini".to_string();
+    vec![
+        // ── Cloud (Gemini) ────────────────────────────────────────────────────
+        RecommendedModel {
+            provider: gemini.clone(), model: "gemini-2.0-flash-lite".into(),
+            name: "Gemini Flash Lite".into(), tier: "fast".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Fastest cloud model. Best for quick chat and low-latency tasks.".into(),
+            tags: vec!["cloud".into(), "fast".into(), "low-cost".into()],
+        },
+        RecommendedModel {
+            provider: gemini.clone(), model: "gemini-2.0-flash".into(),
+            name: "Gemini 2.0 Flash".into(), tier: "balanced".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Best all-around cloud model — code, analysis, multi-step reasoning.".into(),
+            tags: vec!["cloud".into(), "balanced".into(), "recommended".into()],
+        },
+        RecommendedModel {
+            provider: gemini.clone(), model: "gemini-1.5-flash".into(),
+            name: "Gemini 1.5 Flash".into(), tier: "balanced".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Reliable and widely-tested. 1M-token context window.".into(),
+            tags: vec!["cloud".into(), "long-context".into()],
+        },
+        RecommendedModel {
+            provider: gemini.clone(), model: "gemini-1.5-pro".into(),
+            name: "Gemini 1.5 Pro".into(), tier: "smart".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Highest intelligence cloud option. Best for complex research.".into(),
+            tags: vec!["cloud".into(), "smart".into(), "premium".into()],
+        },
+        // ── Local / Ollama (Steam Deck optimized) ────────────────────────────
+        RecommendedModel {
+            provider: ollama.clone(), model: "llama3.2:1b".into(),
+            name: "Llama 3.2 1B".into(), tier: "local-fast".into(), vram_mb: 800,
+            steam_deck_ok: true,
+            description: "Ultra-fast local. ~50 tok/s on Steam Deck. Basic tasks.".into(),
+            tags: vec!["local".into(), "offline".into(), "fast".into(), "steam-deck".into()],
+        },
+        RecommendedModel {
+            provider: ollama.clone(), model: "gemma2:2b".into(),
+            name: "Gemma 2 2B".into(), tier: "local-balanced".into(), vram_mb: 1600,
+            steam_deck_ok: true,
+            description: "Best quality-per-RAM local model. ~20-30 tok/s on Steam Deck. Recommended.".into(),
+            tags: vec!["local".into(), "offline".into(), "balanced".into(), "steam-deck".into(), "recommended".into()],
+        },
+        RecommendedModel {
+            provider: ollama.clone(), model: "qwen2.5:1.5b".into(),
+            name: "Qwen 2.5 1.5B".into(), tier: "local-fast".into(), vram_mb: 1000,
+            steam_deck_ok: true,
+            description: "Fast and multilingual. ~30 tok/s on Steam Deck.".into(),
+            tags: vec!["local".into(), "offline".into(), "multilingual".into(), "steam-deck".into()],
+        },
+        RecommendedModel {
+            provider: ollama.clone(), model: "phi3.5:mini".into(),
+            name: "Phi 3.5 Mini".into(), tier: "local-balanced".into(), vram_mb: 2300,
+            steam_deck_ok: true,
+            description: "Microsoft's compact reasoning model. Strong for code and structured output.".into(),
+            tags: vec!["local".into(), "offline".into(), "code".into(), "steam-deck".into()],
+        },
+        RecommendedModel {
+            provider: ollama.clone(), model: "llama3.2:3b".into(),
+            name: "Llama 3.2 3B".into(), tier: "local-balanced".into(), vram_mb: 2000,
+            steam_deck_ok: true,
+            description: "Better reasoning than 1B. ~15 tok/s on Steam Deck.".into(),
+            tags: vec!["local".into(), "offline".into(), "balanced".into(), "steam-deck".into()],
+        },
+        RecommendedModel {
+            provider: ollama.clone(), model: "phi4-mini:3.8b".into(),
+            name: "Phi 4 Mini 3.8B".into(), tier: "local-smart".into(), vram_mb: 2500,
+            steam_deck_ok: true,
+            description: "Microsoft's latest compact model. Excellent reasoning in 3.8B params.".into(),
+            tags: vec!["local".into(), "offline".into(), "smart".into(), "code".into()],
+        },
+        RecommendedModel {
+            provider: ollama, model: "tinyllama".into(),
+            name: "TinyLlama 1.1B".into(), tier: "local-fast".into(), vram_mb: 600,
+            steam_deck_ok: true,
+            description: "Smallest model. ~60 tok/s. For simple completions only.".into(),
+            tags: vec!["local".into(), "offline".into(), "ultra-fast".into(), "steam-deck".into()],
+        },
+    ]
+}
 
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 pub struct AgentHistoryEntry {
