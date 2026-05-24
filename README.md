@@ -1,3 +1,5 @@
+<div align="center">
+
 ```
 ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗ ██████╗ ███████╗ ██████╗██╗  ██╗
 ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗██╔══██╗██╔════╝██╔════╝██║ ██╔╝
@@ -5,313 +7,378 @@
 ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██║  ██║██╔══╝  ██║     ██╔═██╗
 ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝██████╔╝███████╗╚██████╗██║  ██╗
 ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝
-                    AI-POWERED TERMINAL OS FOR STEAM DECK
 ```
 
-<div align="center">
+### AI-Powered Terminal OS for Steam Deck
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00F0FF?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.77.2-FF4500?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
 [![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Version](https://img.shields.io/badge/Version-1.0.0-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
+[![Version](https://img.shields.io/badge/Version-1.2.1--Ra-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
 
-**[GitHub](https://github.com/khaoticdev62/NEURODECK)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Release Notes](docs/RELEASE_NOTES.md)** &nbsp;·&nbsp; **[Sprint Roadmap](docs/SPRINT_HANDOFF.md)**
+**[Download](https://github.com/khaoticdev62/NEURODECK/releases)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Plugin Registry](https://github.com/khaoticdev62/neurodeck-plugins)** &nbsp;·&nbsp; **[Roadmap](docs/ANTIGRAVITY_HANDOFF.md)**
 
 </div>
 
 ---
 
-## 🧠 What Is NEURODECK?
+<div align="center">
 
-NEURODECK is a **fullscreen desktop app** for Steam Deck (and Linux/Windows) that replaces your standard terminal with an AI-powered OS interface — all inside a single 1280×800 window purpose-built for the Deck's screen.
+![NEURODECK Boot Screen](docs/screenshots/boot.png)
 
-**In plain English:** Imagine if your terminal, an AI chatbot, a live code editor, an SSH client, and a file transfer tool all lived in one app — controllable with your gamepad, keyboard, or even your iPhone. That is NEURODECK.
+*Cinematic boot sequence — real system state, live plugin loading, LLM health check.*
 
-It runs a **Rust backend** (via [Tauri v2](https://tauri.app/)) alongside a **vanilla JavaScript frontend** — no React, no Vue, zero bloat. The AI is powered by Google Gemini (streaming over SSE) or a local Ollama model. Everything talks to each other through a clean IPC bridge. The whole thing is designed to be used on a couch, with a controller, in Steam Deck Game Mode.
+</div>
 
 ---
 
-## ✨ What Can It Do?
+## What Is NEURODECK?
 
-| Capability | Plain English |
+NEURODECK is a **fullscreen desktop app** that turns a Steam Deck (or any Linux/Windows machine) into a purpose-built AI workstation — all inside a single 1280×800 window designed for the Deck's screen.
+
+**In plain English:** Imagine if your terminal, an AI chatbot, a live code editor, an SSH client, a file transfer tool, a browser, and an autonomous coding agent all lived in one app — switchable with your gamepad's left thumb, no keyboard required. That is NEURODECK.
+
+The backend is **Rust + Tauri v2**. The frontend is **vanilla JavaScript** — no React, no Vue, zero npm bloat. AI runs through Google Gemini (streaming SSE) or any local Ollama model. A Lua plugin API lets you extend it with a single `.lua` file drop. Everything is wired through a clean, typed IPC bridge.
+
+Built to be used from a couch, in Game Mode, with a controller in your hands.
+
+---
+
+## The Interface
+
+<div align="center">
+
+![Chat View](docs/screenshots/chat.png)
+
+*Chat tab — AI assistant with contextual prompt cards, RAG memory injection, and multi-persona switching.*
+
+</div>
+
+---
+
+## What It Can Do
+
+| Capability | What That Means |
 |---|---|
-| 💬 LLM Chat with Memory | Talk to Gemini or Ollama. It remembers what you said before — automatically. |
-| 🧠 Vector Memory (RAG) | Silently injects relevant past conversations and your own documents into every AI reply. |
-| 💻 Real Shell (PTY) | A proper multi-session terminal — not a fake one. Runs Bash/Zsh with full process control. |
-| 🤖 Autonomous Agent | Tell it a task. It writes code, runs it, reads the output, and iterates — 5 steps, hands-free. |
-| 🎨 Live Code Canvas | Write HTML/CSS/JS and see it render instantly. Collaborate on a canvas with someone on your LAN. |
-| 🔑 SSH Client | Connect to remote servers. Full terminal passthrough with password or key auth. |
-| 📤 LAN File Transfer | Send files to nearby devices via mDNS peer discovery and Warpinator gRPC — no cloud, no setup. |
-| 📱 iPhone Remote | Start a WebSocket server, scan a QR code, control NEURODECK from Safari on your phone. |
-| 🎮 Gamepad Native | L2 trigger opens a radial menu. Left stick picks a view. Zero keyboard required. |
-| 🔌 Lua Plugin API | Drop a `.lua` file in `plugins/` — it auto-loads on startup. Register commands and hooks. |
+| 💬 **LLM Chat + RAG Memory** | Full streaming chat with Gemini or Ollama. Past conversations and your own docs are silently injected into every reply — no copy-paste, no re-explaining. |
+| 🤖 **Autonomous Agent Loop** | Give it a task in plain English. It writes code, runs it, reads the output, and iterates — up to 5 steps, fully observable in real time. |
+| 💻 **Real PTY Shell** | Not a fake terminal. Multi-session Bash/Zsh with full process control, ANSI colors, and AI autocomplete on `Ctrl+Space`. |
+| 🎨 **Live Code Canvas** | Write HTML/CSS/JS and see it render instantly, split-pane. LAN canvas collaboration — host binds a port, a peer joins and you edit together. |
+| 🔑 **Built-in SSH Client** | Connect to remote servers directly from the app. Password or key auth. Each session is an isolated PTY. |
+| 🌐 **Embedded Browser** | WebView panel with speed-dial bookmarks and URL bar — doc lookups without leaving the app. |
+| 🧠 **Prompt Lab** | Visual prompt engineering studio. Pick a formula (AIDA, SCQA, CoT, ToT), fill the form, get a precision-crafted prompt. JPE explanation included. |
+| 📤 **LAN File Transfer** | Send files to nearby devices via mDNS peer discovery and Warpinator gRPC — no cloud, no setup, no account. |
+| 📱 **iPhone Remote** | Start a WebSocket server, scan the QR code, control NEURODECK from Safari on your phone. |
+| 🎮 **Gamepad-Native UI** | Hold L2, use the left stick to pick a tab, release. Entire app navigable with zero keyboard. |
+| 🔌 **Lua Plugin API** | Drop a `.lua` file in `plugins/` — it auto-loads at startup. Register commands, hooks, and custom personas. |
+| 🏪 **Plugin Marketplace** | Browse, search, and install community plugins from the built-in registry at `github.com/khaoticdev62/neurodeck-plugins`. |
 
 ---
 
-## 🚀 Quick Start
+## Screenshots
 
-> **Prerequisites:** [Rust toolchain](https://rustup.rs/), [Node.js 18+](https://nodejs.org/), and either a `GEMINI_API_KEY` environment variable set or [Ollama](https://ollama.com/) running locally.
+<table>
+<tr>
+<td align="center" width="50%">
+
+![Chat Response](docs/screenshots/chat-response.png)
+**Chat** — Streaming response with syntax-highlighted code blocks, Copy / Send to Canvas / Execute action buttons per block.
+
+</td>
+<td align="center" width="50%">
+
+![Canvas](docs/screenshots/canvas.png)
+**Canvas** — Split-pane live HTML/CSS/JS editor. Code left, rendered preview right. Ctrl+Enter to run.
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
+![Terminal](docs/screenshots/terminal.png)
+**Terminal** — Multi-session PTY shell. Ctrl+Space for AI autocomplete. Ctrl+H for AI history search.
+
+</td>
+<td align="center" width="50%">
+
+![SSH](docs/screenshots/ssh.png)
+**SSH** — Built-in client with saved profiles. Password or key auth. ConnectTimeout guard prevents UI hangs.
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
+![Browser](docs/screenshots/browser.png)
+**Browser** — Native WebView overlay with speed-dial bookmarks. DuckDuckGo, Wikipedia, HN, r/SteamDeck, CodePen and more pre-loaded.
+
+</td>
+<td align="center" width="50%">
+
+![Agent](docs/screenshots/agent.png)
+**Agent** — 5-step autonomous loop: Plan → Write → Execute → Observe → Iterate. Every step streamed live. Roundtable mode for multi-step debates.
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
+![Prompt Lab](docs/screenshots/prompt-lab.png)
+**Prompt Lab** — Visual formula builder. AIDA, SCQA, PASTOR, CoT, ToT, PAS, Role+Constraints. JPE Explain button breaks down what the AI will do.
+
+</td>
+<td align="center" width="50%">
+
+![Share](docs/screenshots/share.png)
+**Share** — LAN P2P file transfer via mDNS. Warpinator gRPC (Linux-compatible). FTP/SFTP browser all in one panel.
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
+![Remote Control](docs/screenshots/remote.png)
+**Remote** — WebSocket server + QR code. Scan with iPhone Camera → Safari webapp opens instantly. Pure LAN, zero cloud.
+
+</td>
+</tr>
+</table>
+
+---
+
+## Quick Start
+
+> **Prerequisites:** [Rust 1.77.2+](https://rustup.rs/), [Node.js 18+](https://nodejs.org/), and either a `GEMINI_API_KEY` set or [Ollama](https://ollama.com/) running locally.
 
 ```bash
 git clone https://github.com/khaoticdev62/NEURODECK.git && cd NEURODECK
 npm install --prefix frontend
-export GEMINI_API_KEY="your-key-here"
+
+# Linux / macOS / SteamOS
+export GEMINI_API_KEY="AIza..."
+
+# Windows PowerShell
+$env:GEMINI_API_KEY = "AIza..."
+
 npm run tauri dev
 ```
 
-That's it. Vite hot-reloads the frontend; Cargo compiles the Rust backend. **First build takes 2–3 minutes** — `mlua` compiles Lua 5.4 from source (vendored feature). Subsequent builds are fast.
+**First build: 2–3 minutes.** `mlua` compiles Lua 5.4 from source (vendored). Every build after that is fast.
 
 ---
 
-## 🖥️ The 10 Views — What Each Tab Does
+## All 12 Tabs — What Each One Does
 
-Every tab lives inside the single 1280×800 window. Switch between them with the radial menu (backtick `` ` `` or gamepad L2), or click the tab bar at the top.
+Switch tabs with the radial menu (`` ` `` backtick or gamepad **L2**), or click the tab bar.
 
 | # | Tab | What It Does |
 |---|---|---|
-| 1 | 💬 **Chat** | Stream-chat with Gemini or Ollama. RAG memory auto-injects top 3 relevant past messages and documents into every AI reply. Detects what game you're playing and adds it as context. Switch AI personas with `/john`, `/sally`, etc. |
-| 2 | 🎨 **Canvas** | Live HTML/CSS/JS sandbox with instant preview. Also supports Python, Bash, and Lua execution. Collaborate on a shared canvas with someone on your LAN — host binds a port, peer connects. |
-| 3 | 💻 **Terminal** | Full PTY shell with multi-session support. Press **Ctrl+Space** for AI autocomplete of your partial command. Press **Ctrl+H** for AI-powered shell history search. Real process signals, ANSI colors, the works. |
-| 4 | 🔑 **SSH** | Built-in SSH client tab. Password or key-based auth. Each session gets its own PTY with a `ConnectTimeout=30` guard to prevent the UI from hanging on a bad host. |
-| 5 | 🔗 **Tunnel** | TCP loopback bridge between SteamOS Game Mode and Desktop Mode. Lets apps communicate across the mode boundary that Steam OS enforces. |
-| 6 | 🌐 **Browser** | Embedded WebView panel for quick documentation lookups without leaving the app. |
-| 7 | 🤖 **Agent** | Give it a task in plain English. It runs a 5-step autonomous loop: plan → write code → execute → read output → iterate. Every step is streamed to the UI live. |
-| 8 | 🧠 **Memory** | Browse and search the local vector database. Index your own document folders (`.txt`, `.md`, code files). Query it manually with cosine-similarity search. |
-| 9 | 📤 **Share** | LAN P2P file transfer via mDNS peer discovery. Browse FTP and SFTP servers. Send files via Warpinator gRPC (compatible with the Linux Warpinator app). |
-| 10 | 📱 **Remote** | Start a WebSocket server on a local port. A QR code appears — scan it with your iPhone. A Safari webapp lets you send commands, switch views, and watch terminal output from your couch. |
+| 1 | 💬 **Chat** | Streaming AI chat with Gemini or Ollama. RAG memory auto-injects top-3 relevant past messages and indexed docs before every reply. Game context is automatically added when a Steam game is detected. Switch personas with `/john`, `/sally`, `/developer`, etc. |
+| 2 | 🎨 **Canvas** | Live HTML/CSS/JS sandbox with instant split-pane preview. Python, Bash, and Lua execution also supported. LAN canvas collaboration — host binds a port, peer connects, edits sync in real time via TCP. |
+| 3 | 💻 **Terminal** | Full PTY shell, multi-session. `Ctrl+Space` → AI autocomplete of your partial command. `Ctrl+H` → AI-powered shell history search. Full ANSI, process signals, the works. |
+| 4 | 🔑 **SSH** | Built-in SSH client. Password or key-based auth. Saved connection profiles. Each session is its own PTY with a `ConnectTimeout=30` guard. |
+| 5 | 🔗 **Tunnel** | TCP loopback bridge between SteamOS Game Mode and Desktop Mode. Lets apps communicate across the OS boundary that Steam enforces. |
+| 6 | 🌐 **Browser** | Embedded WebView with speed-dial bookmarks, URL bar, back/forward, and keyboard shortcuts. Opens as a native overlay window positioned inside the main app frame. |
+| 7 | 🤖 **Agent** | Autonomous 5-step loop: Plan → Write → Execute → Observe → Iterate. Also has a Roundtable mode for multi-agent debate chains. Every step is streamed live — nothing hidden. |
+| 8 | 🧠 **Memory** | Browse and query the local cosine-similarity vector database. Index your own `.txt`, `.md`, and code file folders. Query it manually. See exactly what context the AI is pulling. |
+| 9 | 📤 **Share** | LAN P2P file transfer via mDNS peer discovery + Warpinator gRPC. Also a full FTP and SFTP file browser. No cloud account. No setup. |
+| 10 | 🔬 **Prompt Lab** | Visual prompt engineering studio. 7 formula templates (AIDA, SCQA, PASTOR, CoT, ToT, PAS, Role+Constraints). A template gallery. JPE Explain mode that describes exactly what the AI will do with your prompt before you send it. |
+| 11 | 📱 **Remote** | axum WebSocket server on a local port. A QR code appears — scan with iPhone. A Safari webapp opens with live terminal output and full command input. Zero install, zero cloud. |
+| 12 | ⚙️ **Settings** | Theme switcher (7 built-in + custom hex), LLM provider/model config, API key management via OS keychain, persona selector, and onboarding diagnostics. |
 
 ---
 
-## 🏗️ How It Works — Under the Hood
+## How It Works — Under the Hood
 
-> This section explains the architecture in plain English. Skip it if you just want to run the app — but read it if you want to contribute or extend NEURODECK.
+> Skip this section if you just want to use the app. Read it if you want to contribute or extend NEURODECK.
 
-### The Two Halves
+### The Two Processes
 
-NEURODECK splits into two processes that communicate through [Tauri's IPC bridge](https://tauri.app/v2/guides/inter-process-communication/):
+NEURODECK is two processes talking through [Tauri v2 IPC](https://tauri.app/):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  FRONTEND  (WebView / Chromium engine)                      │
+│  FRONTEND  (WebView — Chromium engine)                      │
 │                                                             │
-│  frontend/src/main.js          ~11,000 lines, vanilla JS   │
+│  frontend/src/main.js          ~9,000 lines, vanilla JS    │
+│  frontend/src/chat.js          streaming chat + shortcuts  │
+│  frontend/src/canvas.js        canvas + live collab        │
+│  frontend/src/settings.js      settings modal + keychain   │
 │  frontend/src/ctrl_prompt.js   AI terminal autocomplete    │
-│  frontend/src/remote_control_view.js   iPhone remote UI    │
+│  frontend/src/remote_control_view.js  iPhone remote UI     │
 │                                                             │
-│  Uses: xterm.js (terminal), marked.js (Markdown render)    │
-│                                                             │
-│  invoke("command_name", { args })  ──────────────────────► │
-│  listen("event_name", handler)    ◄────────────────────── │
+│  invoke("command", { args })  ──────────────────────────►  │
+│  listen("event", handler)     ◄────────────────────────── │
 └─────────────────────────────────────────────────────────────┘
-                          IPC Bridge (Tauri v2)
+                          Tauri v2 IPC Bridge
 ┌─────────────────────────────────────────────────────────────┐
 │  BACKEND  (Rust / Tauri v2)                                 │
 │                                                             │
-│  src-tauri/src/lib.rs        ~1,800 lines                  │
-│    All #[tauri::command] handlers, AppState, themes,       │
-│    personas, game detection, voice I/O, agent loop         │
-│                                                             │
-│  ├── llm.rs          Gemini SSE streaming + Ollama          │
-│  ├── pty_manager.rs  Real PTY sessions (portable-pty)       │
-│  ├── memory.rs       Vector DB, cosine similarity           │
-│  ├── ftp.rs          FTP client (suppaftp, sync wrapped)    │
-│  ├── sftp.rs         SFTP client (ssh2)                     │
-│  ├── transfer.rs     LAN P2P + Warpinator gRPC + mDNS      │
-│  ├── canvas_collab.rs  TCP live canvas sync                 │
-│  ├── whisper.rs      Voice transcription (system tools)     │
-│  ├── remote_control.rs  axum WebSocket server               │
-│  └── tunnel.rs       TCP loopback bridge                    │
+│  src-tauri/src/lib.rs       ~1,800 lines — all commands    │
+│  ├── llm.rs                 Gemini SSE + Ollama streaming  │
+│  ├── pty_manager.rs         PTY sessions (portable-pty)    │
+│  ├── memory.rs              Cosine-similarity vector DB    │
+│  ├── ftp.rs / sftp.rs       FTP + SFTP clients            │
+│  ├── transfer.rs            LAN P2P + Warpinator gRPC      │
+│  ├── canvas_collab.rs       TCP live canvas sync           │
+│  ├── remote_control.rs      axum WebSocket server          │
+│  ├── plugin_mgr.rs          Plugin registry + installer    │
+│  ├── lua.rs                 mlua 5.4 plugin runtime        │
+│  ├── browser.rs             Native WebView browser overlay │
+│  └── tunnel.rs              Game Mode TCP bridge           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Request/response** (load settings, get personas, etc.) uses `invoke()` — it returns a value directly.
-**Streaming** (LLM tokens, terminal output, agent steps) uses `emit()` events → frontend `listen()` handlers receive chunks in real time as they arrive.
+**Request/response** (load settings, get themes, etc.) → `invoke()` returns a value.  
+**Streaming** (LLM tokens, PTY output, agent steps) → backend `emit()` → frontend `listen()` receives chunks in real time.
 
 ### Infrastructure Crate
 
-A separate Rust workspace crate (`neurodeck_infrastructure`) handles platform-level services:
+A separate Rust workspace crate (`neurodeck_infrastructure`) handles platform services:
 
-| Module | What It Does (Plain English) |
+| Module | Plain English |
 |---|---|
-| `secrets.rs` | Saves/reads your API key from the **OS keychain** (Windows Credential Manager, Linux Secret Service, macOS Keychain) — never stored in a plaintext config file. |
-| `oauth.rs` | Google OAuth2 **Device Flow** — shows a short code for you to enter at `google.com/device`. No browser redirect needed. Works from a terminal-only environment. |
-| `warpinator.rs` | Full **gRPC server** (tonic 0.11) implementing the Warpinator file-transfer protocol — compatible with the Linux Warpinator desktop app. |
-
-<details>
-<summary><strong>Full Rust module layout (click to expand)</strong></summary>
-
-```
-src-tauri/
-├── src/
-│   ├── lib.rs              # All #[tauri::command] handlers, AppState, themes, personas
-│   ├── llm.rs              # GeminiProvider (SSE) + OllamaProvider; generate_embedding()
-│   ├── pty_manager.rs      # PTY sessions via portable-pty; HashMap<String, PtySession>
-│   ├── memory.rs           # Cosine-similarity vector DB; persists to data/memory/
-│   ├── ftp.rs              # suppaftp FTP client; all ops wrapped in spawn_blocking
-│   ├── sftp.rs             # SFTP client via ssh2
-│   ├── transfer.rs         # LAN P2P + Warpinator gRPC server + mDNS discovery
-│   ├── canvas_collab.rs    # TCP canvas collaboration — host/join
-│   ├── whisper.rs          # Voice STT via system arecord/espeak
-│   ├── remote_control.rs   # axum WebSocket server for iPhone remote
-│   └── tunnel.rs           # TCP loopback bridge (Game Mode <-> Desktop Mode)
-├── Cargo.toml
-└── llm-term.toml           # Runtime config (THIS is the file the binary reads)
-
-infrastructure/
-├── src/
-│   ├── lib.rs
-│   ├── secrets.rs          # OS keychain via keyring 2.x
-│   ├── oauth.rs            # Google Device Flow OAuth
-│   └── warpinator.rs       # gRPC server (tonic 0.11)
-├── build.rs                # protoc-bin-vendored for .proto compilation
-└── Cargo.toml
-
-frontend/
-├── src/
-│   ├── main.js             # ~11,000 lines — all UI, all view logic
-│   ├── ctrl_prompt.js      # AI terminal autocomplete module
-│   └── remote_control_view.js  # iPhone remote control view
-└── index.html
-
-plugins/
-├── bmad.lua                # BMAD personas (/john, /sally, etc.)
-└── promptgen.lua           # Prompt Lab commands (/promptlab, /formula)
-```
-
-</details>
+| `secrets.rs` | Reads/writes your API key from the **OS keychain** — Windows Credential Manager, Linux Secret Service, macOS Keychain. Never stored in a plaintext file. |
+| `oauth.rs` | Google OAuth2 **Device Flow** — shows a short code you enter at `google.com/device`. Works without a browser. |
+| `warpinator.rs` | Full **gRPC server** (tonic) implementing the Warpinator file-transfer protocol — compatible with the Linux Warpinator desktop app. |
 
 ---
 
-## 🧠 How the AI Memory Works
+## How the AI Memory Works
 
-> **Plain English — read this once, understand it forever.**
+> One read, understand it forever.
 
-> When you send a message in the Chat tab, NEURODECK does three things simultaneously behind the scenes:
->
-> 1. **Converts your message into a number array** called an "embedding" — a mathematical fingerprint of what your message *means*, not just what words it contains.
-> 2. **Compares that fingerprint** against every past message and indexed document in the local vector database using cosine similarity — basically: "how close in meaning are these two things on a scale of 0 to 1?"
-> 3. **Takes the top 3 closest matches** and silently prepends them to the AI's context before your message is sent.
->
-> The AI never sees a lookup query. It just sees your message with the relevant context already attached. This is called **RAG — Retrieval-Augmented Generation**. It means the AI can recall conversations from weeks ago without you repeating yourself, and it can reference your own documents as if it read them.
->
-> The vector DB lives in `data/memory/chat_history.json`. Every conversation is stored as an embedding + raw text pair. Point NEURODECK at any folder of `.txt`, `.md`, or code files in the Memory tab to index your own docs the same way.
+When you send a message in Chat, NEURODECK silently does three things:
+
+1. **Converts your message into a vector** — a 768-number mathematical fingerprint of what your message *means*, not just the words it uses.
+2. **Compares that fingerprint** against every past message and indexed document in the local DB using cosine similarity: "how close in meaning are these two things on a scale of 0 to 1?"
+3. **Prepends the top-3 closest matches** to the AI's context before your message is sent. The AI sees your message with relevant context already attached.
+
+This is called **RAG — Retrieval-Augmented Generation.** It means the AI recalls conversations from weeks ago without you repeating yourself, and can reference your own documents as if it read them.
+
+The DB lives in `data/memory/chat_history.json`. Point NEURODECK at any folder of `.txt`, `.md`, or code files in the Memory tab to index your own docs the same way.
+
+> **Requires Gemini API** — `generate_embedding()` calls the Gemini embedding endpoint. If Ollama is the active provider, RAG is silently skipped for that session.
 
 ---
 
-## ⚡ Key Features in Plain English
+## Gamepad Navigation
 
-### 🎮 Gamepad Navigation
+The entire app is controllable with a Steam Deck controller — designed for couch sessions and Game Mode.
 
-The entire app is navigable with a Steam Deck controller. Hold **L2** to open a 10-segment radial menu — each segment is a tab. Use the **left stick** to highlight the segment, release L2 to jump there. The **D-pad** navigates inner tabs (like multiple SSH sessions). No keyboard, no mouse required — designed for couch sessions and Game Mode.
+| Input | Action |
+|---|---|
+| **L2 (hold)** | Open the 12-segment radial menu |
+| **Left Stick** | Highlight a radial segment (tab) |
+| **L2 (release)** | Jump to the highlighted tab |
+| **D-Pad** | Navigate inner tabs (e.g., multiple SSH sessions) |
+| `` ` `` **Backtick** | Open / close radial menu from keyboard |
+| **Arrow Keys** (radial open) | Highlight segments |
+| **Enter** (radial open) | Activate highlighted segment |
 
-To enable full gamepad support: load the NEURODECK Steam Input profile described in [`docs/steam_input_guide.md`](docs/steam_input_guide.md). The `.vdf` profile maps L2 → radial, stick → segment selection, D-pad → inner tab navigation.
+To enable full controller support in Steam Game Mode, load the NEURODECK Steam Input profile described in [`docs/steam_input_guide.md`](docs/steam_input_guide.md).
 
-### ⌨️ AI Terminal Autocomplete
+---
 
-Type a partial command in the terminal and press **Ctrl+Space**. NEURODECK sends that partial command to the active LLM and streams back a suggested completion. Press **→** (right arrow) to accept it. Escape to dismiss. Powered by `ctrl_prompt.js` and the `ai_terminal_autocomplete` Tauri command.
+## The Model Switcher
 
-### 🤖 5-Step Autonomous Agent Loop
+Click the **`[ MODEL: GEMINI ]`** button in the top bar to open the model switcher panel. From there you can:
 
-The Agent tab runs a deterministic, observable loop:
+- Switch between any configured agent (Gemini, Ollama, or custom)
+- Browse **Recommended Models** — curated list with Steam Deck compatibility flags and VRAM estimates
+- Add a custom agent with a specific model ID, provider, and Ollama base URL
+- Delete agents you no longer need
 
-1. **Plan** — AI outlines the approach in plain English
-2. **Write** — generates the code or script
-3. **Execute** — runs it in a PTY subprocess
-4. **Observe** — reads stdout/stderr
-5. **Iterate** — if it failed, revises and reruns (up to 5 cycles total)
+The active agent label updates in real time. Switching mid-conversation carries the context forward.
 
-Every step is streamed to the UI in real time. You watch it think and work. Nothing is hidden.
+---
 
-### 📱 iPhone Remote Control
+## AI Personas — Switch Mid-Conversation
 
-1. Open the **Remote** tab and hit **Start Server**.
-2. A QR code appears on screen — scan it with iPhone Camera.
-3. Safari opens a webapp served from the local `axum` WebSocket backend.
-4. From your phone: type commands, switch views, watch live terminal output.
+Type a persona command in Chat to shift the AI's framing and response style instantly:
 
-Built entirely with `remote_control.rs` (axum + tokio WebSocket). Zero external service — pure LAN.
+| Command | Persona | Role Framing |
+|---|---|---|
+| *(default)* | Default | Balanced general assistant |
+| `/developer` | Developer | Code-first, terse, technical |
+| `/cyberpunk` | Cyberpunk | Street-tech aesthetic, lateral thinking |
+| `/john` | John | Product manager, user story thinking |
+| `/sally` | Sally | UX focus, user empathy |
+| `/winston` | Winston | Systems architecture depth |
+| `/amelia` | Amelia | Implementation-focused developer |
+| `/paige` | Paige | Technical writing voice |
+| `/mary` | Mary | Business analyst framing |
+| *(custom)* | Yours | Define via `setPersona()` in a Lua plugin |
 
-### 🔌 Lua Plugin System
+---
 
-Drop any `.lua` file into the `plugins/` folder. NEURODECK loads it at startup via `mlua` (Lua 5.4, compiled from source). Available globals:
+## Themes
+
+| Theme | Accent | Vibe |
+|---|---|---|
+| **BLACKSITE** | `#00F0FF` | Cold cyan ops center |
+| **TERMINAL_GHOST** | `#00FFCC` | Classic green phosphor |
+| **SYNTH_GRID** | `#FF00FF` | Retrofuture magenta |
+| **CYBER_PUNK** | `#FF007F` | Hot pink neon |
+| **MILITARY** | `#39FF14` | Tactical green |
+| **OBSIDIAN** | `#7C3AED` | Deep purple haze |
+| **Custom** | any hex | Define it in Settings → Custom Theme |
+
+---
+
+## The Lua Plugin System
+
+Drop any `.lua` file into `plugins/`. NEURODECK loads it at startup via `mlua` (Lua 5.4, compiled from source). Available globals:
 
 ```lua
 print("hello from lua")
-execute("any_bash_command_here")
+execute("any_bash_command")
 registerCommand("/mycommand", function(args) ... end)
 registerHook("before_send", function(msg) return msg end)
 setPersona("developer")
 ```
 
-Syntax errors in a plugin silently suppress that plugin — the app keeps running. Check the Tauri terminal console for `[Lua Error]` lines.
+A syntax error in a plugin silently suppresses that plugin only — the app keeps running. Check the Tauri console for `[Lua Error]` lines.
+
+### Community Plugin Registry
+
+The built-in **Plugin Marketplace** tab (inside Settings → Plugins) connects to the [neurodeck-plugins](https://github.com/khaoticdev62/neurodeck-plugins) registry. Browse, search by tag, and install plugins without leaving the app. The registry currently includes:
+
+| Plugin | What It Does |
+|---|---|
+| `bmad.lua` | BMAD AI personas — `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary` |
+| `promptgen.lua` | Prompt Lab commands — `/promptlab`, `/promptgen <task>`, `/formula <name> <task>` |
+| `ip_lookup.lua` | `/iplookup <address>` — geo and ASN info via ip-api.com |
+| `auto_responder.lua` | Keyword-triggered auto-replies in Chat |
 
 ---
 
-## 🎨 Themes & Personas
-
-### Built-In Themes
-
-| Name | Accent Color | Vibe |
-|---|---|---|
-| BLACKSITE | `#00F0FF` | Cold cyan ops center |
-| TERMINAL_GHOST | `#00FFCC` | Classic green phosphor |
-| SYNTH_GRID | `#FF00FF` | Retrofuture magenta |
-| CYBER_PUNK | `#FF007F` | Hot pink neon |
-| MILITARY | `#39FF14` | Tactical green |
-| OBSIDIAN | `#7C3AED` | Deep purple haze |
-| Custom | any hex | Define it in Settings |
-
-Switch themes in the Settings panel. To add new themes in code: add an entry to the `THEMES` `lazy_static` in `lib.rs`.
-
-### AI Personas — Switch Mid-Conversation
-
-Type a persona command in the Chat tab to instantly shift the AI's response style and framing:
-
-| Command | Persona | Role Framing |
-|---|---|---|
-| (default) | Default | Balanced general assistant |
-| `/developer` | Developer | Code-first, terse, technical |
-| `/cyberpunk` | Cyberpunk | Street-tech aesthetic |
-| `/john` | John | Product manager mindset |
-| `/sally` | Sally | UX and user empathy focus |
-| `/winston` | Winston | Systems architecture thinking |
-| `/amelia` | Amelia | Implementation-focused dev |
-| `/paige` | Paige | Technical writing voice |
-| `/mary` | Mary | Business analyst framing |
-| Custom | yours | Define via Lua `setPersona()` |
-
-Personas are defined in two places: the `PERSONAS` map in `lib.rs` (hardcoded fallback) and `plugins/bmad.lua` (Lua-registered at runtime). If Lua fails to load, the hardcoded fallback still works.
-
----
-
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
-| `` ` `` (backtick) | Open radial menu |
+| `` ` `` | Open / close radial menu |
 | `Ctrl+Space` | AI terminal autocomplete |
 | `Ctrl+H` | AI shell history search |
-| `Escape` | Close overlays / dismiss menus |
-| Gamepad **L2** | Open radial menu |
-| Gamepad **Left Stick** | Select radial segment |
-| Gamepad **D-pad** | Navigate inner tabs (SSH sessions, etc.) |
+| `Escape` | Close overlays, dismiss menus |
+| `F5` | Refresh browser (browser view active) |
+| `Ctrl+L` | Focus browser URL bar |
+| `Alt+←` / `Alt+→` | Browser back / forward |
+| `Ctrl+Enter` | Run canvas code |
 
 ---
 
-## ⚙️ Configuration
-
-NEURODECK is configured via TOML. **Two copies must be kept in sync:**
-
-- `src-tauri/llm-term.toml` — read by the Rust binary at runtime (working dir is `src-tauri/`)
-- `llm-term.toml` (project root) — used by installer and deploy scripts
+## Configuration
 
 ```toml
+# src-tauri/llm-term.toml  ←  the file the binary reads at runtime
+
 [llm]
 provider = "gemini"           # "gemini" or "ollama"
 model = "gemini-pro"
-google_client_id = ""         # Required for OAuth device-flow sign-in
+google_client_id = ""         # For Google OAuth Device Flow sign-in
 
 [ollama]
 base_url = "http://localhost:11434"
@@ -322,7 +389,9 @@ theme = "BLACKSITE"
 persona = "default"
 ```
 
-**Required environment variable:**
+> Two copies of this file exist: `src-tauri/llm-term.toml` (read by the binary) and `llm-term.toml` (project root, used by the installer). Always edit both.
+
+**Required environment variable — set before `npm run tauri dev`:**
 
 ```bash
 # Linux / macOS / SteamOS
@@ -332,94 +401,82 @@ export GEMINI_API_KEY="AIza..."
 $env:GEMINI_API_KEY = "AIza..."
 ```
 
-If `GEMINI_API_KEY` is absent, the app silently falls back to Ollama with no visible error. Set it before running `npm run tauri dev`.
+If absent, the app silently falls back to Ollama with no visible error.
 
 ---
 
-## 🏗️ Building & Deploying
+## Building & Deploying
 
 ### Development
 
 ```bash
-# Full hot-reload dev server (Vite + Rust, recommended)
-npm run tauri dev
-
-# Frontend only — uses mock IPC, no Rust needed
-npm run --prefix frontend dev
-
-# Fast Rust type-check (no full compile, ~10 seconds)
-cd src-tauri && cargo check
-
-# Rust linter
-cd src-tauri && cargo clippy
+npm run tauri dev                    # Full hot-reload (Vite + Rust) — use this
+npm run --prefix frontend dev        # Frontend CSS/HTML only (invoke() calls fail)
+cd src-tauri && cargo check          # Fast Rust type-check (~10s)
+cd src-tauri && cargo clippy         # Rust linter
 ```
 
-### Production Builds
+### Production
 
-**Windows — NSIS installer:**
-```powershell
-npx tauri build --bundles nsis
+```bash
+# Windows — NSIS + MSI installer
+npx tauri build --bundles nsis,msi
 .\package_release.ps1
-```
 
-**SteamOS — direct deploy to `~/Applications/neurodeck/`:**
-```bash
+# Linux — AppImage + deb
+npx tauri build --bundles appimage,deb
+
+# SteamOS — direct deploy to ~/Applications/neurodeck/
 chmod +x install.sh && ./install.sh
-```
 
-**Linux Flatpak:**
-```bash
-chmod +x build_flatpak.sh && ./build_flatpak.sh
-flatpak install --user neurodeck.flatpak
-```
-
-**Steam Deck Game Mode (gamescope 1280×800):**
-```bash
+# Steam Deck Game Mode (gamescope 1280×800)
 ./launch_gamescope.sh
 ```
 
+CI builds (`.github/workflows/ci.yml`) run automatically on every push and produce AppImage + deb (Ubuntu), MSI + NSIS (Windows), and DMG + app (macOS).
+
 ---
 
-## 📁 Documentation
+## Documentation
 
 | Document | What It Covers |
 |---|---|
 | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | Full feature walkthrough for end users |
-| [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) | v1.0.0 changelog and known issues |
-| [`docs/SPRINT_HANDOFF.md`](docs/SPRINT_HANDOFF.md) | Remaining sprint roadmap and priority matrix |
+| [`docs/ANTIGRAVITY_HANDOFF.md`](docs/ANTIGRAVITY_HANDOFF.md) | Feature backlog, sprint history, priority matrix |
+| [`docs/project-context.md`](docs/project-context.md) | Project identity, command registry, sprint log |
 | [`docs/gamescope_guide.md`](docs/gamescope_guide.md) | SteamOS Game Mode integration, gamescope flags |
 | [`docs/steam_input_guide.md`](docs/steam_input_guide.md) | Steam Input controller mapping and `.vdf` profile |
-| [`CLAUDE.md`](CLAUDE.md) | AI coding context — architecture rules, gotchas, tribal knowledge for contributors and AI assistants |
+| [`CLAUDE.md`](CLAUDE.md) | AI coding context — architecture rules, gotchas, tribal knowledge |
 
 ---
 
-## 🛠️ Contributing
+## Contributing
 
-1. **Fork** the repo and create a feature branch off `main`.
-2. **Follow the IPC triad rule** — every new Tauri command needs three things: (1) a `#[tauri::command]` function in a `src/` module, (2) an entry in `generate_handler![]` in `lib.rs`, and (3) a case in the mock IPC switch in `main.js`. Miss any step and it silently fails in browser dev mode.
-3. **No npm packages** — the frontend is zero-dependency by design. Use CDN or vendored assets only (xterm.js, marked.js, and Tauri's JS API are the only allowed deps).
-4. **No `unwrap()` in Tauri handlers** — use `map_err(|e| e.to_string())?`. Panics crash the backend process silently.
-5. **CSS specificity trap** — never add `display: flex` or `display: block` to `#view-*` ID rules in `app.css`. ID selectors (specificity 100) override the `.view-content { display: none }` hide rule (specificity 20) and permanently break tab switching. Only use class selectors for display toggling.
-6. Open a PR with a clear description of what changed and why. Reference the relevant section of `CLAUDE.md` if your change touches a known gotcha.
+1. **Fork** the repo and create a feature branch off `master`.
+2. **IPC triad rule** — every new Tauri command needs three things: (1) a `#[tauri::command]` function in a `src/` module, (2) an entry in `generate_handler![]` in `lib.rs`, (3) no mock IPC needed — the dev-mode shim has been removed.
+3. **No npm packages** — frontend is zero-dependency except xterm.js, marked.js, and Tauri's JS API (CDN / vendored). Bundled packages bloat the WebView.
+4. **No `unwrap()` in Tauri handlers** — use `map_err(|e| e.to_string())?`. Panics crash the backend silently.
+5. **CSS specificity trap** — never add `display: flex` or `display: block` to `#view-*` ID rules in `app.css`. ID selectors (specificity 100) permanently override `.view-content { display: none }` (specificity 20) and break tab switching.
+6. **ES module scope** — `main.js` uses `import` statements, making it an ES module. Functions not exposed as `window.foo = foo` are invisible to inline `onclick` handlers and to `chat.js` / other submodules.
 
 <details>
-<summary><strong>Full contributor gotcha list (click to expand)</strong></summary>
+<summary><strong>Full contributor gotcha list</strong></summary>
 
-- **Four copies of `llm-term.toml`** exist across the project. Only `src-tauri/llm-term.toml` is read at runtime. Always edit that one and the root copy together.
-- **`main.js` template strings** are one massive string literal per section. Match full containing elements when editing — never search for a partial string. Ambiguous edits corrupt the HTML.
-- **PTY double-spawn** — always call `pty_kill` before `pty_spawn` with the same session ID. Double-spawning the same ID leaves the old reader thread running as an invisible leak.
-- **FTP large files** — `retr_as_buffer` loads the entire file into RAM. For user-selectable files, stream to disk. Don't use `retr_as_buffer` for anything that could be over 100MB.
-- **`suppaftp` and `std::net::TcpStream` are synchronous** — always wrap in `tokio::task::spawn_blocking`. Calling them on the async executor blocks the entire runtime.
-- **Lua plugin errors** are silent — a syntax error suppresses that plugin and the app keeps running. Check the Tauri terminal console for `[Lua Error]` lines.
-- **RAG requires Gemini** — `generate_embedding()` calls the Gemini API. If Ollama is the active provider, RAG is silently skipped for that session.
-- **Radial menu gap** — the radial menu currently maps the original 8 views. The SSH tab is not yet included. Adding it requires updating the radial menu segment definitions in `main.js`.
-- **Config path fallback** — the Rust binary checks for `../llm-term.toml` first (project root) then falls back to `llm-term.toml` (current working dir, which is `src-tauri/` during dev). Never hardcode just `"llm-term.toml"` — the path logic in `lib.rs` is load-bearing.
+- **Four copies of `llm-term.toml`** exist across the project. Only `src-tauri/llm-term.toml` is read at runtime.
+- **PTY double-spawn** — always call `pty_kill` before `pty_spawn` with the same session ID. Double-spawning leaks the old reader thread.
+- **FTP large files** — `retr_as_buffer` loads the entire file into RAM. For user-selectable files, stream to disk.
+- **`suppaftp` and `std::net::TcpStream` are synchronous** — always wrap in `tokio::task::spawn_blocking`.
+- **Lua errors are silent** — a syntax error suppresses that plugin only. Check the Tauri console for `[Lua Error]`.
+- **RAG requires Gemini** — `generate_embedding()` calls the Gemini API. If Ollama is active, RAG is silently skipped.
+- **Radial menu has 12 segments** — all major tabs are represented. Updating the segment list requires editing the `RADIAL_SEGMENTS` array in `main.js`.
+- **Config path fallback** — the Rust binary checks `../llm-term.toml` first (project root), then falls back to `llm-term.toml` (working dir = `src-tauri/` during dev). Never hardcode just `"llm-term.toml"`.
+- **`send_command` vs `execute_command_stream`** — use `send_command` for all new LLM features. It includes RAG, game context, persona, and memory storage. `execute_command_stream` is the older path.
 
 </details>
 
 ---
 
-## 📜 License
+## License
 
 MIT — see [`LICENSE`](LICENSE) for full terms.
 
@@ -429,6 +486,8 @@ MIT — see [`LICENSE`](LICENSE) for full terms.
 
 **Built for the Steam Deck. Runs anywhere.**
 
-[github.com/khaoticdev62/NEURODECK](https://github.com/khaoticdev62/NEURODECK) &nbsp;·&nbsp; App ID: `com.neurodeck.app` &nbsp;·&nbsp; v1.0.0
+`com.neurodeck.app` &nbsp;·&nbsp; v1.2.1-Ra &nbsp;·&nbsp; KFMS Codename: Thoth → Ra
+
+[github.com/khaoticdev62/NEURODECK](https://github.com/khaoticdev62/NEURODECK)
 
 </div>
