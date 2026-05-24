@@ -171,7 +171,7 @@ All systems support:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│              NEURODECK FRONTEND (Tauri WebView)       │
+│              NEURODECK FRONTEND (Tauri WebView)      │
 │   Vite + Vanilla JS — 11 views, gamepad loop,        │
 │   xterm.js, canvas, chat, memory, agent, SSH/FTP/    │
 │   transfer, remote control, prompt lab, radial menu  │
@@ -224,7 +224,7 @@ All systems support:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│              NEURODECK FRONTEND                       │
+│              NEURODECK FRONTEND                      │
 │   + Infinite workspace canvas (spatial computing)    │
 │   + Monaco editor integration                        │
 │   + Knowledge graph visualization                    │
@@ -236,21 +236,21 @@ All systems support:
 ┌──────────────────────────────────────────────────────┐
 │              RUST BACKEND                            │
 │   + Multi-agent orchestrator (LangGraph-style)       │
-│   + Task scheduler + queue                          │
-│   + Browser automation (headless Chromium)          │
+│   + Task scheduler + queue                           │
+│   + Browser automation (headless Chromium)           │
 │   + Desktop computer use layer                       │
-│   + WASM sandbox runtime                            │
-│   + Docker/container integration                    │
-│   + Webhook + trigger engine                        │
+│   + WASM sandbox runtime                             │
+│   + Docker/container integration                     │
+│   + Webhook + trigger engine                         │
 └──────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌──────────────────────────────────────────────────────┐
 │              DATA LAYER                              │
-│   SQLite (structured local data) — current          │
-│   Qdrant (vector store) — planned upgrade           │
-│   Neo4j/graph (knowledge graph) — planned           │
-│   PostgreSQL (cloud sync backend) — planned         │
+│   SQLite (structured local data) — current           │
+│   Qdrant (vector store) — planned upgrade            │
+│   Neo4j/graph (knowledge graph) — planned            │
+│   PostgreSQL (cloud sync backend) — planned          │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -449,7 +449,7 @@ searches top-3, and prepends context to the LLM prompt.
 
 ```
 ┌─────────────────────────────────────────────┐
-│              MEMORY LAYER                    │
+│              MEMORY LAYER                   │
 │                                             │
 │  Semantic Memory    → Qdrant vector store   │
 │  Procedural Memory  → workflow recordings   │
