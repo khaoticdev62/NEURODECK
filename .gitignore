@@ -18,6 +18,8 @@ frontend/.vite/
 neurodeck
 neurodeck_rc.zip
 neurodeck_win_release.zip
+*.exe
+*.msi
 
 # --- Test screenshots & temporary output ---
 test-*.png
@@ -32,8 +34,12 @@ src-tauri/data/logs/
 .DS_Store
 Thumbs.db
 
-# --- KFMS loose zone — scratch files, never committed ---
+# --- KFMS loose zone — reference materials tracked; compiled binaries excluded ---
 .loose/*
 !.loose/
 !.loose/inbox/
-!.loose/inbox/.gitkeep
+!.loose/inbox/**
+.loose/inbox/*.exe
+.loose/inbox/*.msi
+.loose/inbox/*.zip
+.loose/inbox/neurodeck

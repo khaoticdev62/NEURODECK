@@ -11,6 +11,55 @@ ollama_model = "llama3.2:1b"
 gemini_model = "gemini-1.5-flash"
 ollama_base_url = "http://localhost:11434"
 google_client_id = ""
+active_agent_id = "local-llama1b"
+
+[[llm.agents]]
+id = "gemini-flash-lite"
+name = "Flash Lite"
+provider = "gemini"
+model = "gemini-2.0-flash-lite"
+base_url = ""
+description = "Fastest cloud model — best for quick chat and low-latency tasks."
+
+[[llm.agents]]
+id = "gemini-flash"
+name = "Flash"
+provider = "gemini"
+model = "gemini-2.0-flash"
+base_url = ""
+description = "Best all-around cloud model — code, analysis, multi-step reasoning."
+
+[[llm.agents]]
+id = "gemini-pro"
+name = "Pro"
+provider = "gemini"
+model = "gemini-1.5-pro"
+base_url = ""
+description = "Highest intelligence — complex research, long context (1M tokens)."
+
+[[llm.agents]]
+id = "local-gemma2b"
+name = "Gemma 2B"
+provider = "ollama"
+model = "gemma2:2b"
+base_url = "http://localhost:11434"
+description = "Best quality-per-RAM local model. ~20-30 tok/s on Steam Deck. Offline."
+
+[[llm.agents]]
+id = "local-llama1b"
+name = "Llama 1B"
+provider = "ollama"
+model = "llama3.2:1b"
+base_url = "http://localhost:11434"
+description = "Ultra-fast local. ~50 tok/s on Steam Deck. Basic tasks. Offline."
+
+[[llm.agents]]
+id = "local-phi35"
+name = "Phi 3.5 Mini"
+provider = "ollama"
+model = "phi3.5:mini"
+base_url = "http://localhost:11434"
+description = "Microsoft compact reasoning model. Strong for code. Offline."
 
 [stt]
 whisper_binary = ""

@@ -1,0 +1,343 @@
+"controller_mappings"
+{
+	"version"		"3"
+	"revision"		"1"
+	"title"		"NEURODECK — Steam Deck Default"
+	"description"		"Optimized layout for NEURODECK AI Terminal in Steam Deck Game Mode. L2 opens radial navigation menu."
+	"controller_type"		"controller_steamdeck"
+	"controller_caps"		"78"
+
+	"group"
+	{
+		"id"		"0"
+		"mode"		"four_buttons"
+		"name"		"Face Buttons"
+		"description"		"A=Confirm  B=Back/Close  X=Chat  Y=Cycle Persona"
+		"inputs"
+		{
+			"button_a"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button A" }
+					}
+				}
+			}
+			"button_b"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button B" }
+					}
+				}
+			}
+			"button_x"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button X" }
+					}
+				}
+			}
+			"button_y"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button Y" }
+					}
+				}
+			}
+		}
+	}
+
+	"group"
+	{
+		"id"		"1"
+		"mode"		"dpad"
+		"name"		"D-Pad — Tab Navigation"
+		"description"		"Up/Down scroll focus  Left/Right cycle tabs"
+		"inputs"
+		{
+			"dpad_north"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button DPAD_UP" }
+					}
+				}
+			}
+			"dpad_south"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button DPAD_DOWN" }
+					}
+				}
+			}
+			"dpad_east"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button DPAD_RIGHT" }
+					}
+				}
+			}
+			"dpad_west"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button DPAD_LEFT" }
+					}
+				}
+			}
+		}
+	}
+
+	"group"
+	{
+		"id"		"2"
+		"mode"		"joystick_move"
+		"name"		"Left Stick — Radial Selector / Scroll"
+		"description"		"When L2 held: selects radial menu segment. Otherwise: scroll."
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button JOYSTICK_LEFT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_joystick"	"0"
+		}
+	}
+
+	"group"
+	{
+		"id"		"3"
+		"mode"		"joystick_move"
+		"name"		"Right Stick — Scroll"
+		"description"		"Scrolls within the active view."
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button JOYSTICK_RIGHT" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_joystick"	"1"
+		}
+	}
+
+	"group"
+	{
+		"id"		"4"
+		"mode"		"trigger"
+		"name"		"L2 — Radial Menu"
+		"description"		"Hold to open radial navigation wheel. Aim left stick at segment, release to navigate."
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button LEFT_TRIGGER_CLICK" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"	"0"
+		}
+	}
+
+	"group"
+	{
+		"id"		"5"
+		"mode"		"trigger"
+		"name"		"R2 — Submit / Run"
+		"description"		"Full press sends chat message or runs agent."
+		"inputs"
+		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button RIGHT_TRIGGER_CLICK" }
+					}
+				}
+			}
+		}
+		"settings"
+		{
+			"output_trigger"	"1"
+		}
+	}
+
+	"group"
+	{
+		"id"		"6"
+		"mode"		"four_buttons"
+		"name"		"Bumpers"
+		"description"		"L1=Prev Tab  R1=Next Tab"
+		"inputs"
+		{
+			"button_l"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button LEFT_BUMPER" }
+					}
+				}
+			}
+			"button_r"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button RIGHT_BUMPER" }
+					}
+				}
+			}
+		}
+	}
+
+	"group"
+	{
+		"id"		"7"
+		"mode"		"four_buttons"
+		"name"		"Menu Buttons"
+		"description"		"Select=Run Canvas  Start=Settings"
+		"inputs"
+		{
+			"button_select"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button SELECT" }
+					}
+				}
+			}
+			"button_start"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button START" }
+					}
+				}
+			}
+		}
+	}
+
+	"group"
+	{
+		"id"		"8"
+		"mode"		"four_buttons"
+		"name"		"Grip / Back Buttons"
+		"description"		"L4=Sidebar  R4=Context Drawer  L5=Clear Canvas  R5=Cycle Theme"
+		"inputs"
+		{
+			"left_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button BUTTON_17" }
+					}
+				}
+			}
+			"right_bumper"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button BUTTON_18" }
+					}
+				}
+			}
+			"left_grip"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button BUTTON_19" }
+					}
+				}
+			}
+			"right_grip"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"	{ "binding"	"xinput_button BUTTON_20" }
+					}
+				}
+			}
+		}
+	}
+
+	"preset"
+	{
+		"id"		"0"
+		"name"		"Default"
+		"primary_set_name"	"NEURODECK_ACTIONS"
+		"group_source_bindings"
+		{
+			"0"		"switch active"
+			"1"		"switch active"
+			"2"		"switch active"
+			"3"		"switch active"
+			"4"		"switch active"
+			"5"		"switch active"
+			"6"		"switch active"
+			"7"		"switch active"
+			"8"		"switch active"
+		}
+	}
+}
