@@ -1500,41 +1500,62 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Prompt Lab UI View -->
                 <div class="view-content" id="view-prompt-lab">
+                    <!-- Template Gallery Drawer -->
+                    <div class="pl-template-gallery hidden" id="pl-template-gallery">
+                        <div class="pl-gallery-overlay" id="pl-gallery-overlay"></div>
+                        <div class="pl-gallery-panel">
+                            <div class="pl-gallery-header">
+                                <span>Template Gallery</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <input type="text" id="pl-gallery-search" class="pl-gallery-search" placeholder="Search templates...">
+                                    <button class="pl-gallery-close" id="pl-gallery-close">✕</button>
+                                </div>
+                            </div>
+                            <div class="pl-gallery-body" id="pl-gallery-body"></div>
+                        </div>
+                    </div>
+
                     <div class="prompt-lab-container">
                         <!-- Left pane: Input Form -->
                         <div class="prompt-lab-form">
                             <div class="prompt-lab-header">
-                                <h3>Prompt Generator</h3>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <select id="pl-template-select" class="pl-dropdown" style="max-width: 140px;">
-                                        <option value="">Load Preset...</option>
-                                        <option value="game">Endless Runner Game Concept</option>
-                                        <option value="app">To-Do List App Features</option>
-                                        <option value="script">Lua Scripting Template</option>
-                                    </select>
-                                    <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display: none; width: 100px; padding: 4px 8px; font-size: 0.8rem; background: rgba(0,0,0,0.3);">
-                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display: none; font-size: 0.75rem;">💾 Save</button>
-                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size: 0.75rem;" title="Save Custom Preset">💾 Save Current</button>
+                                <div class="pl-header-title">
+                                    <span class="pl-header-icon">⚗️</span>
+                                    <h3>Prompt Lab</h3>
+                                </div>
+                                <div style="display:flex;gap:6px;align-items:center;">
+                                    <button class="pl-gallery-btn" id="pl-open-gallery-btn" title="Browse Template Gallery">📚 Templates</button>
+                                    <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display:none;width:96px;padding:4px 8px;font-size:0.8rem;background:rgba(0,0,0,0.3);">
+                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display:none;font-size:0.75rem;">💾 Save</button>
+                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset">💾</button>
                                 </div>
                             </div>
-                            
-                            <!-- Quality/Strength Meter -->
-                            <div class="pl-strength-container" style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);">
-                                <label style="font-size: 0.7rem; font-weight: bold; text-transform: uppercase; color: rgba(255,255,255,0.5); margin: 0; letter-spacing: 0.5px; white-space: nowrap;">Strength:</label>
-                                <div class="pl-strength-bar-bg" style="flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
-                                    <div id="pl-strength-bar-fill" style="width: 0%; height: 100%; background: var(--error-color); transition: all 0.3s ease;"></div>
+
+                            <!-- Strength Meter -->
+                            <div class="pl-strength-container">
+                                <span class="pl-strength-label-text">Strength</span>
+                                <div class="pl-strength-bar-bg">
+                                    <div id="pl-strength-bar-fill" class="pl-strength-bar-fill"></div>
                                 </div>
-                                <span id="pl-strength-label" style="font-size: 0.7rem; font-weight: bold; color: var(--error-color); white-space: nowrap;">Weak (0/5)</span>
+                                <span id="pl-strength-label" class="pl-strength-value">Weak (0/5)</span>
                             </div>
 
                             <div class="pl-field">
                                 <label>Persona / Role</label>
-                                <input type="text" id="pl-persona" placeholder="e.g. You are a creative game designer.">
+                                <input type="text" id="pl-persona" placeholder="e.g. You are a senior software engineer.">
+                                <div class="pl-chips">
+                                    <span class="pl-chip" data-target="pl-persona">Game Dev</span>
+                                    <span class="pl-chip" data-target="pl-persona">Engineer</span>
+                                    <span class="pl-chip" data-target="pl-persona">Copywriter</span>
+                                    <span class="pl-chip" data-target="pl-persona">Analyst</span>
+                                    <span class="pl-chip" data-target="pl-persona">Teacher</span>
+                                    <span class="pl-chip" data-target="pl-persona">Marketer</span>
+                                </div>
                             </div>
                             <div class="pl-field">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <label style="margin: 0;">Task / Objective</label>
-                                    <button class="agent-btn agent-btn-sm" id="pl-optimize-ai-btn" style="padding: 2px 6px; font-size: 0.7rem;" title="AI Decompose & Optimize">AI Optimize ⚡</button>
+                                <div class="pl-field-header">
+                                    <label>Task / Objective</label>
+                                    <button class="pl-optimize-btn" id="pl-optimize-ai-btn" title="AI Decompose & Optimize">⚡ AI Optimize</button>
                                 </div>
                                 <input type="text" id="pl-task" placeholder="e.g. Design an endless runner game.">
                             </div>
@@ -1544,61 +1565,89 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             <div class="pl-field">
                                 <label>Tone / Style</label>
-                                <input type="text" id="pl-tone" placeholder="e.g. Upbeat and clear, kid-friendly.">
+                                <input type="text" id="pl-tone" placeholder="e.g. Concise and professional.">
+                                <div class="pl-chips">
+                                    <span class="pl-chip" data-target="pl-tone">Technical</span>
+                                    <span class="pl-chip" data-target="pl-tone">Casual</span>
+                                    <span class="pl-chip" data-target="pl-tone">Professional</span>
+                                    <span class="pl-chip" data-target="pl-tone">Playful</span>
+                                    <span class="pl-chip" data-target="pl-tone">Concise</span>
+                                    <span class="pl-chip" data-target="pl-tone">Academic</span>
+                                </div>
                             </div>
                             <div class="pl-field">
                                 <label>Constraints</label>
-                                <textarea id="pl-constraints" placeholder="e.g. Max 150 words. Answer in bullet points." rows="2"></textarea>
+                                <textarea id="pl-constraints" placeholder="e.g. Max 150 words. No jargon." rows="2"></textarea>
                             </div>
                             <div class="pl-field">
                                 <label>Output Format</label>
-                                <input type="text" id="pl-format" placeholder="e.g. JSON with keys: concept, mechanics, art_style">
+                                <input type="text" id="pl-format" placeholder="e.g. JSON with keys: concept, mechanics">
+                                <div class="pl-chips">
+                                    <span class="pl-chip" data-target="pl-format">Markdown</span>
+                                    <span class="pl-chip" data-target="pl-format">JSON</span>
+                                    <span class="pl-chip" data-target="pl-format">Bullet List</span>
+                                    <span class="pl-chip" data-target="pl-format">Code Block</span>
+                                    <span class="pl-chip" data-target="pl-format">Step-by-step</span>
+                                    <span class="pl-chip" data-target="pl-format">Table</span>
+                                </div>
                             </div>
-                            <div class="pl-advanced-toggle" id="pl-advanced-toggle">⚙️ Advanced Options</div>
+
+                            <!-- Formula Card Gallery -->
+                            <div class="pl-formula-section">
+                                <div class="pl-formula-section-header">
+                                    <label>Framework / Formula</label>
+                                    <span class="pl-formula-active-badge" id="pl-formula-badge">Default</span>
+                                </div>
+                                <div class="pl-formula-grid" id="pl-formula-grid"></div>
+                                <input type="hidden" id="pl-formula" value="default">
+                                <div id="pl-formula-info" class="pl-formula-info">
+                                    Standard prompt structure: Persona → Task → Context → Constraints → Format.
+                                </div>
+                            </div>
+
+                            <!-- Few-shot examples (collapsible) -->
+                            <div class="pl-advanced-toggle" id="pl-advanced-toggle">⚙️ Few-Shot Examples</div>
                             <div class="pl-advanced-fields hidden" id="pl-advanced-fields">
                                 <div class="pl-field">
-                                    <label>Few-Shot Examples</label>
-                                    <textarea id="pl-examples" placeholder="e.g. Input: Puzzle game. Output: A grid-based..." rows="2"></textarea>
-                                </div>
-                                <div class="pl-field">
-                                    <label>Framework / Formula</label>
-                                    <select id="pl-formula" class="pl-dropdown">
-                                        <option value="default">Role + Constraints + Examples</option>
-                                        <option value="aida">AIDA (Attention, Interest, Desire, Action)</option>
-                                        <option value="scqa">SCQA (Situation, Complication, Question, Answer)</option>
-                                        <option value="pastor">PASTOR (Problem, Amplify, Story, Transformation, Offer, Response)</option>
-                                        <option value="pas">PAS (Problem, Agitate, Solution)</option>
-                                        <option value="cot">CoT (Chain of Thought / Step-by-Step)</option>
-                                        <option value="tot">ToT (Tree of Thought / Reasoning Paths)</option>
-                                    </select>
-                                    <div id="pl-formula-info" class="pl-formula-info" style="margin-top: 8px; font-size: 0.75rem; color: rgba(255,255,255,0.45); line-height: 1.35; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; border-left: 2px solid var(--accent-color);">
-                                        Default: Standard prompt construction focusing on Persona, Objective, Constraints, and Examples.
-                                    </div>
+                                    <label>Examples</label>
+                                    <textarea id="pl-examples" placeholder="e.g. Input: Puzzle game. Output: A grid-based..." rows="3"></textarea>
                                 </div>
                             </div>
+
                             <button class="pl-btn-primary" id="pl-generate-btn">⚡ Generate Prompt</button>
                         </div>
-                        
+
                         <!-- Right pane: Output & JPE -->
                         <div class="prompt-lab-output">
                             <div class="pl-output-section">
                                 <div class="pl-output-header">
-                                    <span>Generated Prompt</span>
-                                    <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">📋 Copy</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">💬 Send to Chat</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">📄 JSON</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Automation Macro">⚙️ Lua Script</button>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <span>Generated Prompt</span>
+                                        <span class="pl-token-counter" id="pl-token-counter">~0 tokens</span>
                                     </div>
+                                    <div class="pl-actions">
+                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History">🕐</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">📋 Copy</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">💬 Chat</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">📄 JSON</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Macro">⚙️ Lua</button>
+                                    </div>
+                                </div>
+                                <div class="pl-history-drawer hidden" id="pl-history-drawer">
+                                    <div class="pl-history-header">
+                                        <span>Recent Prompts</span>
+                                        <button class="pl-history-clear" id="pl-history-clear">Clear all</button>
+                                    </div>
+                                    <div class="pl-history-list" id="pl-history-list"></div>
                                 </div>
                                 <textarea id="pl-result-prompt" class="pl-result-textarea" readonly placeholder="Your generated prompt will appear here..."></textarea>
                             </div>
-                            
+
                             <div class="pl-output-section jpe-section">
                                 <div class="pl-output-header">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
                                         <span>JPE Explanation</span>
-                                        <select id="pl-jpe-level-select" class="pl-dropdown" style="padding: 2px 4px; font-size: 0.75rem; background: rgba(0,0,0,0.2);">
+                                        <select id="pl-jpe-level-select" class="pl-dropdown" style="padding:2px 4px;font-size:0.75rem;background:rgba(0,0,0,0.2);">
                                             <option value="grade8">Grade 8 (Simple)</option>
                                             <option value="grade12">Grade 12 (Standard)</option>
                                             <option value="executive">Executive</option>
@@ -1606,12 +1655,12 @@ document.querySelector('#app').innerHTML = `
                                         </select>
                                     </div>
                                     <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain Prompt with LLM">🔍 Explain in JPE</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain in JPE">🔍 Explain</button>
                                         <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">📋 Copy</button>
                                     </div>
                                 </div>
                                 <div id="pl-result-jpe" class="pl-result-jpe">
-                                    <span class="pl-empty-text">Click "Explain in JPE" to get a plain english summary of what the prompt asks the AI to do.</span>
+                                    <span class="pl-empty-text">Generate a prompt then click Explain to get a plain-English breakdown of what it instructs the AI to do.</span>
                                 </div>
                             </div>
                         </div>
@@ -6182,44 +6231,365 @@ function initGameContextPanel() {
 
 // --- PROMPT LAB (SPRINT 6/7) ---
 function initPromptLab() {
-    const generateBtn = document.getElementById("pl-generate-btn");
-    const explainBtn = document.getElementById("pl-explain-jpe-btn");
-    const copyPromptBtn = document.getElementById("pl-copy-prompt-btn");
-    const sendChatBtn = document.getElementById("pl-send-chat-btn");
-    const copyJpeBtn = document.getElementById("pl-copy-jpe-btn");
-    
+    const generateBtn    = document.getElementById("pl-generate-btn");
+    const explainBtn     = document.getElementById("pl-explain-jpe-btn");
+    const copyPromptBtn  = document.getElementById("pl-copy-prompt-btn");
+    const sendChatBtn    = document.getElementById("pl-send-chat-btn");
+    const copyJpeBtn     = document.getElementById("pl-copy-jpe-btn");
+
     // Form fields
-    const personaInput = document.getElementById("pl-persona");
-    const taskInput = document.getElementById("pl-task");
-    const contextInput = document.getElementById("pl-context");
-    const toneInput = document.getElementById("pl-tone");
+    const personaInput     = document.getElementById("pl-persona");
+    const taskInput        = document.getElementById("pl-task");
+    const contextInput     = document.getElementById("pl-context");
+    const toneInput        = document.getElementById("pl-tone");
     const constraintsInput = document.getElementById("pl-constraints");
-    const formatInput = document.getElementById("pl-format");
-    const examplesInput = document.getElementById("pl-examples");
-    const formulaSelect = document.getElementById("pl-formula");
-    
-    const resultPrompt = document.getElementById("pl-result-prompt");
-    const resultJpe = document.getElementById("pl-result-jpe");
-    const templateSelect = document.getElementById("pl-template-select");
+    const formatInput      = document.getElementById("pl-format");
+    const examplesInput    = document.getElementById("pl-examples");
+    const formulaHidden    = document.getElementById("pl-formula");  // <input type="hidden">
+
+    const resultPrompt   = document.getElementById("pl-result-prompt");
+    const resultJpe      = document.getElementById("pl-result-jpe");
     const advancedToggle = document.getElementById("pl-advanced-toggle");
     const advancedFields = document.getElementById("pl-advanced-fields");
 
-    // New Fields & Buttons
-    const optimizeAiBtn = document.getElementById("pl-optimize-ai-btn");
-    const jpeLevelSelect = document.getElementById("pl-jpe-level-select");
-    const savePresetBtn = document.getElementById("pl-save-preset-btn");
+    // New UI elements
+    const optimizeAiBtn        = document.getElementById("pl-optimize-ai-btn");
+    const jpeLevelSelect       = document.getElementById("pl-jpe-level-select");
+    const savePresetBtn        = document.getElementById("pl-save-preset-btn");
     const togglePresetInputBtn = document.getElementById("pl-toggle-preset-input-btn");
-    const presetNameInput = document.getElementById("pl-preset-name");
-    const exportJsonBtn = document.getElementById("pl-export-json-btn");
-    const exportLuaBtn = document.getElementById("pl-export-lua-btn");
-    const strengthBarFill = document.getElementById("pl-strength-bar-fill");
-    const strengthLabel = document.getElementById("pl-strength-label");
-    
-    if (!generateBtn) return; // View not in DOM
+    const presetNameInput      = document.getElementById("pl-preset-name");
+    const exportJsonBtn        = document.getElementById("pl-export-json-btn");
+    const exportLuaBtn         = document.getElementById("pl-export-lua-btn");
+    const strengthBarFill      = document.getElementById("pl-strength-bar-fill");
+    const strengthLabel        = document.getElementById("pl-strength-label");
+    const tokenCounter         = document.getElementById("pl-token-counter");
+    const formulaBadge         = document.getElementById("pl-formula-badge");
+    const formulaGrid          = document.getElementById("pl-formula-grid");
+    const formulaInfo          = document.getElementById("pl-formula-info");
+    const historyBtn           = document.getElementById("pl-history-btn");
+    const historyDrawer        = document.getElementById("pl-history-drawer");
+    const historyClear         = document.getElementById("pl-history-clear");
+    const historyList          = document.getElementById("pl-history-list");
+    const openGalleryBtn       = document.getElementById("pl-open-gallery-btn");
+    const galleryOverlay       = document.getElementById("pl-gallery-overlay");
+    const galleryClose         = document.getElementById("pl-gallery-close");
+    const galleryDrawer        = document.getElementById("pl-template-gallery");
+    const galleryBody          = document.getElementById("pl-gallery-body");
+    const gallerySearch        = document.getElementById("pl-gallery-search");
+
+    if (!generateBtn) return;
 
     let loadedCustomPresets = {};
+    let promptHistory = [];
 
-    // Live Quality/Strength Scoring
+    // ── Formula Definitions ────────────────────────────────────────────────────
+    const FORMULAS = [
+        { id: "default",  icon: "📝", label: "Default",  desc: "Standard structure: Persona → Task → Context → Constraints → Format." },
+        { id: "aida",     icon: "📣", label: "AIDA",     desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing." },
+        { id: "scqa",     icon: "🔍", label: "SCQA",     desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis." },
+        { id: "pastor",   icon: "🎯", label: "PASTOR",   desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches." },
+        { id: "pas",      icon: "⚡", label: "PAS",      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points." },
+        { id: "cot",      icon: "🧠", label: "CoT",      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code." },
+        { id: "tot",      icon: "🌳", label: "ToT",      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design." },
+        { id: "star",     icon: "⭐", label: "STAR",     desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples." },
+        { id: "rice",     icon: "📊", label: "RICE",     desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions." },
+        { id: "icio",     icon: "🔄", label: "ICIO",     desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks." },
+        { id: "react",    icon: "🤖", label: "ReAct",    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks." },
+        { id: "spin",     icon: "💬", label: "SPIN",     desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework." },
+        { id: "rtf",      icon: "📐", label: "RTF",      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation." },
+        { id: "expert",   icon: "🎓", label: "Expert",   desc: "Expert persona activation with domain calibration, constraints, and output spec." },
+        { id: "socratic", icon: "🦉", label: "Socratic", desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions." },
+    ];
+
+    // ── Template Gallery Data ──────────────────────────────────────────────────
+    const TEMPLATE_CATEGORIES = [
+        {
+            label: "🎮 Game Design",
+            templates: [
+                {
+                    title: "Endless Runner Concept",
+                    desc: "Mobile cyberpunk endless runner for kids 8-14",
+                    tag: "Game Dev",
+                    data: { persona: "You are a creative game designer.", task: "Design an endless runner game concept for mobile devices.", context: "Target audience: kids, ages 8-14. Theme: Cyberpunk.", tone: "Upbeat, energetic, and concise.", constraints: "- List 3 unique gameplay mechanics\n- Max 150 words total", format: "JSON with keys: title, mechanics, art_style", formula: "default" }
+                },
+                {
+                    title: "Roguelike Dungeon System",
+                    desc: "Procedural dungeon generation design doc",
+                    tag: "Game Dev",
+                    data: { persona: "You are a senior game systems designer.", task: "Design a procedural dungeon generation system for a 2D roguelike.", context: "Unity engine, pixel art aesthetic. Single dev project.", tone: "Technical and detailed.", constraints: "- Cover room types, corridors, and difficulty scaling\n- Include spawner logic", format: "Markdown with H2 sections", formula: "cot" }
+                },
+                {
+                    title: "Game Economy Balancer",
+                    desc: "Balance a free-to-play currency economy",
+                    tag: "F2P",
+                    data: { persona: "You are an expert game economist.", task: "Analyze and balance a free-to-play game economy with two currencies.", context: "Soft currency earned via gameplay. Hard currency purchased. Retention focus.", tone: "Analytical, structured.", constraints: "- Avoid pay-to-win\n- Include daily login bonuses and event structures", format: "Table + written rationale", formula: "rice" }
+                },
+            ]
+        },
+        {
+            label: "💻 Engineering",
+            templates: [
+                {
+                    title: "Lua Script Template",
+                    desc: "Extract email addresses from text with Lua",
+                    tag: "Lua",
+                    data: { persona: "You are a senior Lua developer.", task: "Write a Lua script that parses a string and extracts all email addresses.", context: "Data processing pipeline. No external libraries.", tone: "Technical and precise.", constraints: "- Comment the regex\n- Single function: extract_emails(text)", format: "Lua code block only", formula: "default" }
+                },
+                {
+                    title: "Rust API Endpoint",
+                    desc: "Design a RESTful endpoint in Tauri/Axum",
+                    tag: "Rust",
+                    data: { persona: "You are a Rust systems engineer.", task: "Design a REST API endpoint for user authentication with JWT.", context: "Tauri desktop app. Axum framework. Async Rust.", tone: "Precise, security-conscious.", constraints: "- Include error handling\n- Use map_err, no unwrap()\n- Include request/response types", format: "Complete Rust code with types", formula: "icio" }
+                },
+                {
+                    title: "SQL Query Optimizer",
+                    desc: "Optimize a slow database query",
+                    tag: "SQL",
+                    data: { persona: "You are a database performance engineer.", task: "Analyze and optimize a slow SQL query for a user activity dashboard.", context: "PostgreSQL 15. Table has 10M+ rows. No query cache.", tone: "Technical, explanatory.", constraints: "- Explain each optimization\n- Show EXPLAIN ANALYZE output interpretation", format: "SQL + Markdown explanation", formula: "scqa" }
+                },
+                {
+                    title: "Code Review Checklist",
+                    desc: "Generate a thorough code review",
+                    tag: "DevOps",
+                    data: { persona: "You are a senior software engineer and CISO.", task: "Review the following code for bugs, security vulnerabilities, and performance issues.", context: "Production Rust/TypeScript codebase. Solo developer.", tone: "Methodical, constructive.", constraints: "- Prioritize by severity (Critical > High > Medium)\n- Include fix suggestions", format: "Markdown table with columns: Issue, Severity, Fix", formula: "expert" }
+                },
+            ]
+        },
+        {
+            label: "📋 Product & Strategy",
+            templates: [
+                {
+                    title: "Product Feature List",
+                    desc: "Minimalist to-do app feature breakdown",
+                    tag: "Product",
+                    data: { persona: "You are an expert product manager.", task: "Create a feature list for a minimalist To-Do list app.", context: "Target: busy professionals who hate complexity.", tone: "Professional and structured.", constraints: "- Exactly 5 features\n- Short name + 1 sentence description each", format: "Markdown bulleted list", formula: "default" }
+                },
+                {
+                    title: "Competitive Analysis",
+                    desc: "SCQA-structured competitor teardown",
+                    tag: "Strategy",
+                    data: { persona: "You are a strategic consultant.", task: "Analyze the competitive landscape for a solo-dev AI terminal app.", context: "Competitors: GitHub Copilot CLI, Cursor, Warp terminal.", tone: "Executive, data-driven.", constraints: "- Focus on gaps and opportunities\n- Max 400 words", format: "Markdown with SWOT table", formula: "scqa" }
+                },
+                {
+                    title: "Sprint Backlog Generator",
+                    desc: "Convert a feature idea into sprint tasks",
+                    tag: "Agile",
+                    data: { persona: "You are an Agile coach and staff engineer.", task: "Convert a feature description into a prioritized sprint backlog.", context: "Solo developer, 2-week sprints, Tauri desktop app.", tone: "Structured, actionable.", constraints: "- Max 8 tasks\n- Include acceptance criteria per task\n- Mark dependencies", format: "Markdown checklist with AC and deps", formula: "rice" }
+                },
+            ]
+        },
+        {
+            label: "✍️ Content & Copy",
+            templates: [
+                {
+                    title: "Landing Page Hero Copy",
+                    desc: "AIDA-structured hero section for a SaaS",
+                    tag: "Marketing",
+                    data: { persona: "You are a world-class conversion copywriter.", task: "Write hero section copy for a solo-dev AI terminal application.", context: "Product: NEURODECK — AI-native terminal OS for Steam Deck.", tone: "Bold, energetic, technical-cool.", constraints: "- Headline ≤12 words\n- Subheadline ≤25 words\n- 3 CTA variants", format: "Structured copy block", formula: "aida" }
+                },
+                {
+                    title: "Tech Blog Post Outline",
+                    desc: "Structured outline for a technical article",
+                    tag: "Content",
+                    data: { persona: "You are a senior developer and technical writer.", task: "Create a detailed outline for a blog post about building a Tauri desktop app.", context: "Target audience: intermediate Rust developers.", tone: "Educational, engaging.", constraints: "- 6-8 sections\n- Include code snippet placeholders\n- End with key takeaways", format: "Markdown H2/H3 outline", formula: "star" }
+                },
+                {
+                    title: "Cold Email Sequence",
+                    desc: "3-email outreach sequence (SPIN framework)",
+                    tag: "Sales",
+                    data: { persona: "You are a B2B sales strategist.", task: "Write a 3-email cold outreach sequence for an indie dev selling a productivity tool.", context: "Target: CTOs and engineering leads at 10-50 person startups.", tone: "Professional, empathetic, direct.", constraints: "- Each email ≤150 words\n- Progressive value escalation\n- Clear CTAs", format: "Email 1 / Email 2 / Email 3 blocks", formula: "spin" }
+                },
+            ]
+        },
+        {
+            label: "🧪 AI & Research",
+            templates: [
+                {
+                    title: "Socratic Reasoning Session",
+                    desc: "Guide AI through a problem via questions",
+                    tag: "Research",
+                    data: { persona: "You are a Socratic tutor.", task: "Guide me through understanding transformer attention mechanisms using only questions.", context: "I have intermediate ML knowledge but haven't built a transformer from scratch.", tone: "Patient, inquisitive, Socratic.", constraints: "- Never state answers directly\n- Ask only one question at a time\n- Build towards understanding", format: "Dialogue format", formula: "socratic" }
+                },
+                {
+                    title: "ReAct Agent Task",
+                    desc: "Multi-step reasoning + action agent prompt",
+                    tag: "Agents",
+                    data: { persona: "You are an autonomous AI agent.", task: "Research and summarize the latest developments in Rust async runtimes.", context: "I need a decision on whether to switch from tokio to async-std for a new project.", tone: "Methodical, evidence-based.", constraints: "- Show Thought/Action/Observation steps\n- Cite sources\n- End with Recommendation", format: "ReAct trace + Final Answer", formula: "react" }
+                },
+                {
+                    title: "Dataset Generation Prompt",
+                    desc: "Generate synthetic training data",
+                    tag: "ML",
+                    data: { persona: "You are an ML data engineer.", task: "Generate 20 synthetic question-answer pairs for fine-tuning a coding assistant.", context: "Focus on Rust error handling patterns. Difficulty: intermediate to advanced.", tone: "Technical, precise.", constraints: "- Diverse error types (Result, Option, ?, panic)\n- Realistic code snippets\n- Include edge cases", format: "JSONL with fields: question, answer, difficulty", formula: "icio" }
+                },
+            ]
+        },
+    ];
+
+    // ── Render Formula Cards ───────────────────────────────────────────────────
+    function renderFormulaCards() {
+        if (!formulaGrid) return;
+        formulaGrid.innerHTML = "";
+        FORMULAS.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "pl-formula-card" + (f.id === "default" ? " active" : "");
+            card.dataset.formulaId = f.id;
+            card.innerHTML = `<div class="pl-formula-card-icon">${f.icon}</div><div class="pl-formula-card-label">${f.label}</div>`;
+            card.addEventListener("click", () => selectFormula(f.id));
+            formulaGrid.appendChild(card);
+        });
+    }
+
+    function selectFormula(id) {
+        formulaHidden.value = id;
+        const formula = FORMULAS.find(f => f.id === id);
+        if (formulaBadge) formulaBadge.textContent = formula ? formula.label : id.toUpperCase();
+        if (formulaInfo) formulaInfo.textContent = formula ? formula.desc : "";
+        formulaGrid.querySelectorAll(".pl-formula-card").forEach(card => {
+            card.classList.toggle("active", card.dataset.formulaId === id);
+        });
+        assemblePrompt();
+    }
+
+    renderFormulaCards();
+
+    // ── Token Counter ──────────────────────────────────────────────────────────
+    function updateTokenCounter(text) {
+        if (!tokenCounter) return;
+        // Rough estimate: 1 token ≈ 4 chars
+        const tokens = Math.ceil((text || "").length / 4);
+        tokenCounter.textContent = `~${tokens} tokens`;
+        tokenCounter.classList.toggle("warn", tokens > 1500 && tokens <= 3000);
+        tokenCounter.classList.toggle("high", tokens > 3000);
+    }
+
+    // ── Prompt History ─────────────────────────────────────────────────────────
+    function addToHistory(promptText) {
+        if (!promptText.trim() || promptHistory[0] === promptText) return;
+        promptHistory.unshift(promptText);
+        if (promptHistory.length > 20) promptHistory.pop();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        if (!historyList) return;
+        historyList.innerHTML = "";
+        if (promptHistory.length === 0) {
+            historyList.innerHTML = `<div style="padding:10px 12px;font-size:0.75rem;color:rgba(255,255,255,0.3)">No history yet.</div>`;
+            return;
+        }
+        promptHistory.forEach((p, i) => {
+            const el = document.createElement("div");
+            el.className = "pl-history-item";
+            el.innerHTML = `<div class="pl-history-item-meta">#${i + 1} · ${p.length} chars</div>${p.substring(0, 90)}${p.length > 90 ? "…" : ""}`;
+            el.addEventListener("click", () => {
+                resultPrompt.value = p;
+                updateTokenCounter(p);
+                historyDrawer.classList.add("hidden");
+            });
+            historyList.appendChild(el);
+        });
+    }
+
+    if (historyBtn) {
+        historyBtn.addEventListener("click", () => historyDrawer.classList.toggle("hidden"));
+    }
+    if (historyClear) {
+        historyClear.addEventListener("click", () => {
+            promptHistory = [];
+            renderHistory();
+        });
+    }
+
+    // ── Template Gallery ───────────────────────────────────────────────────────
+    function openGallery() {
+        if (!galleryDrawer) return;
+        galleryDrawer.classList.remove("hidden");
+        renderGallery("");
+        if (gallerySearch) { gallerySearch.value = ""; gallerySearch.focus(); }
+    }
+    function closeGallery() {
+        if (galleryDrawer) galleryDrawer.classList.add("hidden");
+    }
+
+    function renderGallery(query) {
+        if (!galleryBody) return;
+        const q = query.toLowerCase().trim();
+        galleryBody.innerHTML = "";
+        TEMPLATE_CATEGORIES.forEach(cat => {
+            const filtered = q ? cat.templates.filter(t =>
+                t.title.toLowerCase().includes(q) ||
+                t.desc.toLowerCase().includes(q) ||
+                t.tag.toLowerCase().includes(q)
+            ) : cat.templates;
+            if (filtered.length === 0) return;
+
+            const section = document.createElement("div");
+            section.className = "pl-gallery-category";
+            section.innerHTML = `<div class="pl-gallery-category-label">${cat.label}</div>`;
+
+            filtered.forEach(tmpl => {
+                const card = document.createElement("div");
+                card.className = "pl-gallery-card";
+                card.innerHTML = `
+                    <div class="pl-gallery-card-title">
+                        ${tmpl.title}
+                        <span class="pl-gallery-card-tag">${tmpl.tag}</span>
+                    </div>
+                    <div class="pl-gallery-card-desc">${tmpl.desc}</div>
+                `;
+                card.addEventListener("click", () => applyTemplate(tmpl.data));
+                section.appendChild(card);
+            });
+
+            galleryBody.appendChild(section);
+        });
+
+        if (galleryBody.children.length === 0) {
+            galleryBody.innerHTML = `<div style="padding:24px;text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem">No templates match "${query}"</div>`;
+        }
+    }
+
+    function applyTemplate(data) {
+        if (personaInput)     personaInput.value     = data.persona     || "";
+        if (taskInput)        taskInput.value        = data.task        || "";
+        if (contextInput)     contextInput.value     = data.context     || "";
+        if (toneInput)        toneInput.value        = data.tone        || "";
+        if (constraintsInput) constraintsInput.value = data.constraints || "";
+        if (formatInput)      formatInput.value      = data.format      || "";
+        if (examplesInput)    examplesInput.value    = data.examples    || "";
+        selectFormula(data.formula || "default");
+        assemblePrompt();
+        updatePromptStrength();
+        closeGallery();
+        addNotification("Prompt Lab", "Template loaded.", "success");
+    }
+
+    if (openGalleryBtn) openGalleryBtn.addEventListener("click", openGallery);
+    if (galleryClose)   galleryClose.addEventListener("click", closeGallery);
+    if (galleryOverlay) galleryOverlay.addEventListener("click", closeGallery);
+    if (gallerySearch) {
+        gallerySearch.addEventListener("input", e => renderGallery(e.target.value));
+    }
+
+    // ── Quick-fill Chips ───────────────────────────────────────────────────────
+    document.querySelectorAll(".pl-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+            const targetId = chip.dataset.target;
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            const val = chip.textContent.trim();
+            if (target.value) {
+                target.value = target.value.trimEnd() + ", " + val;
+            } else {
+                target.value = val;
+            }
+            assemblePrompt();
+            updatePromptStrength();
+        });
+    });
+
+    // ── Strength Meter ─────────────────────────────────────────────────────────
     function updatePromptStrength() {
         let score = 0;
         if (personaInput.value.trim().length > 5) score++;
@@ -6231,56 +6601,27 @@ function initPromptLab() {
         const percentage = (score / 5) * 100;
         if (strengthBarFill) {
             strengthBarFill.style.width = percentage + "%";
-            
-            // Color updates
             if (score <= 2) {
                 strengthBarFill.style.background = "var(--error-color)";
-                if (strengthLabel) {
-                    strengthLabel.style.color = "var(--error-color)";
-                    strengthLabel.textContent = `Weak (${score}/5)`;
-                }
+                if (strengthLabel) { strengthLabel.style.color = "var(--error-color)"; strengthLabel.textContent = `Weak (${score}/5)`; }
             } else if (score <= 4) {
                 strengthBarFill.style.background = "var(--accent-color)";
-                if (strengthLabel) {
-                    strengthLabel.style.color = "var(--accent-color)";
-                    strengthLabel.textContent = `Moderate (${score}/5)`;
-                }
+                if (strengthLabel) { strengthLabel.style.color = "var(--accent-color)"; strengthLabel.textContent = `Moderate (${score}/5)`; }
             } else {
                 strengthBarFill.style.background = "var(--response-color)";
-                if (strengthLabel) {
-                    strengthLabel.style.color = "var(--response-color)";
-                    strengthLabel.textContent = `Optimized (${score}/5) ✨`;
-                }
+                if (strengthLabel) { strengthLabel.style.color = "var(--response-color)"; strengthLabel.textContent = `Optimized (${score}/5) ✨`; }
             }
         }
     }
 
-    // Load custom presets on startup
+    // ── Custom Presets ─────────────────────────────────────────────────────────
     function refreshCustomPresets() {
         invoke("load_prompt_presets")
-            .then(presets => {
-                loadedCustomPresets = presets;
-                // Keep the default static options
-                templateSelect.innerHTML = `
-                    <option value="">Load Preset...</option>
-                    <option value="game">Endless Runner Game Concept</option>
-                    <option value="app">To-Do List App Features</option>
-                    <option value="script">Lua Scripting Template</option>
-                `;
-                // Append custom ones
-                Object.keys(presets).forEach(name => {
-                    const opt = document.createElement("option");
-                    opt.value = `custom_${name}`;
-                    opt.textContent = name;
-                    templateSelect.appendChild(opt);
-                });
-            })
+            .then(presets => { loadedCustomPresets = presets; })
             .catch(err => console.error("Error loading presets:", err));
     }
-
     refreshCustomPresets();
 
-    // Toggle save preset UI
     if (togglePresetInputBtn) {
         togglePresetInputBtn.addEventListener("click", () => {
             if (presetNameInput.style.display === "none") {
@@ -6291,311 +6632,173 @@ function initPromptLab() {
                 presetNameInput.style.display = "none";
                 savePresetBtn.style.display = "none";
                 presetNameInput.value = "";
-                togglePresetInputBtn.textContent = "💾 Save Current";
+                togglePresetInputBtn.textContent = "💾";
             }
         });
     }
 
-    // Save Preset handler
     if (savePresetBtn) {
         savePresetBtn.addEventListener("click", () => {
             const name = presetNameInput.value.trim();
-            if (!name) {
-                addNotification("Prompt Lab Error", "Please enter a preset name.", "error");
-                return;
-            }
-
+            if (!name) { addNotification("Prompt Lab", "Enter a preset name.", "error"); return; }
             const schema = {
-                persona: personaInput.value.trim(),
-                task: taskInput.value.trim(),
-                context: contextInput.value.trim(),
-                tone: toneInput.value.trim(),
-                constraints: constraintsInput.value.trim(),
-                format: formatInput.value.trim(),
-                examples: examplesInput.value.trim(),
-                formula: formulaSelect.value
+                persona: personaInput.value.trim(), task: taskInput.value.trim(),
+                context: contextInput.value.trim(), tone: toneInput.value.trim(),
+                constraints: constraintsInput.value.trim(), format: formatInput.value.trim(),
+                examples: examplesInput.value.trim(), formula: formulaHidden.value
             };
-
             invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(schema) })
                 .then(() => {
                     addNotification("Prompt Lab", `Preset "${name}" saved!`, "success");
                     presetNameInput.style.display = "none";
                     savePresetBtn.style.display = "none";
                     presetNameInput.value = "";
-                    togglePresetInputBtn.textContent = "💾 Save Current";
+                    togglePresetInputBtn.textContent = "💾";
                     refreshCustomPresets();
                 })
-                .catch(err => {
-                    addNotification("Prompt Lab Error", "Failed to save preset: " + err, "error");
-                });
+                .catch(err => addNotification("Prompt Lab", "Failed: " + err, "error"));
         });
     }
 
-    // AI Optimize handler
+    // ── AI Optimize ────────────────────────────────────────────────────────────
     if (optimizeAiBtn) {
         optimizeAiBtn.addEventListener("click", async () => {
             const currentTask = taskInput.value.trim();
-            if (!currentTask) {
-                addNotification("Prompt Lab Error", "Provide a rough task description in the Task field first.", "error");
-                return;
-            }
-
+            if (!currentTask) { addNotification("Prompt Lab", "Add a task first.", "error"); return; }
             optimizeAiBtn.disabled = true;
-            const originalText = optimizeAiBtn.textContent;
-            optimizeAiBtn.textContent = "Optimizing...";
-
+            const orig = optimizeAiBtn.textContent;
+            optimizeAiBtn.textContent = "…";
             try {
                 const schema = await invoke("optimize_raw_prompt", { rawText: currentTask });
-                personaInput.value = schema.persona;
-                taskInput.value = schema.task;
-                contextInput.value = schema.context;
-                toneInput.value = schema.tone;
+                personaInput.value     = schema.persona;
+                taskInput.value        = schema.task;
+                contextInput.value     = schema.context;
+                toneInput.value        = schema.tone;
                 constraintsInput.value = schema.constraints;
-                formatInput.value = schema.format;
-
-                addNotification("Prompt Lab", "AI Optimization completed!", "success");
+                formatInput.value      = schema.format;
+                addNotification("Prompt Lab", "AI Optimization done!", "success");
                 assemblePrompt();
                 updatePromptStrength();
             } catch (err) {
-                addNotification("Prompt Lab Error", "Optimization failed: " + err, "error");
+                addNotification("Prompt Lab", "Optimization failed: " + err, "error");
             } finally {
                 optimizeAiBtn.disabled = false;
-                optimizeAiBtn.textContent = originalText;
+                optimizeAiBtn.textContent = orig;
             }
         });
     }
 
-    // Progressive Disclosure Toggle
-    advancedToggle.addEventListener("click", () => {
-        advancedFields.classList.toggle("hidden");
-        advancedToggle.textContent = advancedFields.classList.contains("hidden") 
-            ? "⚙️ Advanced Options" : "⚙️ Hide Advanced Options";
-    });
-    
-    // Templates Change handler
-    templateSelect.addEventListener("change", (e) => {
-        const val = e.target.value;
-        if (!val) return;
+    // ── Advanced Toggle ────────────────────────────────────────────────────────
+    if (advancedToggle) {
+        advancedToggle.addEventListener("click", () => {
+            advancedFields.classList.toggle("hidden");
+            advancedToggle.textContent = advancedFields.classList.contains("hidden")
+                ? "⚙️ Few-Shot Examples" : "⚙️ Hide Examples";
+        });
+    }
 
-        if (val.startsWith("custom_")) {
-            const name = val.substring(7);
-            const schemaStr = loadedCustomPresets[name];
-            if (schemaStr) {
-                try {
-                    const schema = JSON.parse(schemaStr);
-                    personaInput.value = schema.persona || "";
-                    taskInput.value = schema.task || "";
-                    contextInput.value = schema.context || "";
-                    toneInput.value = schema.tone || "";
-                    constraintsInput.value = schema.constraints || "";
-                    formatInput.value = schema.format || "";
-                    examplesInput.value = schema.examples || "";
-                    formulaSelect.value = schema.formula || "default";
-                    assemblePrompt();
-                    updatePromptStrength();
-                } catch (err) {
-                    console.error("Failed to parse custom preset:", err);
-                }
-            }
-        } else if (val === "game") {
-            personaInput.value = "You are a creative game designer.";
-            taskInput.value = "Design an endless runner game concept for mobile devices.";
-            contextInput.value = "Target audience: kids, ages 8-14. Theme: Cyberpunk.";
-            toneInput.value = "Upbeat, energetic, and concise.";
-            constraintsInput.value = "- List 3 unique gameplay mechanics\n- Max 150 words total";
-            formatInput.value = "JSON with keys: title, mechanics, art_style";
-            examplesInput.value = "";
-            formulaSelect.value = "default";
-        } else if (val === "app") {
-            personaInput.value = "You are an expert product manager.";
-            taskInput.value = "Create a feature list for a minimalist To-Do list app.";
-            contextInput.value = "Target audience: busy professionals who hate complex apps.";
-            toneInput.value = "Professional and structured.";
-            constraintsInput.value = "- Exactly 5 features\n- Each feature should have a short name and 1 sentence description";
-            formatInput.value = "Markdown bulleted list";
-            examplesInput.value = "";
-            formulaSelect.value = "default";
-        } else if (val === "script") {
-            personaInput.value = "You are a senior Lua developer.";
-            taskInput.value = "Write a Lua script that parses a string and extracts all email addresses.";
-            contextInput.value = "This is for a data processing pipeline. No external libraries available.";
-            toneInput.value = "Technical and precise.";
-            constraintsInput.value = "- Include code comments explaining the regex\n- Must be a single function `extract_emails(text)`";
-            formatInput.value = "Lua code block only";
-            examplesInput.value = "";
-            formulaSelect.value = "default";
-        }
-        assemblePrompt();
-        updatePromptStrength();
-    });
-
-    // Prompt Assembly Logic using Lua Engine backend
+    // ── Prompt Assembly ────────────────────────────────────────────────────────
     async function assemblePrompt() {
-        const persona = personaInput.value;
-        const task = taskInput.value;
-        const context = contextInput.value;
-        const tone = toneInput.value;
+        const persona     = personaInput.value;
+        const task        = taskInput.value;
+        const context     = contextInput.value;
+        const tone        = toneInput.value;
         const constraints = constraintsInput.value;
-        const format = formatInput.value;
-        const examples = examplesInput.value;
-        const formula = formulaSelect.value;
-        
+        const format      = formatInput.value;
+        const examples    = examplesInput.value;
+        const formula     = formulaHidden.value;
+
         try {
             const assembled = await invoke("assemble_prompt_via_lua_cmd", {
                 persona, task, context, tone, constraints, format, examples, formula
             });
             resultPrompt.value = assembled;
-        } catch (err) {
-            console.error("Lua assembly failed:", err);
-            // Fallback to simple js concatenation
-            let promptParts = [];
-            if (persona.trim()) promptParts.push(`**Role/Persona:**\n${persona.trim()}`);
-            if (task.trim()) promptParts.push(`**Task/Objective:**\n${task.trim()}`);
-            if (context.trim()) promptParts.push(`**Context/Background:**\n${context.trim()}`);
-            if (tone.trim()) promptParts.push(`**Tone/Style:**\n${tone.trim()}`);
-            if (constraints.trim()) promptParts.push(`**Constraints:**\n${constraints.trim()}`);
-            if (format.trim()) promptParts.push(`**Output Format:**\n${format.trim()}`);
-            resultPrompt.value = promptParts.join("\n\n");
+            updateTokenCounter(assembled);
+        } catch {
+            let parts = [];
+            if (persona.trim())     parts.push(`**Role/Persona:**\n${persona.trim()}`);
+            if (task.trim())        parts.push(`**Task/Objective:**\n${task.trim()}`);
+            if (context.trim())     parts.push(`**Context/Background:**\n${context.trim()}`);
+            if (tone.trim())        parts.push(`**Tone/Style:**\n${tone.trim()}`);
+            if (constraints.trim()) parts.push(`**Constraints:**\n${constraints.trim()}`);
+            if (format.trim())      parts.push(`**Output Format:**\n${format.trim()}`);
+            const fallback = parts.join("\n\n");
+            resultPrompt.value = fallback;
+            updateTokenCounter(fallback);
         }
     }
 
     generateBtn.addEventListener("click", () => {
-        assemblePrompt();
-        addNotification("Prompt Lab", "Prompt generated successfully.", "success");
-    });
-    
-    // Auto-update on blur or select change
-    [personaInput, taskInput, contextInput, toneInput, constraintsInput, formatInput, examplesInput, formulaSelect].forEach(el => {
-        el.addEventListener("input", () => {
-            assemblePrompt();
-            updatePromptStrength();
-        });
-        el.addEventListener("change", () => {
-            assemblePrompt();
-            updatePromptStrength();
+        assemblePrompt().then(() => {
+            addToHistory(resultPrompt.value);
+            addNotification("Prompt Lab", "Prompt generated.", "success");
         });
     });
 
-    const formulaInfo = document.getElementById("pl-formula-info");
-    const formulaDescriptions = {
-        "default": "Default: Standard prompt construction focusing on Persona, Objective, Constraints, and Examples.",
-        "aida": "AIDA: Attention, Interest, Desire, Action. Ideal for persuasive copywriting, marketing messages, and engaging content.",
-        "scqa": "SCQA: Situation, Complication, Question, Answer. Excellent for consulting, structured analysis, and diagnostic problem solving.",
-        "pastor": "PASTOR: Problem, Amplify, Story, Transformation, Offer, Response. Highly effective for landing pages and value-based pitches.",
-        "pas": "PAS: Problem, Agitate, Solution. A classic, punchy copywriting framework for quick conversion and highlighting pain points.",
-        "cot": "CoT: Chain of Thought. Guides the AI to decompose complex reasoning tasks step-by-step. Excellent for logic and coding.",
-        "tot": "ToT: Tree of Thought. Forces the AI to branch, self-evaluate, and search paths. Best for complex design and strategic planning."
-    };
+    // Auto-update on any field change
+    [personaInput, taskInput, contextInput, toneInput, constraintsInput, formatInput, examplesInput].forEach(el => {
+        el.addEventListener("input", () => { assemblePrompt(); updatePromptStrength(); });
+    });
 
-    if (formulaSelect && formulaInfo) {
-        formulaSelect.addEventListener("change", () => {
-            const desc = formulaDescriptions[formulaSelect.value] || "Select a formula to apply structured copywriting/reasoning flow.";
-            formulaInfo.textContent = desc;
-        });
-    }
-
-    // Tauri JPE call supporting reading level
+    // ── JPE Explanation ────────────────────────────────────────────────────────
     explainBtn.addEventListener("click", async () => {
         const text = resultPrompt.value.trim();
-        if (!text) {
-            addNotification("Prompt Lab Error", "Generate a prompt first to explain it.", "error");
-            return;
-        }
-        
-        resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation via AI...</span>`;
+        if (!text) { addNotification("Prompt Lab", "Generate a prompt first.", "error"); return; }
+        resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation…</span>`;
         explainBtn.disabled = true;
-        
-        const readingLevel = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
-        
+        const level = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
         try {
-            const explanation = await invoke("generate_jpe_explanation_with_level", { promptText: text, readingLevel });
+            const explanation = await invoke("generate_jpe_explanation_with_level", { promptText: text, readingLevel: level });
             resultJpe.innerHTML = `<div class="jpe-content">${explanation.replace(/\n/g, '<br>')}</div>`;
         } catch (err) {
-            console.error("JPE error:", err);
-            resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)">Error generating explanation: ${err}</span>`;
-            addNotification("Prompt Lab Error", "Failed to generate explanation.", "error");
+            resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)">Error: ${err}</span>`;
+            addNotification("Prompt Lab", "Explanation failed.", "error");
         } finally {
             explainBtn.disabled = false;
         }
     });
 
     copyPromptBtn.addEventListener("click", () => {
-        if (resultPrompt.value) {
-            navigator.clipboard.writeText(resultPrompt.value);
-            addNotification("Prompt Lab", "Prompt copied to clipboard.", "success");
-        }
+        if (resultPrompt.value) { navigator.clipboard.writeText(resultPrompt.value); addNotification("Prompt Lab", "Prompt copied.", "success"); }
     });
-
     copyJpeBtn.addEventListener("click", () => {
-        if (resultJpe.innerText && !resultJpe.innerText.includes("Click \"Explain")) {
-            navigator.clipboard.writeText(resultJpe.innerText);
-            addNotification("Prompt Lab", "Explanation copied to clipboard.", "success");
-        }
+        if (resultJpe.innerText && !resultJpe.innerText.includes("Generate")) { navigator.clipboard.writeText(resultJpe.innerText); addNotification("Prompt Lab", "Explanation copied.", "success"); }
     });
-    
     sendChatBtn.addEventListener("click", () => {
-        if (resultPrompt.value) {
-            // Switch to Chat view
-            document.querySelector('.nav-tab[data-view="chat"]')?.click();
-            
-            // Paste prompt into chat input
-            const chatInput = document.getElementById("user-input");
-            if (chatInput) {
-                chatInput.value = resultPrompt.value;
-                chatInput.focus();
-                
-                // Adjust textarea height
-                chatInput.style.height = "auto";
-                chatInput.style.height = Math.min(chatInput.scrollHeight, 300) + "px";
-                
-                addNotification("Prompt Lab", "Prompt transferred to Chat.", "info");
-            }
+        if (!resultPrompt.value) return;
+        document.querySelector('.nav-tab[data-view="chat"]')?.click();
+        const chatInput = document.getElementById("user-input");
+        if (chatInput) {
+            chatInput.value = resultPrompt.value;
+            chatInput.focus();
+            chatInput.style.height = "auto";
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 300) + "px";
+            addNotification("Prompt Lab", "Prompt sent to Chat.", "info");
         }
     });
 
-    // Export JSON handler
+    // ── Export handlers ────────────────────────────────────────────────────────
     if (exportJsonBtn) {
         exportJsonBtn.addEventListener("click", () => {
-            if (!resultPrompt.value.trim()) {
-                addNotification("Prompt Lab Error", "Generate a prompt first to export.", "error");
-                return;
-            }
+            if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
             const schema = {
-                persona: personaInput.value.trim(),
-                task: taskInput.value.trim(),
-                context: contextInput.value.trim(),
-                tone: toneInput.value.trim(),
-                constraints: constraintsInput.value.trim(),
-                format: formatInput.value.trim(),
-                examples: examplesInput.value.trim(),
-                formula: formulaSelect.value,
+                persona: personaInput.value.trim(), task: taskInput.value.trim(),
+                context: contextInput.value.trim(), tone: toneInput.value.trim(),
+                constraints: constraintsInput.value.trim(), format: formatInput.value.trim(),
+                examples: examplesInput.value.trim(), formula: formulaHidden.value,
                 assembled_prompt: resultPrompt.value
             };
-            const jsonStr = JSON.stringify(schema, null, 2);
-            navigator.clipboard.writeText(jsonStr);
-            addNotification("Prompt Lab", "Assembled JSON Schema copied to clipboard.", "success");
+            navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
+            addNotification("Prompt Lab", "JSON Schema copied.", "success");
         });
     }
-
-    // Export Lua Automation Script handler (runs prompt automatically in S-Term Agent tab)
     if (exportLuaBtn) {
         exportLuaBtn.addEventListener("click", () => {
-            if (!resultPrompt.value.trim()) {
-                addNotification("Prompt Lab Error", "Generate a prompt first to export.", "error");
-                return;
-            }
-            const escapedPrompt = resultPrompt.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
-            const luaScript = `-- S-Term Prompt Lab Automation Macro\n` +
-                              `-- Generated on ${new Date().toISOString()}\n\n` +
-                              `local prompt = "${escapedPrompt}"\n\n` +
-                              `print("[Automation] Executing Prompt Lab macro in S-Term...")\n` +
-                              `-- Send the prompt to the active LLM provider and fetch the response\n` +
-                              `local response = sendPrompt(prompt)\n` +
-                              `print("[Automation] AI Response:")\n` +
-                              `print(response)\n`;
-            
-            navigator.clipboard.writeText(luaScript);
-            addNotification("Prompt Lab", "Lua automation macro copied to clipboard.", "success");
+            if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
+            const esc = resultPrompt.value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+            const lua = `-- S-Term Prompt Lab Macro\n-- ${new Date().toISOString()}\nlocal prompt = "${esc}"\nprint("[Macro] Sending prompt...")\nlocal response = sendPrompt(prompt)\nprint("[Macro] Response:")\nprint(response)\n`;
+            navigator.clipboard.writeText(lua);
+            addNotification("Prompt Lab", "Lua macro copied.", "success");
         });
     }
 

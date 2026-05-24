@@ -4921,6 +4921,408 @@ body.crt-flicker-disabled .crt-flicker {
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
 }
 
+/* ── Prompt Lab: Header Title ──────────────────────────────────────────────── */
+.pl-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pl-header-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.pl-header-title h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--accent-color);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* ── Prompt Lab: Gallery Button ────────────────────────────────────────────── */
+.pl-gallery-btn {
+    background: rgba(var(--accent-rgb), 0.08);
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    color: var(--accent-color);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-snap),
+                border-color var(--dur-fast) var(--ease-snap);
+}
+.pl-gallery-btn:hover {
+    background: rgba(var(--accent-rgb), 0.16);
+    border-color: rgba(var(--accent-rgb), 0.5);
+}
+
+/* ── Prompt Lab: Quick-Fill Chips ──────────────────────────────────────────── */
+.pl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+}
+.pl-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.65);
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background var(--dur-micro) var(--ease-snap),
+                color var(--dur-micro) var(--ease-snap),
+                border-color var(--dur-micro) var(--ease-snap);
+    user-select: none;
+}
+.pl-chip:hover {
+    background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--accent-rgb), 0.35);
+    color: var(--accent-color);
+}
+.pl-chip:active {
+    transform: scale(0.93);
+}
+
+/* ── Prompt Lab: Field Header Row ──────────────────────────────────────────── */
+.pl-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.pl-field-header label {
+    margin-bottom: 0;
+}
+.pl-optimize-btn {
+    background: transparent;
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-snap),
+                border-color var(--dur-fast) var(--ease-snap);
+}
+.pl-optimize-btn:hover {
+    background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--accent-rgb), 0.55);
+}
+
+/* ── Prompt Lab: Formula Card Section ─────────────────────────────────────── */
+.pl-formula-section {
+    margin-bottom: 14px;
+}
+.pl-formula-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.pl-formula-section-header label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0;
+}
+.pl-formula-active-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--background);
+    background: var(--accent-color);
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+}
+.pl-formula-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+.pl-formula-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 7px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-snap),
+                border-color var(--dur-fast) var(--ease-snap),
+                transform var(--dur-micro) var(--ease-snap);
+}
+.pl-formula-card:hover {
+    background: rgba(var(--accent-rgb), 0.07);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+.pl-formula-card:active {
+    transform: scale(0.93);
+}
+.pl-formula-card.active {
+    background: rgba(var(--accent-rgb), 0.13);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.12);
+}
+.pl-formula-card-icon {
+    font-size: 1rem;
+    line-height: 1;
+    margin-bottom: 3px;
+}
+.pl-formula-card-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+.pl-formula-card.active .pl-formula-card-label {
+    color: var(--accent-color);
+}
+
+/* ── Prompt Lab: Token Counter ─────────────────────────────────────────────── */
+.pl-token-counter {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.2px;
+    transition: color var(--dur-fast) var(--ease-snap);
+}
+.pl-token-counter.warn {
+    color: var(--warning-color);
+    border-color: rgba(var(--warning-rgb), 0.3);
+}
+.pl-token-counter.high {
+    color: var(--error-color);
+    border-color: rgba(var(--error-rgb), 0.3);
+}
+
+/* ── Prompt Lab: History Drawer ────────────────────────────────────────────── */
+.pl-history-drawer {
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--border-color);
+    max-height: 180px;
+    overflow-y: auto;
+    transition: max-height var(--dur-base) var(--ease-out-expo),
+                opacity var(--dur-base) var(--ease-out-expo);
+}
+.pl-history-drawer.hidden {
+    display: none;
+}
+.pl-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    position: sticky;
+    top: 0;
+    background: rgba(10, 13, 16, 0.95);
+    z-index: 1;
+}
+.pl-history-clear {
+    background: transparent;
+    border: none;
+    color: rgba(var(--error-rgb), 0.65);
+    font-size: 0.72rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: color var(--dur-micro) var(--ease-snap);
+}
+.pl-history-clear:hover {
+    color: var(--error-color);
+}
+.pl-history-list {
+    padding: 4px 0;
+}
+.pl-history-item {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--dur-micro) var(--ease-snap),
+                color var(--dur-micro) var(--ease-snap);
+}
+.pl-history-item:hover {
+    background: rgba(var(--accent-rgb), 0.07);
+    color: var(--foreground);
+}
+.pl-history-item .pl-history-item-meta {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 2px;
+}
+
+/* ── Prompt Lab: Template Gallery Drawer ───────────────────────────────────── */
+.pl-template-gallery {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+}
+.pl-template-gallery:not(.hidden) {
+    pointer-events: all;
+}
+.pl-template-gallery.hidden .pl-gallery-overlay,
+.pl-template-gallery.hidden .pl-gallery-panel {
+    opacity: 0;
+    pointer-events: none;
+}
+.pl-gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    transition: opacity var(--dur-base) var(--ease-standard);
+}
+.pl-template-gallery.hidden .pl-gallery-overlay {
+    opacity: 0;
+}
+.pl-gallery-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 420px;
+    height: 100%;
+    background: #0d1117;
+    border-left: 1px solid rgba(var(--accent-rgb), 0.2);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition: transform var(--dur-enter) var(--ease-out-expo),
+                opacity var(--dur-enter) var(--ease-out-expo);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+}
+.pl-template-gallery.hidden .pl-gallery-panel {
+    transform: translateX(100%);
+    opacity: 0;
+}
+.pl-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--foreground);
+}
+.pl-gallery-search {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--foreground);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    outline: none;
+    width: 150px;
+    transition: border-color var(--dur-fast) var(--ease-snap);
+}
+.pl-gallery-search:focus {
+    border-color: rgba(var(--accent-rgb), 0.5);
+}
+.pl-gallery-close {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.65);
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--dur-micro) var(--ease-snap),
+                color var(--dur-micro) var(--ease-snap);
+}
+.pl-gallery-close:hover {
+    background: rgba(var(--error-rgb), 0.15);
+    color: var(--error-color);
+    border-color: rgba(var(--error-rgb), 0.3);
+}
+.pl-gallery-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.pl-gallery-category {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pl-gallery-category-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.35);
+    padding: 0 4px;
+}
+.pl-gallery-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    padding: 10px 13px;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-snap),
+                border-color var(--dur-fast) var(--ease-snap),
+                transform var(--dur-micro) var(--ease-snap);
+}
+.pl-gallery-card:hover {
+    background: rgba(var(--accent-rgb), 0.07);
+    border-color: rgba(var(--accent-rgb), 0.25);
+    transform: translateX(-3px);
+}
+.pl-gallery-card:active {
+    transform: scale(0.97);
+}
+.pl-gallery-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.pl-gallery-card-desc {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1.35;
+}
+.pl-gallery-card-tag {
+    font-size: 0.62rem;
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
 /* Onboarding Wizard Overlay Styles */
 .onboarding-overlay {
     position: fixed;
