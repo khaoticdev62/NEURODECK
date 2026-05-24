@@ -88,7 +88,7 @@ import { marked } from 'marked';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
-import { ctrlPromptVisible, ctrlPromptTemplateMode,
+import { getCtrlPromptVisible, getCtrlPromptTemplateMode,
     openCtrlPromptOverlay, closeCtrlPromptOverlay, confirmCtrlPrompt,
     exitTemplateMode, cycleTemplatePlaceholder, navigateTemplatePlaceholder,
     confirmTemplateAndSend, navigateCtrlPromptList, navigateCtrlPromptCat,
@@ -2788,7 +2788,7 @@ const RADIAL_SEGMENTS = [
 
 function getGamepadFocusableElements() {
     // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
-    if (ctrlPromptVisible) return [];
+    if (getCtrlPromptVisible()) return [];
 
     // If state.notifications modal is open, focus only notif modal elements
     const notifModal = document.getElementById("notif-modal");
@@ -3091,8 +3091,8 @@ function pollGamepads() {
 
     // A Button (0) - Click active element / confirm prompt picker
     if (buttonPressed(0)) {
-        if (ctrlPromptVisible) {
-            if (ctrlPromptTemplateMode) {
+        if (getCtrlPromptVisible()) {
+            if (getCtrlPromptTemplateMode()) {
                 confirmTemplateAndSend();
             } else {
                 confirmCtrlPrompt();
@@ -3113,8 +3113,8 @@ function pollGamepads() {
 
     // B Button (1) - Close overlays/menus (ctrl prompt picker takes priority)
     if (buttonPressed(1)) {
-        if (ctrlPromptVisible) {
-            if (ctrlPromptTemplateMode) {
+        if (getCtrlPromptVisible()) {
+            if (getCtrlPromptTemplateMode()) {
                 exitTemplateMode();
             } else {
                 closeCtrlPromptOverlay();
@@ -3122,7 +3122,7 @@ function pollGamepads() {
             // skip normal B handling
         }
     }
-    if (buttonPressed(1) && !ctrlPromptVisible) {
+    if (buttonPressed(1) && !getCtrlPromptVisible()) {
         const settingsOverlay = document.getElementById("settings-overlay");
         const transferModal = document.getElementById("transfer-modal");
         const inspectDrawer = document.getElementById("inspect-drawer");
@@ -3163,16 +3163,23 @@ function pollGamepads() {
     if (buttonPressed(7)) {
         const shareView = document.getElementById("view-share");
         if (!(shareView && shareView.classList.contains("active"))) {
-            if (ctrlPromptVisible) {
-                ctrlPromptTemplateMode ? exitTemplateMode() : closeCtrlPromptOverlay();
+            if (getCtrlPromptVisible()) {
+                getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
             } else {
                 openCtrlPromptOverlay();
+                // Auto-show VK in gamepad mode so search field is immediately typeable
+                if (state.gamepadActive && window.showVirtualKeyboard) {
+                    setTimeout(() => {
+                        const searchEl = document.getElementById("ctrl-prompt-search");
+                        if (searchEl) { searchEl.focus(); window.showVirtualKeyboard(searchEl); }
+                    }, 120);
+                }
             }
         }
     }
 
     // X Button (2) - Go to Chat tab and focus input (blocked when prompt picker open)
-    if (buttonPressed(2) && !ctrlPromptVisible) {
+    if (buttonPressed(2) && !getCtrlPromptVisible()) {
         const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
         if (chatTab) {
             chatTab.click();
@@ -3191,7 +3198,7 @@ function pollGamepads() {
     }
 
     // Y Button (3) - Cycle active persona (blocked when prompt picker open)
-    if (buttonPressed(3) && !ctrlPromptVisible) {
+    if (buttonPressed(3) && !getCtrlPromptVisible()) {
         if (state.availablePersonas && state.availablePersonas.length > 0) {
             const currentIdx = state.availablePersonas.indexOf(state.activePersona);
             const nextIdx = (currentIdx + 1) % state.availablePersonas.length;
@@ -3216,12 +3223,12 @@ function pollGamepads() {
     }
 
     // L1 (4) / R1 (5) - When prompt overlay: switch categories; else cycle app tabs
-    if ((buttonPressed(4) || buttonPressed(5)) && ctrlPromptVisible) {
+    if ((buttonPressed(4) || buttonPressed(5)) && getCtrlPromptVisible()) {
         navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
     }
 
     // L1 (4) / R1 (5) - Cycle tabs; when SSH tab active, also load focused SSH profile
-    if ((buttonPressed(4) || buttonPressed(5)) && !ctrlPromptVisible) {
+    if ((buttonPressed(4) || buttonPressed(5)) && !getCtrlPromptVisible()) {
         const sshView = document.getElementById("view-ssh");
         if (sshView && sshView.classList.contains("active")) {
             // L1 in SSH: load the currently D-pad-focused profile (A-button equivalent)
@@ -3251,7 +3258,7 @@ function pollGamepads() {
     }
 
     // Select Button (8) - Run Canvas Code (blocked when prompt picker open)
-    if (buttonPressed(8) && !ctrlPromptVisible) {
+    if (buttonPressed(8) && !getCtrlPromptVisible()) {
         const runBtn = document.getElementById("canvas-run-btn");
         if (runBtn) {
             runBtn.click();
@@ -3259,7 +3266,7 @@ function pollGamepads() {
     }
 
     // Start Button (9) - Toggle settings modal (blocked when prompt picker open)
-    if (buttonPressed(9) && !ctrlPromptVisible) {
+    if (buttonPressed(9) && !getCtrlPromptVisible()) {
         const settingsOverlay = document.getElementById("settings-overlay");
         if (settingsOverlay) {
             if (settingsOverlay.classList.contains("active")) {
@@ -3277,15 +3284,15 @@ function pollGamepads() {
     // Otherwise: move gamepad focus index
     if (buttonPressed(12) || buttonPressed(13)) {
         const goUp = buttonPressed(12);
-        if (ctrlPromptVisible) {
-            if (ctrlPromptTemplateMode) {
+        if (getCtrlPromptVisible()) {
+            if (getCtrlPromptTemplateMode()) {
                 navigateTemplatePlaceholder(goUp ? -1 : 1);
             } else {
                 navigateCtrlPromptList(goUp ? -1 : 1);
             }
         }
     }
-    if ((buttonPressed(12) || buttonPressed(13)) && !ctrlPromptVisible) {
+    if ((buttonPressed(12) || buttonPressed(13)) && !getCtrlPromptVisible()) {
         const shareView = document.getElementById("view-share");
         const sshView = document.getElementById("view-ssh");
         const goUp = buttonPressed(12);
@@ -3317,9 +3324,9 @@ function pollGamepads() {
     }
 
     // D-pad Left (14) / Right (15) - when prompt overlay: cycle category or placeholder; else normal
-    if ((buttonPressed(14) || buttonPressed(15)) && ctrlPromptVisible) {
+    if ((buttonPressed(14) || buttonPressed(15)) && getCtrlPromptVisible()) {
         const goLeft = buttonPressed(14);
-        if (ctrlPromptTemplateMode) {
+        if (getCtrlPromptTemplateMode()) {
             cycleTemplatePlaceholder(goLeft ? -1 : 1);
         } else {
             navigateCtrlPromptCat(goLeft ? -1 : 1);
@@ -3327,7 +3334,7 @@ function pollGamepads() {
     }
 
     // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
-    if ((buttonPressed(14) || buttonPressed(15)) && !ctrlPromptVisible) {
+    if ((buttonPressed(14) || buttonPressed(15)) && !getCtrlPromptVisible()) {
         const els = getGamepadFocusableElements();
         const activeEl = els[state.gamepadFocusIndex];
         const handled = activeEl && (() => {
@@ -3368,27 +3375,30 @@ function pollGamepads() {
     }
 
     // Steam Deck Grip Buttons Polling (indices 17-20)
-    // L4 (17) -> Toggle Left Sidebar
-    if (buttonPressed(17)) {
-        const sidebar = document.getElementById("sidebar");
-        if (sidebar) sidebar.classList.toggle("collapsed");
-    }
+    // Grip buttons are suppressed while the ctrl-prompt overlay is open
+    if (!getCtrlPromptVisible()) {
+        // L4 (17) -> Toggle Left Sidebar
+        if (buttonPressed(17)) {
+            const sidebar = document.getElementById("sidebar");
+            if (sidebar) sidebar.classList.toggle("collapsed");
+        }
 
-    // R4 (18) -> Toggle Right Context Drawer
-    if (buttonPressed(18)) {
-        const inspectDrawer = document.getElementById("inspect-drawer");
-        if (inspectDrawer) inspectDrawer.classList.toggle("collapsed");
-    }
+        // R4 (18) -> Toggle Right Context Drawer
+        if (buttonPressed(18)) {
+            const inspectDrawer = document.getElementById("inspect-drawer");
+            if (inspectDrawer) inspectDrawer.classList.toggle("collapsed");
+        }
 
-    // L5 (19) -> Clear Visual Canvas
-    if (buttonPressed(19)) {
-        const clearBtn = document.getElementById("canvas-clear-btn");
-        if (clearBtn) clearBtn.click();
-    }
+        // L5 (19) -> Clear Visual Canvas
+        if (buttonPressed(19)) {
+            const clearBtn = document.getElementById("canvas-clear-btn");
+            if (clearBtn) clearBtn.click();
+        }
 
-    // R5 (20) -> Cycle Theme
-    if (buttonPressed(20)) {
-        cycleTheme();
+        // R5 (20) -> Cycle Theme
+        if (buttonPressed(20)) {
+            cycleTheme();
+        }
     }
 
     // === RADIAL MENU — L2 Trigger (button 6 / axis 5) ===
@@ -3453,7 +3463,7 @@ function pollGamepads() {
     }
 
     // B button — toggle virtual keyboard (when nothing else consumed B)
-    if (buttonPressed(1) && !ctrlPromptVisible) {
+    if (buttonPressed(1) && !getCtrlPromptVisible()) {
         const vkEl = document.getElementById("vk-overlay");
         if (vkEl && vkEl.classList.contains("vk-visible")) {
             if (window.hideVirtualKeyboard) window.hideVirtualKeyboard();
@@ -6516,9 +6526,7 @@ async function checkOnboarding() {
     try {
         const completed = localStorage.getItem("neurodeck_onboarding_complete");
         if (completed === "true") return; // Already done — skip
-        let hasKey = false;
-        try { hasKey = !!(await invoke("get_gemini_api_key")); } catch (_) {}
-        if (!hasKey) showOnboardingWizard();
+        showOnboardingWizard();
     } catch (e) {
         console.error("Failed to check onboarding state:", e);
     }
@@ -6541,6 +6549,7 @@ async function showOnboardingWizard() {
                     <span class="onboarding-step-dot" data-step="3"></span>
                     <span class="onboarding-step-dot" data-step="4"></span>
                     <span class="onboarding-step-dot" data-step="5"></span>
+                    <span class="onboarding-step-dot" data-step="6"></span>
                 </div>
             </header>
 
@@ -6728,8 +6737,43 @@ async function showOnboardingWizard() {
                     </div>
                 </div>
 
-                <!-- Slide 5: System Integration Diagnostics (6-check) -->
+                <!-- Slide 5: Controller / Gamepad Guide -->
                 <div class="onboarding-slide" id="slide-5">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 8px;">CONTROLLER & GAMEPAD GUIDE</h3>
+                    <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 12px;">Full Steam Deck & gamepad support is built-in. No configuration needed.</p>
+
+                    <div class="ob-controller-grid">
+                        <div class="ob-ctrl-section">
+                            <div class="ob-ctrl-header">NAVIGATION</div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">D-Pad</span><span class="ob-ctrl-desc">Navigate lists, chat history, menus</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">L-Stick</span><span class="ob-ctrl-desc">Scroll chat / terminal output</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">L1 / R1</span><span class="ob-ctrl-desc">Previous / Next tab</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">L2 / R2</span><span class="ob-ctrl-desc">Open radial menu / Confirm action</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">SELECT</span><span class="ob-ctrl-desc">Toggle sidebar open/closed</span></div>
+                        </div>
+                        <div class="ob-ctrl-section">
+                            <div class="ob-ctrl-header">ACTIONS</div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge ob-ctrl-a">A</span><span class="ob-ctrl-desc">Confirm / Select / Send message</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge ob-ctrl-b">B</span><span class="ob-ctrl-desc">Cancel / Back / Close overlay</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge ob-ctrl-x">X</span><span class="ob-ctrl-desc">Open prompt picker (ctrl prompt)</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge ob-ctrl-y">Y</span><span class="ob-ctrl-desc">Toggle virtual keyboard</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-badge">START</span><span class="ob-ctrl-desc">New chat session</span></div>
+                        </div>
+                        <div class="ob-ctrl-section">
+                            <div class="ob-ctrl-header">RADIAL MENU <span style="opacity:0.5;font-size:0.65rem;">(L2 or backtick)</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">8 quick-access views: Chat, Terminal, Agent, Canvas, Memory, FTP, Transfer, Remote</span></div>
+                            <div class="ob-ctrl-header" style="margin-top: 8px;">PROMPT PICKER <span style="opacity:0.5;font-size:0.65rem;">(X button)</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">Browse &amp; send AI prompts without typing. D-Pad to navigate, A to send, L1/R1 to switch categories.</span></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px; padding: 8px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.15); border-radius: 6px; font-size: 0.72rem; color: rgba(255,255,255,0.7);">
+                        <strong style="color: var(--accent-color);">STEAM INPUT:</strong> For best gamepad experience activate the NEURODECK Steam Input profile via Steam → Controller Settings. This enables haptic feedback and precise trigger zones.
+                    </div>
+                </div>
+
+                <!-- Slide 6: System Integration Diagnostics (6-check) -->
+                <div class="onboarding-slide" id="slide-6">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 10px;">FINAL SYSTEM CHECK</h3>
 
                     <div class="onboarding-diagnostic-list">
@@ -6854,11 +6898,11 @@ async function showOnboardingWizard() {
         // Update footer buttons
         btnPrev.disabled = currentStep === 1;
 
-        if (currentStep === 5) {
+        if (currentStep === 6) {
             btnNext.innerText = "Launch NEURODECK";
             btnNext.classList.add("primary");
             btnNext.disabled = !isDiagnosticsPassed;
-            // Auto-trigger diagnostics on step 5
+            // Auto-trigger diagnostics on step 6
             runDiagnostics();
         } else {
             btnNext.innerText = "Next";
@@ -6882,7 +6926,7 @@ async function showOnboardingWizard() {
     };
 
     btnNext.onclick = () => {
-        if (currentStep === 5) {
+        if (currentStep === 6) {
             // Finish onboarding!
             localStorage.setItem("neurodeck_onboarding_complete", "true");
             overlay.classList.add("hidden");

@@ -745,8 +745,11 @@ function initCtrlPromptPicker() {
 
 
 // ── Exports ─────────────────────────────────────────────────────────────────
-// State live-bindings (read by gamepad polling loop in main.js)
-export { ctrlPromptVisible, ctrlPromptTemplateMode };
+// Getter functions — guarantee live reads regardless of how the module is bundled.
+// Import these instead of the raw variables so pollGamepads always sees current state.
+export function getCtrlPromptVisible() { return ctrlPromptVisible; }
+export function getCtrlPromptTemplateMode() { return ctrlPromptTemplateMode; }
+
 // Functions called by gamepad polling loop
 export {
     openCtrlPromptOverlay,

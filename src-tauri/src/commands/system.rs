@@ -623,6 +623,12 @@ pub struct DiagnosticResult {
     pub network_details: String,
     pub keychain_ok: bool,
     pub keychain_details: String,
+    pub audio_ok: bool,
+    pub audio_details: String,
+    pub ssh_ok: bool,
+    pub ssh_details: String,
+    pub tts_ok: bool,
+    pub tts_details: String,
 }
 
 #[tauri::command]
@@ -677,6 +683,111 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         Err(_) => (false, "Panic while accessing keyring".to_string()),
     };
 
+    // 4. Check Audio (arecord on Linux, check audio device on Windows)
+    let (audio_ok, audio_details) = tokio::task::spawn_blocking(|| {
+        #[cfg(target_os = "windows")]
+        {
+            // On Windows check for any audio input device via PowerShell
+            let out = std::process::Command::new("powershell")
+                .args(["-NoProfile", "-Command",
+                    "Get-PnpDevice -Class AudioEndpoint -Status OK | Where-Object { $_.FriendlyName -match 'Microphone|Input|Capture' } | Measure-Object | Select-Object -ExpandProperty Count"])
+                .output();
+            match out {
+                Ok(o) if o.status.success() => {
+                    let count_str = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                    let count: u32 = count_str.parse().unwrap_or(0);
+                    if count > 0 {
+                        (true, format!("{} audio input device(s) found", count))
+                    } else {
+                        (false, "No audio input devices detected".to_string())
+                    }
+                }
+                _ => (false, "Could not query audio devices".to_string()),
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Check for arecord (ALSA) or pactl (PulseAudio/PipeWire)
+            if std::process::Command::new("which").arg("arecord").output()
+                .map(|o| o.status.success()).unwrap_or(false)
+            {
+                (true, "ALSA audio (arecord) available".to_string())
+            } else if std::process::Command::new("which").arg("pactl").output()
+                .map(|o| o.status.success()).unwrap_or(false)
+            {
+                (true, "PulseAudio/PipeWire (pactl) available".to_string())
+            } else {
+                (false, "No audio tools found (arecord/pactl)".to_string())
+            }
+        }
+    }).await.unwrap_or((false, "Audio check panicked".to_string()));
+
+    // 5. Check SSH binary availability
+    let (ssh_ok, ssh_details) = tokio::task::spawn_blocking(|| {
+        #[cfg(target_os = "windows")]
+        let ssh_bin = "ssh.exe";
+        #[cfg(not(target_os = "windows"))]
+        let ssh_bin = "ssh";
+
+        let found = std::process::Command::new(ssh_bin)
+            .arg("-V")
+            .output()
+            .map(|o| o.status.success() || !o.stderr.is_empty()) // ssh -V writes to stderr
+            .unwrap_or(false);
+
+        if found {
+            // Try to get version string
+            let ver = std::process::Command::new(ssh_bin)
+                .arg("-V")
+                .output()
+                .ok()
+                .map(|o| String::from_utf8_lossy(&o.stderr).trim().to_string())
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "SSH binary found".to_string());
+            (true, ver)
+        } else {
+            (false, "SSH binary not found in PATH".to_string())
+        }
+    }).await.unwrap_or((false, "SSH check panicked".to_string()));
+
+    // 6. Check TTS binary availability
+    let (tts_ok, tts_details) = tokio::task::spawn_blocking(|| {
+        #[cfg(target_os = "windows")]
+        {
+            // Windows has built-in SAPI TTS — always available
+            (true, "Windows SAPI TTS available".to_string())
+        }
+        #[cfg(target_os = "macos")]
+        {
+            // macOS has `say` built in
+            let found = std::process::Command::new("say")
+                .arg("--version")
+                .output()
+                .map(|_| true)
+                .unwrap_or(false);
+            if found {
+                (true, "macOS `say` TTS available".to_string())
+            } else {
+                (false, "`say` command not found".to_string())
+            }
+        }
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        {
+            // Linux: check espeak-ng or espeak
+            if std::process::Command::new("which").arg("espeak-ng").output()
+                .map(|o| o.status.success()).unwrap_or(false)
+            {
+                (true, "espeak-ng TTS available".to_string())
+            } else if std::process::Command::new("which").arg("espeak").output()
+                .map(|o| o.status.success()).unwrap_or(false)
+            {
+                (true, "espeak TTS available".to_string())
+            } else {
+                (false, "No TTS engine found (install espeak-ng)".to_string())
+            }
+        }
+    }).await.unwrap_or((false, "TTS check panicked".to_string()));
+
     Ok(DiagnosticResult {
         pty_ok,
         pty_details,
@@ -684,6 +795,12 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         network_details,
         keychain_ok,
         keychain_details,
+        audio_ok,
+        audio_details,
+        ssh_ok,
+        ssh_details,
+        tts_ok,
+        tts_details,
     })
 }
 
