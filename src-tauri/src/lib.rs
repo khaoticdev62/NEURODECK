@@ -18,6 +18,7 @@ mod autocomplete;
 mod doc_indexer;
 pub mod scheduler;
 pub mod git;
+pub mod workflow;
 pub mod commands;
 use crate::commands::*;
 
@@ -1027,7 +1028,11 @@ pub fn run() {
             git::git_stage,
             git::git_stage_all,
             git::git_commit,
-            git::generate_commit_message
+            git::generate_commit_message,
+            workflow::list_workflows,
+            workflow::load_workflow,
+            workflow::save_workflow,
+            workflow::delete_workflow,
         ])
         .run(tauri::generate_context!())
 

@@ -97,6 +97,7 @@ import { initRemoteControl } from './remote_control_view.js';
 import { initGraphView, loadGraphData } from './graph_view.js';
 import { initSchedulerView } from './scheduler_view.js';
 import { initGitPanel } from './git_panel.js';
+import { initWorkflowView } from './workflow_view.js';
 
 window.neurodeckCanvas = {
     currentLang: 'html',
@@ -309,6 +310,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="prompt-lab">📝 Lab</button>
                     <button class="nav-tab" data-view="remote">📱 Remote</button>
                     <button class="nav-tab" data-view="scheduler">⏱️ Tasks</button>
+                    <button class="nav-tab" data-view="workflow">⛓ Flow</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -1325,6 +1327,10 @@ document.querySelector('#app').innerHTML = `
                 <!-- Task Scheduler View -->
                 <div class="view-content" id="view-scheduler">
                     <!-- Populated by initSchedulerView() in scheduler_view.js -->
+                </div>
+
+                <div class="view-content" id="view-workflow">
+                    <!-- Populated by initWorkflowView() in workflow_view.js -->
                 </div>
 
             </div>
@@ -2843,6 +2849,7 @@ const RADIAL_SEGMENTS = [
     { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
     { icon: "⏱️", label: "Tasks",      view: "scheduler"  },
     { icon: "⬡",  label: "Graph",      view: "graph"      },
+    { icon: "⛓",  label: "Flow",       view: "workflow"   },
 ];
 
 function getGamepadFocusableElements() {
@@ -3035,6 +3042,17 @@ function getGamepadFocusableElements() {
         // Graph View
         "#view-graph.active #graph-refresh-btn",
         "#view-graph.active #graph-center-btn",
+
+        // Workflow View
+        "#view-workflow.active #wf-run-btn",
+        "#view-workflow.active #wf-stop-btn",
+        "#view-workflow.active #wf-save-btn",
+        "#view-workflow.active #wf-clear-btn",
+        "#view-workflow.active #wf-name-input",
+        "#view-workflow.active .wf-palette-item",
+        "#view-workflow.active .wf-saved-load",
+        "#view-workflow.active .wf-prop-input",
+        "#view-workflow.active .wf-prop-select",
 
         // Prompt Lab View
         "#view-prompt-lab.active #pl-open-gallery-btn",
@@ -8186,3 +8204,4 @@ initCtrlPromptPicker();
 initRemoteControl();
 initSchedulerView();
 initGitPanel();
+initWorkflowView();
