@@ -95,6 +95,7 @@ import { getCtrlPromptVisible, getCtrlPromptTemplateMode,
     initCtrlPromptPicker } from './ctrl_prompt.js';
 import { initRemoteControl } from './remote_control_view.js';
 import { initGraphView, loadGraphData } from './graph_view.js';
+import { initSchedulerView } from './scheduler_view.js';
 
 window.neurodeckCanvas = {
     currentLang: 'html',
@@ -306,6 +307,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="graph">⬡ Graph</button>
                     <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
                     <button class="nav-tab" data-view="remote">📱 Remote</button>
+                    <button class="nav-tab" data-view="scheduler">⏱️ Tasks</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -1274,6 +1276,39 @@ document.querySelector('#app').innerHTML = `
                             <div class="remote-instr-step"><span class="remote-instr-num">1</span><span>Ensure your iPhone is on the same Wi-Fi network as this device.</span></div>
                             <div class="remote-instr-step"><span class="remote-instr-num">2</span><span>Start the server, then scan the QR code with your iPhone Camera app.</span></div>
                             <div class="remote-instr-step"><span class="remote-instr-num">3</span><span>The NEURODECK Remote webapp opens in Safari — no install required.</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Scheduler View -->
+                <div class="view-content" id="view-scheduler">
+                    <div class="scheduler-container" style="padding: 20px; max-width: 800px; margin: 0 auto; color: var(--fg-color);">
+                        <div class="scheduler-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>⏱️ Scheduled Tasks</h2>
+                        </div>
+                        
+                        <div class="scheduler-add-form" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                            <h3 style="margin-top: 0;">Add New Task</h3>
+                            <div class="setting-field-group">
+                                <label>Task Name</label>
+                                <input type="text" id="scheduler-name-input" class="tunnel-text-input" placeholder="e.g. Morning Summary" style="width: 100%; box-sizing: border-box;">
+                            </div>
+                            <div class="setting-field-group">
+                                <label>Cron Expression (5-field)</label>
+                                <input type="text" id="scheduler-cron-input" class="tunnel-text-input" placeholder="e.g. 0 9 * * *" style="width: 100%; box-sizing: border-box; font-family: var(--font-mono);">
+                            </div>
+                            <div class="setting-field-group">
+                                <label>Agent Goal</label>
+                                <textarea id="scheduler-goal-input" class="tunnel-text-area" placeholder="e.g. Summarize all my unread emails and tasks..." rows="3" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;"></textarea>
+                            </div>
+                            <button id="scheduler-add-btn" class="send-prompt-btn">Add Task</button>
+                        </div>
+
+                        <div class="scheduler-list-section">
+                            <h3>Active Tasks</h3>
+                            <div id="scheduler-task-list" class="scheduler-task-list">
+                                <!-- Tasks rendered here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5788,6 +5823,12 @@ function handleAddAgent() {
     });
 }
 
+window.toggleAgentSwitcher = toggleAgentSwitcher;
+window.activateAgent = activateAgent;
+window.deleteAgentById = deleteAgentById;
+window.instantiateRecommended = instantiateRecommended;
+window.handleAddAgent = handleAddAgent;
+
 // Tab switching inside agent switcher panel
 document.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-atab]");
@@ -7992,3 +8033,4 @@ async function showOnboardingWizard() {
 // ── Module init calls ────────────────────────────────────────────────────
 initCtrlPromptPicker();
 initRemoteControl();
+initSchedulerView();

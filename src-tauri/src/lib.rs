@@ -16,6 +16,7 @@ mod canvas_collab;
 mod remote_control;
 mod autocomplete;
 mod doc_indexer;
+pub mod scheduler;
 pub mod commands;
 use crate::commands::*;
 
@@ -230,6 +231,16 @@ pub struct AppState {
     // P19 — Live Canvas Collab
     pub(crate) collab_abort: Option<tokio::task::AbortHandle>,
     pub(crate) collab_tx: Option<tokio::sync::mpsc::Sender<String>>,
+}
+
+/// Managed state for the cron task scheduler — lives outside AppState's Mutex
+/// so async JobScheduler operations don't contend with the global lock.
+/// `scheduler` starts as None until the async init completes in `.setup()`.
+pub struct SchedulerManaged {
+    pub scheduler: Arc<tokio::sync::Mutex<Option<tokio_cron_scheduler::JobScheduler>>>,
+    pub tasks: Arc<Mutex<Vec<scheduler::ScheduledTask>>>,
+    pub job_map: scheduler::JobMap,
+    pub tasks_path: PathBuf,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -785,6 +796,16 @@ pub fn run() {
         collab_tx: None,
     };
 
+    // ── Scheduler state (async-init, starts None then populated in setup) ────
+    let scheduler_tasks_path = PathBuf::from("./data/scheduler/tasks.json");
+    let scheduler_tasks = Arc::new(Mutex::new(scheduler::load_tasks(&scheduler_tasks_path)));
+    let scheduler_managed = Arc::new(SchedulerManaged {
+        scheduler: Arc::new(tokio::sync::Mutex::new(None)),
+        tasks: scheduler_tasks,
+        job_map: Arc::new(Mutex::new(HashMap::new())),
+        tasks_path: scheduler_tasks_path,
+    });
+
     tauri::Builder::default()
         .manage(Mutex::new(app_state))
         .manage(pty_manager::PtyState {
@@ -793,10 +814,37 @@ pub fn run() {
         })
         .manage(remote_control::RemoteControlState::default())
         .manage(transfer::SharedTransferState(Arc::new(Mutex::new(transfer::TransferState::new()))))
+        .manage(scheduler_managed)
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
             transfer::start_transfer_services(app.handle().clone(), transfer_state);
+
+            // ── Init cron scheduler async ──────────────────────────────────
+            {
+                let sm = app.state::<Arc<SchedulerManaged>>().inner().clone();
+                let app_h = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    match scheduler::init_scheduler().await {
+                        Ok(sched) => {
+                            // Register all enabled tasks loaded from disk
+                            let enabled: Vec<scheduler::ScheduledTask> = sm.tasks
+                                .lock().unwrap()
+                                .iter().filter(|t| t.enabled).cloned().collect();
+                            for task in &enabled {
+                                let _ = scheduler::register_task(
+                                    &sched, task, sm.job_map.clone(), app_h.clone(),
+                                ).await;
+                            }
+                            if let Err(e) = sched.start().await {
+                                eprintln!("[Scheduler] start error: {}", e);
+                            }
+                            *sm.scheduler.lock().await = Some(sched);
+                        }
+                        Err(e) => eprintln!("[Scheduler] init failed: {}", e),
+                    }
+                });
+            }
 
             // Initialize Lua state
             let lua_engine = lua::LuaEngine::new(app.handle().clone())
@@ -966,7 +1014,12 @@ pub fn run() {
             remote_control::start_remote_server,
             remote_control::stop_remote_server,
             remote_control::get_remote_server_info,
-            remote_control::remote_send_to_clients
+            remote_control::remote_send_to_clients,
+            scheduler::list_scheduled_tasks,
+            scheduler::add_scheduled_task,
+            scheduler::delete_scheduled_task,
+            scheduler::toggle_scheduled_task,
+            scheduler::run_task_now
         ])
         .run(tauri::generate_context!())
 

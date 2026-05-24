@@ -49,5 +49,7 @@ tonic = "0.11"
 axum = { version = "0.7", features = ["ws"] }
 tower = "0.4"
 walkdir = "2.3"
+tokio-cron-scheduler = "0.13"
+uuid = { version = "1", features = ["v4"] }
 
 
