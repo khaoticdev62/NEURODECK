@@ -29,6 +29,9 @@ const MONACO_LANG_MAP = {
 let monacoEditor = null;
 let monacoReady = false;
 let _peerSyncing = false;
+const COLLAB_CLIENT_ID = window.crypto?.randomUUID?.() || `nd-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const COLLAB_DISPLAY_NAME = localStorage.getItem('neurodeckCollabName') || 'NEURODECK Operator';
+const collabPresence = new Map();
 
 function getMonacoLang(lang) {
     return MONACO_LANG_MAP[lang] || 'plaintext';
@@ -73,6 +76,15 @@ function renderCanvasPreview() {
         outputPre.style.display = 'none';
         frame.srcdoc = buildPreviewDoc(lang, code);
     }
+}
+
+function escapeCanvasHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function loadCanvasCode(lang, content, fileName = "") {
@@ -310,7 +322,8 @@ function _createMonacoInstance(container, initialLang, initialCode, cdnBase) {
                 window._canvasCollabTimer = setTimeout(() => {
                     invoke('canvas_collab_send', {
                         code: monacoEditor.getValue(),
-                        lang: window.neurodeckCanvas.currentLang
+                        lang: window.neurodeckCanvas.currentLang,
+                        sender: COLLAB_CLIENT_ID
                     }).catch(() => {});
                 }, 300);
             }
@@ -606,6 +619,14 @@ function initCanvasCollab() {
     const hostWaiting = document.getElementById("collab-host-waiting");
     const hostAddr = document.getElementById("collab-host-addr");
     const stopBtn = document.getElementById("collab-stop-btn");
+    const workspaceNameInput = document.getElementById("collab-workspace-name");
+    const invitePayload = document.getElementById("collab-invite-payload");
+    const presenceList = document.getElementById("collab-presence-list");
+    const chatLog = document.getElementById("collab-chat-log");
+    const chatInput = document.getElementById("collab-chat-input");
+    const chatSendBtn = document.getElementById("collab-chat-send");
+    const approvalLog = document.getElementById("collab-approval-log");
+    const approvalBtn = document.getElementById("collab-agent-approval-btn");
 
     if (!collabBtn || !collabModal) return;
 
@@ -635,13 +656,120 @@ function initCanvasCollab() {
     const statusBar = document.getElementById("canvas-collab-status-bar");
     const statusText = document.getElementById("canvas-collab-status-text");
     const resyncBtn = document.getElementById("canvas-collab-resync-btn");
+    const statusPeers = document.getElementById("canvas-collab-peer-count");
+
+    function workspaceName() {
+        return (workspaceNameInput?.value || 'NEURODECK Workspace').trim() || 'NEURODECK Workspace';
+    }
+
+    function updatePresenceList() {
+        if (!presenceList) return;
+        collabPresence.set(COLLAB_CLIENT_ID, {
+            name: COLLAB_DISPLAY_NAME,
+            role: 'local',
+            at: Date.now()
+        });
+        const rows = Array.from(collabPresence.entries()).map(([id, peer]) => {
+            const role = peer.role === 'local' ? 'This device' : 'Peer';
+            return `<div class="collab-presence-row">
+                <span class="collab-presence-dot"></span>
+                <span class="collab-presence-name">${escapeCanvasHtml(peer.name || id)}</span>
+                <span class="collab-presence-role">${role}</span>
+            </div>`;
+        });
+        presenceList.innerHTML = rows.join('');
+    }
+
+    function appendChat(name, message, local = false) {
+        if (!chatLog) return;
+        const row = document.createElement('div');
+        row.className = `collab-chat-row${local ? ' local' : ''}`;
+        row.innerHTML = `<span>${escapeCanvasHtml(name)}</span><p>${escapeCanvasHtml(message)}</p>`;
+        chatLog.appendChild(row);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function appendApproval(message, status = 'pending', options = {}) {
+        if (!approvalLog) return;
+        const row = document.createElement('div');
+        row.className = `collab-approval-row ${status}`;
+        row.textContent = message;
+        if (status === 'pending' && options.remote && options.requestId) {
+            const controls = document.createElement('div');
+            controls.className = 'collab-approval-controls';
+            const approve = document.createElement('button');
+            approve.className = 'canvas-btn canvas-btn-sm';
+            approve.textContent = 'Approve';
+            const deny = document.createElement('button');
+            deny.className = 'canvas-btn canvas-btn-sm';
+            deny.textContent = 'Deny';
+            deny.style.borderColor = 'var(--error-color)';
+            deny.style.color = 'var(--error-color)';
+            approve.addEventListener('click', () => {
+                row.className = 'collab-approval-row approved';
+                row.textContent = `Approved: ${options.action || 'shared run'}`;
+                broadcastCollab({
+                    type: 'agent_approval_response',
+                    name: COLLAB_DISPLAY_NAME,
+                    request_id: options.requestId,
+                    action: options.action || 'shared run',
+                    approved: true
+                });
+            });
+            deny.addEventListener('click', () => {
+                row.className = 'collab-approval-row denied';
+                row.textContent = `Denied: ${options.action || 'shared run'}`;
+                broadcastCollab({
+                    type: 'agent_approval_response',
+                    name: COLLAB_DISPLAY_NAME,
+                    request_id: options.requestId,
+                    action: options.action || 'shared run',
+                    approved: false
+                });
+            });
+            controls.append(approve, deny);
+            row.appendChild(controls);
+        }
+        approvalLog.prepend(row);
+    }
+
+    async function broadcastCollab(payload) {
+        const enriched = {
+            ...payload,
+            sender: COLLAB_CLIENT_ID,
+            workspace: workspaceName(),
+            at: new Date().toISOString()
+        };
+        await invoke('canvas_collab_broadcast', { payload: enriched }).catch(() => {});
+    }
+
+    function sendPresence() {
+        updatePresenceList();
+        broadcastCollab({
+            type: 'presence',
+            name: COLLAB_DISPLAY_NAME,
+            role: 'peer'
+        });
+    }
+
+    async function refreshCollabStatus() {
+        try {
+            const status = await invoke('canvas_collab_status');
+            if (statusPeers) {
+                const peerCount = Number.parseInt(status.peers || '0', 10);
+                statusPeers.textContent = `${peerCount} peer${peerCount === 1 ? '' : 's'}`;
+            }
+            if (window) window._mockCollabActive = status.active === 'true';
+        } catch (_) {}
+    }
 
     if (resyncBtn) {
         resyncBtn.addEventListener("click", () => {
             if (monacoEditor) {
                 invoke("canvas_collab_send", {
                     code: monacoEditor.getValue(),
-                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
+                    lang: document.getElementById("canvas-lang-select")?.value || 'html',
+                    sender: COLLAB_CLIENT_ID
                 }).catch(() => {});
             }
         });
@@ -665,6 +793,9 @@ function initCanvasCollab() {
             }
             statusText.innerText = label;
         }
+        updatePresenceList();
+        sendPresence();
+        refreshCollabStatus();
     }
 
     function setDisconnected() {
@@ -676,6 +807,20 @@ function initCanvasCollab() {
         }
         if (statusLine) statusLine.innerHTML = '';
         if (statusBar) statusBar.style.display = 'none';
+        collabPresence.clear();
+        updatePresenceList();
+        if (window) window._mockCollabActive = false;
+    }
+
+    function updateInvitePayload(address) {
+        if (!invitePayload) return;
+        const payload = {
+            type: 'neurodeck-workspace-invite',
+            workspace: workspaceName(),
+            address,
+            protocol: 'neurodeck-collab-tcp-v2'
+        };
+        invitePayload.value = JSON.stringify(payload, null, 2);
     }
 
     listen("canvas_collab_event", (event) => {
@@ -701,6 +846,7 @@ function initCanvasCollab() {
         try {
             const data = typeof event.payload === 'string'
                 ? JSON.parse(event.payload) : event.payload;
+            if (data.sender && data.sender === COLLAB_CLIENT_ID) return;
             if (data.type === 'sync' && data.code !== undefined) {
                 _peerSyncing = true;
                 if (monacoEditor) {
@@ -713,6 +859,27 @@ function initCanvasCollab() {
                     langSelect.dispatchEvent(new Event('change'));
                 }
                 renderCanvasPreview();
+            } else if (data.type === 'presence') {
+                collabPresence.set(data.sender || `peer-${Date.now()}`, {
+                    name: data.name || 'Peer',
+                    role: 'peer',
+                    at: Date.now()
+                });
+                updatePresenceList();
+                refreshCollabStatus();
+            } else if (data.type === 'chat') {
+                appendChat(data.name || 'Peer', data.message || '');
+            } else if (data.type === 'agent_approval_request') {
+                appendApproval(`${data.name || 'Peer'} requested agent approval: ${data.action || 'shared run'}`, 'pending', {
+                    remote: true,
+                    requestId: data.request_id || `req-${Date.now()}`,
+                    action: data.action || 'shared run'
+                });
+                if (typeof addNotification === "function") {
+                    addNotification("Shared Agent Approval", data.action || "A collaborator requested approval.", "warning");
+                }
+            } else if (data.type === 'agent_approval_response') {
+                appendApproval(`${data.name || 'Peer'} ${data.approved ? 'approved' : 'denied'}: ${data.action || 'shared run'}`, data.approved ? 'approved' : 'denied');
             }
         } catch (e) {
             console.warn('[Collab] Failed to parse canvas_sync:', e);
@@ -729,8 +896,11 @@ function initCanvasCollab() {
                 const boundPort = await invoke("canvas_collab_host", { port });
                 if (hostWaiting) hostWaiting.style.display = '';
                 const lanIp = await invoke("get_lan_ip").catch(() => "your-lan-ip");
-                if (hostAddr) hostAddr.innerText = `${lanIp}:${boundPort}`;
+                const address = `${lanIp}:${boundPort}`;
+                if (hostAddr) hostAddr.innerText = address;
+                updateInvitePayload(address);
                 if (statusLine) statusLine.innerHTML = '';
+                refreshCollabStatus();
             } catch (err) {
                 if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
                 hostStartBtn.disabled = false;
@@ -751,6 +921,7 @@ function initCanvasCollab() {
             try {
                 await invoke("canvas_collab_join", { addr });
                 setPeerConnected(addr);
+                updateInvitePayload(addr);
             } catch (err) {
                 if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
                 joinStartBtn.disabled = false;
@@ -767,6 +938,39 @@ function initCanvasCollab() {
             if (joinStartBtn) joinStartBtn.disabled = false;
         });
     }
+
+    if (chatSendBtn && chatInput) {
+        chatSendBtn.addEventListener("click", () => {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            chatInput.value = '';
+            appendChat(COLLAB_DISPLAY_NAME, message, true);
+            broadcastCollab({
+                type: 'chat',
+                name: COLLAB_DISPLAY_NAME,
+                message
+            });
+        });
+        chatInput.addEventListener("keydown", (event) => {
+            if (event.key === 'Enter') chatSendBtn.click();
+        });
+    }
+
+    if (approvalBtn) {
+        approvalBtn.addEventListener("click", () => {
+            const action = `Run ${window.neurodeckCanvas.currentLang || 'canvas'} code with shared workspace context`;
+            appendApproval(`Local approval requested: ${action}`, 'pending');
+            broadcastCollab({
+                type: 'agent_approval_request',
+                name: COLLAB_DISPLAY_NAME,
+                request_id: `approval-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                action
+            });
+        });
+    }
+
+    updatePresenceList();
+    setInterval(refreshCollabStatus, 5000);
 }
 
 

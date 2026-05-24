@@ -61,6 +61,7 @@ Frontend (`frontend/src/main.js`) ↔ Rust backend (`src-tauri/src/lib.rs`) via 
 | Tunnel | `tunnel.rs` | SteamOS LAN tunneling |
 | Transfer | `transfer.rs` | P2P file sharing over LAN |
 | Sync | `sync.rs` | Encrypted cloud sync for memory records and saved chat sessions |
+| Canvas Collaboration | `canvas_collab.rs` | Multi-peer LAN workspace transport for code, chat, presence, and approvals |
 
 ### Frontend Structure
 
@@ -117,6 +118,13 @@ Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base
 - Commands: `start_sync`, `get_sync_status`, `sync_now`, `configure_sync`
 - Settings Sync panel exposes opt-in toggles, API URL, device ID, last sync, pending count, and conflicts
 - Emits `sync_progress` events for collecting, pushing, pulling, merging, and done states
+
+### Sprint 5.1 — Real-Time Collaborative Workspaces
+- Upgraded Canvas collaboration host mode from one peer to a multi-peer LAN room
+- Workspace payload protocol now carries live code sync, shared chat, presence, invite metadata, and agent approval requests
+- Commands: `canvas_collab_host`, `canvas_collab_join`, `canvas_collab_send`, `canvas_collab_broadcast`, `canvas_collab_status`, `canvas_collab_stop`
+- Canvas Collab modal exposes workspace naming, invite JSON, peer count, presence, shared chat, and approval controls
+- Host relays peer messages to other connected peers while each client ignores its own echoed payloads by sender ID
 
 ---
 

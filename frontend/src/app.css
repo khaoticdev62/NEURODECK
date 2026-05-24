@@ -2660,6 +2660,178 @@ code {
     font-size: 0.75rem;
 }
 
+.canvas-collab-peer-count {
+    color: rgba(217, 247, 255, 0.65);
+    border-left: 1px solid rgba(0, 255, 136, 0.2);
+    padding-left: 8px;
+}
+
+.collab-workspace-card {
+    max-width: 720px;
+}
+
+.collab-field {
+    margin-bottom: 10px;
+}
+
+.collab-field input {
+    flex: 1;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.collab-tab-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.collab-host-waiting {
+    font-size: 0.8rem;
+    padding: 8px;
+    background: rgba(0, 229, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+}
+
+.collab-invite-payload {
+    width: 100%;
+    min-height: 74px;
+    margin-top: 8px;
+    resize: vertical;
+    background: rgba(0, 0, 0, 0.24);
+    border: 1px solid rgba(0, 229, 255, 0.16);
+    border-radius: 4px;
+    color: rgba(217, 247, 255, 0.75);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+}
+
+.collab-workspace-grid {
+    display: grid;
+    grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.collab-workspace-panel {
+    min-height: 104px;
+    border: 1px solid rgba(0, 229, 255, 0.14);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.18);
+    padding: 8px;
+    overflow: hidden;
+}
+
+.collab-workspace-panel-wide {
+    grid-column: 1 / -1;
+    min-height: 82px;
+}
+
+.collab-panel-title {
+    color: rgba(217, 247, 255, 0.58);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.collab-presence-list,
+.collab-chat-log,
+.collab-approval-log {
+    max-height: 132px;
+    overflow: auto;
+}
+
+.collab-presence-row {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+.collab-presence-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--response-color);
+    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+
+.collab-presence-name {
+    color: var(--fg-color);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.collab-presence-role {
+    color: rgba(217, 247, 255, 0.42);
+    font-size: 0.68rem;
+}
+
+.collab-chat-row {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.collab-chat-row span {
+    color: var(--accent-color);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+}
+
+.collab-chat-row.local span {
+    color: var(--response-color);
+}
+
+.collab-chat-row p {
+    margin: 2px 0 0;
+    color: rgba(217, 247, 255, 0.82);
+    line-height: 1.35;
+}
+
+.collab-chat-compose {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.collab-chat-compose input {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.collab-approval-row {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: rgba(255, 176, 0, 0.08);
+    color: rgba(217, 247, 255, 0.82);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+}
+
+.collab-approval-row.approved {
+    background: rgba(0, 255, 136, 0.08);
+}
+
+.collab-approval-row.denied {
+    background: rgba(255, 60, 90, 0.08);
+}
+
+.collab-approval-controls {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
 #canvas-run-btn {
     background: rgba(124, 58, 237, 0.12);
     border-color: rgba(124, 58, 237, 0.35);

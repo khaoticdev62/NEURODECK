@@ -604,9 +604,9 @@ MEDIUM (v2.0 milestone):
 [ ] Plugin Marketplace (Sprint 4.4)
 
 LOWER (post v2.0):
-[ ] Desktop Computer Use (Sprint 4.5)
+[x] Desktop Computer Use (Sprint 4.5)
 [x] Cloud Sync (Sprint 4.6)
-[ ] Real-Time Collaboration (Sprint 5.1)
+[x] Real-Time Collaboration (Sprint 5.1)
 [ ] Mobile Companion App (Sprint 5.2)
 ```
 

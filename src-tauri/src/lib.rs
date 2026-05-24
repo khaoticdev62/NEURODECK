@@ -22,6 +22,7 @@ pub mod commands;
 use crate::commands::*;
 
 use std::collections::HashMap;
+use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
 use tauri::Manager;
@@ -232,6 +233,9 @@ pub struct AppState {
     // P19 — Live Canvas Collab
     pub(crate) collab_abort: Option<tokio::task::AbortHandle>,
     pub(crate) collab_tx: Option<tokio::sync::mpsc::Sender<String>>,
+    pub(crate) collab_mode: Option<String>,
+    pub(crate) collab_addr: Option<String>,
+    pub(crate) collab_peer_count: Option<Arc<AtomicUsize>>,
     // Canvas streaming execution cancellation.
     pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
@@ -787,6 +791,9 @@ pub fn run() {
         whisper_model,
         collab_abort: None,
         collab_tx: None,
+        collab_mode: None,
+        collab_addr: None,
+        collab_peer_count: None,
         canvas_exec_cancel_tx: None,
     };
 
@@ -964,6 +971,8 @@ pub fn run() {
             canvas_collab_host,
             canvas_collab_join,
             canvas_collab_send,
+            canvas_collab_broadcast,
+            canvas_collab_status,
             canvas_collab_stop,
             save_profiles,
             load_profiles,

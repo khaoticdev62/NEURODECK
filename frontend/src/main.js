@@ -485,6 +485,7 @@ document.querySelector('#app').innerHTML = `
                     <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
                         <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
                         <span id="canvas-collab-status-text" style="color:var(--response-color);">Collab Active: Syncing edits live</span>
+                        <span id="canvas-collab-peer-count" class="canvas-collab-peer-count">0 peers</span>
                         <button class="canvas-btn canvas-btn-sm" id="canvas-collab-resync-btn" style="margin-left: auto; padding: 2px 8px; font-size: 0.72rem;">Force Resync 🔄</button>
                     </div>
                     <div class="canvas-split" id="canvas-split">
@@ -1915,17 +1916,18 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Canvas Collaboration Modal -->
         <div class="settings-overlay" id="collab-modal">
-            <div class="settings-modal-card" style="max-width: 400px;">
+            <div class="settings-modal-card collab-workspace-card">
                 <div class="settings-modal-header">
-                    <h3>🤝 LIVE CANVAS COLLAB</h3>
+                    <h3>LIVE WORKSPACE</h3>
                     <button class="sidebar-toggle-btn" id="close-collab-x">✕</button>
                 </div>
                 <div class="settings-modal-content">
-                    <div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 14px; line-height: 1.5;">
-                        Share your Canvas session with another NEURODECK instance on the same LAN. Both sides see edits in real time.
+                    <div class="setting-field-group collab-field">
+                        <label for="collab-workspace-name">Workspace:</label>
+                        <input type="text" id="collab-workspace-name" class="tunnel-text-input" value="NEURODECK Workspace">
                     </div>
                     <!-- Tab toggle -->
-                    <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+                    <div class="collab-tab-row">
                         <button class="canvas-btn" id="collab-host-tab-btn" style="flex: 1; background: rgba(0,229,255,0.1); border-color: var(--accent-color);">Host Session</button>
                         <button class="canvas-btn" id="collab-join-tab-btn" style="flex: 1;">Join Session</button>
                     </div>
@@ -1936,9 +1938,10 @@ document.querySelector('#app').innerHTML = `
                             <input type="number" id="collab-port-input" class="tunnel-text-input" value="13338" min="1024" max="65535" style="width: 100px; box-sizing: border-box; margin: 0;">
                         </div>
                         <button class="send-prompt-btn" id="collab-host-start-btn" style="width: 100%; margin: 0 0 10px;">Start Hosting</button>
-                        <div id="collab-host-waiting" style="display: none; font-size: 0.8rem; padding: 8px; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; font-family: var(--font-mono);">
+                        <div id="collab-host-waiting" class="collab-host-waiting" style="display: none;">
                             Waiting for peer... Share this address with your collaborator:<br>
                             <span id="collab-host-addr" style="color: var(--accent-color);"></span>
+                            <textarea id="collab-invite-payload" class="collab-invite-payload" readonly></textarea>
                         </div>
                     </div>
                     <!-- Join panel -->
@@ -1953,6 +1956,25 @@ document.querySelector('#app').innerHTML = `
                     <div id="collab-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
                     <div id="collab-active-panel" style="display: none; margin-top: 10px; padding: 8px; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; font-size: 0.8rem;">
                         <span style="color: var(--response-color);">✓ Peer connected</span> — edits are syncing live.
+                        <div class="collab-workspace-grid">
+                            <section class="collab-workspace-panel">
+                                <div class="collab-panel-title">Presence</div>
+                                <div id="collab-presence-list" class="collab-presence-list"></div>
+                            </section>
+                            <section class="collab-workspace-panel">
+                                <div class="collab-panel-title">Shared Chat</div>
+                                <div id="collab-chat-log" class="collab-chat-log"></div>
+                                <div class="collab-chat-compose">
+                                    <input type="text" id="collab-chat-input" class="tunnel-text-input" placeholder="Message workspace">
+                                    <button class="canvas-btn canvas-btn-sm" id="collab-chat-send">Send</button>
+                                </div>
+                            </section>
+                            <section class="collab-workspace-panel collab-workspace-panel-wide">
+                                <div class="collab-panel-title">Shared Agent Approval</div>
+                                <button class="canvas-btn canvas-btn-sm" id="collab-agent-approval-btn">Request Approval</button>
+                                <div id="collab-approval-log" class="collab-approval-log"></div>
+                            </section>
+                        </div>
                         <button class="canvas-btn" id="collab-stop-btn" style="display: block; width: 100%; margin-top: 8px; border-color: var(--error-color); color: var(--error-color);">Disconnect</button>
                     </div>
                 </div>

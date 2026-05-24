@@ -1,8 +1,9 @@
 use crate::*;
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
+use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use neurodeck_core::ipc::{Intent, StatePatch};
@@ -1540,6 +1541,9 @@ pub async fn canvas_collab_host(
             abort.abort();
         }
         s.collab_tx = None;
+        s.collab_mode = None;
+        s.collab_addr = None;
+        s.collab_peer_count = None;
     }
 
     let (bound_port, session) = canvas_collab::host(port, app).await?;
@@ -1547,6 +1551,9 @@ pub async fn canvas_collab_host(
     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     s.collab_abort = Some(session.abort_handle);
     s.collab_tx = Some(session.tx);
+    s.collab_mode = Some("host".to_string());
+    s.collab_addr = Some(format!("0.0.0.0:{}", bound_port));
+    s.collab_peer_count = Some(session.peer_count);
 
     Ok(bound_port)
 }
@@ -1563,6 +1570,9 @@ pub async fn canvas_collab_join(
             abort.abort();
         }
         s.collab_tx = None;
+        s.collab_mode = None;
+        s.collab_addr = None;
+        s.collab_peer_count = None;
     }
 
     let session = canvas_collab::join(&addr, app).await?;
@@ -1570,6 +1580,9 @@ pub async fn canvas_collab_join(
     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     s.collab_abort = Some(session.abort_handle);
     s.collab_tx = Some(session.tx);
+    s.collab_mode = Some("guest".to_string());
+    s.collab_addr = Some(addr);
+    s.collab_peer_count = Some(session.peer_count);
 
     Ok(())
 }
@@ -1578,6 +1591,7 @@ pub async fn canvas_collab_join(
 pub async fn canvas_collab_send(
     code: String,
     lang: String,
+    sender: Option<String>,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
     let tx = {
@@ -1585,7 +1599,31 @@ pub async fn canvas_collab_send(
         s.collab_tx.clone()
     };
     if let Some(tx) = tx {
-        let payload = serde_json::json!({ "type": "sync", "code": code, "lang": lang });
+        let payload = serde_json::json!({
+            "type": "sync",
+            "code": code,
+            "lang": lang,
+            "sender": sender.unwrap_or_default()
+        });
+        tx.send(payload.to_string())
+            .await
+            .map_err(|_| "Collab channel closed".to_string())?;
+        Ok(())
+    } else {
+        Err("No active collab session".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn canvas_collab_broadcast(
+    payload: serde_json::Value,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    let tx = {
+        let s = state.lock().unwrap_or_else(|e| e.into_inner());
+        s.collab_tx.clone()
+    };
+    if let Some(tx) = tx {
         tx.send(payload.to_string())
             .await
             .map_err(|_| "Collab channel closed".to_string())?;
@@ -1602,6 +1640,28 @@ pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
         abort.abort();
     }
     s.collab_tx = None;
+    s.collab_mode = None;
+    s.collab_addr = None;
+    s.collab_peer_count = None;
+}
+
+#[tauri::command]
+pub fn canvas_collab_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
+    let s = state.lock().unwrap_or_else(|e| e.into_inner());
+    let mut result = HashMap::new();
+    result.insert("active".to_string(), s.collab_abort.is_some().to_string());
+    result.insert(
+        "mode".to_string(),
+        s.collab_mode.clone().unwrap_or_else(|| "idle".to_string()),
+    );
+    result.insert("addr".to_string(), s.collab_addr.clone().unwrap_or_default());
+    let peers = s
+        .collab_peer_count
+        .as_ref()
+        .map(|count| count.load(Ordering::SeqCst))
+        .unwrap_or(0);
+    result.insert("peers".to_string(), peers.to_string());
+    result
 }
 
 #[tauri::command]
