@@ -20,6 +20,7 @@ pub mod scheduler;
 pub mod git;
 pub mod workflow;
 pub mod orchestrator;
+pub mod sync;
 pub mod commands;
 use crate::commands::*;
 
@@ -1039,6 +1040,10 @@ pub fn run() {
             orchestrator::start_orchestrated_task,
             orchestrator::get_orchestration_status,
             orchestrator::stop_orchestration,
+            sync::start_sync,
+            sync::get_sync_status,
+            sync::sync_now,
+            sync::configure_sync,
         ])
         .run(tauri::generate_context!())
 

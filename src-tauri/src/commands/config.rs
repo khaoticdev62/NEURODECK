@@ -16,6 +16,7 @@ pub fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>)
         "llm.gemini_model" => config.llm.gemini_model = value,
         "llm.ollama_base_url" => config.llm.ollama_base_url = value,
         "llm.google_client_id" => config.llm.google_client_id = value,
+        "sync.api_base_url" => config.sync.api_base_url = value,
         _ => return Err(format!("Unknown config key: {}", key)),
     }
 
