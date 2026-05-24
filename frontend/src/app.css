@@ -2633,37 +2633,45 @@ code {
 }
 
 .canvas-toolbar {
-    height: 48px;
-    border-bottom: 1px solid var(--border-color);
-    background: rgba(8, 12, 16, 0.97);
+    height: 46px;
+    border-bottom: 1px solid rgba(var(--accent-rgb), 0.1);
+    background: linear-gradient(180deg,
+        rgba(6, 10, 16, 0.99) 0%,
+        rgba(4, 7, 12, 0.98) 100%);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.025);
     display: flex;
     align-items: center;
     padding: 0 14px;
-    gap: 10px;
+    gap: 8px;
     flex-shrink: 0;
     z-index: 10;
 }
 
 .canvas-lang-select {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-color);
+    background: rgba(4, 8, 14, 0.65);
+    border: 1px solid rgba(var(--accent-rgb), 0.13);
     border-radius: 6px;
     color: var(--fg-color);
     font-family: var(--font-mono);
     font-size: 0.78rem;
-    padding: 5px 8px;
+    padding: 5px 10px;
     cursor: pointer;
     outline: none;
-    transition: border-color 0.2s;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    transition: border-color 0.15s var(--ease-snap),
+                box-shadow   0.15s var(--ease-snap);
 }
 
 .canvas-lang-select:focus,
 .canvas-lang-select:hover {
-    border-color: var(--accent-color);
+    border-color: rgba(var(--accent-rgb), 0.5);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.08),
+                inset 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .canvas-lang-select option {
-    background: #0d0d0d;
+    background: #08111a;
     color: var(--fg-color);
 }
 
@@ -4592,20 +4600,23 @@ body.crt-flicker-disabled .crt-flicker {
 
 .agent-task-input {
     flex: 1;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-color);
+    background: rgba(4, 8, 14, 0.65);
+    border: 1px solid rgba(var(--accent-rgb), 0.13);
     border-radius: 8px;
     color: var(--fg-color);
     font-family: var(--font-sans);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     padding: 8px 14px;
     outline: none;
-    transition: border-color 0.2s;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.15s var(--ease-snap),
+                box-shadow   0.15s var(--ease-snap);
 }
 
 .agent-task-input:focus {
-    border-color: var(--accent-color);
-    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.1),
+                inset 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .agent-task-input::placeholder {
@@ -4628,20 +4639,25 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .agent-btn:hover {
-    background: rgba(0, 240, 255, 0.08);
-    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.07);
+    border-color: rgba(var(--accent-rgb), 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 .agent-btn-run {
     background: rgba(124, 58, 237, 0.14);
     border-color: rgba(124, 58, 237, 0.4);
     color: #a78bfa;
+    font-weight: 600;
 }
 
 .agent-btn-run:hover {
-    background: rgba(124, 58, 237, 0.24);
-    border-color: #7C3AED;
-    box-shadow: 0 0 10px rgba(124, 58, 237, 0.15);
+    background: rgba(124, 58, 237, 0.26);
+    border-color: rgba(124, 58, 237, 0.7);
+    box-shadow: 0 0 14px rgba(124, 58, 237, 0.22),
+                0 3px 10px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
 }
 
 .agent-btn-stop {
@@ -4651,8 +4667,11 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .agent-btn-stop:hover {
-    background: rgba(255, 60, 90, 0.22);
-    border-color: var(--error-color);
+    background: rgba(255, 60, 90, 0.24);
+    border-color: rgba(255, 60, 90, 0.65);
+    box-shadow: 0 0 12px rgba(255, 60, 90, 0.18),
+                0 3px 10px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
 }
 
 .agent-btn-sm {

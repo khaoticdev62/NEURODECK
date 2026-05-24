@@ -558,7 +558,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             <div class="setting-field-group">
                                 <label>Auth Type</label>
-                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;">
                                     <option value="password">Password</option>
                                     <option value="key">Key File</option>
                                 </select>
@@ -760,7 +760,7 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                                 <div class="setting-field-group">
                                     <label>Auth Type</label>
-                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;">
                                         <option value="password">Password</option>
                                         <option value="key">Key File</option>
                                     </select>
