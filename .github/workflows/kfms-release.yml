@@ -1,0 +1,46 @@
+name: KFMS Release Validation
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  kfms-validate:
+    name: Validate KFMS on Release Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make KFMS script executable
+        run: chmod +x scripts/khaotic-init.sh
+
+      - name: Install ajv-cli for schema validation
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: KFMS — stamp
+        run: bash scripts/khaotic-init.sh stamp
+
+      - name: KFMS — validate
+        run: bash scripts/khaotic-init.sh validate
+
+      - name: KFMS — status
+        run: bash scripts/khaotic-init.sh status
+
+      - name: Verify tag matches meta.json version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          META_VERSION="$(grep '"version"' infra/meta/meta.json | head -1 | sed 's/.*": "\(.*\)".*/\1/')"
+          META_CODENAME="$(grep '"name"' infra/meta/meta.json | grep -v 'NEURODECK\|Khaotic' | head -1 | sed 's/.*": "\(.*\)".*/\1/' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED_TAG="v${META_VERSION}-${META_CODENAME}"
+          echo "Git tag:      $TAG"
+          echo "Expected tag: $EXPECTED_TAG"
+          if [ "$TAG" != "$EXPECTED_TAG" ]; then
+            echo "ERROR: Tag '$TAG' does not match expected KFMS tag '$EXPECTED_TAG'"
+            exit 1
+          fi
+          echo "Tag format OK."

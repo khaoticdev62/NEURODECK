@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# KFMS post-commit hook
+# Stamps meta.json with the just-committed SHA and amends silently.
+# Guard prevents recursion when the amend itself triggers this hook.
+
+[ "${KFMS_HOOK_RUNNING:-}" = "1" ] && exit 0
+export KFMS_HOOK_RUNNING=1
+
+ROOT="$(git rev-parse --show-toplevel)"
+SCRIPT="$ROOT/scripts/khaotic-init.sh"
+
+[ -x "$SCRIPT" ] || chmod +x "$SCRIPT"
+
+echo "[KFMS] Stamping build block..."
+bash "$SCRIPT" stamp
+
+# If meta.json changed, fold it into the commit via amend (no new commit created)
+if ! git diff --quiet HEAD -- infra/meta/meta.json 2>/dev/null; then
+    git add "$ROOT/infra/meta/meta.json"
+    KFMS_HOOK_RUNNING=1 git commit --amend --no-edit --quiet
+    echo "[KFMS] meta.json amend applied."
+fi
+
+bash "$SCRIPT" status
