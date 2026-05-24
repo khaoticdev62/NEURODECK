@@ -20,6 +20,21 @@
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --font-display: 'Outfit', sans-serif;
     --sidebar-width: 280px;
+
+    /* Motion duration scale */
+    --dur-micro:  80ms;
+    --dur-fast:   150ms;
+    --dur-base:   220ms;
+    --dur-enter:  300ms;
+    --dur-spring: 380ms;
+    --dur-ambient: 2400ms;
+
+    /* Easing library */
+    --ease-snap:           cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-out-expo:       cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-standard:       cubic-bezier(0.25, 0, 0, 1);
+    --ease-in-out-smooth:  cubic-bezier(0.45, 0, 0.15, 1);
 }
 
 body {
@@ -74,7 +89,10 @@ body::before {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width     var(--dur-enter) var(--ease-out-expo),
+                min-width var(--dur-enter) var(--ease-out-expo),
+                transform var(--dur-enter) var(--ease-out-expo),
+                border    var(--dur-fast)  var(--ease-standard);
     z-index: 40;
     transform: translateX(0);
 }
@@ -129,7 +147,9 @@ body::before {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.2s ease;
+    transition: background   var(--dur-fast) var(--ease-standard),
+                border-color var(--dur-fast) var(--ease-standard),
+                box-shadow   var(--dur-fast) var(--ease-standard);
 }
 
 .new-chat-btn:hover {
@@ -163,7 +183,9 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: all 0.15s ease;
+    transition: background   var(--dur-fast) var(--ease-standard),
+                border-color var(--dur-fast) var(--ease-standard),
+                color        var(--dur-fast) var(--ease-standard);
     border: 1px solid transparent;
 }
 
@@ -340,12 +362,12 @@ body::before {
 .game-badge-dot--running {
     background: var(--response-color);
     box-shadow: 0 0 6px rgba(124, 255, 178, 0.15);
-    animation: game-badge-pulse 2s ease-in-out infinite;
+    animation: game-badge-pulse var(--dur-ambient) var(--ease-in-out-smooth) infinite;
 }
 
 @keyframes game-badge-pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.4; }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.78); }
 }
 
 
@@ -670,7 +692,9 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background var(--dur-fast) var(--ease-standard),
+                color      var(--dur-fast) var(--ease-standard),
+                transform  var(--dur-micro) var(--ease-snap);
 }
 
 .input-btn:hover {
@@ -685,13 +709,12 @@ body::before {
 .input-btn.mic-btn.recording {
     color: #ef476f;
     background: rgba(239, 71, 111, 0.1);
-    animation: pulse-recording 1.2s infinite;
+    animation: pulse-recording 1.6s ease-in-out infinite;
 }
 
 @keyframes pulse-recording {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-    100% { transform: scale(1); }
+    0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(239, 71, 111, 0.35); }
+    50%       { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(239, 71, 111, 0);    }
 }
 
 .send-prompt-btn {
@@ -707,7 +730,9 @@ body::before {
     display: flex;
     align-items: center;
     gap: 4px;
-    transition: all 0.15s ease;
+    transition: background var(--dur-micro) var(--ease-snap),
+                transform  var(--dur-micro) var(--ease-snap),
+                box-shadow var(--dur-fast) var(--ease-standard);
 }
 
 .send-prompt-btn:hover {
@@ -725,7 +750,10 @@ body::before {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width     var(--dur-enter) var(--ease-out-expo),
+                min-width var(--dur-enter) var(--ease-out-expo),
+                transform var(--dur-enter) var(--ease-out-expo),
+                border    var(--dur-fast)  var(--ease-standard);
     z-index: 40;
 }
 
@@ -832,7 +860,8 @@ body::before {
     flex-direction: row;
     overflow: hidden;
     transform: scale(0.92) translateY(12px);
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    transition: transform var(--dur-spring) var(--ease-out-spring),
+                opacity   var(--dur-base)   var(--ease-standard);
     position: relative;
 }
 .settings-overlay.active .settings-modal-card {
@@ -1258,18 +1287,12 @@ code {
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    animation: terminal-expand 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: terminal-expand 280ms var(--ease-out-expo) both;
 }
 
 @keyframes terminal-expand {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
 }
 
 .terminal-console-header {
@@ -2091,7 +2114,9 @@ code {
     border-radius: 6px;
     padding: 8px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background   var(--dur-fast) var(--ease-standard),
+                border-color var(--dur-fast) var(--ease-standard),
+                box-shadow   var(--dur-fast) var(--ease-standard);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2522,7 +2547,10 @@ body.crt-flicker-disabled .crt-flicker {
     justify-content: center;
     cursor: pointer;
     font-size: 0.85rem;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background   var(--dur-fast) var(--ease-standard),
+                border-color var(--dur-fast) var(--ease-standard),
+                color        var(--dur-fast) var(--ease-standard),
+                box-shadow   var(--dur-fast) var(--ease-standard);
 }
 
 .browser-btn:hover:not(:disabled) {
@@ -2756,7 +2784,10 @@ body.crt-flicker-disabled .crt-flicker {
     border-radius: 10px;
     padding: 18px 12px;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background   var(--dur-fast)  var(--ease-standard),
+                border-color var(--dur-fast)  var(--ease-standard),
+                transform    var(--dur-base) var(--ease-out-expo),
+                box-shadow   var(--dur-fast)  var(--ease-standard);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3195,12 +3226,12 @@ body.crt-flicker-disabled .crt-flicker {
     border: 1px solid transparent;
     font-size: 0.78rem;
     line-height: 1.4;
-    animation: agent-entry-in 0.2s ease;
+    animation: agent-entry-in 300ms var(--ease-out-expo) both;
 }
 
 @keyframes agent-entry-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
 }
 
 .agent-log-thought  { border-color: rgba(124, 58, 237, 0.15); background: rgba(124, 58, 237, 0.05); }
@@ -3486,12 +3517,12 @@ body.crt-flicker-disabled .crt-flicker {
     border-radius: 10px;
     padding: 10px 14px;
     transition: border-color 0.15s, background 0.15s;
-    animation: mem-card-in 0.18s ease;
+    animation: mem-card-in 280ms var(--ease-out-expo) both;
 }
 
 @keyframes mem-card-in {
-    from { opacity: 0; transform: translateY(3px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
 }
 
 .memory-record-card:hover {
@@ -3781,22 +3812,23 @@ body.crt-flicker-disabled .crt-flicker {
 
 /* Entrance animation */
 .radial-menu.active .radial-ring {
-    animation: radial-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: radial-pop 320ms var(--ease-out-spring) forwards;
 }
 
 @keyframes radial-pop {
-    from { transform: scale(0.7); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
+    0%   { transform: scale(0.6) rotate(-4deg); opacity: 0; }
+    65%  { transform: scale(1.05) rotate(1deg);  opacity: 1; }
+    100% { transform: scale(1)   rotate(0);     opacity: 1; }
 }
 
 /* Keyboard/mouse shortcut to preview radial — hold backtick ` for testing */
 .radial-menu.active .radial-backdrop {
-    animation: radial-bg-in 0.15s ease forwards;
+    animation: radial-bg-in 240ms var(--ease-standard) forwards;
 }
 
 @keyframes radial-bg-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from { opacity: 0; transform: scale(1.04); }
+    to   { opacity: 1; transform: scale(1);    }
 }
 
 /* ==========================================================================
@@ -4132,7 +4164,7 @@ body.crt-flicker-disabled .crt-flicker {
     flex-direction: column;
     gap: 4px;
     pointer-events: auto;
-    animation: toast-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: toast-slide-in 420ms var(--ease-out-spring) forwards;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -4168,14 +4200,9 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 @keyframes toast-slide-in {
-    from {
-        transform: translateX(120%) translateY(0);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0) translateY(0);
-        opacity: 1;
-    }
+    0%   { transform: translateX(calc(100% + 32px)) scale(0.92); opacity: 0; }
+    62%  { transform: translateX(-10px)              scale(1.02); opacity: 1; }
+    100% { transform: translateX(0)                   scale(1);    opacity: 1; }
 }
 
 /* Notification badge styles */
@@ -4303,7 +4330,7 @@ body.crt-flicker-disabled .crt-flicker {
     justify-content: center;
     padding-top: 80px;
     background: rgba(0, 0, 0, 0.88);
-    animation: history-overlay-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: history-overlay-in 280ms var(--ease-out-expo) both;
 }
 
 #history-search-overlay.hidden {
@@ -4311,8 +4338,8 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 @keyframes history-overlay-in {
-    from { opacity: 0; transform: scale(0.97); }
-    to   { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0);   }
 }
 
 .history-search-panel {
@@ -4497,7 +4524,7 @@ body.crt-flicker-disabled .crt-flicker {
 
 .history-ai-loading::before {
     content: "⟳";
-    animation: spin 1s linear infinite;
+    animation: spin 900ms linear infinite;
     display: inline-block;
 }
 
@@ -4531,12 +4558,13 @@ body.crt-flicker-disabled .crt-flicker {
     box-shadow: 0 2px 10px rgba(0,0,0,0.4);
     background: #0a0f1d;
     flex-shrink: 0;
-    animation: attachment-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: attachment-pop 300ms var(--ease-out-spring) both;
 }
 
 @keyframes attachment-pop {
-    from { transform: scale(0.6); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
+    0%   { transform: scale(0.55) translateY(8px); opacity: 0; }
+    65%  { transform: scale(1.06) translateY(-2px); opacity: 1; }
+    100% { transform: scale(1)    translateY(0);    opacity: 1; }
 }
 
 .chat-attachment-preview img {
@@ -5370,7 +5398,7 @@ body.crt-flicker-disabled .crt-flicker {
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     opacity: 0;
     transform: translateY(10px);
-    animation: ob-card-in 0.35s ease forwards;
+    animation: ob-card-in 400ms var(--ease-out-expo) both;
 }
 
 .ob-feature-card:hover {
@@ -5380,7 +5408,8 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 @keyframes ob-card-in {
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(20px) scale(0.94); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    }
 }
 
 .ob-feature-icon {
@@ -5539,14 +5568,15 @@ body.crt-flicker-disabled .crt-flicker {
     line-height: 1.75;
     opacity: 0;
     transform: translateX(-8px);
-    animation: bootLineIn 0.22s ease forwards;
+    animation: bootLineIn 300ms var(--ease-out-expo) both;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: rgba(200,240,255,0.75);
 }
 @keyframes bootLineIn {
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0);    }
 }
 .boot-log-line .boot-addr { color: rgba(0,240,255,0.4); }
 .boot-log-line .boot-ok   { color: var(--response-color); }
@@ -5931,12 +5961,12 @@ body.crt-flicker-disabled .crt-flicker {
 .ctrl-prompt-template-token.current {
     background: var(--accent-color, #00f0ff);
     color: #000;
-    animation: token-pulse 0.8s ease infinite;
+    animation: token-pulse 1.4s var(--ease-in-out-smooth) infinite;
 }
 
 @keyframes token-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%, 100% { opacity: 1;    transform: scale(1);    }
+    50%       { opacity: 0.75; transform: scale(1.05); }
 }
 
 /* -- Footer (tooltip panel) -- */
@@ -6213,12 +6243,12 @@ body.crt-flicker-disabled .crt-flicker {
 .remote-status-dot.remote-dot-online {
     background: #00e676;
     box-shadow: 0 0 6px rgba(124, 255, 178, 0.15);
-    animation: remote-pulse 2s infinite;
+    animation: remote-pulse var(--dur-ambient) ease-in-out infinite;
 }
 
 @keyframes remote-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% { opacity: 1;   transform: scale(1);    }
+    50%       { opacity: 0.55; transform: scale(0.78); }
 }
 
 /* Main grid */
@@ -6823,4 +6853,251 @@ body.crt-flicker-disabled .crt-flicker {
     font-family: var(--font-mono);
     font-size: 0.65rem;
     transition: color 0.2s;
+}
+
+
+/* ===========================================================================
+   ELITE ANIMATION SYSTEM v2 — Tactical Glass Motion Language
+   GPU contract: ONLY transform + opacity animated
+   SNAP   cubic-bezier(0.22, 1, 0.36, 1)    80–150ms  micro-interactions
+   EXPO   cubic-bezier(0.16, 1, 0.3, 1)    220–320ms  content entries
+   SPRING cubic-bezier(0.34, 1.56, 0.64, 1) 320–420ms  panels & objects
+   =========================================================================== */
+
+/* ── Message Bubble Entrances ─────────────────────────────────────────────── */
+@keyframes msg-in-user {
+    from { opacity: 0; transform: translateX(20px) translateY(6px) scale(0.96); }
+    to   { opacity: 1; transform: translateX(0)    translateY(0)   scale(1);    }
+}
+@keyframes msg-in-ai {
+    from { opacity: 0; transform: translateX(-20px) translateY(6px) scale(0.96); }
+    to   { opacity: 1; transform: translateX(0)     translateY(0)   scale(1);    }
+}
+.message.user .message-card {
+    animation: msg-in-user 320ms var(--ease-out-expo) both;
+}
+.message.ai .message-card {
+    animation: msg-in-ai 320ms var(--ease-out-expo) both;
+}
+.message.system .message-card {
+    animation: msg-in-ai 240ms var(--ease-out-expo) both;
+}
+
+/* ── Universal Interactive Press Feedback ────────────────────────────────── */
+.input-btn:active,
+.send-prompt-btn:active,
+.new-chat-btn:active,
+.canvas-btn:active,
+.agent-btn:active,
+.stv-nav-item:active,
+.history-item:active,
+.sidebar-toggle-btn:active,
+.memory-action-btn:active,
+.browser-btn:active,
+.tool-btn:active,
+button.tab-btn:active,
+.radial-segment:active {
+    transform: scale(0.92) !important;
+    transition: transform var(--dur-micro) var(--ease-snap) !important;
+}
+
+/* ── View Entrance on Tab Switch ─────────────────────────────────────────── */
+@keyframes view-slide-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+.view-content.active {
+    animation: view-slide-in 280ms var(--ease-out-expo) both;
+}
+
+/* ── Input Console Focus Ring ────────────────────────────────────────────── */
+@keyframes focus-ring-expand {
+    from { opacity: 0.4; transform: scaleX(0.94) scaleY(0.9); }
+    to   { opacity: 1;   transform: scaleX(1)    scaleY(1);   }
+}
+.input-console-bar:focus-within {
+    animation: focus-ring-expand 200ms var(--ease-out-expo) both;
+}
+
+/* ── Settings Modal Spring Entrance ─────────────────────────────────────── */
+@keyframes modal-spring-in {
+    0%   { opacity: 0; transform: scale(0.86) translateY(24px); }
+    62%  { opacity: 1; transform: scale(1.02) translateY(-3px);  }
+    100% { opacity: 1; transform: scale(1)    translateY(0);     }
+}
+.settings-overlay.active .settings-modal-card {
+    animation: modal-spring-in 380ms var(--ease-out-spring) both;
+}
+
+/* ── Shimmer Skeleton Loading ─────────────────────────────────────────────── */
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+}
+.skeleton,
+.skeleton-line {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.025)  0%,
+        rgba(94, 235, 255, 0.055)  45%,
+        rgba(255, 255, 255, 0.025) 90%
+    );
+    background-size: 200% auto;
+    animation: shimmer 1.8s var(--ease-in-out-smooth) infinite;
+    border-radius: 4px;
+    color: transparent;
+    pointer-events: none;
+}
+
+/* ── Status Dot Breathing ────────────────────────────────────────────────── */
+@keyframes status-breathe {
+    0%, 100% { opacity: 1;    transform: scale(1);    }
+    50%       { opacity: 0.45; transform: scale(0.72); }
+}
+.status-dot {
+    animation: status-breathe 3.2s ease-in-out infinite;
+}
+
+/* ── Notification Badge Bounce In ────────────────────────────────────────── */
+@keyframes badge-bounce-in {
+    0%   { transform: scale(0)   rotate(-12deg); }
+    55%  { transform: scale(1.3) rotate(4deg);   }
+    75%  { transform: scale(0.9) rotate(-1deg);  }
+    100% { transform: scale(1)   rotate(0);      }
+}
+.notif-badge {
+    animation: badge-bounce-in 380ms var(--ease-out-spring) both;
+    transform-origin: center;
+}
+
+/* ── Radial Menu Segment Stagger ─────────────────────────────────────────── */
+.radial-menu.active .radial-segment:nth-child(1) { animation-delay: 18ms;  }
+.radial-menu.active .radial-segment:nth-child(2) { animation-delay: 36ms;  }
+.radial-menu.active .radial-segment:nth-child(3) { animation-delay: 54ms;  }
+.radial-menu.active .radial-segment:nth-child(4) { animation-delay: 72ms;  }
+.radial-menu.active .radial-segment:nth-child(5) { animation-delay: 90ms;  }
+.radial-menu.active .radial-segment:nth-child(6) { animation-delay: 108ms; }
+.radial-menu.active .radial-segment:nth-child(7) { animation-delay: 126ms; }
+.radial-menu.active .radial-segment:nth-child(8) { animation-delay: 144ms; }
+
+/* ── Agent Log Entry Stagger ─────────────────────────────────────────────── */
+.agent-log-entry:nth-child(1) { animation-delay: 0ms;   }
+.agent-log-entry:nth-child(2) { animation-delay: 45ms;  }
+.agent-log-entry:nth-child(3) { animation-delay: 90ms;  }
+.agent-log-entry:nth-child(4) { animation-delay: 135ms; }
+.agent-log-entry:nth-child(5) { animation-delay: 180ms; }
+.agent-log-entry:nth-child(6) { animation-delay: 225ms; }
+.agent-log-entry:nth-child(7) { animation-delay: 270ms; }
+.agent-log-entry:nth-child(8) { animation-delay: 315ms; }
+
+/* ── Memory Card Stagger ─────────────────────────────────────────────────── */
+.memory-record-card:nth-child(1) { animation-delay: 0ms;   }
+.memory-record-card:nth-child(2) { animation-delay: 35ms;  }
+.memory-record-card:nth-child(3) { animation-delay: 70ms;  }
+.memory-record-card:nth-child(4) { animation-delay: 105ms; }
+.memory-record-card:nth-child(5) { animation-delay: 140ms; }
+.memory-record-card:nth-child(6) { animation-delay: 175ms; }
+
+/* ── History Item Stagger from Left ─────────────────────────────────────── */
+@keyframes history-item-in {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0);     }
+}
+.history-item {
+    animation: history-item-in 220ms var(--ease-out-expo) both;
+}
+.history-item:nth-child(1)   { animation-delay: 0ms;   }
+.history-item:nth-child(2)   { animation-delay: 30ms;  }
+.history-item:nth-child(3)   { animation-delay: 60ms;  }
+.history-item:nth-child(4)   { animation-delay: 90ms;  }
+.history-item:nth-child(5)   { animation-delay: 120ms; }
+.history-item:nth-child(6)   { animation-delay: 150ms; }
+.history-item:nth-child(7)   { animation-delay: 180ms; }
+.history-item:nth-child(8)   { animation-delay: 210ms; }
+.history-item:nth-child(n+9) { animation-delay: 240ms; }
+
+/* ── Send Button Focus-state Pulse ───────────────────────────────────────── */
+@keyframes send-ready {
+    0%, 100% { transform: scale(1);    }
+    50%       { transform: scale(1.05); }
+}
+.send-prompt-btn:not(:disabled):focus-visible {
+    animation: send-ready 700ms var(--ease-in-out-smooth) infinite;
+}
+
+/* ── Toast Notif Exit ────────────────────────────────────────────────────── */
+@keyframes toast-slide-out {
+    from { transform: translateX(0)    scale(1);    opacity: 1; }
+    to   { transform: translateX(110%) scale(0.92); opacity: 0; }
+}
+.toast-notif.hiding {
+    animation: toast-slide-out 280ms var(--ease-standard) both;
+}
+
+/* ── Panel Slide Up / Down ────────────────────────────────────────────────── */
+@keyframes panel-slide-up {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes panel-slide-down {
+    from { opacity: 1; transform: translateY(0);    }
+    to   { opacity: 0; transform: translateY(100%); }
+}
+
+/* ── Token / Stat Counter Tick ────────────────────────────────────────────── */
+@keyframes counter-tick {
+    0%   { transform: translateY(0);    opacity: 1; }
+    40%  { transform: translateY(-8px); opacity: 0; }
+    60%  { transform: translateY(8px);  opacity: 0; }
+    100% { transform: translateY(0);    opacity: 1; }
+}
+.token-count-changing {
+    animation: counter-tick 200ms var(--ease-snap) both;
+}
+
+/* ── Card Hover Lift ─────────────────────────────────────────────────────── */
+.speed-dial-card:hover,
+.ob-feature-card:hover {
+    transform: translateY(-4px);
+    transition: transform var(--dur-base) var(--ease-out-expo) !important;
+}
+
+/* ── Onboarding feature card stagger ────────────────────────────────────── */
+.ob-feature-card:nth-child(1) { animation-delay: 60ms;  }
+.ob-feature-card:nth-child(2) { animation-delay: 110ms; }
+.ob-feature-card:nth-child(3) { animation-delay: 160ms; }
+.ob-feature-card:nth-child(4) { animation-delay: 210ms; }
+.ob-feature-card:nth-child(5) { animation-delay: 260ms; }
+.ob-feature-card:nth-child(6) { animation-delay: 310ms; }
+
+/* ── Boot log line — upgrade (JS sets animation-delay inline) ─────────────── */
+@keyframes boot-line-reveal {
+    from { opacity: 0; transform: translateX(-14px) skewX(-0.5deg); }
+    to   { opacity: 1; transform: translateX(0)     skewX(0);        }
+}
+
+/* ── Will-change hints — declared only on actively animated layers ─────────── */
+.message-card,
+.toast-notif,
+.settings-modal-card,
+.radial-ring,
+.agent-log-entry,
+.memory-record-card,
+.chat-attachment-preview {
+    will-change: transform, opacity;
+}
+
+/* ── Reduced Motion — accessibility ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration:        0.01ms !important;
+        animation-iteration-count: 1      !important;
+        transition-duration:       0.01ms !important;
+    }
+    .status-dot,
+    .app-background-css,
+    .skeleton,
+    .skeleton-line {
+        animation: none !important;
+    }
 }
