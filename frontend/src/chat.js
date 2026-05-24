@@ -736,66 +736,66 @@ listen("command_exit", function (event) {
     finishRunningProcess(code);
 });
 
+listen("stt_progress", function (event) {
+    const status = event.payload.status;
+    let mic = document.getElementById("mic-btn");
+    if (!mic) return;
+    
+    if (status === "recording") {
+        state.isRecording = true;
+        mic.innerText = "🛑";
+        mic.classList.add("recording");
+        mic.classList.remove("transcribing");
+    } else if (status === "transcribing") {
+        state.isRecording = false;
+        mic.innerText = "⏳";
+        mic.classList.remove("recording");
+        mic.classList.add("transcribing");
+    } else if (status === "done") {
+        state.isRecording = false;
+        mic.innerText = "🎙️";
+        mic.classList.remove("recording");
+        mic.classList.remove("transcribing");
+    }
+});
+
 // Audio Recording Logic
 // let isRecording = false; (Moved to state.js)
 let micBtn = null;
 
-function handleMicAction() {
-    let chatViewport = document.getElementById("chat-viewport");
-    let viewport = document.getElementById("chat-workspace");
+// The global stt_progress listener (registered above) handles mic button icon/class.
+// handleMicAction manages the record/stop invocation flow and input population.
+async function handleMicAction() {
+    const chatViewport = document.getElementById("chat-viewport");
+    const viewport = document.getElementById("chat-workspace");
+
     if (!state.isRecording) {
-        state.isRecording = true;
-        micBtn.innerText = "🛑";
-        micBtn.classList.add("recording");
-        invoke("start_recording").then((msg) => {
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: ${msg}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
-        }).catch((err) => {
-            state.isRecording = false;
-            micBtn.innerText = "🎙️";
-            micBtn.classList.remove("recording");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System error starting recording: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
+        // ── START recording ─────────────────────────────────────────────────
+        micBtn.title = "Stop Recording";
+        invoke("start_recording").catch((err) => {
+            const errDiv = document.createElement("div");
+            errDiv.className = "message system error";
+            errDiv.innerHTML = `<div class="message-card">Error starting recording: ${err}</div>`;
+            chatViewport.appendChild(errDiv);
             viewport.scrollTop = viewport.scrollHeight;
         });
-    } else {
-        state.isRecording = false;
-        micBtn.innerText = "🎙️";
-        micBtn.classList.remove("recording");
-        
-        let div = document.createElement("div");
-        div.className = "message system";
-        div.innerHTML = `
-            <div class="message-card">
-                System: Processing audio...
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
 
+    } else {
+        // ── STOP recording + transcribe ─────────────────────────────────────
+        micBtn.title = "Voice Input";
         invoke("stop_recording").then((text) => {
-            inputElement.value = text;
-            inputElement.style.height = "auto";
-            inputElement.style.height = (inputElement.scrollHeight) + "px";
-            inputElement.focus();
-            
-            div.querySelector(".message-card").innerText = "System: Audio transcribed.";
+            if (inputElement) {
+                inputElement.value = text;
+                inputElement.style.height = "auto";
+                inputElement.style.height = inputElement.scrollHeight + "px";
+                inputElement.focus();
+            }
         }).catch((err) => {
-            div.className = "message system error";
-            div.querySelector(".message-card").innerText = "System error stop recording/transcribing: " + err;
+            const errDiv = document.createElement("div");
+            errDiv.className = "message system error";
+            errDiv.innerHTML = `<div class="message-card">Transcription error: ${err}</div>`;
+            chatViewport.appendChild(errDiv);
+            viewport.scrollTop = viewport.scrollHeight;
         });
     }
 }

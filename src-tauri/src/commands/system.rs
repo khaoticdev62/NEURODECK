@@ -263,26 +263,45 @@ pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    
+pub async fn start_recording(
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let _ = app_handle.emit("stt_progress", serde_json::json!({ "status": "recording" }));
+
     if cfg!(target_os = "linux") {
-        match std::process::Command::new("arecord")
-            .arg("-f")
-            .arg("cd")
-            .arg("-t")
-            .arg("wav")
-            .arg("record.wav")
-            .spawn() 
-        {
-            Ok(child) => {
-                app.record_child = Some(child);
-                "Recording started...".to_string()
-            }
-            Err(e) => format!("Error starting recording: {}", e),
-        }
+        let child = std::process::Command::new("arecord")
+            .arg("-f").arg("cd")
+            .arg("-t").arg("wav")
+            .arg("/tmp/neurodeck_record.wav")
+            .spawn()
+            .map_err(|e| format!("Error starting recording: {}", e))?;
+
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.record_child = Some(child);
+        Ok("Recording started".to_string())
+    } else if cfg!(target_os = "windows") {
+        // PowerShell audio capture via Windows Core Audio
+        let ps_script = r#"
+Add-Type -AssemblyName System.Speech
+$recognizer = New-Object System.Speech.Recognition.SpeechRecognitionEngine
+$grammar = New-Object System.Speech.Recognition.DictationGrammar
+$recognizer.LoadGrammar($grammar)
+$recognizer.SetInputToDefaultAudioDevice()
+$result = $recognizer.Recognize([System.TimeSpan]::FromSeconds(8))
+if ($result) { Write-Output $result.Text }
+"#;
+        let child = std::process::Command::new("powershell")
+            .arg("-NoProfile").arg("-NonInteractive")
+            .arg("-Command").arg(ps_script)
+            .spawn()
+            .map_err(|e| format!("Error starting recording: {}", e))?;
+
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.record_child = Some(child);
+        Ok("Recording started".to_string())
     } else {
-        "Voice recording is only supported on Linux/SteamOS. Use Whisper STT with a pre-recorded WAV, or configure a Gemini API key for cloud transcription.".to_string()
+        Err("Voice recording is not supported on this platform.".to_string())
     }
 }
 
@@ -340,46 +359,67 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
 }
 
 #[tauri::command]
-pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn stop_recording(
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    // Kill the recording process
     let record_child = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.record_child.take()
     };
-
     if let Some(mut child) = record_child {
         let _ = child.kill();
         let _ = child.wait();
     }
 
-    let audio_data = std::fs::read("record.wav");
-    if let Ok(data) = audio_data {
-        // Try whisper.cpp first if model is configured and file exists
-        let (whisper_binary, whisper_model) = {
-            let app = state.lock().unwrap_or_else(|e| e.into_inner());
-            (app.whisper_binary.clone(), app.whisper_model.clone())
-        };
-        if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
-            let bin = whisper_binary.clone();
-            let mdl = whisper_model.clone();
-            let result = tokio::task::spawn_blocking(move || {
-                crate::whisper::transcribe("record.wav", &bin, &mdl)
-            })
-            .await;
-            if let Ok(Ok(text)) = result {
-                return Ok(text);
-            }
-        }
+    let _ = app_handle.emit("stt_progress", serde_json::json!({ "status": "transcribing" }));
 
-        let provider = {
-            let app = state.lock().unwrap_or_else(|e| e.into_inner());
-            app.provider.clone()
-        };
-        match provider.transcribe_audio(&data).await {
-            Ok(text) => Ok(text),
-            Err(e) => Err(format!("Error transcribing: {}", e)),
-        }
+    // Resolve wav path — prefer /tmp location, fall back to cwd record.wav
+    let wav_path = if std::path::Path::new("/tmp/neurodeck_record.wav").exists() {
+        "/tmp/neurodeck_record.wav".to_string()
     } else {
-        Err("No audio recording found. Start recording first with the mic button, or configure Whisper STT in Settings.".to_string())
+        "record.wav".to_string()
+    };
+
+    let (whisper_binary, whisper_model) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        (app.whisper_binary.clone(), app.whisper_model.clone())
+    };
+
+    // Try whisper.cpp first if configured
+    if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
+        let bin = whisper_binary.clone();
+        let mdl = whisper_model.clone();
+        let wav = wav_path.clone();
+        let result = tokio::task::spawn_blocking(move || {
+            crate::whisper::transcribe(&wav, &bin, &mdl)
+        })
+        .await;
+        if let Ok(Ok(text)) = result {
+            let _ = app_handle.emit("stt_progress", serde_json::json!({ "status": "done" }));
+            return Ok(text);
+        }
+    }
+
+    // Fall back to provider transcribe_audio (Gemini)
+    let audio_data = std::fs::read(&wav_path)
+        .map_err(|_| "No audio recording found. Use the mic button to start recording first.".to_string())?;
+
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.provider.clone()
+    };
+
+    match provider.transcribe_audio(&audio_data).await {
+        Ok(text) => {
+            let _ = app_handle.emit("stt_progress", serde_json::json!({ "status": "done" }));
+            Ok(text)
+        }
+        Err(e) => {
+            let _ = app_handle.emit("stt_progress", serde_json::json!({ "status": "done" }));
+            Err(format!("Transcription failed: {}", e))
+        }
     }
 }
 
