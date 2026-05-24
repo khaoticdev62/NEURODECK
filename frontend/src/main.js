@@ -298,7 +298,7 @@ document.querySelector('#app').innerHTML = `
                 <div class="nav-tab-bar">
                     <button class="nav-tab active" data-view="chat">💬 Chat</button>
                     <button class="nav-tab" data-view="canvas">🎨 Canvas</button>
-                    <button class="nav-tab" data-view="terminal">💻 Terminal</button>
+                    <button class="nav-tab" data-view="terminal">💻 Term</button>
                     <button class="nav-tab" data-view="ssh">🔑 SSH</button>
                     <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
                     <button class="nav-tab" data-view="share">📤 Share</button>
@@ -306,7 +306,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
                     <button class="nav-tab" data-view="graph">⬡ Graph</button>
-                    <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
+                    <button class="nav-tab" data-view="prompt-lab">📝 Lab</button>
                     <button class="nav-tab" data-view="remote">📱 Remote</button>
                     <button class="nav-tab" data-view="scheduler">⏱️ Tasks</button>
                 </div>
