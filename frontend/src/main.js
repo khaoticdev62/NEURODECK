@@ -2842,6 +2842,7 @@ const RADIAL_SEGMENTS = [
     { icon: "📱", label: "Remote",     view: "remote"     },
     { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
     { icon: "⏱️", label: "Tasks",      view: "scheduler"  },
+    { icon: "⬡",  label: "Graph",      view: "graph"      },
 ];
 
 function getGamepadFocusableElements() {
@@ -2967,6 +2968,19 @@ function getGamepadFocusableElements() {
         "#view-canvas.active #canvas-copy-btn",
         "#view-canvas.active #canvas-lang-select",
         "#view-canvas.active #canvas-collab-btn",
+        "#view-canvas.active #canvas-git-btn",
+
+        // Canvas Git Panel (when open)
+        "#canvas-git-panel.open #git-path-input",
+        "#canvas-git-panel.open #git-path-apply",
+        "#canvas-git-panel.open .git-tab-btn",
+        "#canvas-git-panel.open .git-file-chk",
+        "#canvas-git-panel.open .git-diff-btn",
+        "#canvas-git-panel.open #git-stage-all-btn",
+        "#canvas-git-panel.open #git-stage-sel-btn",
+        "#canvas-git-panel.open #git-gen-msg-btn",
+        "#canvas-git-panel.open #git-commit-msg",
+        "#canvas-git-panel.open #git-commit-btn",
         
         // Terminal View
         "#view-terminal.active #pty-reconnect-btn",
@@ -3021,6 +3035,27 @@ function getGamepadFocusableElements() {
         // Graph View
         "#view-graph.active #graph-refresh-btn",
         "#view-graph.active #graph-center-btn",
+
+        // Prompt Lab View
+        "#view-prompt-lab.active #pl-open-gallery-btn",
+        "#view-prompt-lab.active #pl-optimize-ai-btn",
+        "#view-prompt-lab.active #pl-persona",
+        "#view-prompt-lab.active #pl-task",
+        "#view-prompt-lab.active #pl-context",
+        "#view-prompt-lab.active #pl-tone",
+        "#view-prompt-lab.active #pl-constraints",
+        "#view-prompt-lab.active #pl-format",
+        "#view-prompt-lab.active .pl-formula-card",
+        "#view-prompt-lab.active .pl-chip",
+        "#view-prompt-lab.active #pl-generate-btn",
+        "#view-prompt-lab.active #pl-jpe-level-select",
+        "#view-prompt-lab.active #pl-explain-jpe-btn",
+        "#view-prompt-lab.active #pl-copy-prompt-btn",
+        "#view-prompt-lab.active #pl-send-chat-btn",
+        "#view-prompt-lab.active #pl-history-btn",
+        "#view-prompt-lab.active #pl-export-json-btn",
+        "#view-prompt-lab.active #pl-export-lua-btn",
+        "#view-prompt-lab.active #pl-copy-jpe-btn",
 
         // Agent View
         "#view-agent.active #agent-task-input",
@@ -3283,12 +3318,15 @@ function pollGamepads() {
         const notifModal = document.getElementById("notif-modal");
         const gameModal = document.getElementById("game-context-modal");
         const agentSwitcher = document.getElementById("agent-switcher-panel");
+        const gitPanel = document.getElementById("canvas-git-panel");
         if (notifModal && notifModal.classList.contains("active")) {
             document.getElementById("close-notif-btn").click();
         } else if (gameModal && gameModal.classList.contains("active")) {
             document.getElementById("close-game-context").click();
         } else if (agentSwitcher && !agentSwitcher.classList.contains("hidden")) {
             toggleAgentSwitcher();
+        } else if (gitPanel && gitPanel.classList.contains("open")) {
+            document.getElementById("canvas-git-btn").click();
         } else if (settingsOverlay && settingsOverlay.classList.contains("active")) {
             document.getElementById("close-settings").click();
         } else if (transferModal && transferModal.classList.contains("active")) {
