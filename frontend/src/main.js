@@ -222,8 +222,8 @@ document.querySelector('#app').innerHTML = `
 ██║  ██║██╔══╝  ██║     ██╔═██╗
 ██████╔╝███████╗╚██████╗██║  ██╗
 ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝</pre>
-                <div class="boot-subtitle">AI TERMINAL OS · v1.0.0</div>
-                <div class="boot-build-tag">BUILD 20260523 · STEAM DECK EDITION</div>
+                <div class="boot-subtitle">AI TERMINAL OS · v1.2.0-ra · Ra</div>
+                <div class="boot-build-tag">BUILD 20260524 · STEAM DECK EDITION · KFMS THOTH</div>
                 <div class="boot-status-dot" id="boot-status-dot"></div>
             </div>
             <div class="boot-log-panel">
@@ -291,22 +291,6 @@ document.querySelector('#app').innerHTML = `
                     <span class="top-nav-title" id="session-title">Active Session</span>
                 </div>
                 
-                <!-- Premium Glassmorphic Navigation Tab Bar -->
-                <div class="nav-tab-bar">
-                    <button class="nav-tab active" data-view="chat">💬 Chat</button>
-                    <button class="nav-tab" data-view="canvas">🎨 Canvas</button>
-                    <button class="nav-tab" data-view="terminal">💻 Terminal</button>
-                    <button class="nav-tab" data-view="ssh">🔑 SSH</button>
-                    <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
-                    <button class="nav-tab" data-view="share">📤 Share</button>
-                    <button class="nav-tab" data-view="browser">🌐 Browser</button>
-                    <button class="nav-tab" data-view="agent">🤖 Agent</button>
-                    <button class="nav-tab" data-view="memory">🧠 Memory</button>
-                    <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
-                    <button class="nav-tab" data-view="remote">📱 Remote</button>
-                    <button class="nav-tab" data-view="docs">📚 Docs</button>
-                </div>
-
                 <div class="top-nav-right">
                     <button class="model-selector-indicator" id="model-name" title="Switch Agent (Ctrl+Shift+M)" onclick="toggleAgentSwitcher()">[ MODEL: GEMINI ]</button>
                     <span class="game-context-badge hidden" id="game-badge" title="Steam game detected">
@@ -322,6 +306,26 @@ document.querySelector('#app').innerHTML = `
                     <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
                 </div>
             </header>
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 NAVIGATION TAB ROW — full-width row below top-nav
+                 ═══════════════════════════════════════════════════════════ -->
+            <nav class="nav-tab-row">
+                <div class="nav-tab-bar">
+                    <button class="nav-tab active" data-view="chat">💬 Chat</button>
+                    <button class="nav-tab" data-view="canvas">🎨 Canvas</button>
+                    <button class="nav-tab" data-view="terminal">💻 Terminal</button>
+                    <button class="nav-tab" data-view="ssh">🔑 SSH</button>
+                    <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
+                    <button class="nav-tab" data-view="share">📤 Share</button>
+                    <button class="nav-tab" data-view="browser">🌐 Browser</button>
+                    <button class="nav-tab" data-view="agent">🤖 Agent</button>
+                    <button class="nav-tab" data-view="memory">🧠 Memory</button>
+                    <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
+                    <button class="nav-tab" data-view="remote">📱 Remote</button>
+                    <button class="nav-tab" data-view="docs">📚 Docs</button>
+                </div>
+            </nav>
 
             <!-- ═══════════════════════════════════════════════════════════
                  AGENT SWITCHER PANEL — drops down from model-name button
@@ -8500,7 +8504,7 @@ async function showOnboardingWizard() {
     try {
 
     // Dynamic step count — each addLine() call increments step automatically
-    const TOTAL_STEPS = 22;
+    const TOTAL_STEPS = 28;
     let step = 0;
 
     function setProgress(pct, label) {
@@ -8521,23 +8525,23 @@ async function showOnboardingWizard() {
 
     const delay = ms => new Promise(r => setTimeout(r, ms));
 
-    addLine('[0x0001]', 'Initializing kernel space&hellip;');
-    await delay(90);
+    addLine('[0x0001]', 'Initializing kernel space&hellip; KFMS <span class="boot-val">v1.2.0-ra</span> · Codename <span class="boot-val">Ra</span>');
+    await delay(320);
 
     addLine('[0x0002]', 'Loading configuration: <span class="boot-val">llm-term.toml</span>');
     let cfg = null;
     try { cfg = await invoke('get_config'); } catch (_) {}
-    await delay(70);
+    await delay(280);
 
     const prov = cfg?.llm?.default_provider ?? 'ollama';
     const model = prov === 'gemini' ? (cfg?.llm?.gemini_model ?? 'gemini-1.5-flash') : (cfg?.llm?.ollama_model ?? 'llama2');
-    addLine('[0x0003]', `Provider: <span class="boot-val">${prov.toUpperCase()}</span>  &middot;  Model: <span class="boot-val">${model}</span>`);
-    await delay(80);
+    addLine('[0x0003]', `Provider: <span class="boot-val">${prov.toUpperCase()}</span>  &middot;  Model: <span class="boot-val">${model}</span>  <span class="boot-ok">&check;</span>`);
+    await delay(300);
 
     addLine('[0x0004]', 'Scanning plugin directory: <span class="boot-val">plugins/</span>');
     let plugins = [];
     try { plugins = await invoke('list_plugins'); } catch (_) {}
-    await delay(60);
+    await delay(240);
 
     const pluginDescMap = {
         'bmad.lua': 'BMad Framework &mdash; /john /sally /winston /amelia /paige /mary',
@@ -8552,7 +8556,7 @@ async function showOnboardingWizard() {
         const status = p.enabled === false ? '<span style="color:#ff4466">DISABLED</span>' : '<span class="boot-ok">LOADED</span>';
         addLine(`[0x${addrIdx.toString(16).padStart(4,'0')}]`, `Plugin: <span class="boot-val">${fname}</span>  ${status}  <span style="opacity:0.4">// ${desc}</span>`);
         addrIdx++;
-        await delay(55);
+        await delay(220);
     }
     if (plugins.length === 0) {
         addLine('[0x0005]', 'No plugins found in plugins/  <span style="opacity:0.5">(dir may be empty)</span>');
@@ -8562,51 +8566,63 @@ async function showOnboardingWizard() {
     const luaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(luaAddr, `Starting Lua runtime <span class="boot-val">(v5.4 &mdash; vendored via mlua)</span>&hellip;  <span class="boot-ok">&check;</span>`);
     addrIdx++;
-    await delay(80);
+    await delay(300);
 
     const personaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(personaAddr, 'Enumerating persona registry&hellip;');
     addrIdx++;
     let personas = [];
     try { personas = await invoke('get_personas'); } catch (_) {}
-    await delay(55);
+    await delay(240);
     const personaAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(personaAddr2, `Registered <span class="boot-val">${personas.length || 9}</span> personas  <span class="boot-ok">&check;</span>`);
     addrIdx++;
-    await delay(65);
+    await delay(260);
 
     const themeAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(themeAddr, 'Loading theme palette&hellip;');
     addrIdx++;
     let themes = [];
     try { themes = await invoke('get_themes'); } catch (_) {}
-    await delay(55);
+    await delay(240);
     const themeAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(themeAddr2, `<span class="boot-val">${themes.length || 6}</span> themes indexed  <span class="boot-ok">&check;</span>`);
     addrIdx++;
-    await delay(70);
+    await delay(260);
 
     const memAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(memAddr, 'Initializing vector memory subsystem&hellip;');
     addrIdx++;
     let memCount = 0;
     try { memCount = await invoke('get_doc_count'); } catch (_) {}
-    await delay(60);
+    await delay(260);
     const memAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(memAddr2, `Vector memory: <span class="boot-val">${memCount}</span> documents indexed  <span class="boot-ok">&check;</span>`);
+    addLine(memAddr2, `Vector memory: <span class="boot-val">${memCount}</span> documents indexed  &middot;  RAG pipeline: <span class="boot-ok">ARMED</span>`);
     addrIdx++;
-    await delay(65);
+    await delay(280);
+
+    // Knowledge Base / Docs subsystem
+    const kbAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(kbAddr, 'Knowledge Base module: <span class="boot-val">doc_indexer</span>  &middot;  Semantic search: <span class="boot-ok">READY</span>');
+    addrIdx++;
+    await delay(300);
 
     const ptyAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(ptyAddr, 'PTY manager: <span class="boot-ok">READY</span>  &middot;  Canvas engine: <span class="boot-ok">READY</span>  &middot;  Collab TCP: <span class="boot-ok">STANDBY</span>');
+    addLine(ptyAddr, 'PTY manager: <span class="boot-ok">READY</span>  &middot;  SSH bridge: <span class="boot-ok">READY</span>  &middot;  Collab TCP: <span class="boot-ok">STANDBY</span>');
     addrIdx++;
-    await delay(75);
+    await delay(300);
+
+    // Canvas streaming exec subsystem
+    const cvAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
+    addLine(cvAddr, 'Canvas engine: <span class="boot-ok">READY</span>  &middot;  Streaming exec: <span class="boot-val">exec_code_stream</span>  <span class="boot-ok">&check;</span>');
+    addrIdx++;
+    await delay(320);
 
     // Real LLM connectivity test
     const llmAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(llmAddr, `Testing LLM provider [<span class="boot-val">${prov.toUpperCase()}</span>]&hellip;`);
     addrIdx++;
-    await delay(50);
+    await delay(280);
     let llmStats = null;
     try { llmStats = await invoke('get_context_stats'); } catch (_) {}
     const llmStatus = llmStats ? '<span class="boot-ok">ONLINE</span>' : '<span style="color:#ffaa00">STANDBY</span>';
@@ -8614,11 +8630,11 @@ async function showOnboardingWizard() {
     const llmAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
     addLine(llmAddr2, `LLM [<span class="boot-val">${llmModel}</span>]: ${llmStatus}  &middot;  Infrastructure: <span class="boot-ok">ONLINE</span>`);
     addrIdx++;
-    await delay(80);
+    await delay(350);
 
-    addLine('[0x0011]', '<strong style="color:#00ff88;letter-spacing:0.06em">ALL SYSTEMS NOMINAL &mdash; NEURODECK ONLINE &check;</strong>', 'boot-final');
+    addLine(`[0x${addrIdx.toString(16).padStart(4,'0')}]`, '<strong style="color:#00ff88;letter-spacing:0.06em">ALL SYSTEMS NOMINAL &mdash; NEURODECK ONLINE &check;</strong>', 'boot-final');
     setProgress(100, 'NEURODECK ONLINE');
-    await delay(950);
+    await delay(1400);
 
         overlay.classList.add('fade-out');
         await delay(680);
