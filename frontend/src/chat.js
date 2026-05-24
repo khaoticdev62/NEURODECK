@@ -224,7 +224,7 @@ function sendMessage() {
 
     msg.innerHTML = `
         <div class="message-card">
-            ${attachmentHTML}${text}
+            ${attachmentHTML}${window.sanitizeHtml(text)}
         </div>
     `;
     // Add copy button to user message
@@ -890,7 +890,7 @@ function loadSession(sid) {
                 div.className = "message user";
                 div.innerHTML = `
                     <div class="message-card">
-                        ${msgStr.substring(6)}
+                        ${window.sanitizeHtml(msgStr.substring(6))}
                     </div>
                 `;
             } else if (msgStr.startsWith("AI: ")) {
@@ -905,7 +905,7 @@ function loadSession(sid) {
                 div.className = "message system";
                 div.innerHTML = `
                     <div class="message-card">
-                        ${msgStr}
+                        ${window.sanitizeHtml(msgStr)}
                     </div>
                 `;
             }

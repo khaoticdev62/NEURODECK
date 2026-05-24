@@ -85,7 +85,6 @@ async function triggerOAuthLogin() {
 }
 import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
-import { mockIPC } from '@tauri-apps/api/mocks';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
@@ -113,27 +112,54 @@ window.sanitizeHtml = function(html) {
     try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const scripts = doc.querySelectorAll('script');
-        scripts.forEach(s => s.remove());
-        const allElements = doc.querySelectorAll('*');
-        allElements.forEach(el => {
-            const attrs = Array.from(el.attributes);
-            attrs.forEach(attr => {
-                const name = attr.name.toLowerCase();
-                if (name.startsWith('on')) {
-                    el.removeAttribute(attr.name);
-                } else if (name === 'href' || name === 'src' || name === 'action') {
-                    const val = attr.value.trim().toLowerCase();
-                    if (val.startsWith('javascript:') || val.startsWith('data:text/html')) {
-                        el.removeAttribute(attr.name);
+        
+        const allowedTags = new Set([
+            'a', 'span', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+            'ul', 'ol', 'li', 'pre', 'code', 'em', 'strong', 'br', 'img', 
+            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 'hr'
+        ]);
+        
+        const allowedAttrs = new Set(['class', 'href', 'src', 'alt', 'title', 'target', 'style']);
+        
+        function cleanNode(node) {
+            const children = Array.from(node.childNodes);
+            for (const child of children) {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = child.tagName.toLowerCase();
+                    if (!allowedTags.has(tagName)) {
+                        if (['script', 'style', 'iframe', 'object', 'embed', 'noscript', 'meta', 'link'].includes(tagName)) {
+                            child.remove();
+                        } else {
+                            cleanNode(child);
+                            while (child.firstChild) {
+                                child.parentNode.insertBefore(child.firstChild, child);
+                            }
+                            child.remove();
+                        }
+                    } else {
+                        const attrs = Array.from(child.attributes);
+                        for (const attr of attrs) {
+                            const name = attr.name.toLowerCase();
+                            if (!allowedAttrs.has(name) || name.startsWith('on')) {
+                                child.removeAttribute(attr.name);
+                            } else if (name === 'href' || name === 'src') {
+                                const val = attr.value.trim().toLowerCase();
+                                if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) {
+                                    child.removeAttribute(attr.name);
+                                }
+                            }
+                        }
+                        cleanNode(child);
                     }
                 }
-            });
-        });
+            }
+        }
+        
+        cleanNode(doc.body);
         return doc.body.innerHTML;
     } catch (e) {
         console.error("HTML Sanitization failed:", e);
-        return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        return html.replace(/<[^>]*>/g, '');
     }
 };
 
@@ -166,648 +192,6 @@ window.applyThemeColors = function(theme) {
         window.sshTerminal.options.theme = xtermTheme;
     }
 };
-
-// Check if running in browser dev environment (outside Tauri WebView)
-if (!window.__TAURI_INTERNALS__) {
-    // Mock the session list in memory for interactivity
-    let mockSessions = ["session_mock_123", "session_mock_456"];
-    let mockActivePersona = "Default";
-    let mockCurrentSessionId = "session_mock_123";
-    let mockPlugins = [
-        { name: "auto_responder", file_name: "auto_responder.lua", enabled: true },
-        { name: "bmad", file_name: "bmad.lua", enabled: true },
-        { name: "ip_lookup", file_name: "ip_lookup.lua.disabled", enabled: false }
-    ];
-    let mockCustomPersonas = [];
-    
-    mockIPC((cmd, args) => {
-        console.log(`[Mock IPC] Invoked: ${cmd}`, args);
-        switch (cmd) {
-            case 'get_initial_state':
-                return {
-                    model: "GEMINI",
-                    memory_status: "Stable",
-                    tool_status: "Idle",
-                    session_id: mockCurrentSessionId,
-                    active_persona: mockActivePersona,
-                    game_name: "Elden Ring",
-                    game_app_id: "1245620",
-                    game_running: "true"
-                };
-            case 'get_personas':
-                return ["Default", "Developer", "Cyberpunk", "John", "Sally", "Winston", "Amelia", "Paige", "Mary"].concat(mockCustomPersonas.map(p => p.name));
-            case 'list_custom_personas':
-                return mockCustomPersonas;
-            case 'add_custom_persona': {
-                const { name, prompt } = args;
-                const name_trimmed = name.trim();
-                const prompt_trimmed = prompt.trim();
-                
-                if (!name_trimmed || !prompt_trimmed) {
-                    throw "Name and prompt cannot be empty";
-                }
-                if (name_trimmed.length > 30) {
-                    throw "Persona name must be under 30 characters";
-                }
-                const alphanumeric = /^[a-zA-Z0-9_\-\s]+$/;
-                if (!alphanumeric.test(name_trimmed)) {
-                    throw "Persona name can only contain letters, numbers, spaces, underscores, and hyphens";
-                }
-                const builtIn = ["Default", "Developer", "Cyberpunk", "John", "Sally", "Winston", "Amelia", "Paige", "Mary"];
-                if (builtIn.some(p => p.toLowerCase() === name_trimmed.toLowerCase())) {
-                    throw `Persona '${name_trimmed}' clashes with a built-in persona`;
-                }
-                if (mockCustomPersonas.some(p => p.name.toLowerCase() === name_trimmed.toLowerCase())) {
-                    throw `Persona '${name_trimmed}' already exists`;
-                }
-                mockCustomPersonas.push({ name: name_trimmed, prompt: prompt_trimmed });
-                return null;
-            }
-            case 'delete_custom_persona': {
-                const { name } = args;
-                const initial_len = mockCustomPersonas.length;
-                mockCustomPersonas = mockCustomPersonas.filter(p => p.name !== name);
-                if (mockCustomPersonas.length === initial_len) {
-                    throw `Custom persona '${name}' not found`;
-                }
-                return null;
-            }
-            case 'get_themes':
-                return ["Default", "Nord", "Gruvbox", "Sunset", "Dracula"];
-            case 'set_persona':
-                mockActivePersona = args.name;
-                return `Persona set to ${args.name}`;
-            case 'set_theme': {
-                const themes = {
-                    Default: { Background: "#12131C", Foreground: "#E0E0E0", Accent: "#00E5FF" },
-                    Nord: { Background: "#2E3440", Foreground: "#D8DEE9", Accent: "#88C0D0" },
-                    Gruvbox: { Background: "#282828", Foreground: "#EBDBB2", Accent: "#FE8019" },
-                    Sunset: { Background: "#1A0F1A", Foreground: "#FFE0F0", Accent: "#FF5E97" },
-                    Dracula: { Background: "#282A36", Foreground: "#F8F8F2", Accent: "#BD93F9" }
-                };
-                return themes[args.name] || themes.Default;
-            }
-            case 'new_session': {
-                const newId = "session_mock_" + Math.random().toString(36).substr(2, 9);
-                mockSessions.push(newId);
-                mockCurrentSessionId = newId;
-                return newId;
-            }
-            case 'list_sessions':
-                return mockSessions;
-            case 'load_session_by_id':
-                return {
-                    session_id: args.id,
-                    messages: [
-                        "User: Hello, list files in this directory please.",
-                        "AI: Here is a code block:\n```bash\nls -la\n```",
-                        "User: thanks!"
-                    ]
-                };
-            case 'delete_session':
-                mockSessions = mockSessions.filter(id => id !== args.id);
-                return "ok";
-            case 'save_session':
-                return "Session saved successfully";
-            case 'load_latest_session':
-                return {
-                    session_id: mockCurrentSessionId,
-                    messages: [
-                        "User: Hello, list files in this directory please.",
-                        "AI: Here is a code block:\n```bash\nls -la\n```",
-                        "User: thanks!"
-                    ]
-                };
-            case 'speak_text':
-                console.log(`[Mock TTS] Speaking: ${args.text}`);
-                return "ok";
-            case 'start_recording':
-                return "Voice recording started (Mock)";
-            case 'stop_recording':
-                return "Show me the latest logs (mock transcription)";
-            case 'send_command': {
-                // Simulate AI response stream
-                const text = args.prompt;
-
-                // Let's create a simulated response depending on user prompt
-                let reply = `I received your command: "${text}".\n\nHere is some code execution output:`;
-                if (args.imageBase64) {
-                    reply = `**[Vision Mock]** I can see the attached screenshot.\n\nYou asked: "${text}"\n\nIn production this calls Gemini Vision to analyze the image.`;
-                } else if (text.startsWith('/persona')) {
-                    reply = `Persona command executed successfully. Active persona updated.`;
-                } else if (text.startsWith('/discuss')) {
-                    reply = `Roundtable discussion initiated:\n\n**Amelia (Dev)**: Let's refactor the process stream.\n**Winston (Architect)**: Make sure the IPC channels are secure.\n**Sally (UX)**: Ensure the console feels fluid.`;
-                } else {
-                    reply = `Hello! This is a simulated stream response from **NEURODECK**.\n\nYou sent: "${text}".\n\nLet's test code output:\n\`\`\`bash\nnpm run test:nav\n\`\`\``;
-                }
-                
-                // Stream the reply in chunks
-                let chunks = [];
-                for (let i = 0; i < reply.length; i += 5) {
-                    chunks.push(reply.substring(i, i + 5));
-                }
-                
-                let delay = 50;
-                chunks.forEach((chunk, index) => {
-                    setTimeout(() => {
-                        invoke('plugin:event|emit', { event: 'stream_chunk', payload: chunk });
-                    }, delay * (index + 1));
-                });
-                
-                setTimeout(() => {
-                    invoke('plugin:event|emit', { event: 'stream_done', payload: {} });
-                }, delay * (chunks.length + 2));
-                
-                return "ok";
-            }
-            case 'execute_command_stream': {
-                // Simulate command execution stdout/stderr stream
-                const cmd = args.cmdStr;
-                let lines = [
-                    `$ ${cmd}`,
-                    `Cloning repository...`,
-                    `Resolving dependencies...`,
-                    `Success: process completed.`,
-                ];
-                
-                lines.forEach((line, index) => {
-                    setTimeout(() => {
-                        invoke('plugin:event|emit', { event: 'command_stdout', payload: line });
-                    }, 300 * (index + 1));
-                });
-                
-                setTimeout(() => {
-                    invoke('plugin:event|emit', { event: 'command_exit', payload: 0 });
-                }, 300 * (lines.length + 1));
-                
-                return "ok";
-            }
-            case 'kill_process':
-                return "ok";
-            case 'write_to_process':
-                return "ok";
-            case 'execute_lua': {
-                const code = args.code;
-                let lines = [
-                    `[Lua Engine] Executing script...`,
-                    `Hello from Lua Mock Runtime!`,
-                    `Evaluating: ${code.substring(0, 30)}${code.length > 30 ? '...' : ''}`,
-                ];
-                lines.forEach((line, index) => {
-                    setTimeout(() => {
-                        invoke('plugin:event|emit', { event: 'command_stdout', payload: line });
-                    }, 200 * (index + 1));
-                });
-                setTimeout(() => {
-                    invoke('plugin:event|emit', { event: 'command_exit', payload: 0 });
-                }, 200 * (lines.length + 1));
-                return "ok";
-            }
-            case 'export_session_markdown':
-                return `Session exported to ./exports/${args.id}.md (Mock)`;
-            case 'open_external':
-                console.log(`[Mock Browser] Opening external URL: ${args.url}`);
-                return "ok";
-            case 'browser_open':
-            case 'browser_navigate':
-            case 'browser_hide':
-            case 'browser_show':
-            case 'browser_exec':
-                console.log(`[Mock] ${cmd}:`, args);
-                return "ok";
-            case 'browser_get_url':
-                return "https://html.duckduckgo.com/html/";
-            case 'get_game_context':
-                return {
-                    name: "Elden Ring",
-                    app_id: "1245620",
-                    is_running: "true",
-                    notes: "Action RPG / Souls-like. Recommended Settings: Medium settings, 800p, Lock at 30FPS for visual stability. Common tweaks: Use Proton Experimental and enable CryoUtilities swap file increase to resolve open world stutters."
-                };
-            case 'send_tunnel_request':
-                return JSON.stringify({ status: "offline", error: "Mock: no tunnel server" });
-            case 'start_tunnel_server':
-            case 'stop_tunnel_server':
-                return "ok";
-            case 'pty_kill':
-            case 'pty_write':
-            case 'pty_resize':
-                return "ok";
-            case 'pty_spawn':
-                return { id: args.id || "main_pty_session" };
-            case 'ftp_test_connection':
-                return "Connected. Current directory: /";
-            case 'ftp_list_dir':
-                return [
-                    { name: "documents", is_dir: true, size: 0 },
-                    { name: "readme.txt", is_dir: false, size: 1024 },
-                ];
-            case 'ftp_download_file':
-            case 'ftp_upload_file':
-                return null;
-            case 'sftp_test_connection':
-                return "Connected. Current directory: /";
-            case 'sftp_list_dir':
-                return [
-                    { name: "sftp_documents", is_dir: true, size: 0 },
-                    { name: "sftp_readme.txt", is_dir: false, size: 2048 },
-                ];
-            case 'sftp_download_file':
-            case 'sftp_upload_file':
-                return null;
-            case 'get_discovered_peers':
-                return [];
-            case 'get_active_transfers':
-                return [];
-            case 'cancel_transfer':
-                return null;
-            case 'set_group_code':
-                window._mockGroupCode = args.code;
-                return null;
-            case 'get_group_code':
-                return window._mockGroupCode || "DEFAULT";
-            case 'assemble_prompt_via_lua_cmd':
-                // Simple JS concatenation fallback for browser mock mode
-                return `**Role/Persona:**\n${args.persona}\n\n**Task/Objective:**\n${args.task}\n\n**Context/Background:**\n${args.context}\n\n**Tone:**\n${args.tone}\n\n**Constraints:**\n${args.constraints}\n\n**Output Format:**\n${args.format}\n\n[Formula Applied: ${args.formula.toUpperCase()}]`;
-            case 'optimize_raw_prompt':
-                return {
-                    persona: "You are an expert software engineer.",
-                    task: args.raw_text || "Create a hello world program.",
-                    context: "Target environment: S-Term system.",
-                    tone: "Precise and direct.",
-                    constraints: "- Do not use third party dependencies.\n- Write highly performant code.",
-                    format: "Markdown code block only."
-                };
-            case 'generate_jpe_explanation_with_level':
-                return `[JPE Summary - Target Style: ${args.reading_level.toUpperCase()}]\nThis prompt instructs the AI to adopt the role of "${args.reading_level}" and solve the task: "${args.prompt_text.substring(0, 50)}...". It mandates that all specified constraints and formatted structures be strictly followed.`;
-            case 'save_prompt_preset':
-                if (!window._mockPresets) window._mockPresets = {};
-                window._mockPresets[args.name] = args.schema_json;
-                return null;
-            case 'load_prompt_presets':
-                return window._mockPresets || {};
-            case 'ollama_list_models':
-                return [
-                    { name: "llama2:latest", size: 3791823901, modified_at: "2026-05-23T01:21:46Z" },
-                    { name: "llama3.2:latest", size: 2018898124, modified_at: "2026-05-23T01:21:46Z" },
-                ];
-            case 'ollama_pull_model': {
-                setTimeout(() => {
-                    const el = document.getElementById("settings-ollama-pull-status");
-                    if (el) el.innerText = "Downloading...";
-                    const pct = document.getElementById("settings-ollama-pull-percent");
-                    if (pct) pct.innerText = "50%";
-                    const bar = document.getElementById("settings-ollama-pull-bar");
-                    if (bar) bar.style.width = "50%";
-                    setTimeout(() => {
-                        if (el) el.innerText = "Pull complete!";
-                        if (pct) pct.innerText = "100%";
-                        if (bar) bar.style.width = "100%";
-                        setTimeout(() => {
-                            const container = document.getElementById("settings-ollama-pull-progress-container");
-                            if (container) container.style.display = "none";
-                            const pullBtn = document.getElementById("settings-ollama-pull-btn");
-                            if (pullBtn) pullBtn.disabled = false;
-                            const inputEl = document.getElementById("settings-ollama-pull-input");
-                            if (inputEl) inputEl.value = "";
-                            refreshOllamaModels();
-                        }, 1000);
-                    }, 1000);
-                }, 500);
-                return null;
-            }
-            case 'ollama_delete_model':
-                return null;
-            case 'agent_step':
-                return JSON.stringify({
-                    thought: "Mock: I'll write a simple Python hello world script.",
-                    code: 'print("Hello from NEURODECK Agent!")',
-                    lang: "python",
-                    action: "run_code",
-                    summary: "Print a hello world message"
-                });
-            case 'agent_exec_code':
-                return "Hello from NEURODECK Agent!\n(mock output — run in Tauri for real execution)";
-            case 'memory_list_all':
-                return [
-                    { id: "mock-20240101-1", content: "User: How do I reverse a list in Python?", metadata: { role: "user" } },
-                    { id: "mock-20240101-2", content: "AI: Use list[::-1] or list.reverse() for in-place reversal.", metadata: { role: "ai" } },
-                    { id: "fact-20240101000000000", content: "Preferred language: Python 3.11. Always use type hints.", metadata: { role: "fact", pinned: "true" } },
-                    { id: "mock-20240102-1", content: "User: Explain the Rust borrow checker.", metadata: { role: "user" } },
-                    { id: "mock-20240102-2", content: "AI: The borrow checker ensures memory safety by enforcing ownership rules at compile time.", metadata: { role: "ai", pinned: "true" } },
-                ];
-            case 'memory_delete':
-                return null;
-            case 'memory_pin':
-                return null;
-            case 'memory_add_fact':
-                return `fact-mock-${Date.now()}`;
-            case 'get_config':
-                return {
-                    theme: {
-                        primary_color: "#00F0FF",
-                        secondary_color: "#FF0055",
-                        bg_color: "#050505",
-                        foreground_color: "#D9F7FF",
-                        response_color: "#00FF88"
-                    },
-                    llm: {
-                        default_provider: "ollama",
-                        ollama_model: "llama2",
-                        gemini_model: "gemini-1.5-flash",
-                        ollama_base_url: "http://localhost:11434",
-                        google_client_id: ""
-                    }
-                };
-            case 'set_config':
-                return null;
-            case 'save_gemini_api_key':
-                return null;
-            case 'get_gemini_api_key':
-                return "MOCK_GEMINI_API_KEY";
-            case 'test_llm_connection':
-                return "Mock LLM Connection Successful!";
-            case 'open_external':
-            case 'open_url':
-                console.log("[Mock] open_external:", args?.url);
-                return;
-            case 'install_bmad_to_dir':
-                return `BMAD installed to ${args?.targetDir} (_bmad/ + .claude/skills/ with 44 skill sets) [MOCK]`;
-            case 'get_context_stats':
-                return {
-                    active_model: "llama2 (mock)",
-                    active_provider: "ollama (mock)",
-                    memory_records_count: 5,
-                    memory_pinned_count: 2,
-                    memory_last_store: "Stable",
-                    session_id: "20260523-011800",
-                    session_messages_count: 3,
-                    session_created: "2026-05-23 01:18:00",
-                    active_persona: "Default",
-                    ram_available: "12867MB / 15867MB"
-                };
-            case 'list_plugins':
-                return mockPlugins;
-            case 'toggle_plugin': {
-                const { fileName, enabled } = args;
-                const plugin = mockPlugins.find(p => p.file_name === fileName);
-                if (plugin) {
-                    plugin.enabled = enabled;
-                    if (enabled) {
-                        if (fileName.endsWith(".disabled")) {
-                            plugin.file_name = fileName.replace(".disabled", "");
-                        }
-                    } else {
-                        if (!fileName.endsWith(".disabled")) {
-                            plugin.file_name = fileName + ".disabled";
-                        }
-                    }
-                }
-                return null;
-            }
-            case 'install_plugin': {
-                const { url } = args;
-                const lastSlash = url.lastIndexOf('/');
-                let name = lastSlash !== -1 ? url.substring(lastSlash + 1) : "new_plugin.lua";
-                if (!name.endsWith(".lua") && !name.endsWith(".disabled")) {
-                    name += ".lua";
-                }
-                const baseName = name.endsWith(".disabled") ? name.replace(".lua.disabled", "") : name.replace(".lua", "");
-                mockPlugins.push({
-                    name: baseName,
-                    file_name: name,
-                    enabled: !name.endsWith(".disabled")
-                });
-                return null;
-            }
-            case 'read_plugin': {
-                const { fileName } = args;
-                if (fileName.includes("bmad")) {
-                    return `-- plugins/bmad.lua\n-- Preinstalled BMad framework plugin.\nprint("Hello Bmad Mock")`;
-                } else if (fileName.includes("ip_lookup")) {
-                    return `-- ip_lookup.lua\nprint("Hello IP Lookup Mock")`;
-                } else {
-                    return `-- ${fileName}\nprint("Custom Mock Script")`;
-                }
-            }
-            case 'save_plugin': {
-                const { fileName, content } = args;
-                const baseName = fileName.endsWith(".disabled") ? fileName.replace(".lua.disabled", "") : fileName.replace(".lua", "");
-                let plugin = mockPlugins.find(p => p.file_name === fileName);
-                if (!plugin) {
-                    plugin = { name: baseName, file_name: fileName, enabled: !fileName.endsWith(".disabled") };
-                    mockPlugins.push(plugin);
-                }
-                console.log(`[Mock IPC] Saved plugin ${fileName} with content length: ${content.length}`);
-                return null;
-            }
-            case 'reload_plugins':
-                return null;
-            case 'shell_autocomplete': {
-                // Simulate an AI-generated completion suffix
-                const buf = (args.buffer || '').trim();
-                let completion = '';
-                if (buf.startsWith('git cl')) completion = 'one ';
-                else if (buf.startsWith('git co')) completion = 'mmit -m ""';
-                else if (buf.startsWith('git s')) completion = 'tatus';
-                else if (buf.startsWith('npm r')) completion = 'un dev';
-                else if (buf.startsWith('ls')) completion = ' -la';
-                else if (buf.startsWith('cd')) completion = ' ~/Desktop';
-                else if (buf.startsWith('docker')) completion = ' ps -a';
-                else if (buf.startsWith('sudo ap')) completion = 't update';
-                console.log(`[Mock IPC] Autocomplete for "${buf}": "${completion}"`);
-                return completion;
-            }
-            case 'read_last_screenshot': {
-                // Return a mock 1x1 cyan PNG as base64 (a real image)
-                const mockPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-                return {
-                    path: '/home/deck/Pictures/Screenshots/mock_screenshot.png',
-                    data: mockPng,
-                    mime: 'image/png'
-                };
-            }
-            case 'search_history_ai': {
-                const query = (args.query || '').toLowerCase();
-                const mockHistory = [
-                    'git commit -m "feat: add category B features"',
-                    'git push origin main',
-                    'npm run dev',
-                    'cargo check',
-                    'ls -la ~/.local/share/Steam',
-                    'cd ~/Desktop/S-Term',
-                    'cat ~/.bash_history | tail -50',
-                    'docker ps -a',
-                    'sudo pacman -Syu',
-                    'flatpak update',
-                    'steam-run ./game.sh',
-                    'systemctl restart sshd',
-                    'journalctl -xe',
-                    'df -h',
-                    'htop',
-                ];
-                // Simple keyword filter for demo
-                const filtered = mockHistory.filter(cmd =>
-                    query === '' || cmd.toLowerCase().includes(query.split(' ')[0])
-                ).slice(0, 10);
-                return filtered.length > 0 ? filtered : mockHistory.slice(0, 5);
-            }
-            case 'start_mcp_server': {
-                const port = args.port || 13337;
-                window._mockMcpRunning = true;
-                window._mockMcpPort = port;
-                return `MCP server started on http://127.0.0.1:${port}`;
-            }
-            case 'stop_mcp_server': {
-                window._mockMcpRunning = false;
-                return `MCP server on port ${window._mockMcpPort || 13337} stopped.`;
-            }
-            case 'get_mcp_status': {
-                const running = window._mockMcpRunning || false;
-                const port = window._mockMcpPort || 13337;
-                return running
-                    ? { running: 'true', port: String(port), url: `http://127.0.0.1:${port}` }
-                    : { running: 'false', port: String(port) };
-            }
-            case 'index_directory': {
-                // Simulate progress events then return count
-                const total = 4;
-                for (let i = 1; i <= total; i++) {
-                    setTimeout(() => {
-                        invoke('plugin:event|emit', {
-                            event: 'doc_index_progress',
-                            payload: JSON.stringify({ indexed: i, total, file: `mock_doc_${i}.txt` })
-                        });
-                    }, 300 * i);
-                }
-                setTimeout(() => {
-                    invoke('plugin:event|emit', {
-                        event: 'doc_index_progress',
-                        payload: JSON.stringify({ indexed: total, total, done: true })
-                    });
-                }, 300 * (total + 1));
-                return `Indexed ${total} documents (mock).`;
-            }
-            case 'get_doc_count':
-                return window._mockDocCount || 0;
-            case 'clear_doc_index':
-                window._mockDocCount = 0;
-                return 'Document index cleared (mock).';
-            case 'get_game_notes': {
-                const appId = args.appId || '';
-                return window._mockGameNotes?.[appId] || '';
-            }
-            case 'save_game_note': {
-                if (!window._mockGameNotes) window._mockGameNotes = {};
-                window._mockGameNotes[args.appId] = args.content;
-                return null;
-            }
-            case 'set_whisper_config':
-                window._mockWhisperBinary = args.binary || '';
-                window._mockWhisperModel = args.model || '';
-                return null;
-            case 'get_whisper_status': {
-                const configured = !!(window._mockWhisperModel);
-                return {
-                    configured,
-                    binary: window._mockWhisperBinary || '',
-                    model: window._mockWhisperModel || '',
-                    model_exists: configured,
-                    binary_found: configured,
-                };
-            }
-            case 'transcribe_audio_whisper': {
-                if (!window._mockWhisperModel) {
-                    throw 'Whisper model path not set. Configure it in Settings → Whisper STT.';
-                }
-                return 'This is a mock whisper transcription of the recorded audio.';
-            }
-            case 'download_whisper_model': {
-                const m = args.model || 'base.en';
-                const mockPath = `/home/user/.local/share/neurodeck/models/ggml-${m}.bin`;
-                setTimeout(() => {
-                    [0,25,50,75,100].forEach((pct, i) => setTimeout(() => {
-                        window.__tauriListeners?.whisper_download_progress?.forEach(cb =>
-                            cb({ payload: { done: pct === 100, pct, path: pct === 100 ? mockPath : undefined } }));
-                    }, i * 200));
-                }, 100);
-                return mockPath;
-            }
-            case 'canvas_collab_host': {
-                const port = args.port || 13338;
-                window._mockCollabActive = true;
-                window._mockCollabPort = port;
-                window._mockCollabRole = 'host';
-                return port;
-            }
-            case 'canvas_collab_join': {
-                window._mockCollabActive = true;
-                window._mockCollabRole = 'guest';
-                window._mockCollabAddr = args.addr;
-                // Simulate peer connecting after a short delay
-                setTimeout(() => {
-                    invoke('plugin:event|emit', {
-                        event: 'canvas_collab_event',
-                        payload: 'peer_connected:mock_peer'
-                    });
-                }, 800);
-                return null;
-            }
-            case 'canvas_collab_send':
-                console.log('[Mock Collab] Sent:', args.lang, args.code?.substring(0, 40));
-                return null;
-            case 'canvas_collab_stop':
-                window._mockCollabActive = false;
-                return null;
-            case 'save_profiles': {
-                if (!window._mockProfiles) window._mockProfiles = {};
-                window._mockProfiles[args.key] = args.data;
-                return null;
-            }
-            case 'load_profiles': {
-                if (!window._mockProfiles) return '[]';
-                return window._mockProfiles[args.key] || '[]';
-            }
-            case 'save_custom_themes': {
-                window._mockCustomThemes = args.data;
-                return null;
-            }
-            case 'load_custom_themes':
-                return window._mockCustomThemes || '[]';
-            case 'get_lan_ip':
-                return '192.168.1.100';
-            case 'generate_jpe_explanation':
-                return `This prompt asks the AI to act as ${(args.promptText || '').slice(0, 60)}... In plain terms: fill in your role, give a clear task, add any constraints, and specify the output format you want. The AI will follow these instructions step by step.`;
-            case 'start_oauth_flow':
-                return { device_code: 'mock_device_code', user_code: 'MOCK-CODE', verification_uri: 'https://accounts.google.com/device', expires_in: 300, interval: 5 };
-            case 'poll_oauth_token':
-                return null;
-            case 'run_onboarding_diagnostics':
-                return { pty_ok: true, pty_details: 'Shell Subsystem active (Default: powershell.exe)', network_ok: true, network_details: 'Internet active (mock)', keychain_ok: true, keychain_details: 'Secure credential storage active (mock)' };
-            case 'start_warpinator':
-                return null;
-            case 'start_remote_server': {
-                const port = args.port || 9090;
-                window._mockRemoteServer = { port, ip: '192.168.1.100', pin: '123456', running: true };
-                return { port, ip: '192.168.1.100', pin: '123456', url: `http://192.168.1.100:${port}/?pin=123456` };
-            }
-            case 'stop_remote_server':
-                window._mockRemoteServer = null;
-                return null;
-            case 'get_remote_server_info':
-                if (window._mockRemoteServer) {
-                    const rs = window._mockRemoteServer;
-                    return { running: true, port: rs.port, ip: rs.ip, pin: rs.pin, url: `http://${rs.ip}:${rs.port}/?pin=${rs.pin}`, connected: 0 };
-                }
-                return { running: false };
-            case 'remote_send_to_clients':
-                return null;
-            default:
-                console.warn(`[Mock IPC] Unknown command: ${cmd}`);
-                return null;
-        }
-    }, { shouldMockEvents: true });
-}
 
 document.querySelector('#app').innerHTML = `
     <!-- ═══════════════════════════════════════════════════════════
@@ -6774,9 +6158,11 @@ function initPromptLab() {
         const level = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
         try {
             const explanation = await invoke("generate_jpe_explanation_with_level", { promptText: text, readingLevel: level });
-            resultJpe.innerHTML = `<div class="jpe-content">${explanation.replace(/\n/g, '<br>')}</div>`;
+            resultJpe.innerHTML = `<div class="jpe-content"></div>`;
+            resultJpe.querySelector(".jpe-content").innerHTML = window.sanitizeHtml(explanation).replace(/\n/g, '<br>');
         } catch (err) {
-            resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)">Error: ${err}</span>`;
+            resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)"></span>`;
+            resultJpe.querySelector(".pl-empty-text").textContent = `Error: ${err}`;
             addNotification("Prompt Lab", "Explanation failed.", "error");
         } finally {
             explainBtn.disabled = false;

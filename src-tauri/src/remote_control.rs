@@ -1,4 +1,4 @@
-use std::net::UdpSocket;
+use std::net::{UdpSocket, SocketAddr};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -8,6 +8,7 @@ use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
+        ConnectInfo,
     },
     response::{Html, IntoResponse},
     routing::get,
@@ -144,7 +145,15 @@ input.ci:focus{border-color:var(--a)}
 <script>
 var ws=null,authed=false,curAi=null,pingT=null,pingStart=0;
 
-function gp(n){try{return new URL(location.href).searchParams.get(n);}catch(e){return null;}}
+function gp(n){
+  try {
+    var hash = location.hash.substring(1);
+    var params = new URLSearchParams(hash);
+    return params.get(n);
+  } catch(e) {
+    return null;
+  }
+}
 function setS(t){document.getElementById('stxt').textContent=t;}
 function showErr(m){
   var e=document.getElementById('emsg');e.textContent=m;e.style.display='';
@@ -183,7 +192,7 @@ function doConnect(){
       appendMsg('a','\u26A0 '+m.message);
     }
   };
-  ws.onerror=function(){showErr('Connection error. Make sure your phone and PC are on the same Wi-Fi network.');};
+  ws.onerror=function(){showErr('Connection error. Verify that your phone and PC are on the same Wi-Fi network. Tip: If using an in-app QR scanner browser, copy the URL and open it in Safari/Chrome instead.');};
   ws.onclose=function(){
     clearInterval(pingT);
     if(authed){document.getElementById('cdot').style.background='#ff5f5f';}
@@ -252,6 +261,7 @@ pub struct WsAppState {
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub app_handle: AppHandle,
+    pub ip_attempts: Arc<std::sync::Mutex<std::collections::HashMap<std::net::IpAddr, usize>>>,
 }
 
 pub struct RemoteServerHandle {
@@ -289,26 +299,48 @@ pub fn get_local_ip() -> String {
 
 fn generate_pin() -> String {
     let mut rng = rand::thread_rng();
-    format!("{:06}", rng.gen_range(100000u32..999999u32))
+    let val: u128 = rng.gen();
+    format!("{:032x}", val)
 }
 
 // ── Axum route handlers ───────────────────────────────────────────────────────
 
 async fn root_handler() -> impl IntoResponse {
+    println!("[DEBUG remote_control] root_handler: serving WEBAPP_HTML");
     Html(WEBAPP_HTML)
 }
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
+    addr_opt: Option<ConnectInfo<SocketAddr>>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_ws_connection(socket, state))
+    let ip = addr_opt.map(|ConnectInfo(addr)| addr.ip()).unwrap_or_else(|| "127.0.0.1".parse().unwrap());
+    println!("[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}", ip);
+
+    // Lockout check
+    {
+        let attempts_map = state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(&attempts) = attempts_map.get(&ip) {
+            if attempts >= 5 {
+                println!("[DEBUG remote_control] ws_handler: IP locked out {:?}", ip);
+                return (
+                    axum::http::StatusCode::FORBIDDEN,
+                    "Lockout: Too many failed connection attempts.",
+                ).into_response();
+            }
+        }
+    }
+
+    ws.on_upgrade(move |socket| handle_ws_connection(socket, ip, state))
 }
 
-async fn handle_ws_connection(socket: WebSocket, ws_state: WsAppState) {
+async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state: WsAppState) {
+    println!("[DEBUG remote_control] handle_ws_connection: upgraded connection for {:?}", ip);
     let (mut sender, mut receiver) = socket.split();
 
     // Send hello
+    println!("[DEBUG remote_control] handle_ws_connection: sending hello frame");
     let _ = sender
         .send(Message::Text(
             json!({"type":"hello","version":"1.0"}).to_string(),
@@ -316,31 +348,54 @@ async fn handle_ws_connection(socket: WebSocket, ws_state: WsAppState) {
         .await;
 
     // Authenticate
-    let authed = match receiver.next().await {
-        Some(Ok(Message::Text(txt))) => {
-            if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
-                if msg["type"] == "auth" && msg["pin"].as_str() == Some(ws_state.pin.as_str()) {
-                    let _ = sender
-                        .send(Message::Text(json!({"type":"auth_ok"}).to_string()))
-                        .await;
-                    true
-                } else {
-                    let _ = sender
-                        .send(Message::Text(
-                            json!({"type":"auth_fail","reason":"Invalid PIN"}).to_string(),
-                        ))
-                        .await;
-                    false
+    let mut authed = false;
+    println!("[DEBUG remote_control] handle_ws_connection: waiting for auth message...");
+    while let Some(res) = receiver.next().await {
+        println!("[DEBUG remote_control] handle_ws_connection: received frame: {:?}", res);
+        match res {
+            Ok(Message::Text(txt)) => {
+                if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
+                    if msg["type"] == "auth" {
+                        if msg["pin"].as_str() == Some(ws_state.pin.as_str()) {
+                            println!("[DEBUG remote_control] handle_ws_connection: authentication succeeded for {:?}", ip);
+                            let _ = sender
+                                .send(Message::Text(json!({"type":"auth_ok"}).to_string()))
+                                .await;
+                            authed = true;
+                        } else {
+                            println!("[DEBUG remote_control] handle_ws_connection: invalid PIN from {:?}", ip);
+                        }
+                        break;
+                    }
                 }
-            } else {
-                false
             }
+            Ok(Message::Close(_)) | Err(_) => {
+                break;
+            }
+            _ => {} // Skip other message types during auth handshake
         }
-        _ => false,
-    };
+    }
 
     if !authed {
+        {
+            let mut attempts_map = ws_state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+            let entry = attempts_map.entry(ip).or_insert(0);
+            *entry += 1;
+        }
+        let _ = sender
+            .send(Message::Text(
+                json!({"type":"auth_fail","reason":"Invalid PIN"}).to_string(),
+            ))
+            .await;
+        // Sleep 2s to rate limit
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         return;
+    }
+
+    // Reset attempts on success
+    {
+        let mut attempts_map = ws_state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        attempts_map.remove(&ip);
     }
 
     ws_state.connected.fetch_add(1, Ordering::Relaxed);
@@ -352,28 +407,53 @@ async fn handle_ws_connection(socket: WebSocket, ws_state: WsAppState) {
     let mut rx = ws_state.broadcast_tx.subscribe();
     let app_handle = ws_state.app_handle.clone();
 
+    println!("[DEBUG remote_control] handle_ws_connection: spawning fwd_task and recv_task");
+
     // Broadcast → WS forward task
     let mut fwd_task = tokio::spawn(async move {
+        println!("[DEBUG remote_control] fwd_task: started");
         while let Ok(msg) = rx.recv().await {
+            println!("[DEBUG remote_control] fwd_task: forwarding message to client: {}", msg);
             if sender.send(Message::Text(msg)).await.is_err() {
+                println!("[DEBUG remote_control] fwd_task: send failed");
                 break;
             }
         }
+        println!("[DEBUG remote_control] fwd_task: terminated");
     });
 
     // WS → app dispatch task
     let mut recv_task = tokio::spawn(async move {
-        while let Some(Ok(Message::Text(txt))) = receiver.next().await {
-            if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
-                dispatch_remote_command(&msg, &app_handle).await;
+        println!("[DEBUG remote_control] recv_task: started");
+        while let Some(res) = receiver.next().await {
+            println!("[DEBUG remote_control] recv_task: received frame {:?}", res);
+            match res {
+                Ok(Message::Text(txt)) => {
+                    if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
+                        dispatch_remote_command(&msg, &app_handle).await;
+                    }
+                }
+                Ok(Message::Close(_)) | Err(_) => {
+                    break;
+                }
+                _ => {} // Skip ping/pong/binary/etc.
             }
         }
+        println!("[DEBUG remote_control] recv_task: terminated");
     });
 
     tokio::select! {
-        _ = (&mut fwd_task)  => recv_task.abort(),
-        _ = (&mut recv_task) => fwd_task.abort(),
+        res = (&mut fwd_task)  => {
+            println!("[DEBUG remote_control] fwd_task finished select: {:?}", res);
+            recv_task.abort();
+        }
+        res = (&mut recv_task) => {
+            println!("[DEBUG remote_control] recv_task finished select: {:?}", res);
+            fwd_task.abort();
+        }
     }
+
+    println!("[DEBUG remote_control] handle_ws_connection: connection tasks finished, cleaning up");
 
     ws_state.connected.fetch_sub(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
@@ -436,7 +516,7 @@ pub async fn start_remote_server(
 ) -> Result<serde_json::Value, String> {
     // Stop any existing server
     {
-        let mut guard = state.handle.lock().unwrap();
+        let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(old) = guard.take() {
             let _ = old.shutdown_tx.send(());
         }
@@ -453,6 +533,7 @@ pub async fn start_remote_server(
         broadcast_tx: broadcast_tx.clone(),
         connected: connected.clone(),
         app_handle: app_handle.clone(),
+        ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
     };
 
     let router = Router::new()
@@ -460,8 +541,8 @@ pub async fn start_remote_server(
         .route("/ws", get(ws_handler))
         .with_state(ws_state);
 
-    let addr = format!("0.0.0.0:{}", port);
-    let listener = tokio::net::TcpListener::bind(&addr)
+    let bind_addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
         .map_err(|e| format!("Failed to bind port {}: {}", port, e))?;
 
@@ -476,14 +557,14 @@ pub async fn start_remote_server(
 
     // Wire PTY output forwarding
     {
-        let mut rtx = pty_state.remote_tx.lock().unwrap();
+        let mut rtx = pty_state.remote_tx.lock().unwrap_or_else(|e| e.into_inner());
         *rtx = Some(broadcast_tx.clone());
     }
 
-    let url = format!("http://{}:{}/?pin={}", local_ip, port, pin);
+    let url = format!("http://{}:{}/#pin={}", local_ip, port, pin);
 
     {
-        let mut guard = state.handle.lock().unwrap();
+        let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
         *guard = Some(RemoteServerHandle {
             port,
             local_ip: local_ip.clone(),
@@ -507,18 +588,18 @@ pub async fn stop_remote_server(
     state: TauriState<'_, RemoteControlState>,
     pty_state: TauriState<'_, crate::pty_manager::PtyState>,
 ) -> Result<(), String> {
-    let mut guard = state.handle.lock().unwrap();
+    let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
     }
-    let mut rtx = pty_state.remote_tx.lock().unwrap();
+    let mut rtx = pty_state.remote_tx.lock().unwrap_or_else(|e| e.into_inner());
     *rtx = None;
     Ok(())
 }
 
 #[tauri::command]
 pub fn get_remote_server_info(state: TauriState<'_, RemoteControlState>) -> serde_json::Value {
-    let guard = state.handle.lock().unwrap();
+    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     match guard.as_ref() {
         Some(h) => {
             let connected = h.connected.load(Ordering::Relaxed);
@@ -527,7 +608,7 @@ pub fn get_remote_server_info(state: TauriState<'_, RemoteControlState>) -> serd
                 "port":      h.port,
                 "ip":        h.local_ip,
                 "pin":       h.pin,
-                "url":       format!("http://{}:{}/?pin={}", h.local_ip, h.port, h.pin),
+                "url":       format!("http://{}:{}/#pin={}", h.local_ip, h.port, h.pin),
                 "connected": connected,
             })
         }
@@ -540,7 +621,7 @@ pub fn remote_send_to_clients(
     message: String,
     state: TauriState<'_, RemoteControlState>,
 ) -> Result<(), String> {
-    let guard = state.handle.lock().unwrap();
+    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref h) = *guard {
         let _ = h.broadcast_tx.send(message);
         Ok(())

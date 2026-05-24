@@ -14,7 +14,7 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
 
 - **Two config files exist**: `llm-term.toml` at the project root AND `src-tauri/llm-term.toml`. The Rust binary reads `src-tauri/llm-term.toml` during `cargo run` / `tauri dev` (working dir is `src-tauri/`). The root copy is what the installer deploys. Always edit both or let `config.rs` path logic handle it.
 - **`GEMINI_API_KEY` must be set as an env var** before `npm run tauri dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
-- **Vite dev standalone** (`npm run --prefix frontend dev`) works but all `invoke()` calls hit the mock IPC shim at the top of `main.js` (lines ~130–225). All new Tauri commands must be added to both the real handler in `lib.rs` AND the mock shim.
+- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the dev-mode mock IPC shim has been removed. To test real commands, use `npm run tauri dev`.
 - **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines.
 - **Rust version is pinned to 1.77.2** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
 - **suppaftp 6.x `retr_as_buffer`** returns `Cursor<Vec<u8>>` and loads the entire file into RAM. Don't use it for files > 100MB.
@@ -77,7 +77,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Rules
 
-- **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`, (3) added to the mock IPC switch in `main.js`. Skip any step and it silently fails in browser dev mode.
+- **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`. The dev-mode mock IPC shim has been removed — commands are no longer duplicated there.
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
@@ -130,7 +130,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The radial menu segments are hardcoded to the original 8 views — the new SSH tab is not in the radial menu yet.
 
-- **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field. The mock IPC shim does not need updating for this since it ignores extra args.
+- **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field.
 
 - **Prompt Lab tab** (`#view-prompt-lab`) was added by the Google Antigravity automated sprint. It exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
 
@@ -191,7 +191,7 @@ next:    v1.2.x → Ra     (MINOR=2, index 2)
 npm run tauri dev                     # Hot-reload (Vite + Rust)
 npm run build                         # Production build
 
-npm run --prefix frontend dev         # Frontend only (uses mock IPC)
+npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without Tauri)
 npm run --prefix frontend build       # Vite build only
 
 cd src-tauri && cargo check           # Fast type-check

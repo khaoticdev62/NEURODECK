@@ -234,7 +234,7 @@ function renderTerminalTabs() {
         const activeClass = s.id === state.activeTerminalSessionId ? "active" : "";
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
-                <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${label}</span>
+                <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${window.sanitizeHtml(label)}</span>
                 <span class="terminal-tab-close" data-session-id="${s.id}">✕</span>
             </div>
         `;
@@ -510,9 +510,12 @@ function renderHistoryResults(results) {
         item.dataset.idx = idx;
         item.innerHTML = `
             <span class="history-result-rank">${idx + 1}</span>
-            <span class="history-result-cmd" title="${cmd.replace(/"/g, '&quot;')}">${cmd}</span>
+            <span class="history-result-cmd"></span>
             <span class="history-result-insert-hint">↵ Insert</span>
         `;
+        const cmdEl = item.querySelector(".history-result-cmd");
+        cmdEl.textContent = cmd;
+        cmdEl.title = cmd;
         item.addEventListener("click", () => {
             insertHistoryCommand(cmd);
         });
@@ -867,7 +870,7 @@ function connectSsh() {
 
     // Use system ssh binary
     const sshBin = "ssh";
-    const sshArgs = ["-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=30", "-p", String(port)];
+    const sshArgs = ["-o", "ConnectTimeout=30", "-p", String(port)];
     if (authType === "key" && keyPath) {
         sshArgs.push("-i", keyPath);
     }
@@ -937,8 +940,8 @@ function renderSshProfiles() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item" data-index="${i}">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
                 <button class="canvas-btn ssh-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
@@ -948,7 +951,7 @@ function renderSshProfiles() {
     `).join("");
 
     list.querySelectorAll(".ssh-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
             const p = getSshProfiles()[parseInt(btn.getAttribute("data-index"))];
             if (!p) return;
             document.getElementById("ssh-host-input").value = p.host || "";
@@ -958,13 +961,32 @@ function renderSshProfiles() {
             document.getElementById("ssh-key-path-input").value = p.key_path || "";
             document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
             document.getElementById("ssh-pass-input").value = "";
+            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+                try {
+                    const pwd = await invoke("get_ssh_credential", { profileName: p.name });
+                    if (pwd) {
+                        document.getElementById("ssh-pass-input").value = pwd;
+                    }
+                } catch (err) {
+                    console.error("Failed to load SSH credential from keychain:", err);
+                }
+            }
         };
     });
 
     list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
             const profiles = getSshProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            const p = profiles[index];
+            if (p && window.__TAURI_INTERNALS__) {
+                try {
+                    await invoke("delete_ssh_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SSH credential from keychain:", err);
+                }
+            }
+            profiles.splice(index, 1);
             saveSshProfiles(profiles);
             renderSshProfiles();
             renderSshProfilesSettings();
@@ -983,16 +1005,25 @@ function renderSshProfilesSettings() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
         </div>
     `).join("");
     list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
             const profiles = getSshProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            const p = profiles[index];
+            if (p && window.__TAURI_INTERNALS__) {
+                try {
+                    await invoke("delete_ssh_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SSH credential from keychain:", err);
+                }
+            }
+            profiles.splice(index, 1);
             saveSshProfiles(profiles);
             renderSshProfilesSettings();
             renderSshProfiles();
@@ -1001,23 +1032,44 @@ function renderSshProfilesSettings() {
 }
 
 function initSshProfileListeners() {
-    document.getElementById("ssh-save-profile-btn")?.addEventListener("click", () => {
+    document.getElementById("ssh-save-profile-btn")?.addEventListener("click", async () => {
         const host = document.getElementById("ssh-host-input")?.value.trim();
         const port = parseInt(document.getElementById("ssh-port-input")?.value || "22", 10);
         const user = document.getElementById("ssh-user-input")?.value.trim();
         const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
         const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
+        const password = document.getElementById("ssh-pass-input")?.value || "";
         if (!host || !user) { alert("Enter host and username first."); return; }
         const name = prompt("Profile name:", `${user}@${host}`);
         if (!name) return;
+
+        if (auth_type === "password" && password && window.__TAURI_INTERNALS__) {
+            try {
+                await invoke("save_ssh_credential", { profileName: name, password: password });
+            } catch (err) {
+                console.error("Failed to save SSH credential to keychain:", err);
+            }
+        }
+
         const profiles = getSshProfiles();
         profiles.push({ name, host, port, user, auth_type, key_path });
         saveSshProfiles(profiles);
         renderSshProfiles();
     });
 
-    document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", () => {
+    document.getElementById("settings-clear-ssh-profiles")?.addEventListener("click", async () => {
+        if (window.__TAURI_INTERNALS__) {
+            const profiles = getSshProfiles();
+            for (const p of profiles) {
+                try {
+                    await invoke("delete_ssh_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SSH credential from keychain:", err);
+                }
+            }
+        }
         localStorage.removeItem("sshProfiles");
+        saveSshProfiles([]);
         renderSshProfiles();
         renderSshProfilesSettings();
     });
@@ -1064,8 +1116,8 @@ function renderFtpProfiles() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item" data-index="${i}">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
                 <button class="canvas-btn ftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
@@ -1108,8 +1160,8 @@ function renderFtpProfilesSettings() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
         </div>
@@ -1160,14 +1212,39 @@ function renderFtpFiles(entries) {
         list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
         return;
     }
-    list.innerHTML = entries.map(e => `
-        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
-            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
-            <span class="ftp-file-name">${e.name}</span>
-            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
-            ${!e.is_dir ? `<button class="canvas-btn ftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
-        </div>
-    `).join("");
+    list.innerHTML = "";
+    entries.forEach(e => {
+        const item = document.createElement("div");
+        item.className = "ftp-file-item" + (e.is_dir ? " is-dir" : "");
+        item.setAttribute("data-name", e.name);
+        item.setAttribute("data-is-dir", e.is_dir ? "true" : "false");
+
+        const icon = document.createElement("span");
+        icon.className = "ftp-file-icon";
+        icon.textContent = e.is_dir ? "📁" : "📄";
+
+        const name = document.createElement("span");
+        name.className = "ftp-file-name";
+        name.textContent = e.name;
+
+        const size = document.createElement("span");
+        size.className = "ftp-file-size";
+        size.textContent = e.is_dir ? "—" : formatBytes(e.size);
+
+        item.appendChild(icon);
+        item.appendChild(name);
+        item.appendChild(size);
+
+        if (!e.is_dir) {
+            const btn = document.createElement("button");
+            btn.className = "canvas-btn ftp-download-btn";
+            btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
+            btn.setAttribute("data-name", e.name);
+            btn.textContent = "⬇ Download";
+            item.appendChild(btn);
+        }
+        list.appendChild(item);
+    });
 
     // Directory navigation
     list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
@@ -1285,14 +1362,39 @@ function renderSftpFiles(entries) {
         list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
         return;
     }
-    list.innerHTML = entries.map(e => `
-        <div class="ftp-file-item ${e.is_dir ? "is-dir" : ""}" data-name="${e.name}" data-is-dir="${e.is_dir}">
-            <span class="ftp-file-icon">${e.is_dir ? "📁" : "📄"}</span>
-            <span class="ftp-file-name">${e.name}</span>
-            <span class="ftp-file-size">${e.is_dir ? "—" : formatBytes(e.size)}</span>
-            ${!e.is_dir ? `<button class="canvas-btn sftp-download-btn" style="padding:3px 8px;font-size:0.75rem;" data-name="${e.name}">⬇ Download</button>` : ""}
-        </div>
-    `).join("");
+    list.innerHTML = "";
+    entries.forEach(e => {
+        const item = document.createElement("div");
+        item.className = "ftp-file-item" + (e.is_dir ? " is-dir" : "");
+        item.setAttribute("data-name", e.name);
+        item.setAttribute("data-is-dir", e.is_dir ? "true" : "false");
+
+        const icon = document.createElement("span");
+        icon.className = "ftp-file-icon";
+        icon.textContent = e.is_dir ? "📁" : "📄";
+
+        const name = document.createElement("span");
+        name.className = "ftp-file-name";
+        name.textContent = e.name;
+
+        const size = document.createElement("span");
+        size.className = "ftp-file-size";
+        size.textContent = e.is_dir ? "—" : formatBytes(e.size);
+
+        item.appendChild(icon);
+        item.appendChild(name);
+        item.appendChild(size);
+
+        if (!e.is_dir) {
+            const btn = document.createElement("button");
+            btn.className = "canvas-btn sftp-download-btn";
+            btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
+            btn.setAttribute("data-name", e.name);
+            btn.textContent = "⬇ Download";
+            item.appendChild(btn);
+        }
+        list.appendChild(item);
+    });
 
     // Directory navigation
     list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
@@ -1436,8 +1538,8 @@ function renderSftpProfiles() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item" data-index="${i}">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
                 <button class="canvas-btn sftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
@@ -1447,7 +1549,7 @@ function renderSftpProfiles() {
     `).join("");
 
     list.querySelectorAll(".sftp-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
             const p = getSftpProfiles()[parseInt(btn.getAttribute("data-index"))];
             if (!p) return;
             document.getElementById("sftp-host-input").value = p.host || "";
@@ -1458,13 +1560,32 @@ function renderSftpProfiles() {
             document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
             document.getElementById("sftp-pass-input").value = "";
             document.getElementById("sftp-path-input").value = p.path || "/";
+            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+                try {
+                    const pwd = await invoke("get_sftp_credential", { profileName: p.name });
+                    if (pwd) {
+                        document.getElementById("sftp-pass-input").value = pwd;
+                    }
+                } catch (err) {
+                    console.error("Failed to load SFTP credential from keychain:", err);
+                }
+            }
         };
     });
 
     list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
             const profiles = getSftpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            const p = profiles[index];
+            if (p && window.__TAURI_INTERNALS__) {
+                try {
+                    await invoke("delete_sftp_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SFTP credential from keychain:", err);
+                }
+            }
+            profiles.splice(index, 1);
             fn_sftp_save_profiles(profiles);
             renderSftpProfiles();
             renderSftpProfilesSettings();
@@ -1483,16 +1604,25 @@ function renderSftpProfilesSettings() {
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item">
             <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${p.name}</span>
-                <span class="ssh-profile-host">${p.user}@${p.host}:${p.port}</span>
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
         </div>
     `).join("");
     list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
             const profiles = getSftpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
+            const p = profiles[index];
+            if (p && window.__TAURI_INTERNALS__) {
+                try {
+                    await invoke("delete_sftp_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SFTP credential from keychain:", err);
+                }
+            }
+            profiles.splice(index, 1);
             fn_sftp_save_profiles(profiles);
             renderSftpProfilesSettings();
             renderSftpProfiles();
@@ -1501,24 +1631,45 @@ function renderSftpProfilesSettings() {
 }
 
 function initSftpProfileListeners() {
-    document.getElementById("sftp-save-profile-btn")?.addEventListener("click", () => {
+    document.getElementById("sftp-save-profile-btn")?.addEventListener("click", async () => {
         const host = document.getElementById("sftp-host-input")?.value.trim();
         const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
         const user = document.getElementById("sftp-user-input")?.value.trim();
         const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
         const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
         const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
+        const password = document.getElementById("sftp-pass-input")?.value || "";
         if (!host || !user) { alert("Enter host and username first."); return; }
         const name = prompt("Profile name:", `${user}@${host}`);
         if (!name) return;
+
+        if (auth_type === "password" && password && window.__TAURI_INTERNALS__) {
+            try {
+                await invoke("save_sftp_credential", { profileName: name, password: password });
+            } catch (err) {
+                console.error("Failed to save SFTP credential to keychain:", err);
+            }
+        }
+
         const profiles = getSftpProfiles();
         profiles.push({ name, host, port, user, auth_type, key_path, path });
         fn_sftp_save_profiles(profiles);
         renderSftpProfiles();
     });
 
-    document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", () => {
+    document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", async () => {
+        if (window.__TAURI_INTERNALS__) {
+            const profiles = getSftpProfiles();
+            for (const p of profiles) {
+                try {
+                    await invoke("delete_sftp_credential", { profileName: p.name });
+                } catch (err) {
+                    console.error("Failed to delete SFTP credential from keychain:", err);
+                }
+            }
+        }
         localStorage.removeItem("sftpProfiles");
+        fn_sftp_save_profiles([]);
         renderSftpProfiles();
         renderSftpProfilesSettings();
     });

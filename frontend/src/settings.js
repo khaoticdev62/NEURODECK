@@ -400,17 +400,37 @@ function loadCustomPersonas() {
             return;
         }
         
-        listEl.innerHTML = personas.map((p) => {
-            return `
-                <div class="ssh-profile-item" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
-                    <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;">
-                        <span style="font-weight: 500; color: var(--foreground-color);">${p.name}</span>
-                        <span style="font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;" title="${p.prompt.replace(/"/g, '&quot;')}">${p.prompt}</span>
-                    </div>
-                    <button class="canvas-btn persona-delete-btn" data-name="${p.name}" style="padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);">✕</button>
-                </div>
-            `;
-        }).join("");
+        listEl.innerHTML = "";
+        personas.forEach((p) => {
+            const item = document.createElement("div");
+            item.className = "ssh-profile-item";
+            item.style.cssText = "padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;";
+
+            const info = document.createElement("div");
+            info.style.cssText = "display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;";
+
+            const name = document.createElement("span");
+            name.style.cssText = "font-weight: 500; color: var(--foreground-color);";
+            name.textContent = p.name;
+
+            const prompt = document.createElement("span");
+            prompt.style.cssText = "font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;";
+            prompt.textContent = p.prompt;
+            prompt.title = p.prompt;
+
+            info.appendChild(name);
+            info.appendChild(prompt);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "canvas-btn persona-delete-btn";
+            deleteBtn.setAttribute("data-name", p.name);
+            deleteBtn.style.cssText = "padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);";
+            deleteBtn.textContent = "✕";
+
+            item.appendChild(info);
+            item.appendChild(deleteBtn);
+            listEl.appendChild(item);
+        });
         
         // Wire delete button listeners
         listEl.querySelectorAll(".persona-delete-btn").forEach(btn => {
@@ -431,7 +451,11 @@ function loadCustomPersonas() {
             };
         });
     }).catch(err => {
-        listEl.innerHTML = `<div style="color: var(--error-color); padding: 5px;">Failed to load custom personas: ${err}</div>`;
+        listEl.innerHTML = "";
+        const div = document.createElement("div");
+        div.style.cssText = "color: var(--error-color); padding: 5px;";
+        div.textContent = `Failed to load custom personas: ${err}`;
+        listEl.appendChild(div);
     });
 }
 
@@ -767,7 +791,11 @@ function initMcpSettings() {
                 addNotification("MCP Server Started", `Listening on port ${port}. Add to Claude Desktop config.`, "success");
             }
         } catch (err) {
-            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+            statusLine.innerHTML = "";
+            const span = document.createElement("span");
+            span.style.color = "var(--error-color)";
+            span.textContent = `Error: ${err}`;
+            statusLine.appendChild(span);
             startBtn.disabled = false;
         }
     });
@@ -781,7 +809,11 @@ function initMcpSettings() {
                 addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
             }
         } catch (err) {
-            statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+            statusLine.innerHTML = "";
+            const span = document.createElement("span");
+            span.style.color = "var(--error-color)";
+            span.textContent = `Error: ${err}`;
+            statusLine.appendChild(span);
             stopBtn.disabled = false;
         }
     });
@@ -854,11 +886,23 @@ function initDocRag() {
     indexBtn.addEventListener("click", async () => {
         const folder = folderInput ? folderInput.value.trim() : "";
         if (!folder) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter a folder path to index.</span>`;
+            if (statusLine) {
+                statusLine.innerHTML = "";
+                const span = document.createElement("span");
+                span.style.color = "var(--warning-color)";
+                span.textContent = "Enter a folder path to index.";
+                statusLine.appendChild(span);
+            }
             return;
         }
         indexBtn.disabled = true;
-        if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.7;">Starting indexer...</span>`;
+        if (statusLine) {
+            statusLine.innerHTML = "";
+            const span = document.createElement("span");
+            span.style.opacity = "0.7";
+            span.textContent = "Starting indexer...";
+            statusLine.appendChild(span);
+        }
         if (progressContainer) progressContainer.style.display = "block";
         if (progressBar) progressBar.style.width = "0%";
         if (progressPct) progressPct.innerText = "0%";
@@ -867,13 +911,25 @@ function initDocRag() {
         try {
             const result = await invoke("index_directory", { path: folder });
             const count = typeof result === "number" ? `Indexed ${result} document${result !== 1 ? "s" : ""}.` : result;
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">${count}</span>`;
+            if (statusLine) {
+                statusLine.innerHTML = "";
+                const span = document.createElement("span");
+                span.style.color = "var(--response-color)";
+                span.textContent = count;
+                statusLine.appendChild(span);
+            }
             if (typeof addNotification === "function") {
                 addNotification("RAG Index Complete", count, "success");
             }
             invoke("get_doc_count").then(c => { if (docCount) docCount.innerText = c || 0; }).catch(() => {});
         } catch (err) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+            if (statusLine) {
+                statusLine.innerHTML = "";
+                const span = document.createElement("span");
+                span.style.color = "var(--error-color)";
+                span.textContent = `Error: ${err}`;
+                statusLine.appendChild(span);
+            }
         } finally {
             indexBtn.disabled = false;
         }

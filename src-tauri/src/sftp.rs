@@ -6,10 +6,25 @@ fn to_string_err<E: std::fmt::Display>(e: E) -> String {
 }
 
 fn validate_sftp_path(path: &str) -> Result<(), String> {
-    if path.contains('\n') || path.contains('\r') || path.contains('"') {
-        return Err("Invalid characters in SFTP path. Newlines and double-quotes are forbidden.".to_string());
+    lazy_static::lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"^[a-zA-Z0-9_\.\-\/ ]+$").unwrap();
     }
-    Ok(())
+    if RE.is_match(path) {
+        Ok(())
+    } else {
+        Err("Invalid characters in SFTP path. Only alphanumeric, dashes, dots, underscores, spaces, and slashes are allowed.".to_string())
+    }
+}
+
+fn validate_sftp_user_host(val: &str) -> Result<(), String> {
+    lazy_static::lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"^[a-zA-Z0-9._-]+$").unwrap();
+    }
+    if RE.is_match(val) {
+        Ok(())
+    } else {
+        Err("Invalid user or host format. Only alphanumeric, dots, underscores, and dashes are allowed.".to_string())
+    }
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -36,10 +51,6 @@ fn build_sftp_command(
         cmd.arg("sftp");
     }
 
-    // Common SSH/SFTP options
-    cmd.arg("-o").arg("StrictHostKeyChecking=no");
-    cmd.arg("-o").arg("UserKnownHostsFile=/dev/null");
-    
     // Port argument (capital -P for sftp)
     cmd.arg("-P").arg(port.to_string());
 
@@ -117,6 +128,8 @@ pub async fn sftp_test_connection(
     password: Option<String>,
     key_path: Option<String>,
 ) -> Result<String, String> {
+    validate_sftp_user_host(&host)?;
+    validate_sftp_user_host(&user)?;
     tokio::task::spawn_blocking(move || {
         let cmd = build_sftp_command(
             &host,
@@ -143,6 +156,8 @@ pub async fn sftp_list_dir(
     key_path: Option<String>,
     path: String,
 ) -> Result<Vec<FtpFileEntry>, String> {
+    validate_sftp_user_host(&host)?;
+    validate_sftp_user_host(&user)?;
     validate_sftp_path(&path)?;
     tokio::task::spawn_blocking(move || {
         let cmd = build_sftp_command(
@@ -178,6 +193,8 @@ pub async fn sftp_download_file(
     remote_path: String,
     local_path: String,
 ) -> Result<(), String> {
+    validate_sftp_user_host(&host)?;
+    validate_sftp_user_host(&user)?;
     validate_sftp_path(&remote_path)?;
     validate_sftp_path(&local_path)?;
     tokio::task::spawn_blocking(move || {
@@ -208,6 +225,8 @@ pub async fn sftp_upload_file(
     local_path: String,
     remote_path: String,
 ) -> Result<(), String> {
+    validate_sftp_user_host(&host)?;
+    validate_sftp_user_host(&user)?;
     validate_sftp_path(&local_path)?;
     validate_sftp_path(&remote_path)?;
     tokio::task::spawn_blocking(move || {

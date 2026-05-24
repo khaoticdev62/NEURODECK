@@ -251,3 +251,33 @@ pub fn load_custom_themes() -> String {
     std::fs::read_to_string("./data/themes/custom.json")
         .unwrap_or_else(|_| "[]".to_string())
 }
+
+#[tauri::command]
+pub fn save_ssh_credential(profile_name: String, password: String) -> Result<(), String> {
+    neurodeck_infrastructure::secrets::save_ssh_credential(&profile_name, &password)
+}
+
+#[tauri::command]
+pub fn get_ssh_credential(profile_name: String) -> Result<String, String> {
+    neurodeck_infrastructure::secrets::get_ssh_credential(&profile_name)
+}
+
+#[tauri::command]
+pub fn delete_ssh_credential(profile_name: String) -> Result<(), String> {
+    neurodeck_infrastructure::secrets::delete_ssh_credential(&profile_name)
+}
+
+#[tauri::command]
+pub fn save_sftp_credential(profile_name: String, password: String) -> Result<(), String> {
+    neurodeck_infrastructure::secrets::save_sftp_credential(&profile_name, &password)
+}
+
+#[tauri::command]
+pub fn get_sftp_credential(profile_name: String) -> Result<String, String> {
+    neurodeck_infrastructure::secrets::get_sftp_credential(&profile_name)
+}
+
+#[tauri::command]
+pub fn delete_sftp_credential(profile_name: String) -> Result<(), String> {
+    neurodeck_infrastructure::secrets::delete_sftp_credential(&profile_name)
+}

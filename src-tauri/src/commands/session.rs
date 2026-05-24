@@ -48,7 +48,7 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
     for entry in read_dir.flatten() {
         let path = entry.path();
         if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
-            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
             if latest_name.is_empty() || name > latest_name {
                 latest_name = name;
                 latest_file = path;
@@ -70,7 +70,7 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
     result.insert("session_id".to_string(), serde_json::Value::String(session.id));
     result.insert(
         "messages".to_string(),
-        serde_json::to_value(session.messages).unwrap(),
+        serde_json::to_value(&session.messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
     );
 
     Ok(result)
@@ -121,7 +121,7 @@ pub fn load_session_by_id(id: String, state: State<'_, Mutex<AppState>>) -> Resu
     result.insert("session_id".to_string(), serde_json::Value::String(session.id));
     result.insert(
         "messages".to_string(),
-        serde_json::to_value(session.messages).unwrap(),
+        serde_json::to_value(&session.messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
     );
 
     Ok(result)
@@ -205,7 +205,7 @@ pub async fn send_command(
     let mut prompt = prompt;
     {
         let lua_state = app_handle.state::<LuaState>();
-        let engine = lua_state.0.lock().unwrap();
+        let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
         if let Ok(modified) = engine.trigger_hook("onMessage", prompt.clone()) {
             prompt = modified;
         }
@@ -223,14 +223,14 @@ pub async fn send_command(
 
     let is_lua_cmd = {
         let lua_state = app_handle.state::<LuaState>();
-        let engine = lua_state.0.lock().unwrap();
+        let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
         engine.is_command_registered(cmd_name)
     };
 
     if is_lua_cmd {
         let result = {
             let lua_state = app_handle.state::<LuaState>();
-            let engine = lua_state.0.lock().unwrap();
+            let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
             engine.call_command(cmd_name, cmd_args)
         };
         match result {
@@ -241,7 +241,7 @@ pub async fn send_command(
                 
                 // Trigger onAIResponse hook
                 let lua_state = app_handle.state::<LuaState>();
-                let engine = lua_state.0.lock().unwrap();
+                let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
                 let _ = engine.trigger_hook("onAIResponse", out);
                 
                 return Ok(());
@@ -338,22 +338,66 @@ pub async fn send_command(
 
     // Handle @file:path pattern
     let mut full_prompt = prompt.clone();
-    let re = regex::Regex::new(r"@file:([^\s]+)").unwrap();
+    let re = regex::Regex::new(r"@file:([^\s]+)").map_err(|e| format!("Regex error: {}", e))?;
     if let Some(caps) = re.captures(&prompt) {
-        let file_path = caps.get(1).unwrap().as_str();
-        if let Ok(content) = std::fs::read_to_string(file_path) {
+        let file_path_str = caps.get(1).ok_or("Failed to extract file path")?.as_str();
+        let target_path = std::path::Path::new(file_path_str);
+        
+        let canonical_path = match target_path.canonicalize() {
+            Ok(p) => p,
+            Err(e) => {
+                let _ = app_handle.emit(
+                    "stream_chunk",
+                    format!("System: Error reading file {}: Failed to canonicalize path: {}\n", file_path_str, e),
+                );
+                let _ = app_handle.emit("stream_done", ());
+                return Ok(());
+            }
+        };
+
+        let is_safe = {
+            let mut safe = false;
+            if let Some(home) = crate::get_home_dir() {
+                if let Ok(can_home) = home.canonicalize() {
+                    if canonical_path.starts_with(&can_home) {
+                        safe = true;
+                    }
+                }
+            }
+            if !safe {
+                if let Ok(current_dir) = std::env::current_dir() {
+                    if let Ok(can_curr) = current_dir.canonicalize() {
+                        if canonical_path.starts_with(&can_curr) {
+                            safe = true;
+                        }
+                    }
+                }
+            }
+            safe
+        };
+
+        if !is_safe {
             let _ = app_handle.emit(
                 "stream_chunk",
-                format!("System: Read file {} ({} bytes)\n", file_path, content.len()),
+                format!("System: Access denied: file '{}' is outside permitted directories.\n", file_path_str),
+            );
+            let _ = app_handle.emit("stream_done", ());
+            return Ok(());
+        }
+
+        if let Ok(content) = std::fs::read_to_string(&canonical_path) {
+            let _ = app_handle.emit(
+                "stream_chunk",
+                format!("System: Read file {} ({} bytes)\n", file_path_str, content.len()),
             );
             full_prompt = format!(
                 "User mentioned file: {}\n```\n{}\n```\n\n{}",
-                file_path, content, prompt
+                file_path_str, content, prompt
             );
         } else {
             let _ = app_handle.emit(
                 "stream_chunk",
-                format!("System: Error reading file {}: File not found or unreadable\n", file_path),
+                format!("System: Error reading file {}: File not found or unreadable\n", file_path_str),
             );
             let _ = app_handle.emit("stream_done", ());
             return Ok(());
@@ -402,11 +446,11 @@ pub async fn send_command(
 
     // Check for roundtable discussion command
     if prompt.trim().starts_with("/discuss") {
-        let re_discuss = regex::Regex::new(r"^/discuss\s+(\w+)\s+(\w+)\s+(.+)$").unwrap();
+        let re_discuss = regex::Regex::new(r"^/discuss\s+(\w+)\s+(\w+)\s+(.+)$").map_err(|e| format!("Regex error: {}", e))?;
         if let Some(caps) = re_discuss.captures(prompt.trim()) {
-            let p1 = caps.get(1).unwrap().as_str().to_string();
-            let p2 = caps.get(2).unwrap().as_str().to_string();
-            let topic = caps.get(3).unwrap().as_str().to_string();
+            let p1 = caps.get(1).ok_or("Participant 1 missing")?.as_str().to_string();
+            let p2 = caps.get(2).ok_or("Participant 2 missing")?.as_str().to_string();
+            let topic = caps.get(3).ok_or("Topic missing")?.as_str().to_string();
 
             let (has_p1, has_p2, custom_list) = {
                 let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -414,55 +458,55 @@ pub async fn send_command(
                 let has2 = PERSONAS.iter().any(|p| p.0 == p2) || app.custom_personas.iter().any(|p| p.name == p2);
                 (has1, has2, app.custom_personas.clone())
             };
-
-            if !has_p1 || !has_p2 {
-                let mut available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
-                for cp in custom_list {
-                    available.push(cp.name);
-                }
-                let error_msg = format!(
-                    "System: Invalid personas specified. Available personas: {}\nUsage: `/discuss <persona1> <persona2> <topic>`",
-                    available.join(", ")
-                );
-                let _ = app_handle.emit("stream_chunk", error_msg);
-                let _ = app_handle.emit("stream_done", ());
-                return Ok(());
-            }
-
-            let mut discussion_history = format!(
-                "We are holding a roundtable discussion/debate on the topic: \"{}\".\nParticipants: {} and {}.\n\n",
-                topic, p1, p2
-            );
-
-            let mut current_speaker = p1.clone();
-            let mut next_speaker = p2.clone();
-
-            let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
-            {
-                let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-                app.cancel_stream_tx = Some(cancel_tx);
-            }
-
-            for turn in 1..=4 {
-                if cancel_rx.try_recv().is_ok() {
-                    let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
-                    let _ = app_handle.emit("stream_done", ());
-                    {
-                        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-                        app.cancel_stream_tx = None;
+    
+                if !has_p1 || !has_p2 {
+                    let mut available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+                    for cp in custom_list {
+                        available.push(cp.name);
                     }
+                    let error_msg = format!(
+                        "System: Invalid personas specified. Available personas: {}\nUsage: `/discuss <persona1> <persona2> <topic>`",
+                        available.join(", ")
+                    );
+                    let _ = app_handle.emit("stream_chunk", error_msg);
+                    let _ = app_handle.emit("stream_done", ());
                     return Ok(());
                 }
-
-                let speaker_system_prompt = PERSONAS
-                    .iter()
-                    .find(|p| p.0 == current_speaker)
-                    .map(|p| p.1.clone())
-                    .or_else(|| {
-                        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-                        app.custom_personas.iter().find(|p| p.name == current_speaker).map(|p| p.prompt.clone())
-                    })
-                    .unwrap_or_default();
+    
+                let mut discussion_history = format!(
+                    "We are holding a roundtable discussion/debate on the topic: \"{}\".\nParticipants: {} and {}.\n\n",
+                    topic, p1, p2
+                );
+    
+                let mut current_speaker = p1.clone();
+                let mut next_speaker = p2.clone();
+    
+                let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+                {
+                    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+                    app.cancel_stream_tx = Some(cancel_tx);
+                }
+    
+                for turn in 1..=4 {
+                    if cancel_rx.try_recv().is_ok() {
+                        let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
+                        let _ = app_handle.emit("stream_done", ());
+                        {
+                            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+                            app.cancel_stream_tx = None;
+                        }
+                        return Ok(());
+                    }
+    
+                    let speaker_system_prompt = PERSONAS
+                        .iter()
+                        .find(|p| p.0 == current_speaker)
+                        .map(|p| p.1.clone())
+                        .or_else(|| {
+                            let app = state.lock().unwrap_or_else(|e| e.into_inner());
+                            app.custom_personas.iter().find(|p| p.name == current_speaker).map(|p| p.prompt.clone())
+                        })
+                        .unwrap_or_default();
 
                 let full_system_prompt = format!(
                     "{} You are participating in a roundtable debate. Keep your responses short (under 100 words), engaging, and directly address the previous points. You are speaking as {}.",
@@ -644,7 +688,7 @@ pub async fn send_command(
     // Trigger onAIResponse hook
     {
         let lua_state = app_handle.state::<LuaState>();
-        let engine = lua_state.0.lock().unwrap();
+        let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
         let _ = engine.trigger_hook("onAIResponse", full_response.clone());
     }
 

@@ -122,7 +122,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
         let (accept_tx, accept_rx) = tokio::sync::oneshot::channel::<bool>();
 
         {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             s.transfers.insert(transfer_id.clone(), transfer.clone());
             s.accept_txs.insert(transfer_id.clone(), accept_tx);
         }
@@ -172,7 +172,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
     fn on_transfer_progress(&self, transfer_id: &str, progress: u64) {
         {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(transfer_id) {
                 t.progress = progress;
                 if t.status == "Pending" || t.status == "Accepted" {
@@ -185,7 +185,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
     fn on_transfer_completed(&self, transfer_id: &str) {
         {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(transfer_id) {
                 t.status = "Completed".to_string();
             }
@@ -194,7 +194,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
         // Clean up temp file if it was a directory archive
         let path_to_clean = {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             s.outgoing_paths.remove(transfer_id)
         };
         if let Some(path) = path_to_clean {
@@ -206,7 +206,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
     fn on_transfer_failed(&self, transfer_id: &str) {
         {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(transfer_id) {
                 t.status = "Failed".to_string();
             }
@@ -215,7 +215,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
         // Clean up temp file if it was a directory archive
         let path_to_clean = {
-            let mut s = self.state.lock().unwrap();
+            let mut s = self.state.lock().unwrap_or_else(|e| e.into_inner());
             s.outgoing_paths.remove(transfer_id)
         };
         if let Some(path) = path_to_clean {
@@ -226,7 +226,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
     }
 
     fn is_cancelled(&self, transfer_id: &str) -> bool {
-        let s = self.state.lock().unwrap();
+        let s = self.state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get(transfer_id) {
             t.status == "Cancelled"
         } else {
@@ -235,7 +235,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
     }
 
     fn get_outgoing_file_path(&self, transfer_id: &str) -> Option<std::path::PathBuf> {
-        let s = self.state.lock().unwrap();
+        let s = self.state.lock().unwrap_or_else(|e| e.into_inner());
         s.outgoing_paths.get(transfer_id).cloned()
     }
 }
@@ -252,7 +252,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
 
     // Store daemon in state for later updates
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.mdns_daemon = Some(mdns.clone());
     }
 
@@ -264,7 +264,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
     let port = 18338;
 
     let group_code = {
-        let s = state.lock().unwrap();
+        let s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.group_code.clone()
     };
 
@@ -309,7 +309,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                         .to_string();
 
                     let local_group = {
-                        let s = state_browser.lock().unwrap();
+                        let s = state_browser.lock().unwrap_or_else(|e| e.into_inner());
                         s.group_code.clone()
                     };
 
@@ -340,7 +340,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                             let mut changed = false;
                             let mut peer_list = Vec::new();
                             {
-                                let mut s = state_browser.lock().unwrap();
+                                let mut s = state_browser.lock().unwrap_or_else(|e| e.into_inner());
                                 let peer = Peer {
                                     ip: ip.clone(),
                                     hostname: hostname.clone(),
@@ -367,7 +367,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     let mut changed = false;
                     let mut peer_list = Vec::new();
                     {
-                        let mut s = state_browser.lock().unwrap();
+                        let mut s = state_browser.lock().unwrap_or_else(|e| e.into_inner());
                         let to_remove: Vec<String> = s.peers.iter()
                             .filter(|(_, (p, _))| name.contains(&p.hostname) && !p.is_warpinator)
                             .map(|(ip, _)| ip.clone())
@@ -411,7 +411,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                         .to_string();
 
                     let local_group = {
-                        let s = state_browser_warp.lock().unwrap();
+                        let s = state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
                         s.group_code.clone()
                     };
 
@@ -442,7 +442,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                             let mut changed = false;
                             let mut peer_list = Vec::new();
                             {
-                                let mut s = state_browser_warp.lock().unwrap();
+                                let mut s = state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
                                 let peer = Peer {
                                     ip: ip.clone(),
                                     hostname: hostname.clone(),
@@ -469,7 +469,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     let mut changed = false;
                     let mut peer_list = Vec::new();
                     {
-                        let mut s = state_browser_warp.lock().unwrap();
+                        let mut s = state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
                         let to_remove: Vec<String> = s.peers.iter()
                             .filter(|(_, (p, _))| name.contains(&p.hostname) && p.is_warpinator)
                             .map(|(ip, _)| ip.clone())
@@ -568,7 +568,7 @@ async fn handle_incoming_connection(
     let (accept_tx, accept_rx) = oneshot::channel::<bool>();
     
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.transfers.insert(transfer_id.clone(), transfer.clone());
         s.accept_txs.insert(transfer_id.clone(), accept_tx);
     }
@@ -586,7 +586,7 @@ async fn handle_incoming_connection(
         tx.write_all(resp_bytes.as_bytes()).await?;
         
         {
-            let mut s = state.lock().unwrap();
+            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(&transfer_id) {
                 t.status = "Rejected".to_string();
             }
@@ -603,7 +603,7 @@ async fn handle_incoming_connection(
     // Register cancellation oneshot
     let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Transferring".to_string();
         }
@@ -664,7 +664,7 @@ async fn handle_incoming_connection(
         
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_written == size {
             {
-                let mut s = state.lock().unwrap();
+                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(t) = s.transfers.get_mut(&transfer_id) {
                     t.progress = bytes_written;
                 }
@@ -676,14 +676,14 @@ async fn handle_incoming_connection(
     
     // Clean up cancellation handle
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.cancel_txs.remove(&transfer_id);
     }
     
     if !transfer_success || bytes_written < size {
         // Cancelled or aborted transfer cleanup
         {
-            let mut s = state.lock().unwrap();
+            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(&transfer_id) {
                 if t.status != "Cancelled" {
                     t.status = "Failed".to_string();
@@ -697,7 +697,7 @@ async fn handle_incoming_connection(
     
     // Completed successfully
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Completed".to_string();
             t.progress = size;
@@ -725,7 +725,7 @@ async fn handle_incoming_connection(
         if let Err(e) = extract_res {
             println!("Failed to extract folder: {:?}", e);
             {
-                let mut s = state.lock().unwrap();
+                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(t) = s.transfers.get_mut(&transfer_id) {
                     t.status = "Failed".to_string();
                 }
@@ -755,7 +755,7 @@ async fn run_outgoing_transfer(
         Ok(s) => s,
         Err(e) => {
             {
-                let mut s = state.lock().unwrap();
+                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(t) = s.transfers.get_mut(&transfer_id) {
                     t.status = "Failed".to_string();
                 }
@@ -787,7 +787,7 @@ async fn run_outgoing_transfer(
     
     if resp.status != "accepted" {
         {
-            let mut s = state.lock().unwrap();
+            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(&transfer_id) {
                 t.status = "Rejected".to_string();
             }
@@ -802,7 +802,7 @@ async fn run_outgoing_transfer(
     // Register cancellation oneshot
     let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Transferring".to_string();
         }
@@ -846,7 +846,7 @@ async fn run_outgoing_transfer(
         
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_sent == size {
             {
-                let mut s = state.lock().unwrap();
+                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(t) = s.transfers.get_mut(&transfer_id) {
                     t.progress = bytes_sent;
                 }
@@ -858,7 +858,7 @@ async fn run_outgoing_transfer(
     
     // Clean up cancellation handle
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.cancel_txs.remove(&transfer_id);
     }
     
@@ -869,7 +869,7 @@ async fn run_outgoing_transfer(
     
     if !transfer_success || bytes_sent < size {
         {
-            let mut s = state.lock().unwrap();
+            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(&transfer_id) {
                 if t.status != "Cancelled" {
                     t.status = "Failed".to_string();
@@ -881,7 +881,7 @@ async fn run_outgoing_transfer(
     }
     
     {
-        let mut s = state.lock().unwrap();
+        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
             t.status = "Completed".to_string();
             t.progress = size;
@@ -958,12 +958,12 @@ pub async fn start_file_transfer(
     };
     
     let (is_warpinator, peer_port) = {
-        let s = state.0.lock().unwrap();
+        let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
         s.peers.get(&peer_ip).map(|(p, _)| (p.is_warpinator, p.port)).unwrap_or((false, 18338))
     };
 
     {
-        let mut s = state.0.lock().unwrap();
+        let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
         let peer_name = s.peers.get(&peer_ip).map(|(p, _)| p.hostname.clone()).unwrap_or_else(|| "Unknown Peer".to_string());
         let mut t = transfer.clone();
         t.peer_name = peer_name;
@@ -1014,7 +1014,7 @@ pub fn respond_to_transfer(
     accept: bool,
     state: State<'_, SharedTransferState>,
 ) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = s.accept_txs.remove(&transfer_id) {
         let _ = tx.send(accept);
         Ok(())
@@ -1027,7 +1027,7 @@ pub fn respond_to_transfer(
 pub fn get_discovered_peers(
     state: State<'_, SharedTransferState>,
 ) -> Vec<Peer> {
-    let s = state.0.lock().unwrap();
+    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.peers.values().map(|(p, _)| p.clone()).collect()
 }
 
@@ -1035,7 +1035,7 @@ pub fn get_discovered_peers(
 pub fn get_active_transfers(
     state: State<'_, SharedTransferState>,
 ) -> Vec<FileTransfer> {
-    let s = state.0.lock().unwrap();
+    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.transfers.values().cloned().collect()
 }
 
@@ -1044,7 +1044,7 @@ pub fn cancel_transfer(
     transfer_id: String,
     state: State<'_, SharedTransferState>,
 ) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = s.cancel_txs.remove(&transfer_id) {
         let _ = tx.send(());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
@@ -1069,7 +1069,7 @@ pub fn set_group_code(
     code: String,
     state: State<'_, SharedTransferState>,
 ) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.group_code = code.trim().to_string();
     
     if let Some(ref mdns) = s.mdns_daemon {
@@ -1108,6 +1108,6 @@ pub fn set_group_code(
 pub fn get_group_code(
     state: State<'_, SharedTransferState>,
 ) -> Result<String, String> {
-    let s = state.0.lock().unwrap();
+    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     Ok(s.group_code.clone())
 }

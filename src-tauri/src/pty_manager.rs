@@ -132,7 +132,7 @@ pub fn pty_spawn(
 
     // Snapshot the remote broadcast sender (if active) before entering the thread.
     let remote_tx_snap: Option<tokio::sync::broadcast::Sender<String>> = {
-        state.remote_tx.lock().unwrap().clone()
+        state.remote_tx.lock().unwrap_or_else(|e| e.into_inner()).clone()
     };
 
     // Spawn reader thread
@@ -158,7 +158,7 @@ pub fn pty_spawn(
         let _ = app_handle_clone.emit("pty_exit", id_clone);
     });
 
-    let mut sessions = state.sessions.lock().unwrap();
+    let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     sessions.insert(id, PtySession {
         writer,
         master: pair.master,
@@ -173,7 +173,7 @@ pub fn pty_write(
     data: String,
     state: State<'_, PtyState>,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
+    let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get_mut(&id) {
         session.writer.write_all(data.as_bytes()).map_err(to_string_err)?;
         session.writer.flush().map_err(to_string_err)?;
@@ -190,7 +190,7 @@ pub fn pty_resize(
     rows: u16,
     state: State<'_, PtyState>,
 ) -> Result<(), String> {
-    let sessions = state.sessions.lock().unwrap();
+    let sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get(&id) {
         session.master.resize(PtySize {
             rows,
@@ -209,7 +209,7 @@ pub fn pty_kill(
     id: String,
     state: State<'_, PtyState>,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().unwrap();
+    let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if sessions.remove(&id).is_some() {
         Ok(())
     } else {

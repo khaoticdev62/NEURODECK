@@ -69,6 +69,7 @@ pub async fn execute_command(cmd_str: String) -> String {
     }
 }
 
+#[cfg(debug_assertions)]
 #[tauri::command]
 pub async fn execute_lua(
     code: String,
@@ -77,7 +78,7 @@ pub async fn execute_lua(
     let app_handle_clone = app_handle.clone();
     tokio::task::spawn_blocking(move || {
         let lua_state = app_handle_clone.state::<LuaState>();
-        let engine = lua_state.0.lock().unwrap();
+        let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
         match engine.run_script(&code) {
             Ok(_) => {
                 let _ = app_handle_clone.emit("command_exit", 0);
@@ -219,7 +220,7 @@ pub async fn execute_command_stream(
 
         // Clean state if it's still our process
         if let Some(app_state_mutex) = app_handle_exit.try_state::<Mutex<AppState>>() {
-            let mut app = app_state_mutex.lock().unwrap();
+            let mut app = app_state_mutex.lock().unwrap_or_else(|e| e.into_inner());
             if app.active_process_id == proc_id {
                 app.process_stdin_tx = None;
                 app.kill_tx = None;
@@ -835,7 +836,7 @@ pub async fn assemble_prompt_via_lua_cmd(
     formula: String,
     lua_state: State<'_, LuaState>,
 ) -> Result<String, String> {
-    let engine = lua_state.0.lock().unwrap();
+    let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
     engine.assemble_prompt(
         &persona,
         &task,
@@ -1255,9 +1256,30 @@ pub async fn index_directory(
     if !dir.is_dir() {
         return Err(format!("'{}' is not a directory", path));
     }
+    let canonical_dir = dir.canonicalize().map_err(|e| format!("Failed to canonicalize directory: {}", e))?;
+    let mut safe = false;
+    if let Some(home) = crate::get_home_dir() {
+        if let Ok(canonical_home) = home.canonicalize() {
+            if canonical_dir.starts_with(&canonical_home) {
+                safe = true;
+            }
+        }
+    }
+    if !safe {
+        if let Ok(current_dir) = std::env::current_dir() {
+            if let Ok(canonical_current) = current_dir.canonicalize() {
+                if canonical_dir.starts_with(&canonical_current) {
+                    safe = true;
+                }
+            }
+        }
+    }
+    if !safe {
+        return Err("Access denied: path escapes the permitted directories sandbox (home directory or current workspace)".to_string());
+    }
 
     let mut files: Vec<PathBuf> = Vec::new();
-    collect_text_files(&dir, &mut files, 500);
+    collect_text_files(&canonical_dir, &mut files, 500);
 
     let total = files.len();
     let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": 0, "total": total }));

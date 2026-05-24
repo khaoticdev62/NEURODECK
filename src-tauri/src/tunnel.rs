@@ -1,9 +1,8 @@
 use std::sync::Mutex;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncRead, AsyncWrite};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -36,6 +35,70 @@ lazy_static::lazy_static! {
     static ref TUNNEL_TOKEN: Mutex<Option<String>> = Mutex::new(None);
 }
 
+async fn read_framed<S>(socket: &mut S) -> std::io::Result<Vec<u8>>
+where
+    S: AsyncRead + Unpin,
+{
+    let mut len_bytes = [0u8; 4];
+    socket.read_exact(&mut len_bytes).await?;
+    let len = u32::from_be_bytes(len_bytes) as usize;
+    
+    if len > 10 * 1024 * 1024 {
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Payload too large"));
+    }
+    
+    let mut buf = vec![0u8; len];
+    socket.read_exact(&mut buf).await?;
+    Ok(buf)
+}
+
+async fn write_framed<S>(socket: &mut S, data: &[u8]) -> std::io::Result<()>
+where
+    S: AsyncWrite + Unpin,
+{
+    let len = data.len() as u32;
+    socket.write_all(&len.to_be_bytes()).await?;
+    socket.write_all(data).await?;
+    Ok(())
+}
+
+fn sanitize_tunnel_path(path_str: &str) -> Result<std::path::PathBuf, String> {
+    let base_dir = std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let target_path = std::path::Path::new(path_str);
+    
+    let absolute_path = if target_path.is_absolute() {
+        target_path.to_path_buf()
+    } else {
+        base_dir.join(target_path)
+    };
+    
+    let canonical_path = match absolute_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            if let Some(parent) = absolute_path.parent() {
+                match parent.canonicalize() {
+                    Ok(p_can) => {
+                        let file_name = absolute_path.file_name().ok_or("Invalid filename")?;
+                        p_can.join(file_name)
+                    }
+                    Err(e) => return Err(format!("Invalid path directory: {}", e)),
+                }
+            } else {
+                return Err("Invalid path: no parent directory".to_string());
+            }
+        }
+    };
+    
+    let canonical_base = base_dir.canonicalize()
+        .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
+        
+    if canonical_path.starts_with(&canonical_base) {
+        Ok(canonical_path)
+    } else {
+        Err("Access denied: path escapes S-Term sandbox".to_string())
+    }
+}
+
 async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
     match req {
         TunnelRequest::RunCmd { command } => {
@@ -59,19 +122,26 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
             }
         }
         TunnelRequest::WriteFile { path, content } => {
-            let path_obj = Path::new(&path);
-            if let Some(parent) = path_obj.parent() {
+            let safe_path = match sanitize_tunnel_path(&path) {
+                Ok(p) => p,
+                Err(e) => return TunnelResponse::Error { message: e },
+            };
+            if let Some(parent) = safe_path.parent() {
                 if let Err(e) = std::fs::create_dir_all(parent) {
                     return TunnelResponse::Error { message: format!("Failed to create directories: {}", e) };
                 }
             }
-            match std::fs::write(path_obj, content) {
-                Ok(_) => TunnelResponse::Success { output: format!("File successfully written to {}", path) },
+            match std::fs::write(&safe_path, content) {
+                Ok(_) => TunnelResponse::Success { output: format!("File successfully written to {}", safe_path.display()) },
                 Err(e) => TunnelResponse::Error { message: format!("Failed to write file: {}", e) },
             }
         }
         TunnelRequest::ReadDir { path } => {
-            match std::fs::read_dir(Path::new(&path)) {
+            let safe_path = match sanitize_tunnel_path(&path) {
+                Ok(p) => p,
+                Err(e) => return TunnelResponse::Error { message: e },
+            };
+            match std::fs::read_dir(&safe_path) {
                 Ok(read_dir) => {
                     let mut items = Vec::new();
                     for entry in read_dir.flatten() {
@@ -89,7 +159,7 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
 
 #[tauri::command]
 pub async fn start_tunnel_server() -> Result<String, String> {
-    let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap();
+    let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap_or_else(|e| e.into_inner());
     if tx_guard.is_some() {
         return Err("Tunnel server is already running".to_string());
     }
@@ -106,34 +176,13 @@ pub async fn start_tunnel_server() -> Result<String, String> {
         t
     };
 
-    // Save token to data/tunnel_token with secure permissions on Unix (0600)
-    let data_dir = Path::new("data");
-    if !data_dir.exists() {
-        std::fs::create_dir_all(data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
-    }
-    let token_path = data_dir.join("tunnel_token");
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        use std::io::Write as IoWrite;
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&token_path)
-            .map_err(|e| format!("Failed to open tunnel_token: {}", e))?;
-        file.write_all(token.as_bytes()).map_err(|e| format!("Failed to write token: {}", e))?;
-    }
-    #[cfg(not(unix))]
-    {
-        std::fs::write(&token_path, &token).map_err(|e| format!("Failed to write token: {}", e))?;
-    }
+    // Save token to OS secure keychain
+    neurodeck_infrastructure::secrets::save_tunnel_token(&token)
+        .map_err(|e| format!("Failed to save tunnel token: {}", e))?;
 
     // Keep token in memory
     {
-        let mut token_guard = TUNNEL_TOKEN.lock().unwrap();
+        let mut token_guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
         *token_guard = Some(token.clone());
     }
 
@@ -159,14 +208,12 @@ pub async fn start_tunnel_server() -> Result<String, String> {
                 accept_res = listener.accept() => {
                     if let Ok((mut socket, _)) = accept_res {
                         tokio::spawn(async move {
-                            let mut buf = vec![0u8; 65536];
-                            if let Ok(n) = socket.read(&mut buf).await {
-                                if n == 0 { return; }
-                                let req_str = String::from_utf8_lossy(&buf[..n]);
+                            if let Ok(buf) = read_framed(&mut socket).await {
+                                let req_str = String::from_utf8_lossy(&buf);
                                 let (_, response) = match serde_json::from_str::<TunnelEnvelope>(&req_str) {
                                     Ok(envelope) => {
                                         let expected = {
-                                            let guard = TUNNEL_TOKEN.lock().unwrap();
+                                            let guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
                                             guard.clone()
                                         };
                                         if let Some(expected_token) = expected {
@@ -184,7 +231,7 @@ pub async fn start_tunnel_server() -> Result<String, String> {
                                     }
                                 };
                                 if let Ok(resp_bytes) = serde_json::to_vec(&response) {
-                                    let _ = socket.write_all(&resp_bytes).await;
+                                    let _ = write_framed(&mut socket, &resp_bytes).await;
                                 }
                             }
                         });
@@ -199,15 +246,15 @@ pub async fn start_tunnel_server() -> Result<String, String> {
 
 #[tauri::command]
 pub async fn stop_tunnel_server() -> Result<String, String> {
-    let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap();
+    let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = tx_guard.take() {
         let _ = tx.send(());
-        // Clean up token from memory and file
+        // Clean up token from memory and keychain
         {
-            let mut token_guard = TUNNEL_TOKEN.lock().unwrap();
+            let mut token_guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
             *token_guard = None;
         }
-        let _ = std::fs::remove_file("data/tunnel_token");
+        let _ = neurodeck_infrastructure::secrets::delete_tunnel_token();
         Ok("Tunnel server stopped".to_string())
     } else {
         Err("Tunnel server was not running".to_string())
@@ -219,12 +266,10 @@ pub async fn send_tunnel_request(request: String) -> Result<String, String> {
     use tokio::net::TcpStream;
 
     let token = {
-        let guard = TUNNEL_TOKEN.lock().unwrap();
+        let guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
         guard.clone()
     }.or_else(|| {
-        std::fs::read_to_string("data/tunnel_token")
-            .ok()
-            .map(|s| s.trim().to_string())
+        neurodeck_infrastructure::secrets::get_tunnel_token().ok()
     }).ok_or_else(|| "Tunnel token not found. Is the tunnel server running?".to_string())?;
 
     let req_obj: TunnelRequest = serde_json::from_str(&request)
@@ -241,17 +286,13 @@ pub async fn send_tunnel_request(request: String) -> Result<String, String> {
     let mut stream = TcpStream::connect("127.0.0.1:18337").await
         .map_err(|e| format!("Failed to connect to tunnel server: {}", e))?;
 
-    stream.write_all(envelope_str.as_bytes()).await
+    write_framed(&mut stream, envelope_str.as_bytes()).await
         .map_err(|e| format!("Failed to send request: {}", e))?;
 
-    let mut buf = vec![0u8; 65536];
-    let n = stream.read(&mut buf).await
+    let buf = read_framed(&mut stream).await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    if n == 0 {
-        return Err("Server closed connection before response".to_string());
-    }
-    Ok(String::from_utf8_lossy(&buf[..n]).to_string())
+    Ok(String::from_utf8_lossy(&buf).to_string())
 }
 
 pub async fn run_tunnel_server_headless() -> Result<(), String> {
@@ -267,34 +308,13 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
         t
     };
 
-    // Save token to data/tunnel_token with secure permissions on Unix (0600)
-    let data_dir = Path::new("data");
-    if !data_dir.exists() {
-        std::fs::create_dir_all(data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
-    }
-    let token_path = data_dir.join("tunnel_token");
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        use std::io::Write as IoWrite;
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&token_path)
-            .map_err(|e| format!("Failed to open tunnel_token: {}", e))?;
-        file.write_all(token.as_bytes()).map_err(|e| format!("Failed to write token: {}", e))?;
-    }
-    #[cfg(not(unix))]
-    {
-        std::fs::write(&token_path, &token).map_err(|e| format!("Failed to write token: {}", e))?;
-    }
+    // Save token to OS secure keychain
+    neurodeck_infrastructure::secrets::save_tunnel_token(&token)
+        .map_err(|e| format!("Failed to save tunnel token: {}", e))?;
 
     // Keep token in memory
     {
-        let mut token_guard = TUNNEL_TOKEN.lock().unwrap();
+        let mut token_guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
         *token_guard = Some(token.clone());
     }
 
@@ -306,14 +326,12 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
         match listener.accept().await {
             Ok((mut socket, _)) => {
                 tokio::spawn(async move {
-                    let mut buf = vec![0u8; 65536];
-                    if let Ok(n) = socket.read(&mut buf).await {
-                        if n == 0 { return; }
-                        let req_str = String::from_utf8_lossy(&buf[..n]);
+                    if let Ok(buf) = read_framed(&mut socket).await {
+                        let req_str = String::from_utf8_lossy(&buf);
                         let (_, response) = match serde_json::from_str::<TunnelEnvelope>(&req_str) {
                             Ok(envelope) => {
                                 let expected = {
-                                    let guard = TUNNEL_TOKEN.lock().unwrap();
+                                    let guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
                                     guard.clone()
                                 };
                                 if let Some(expected_token) = expected {
@@ -331,7 +349,7 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
                             }
                         };
                         if let Ok(resp_bytes) = serde_json::to_vec(&response) {
-                            let _ = socket.write_all(&resp_bytes).await;
+                            let _ = write_framed(&mut socket, &resp_bytes).await;
                         }
                     }
                 });
