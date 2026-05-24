@@ -931,6 +931,20 @@ document.querySelector('#app').innerHTML = `
             <div class="view-container">
                 <!-- Chat View -->
                 <div class="view-content active" id="view-chat">
+                    <!-- Session Context Header -->
+                    <div class="chat-session-header" id="chat-session-header">
+                        <div class="chat-session-header-left">
+                            <span class="chat-session-status-dot" id="chat-status-dot"></span>
+                            <span class="chat-session-name" id="chat-session-name">New Session</span>
+                        </div>
+                        <div class="chat-session-header-center">
+                            <span class="chat-session-model-chip" id="chat-session-model">GEMINI</span>
+                        </div>
+                        <div class="chat-session-header-right">
+                            <span class="chat-session-tokens" id="chat-session-tokens">0 tokens</span>
+                            <button class="chat-session-new-btn" id="new-chat-btn-header" title="New Session (Ctrl+N)">+ New</button>
+                        </div>
+                    </div>
                     <!-- Chat Workspace -->
                     <div class="chat-workspace" id="chat-workspace">
                         <div class="chat-viewport" id="chat-viewport">
@@ -940,6 +954,17 @@ document.querySelector('#app').innerHTML = `
 
                     <!-- Floating Input Console -->
                     <div class="floating-input-container">
+                        <!-- Generating Status Bar -->
+                        <div class="chat-gen-bar hidden" id="chat-gen-bar">
+                            <div class="chat-gen-bar-dots"><span></span><span></span><span></span></div>
+                            <span class="chat-gen-bar-text">Generating</span>
+                            <span class="chat-gen-bar-sep">·</span>
+                            <span class="chat-gen-bar-model" id="chat-gen-model">GEMINI</span>
+                            <span class="chat-gen-bar-sep">·</span>
+                            <span class="chat-gen-bar-tokens" id="chat-gen-tokens">0 tokens</span>
+                            <div class="chat-gen-bar-spacer"></div>
+                            <button class="chat-gen-stop-btn" id="chat-gen-stop">Stop</button>
+                        </div>
                         <div class="input-console-bar">
                             <div class="chat-input-context" id="chat-input-context"></div>
                             <div class="input-textarea-wrapper">

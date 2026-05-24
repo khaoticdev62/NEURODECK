@@ -76,6 +76,67 @@ function updateContextBar() {
     `;
 }
 
+function updateSessionHeader() {
+    const provider = (state.activeProvider || "gemini").toUpperCase();
+    const sessionId = state.currentSessionId;
+
+    const modelEl = document.getElementById("chat-session-model");
+    if (modelEl) modelEl.textContent = provider;
+
+    const nameEl = document.getElementById("chat-session-name");
+    if (nameEl) {
+        nameEl.textContent = sessionId
+            ? (sessionId.length > 30 ? sessionId.slice(0, 30) + "…" : sessionId)
+            : "New Session";
+    }
+    updateContextBar();
+}
+
+function showGenBar() {
+    const bar = document.getElementById("chat-gen-bar");
+    if (bar) {
+        bar.classList.remove("hidden");
+        const modelEl = document.getElementById("chat-gen-model");
+        if (modelEl) modelEl.textContent = (state.activeProvider || "gemini").toUpperCase();
+        const tokensEl = document.getElementById("chat-gen-tokens");
+        if (tokensEl) tokensEl.textContent = "0 tokens";
+    }
+    const dot = document.getElementById("chat-status-dot");
+    if (dot) dot.classList.add("streaming");
+}
+
+function hideGenBar() {
+    const bar = document.getElementById("chat-gen-bar");
+    if (bar) bar.classList.add("hidden");
+    const dot = document.getElementById("chat-status-dot");
+    if (dot) dot.classList.remove("streaming");
+}
+
+function updateGenBarTokens(count) {
+    const genEl = document.getElementById("chat-gen-tokens");
+    if (genEl) genEl.textContent = count + " tokens";
+    const headerEl = document.getElementById("chat-session-tokens");
+    if (headerEl) headerEl.textContent = count + " tokens";
+}
+
+export function appendToolPill(icon, cmd, status = "done", duration = null) {
+    if (!state.currentAIMessage) return;
+    const msgCard = state.currentAIMessage.querySelector(".message-card");
+    if (!msgCard) return;
+    const pill = document.createElement("div");
+    pill.className = `tool-pill ${status}`;
+    pill.innerHTML = `
+        <span class="tool-pill-dot"></span>
+        <span class="tool-pill-icon">${icon}</span>
+        <span class="tool-pill-cmd">${cmd}</span>
+        ${status !== "running" ? `<span class="tool-pill-status">${status === "error" ? "✗" : "✓"}</span>` : ""}
+        ${duration ? `<span class="tool-pill-duration">${duration}</span>` : ""}
+    `;
+    msgCard.appendChild(pill);
+    const viewport = document.getElementById("chat-workspace");
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+}
+
 function makeCopyBtn(getText) {
     const btn = document.createElement("button");
     btn.className = "msg-copy-btn";
@@ -145,6 +206,7 @@ function sendMessage() {
 
     // Dismiss welcome state on first real message
     dismissWelcome();
+    showGenBar();
 
     // Collect any pending screenshot attachment
     const attachment = window.pendingScreenshot || null;
@@ -561,6 +623,7 @@ listen("stream_chunk", function (event) {
         
         // Latency and Tokens Speed Calculation
         state.totalTokens += chunk.split(/\s+/).filter(Boolean).length || 1;
+        updateGenBarTokens(state.totalTokens);
         if (state.firstChunkTime === 0) {
             state.firstChunkTime = performance.now();
             let latency = Math.round(state.firstChunkTime - state.streamStartTime);
@@ -608,13 +671,29 @@ listen("stream_error", function (event) {
 
 listen("stream_done", function () {
     document.getElementById("tool-status").innerText = "Idle";
+    hideGenBar();
     if (state.currentAIMessage) {
         const msgCard = state.currentAIMessage.querySelector(".message-card");
         if (msgCard) {
             msgCard.innerHTML = window.sanitizeHtml(marked.parse(state.currentAIText));
             formatCodeBlocks(msgCard);
-            // Add copy button — capture text before state is cleared
+            // Capture text before state is cleared
             const capturedText = state.currentAIText;
+            const finalTokens = state.totalTokens;
+            const provider = (state.activeProvider || "gemini").toUpperCase();
+            const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            // Message metadata footer (hover-revealed)
+            const metaRow = document.createElement("div");
+            metaRow.className = "msg-meta";
+            metaRow.innerHTML = `
+                <span class="msg-meta-model">${provider}</span>
+                <span class="msg-meta-sep">·</span>
+                <span>${timeStr}</span>
+                <span class="msg-meta-sep">·</span>
+                <span>${finalTokens} tokens</span>
+            `;
+            msgCard.appendChild(metaRow);
+            // Copy button
             msgCard.appendChild(makeCopyBtn(() => capturedText));
         }
     }
@@ -871,6 +950,12 @@ function startNewSession() {
         chatViewport.innerHTML = CHAT_WELCOME_HTML;
         wireWelcomeStarters();
 
+        // Reset session header
+        const nameEl = document.getElementById("chat-session-name");
+        if (nameEl) nameEl.textContent = "New Session";
+        const tokensEl = document.getElementById("chat-session-tokens");
+        if (tokensEl) tokensEl.textContent = "0 tokens";
+
         refreshSessionsList();
     }).catch(err => {
         console.error("Error starting new session:", err);
@@ -1121,7 +1206,7 @@ function handlePersonaChange() {
     let val = this.value;
     invoke("set_persona", { name: val }).then((msg) => {
         state.activePersona = val;
-        updateContextBar();
+        updateSessionHeader();
         let chatViewport = document.getElementById("chat-viewport");
         let viewport = document.getElementById("chat-workspace");
         let div = document.createElement("div");
@@ -1202,6 +1287,11 @@ export function initChat() {
         newChatBtn.onclick = startNewSession;
     }
 
+    const newChatBtnHeader = document.getElementById("new-chat-btn-header");
+    if (newChatBtnHeader) {
+        newChatBtnHeader.onclick = startNewSession;
+    }
+
     const personaSelect = document.getElementById("persona-select");
     if (personaSelect) {
         personaSelect.onchange = handlePersonaChange;
@@ -1228,6 +1318,14 @@ export function initChat() {
         wireWelcomeStarters();
     }
 
-    // Populate context bar (defer so state.activePersona is set by boot)
-    setTimeout(updateContextBar, 300);
+    // Populate context bar + session header (defer so state is set by boot)
+    setTimeout(updateSessionHeader, 300);
+
+    // Wire gen-bar Stop button
+    const genStopBtn = document.getElementById("chat-gen-stop");
+    if (genStopBtn) {
+        genStopBtn.onclick = () => {
+            invoke("cancel_generation").catch(err => console.error("Error cancelling:", err));
+        };
+    }
 }
