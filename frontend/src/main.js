@@ -3808,6 +3808,8 @@ inspectCloseBtn.onclick = function() {
 // Expose main.js functions to global scope for submodules
 window.hideRadialMenu = hideRadialMenu;
 window.showRadialMenu = showRadialMenu;
+window.updateRadialDisplay = updateRadialDisplay;
+window.activateRadialSegment = activateRadialSegment;
 window.updateContextDrawer = updateContextDrawer;
 window.updateGameBadge = updateGameBadge;
 window.cycleTheme = cycleTheme;
@@ -4739,6 +4741,7 @@ function initBrowser() {
             }
         } catch (e) {
             console.error("[Browser] Navigation error:", e);
+            window.addNotification("Browser Error", String(e), "error");
         }
     }
 
@@ -6471,6 +6474,12 @@ function instantiateRecommended(provider, model, name) {
         });
     }).catch(err => pushNotification("Add agent failed", err, "error"));
 }
+
+// Expose agent switcher functions for inline onclick handlers
+window.toggleAgentSwitcher = toggleAgentSwitcher;
+window.activateAgent = activateAgent;
+window.deleteAgentById = deleteAgentById;
+window.instantiateRecommended = instantiateRecommended;
 
 // Agent custom form — show/hide URL field by provider
 document.addEventListener("change", (e) => {
