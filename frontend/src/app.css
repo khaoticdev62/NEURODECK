@@ -2070,6 +2070,23 @@ body::before {
     overflow-y: auto;
     padding-right: 2px;
 }
+
+.marketplace-loading {
+    grid-column: 1 / -1;
+    padding: 24px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.marketplace-error {
+    grid-column: 1 / -1;
+    padding: 16px;
+    line-height: 1.6;
+    color: var(--error-color);
+    font-size: 0.85rem;
+}
 .plugin-marketplace-card {
     min-width: 0;
     padding: 12px;

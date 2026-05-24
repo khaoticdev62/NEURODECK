@@ -259,7 +259,8 @@ fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
 
 async fn fetch_registry_raw() -> Result<PluginRegistry, String> {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(8))
+        .timeout(Duration::from_secs(10))
+        .user_agent("NEURODECK/1.2 (plugin-manager)")
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
@@ -267,10 +268,15 @@ async fn fetch_registry_raw() -> Result<PluginRegistry, String> {
         .get(REGISTRY_URL)
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch plugin registry: {}", e))?;
+        .map_err(|e| format!("Network error fetching plugin registry: {}", e))?;
 
-    if !response.status().is_success() {
-        return Err(format!("Plugin registry returned HTTP {}", response.status()));
+    let status = response.status();
+    if !status.is_success() {
+        // Treat 404 as "registry not yet populated" — return empty rather than hard error
+        if status.as_u16() == 404 {
+            return Ok(PluginRegistry::default());
+        }
+        return Err(format!("Plugin registry returned HTTP {}", status));
     }
 
     response

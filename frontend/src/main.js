@@ -5849,17 +5849,20 @@ async function loadPluginMarketplace() {
     const statusEl = document.getElementById("plugin-marketplace-status");
     if (!grid) return;
 
-    grid.innerHTML = `<div style="opacity:0.5;font-style:italic;">Loading marketplace registry...</div>`;
-    if (statusEl) statusEl.innerText = "Fetching GitHub plugin registry...";
+    grid.innerHTML = `<div class="marketplace-loading">Loading marketplace registry…</div>`;
+    if (statusEl) statusEl.innerText = "Fetching plugin registry…";
 
     try {
         const registry = await invoke("fetch_plugin_registry");
         pluginMarketplaceState.plugins = registry.plugins || [];
-        if (statusEl) statusEl.innerText = `${pluginMarketplaceState.plugins.length} marketplace plugin${pluginMarketplaceState.plugins.length === 1 ? "" : "s"} available.`;
+        const count = pluginMarketplaceState.plugins.length;
+        if (statusEl) statusEl.innerText = count > 0
+            ? `${count} community plugin${count === 1 ? "" : "s"} available.`
+            : "Registry is empty — check back soon.";
         renderPluginMarketplace();
     } catch (err) {
         pluginMarketplaceState.plugins = [];
-        grid.innerHTML = `<div style="color:var(--error-color);">Failed to load marketplace: ${escapeMarketplaceHtml(err)}</div>`;
+        grid.innerHTML = `<div class="marketplace-error">Could not reach the plugin registry. Check your internet connection and try Refresh.<br><span style="opacity:0.5;font-size:0.8em;">${escapeMarketplaceHtml(String(err))}</span></div>`;
         if (statusEl) statusEl.innerText = "Registry unavailable.";
     }
 }
