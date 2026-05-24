@@ -1,656 +1,361 @@
-# NEURODECK — Implementation Plan
-## Sprint Roadmap: v1.3 (Anubis) → v2.0 (Osiris)
-### Last Updated: 2026-05-24 | KFMS: v1.2.x-Ra
+# NEURODECK Implementation Plan
+## Sprint Roadmap and Integration Ledger
+### Last Updated: 2026-05-24 | KFMS: v1.2.0-ra | Active Branch: `feature/sprint-5.1-real-time-collab`
 
 ---
 
-> **Execution Model**: Solo-dev Agile — one sprint at a time, full files, no placeholders.
-> Each sprint = 1 shippable feature. Commit after every sprint. Test in `npm run tauri dev`.
-> See `CLAUDE.md` for build commands and hard constraints.
+## Execution Model
+
+NEURODECK uses a solo-dev sprint model: one sprint at a time, one shippable feature per sprint, verified before commit, and pushed to GitHub after major updates.
+
+Definition of Done for sprint work:
+- `cargo check` succeeds.
+- `cargo test` succeeds or any skipped coverage is explicitly documented.
+- `npm run --prefix frontend build` succeeds after frontend changes.
+- `git diff --check` succeeds.
+- New Tauri commands are registered in `generate_handler![]`.
+- CSS changes do not add `display: flex` or `display: block` to `#view-*` ID rules.
+- KFMS post-commit hook stamps `infra/meta/meta.json`.
+- Commit is pushed to the active GitHub feature branch.
+
+Long-running interactive validation:
+- `npm run tauri dev` remains the required manual smoke test before final release tagging.
+- Feature branches may be marked implementation-complete before `tauri dev` if automated checks pass and the interactive gap is documented.
 
 ---
 
-# CURRENT STATE BASELINE
+## Current Integrated Baseline
 
-All Phase 1 + Phase 2 features are shipped. The codebase is stable at v1.2.x (Ra).
+The current branch includes the v1.2 Ra foundation plus the integrated sprint work listed below.
 
-```
-Shipped Core:
-✅ LLM Chat (Gemini + Ollama) with RAG
-✅ Multi-agent profiles + live switching
-✅ PTY shell (5 sessions) + SSH + FTP/SFTP
-✅ Code canvas (HTML/Python/Bash/Lua/Markdown)
-✅ Vector memory (CRUD + search + RAG injection)
-✅ Autonomous agent loop (5-step)
-✅ Remote control webapp (4-tab mobile UI)
-✅ LAN P2P transfer + Warpinator gRPC
-✅ Canvas TCP collaboration
-✅ Lua plugin system (4 plugins)
-✅ Gamepad navigation + radial menu + prompt picker
-✅ Controller prompt picker (50+ templates)
-✅ Persona system (9 built-in + custom)
-✅ Theme system (6+ + custom)
-✅ Prompt Lab (15 formulas)
-✅ SteamOS tunnel
-✅ Voice STT/TTS
-✅ Onboarding wizard (6 slides)
-✅ Boot sequence (cinematic)
-✅ XSS hardening
-✅ Security: URL allowlist + scheme check
-✅ KFMS version governance
-```
+Core shipped capabilities:
+- LLM chat with Gemini and Ollama provider support.
+- RAG memory injection and vector memory persistence.
+- PTY terminal sessions, SSH, FTP/SFTP, SteamOS tunnel, and LAN file transfer.
+- Live Canvas with Monaco editor, preview, run support, AI edit, streaming exec output, and cancel support.
+- Lua plugin runtime and plugin marketplace install/uninstall flow.
+- Settings, themes, personas, onboarding, boot sequence, notifications, and gamepad navigation.
+- Whisper.cpp configuration/download path and offline STT command path.
+- Computer-use command layer with user approval flow.
+- Encrypted cloud sync for memory records and saved sessions.
+- Real-time LAN collaborative workspaces for Canvas code, presence, chat, invite payloads, and shared agent approvals.
 
 ---
 
-# PHASE 3 — CODENAME: ANUBIS (v1.3.x)
-## Theme: IDE Layer + Intelligence Upgrade
+## Status Legend
+
+| Status | Meaning |
+|---|---|
+| COMPLETE | Implemented on the current branch and pushed. |
+| BRANCH-COMPLETE | Implemented on another feature branch but not integrated into the current branch. |
+| PARTIAL | Some capability exists, but the sprint's original acceptance criteria are not fully satisfied. |
+| PLANNED | Not implemented in the current branch. |
+| DEFERRED | Intentionally postponed or superseded by a leaner MVP. |
 
 ---
 
-## SPRINT 3.1 — Monaco Editor Integration
-**Priority: HIGH | Estimated complexity: Medium**
+## Sprint Status Matrix
 
-### Goal
-Replace the basic `<textarea>` in the canvas view with a full Monaco Editor instance
-(the same engine as VSCode). Retain all existing language tabs and execution logic.
-
-### What to Build
-
-**Frontend changes (`frontend/src/main.js` + `frontend/src/app.css`)**:
-- Load Monaco from CDN: `https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js`
-- Initialize `monaco.editor.create()` on the canvas container with the current language
-- Wire language tab switches to `editor.getModel().setLanguage(lang)`
-- Replace `canvasCode` textarea reads with `editor.getValue()`
-- Wire `editor.onDidChangeModelContent()` for live HTML preview auto-refresh
-- Add keyboard shortcut: `Ctrl+Enter` → run current canvas content
-- Set Monaco theme to `vs-dark` with NEURODECK accent color overrides
-- Inline AI edit: new button "✦ AI Edit" → sends selection + prompt to `invoke("ai_edit_code")` → applies diff
-
-**Rust changes (`src-tauri/src/commands/`)**:
-- Add `ai_edit_code { code: String, instruction: String, lang: String }` command
-- Sends to active LLM: "Given this {lang} code, apply this instruction: {instruction}"
-- Returns modified code string
-- Register in `generate_handler![]`
-
-**CSS**:
-- `.canvas-editor-container { height: calc(100% - 96px); }` — Monaco fills panel
-- Remove `textarea#canvas-code` height rules
-- Add Monaco scrollbar styling to match NEURODECK theme
-
-### Test Checklist
-- [ ] Monaco loads without CDN errors in tauri dev
-- [ ] Syntax highlighting works for HTML, Python, Bash, Lua, Markdown
-- [ ] Run button still executes code correctly
-- [ ] Live HTML preview still hot-reloads on change
-- [ ] AI Edit button sends selection and applies response
-- [ ] Theme matches NEURODECK dark palette
-- [ ] Canvas collaboration still syncs (text sync must read from Monaco model)
+| Sprint | Feature | Status | Current Evidence / Branch |
+|---|---|---|---|
+| 3.1 | Monaco Editor Integration | COMPLETE | `frontend/src/canvas.js`, `frontend/src/app.css`, commit `56c547e` |
+| 3.2 | Whisper STT Upgrade | COMPLETE | `src-tauri/src/whisper.rs`, Settings Whisper panel, branch `origin/feature/sprint-3.2-whisper` |
+| 3.3 | Knowledge Graph View | BRANCH-COMPLETE | Branch `origin/feature/sprint-3.3-knowledge-graph`; not present on current branch |
+| 3.4 | Task Scheduler | BRANCH-COMPLETE | Branch `origin/feature/sprint-3.4-scheduler`; not present on current branch |
+| 3.5 | Git Integration | BRANCH-COMPLETE | Local branch `feature/sprint-3.5-git`; integration audit still required |
+| 4.1 | Workflow Visual Builder | BRANCH-COMPLETE | Local branch `feature/sprint-4.1-workflow`; integration audit still required |
+| 4.2 | Multi-Agent Orchestrator | BRANCH-COMPLETE | Local branch `feature/sprint-4.2-orchestrator`; integration audit still required |
+| 4.3 | Browser Automation | PARTIAL | Secure embedded browser commands exist in `src-tauri/src/commands/browser.rs`; headless automation acceptance remains open |
+| 4.4 | Plugin Marketplace | COMPLETE | `src-tauri/src/plugin_mgr.rs`, Settings Marketplace UI |
+| 4.5 | Desktop Computer Use | COMPLETE | `src-tauri/src/computer_use.rs`, approval UI, agent tool wiring, commit `7a25eca` |
+| 4.6 | Cloud Sync | COMPLETE | `src-tauri/src/sync.rs`, Settings Sync UI, commit `0c29d8c` |
+| 5.1 | Real-Time Collaborative Workspaces | COMPLETE | Multi-peer `canvas_collab.rs`, workspace UI, commit `24b1348` |
+| 5.2 | Mobile Companion App | PLANNED | Native iOS/Android app not started |
 
 ---
 
-## SPRINT 3.2 — Whisper STT Upgrade
-**Priority: HIGH | Estimated complexity: Medium**
+## Phase 3 - Anubis: IDE Layer and Intelligence Upgrade
 
-### Goal
-Replace `arecord` + system transcription with local Whisper inference via `whisper-rs`
-(Rust bindings to whisper.cpp). Dramatic improvement in transcription quality,
-works offline, no cloud dependency.
+### Sprint 3.1 - Monaco Editor Integration
+Status: COMPLETE
 
-### What to Build
+Delivered:
+- Monaco-backed Canvas editor with language mapping for HTML, CSS, JavaScript, Markdown, Bash, Python, and Lua.
+- Fallback textarea path when Monaco CDN fails.
+- Live preview debounce and Ctrl+Enter run shortcut.
+- AI Edit modal and command integration.
+- Collaboration sync now reads from the Monaco model.
 
-**Rust changes**:
-- Add `whisper-rs = "0.11"` to `Cargo.toml` (bundles whisper.cpp via bindgen)
-- Download `ggml-base.en.bin` model to `data/models/whisper/` on first STT use
-- New `whisper.rs` module:
-  ```rust
-  pub fn transcribe(audio_path: &str, model_path: &str) -> Result<String, String>
-  ```
-- `start_recording`: record to temp WAV file via `arecord` / Windows audio API
-- `stop_recording`: call `whisper.rs::transcribe(wav_path, model_path)` → return text
-- Emit `stt_progress` events: `{ status: "recording" | "transcribing" | "done" }`
+Remaining release smoke:
+- Open Canvas in `npm run tauri dev`.
+- Confirm Monaco CDN load, fallback behavior, language switching, AI Edit, and live collaboration sync.
 
-**Frontend changes**:
-- Listen for `stt_progress` → update mic button icon/animation accordingly
-- Show "Transcribing..." spinner between stop and text return
+### Sprint 3.2 - Whisper STT Upgrade
+Status: COMPLETE
 
-**Model management**:
-- `get_whisper_model_status` command: checks if model file exists + size
-- Settings modal: "Download Whisper Base Model (148MB)" button → `download_whisper_model` command
+Delivered:
+- `whisper.rs` wrapper for whisper.cpp CLI binaries.
+- Settings panel for binary/model paths.
+- Model download command with `whisper_download_progress` events.
+- `get_whisper_status`, `set_whisper_config`, and `transcribe_audio_whisper` commands.
+- Existing STT path attempts Whisper when a configured model exists.
 
-### Test Checklist
-- [ ] Records audio successfully
-- [ ] Transcription returns meaningful text
-- [ ] Progress events update UI correctly
-- [ ] Settings shows model download status
-- [ ] Falls back gracefully if model missing (shows download prompt)
+Remaining release smoke:
+- Validate local microphone recording with an installed whisper.cpp binary and model.
+- Confirm Windows/Linux behavior separately because audio capture differs by OS.
 
----
+### Sprint 3.3 - Knowledge Graph View
+Status: BRANCH-COMPLETE
 
-## SPRINT 3.3 — Knowledge Graph View
-**Priority: MEDIUM | Estimated complexity: High**
+Current state:
+- Work exists on `origin/feature/sprint-3.3-knowledge-graph`.
+- The current branch does not contain the graph module/view.
 
-### Goal
-Add a new `#view-graph` tab showing NEURODECK's vector memory as an interactive
-force-directed knowledge graph. Users can explore concept relationships,
-click nodes to open records, and see how their AI conversations are connected.
+Integration tasks:
+- Cherry-pick or merge the branch into the current sprint line.
+- Resolve conflicts with the current modular frontend and Canvas changes.
+- Re-run `cargo check`, `cargo test`, frontend build, and gamepad/navigation smoke.
 
-### What to Build
+### Sprint 3.4 - Task Scheduler
+Status: BRANCH-COMPLETE
 
-**Frontend — new view `frontend/src/graph_view.js`**:
-- Load D3.js v7 from CDN
-- `initGraphView()` — creates `<svg>` force simulation in `#view-graph`
-- `loadGraphData()` — `invoke("get_memory_graph_data")` → `{ nodes, edges }`
-- Node types: memory records (cyan), sessions (purple), personas (amber), tags (gray)
-- Edge types: semantic similarity (solid), temporal (dashed), session-ref (dotted)
-- Interactions:
-  - Hover: show node preview tooltip
-  - Click: open record in memory view or start chat with context
-  - Drag: pin node position
-  - Scroll: zoom
-  - Double-click node: expand neighbors (load related records)
-- Gamepad support: L-stick pan, R-stick zoom, A = select, B = back, X = expand
+Current state:
+- Work exists on `origin/feature/sprint-3.4-scheduler`.
+- The current branch does not contain the scheduler module/view.
 
-**Rust changes (`src-tauri/src/commands/memory.rs`)**:
-- Add `get_memory_graph_data` command:
-  ```rust
-  pub struct GraphNode { pub id: String, pub label: String, pub node_type: String, pub weight: f32 }
-  pub struct GraphEdge { pub source: String, pub target: String, pub similarity: f32 }
-  pub struct GraphData { pub nodes: Vec<GraphNode>, pub edges: Vec<GraphEdge> }
-  ```
-- Compute edges: for each record pair with cosine_similarity > 0.6, create an edge
-- Cap at top-50 nodes and top-100 edges (performance)
+Integration tasks:
+- Audit persistence path and scheduler startup behavior.
+- Ensure scheduled agent runs use the current agent command path.
+- Add UI smoke for add, toggle, run now, delete, and persistence.
 
-**CSS (`frontend/src/app.css`)**:
-- `#view-graph svg` — full-size, dark background
-- `.graph-node` — circle fills by type (cyan memory, purple session)
-- `.graph-tooltip` — glass card positioned on hover
-- `.graph-edge` — stroke-width by similarity, opacity on dim
+### Sprint 3.5 - Git Integration
+Status: BRANCH-COMPLETE
 
-**HTML (in main.js view template)**:
-- Add `<div class="nav-tab" data-view="graph">⬡ Graph</div>` to nav
-- Add `<div class="view-content" id="view-graph">...</div>`
+Current state:
+- Local branch `feature/sprint-3.5-git` exists.
+- The current branch does not expose Git commands or UI.
 
-### Test Checklist
-- [ ] Graph view tab appears and is navigable
-- [ ] Nodes render for memory records
-- [ ] Edges connect semantically similar records
-- [ ] Hover tooltip shows record text preview
-- [ ] Click opens record in memory view
-- [ ] Gamepad pan/zoom works
-- [ ] Performance is acceptable with 50+ nodes
+Integration tasks:
+- Inspect branch diff before merge.
+- Confirm no unsafe repository path handling.
+- Verify status, diff, stage, commit, log, and generated commit message flow.
 
 ---
 
-## SPRINT 3.4 — Task Scheduler
-**Priority: MEDIUM | Estimated complexity: Medium**
+## Phase 4 - Osiris: Orchestration and Autonomy
 
-### Goal
-Add cron-style scheduled task execution. Users define recurring agent goals
-(e.g. "every morning at 9am, summarize my notes") that run automatically.
+### Sprint 4.1 - Workflow Visual Builder
+Status: BRANCH-COMPLETE
 
-### What to Build
+Current state:
+- Local branch `feature/sprint-4.1-workflow` exists.
+- The current branch does not contain workflow runtime or view files.
 
-**Rust changes**:
-- Add `tokio-cron-scheduler = "0.9"` to `Cargo.toml`
-- New `scheduler.rs` module:
-  ```rust
-  pub struct ScheduledTask { pub id: String, pub name: String, pub cron: String,
-                             pub goal: String, pub enabled: bool, pub last_run: Option<String> }
-  pub struct SchedulerState { pub scheduler: JobScheduler, pub tasks: Vec<ScheduledTask> }
-  ```
-- `AppState.scheduler: Arc<Mutex<SchedulerState>>`
-- Commands: `list_scheduled_tasks`, `add_scheduled_task`, `delete_scheduled_task`,
-  `toggle_scheduled_task`, `run_task_now`
-- On task fire: invoke agent loop with task goal, emit `scheduled_task_started { id, name }`
-- Persist tasks to `data/scheduler/tasks.json`
+Integration tasks:
+- Audit workflow execution for shell/file/HTTP safety.
+- Make workflow persistence compatible with current data directory conventions.
+- Verify view layout inside 1280x800.
 
-**Frontend — `frontend/src/scheduler_view.js`**:
-- New `#view-scheduler` tab (add to nav, add to radial menu replacing least-used item)
-- List of scheduled tasks: name, cron expression, last run, enabled toggle, run now, delete
-- "Add Task" form: name, cron (with human-readable preview), goal text
-- `listen("scheduled_task_started")` → notification + agent log highlight
-- Gamepad: D-pad select, A toggle, X run now, Y add new, B delete
+### Sprint 4.2 - Multi-Agent Orchestrator
+Status: BRANCH-COMPLETE
 
-**CSS**: `.scheduler-task-card`, `.scheduler-cron-input`, `.scheduler-human-label`
+Current state:
+- Local branch `feature/sprint-4.2-orchestrator` exists.
+- The current branch still uses the existing agent loop and profile system.
 
-### Test Checklist
-- [ ] Can add a scheduled task with cron expression
-- [ ] Cron fires correctly (test with `*/1 * * * *` = every minute)
-- [ ] Task runs the agent loop with the goal
-- [ ] Notification appears when task starts
-- [ ] Tasks persist across app restarts
-- [ ] Enable/disable toggle works
+Integration tasks:
+- Audit agent task planning, cancellation, and result aggregation.
+- Confirm no duplicate app state structs or stale frontend selectors.
+- Verify stop behavior under concurrent agent tasks.
 
----
+### Sprint 4.3 - Browser Automation
+Status: PARTIAL
 
-## SPRINT 3.5 — Git Integration
-**Priority: MEDIUM | Estimated complexity: Medium**
+Delivered on current branch:
+- Secure embedded browser window commands:
+  - `browser_open`
+  - `browser_navigate`
+  - `browser_hide`
+  - `browser_show`
+  - `browser_get_url`
+  - `browser_exec`
+- URL scheme allowlist for `http` and `https`.
+- External-open hardening that avoids shell metacharacter injection on Windows.
 
-### Goal
-Add basic Git operations (status, diff, commit, log) accessible from the canvas and
-terminal views. Auto-generate commit messages via LLM.
+Still open from original acceptance criteria:
+- Headless browser session management.
+- DOM extraction, selector click/fill, screenshot capture, and JS result return.
+- Agent browser tool loop beyond basic embedded WebView control.
 
-### What to Build
+Decision:
+- Keep the embedded browser implementation as the lean MVP.
+- Treat full headless browser automation as a follow-up sprint unless the branch `feature/sprint-4.3-command-palette` contains a better integration candidate.
 
-**Rust changes**:
-- Add `git2 = "0.18"` to `Cargo.toml`
-- New `git.rs` module:
-  ```rust
-  pub struct GitStatus { pub path: String, pub staged: Vec<String>,
-                         pub unstaged: Vec<String>, pub untracked: Vec<String> }
-  pub struct GitCommit { pub hash: String, pub message: String, pub author: String, pub timestamp: String }
-  ```
-- Commands: `git_status { path }`, `git_diff { path, file }`, `git_log { path, limit }`,
-  `git_stage { path, files }`, `git_commit { path, message }`, `generate_commit_message { diff }`
-- `generate_commit_message`: sends diff to active LLM with conventional commit prompt
+### Sprint 4.4 - Plugin Marketplace
+Status: COMPLETE
 
-**Frontend — git panel in canvas view**:
-- "⑂ Git" button in canvas header → toggles slide-in git panel
-- Git panel shows: branch name, changed files list (staged/unstaged), diff preview
-- "Stage All" / "Stage Selected" buttons
-- Commit message input (pre-filled by `generate_commit_message`)
-- "Commit" button → `invoke("git_commit")`
-- Log tab: list of recent commits with hash + message
+Delivered:
+- GitHub-hosted plugin registry fetch through `fetch_plugin_registry`.
+- Marketplace metadata merge into `list_plugins`.
+- Registry install/uninstall commands with GitHub-only download validation.
+- Lua runtime reload after install/uninstall.
+- Settings Marketplace UI with install state and registry refresh flow.
 
-**CSS**: `.git-panel`, `.git-file-list`, `.git-diff-preview`, `.git-commit-input`
+Security notes:
+- Marketplace downloads are restricted to validated GitHub raw/plugin URLs.
+- Plugin file names are validated to prevent path traversal.
 
-### Test Checklist
-- [ ] `git_status` returns correct changed files for a real git repo
-- [ ] Diff view shows file changes
-- [ ] LLM generates a meaningful conventional commit message
-- [ ] Commit succeeds and appears in log
-- [ ] Panel opens/closes cleanly without breaking canvas layout
+### Sprint 4.5 - Desktop Computer Use Layer
+Status: COMPLETE
 
----
+Delivered:
+- `computer_use.rs` command layer:
+  - `computer_screenshot`
+  - `computer_mouse_move`
+  - `computer_mouse_click`
+  - `computer_type`
+  - `computer_key`
+  - `computer_find_text`
+- Approval-gated frontend flow before potentially dangerous actions.
+- Agent tool integration for computer-use calls.
+- OCR TSV parsing tests and input validation tests.
 
-# PHASE 4 — CODENAME: OSIRIS (v2.0.x)
-## Theme: Orchestration + Autonomy
+Remaining release smoke:
+- Validate real screenshot/mouse/keyboard behavior on each target OS.
+- Validate OCR availability when Tesseract is installed.
 
----
+### Sprint 4.6 - Cloud Sync
+Status: COMPLETE
 
-## SPRINT 4.1 — Workflow Visual Builder
-**Priority: HIGH | Estimated complexity: High**
-
-### Goal
-A visual node editor where users drag-and-drop automation nodes to create
-multi-step AI workflows. Similar to n8n, but AI-native and gamepad-friendly.
-
-### What to Build
-
-**Frontend — `frontend/src/workflow_view.js`**:
-- Canvas with SVG node graph (no third-party dependency — custom D3-based)
-- Node types:
-  - **LLM Node**: send prompt to active agent → output text
-  - **Shell Node**: run shell command → output stdout
-  - **File Node**: read/write a file
-  - **HTTP Node**: GET/POST to URL
-  - **Condition Node**: if/else branch on content
-  - **Memory Node**: store to / search from vector DB
-  - **Notify Node**: send desktop notification
-  - **Delay Node**: wait N seconds
-- Edges connect output of one node to input of next
-- Toolbar: run workflow, stop, save, load, schedule
-- Node inspector panel (click node → configure properties)
-- Live execution highlighting: nodes glow when active, green on success, red on fail
-
-**Rust changes**:
-- New `workflow.rs` module — parses and executes workflow YAML/JSON
-- `WorkflowEngine` runs nodes in topological order
-- Emits `workflow_node_started { id }`, `workflow_node_done { id, output }`,
-  `workflow_node_error { id, error }` events
-- Commands: `run_workflow`, `stop_workflow`, `save_workflow`, `load_workflow`,
-  `list_workflows`, `delete_workflow`
-
-**Persistence**: `data/workflows/*.json` — save node graph as serialized JSON
-
-### Test Checklist
-- [ ] Can place and connect nodes
-- [ ] Run executes nodes in dependency order
-- [ ] LLM node calls active agent and passes output to next node
-- [ ] Shell node executes and captures output
-- [ ] Condition node branches correctly
-- [ ] Live highlighting shows execution progress
-- [ ] Workflow saves and loads correctly
-
----
-
-## SPRINT 4.2 — Multi-Agent Orchestrator
-**Priority: HIGH | Estimated complexity: High**
-
-### Goal
-Upgrade the single-agent loop to a true multi-agent coordinator where
-specialized agents run in parallel, communicate via message bus, and
-coordinate toward a shared goal.
-
-### Architecture
-
-```
-User Goal: "Build a REST API for a todo app"
-     │
-     ▼
-Coordinator (orchestrator agent — uses LLM to plan)
-     │
-     ├── Agent A (Development) → generates Rust code
-     ├── Agent B (Testing) → writes tests for Agent A's output
-     └── Agent C (Documentation) → generates README
-     │
-     ▼
-Coordinator aggregates results → presents to user
-```
-
-### What to Build
-
-**Rust changes**:
-- New `orchestrator.rs` module:
-  ```rust
-  pub struct AgentTask { pub agent_id: String, pub role: String,
-                         pub goal: String, pub context: Option<String> }
-  pub struct OrchestratorPlan { pub tasks: Vec<AgentTask>, pub dependencies: Vec<(String, String)> }
-  ```
-- `plan_agent_tasks(goal, available_agents)` — LLM call that returns `OrchestratorPlan`
-- Parallel task execution via `tokio::spawn` per agent
-- Message bus: `tokio::sync::mpsc` channels between agents
-- Result aggregation and final synthesis LLM call
-- Commands: `start_orchestrated_task { goal }`, `get_orchestration_status`,
-  `stop_orchestration`
-- Events: `orchestrator_plan_ready { plan }`, `agent_task_started { agent_id, role }`,
-  `agent_task_done { agent_id, result }`, `orchestration_complete { summary }`
-
-**Frontend — Multi-Agent Dashboard**:
-- New view or upgrade to existing `#view-agent`
-- Grid of agent cards showing: identity, current task, step, status (idle/running/done)
-- Live update via events
-- Timeline view: horizontal swimlanes per agent, steps as blocks
-- "Start Orchestrated Task" input → orchestrator takes over
-
-### Test Checklist
-- [ ] Coordinator generates a valid plan for a complex goal
-- [ ] Multiple agents execute in parallel (check timestamps)
-- [ ] Inter-agent context sharing works (Agent B receives Agent A's output)
-- [ ] UI shows all agents simultaneously
-- [ ] Final synthesis produces coherent result
-- [ ] Can stop mid-execution cleanly
-
----
-
-## SPRINT 4.3 — Browser Automation
-**Priority: HIGH | Estimated complexity: High**
-
-### Goal
-Add a headless browser that agents can control — navigate URLs, extract content,
-fill forms, take screenshots, execute JavaScript.
-
-### What to Build
-
-**Rust changes**:
-- Add `chromiumoxide = "0.5"` or `playwright` Rust bindings to `Cargo.toml`
-- New `browser_automation.rs` module:
-  ```rust
-  pub struct BrowserSession { pub id: String, pub url: String }
-  ```
+Delivered:
+- `sync.rs` encrypted sync module for memory records and saved chat sessions.
+- AES-GCM payload encryption through `ring`.
 - Commands:
-  - `browser_open_session { url }` → returns session_id
-  - `browser_navigate_session { session_id, url }`
-  - `browser_get_content { session_id }` → returns HTML
-  - `browser_click { session_id, selector }`
-  - `browser_fill { session_id, selector, value }`
-  - `browser_screenshot { session_id }` → returns base64 PNG
-  - `browser_evaluate_js { session_id, script }` → returns result
-  - `browser_close_session { session_id }`
-- Agent tool calls: browser commands are available as agent tools
-  (agent can call `browser_open` → `browser_get_content` → reason about HTML → `browser_click`)
+  - `start_sync`
+  - `get_sync_status`
+  - `sync_now`
+  - `configure_sync`
+- Settings Sync panel with opt-in toggles, API URL, device ID, last sync, pending count, and conflict count.
+- `sync_progress` events for collecting, pushing, pulling, merging, and done states.
 
-**Frontend**:
-- Browser view enhancement: show automation status overlay when agent is controlling browser
-- Screenshot preview in agent log when `browser_screenshot` is called
-- "Hand over to agent" button in browser view — gives active agent control of current page
-
-### Test Checklist
-- [ ] Can open a headless session and navigate to a URL
-- [ ] Content extraction returns readable HTML/text
-- [ ] Agent can use browser as a tool (search + extract + reason)
-- [ ] Screenshot appears in agent log
-- [ ] Form filling works on a test form page
-- [ ] Sessions clean up on close
+Known boundary:
+- The desktop client side is implemented.
+- Production cloud API deployment remains a release/infrastructure task.
 
 ---
 
-## SPRINT 4.4 — Plugin Marketplace
-**Priority: MEDIUM | Estimated complexity: Medium**
+## Phase 5 - Horus: Collaboration and Companion Surfaces
 
-### Goal
-A built-in plugin marketplace backed by a GitHub-hosted JSON registry.
-Users browse, preview, install, and manage community Lua plugins
-without leaving NEURODECK.
+### Sprint 5.1 - Real-Time Collaborative Workspaces
+Status: COMPLETE
 
-### What to Build
+Delivered:
+- Canvas collaboration host upgraded from one peer to a multi-peer LAN room.
+- Host relays inbound peer messages to other connected peers.
+- Sender IDs prevent local clients from applying their own echoed payloads.
+- Workspace protocol carries:
+  - live code sync
+  - language sync
+  - presence
+  - invite metadata
+  - shared chat
+  - shared agent approval requests/responses
+- Commands:
+  - `canvas_collab_host`
+  - `canvas_collab_join`
+  - `canvas_collab_send`
+  - `canvas_collab_broadcast`
+  - `canvas_collab_status`
+  - `canvas_collab_stop`
+- Canvas Collab modal now includes workspace name, invite JSON, peer count, presence list, shared chat, and approval controls.
 
-**Registry format** (`https://raw.githubusercontent.com/khaoticdev62/neurodeck-plugins/main/registry.json`):
-```json
-{
-  "plugins": [
-    {
-      "id": "weather",
-      "name": "Weather Lookup",
-      "author": "khaoticdev",
-      "version": "1.0.0",
-      "description": "Adds /weather command using wttr.in API",
-      "tags": ["utility", "api"],
-      "download_url": "...",
-      "lua_file": "weather.lua"
-    }
-  ]
-}
-```
+Deferred from original full scope:
+- WebSocket transport.
+- CRDT conflict-free text editing.
+- QR image generation for invites.
 
-**Rust changes**:
-- Add `fetch_plugin_registry` command: HTTP GET to registry URL → parse JSON
-- `install_plugin_from_registry { plugin_id }`: download Lua file → save to `plugins/` → reload Lua runtime
-- `uninstall_plugin { plugin_id }`: delete file + reload
-- Update `list_plugins` to include registry metadata (name, description, author)
+Decision:
+- The shipped Sprint 5.1 is the lean LAN-first MVP. WebSocket/CRDT should be a later hardening sprint if multi-device editing conflict behavior becomes a real user need.
 
-**Frontend — Plugin Marketplace tab in Settings modal**:
-- Tabbed Settings: [General] [LLM] [Plugins] [Marketplace] [Themes]
-- Marketplace tab: search bar + tag filter + grid of plugin cards
-- Plugin card: name, author, description, tags, Install button
-- Installed indicator on already-installed plugins
-- "Refresh Registry" button
+### Sprint 5.2 - NEURODECK Mobile Companion
+Status: PLANNED
 
-### Test Checklist
-- [ ] Registry fetches successfully (real or mock URL)
-- [ ] Plugins display in marketplace with correct metadata
-- [ ] Install downloads Lua file to plugins/ directory
-- [ ] Plugin is active after install (command appears)
-- [ ] Uninstall removes file and command disappears
-- [ ] Already-installed plugins show "Installed" state
+Target:
+- Native iOS/Android companion beyond the existing web remote.
+- Push notifications for agent completion and scheduled tasks.
+- Native voice-to-AI.
+- Session browser and memory viewer.
+- Approval surface for computer-use and shared agent actions.
 
----
-
-## SPRINT 4.5 — Desktop Computer Use Layer
-**Priority: MEDIUM | Estimated complexity: Very High**
-
-### Goal
-Enable NEURODECK agents to control the desktop — take screenshots, move the mouse,
-click UI elements, type into any application. Enables true autonomous RPA.
-
-### What to Build
-
-**Rust changes**:
-- Linux: use `xdotool` subprocess for mouse/keyboard
-- Windows: use `enigo = "0.2"` crate (SendInput)
-- New `computer_use.rs` module:
-  ```rust
-  pub fn screenshot() -> Result<Vec<u8>, String>  // PNG bytes
-  pub fn mouse_move(x: i32, y: i32) -> Result<(), String>
-  pub fn mouse_click(button: &str) -> Result<(), String>
-  pub fn keyboard_type(text: &str) -> Result<(), String>
-  pub fn keyboard_key(key: &str) -> Result<(), String>
-  pub fn find_element_by_text(text: &str) -> Result<(i32, i32), String>  // OCR
-  ```
-- OCR: `leptess = "0.14"` (Tesseract bindings) for text → coordinate mapping
-- Commands: `computer_screenshot`, `computer_mouse_move`, `computer_mouse_click`,
-  `computer_type`, `computer_key`, `computer_find_text`
-- Agent tool integration: all computer_use commands available as agent tools
-- **Safety gate**: each computer_use tool call requires confirmation unless
-  user has enabled "Auto-approve computer use" in settings
-
-**Frontend**:
-- Computer use approval modal: shows screenshot with highlighted target area
-- "Approve" / "Deny" / "Approve All for this session" buttons
-- Live screenshot feed in agent log when computer use is active
-
-### Test Checklist
-- [ ] Screenshot captures current desktop
-- [ ] Mouse move and click work on a test application
-- [ ] Keyboard type works in a text field
-- [ ] OCR finds text and returns coordinates
-- [ ] Approval gate appears before each action
-- [ ] Agent successfully navigates a simple desktop workflow
+Recommended MVP scope:
+- Reuse current remote-control HTTP/WebSocket concepts.
+- Build a minimal React Native or Expo client only after cloud sync and auth are stable.
+- Start with read-only session/memory browsing plus approvals before adding command execution.
 
 ---
 
-## SPRINT 4.6 — Cloud Sync (Memory + Sessions)
-**Priority: MEDIUM | Estimated complexity: High**
+## Backlog Priority
 
-### Goal
-Encrypted cloud sync for memory records and chat sessions.
-Users log in with Google OAuth (already wired) and sync their
-intelligence across devices.
+Immediate integration backlog:
+1. Integrate Sprint 3.3 Knowledge Graph from `origin/feature/sprint-3.3-knowledge-graph`.
+2. Integrate Sprint 3.4 Task Scheduler from `origin/feature/sprint-3.4-scheduler`.
+3. Audit and integrate Sprint 3.5 Git from `feature/sprint-3.5-git`.
+4. Audit and integrate Sprint 4.1 Workflow from `feature/sprint-4.1-workflow`.
+5. Audit and integrate Sprint 4.2 Orchestrator from `feature/sprint-4.2-orchestrator`.
+6. Decide whether Sprint 4.3 should remain embedded-browser MVP or become full headless automation.
 
-### Backend Architecture
+Next net-new sprint:
+1. Sprint 5.2 Mobile Companion App.
 
-```
-Sync flow:
-NEURODECK local DB
-     │ delta (changed records since last_sync_at)
-     │ encrypt (user-derived key from OAuth token)
-     ▼
-NEURODECK Sync API (Rust backend, Railway/Fly.io)
-     │ store encrypted blobs
-     │ return remote delta
-     ▼
-NEURODECK on device B
-     │ download + decrypt delta
-     │ merge (last-write-wins, conflict flag on diverge)
-     ▼
-Local DB updated
-```
-
-**Rust changes**:
-- New `sync.rs` module
-- `SyncRecord { id, type, payload_encrypted, device_id, timestamp }`
-- AES-256-GCM encryption with key derived from OAuth access token
-- Commands: `start_sync`, `get_sync_status`, `sync_now`,
-  `configure_sync { enabled, sync_memory, sync_sessions }`
-- Settings: sync toggle, last sync timestamp, device count, conflict count
-
-**Cloud API** (separate minimal Rust/Axum server):
-- `POST /sync/push` — accept encrypted records
-- `GET /sync/pull?since=` — return remote delta
-- `POST /sync/auth` — validate OAuth token
-- Deploy to Railway with PostgreSQL
-
-### Test Checklist
-- [ ] OAuth login works (already wired in infrastructure/)
-- [ ] Memory records sync to cloud after opt-in
-- [ ] Second device receives synced records
-- [ ] Encryption is applied (server cannot read plaintext)
-- [ ] Conflict detection marks diverged records
-- [ ] Settings show sync status and last sync time
+Release hardening backlog:
+1. Run `npm run tauri dev` and smoke test every completed current-branch feature.
+2. Validate Steam Deck 1280x800 layout for Canvas, Settings, Collab, Sync, and Computer Use.
+3. Run `cargo clippy -- -D warnings` and either fix or document warnings.
+4. Build production package with `npm run build` and platform package scripts.
+5. Cut KFMS release tag only after the current integration branches are reconciled.
 
 ---
 
-# PHASE 5 — CODENAME: HORUS (v2.5.x)
-## Theme: Collaboration + Marketplace
+## Quick Reference Checklist
+
+Current branch complete:
+- [x] Sprint 3.1 Monaco Editor
+- [x] Sprint 3.2 Whisper STT
+- [x] Sprint 4.4 Plugin Marketplace
+- [x] Sprint 4.5 Desktop Computer Use
+- [x] Sprint 4.6 Cloud Sync
+- [x] Sprint 5.1 Real-Time Collaborative Workspaces
+
+Completed elsewhere, needs integration:
+- [ ] Sprint 3.3 Knowledge Graph View
+- [ ] Sprint 3.4 Task Scheduler
+- [ ] Sprint 3.5 Git Integration
+- [ ] Sprint 4.1 Workflow Visual Builder
+- [ ] Sprint 4.2 Multi-Agent Orchestrator
+
+Partial or follow-up:
+- [ ] Sprint 4.3 Browser Automation full headless tool layer
+- [ ] Sprint 5.1 WebSocket/CRDT collaboration hardening
+
+Planned:
+- [ ] Sprint 5.2 Mobile Companion App
 
 ---
 
-## SPRINT 5.1 — Real-Time Collaborative Workspaces
-**Priority: MEDIUM | Estimated complexity: Very High**
+## KFMS Version Map
 
-- Multi-user chat sessions with shared context
-- Collaborative canvas editing (upgrade TCP collab to WebSocket + CRDT)
-- User presence indicators
-- Shared agent runs with approval from any member
-- Invite via QR code (extend remote control system)
-
-## SPRINT 5.2 — NEURODECK Mobile Companion (React Native)
-**Priority: LOW | Estimated complexity: High**
-
-- Native iOS/Android app (beyond current web-based remote control)
-- Push notifications for agent completion, scheduled tasks
-- Voice-to-AI (native microphone)
-- Session browser and memory viewer
-- Approves computer use actions from phone
-
----
-
-# PRIORITIZED BACKLOG (Quick Reference)
-
-```
-URGENT (do next):
-[ ] Monaco Editor (Sprint 3.1)
-[ ] Whisper STT (Sprint 3.2)
-
-HIGH (after urgent):
-[ ] Knowledge Graph View (Sprint 3.3)
-[ ] Git Integration (Sprint 3.5)
-[ ] Task Scheduler (Sprint 3.4)
-
-MEDIUM (v2.0 milestone):
-[ ] Workflow Visual Builder (Sprint 4.1)
-[ ] Multi-Agent Orchestrator (Sprint 4.2)
-[ ] Browser Automation (Sprint 4.3)
-[ ] Plugin Marketplace (Sprint 4.4)
-
-LOWER (post v2.0):
-[x] Desktop Computer Use (Sprint 4.5)
-[x] Cloud Sync (Sprint 4.6)
-[x] Real-Time Collaboration (Sprint 5.1)
-[ ] Mobile Companion App (Sprint 5.2)
-```
-
----
-
-# SPRINT EXECUTION RULES
-
-1. **One sprint at a time** — start Sprint 3.1, finish it completely before 3.2
-2. **Full files** — never truncate output, always complete functions
-3. **Test in `npm run tauri dev`** — never mark complete without running
-4. **Commit after every sprint** — message format: `feat(v1.3): sprint 3.x — description`
-5. **No regressions** — run `cargo check` before commit; 0 errors required
-6. **CSS specificity** — never add `display: flex` to `#view-*` ID rules
-7. **Memory safety** — no `unwrap()` in Tauri handlers; use `map_err(|e| e.to_string())?`
-8. **KFMS compliance** — stamp `meta.json` with new SHA after each sprint
-
----
-
-# DEFINITION OF DONE (PER SPRINT)
-
-A sprint is complete when:
-- [ ] All listed test checklist items pass in `npm run tauri dev`
-- [ ] `cargo check` returns 0 errors, 0 warnings (or warnings documented as acceptable)
-- [ ] `npm run --prefix frontend build` succeeds
-- [ ] New Tauri commands registered in `generate_handler![]`
-- [ ] No CSS specificity traps introduced
-- [ ] Commit pushed to `origin/master`
-- [ ] `CLAUDE.md` updated if new architectural patterns introduced
-- [ ] KFMS `meta.json` stamped
-
----
-
-# KFMS VERSION MAP
-
-| Sprint | Version | Tag |
-|---|---|---|
-| 3.1 Monaco | v1.3.0 | v1.3.0-anubis |
-| 3.2 Whisper | v1.3.1 | v1.3.1-anubis |
-| 3.3 Graph | v1.3.2 | v1.3.2-anubis |
-| 3.4 Scheduler | v1.3.3 | v1.3.3-anubis |
-| 3.5 Git | v1.3.4 | v1.3.4-anubis |
-| 4.1 Workflow | v2.0.0 | v2.0.0-osiris |
-| 4.2 Multi-Agent | v2.0.1 | v2.0.1-osiris |
-| 4.3 Browser Auto | v2.0.2 | v2.0.2-osiris |
-| 4.4 Marketplace | v2.0.3 | v2.0.3-osiris |
-| 4.5 Computer Use | v2.0.4 | v2.0.4-osiris |
-| 4.6 Cloud Sync | v2.0.5 | v2.0.5-osiris |
+| Sprint | Version Line | Codename | Status |
+|---|---:|---|---|
+| 3.1 Monaco | v1.3.0 | Anubis | COMPLETE |
+| 3.2 Whisper | v1.3.1 | Anubis | COMPLETE |
+| 3.3 Knowledge Graph | v1.3.2 | Anubis | BRANCH-COMPLETE |
+| 3.4 Scheduler | v1.3.3 | Anubis | BRANCH-COMPLETE |
+| 3.5 Git | v1.3.4 | Anubis | BRANCH-COMPLETE |
+| 4.1 Workflow | v2.0.0 | Osiris | BRANCH-COMPLETE |
+| 4.2 Multi-Agent | v2.0.1 | Osiris | BRANCH-COMPLETE |
+| 4.3 Browser Automation | v2.0.2 | Osiris | PARTIAL |
+| 4.4 Marketplace | v2.0.3 | Osiris | COMPLETE |
+| 4.5 Computer Use | v2.0.4 | Osiris | COMPLETE |
+| 4.6 Cloud Sync | v2.0.5 | Osiris | COMPLETE |
+| 5.1 Collaborative Workspaces | v2.5.0 | Horus | COMPLETE |
+| 5.2 Mobile Companion | v2.5.1 | Horus | PLANNED |
