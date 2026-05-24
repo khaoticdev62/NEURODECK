@@ -877,8 +877,10 @@ function refreshSessionsList() {
 function loadSession(sid) {
     invoke("load_session_by_id", { id: sid }).then((data) => {
         state.currentSessionId = data.session_id;
-        document.getElementById("session-id").innerText = state.currentSessionId;
-        document.getElementById("session-title").innerText = "Session: " + state.currentSessionId;
+        const sidEl = document.getElementById("session-id");
+        if (sidEl) sidEl.innerText = state.currentSessionId;
+        const stitleEl = document.getElementById("session-title");
+        if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
         
         let chatViewport = document.getElementById("chat-viewport");
         let viewport = document.getElementById("chat-workspace");
@@ -943,8 +945,10 @@ function loadSession(sid) {
 function startNewSession() {
     invoke("new_session").then((newId) => {
         state.currentSessionId = newId;
-        document.getElementById("session-id").innerText = state.currentSessionId;
-        document.getElementById("session-title").innerText = "New Session";
+        const sidEl = document.getElementById("session-id");
+        if (sidEl) sidEl.innerText = state.currentSessionId;
+        const stitleEl = document.getElementById("session-title");
+        if (stitleEl) stitleEl.innerText = "New Session";
 
         const chatViewport = document.getElementById("chat-viewport");
         chatViewport.innerHTML = CHAT_WELCOME_HTML;
@@ -1037,7 +1041,8 @@ window.addEventListener("keydown", function(e) {
             viewport.scrollTop = viewport.scrollHeight;
             
             // Update session title in top navigation bar
-            document.getElementById("session-title").innerText = "Session: " + state.currentSessionId;
+            const stitleEl = document.getElementById("session-title");
+            if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
             
             refreshSessionsList();
         }).catch((err) => {
@@ -1059,8 +1064,10 @@ window.addEventListener("keydown", function(e) {
         e.preventDefault();
         invoke("load_latest_session").then((data) => {
             state.currentSessionId = data.session_id;
-            document.getElementById("session-id").innerText = state.currentSessionId;
-            document.getElementById("session-title").innerText = "Session: " + state.currentSessionId;
+            const sidEl = document.getElementById("session-id");
+            if (sidEl) sidEl.innerText = state.currentSessionId;
+            const stitleEl = document.getElementById("session-title");
+            if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
             
             let chatViewport = document.getElementById("chat-viewport");
             let viewport = document.getElementById("chat-workspace");
