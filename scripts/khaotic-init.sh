@@ -501,15 +501,17 @@ PYEOF
   echo ""
 }
 
-cmd_doctor() {
-  require_python
-  local validation_ok=true build_ok=true frontend_ok=true plan_snapshot_ok=true blockers=()
+evaluate_release_readiness() {
+  local validation_ok=true plan_snapshot_ok=true diff_check_ok=true
+  local workspace_state loose_root_count score=100
+  local blockers=()
 
   if ! cmd_validate >/dev/null 2>&1; then
     validation_ok=false
     blockers+=("KFMS metadata or derived artifact validation is failing.")
   fi
   if ! git -C "$ROOT" diff --check >/dev/null 2>&1; then
+    diff_check_ok=false
     blockers+=("Whitespace or merge-marker issues exist in the working tree.")
   fi
   if [[ ! -f "$PLAN_MD" ]]; then
@@ -520,13 +522,48 @@ cmd_doctor() {
     blockers+=("Implementation plan has no KFMS-generated snapshot marker.")
   fi
 
-  local score=100
+  workspace_state="$(derive_workspace_state)"
+  loose_root_count="$(count_loose_root_files)"
+
   $validation_ok || score=$((score - 35))
   $plan_snapshot_ok || score=$((score - 15))
-  [[ "$(derive_workspace_state)" == "clean" ]] || score=$((score - 20))
-  [[ "$(count_loose_root_files)" == "0" ]] || score=$((score - 10))
-  git -C "$ROOT" diff --check >/dev/null 2>&1 || score=$((score - 20))
+  [[ "$workspace_state" == "clean" ]] || score=$((score - 20))
+  [[ "$loose_root_count" == "0" ]] || score=$((score - 10))
+  $diff_check_ok || score=$((score - 20))
   (( score < 0 )) && score=0
+
+  printf 'score=%s\n' "$score"
+  printf 'validation_ok=%s\n' "$($validation_ok && echo true || echo false)"
+  printf 'plan_snapshot_ok=%s\n' "$($plan_snapshot_ok && echo true || echo false)"
+  printf 'diff_check_ok=%s\n' "$($diff_check_ok && echo true || echo false)"
+  printf 'workspace_state=%s\n' "$workspace_state"
+  printf 'loose_root_count=%s\n' "$loose_root_count"
+  if [[ "${#blockers[@]}" -gt 0 ]]; then
+    local blocker
+    for blocker in "${blockers[@]}"; do
+      printf 'blocker=%s\n' "$blocker"
+    done
+  fi
+}
+
+cmd_doctor() {
+  require_python
+  local score="" validation_ok="" plan_snapshot_ok="" workspace_state="" loose_root_count="" diff_check_ok=""
+  local blockers=() line key value
+
+  while IFS= read -r line; do
+    key="${line%%=*}"
+    value="${line#*=}"
+    case "$key" in
+      score) score="$value" ;;
+      validation_ok) validation_ok="$value" ;;
+      plan_snapshot_ok) plan_snapshot_ok="$value" ;;
+      diff_check_ok) diff_check_ok="$value" ;;
+      workspace_state) workspace_state="$value" ;;
+      loose_root_count) loose_root_count="$value" ;;
+      blocker) blockers+=("$value") ;;
+    esac
+  done < <(evaluate_release_readiness)
 
   echo ""
   echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
@@ -540,14 +577,73 @@ cmd_doctor() {
     die "release readiness score → ${score}/100"
   fi
 
-  ok "meta + derived consistency → $($validation_ok && echo pass || echo fail)"
-  ok "workspace classification → $(derive_workspace_state)"
-  ok "loose root files → $(count_loose_root_files)"
-  ok "implementation plan snapshot marker → $($plan_snapshot_ok && echo present || echo missing)"
+  ok "meta + derived consistency → $( [[ "$validation_ok" == "true" ]] && echo pass || echo fail )"
+  ok "workspace classification → ${workspace_state}"
+  ok "loose root files → ${loose_root_count}"
+  ok "implementation plan snapshot marker → $( [[ "$plan_snapshot_ok" == "true" ]] && echo present || echo missing )"
+  ok "diff hygiene → $( [[ "$diff_check_ok" == "true" ]] && echo pass || echo fail )"
 
   if [[ "${#blockers[@]}" -gt 0 ]]; then
     echo ""
     warn "Top blockers:"
+    local blocker
+    for blocker in "${blockers[@]}"; do
+      warn "  - $blocker"
+    done
+  fi
+  echo ""
+}
+
+cmd_release_plan() {
+  require_python
+  local score="" validation_ok="" plan_snapshot_ok="" workspace_state="" loose_root_count="" diff_check_ok=""
+  local blockers=() line key value release_state
+
+  while IFS= read -r line; do
+    key="${line%%=*}"
+    value="${line#*=}"
+    case "$key" in
+      score) score="$value" ;;
+      validation_ok) validation_ok="$value" ;;
+      plan_snapshot_ok) plan_snapshot_ok="$value" ;;
+      diff_check_ok) diff_check_ok="$value" ;;
+      workspace_state) workspace_state="$value" ;;
+      loose_root_count) loose_root_count="$value" ;;
+      blocker) blockers+=("$value") ;;
+    esac
+  done < <(evaluate_release_readiness)
+
+  if (( score >= 85 )) && [[ "$validation_ok" == "true" ]] && [[ "$plan_snapshot_ok" == "true" ]] && [[ "$diff_check_ok" == "true" ]] && [[ "$workspace_state" == "clean" ]] && [[ "$loose_root_count" == "0" ]]; then
+    release_state="GO"
+  elif (( score >= 60 )); then
+    release_state="HOLD"
+  else
+    release_state="NO-GO"
+  fi
+
+  echo ""
+  echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
+  echo -e "${CY}║  KHAOTIC LABS — KFMS RELEASE PLAN       ║${NC}"
+  echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
+  if [[ "$release_state" == "GO" ]]; then
+    ok "release decision → ${release_state}"
+  elif [[ "$release_state" == "HOLD" ]]; then
+    warn "release decision → ${release_state}"
+  else
+    die "release decision → ${release_state}"
+  fi
+  ok "readiness score  → ${score}/100"
+  ok "metadata         → $( [[ "$validation_ok" == "true" ]] && echo aligned || echo blocked )"
+  ok "plan snapshot    → $( [[ "$plan_snapshot_ok" == "true" ]] && echo present || echo missing )"
+  ok "diff hygiene     → $( [[ "$diff_check_ok" == "true" ]] && echo pass || echo fail )"
+  ok "workspace state  → ${workspace_state}"
+  ok "loose root files → ${loose_root_count}"
+
+  echo ""
+  if [[ "${#blockers[@]}" -eq 0 ]]; then
+    ok "top blockers     → none"
+  else
+    warn "top blockers:"
     local blocker
     for blocker in "${blockers[@]}"; do
       warn "  - $blocker"
@@ -653,6 +749,7 @@ case "$CMD" in
   validate) cmd_validate "${2:-}" ;;
   status)   cmd_status ;;
   doctor)   cmd_doctor ;;
+  release-plan) cmd_release_plan ;;
   bump)     cmd_bump "${@:2}" ;;
   *)
     echo ""
@@ -665,6 +762,7 @@ case "$CMD" in
     echo "    validate        Validate meta.json and derived artifacts"
     echo "    status          Print KFMS health summary"
     echo "    doctor          Print release-readiness and blocker summary"
+    echo "    release-plan    Print ship/no-ship decision with blockers"
     echo "    bump patch      Bump PATCH and refresh derived artifacts"
     echo "    bump minor      Bump MINOR/codename and refresh derived artifacts"
     echo "    bump major      Bump MAJOR and reset codename line"
