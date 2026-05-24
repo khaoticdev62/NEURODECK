@@ -324,6 +324,7 @@ document.querySelector('#app').innerHTML = `
                         <span id="tool-status">Idle</span>
                     </span>
                     <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">🔊</button>
+                    <button class="input-btn" id="cmd-palette-btn" title="Command Palette (Ctrl+K)">⌘</button>
                     <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">🔔<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
                 </div>
@@ -465,6 +466,27 @@ document.querySelector('#app').innerHTML = `
                             <span><kbd>↑↓</kbd> navigate</span>
                             <span><kbd>Enter</kbd> insert command</span>
                             <span><kbd>Esc</kbd> close</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Command Palette (Ctrl+K) -->
+                <div id="command-palette-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Command Palette">
+                    <div class="cp-backdrop" id="cp-backdrop"></div>
+                    <div class="cp-panel">
+                        <div class="cp-header">
+                            <span class="cp-icon">⌘</span>
+                            <input id="cp-input" type="text" class="cp-input" placeholder="Search views, personas, workflows, memory…" autocomplete="off" spellcheck="false">
+                            <kbd class="cp-esc-hint">Esc</kbd>
+                        </div>
+                        <div class="cp-results" id="cp-results">
+                            <div class="cp-empty">Start typing to search</div>
+                        </div>
+                        <div class="cp-footer">
+                            <span><kbd>↑↓</kbd> navigate</span>
+                            <span><kbd>Enter</kbd> activate</span>
+                            <span><kbd>Esc</kbd> close</span>
+                            <span class="cp-footer-right"><kbd>Ctrl+K</kbd> toggle</span>
                         </div>
                     </div>
                 </div>
@@ -2980,6 +3002,7 @@ function getGamepadFocusableElements() {
         "#sidebar-toggle-btn",
         ".nav-tab",
         "#model-name",
+        "#cmd-palette-btn",
         "#mute-btn",
         "#notif-btn",
         "#settings-btn",
@@ -8368,3 +8391,240 @@ initRemoteControl();
 initSchedulerView();
 initGitPanel();
 initWorkflowView();
+
+// ==========================================================================
+// COMMAND PALETTE (Ctrl+K)
+// ==========================================================================
+function initCommandPalette() {
+    const overlay    = document.getElementById('command-palette-overlay');
+    const backdrop   = document.getElementById('cp-backdrop');
+    const input      = document.getElementById('cp-input');
+    const resultsEl  = document.getElementById('cp-results');
+    const openBtn    = document.getElementById('cmd-palette-btn');
+
+    if (!overlay || !input) return;
+
+    let _open = false;
+    let _items = [];      // full item list, rebuilt on open
+    let _filtered = [];   // items matching current query
+    let _selIdx = -1;
+
+    // ── Static view items ───────────────────────────────────────────────────
+    const VIEW_ITEMS = [
+        { type: 'view', icon: '💬', label: 'Chat',        view: 'chat' },
+        { type: 'view', icon: '🎨', label: 'Canvas',      view: 'canvas' },
+        { type: 'view', icon: '💻', label: 'Terminal',    view: 'terminal' },
+        { type: 'view', icon: '🔑', label: 'SSH',         view: 'ssh' },
+        { type: 'view', icon: '🔗', label: 'Tunnel',      view: 'tunnel' },
+        { type: 'view', icon: '📤', label: 'Share',       view: 'share' },
+        { type: 'view', icon: '🌐', label: 'Browser',     view: 'browser' },
+        { type: 'view', icon: '🤖', label: 'Agent',       view: 'agent' },
+        { type: 'view', icon: '🧠', label: 'Memory',      view: 'memory' },
+        { type: 'view', icon: '⬡',  label: 'Graph',       view: 'graph' },
+        { type: 'view', icon: '📝', label: 'Prompt Lab',  view: 'prompt-lab' },
+        { type: 'view', icon: '📱', label: 'Remote',      view: 'remote' },
+        { type: 'view', icon: '⏱️', label: 'Scheduler',   view: 'scheduler' },
+        { type: 'view', icon: '⛓',  label: 'Workflow',    view: 'workflow' },
+    ];
+
+    // ── Action items ─────────────────────────────────────────────────────────
+    const ACTION_ITEMS = [
+        { type: 'action', icon: '⚙️', label: 'Open Settings',      fn: () => document.getElementById('settings-btn')?.click() },
+        { type: 'action', icon: '🔊', label: 'Toggle Voice',        fn: () => document.getElementById('mute-btn')?.click() },
+        { type: 'action', icon: '🔔', label: 'Open Notifications',  fn: () => document.getElementById('notif-btn')?.click() },
+        { type: 'action', icon: '⌨️', label: 'AI Shell History',    fn: () => { closePalette(); if (typeof openHistorySearch === 'function') openHistorySearch(); } },
+        { type: 'action', icon: '➕', label: 'New Terminal Tab',    fn: () => { closePalette(); document.querySelector('.nav-tab[data-view="terminal"]')?.click(); setTimeout(() => document.getElementById('terminal-add-tab-btn')?.click(), 150); } },
+        { type: 'action', icon: '🗑️', label: 'Clear Chat',         fn: () => { closePalette(); invoke('clear_chat_history').catch(() => {}); document.getElementById('output-container') && (document.getElementById('output-container').innerHTML = ''); } },
+        { type: 'action', icon: '🔀', label: 'Multi-Agent Orchestrate', fn: () => { closePalette(); document.querySelector('.nav-tab[data-view="agent"]')?.click(); setTimeout(() => document.getElementById('agent-mode-orchestrate')?.click(), 100); } },
+    ];
+
+    async function buildItems() {
+        _items = [...VIEW_ITEMS, ...ACTION_ITEMS];
+
+        // Personas
+        try {
+            const personas = await invoke('get_personas');
+            for (const p of personas) {
+                _items.push({ type: 'persona', icon: '🎭', label: `Set persona: ${p}`, persona: p });
+            }
+        } catch (_) {}
+
+        // Workflows
+        try {
+            const wfs = await invoke('list_workflows');
+            for (const w of wfs) {
+                _items.push({ type: 'workflow', icon: '⛓', label: `Run workflow: ${w}`, workflow: w });
+            }
+        } catch (_) {}
+
+        // Lua commands from state
+        const luaCmds = state.luaCommands || [];
+        for (const cmd of luaCmds) {
+            _items.push({ type: 'lua', icon: '🔧', label: `/${cmd}`, cmd });
+        }
+    }
+
+    function fuzzy(text, query) {
+        if (!query) return true;
+        const t = text.toLowerCase();
+        const q = query.toLowerCase();
+        let qi = 0;
+        for (let i = 0; i < t.length && qi < q.length; i++) {
+            if (t[i] === q[qi]) qi++;
+        }
+        return qi === q.length;
+    }
+
+    function filterItems(query) {
+        if (!query.trim()) return _items;
+        return _items.filter(item => fuzzy(item.label, query));
+    }
+
+    const TYPE_ORDER = { action: 0, view: 1, persona: 2, workflow: 3, lua: 4 };
+    const TYPE_LABELS = { action: 'Actions', view: 'Navigate', persona: 'Personas', workflow: 'Workflows', lua: 'Commands' };
+
+    function renderResults(query) {
+        _filtered = filterItems(query);
+        if (_filtered.length === 0) {
+            resultsEl.innerHTML = `<div class="cp-empty">No results for "${escapeHtml(query)}"</div>`;
+            _selIdx = -1;
+            return;
+        }
+
+        // Group by type
+        const groups = {};
+        _filtered.forEach((item, idx) => {
+            (groups[item.type] = groups[item.type] || []).push({ item, idx });
+        });
+
+        const orderedTypes = Object.keys(groups).sort((a, b) => (TYPE_ORDER[a] ?? 9) - (TYPE_ORDER[b] ?? 9));
+
+        resultsEl.innerHTML = '';
+        orderedTypes.forEach(type => {
+            const section = document.createElement('div');
+            section.className = 'cp-section';
+            section.innerHTML = `<div class="cp-section-label">${TYPE_LABELS[type] || type}</div>`;
+            groups[type].forEach(({ item, idx }) => {
+                const row = document.createElement('div');
+                row.className = `cp-result-item${idx === _selIdx ? ' selected' : ''}`;
+                row.dataset.idx = idx;
+                // Highlight matched chars
+                const label = highlightMatch(item.label, query);
+                row.innerHTML = `<span class="cp-result-icon">${item.icon}</span><span class="cp-result-label">${label}</span>`;
+                row.addEventListener('mouseenter', () => { _selIdx = idx; updateSelection(); });
+                row.addEventListener('click', () => activateItem(item));
+                section.appendChild(row);
+            });
+            resultsEl.appendChild(section);
+        });
+
+        if (_selIdx < 0 && _filtered.length > 0) _selIdx = 0;
+        updateSelection();
+    }
+
+    function highlightMatch(text, query) {
+        if (!query.trim()) return escapeHtml(text);
+        const safe = escapeHtml(text);
+        const q = query.toLowerCase();
+        let result = '';
+        let qi = 0;
+        for (let i = 0; i < safe.length; i++) {
+            const ch = safe[i];
+            if (qi < q.length && ch.toLowerCase() === q[qi]) {
+                result += `<mark class="cp-match">${ch}</mark>`;
+                qi++;
+            } else {
+                result += ch;
+            }
+        }
+        return result;
+    }
+
+    function updateSelection() {
+        resultsEl.querySelectorAll('.cp-result-item').forEach(el => {
+            const idx = parseInt(el.dataset.idx);
+            el.classList.toggle('selected', idx === _selIdx);
+        });
+        const sel = resultsEl.querySelector('.cp-result-item.selected');
+        if (sel) sel.scrollIntoView({ block: 'nearest' });
+    }
+
+    function activateItem(item) {
+        closePalette();
+        if (item.type === 'view') {
+            document.querySelector(`.nav-tab[data-view="${item.view}"]`)?.click();
+        } else if (item.type === 'action') {
+            item.fn && item.fn();
+        } else if (item.type === 'persona') {
+            invoke('set_persona', { name: item.persona }).catch(() => {});
+            if (typeof pushNotification === 'function') pushNotification('Persona', `Switched to ${item.persona}`, 'info');
+        } else if (item.type === 'workflow') {
+            closePalette();
+            document.querySelector('.nav-tab[data-view="workflow"]')?.click();
+            // Let workflow view load, then trigger load
+            setTimeout(async () => {
+                try {
+                    const json = await invoke('load_workflow', { name: item.workflow });
+                    if (window._wf_load_external) window._wf_load_external(item.workflow, json);
+                } catch (e) { console.warn('[CP] workflow load:', e); }
+            }, 200);
+        } else if (item.type === 'lua') {
+            invoke('send_command', { prompt: `/${item.cmd}` }).catch(() => {});
+        }
+    }
+
+    function moveSelection(dir) {
+        if (_filtered.length === 0) return;
+        _selIdx = Math.max(0, Math.min(_filtered.length - 1, _selIdx + dir));
+        updateSelection();
+    }
+
+    async function openPalette() {
+        if (_open) return;
+        _open = true;
+        overlay.classList.remove('hidden');
+        input.value = '';
+        _selIdx = -1;
+        resultsEl.innerHTML = '<div class="cp-empty">Loading…</div>';
+        await buildItems();
+        renderResults('');
+        setTimeout(() => input.focus(), 30);
+    }
+
+    function closePalette() {
+        if (!_open) return;
+        _open = false;
+        overlay.classList.add('hidden');
+        input.value = '';
+    }
+
+    // ── Event wiring ─────────────────────────────────────────────────────────
+    input.addEventListener('input', () => renderResults(input.value));
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); moveSelection(-1); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            const item = _filtered[_selIdx];
+            if (item) activateItem(item);
+        } else if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
+    });
+
+    backdrop.addEventListener('click', closePalette);
+    openBtn && openBtn.addEventListener('click', () => _open ? closePalette() : openPalette());
+
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            _open ? closePalette() : openPalette();
+        }
+        if (e.key === 'Escape' && _open) { e.preventDefault(); closePalette(); }
+    });
+
+    // Expose for gamepad/external trigger
+    window._openCommandPalette = openPalette;
+    window._closeCommandPalette = closePalette;
+}
+
+initCommandPalette();

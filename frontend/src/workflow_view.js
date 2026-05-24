@@ -46,6 +46,20 @@ export function initWorkflowView() {
     if (!_container) return;
     _buildShell();
     _loadSaved();
+    // Expose for external callers (e.g. Command Palette)
+    window._wf_load_external = (name, json) => {
+        try {
+            const data = JSON.parse(json);
+            _s.nodes = data.nodes || [];
+            _s.edges = data.edges || [];
+            _s.workflowName = data.name || name;
+            _uid = (data.uid || 0) + 1;
+            if (_nameEl) _nameEl.value = _s.workflowName;
+            _s.selectedId = null;
+            _render();
+            _updatePropPanel(null);
+        } catch (e) { console.warn('[WF] external load:', e); }
+    };
 }
 
 // ── Shell builder ─────────────────────────────────────────────────────────────
