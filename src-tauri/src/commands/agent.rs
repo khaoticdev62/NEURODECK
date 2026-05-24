@@ -227,8 +227,10 @@ RESPONSE FORMAT — always output ONLY valid JSON with these exact fields, no ma
   "thought": "reasoning about what to do",
   "code": "executable code (empty string if done)",
   "lang": "python|bash|javascript|powershell",
-  "action": "run_code|done|error",
-  "summary": "one-line description of this step"
+  "action": "run_code|computer|done|error",
+  "summary": "one-line description of this step",
+  "tool": "computer tool name when action is computer",
+  "args": {{"key": "value arguments when action is computer"}}
 }}
 
 RULES:
@@ -238,6 +240,9 @@ RULES:
 - When the task is fully complete, set action to "done" and summarize in "summary".
 - If the task is impossible or you run out of ideas, set action to "error".
 - Prefer {lang} for code execution on this platform.
+- For desktop automation, set action to "computer" with one of these tools:
+  computer_screenshot, computer_find_text, computer_mouse_move, computer_mouse_click, computer_type, computer_key.
+- Computer actions are user-approved by NEURODECK before execution. Use them only when desktop UI control is necessary.
 - Max 5 iterations total — be efficient."#,
         os = os_name,
         lang = preferred_lang

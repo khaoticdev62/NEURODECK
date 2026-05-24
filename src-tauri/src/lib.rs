@@ -10,6 +10,7 @@ mod ftp;
 mod sftp;
 mod ollama_mgr;
 mod plugin_mgr;
+mod computer_use;
 mod mcp;
 mod whisper;
 mod canvas_collab;
@@ -932,6 +933,12 @@ pub fn run() {
             plugin_mgr::read_plugin,
             plugin_mgr::save_plugin,
             plugin_mgr::reload_plugins,
+            computer_use::computer_screenshot,
+            computer_use::computer_mouse_move,
+            computer_use::computer_mouse_click,
+            computer_use::computer_type,
+            computer_use::computer_key,
+            computer_use::computer_find_text,
             shell_autocomplete,
             read_last_screenshot,
             search_history_ai,

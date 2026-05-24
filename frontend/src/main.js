@@ -1406,6 +1406,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="stv-nav-item" data-panel="sp-extensions"><span class="stv-nav-icon">🧩</span> Extensions</button>
                     <button class="stv-nav-item" data-panel="sp-memory"><span class="stv-nav-icon">🧠</span> Memory</button>
                     <button class="stv-nav-item" data-panel="sp-network"><span class="stv-nav-icon">🌐</span> Network</button>
+                    <button class="stv-nav-item" data-panel="sp-computer"><span class="stv-nav-icon">🖥️</span> Computer</button>
                     <button class="stv-nav-item" data-panel="sp-voice"><span class="stv-nav-icon">🎙️</span> Voice</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
@@ -1774,6 +1775,41 @@ document.querySelector('#app').innerHTML = `
                         </div>
                     </div>
 
+                    <!-- ░ Computer Use ░ -->
+                    <div class="settings-panel" id="sp-computer">
+                        <p class="stv-section-title">Computer Use</p>
+                        <p class="stv-section-sub">Desktop screenshot, mouse, keyboard, and OCR controls for approved agent actions.</p>
+
+                        <div class="stv-group-label">Safety Gate</div>
+                        <div class="stv-card">
+                            <div class="stv-toggle-row">
+                                <div>
+                                    <div class="stv-toggle-label">Approve All for This Session</div>
+                                    <div class="stv-toggle-desc">Skips the modal until NEURODECK is reloaded.</div>
+                                </div>
+                                <input type="checkbox" id="computer-approve-all-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                            <p class="computer-use-warning">Actions that move the mouse, click, type, or press keys still pass an explicit approval flag to the backend. Screenshot and OCR are read-only.</p>
+                        </div>
+
+                        <div class="stv-group-label">Live Desktop Snapshot</div>
+                        <div class="stv-card">
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <button class="stv-btn-primary" id="computer-capture-btn" style="flex:1;">Capture Screenshot</button>
+                                <button class="stv-btn-ghost" id="computer-ocr-btn" style="flex:1;">Find Text</button>
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>OCR Text</label>
+                                <input type="text" id="computer-ocr-input" placeholder="Text to locate on screen">
+                            </div>
+                            <div id="computer-status-line" class="stv-status-line"></div>
+                            <div class="computer-preview-shell">
+                                <img id="computer-preview-img" class="computer-preview-img" alt="Desktop screenshot preview">
+                                <div id="computer-preview-empty" class="computer-preview-empty">No screenshot captured.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ░ Voice ░ -->
                     <div class="settings-panel" id="sp-voice">
                         <p class="stv-section-title">Voice</p>
@@ -1950,6 +1986,32 @@ document.querySelector('#app').innerHTML = `
             </div>
         </div>
 
+        <!-- Computer Use Approval Modal -->
+        <div class="settings-overlay" id="computer-use-modal">
+            <div class="settings-modal-card computer-use-modal-card">
+                <div class="settings-modal-header">
+                    <h3>Computer Use Approval</h3>
+                    <button class="sidebar-toggle-btn" id="computer-use-deny-x">✕</button>
+                </div>
+                <div class="settings-modal-content computer-use-modal-content">
+                    <div class="computer-use-modal-copy">
+                        <div class="computer-use-modal-action" id="computer-use-modal-action">Pending desktop action</div>
+                        <div class="computer-use-modal-details" id="computer-use-modal-details">Review the current desktop before approving.</div>
+                    </div>
+                    <div class="computer-approval-preview-shell">
+                        <img id="computer-use-modal-img" class="computer-approval-preview" alt="Current desktop screenshot">
+                        <div id="computer-use-modal-empty" class="computer-preview-empty">Screenshot unavailable.</div>
+                        <div id="computer-use-target-box" class="computer-use-target-box"></div>
+                    </div>
+                </div>
+                <div class="settings-modal-footer computer-use-modal-actions">
+                    <button class="canvas-btn" id="computer-use-deny-btn">Deny</button>
+                    <button class="canvas-btn" id="computer-use-approve-session-btn">Approve All for Session</button>
+                    <button class="send-prompt-btn" id="computer-use-approve-btn">Approve Once</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Notification Center Modal -->
         <div class="settings-overlay" id="notif-modal">
             <div class="settings-modal-card" style="max-width: 400px;">
@@ -1958,7 +2020,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="sidebar-toggle-btn" id="close-notif-x">✕</button>
                 </div>
                 <div class="settings-modal-content" style="max-height: 350px; overflow-y: auto;" id="notif-list-container">
-                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No state.notifications.</div>
+                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications yet.</div>
                 </div>
                 <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
                     <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
@@ -2868,6 +2930,15 @@ function getGamepadFocusableElements() {
         });
     }
 
+    const computerUseModal = document.getElementById("computer-use-modal");
+    if (computerUseModal && computerUseModal.classList.contains("active")) {
+        const els = Array.from(computerUseModal.querySelectorAll("button"));
+        return els.filter(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && !el.disabled;
+        });
+    }
+
     // If settings overlay is open, focus only settings elements
     const settingsOverlay = document.getElementById("settings-overlay");
     if (settingsOverlay && settingsOverlay.classList.contains("active")) {
@@ -3194,10 +3265,13 @@ function pollGamepads() {
         const sidebar = document.getElementById("sidebar");
         const notifModal = document.getElementById("notif-modal");
         const gameModal = document.getElementById("game-context-modal");
+        const computerUseModal = document.getElementById("computer-use-modal");
         if (notifModal && notifModal.classList.contains("active")) {
             document.getElementById("close-notif-btn").click();
         } else if (gameModal && gameModal.classList.contains("active")) {
             document.getElementById("close-game-context").click();
+        } else if (computerUseModal && computerUseModal.classList.contains("active")) {
+            document.getElementById("computer-use-deny-btn").click();
         } else if (settingsOverlay && settingsOverlay.classList.contains("active")) {
             document.getElementById("close-settings").click();
         } else if (transferModal && transferModal.classList.contains("active")) {
@@ -4796,6 +4870,52 @@ function initAgentView() {
         return { thought: raw, code: "", lang: "python", action: "error", summary: "Failed to parse agent response" };
     }
 
+    async function runComputerTool(tool, args = {}) {
+        const computer = window.neurodeckComputerUse;
+        if (!computer) {
+            throw new Error("Computer use tools are not initialized.");
+        }
+
+        switch (tool) {
+            case "computer_screenshot": {
+                const shot = await computer.captureScreenshot({ showInAgentLog: true });
+                return `Screenshot captured (${shot.mime}, ${shot.base64.length} base64 chars).`;
+            }
+            case "computer_find_text": {
+                const text = String(args.text || "");
+                if (!text.trim()) throw new Error("computer_find_text requires args.text.");
+                const match = await computer.findText(text);
+                return `Found "${match.text}" at x=${match.x}, y=${match.y}, width=${match.width}, height=${match.height}, confidence=${Math.round(match.confidence)}.`;
+            }
+            case "computer_mouse_move": {
+                const x = Number(args.x);
+                const y = Number(args.y);
+                if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error("computer_mouse_move requires numeric args.x and args.y.");
+                await computer.mouseMove(Math.round(x), Math.round(y));
+                return `Mouse moved to ${Math.round(x)}, ${Math.round(y)}.`;
+            }
+            case "computer_mouse_click": {
+                const button = String(args.button || "left");
+                await computer.click(button);
+                return `${button} mouse click sent.`;
+            }
+            case "computer_type": {
+                const text = String(args.text || "");
+                if (!text) throw new Error("computer_type requires args.text.");
+                await computer.type(text);
+                return `Typed ${text.length} character${text.length === 1 ? "" : "s"}.`;
+            }
+            case "computer_key": {
+                const key = String(args.key || "");
+                if (!key) throw new Error("computer_key requires args.key.");
+                await computer.key(key);
+                return `Key sent: ${key}.`;
+            }
+            default:
+                throw new Error(`Unsupported computer tool: ${tool}`);
+        }
+    }
+
     async function runAgentLoop(task) {
         const history = [];
         const MAX_STEPS = 5;
@@ -4838,6 +4958,22 @@ function initAgentView() {
             if (parsed.action === "error") {
                 appendLog("error", parsed.summary || "Agent reported an error.", step);
                 break;
+            }
+
+            if (parsed.action === "computer") {
+                const tool = parsed.tool || parsed.computer_tool || "";
+                appendLog("exec", `Requesting computer tool: ${tool}`, step);
+                let toolOut;
+                try {
+                    toolOut = await runComputerTool(tool, parsed.args || {});
+                } catch (e) {
+                    toolOut = `[Computer Use Error] ${e}`;
+                }
+                outputEl.textContent = toolOut;
+                appendLog(toolOut.startsWith("[Computer Use Error]") ? "error" : "output", toolOut, step);
+                history.push({ role: "step", content: JSON.stringify(parsed) });
+                history.push({ role: "output", content: toolOut });
+                continue;
             }
 
             if (!parsed.code) {
@@ -5742,8 +5878,233 @@ function updateCanvasToolbarButtons() {
     }
 }
 
+// ==========================================================================
+// DESKTOP COMPUTER USE
+// ==========================================================================
+const computerUseState = {
+    approveAll: false,
+    pendingResolve: null,
+    pendingTarget: null,
+    lastScreenshot: null
+};
+
+function setComputerStatus(message, tone = "info") {
+    const statusEl = document.getElementById("computer-status-line");
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+    statusEl.className = `stv-status-line ${tone}`;
+}
+
+function setComputerPreview(screenshot) {
+    const img = document.getElementById("computer-preview-img");
+    const empty = document.getElementById("computer-preview-empty");
+    if (!img || !empty) return;
+
+    if (!screenshot || !screenshot.base64) {
+        img.removeAttribute("src");
+        img.classList.remove("active");
+        empty.style.display = "flex";
+        return;
+    }
+
+    img.src = `data:${screenshot.mime || "image/png"};base64,${screenshot.base64}`;
+    img.classList.add("active");
+    empty.style.display = "none";
+}
+
+async function captureComputerScreenshot({ showInAgentLog = false } = {}) {
+    const screenshot = await invoke("computer_screenshot");
+    computerUseState.lastScreenshot = screenshot;
+    setComputerPreview(screenshot);
+    if (showInAgentLog) appendComputerScreenshotToAgentLog(screenshot);
+    return screenshot;
+}
+
+function appendComputerScreenshotToAgentLog(screenshot) {
+    const logEl = document.getElementById("agent-log");
+    if (!logEl || !screenshot?.base64) return;
+
+    const empty = logEl.querySelector(".agent-empty-state");
+    if (empty) empty.remove();
+
+    const entry = document.createElement("div");
+    entry.className = "agent-log-entry agent-log-info agent-log-computer-feed";
+    entry.innerHTML = `<span class="agent-log-icon">🖥️</span>
+        <div class="agent-log-body">
+            <div class="agent-log-label">Computer Use</div>
+            <img class="agent-computer-screenshot" alt="Desktop screenshot" src="data:${screenshot.mime || "image/png"};base64,${screenshot.base64}">
+        </div>`;
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function positionComputerTargetBox(target) {
+    const box = document.getElementById("computer-use-target-box");
+    const img = document.getElementById("computer-use-modal-img");
+    if (!box || !img || !target || !target.width || !target.height || !img.naturalWidth || !img.naturalHeight) {
+        if (box) box.style.display = "none";
+        return;
+    }
+
+    const scaleX = img.clientWidth / img.naturalWidth;
+    const scaleY = img.clientHeight / img.naturalHeight;
+    box.style.display = "block";
+    box.style.left = `${target.x * scaleX}px`;
+    box.style.top = `${target.y * scaleY}px`;
+    box.style.width = `${Math.max(8, target.width * scaleX)}px`;
+    box.style.height = `${Math.max(8, target.height * scaleY)}px`;
+}
+
+async function requestComputerUseApproval({ action, details, target } = {}) {
+    if (computerUseState.approveAll) return true;
+
+    const modal = document.getElementById("computer-use-modal");
+    const actionEl = document.getElementById("computer-use-modal-action");
+    const detailsEl = document.getElementById("computer-use-modal-details");
+    const img = document.getElementById("computer-use-modal-img");
+    const empty = document.getElementById("computer-use-modal-empty");
+    if (!modal || !actionEl || !detailsEl || !img || !empty) {
+        return false;
+    }
+
+    actionEl.textContent = action || "Desktop action requested";
+    detailsEl.textContent = details || "Review the desktop screenshot before approving.";
+    computerUseState.pendingTarget = target || null;
+
+    try {
+        const screenshot = await captureComputerScreenshot({ showInAgentLog: true });
+        img.src = `data:${screenshot.mime || "image/png"};base64,${screenshot.base64}`;
+        img.classList.add("active");
+        empty.style.display = "none";
+        img.onload = () => positionComputerTargetBox(computerUseState.pendingTarget);
+    } catch (err) {
+        img.removeAttribute("src");
+        img.classList.remove("active");
+        empty.style.display = "flex";
+        empty.textContent = `Screenshot unavailable: ${err}`;
+        positionComputerTargetBox(null);
+    }
+
+    modal.classList.add("active");
+    setTimeout(() => document.getElementById("computer-use-approve-btn")?.focus(), 50);
+
+    return new Promise(resolve => {
+        computerUseState.pendingResolve = resolve;
+    });
+}
+
+function finishComputerUseApproval(approved, approveSession = false) {
+    if (approveSession) {
+        computerUseState.approveAll = true;
+        const toggle = document.getElementById("computer-approve-all-toggle");
+        if (toggle) toggle.checked = true;
+    }
+    document.getElementById("computer-use-modal")?.classList.remove("active");
+    positionComputerTargetBox(null);
+    const resolve = computerUseState.pendingResolve;
+    computerUseState.pendingResolve = null;
+    computerUseState.pendingTarget = null;
+    if (resolve) resolve(approved);
+}
+
+async function invokeApprovedComputerAction(command, args, approvalMeta) {
+    const approved = await requestComputerUseApproval(approvalMeta);
+    if (!approved) {
+        throw new Error("Computer use action denied.");
+    }
+    return invoke(command, { ...args, approved: true });
+}
+
+function initComputerUse() {
+    const captureBtn = document.getElementById("computer-capture-btn");
+    const ocrBtn = document.getElementById("computer-ocr-btn");
+    const ocrInput = document.getElementById("computer-ocr-input");
+    const approveAllToggle = document.getElementById("computer-approve-all-toggle");
+    const approveBtn = document.getElementById("computer-use-approve-btn");
+    const approveSessionBtn = document.getElementById("computer-use-approve-session-btn");
+    const denyBtn = document.getElementById("computer-use-deny-btn");
+    const denyX = document.getElementById("computer-use-deny-x");
+
+    if (approveAllToggle) {
+        approveAllToggle.checked = computerUseState.approveAll;
+        approveAllToggle.onchange = () => {
+            computerUseState.approveAll = approveAllToggle.checked;
+            setComputerStatus(computerUseState.approveAll ? "Computer use auto-approval is active for this session." : "Computer use approval modal is active.", "info");
+        };
+    }
+
+    if (captureBtn) {
+        captureBtn.onclick = async () => {
+            captureBtn.disabled = true;
+            setComputerStatus("Capturing desktop screenshot...");
+            try {
+                await captureComputerScreenshot({ showInAgentLog: true });
+                setComputerStatus("Screenshot captured.", "ok");
+            } catch (err) {
+                setComputerStatus(`Screenshot failed: ${err}`, "error");
+            } finally {
+                captureBtn.disabled = false;
+            }
+        };
+    }
+
+    if (ocrBtn && ocrInput) {
+        ocrBtn.onclick = async () => {
+            const text = ocrInput.value.trim();
+            if (!text) {
+                ocrInput.focus();
+                return;
+            }
+            ocrBtn.disabled = true;
+            setComputerStatus("Running OCR over the current desktop...");
+            try {
+                const match = await invoke("computer_find_text", { text });
+                await requestComputerUseApproval({
+                    action: `Found text: ${match.text}`,
+                    details: `Coordinates ${match.x}, ${match.y}; confidence ${Math.round(match.confidence)}%.`,
+                    target: match
+                });
+                setComputerStatus(`Found "${match.text}" at ${match.x}, ${match.y}.`, "ok");
+            } catch (err) {
+                setComputerStatus(`OCR failed: ${err}`, "error");
+            } finally {
+                ocrBtn.disabled = false;
+            }
+        };
+    }
+
+    if (approveBtn) approveBtn.onclick = () => finishComputerUseApproval(true, false);
+    if (approveSessionBtn) approveSessionBtn.onclick = () => finishComputerUseApproval(true, true);
+    if (denyBtn) denyBtn.onclick = () => finishComputerUseApproval(false, false);
+    if (denyX) denyX.onclick = () => finishComputerUseApproval(false, false);
+
+    window.neurodeckComputerUse = {
+        captureScreenshot: captureComputerScreenshot,
+        requestApproval: requestComputerUseApproval,
+        mouseMove: (x, y) => invokeApprovedComputerAction("computer_mouse_move", { x, y }, {
+            action: "Move mouse pointer",
+            details: `Move pointer to ${x}, ${y}.`,
+            target: { x, y, width: 28, height: 28 }
+        }),
+        click: (button = "left") => invokeApprovedComputerAction("computer_mouse_click", { button }, {
+            action: "Mouse click",
+            details: `Perform a ${button} click at the current pointer position.`
+        }),
+        type: (text) => invokeApprovedComputerAction("computer_type", { text }, {
+            action: "Type text",
+            details: `Type ${String(text || "").length} character${String(text || "").length === 1 ? "" : "s"} into the focused application.`
+        }),
+        key: (key) => invokeApprovedComputerAction("computer_key", { key }, {
+            action: "Press keyboard key",
+            details: `Send key: ${key}.`
+        }),
+        findText: (text) => invoke("computer_find_text", { text })
+    };
+}
+
 // Initialize Plugins Manager event handlers
 initPluginsManager();
+initComputerUse();
 
 
 
@@ -5811,7 +6172,7 @@ function renderNotificationsList() {
     if (!container) return;
     
     if (state.notifications.length === 0) {
-        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No state.notifications.</div>`;
+        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications yet.</div>`;
         return;
     }
     
@@ -8288,6 +8649,7 @@ function initDocsView() {
             indexBtn.textContent = 'Indexing…';
             await invoke('index_directory', { path: dir.trim() });
             await refreshFileList();
+            if (window.addNotification) window.addNotification('Docs Indexed', `Folder indexed: ${dir.trim().split(/[\\/]/).pop()}`, 'success');
         } catch (err) {
             alert(`Indexing failed: ${err}`);
         } finally {
