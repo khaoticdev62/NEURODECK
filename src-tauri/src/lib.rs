@@ -1031,6 +1031,7 @@ pub fn run() {
             git::git_stage_all,
             git::git_commit,
             git::generate_commit_message,
+            git::review_code,
             workflow::list_workflows,
             workflow::load_workflow,
             workflow::save_workflow,

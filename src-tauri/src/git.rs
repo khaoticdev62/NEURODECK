@@ -284,3 +284,67 @@ pub async fn generate_commit_message(
 
     Ok(cleaned)
 }
+
+// ── AI Code Review ─────────────────────────────────────────────────────────
+
+/// Review code and return a JSON array of findings:
+/// `[{ "line": N, "severity": "error"|"warning"|"info", "category": "...", "message": "..." }]`
+#[tauri::command]
+pub async fn review_code(
+    code: String,
+    lang: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        std::sync::Arc::clone(&app.provider)
+    };
+
+    if code.trim().is_empty() {
+        return Err("No code to review".to_string());
+    }
+
+    let code_preview = if code.len() > 4000 {
+        format!("{}… [truncated at 4000 chars]", &code[..4000])
+    } else {
+        code.clone()
+    };
+
+    let prompt = format!(
+        "You are a senior code reviewer. Review the following {} code and identify bugs, \
+         security issues, performance problems, and style concerns.\n\
+         Output ONLY valid JSON — no markdown, no explanation:\n\
+         {{\"findings\":[{{\"line\":1,\"severity\":\"error\",\"category\":\"bug\",\"message\":\"description\"}}]}}\n\
+         Rules:\n\
+         - severity: \"error\" (crash/security), \"warning\" (logic/perf), \"info\" (style/suggestion)\n\
+         - category: \"bug\", \"security\", \"performance\", \"style\", \"logic\"\n\
+         - line: best estimate of affected line number (1-based), or 0 if file-wide\n\
+         - message: concise, actionable description (max 120 chars)\n\
+         - 3-10 findings maximum; omit trivial nits\n\
+         - If code is correct and clean, return {{\"findings\":[]}}\n\n\
+         Language: {}\n\
+         Code:\n```\n{}\n```",
+        lang, lang, code_preview
+    );
+
+    let raw = provider.generate_oneshot(&prompt, 800).await?;
+
+    // Strip markdown fences and find the JSON object
+    let s = raw.trim();
+    let inner = if let Some(start) = s.find("```") {
+        let after = &s[start + 3..];
+        let after = if after.starts_with("json") { &after[4..] } else { after };
+        if let Some(end) = after.find("```") { &after[..end] } else { after }
+    } else {
+        s
+    };
+    let trimmed = inner.trim();
+    let start = trimmed.find('{').unwrap_or(0);
+    let json_str = &trimmed[start..];
+
+    // Validate it parses
+    serde_json::from_str::<serde_json::Value>(json_str)
+        .map_err(|e| format!("Review JSON parse error: {} — raw: {}", e, &json_str[..json_str.len().min(200)]))?;
+
+    Ok(json_str.to_string())
+}

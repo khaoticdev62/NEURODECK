@@ -507,6 +507,7 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
                         <button class="canvas-btn" id="canvas-clear-btn">Clear</button>
                         <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">✦ AI Edit</button>
+                        <button class="canvas-btn canvas-btn-review" id="canvas-review-btn" title="AI Code Review">🔍 Review</button>
                         <button class="canvas-btn canvas-btn-git" id="canvas-git-btn" title="Git panel">⑂ Git</button>
                         <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
@@ -551,6 +552,21 @@ document.querySelector('#app').innerHTML = `
                             </div>
                         </div>
                     </div>
+                    <!-- AI Code Review slide-in panel -->
+                    <div id="canvas-review-panel" class="canvas-review-panel">
+                        <div class="review-panel-header">
+                            <span class="review-panel-title">🔍 AI Code Review</span>
+                            <div class="review-summary" id="review-summary"></div>
+                            <button class="canvas-btn canvas-btn-sm" id="canvas-review-close" title="Close">✕</button>
+                        </div>
+                        <div class="review-panel-body" id="review-panel-body">
+                            <div class="review-empty-state" id="review-empty-state">
+                                <div class="review-empty-icon">🔍</div>
+                                <p>Click <strong>🔍 Review</strong> in the toolbar to run AI code analysis on the current code.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
                         <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
                         <span id="canvas-collab-status-text" style="color:var(--response-color);">Collab Active: Syncing edits live</span>
@@ -3020,8 +3036,11 @@ function getGamepadFocusableElements() {
         "#view-canvas.active #canvas-clear-btn",
         "#view-canvas.active #canvas-copy-btn",
         "#view-canvas.active #canvas-lang-select",
+        "#view-canvas.active #canvas-review-btn",
         "#view-canvas.active #canvas-collab-btn",
         "#view-canvas.active #canvas-git-btn",
+        "#canvas-review-panel.open #canvas-review-close",
+        "#canvas-review-panel.open .review-finding-row",
 
         // Canvas Git Panel (when open)
         "#canvas-git-panel.open #git-path-input",

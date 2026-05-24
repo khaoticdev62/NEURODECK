@@ -687,6 +687,153 @@ function initCanvasCollab() {
 
 
 
+// ==========================================================================
+// AI CODE REVIEW PANEL
+// ==========================================================================
+
+const SEVERITY_CONFIG = {
+    error:   { icon: '✗', label: 'Error',   cls: 'review-sev-error' },
+    warning: { icon: '⚠', label: 'Warning', cls: 'review-sev-warning' },
+    info:    { icon: 'ℹ', label: 'Info',    cls: 'review-sev-info' },
+};
+
+const CATEGORY_ICON = {
+    bug: '🐛', security: '🔐', performance: '⚡', style: '✏️', logic: '🧩',
+};
+
+export function initCodeReview() {
+    const reviewBtn   = document.getElementById('canvas-review-btn');
+    const reviewPanel = document.getElementById('canvas-review-panel');
+    const closeBtn    = document.getElementById('canvas-review-close');
+    const bodyEl      = document.getElementById('review-panel-body');
+    const summaryEl   = document.getElementById('review-summary');
+
+    if (!reviewBtn || !reviewPanel) return;
+
+    function openPanel() {
+        reviewPanel.classList.add('open');
+        // Close git panel if open
+        const gitPanel = document.getElementById('canvas-git-panel');
+        if (gitPanel && gitPanel.classList.contains('open')) {
+            gitPanel.classList.remove('open');
+        }
+    }
+
+    function closePanel() {
+        reviewPanel.classList.remove('open');
+    }
+
+    closeBtn && closeBtn.addEventListener('click', closePanel);
+
+    function setLoading(on) {
+        reviewBtn.disabled = on;
+        reviewBtn.textContent = on ? '⟳ Analyzing…' : '🔍 Review';
+        if (on) {
+            bodyEl.innerHTML = `
+                <div class="review-loading">
+                    <div class="review-spinner"></div>
+                    <span>Analyzing code with AI…</span>
+                </div>`;
+            summaryEl.innerHTML = '';
+        }
+    }
+
+    function renderFindings(findings) {
+        if (!findings || findings.length === 0) {
+            bodyEl.innerHTML = `
+                <div class="review-clean">
+                    <div class="review-clean-icon">✓</div>
+                    <div class="review-clean-msg">No issues found — code looks clean!</div>
+                </div>`;
+            summaryEl.innerHTML = '<span class="review-badge review-badge-clean">✓ Clean</span>';
+            return;
+        }
+
+        // Count by severity
+        const counts = { error: 0, warning: 0, info: 0 };
+        findings.forEach(f => { counts[f.severity] = (counts[f.severity] || 0) + 1; });
+
+        const parts = [];
+        if (counts.error)   parts.push(`<span class="review-badge review-badge-error">${counts.error} error${counts.error > 1 ? 's' : ''}</span>`);
+        if (counts.warning) parts.push(`<span class="review-badge review-badge-warning">${counts.warning} warning${counts.warning > 1 ? 's' : ''}</span>`);
+        if (counts.info)    parts.push(`<span class="review-badge review-badge-info">${counts.info} note${counts.info > 1 ? 's' : ''}</span>`);
+        summaryEl.innerHTML = parts.join('');
+
+        // Sort: errors first
+        const ORDER = { error: 0, warning: 1, info: 2 };
+        const sorted = [...findings].sort((a, b) => (ORDER[a.severity] ?? 2) - (ORDER[b.severity] ?? 2));
+
+        bodyEl.innerHTML = '';
+        sorted.forEach(f => {
+            const sev = SEVERITY_CONFIG[f.severity] || SEVERITY_CONFIG.info;
+            const catIcon = CATEGORY_ICON[f.category] || '•';
+            const row = document.createElement('div');
+            row.className = `review-finding-row ${sev.cls}`;
+            row.dataset.line = f.line || 0;
+            row.innerHTML = `
+                <div class="review-finding-top">
+                    <span class="review-sev-icon">${sev.icon}</span>
+                    <span class="review-cat-icon" title="${escapeHtmlLocal(f.category || '')}">${catIcon}</span>
+                    ${f.line > 0 ? `<span class="review-line-badge">L${f.line}</span>` : ''}
+                    <span class="review-cat-label">${escapeHtmlLocal(f.category || 'general')}</span>
+                </div>
+                <div class="review-finding-msg">${escapeHtmlLocal(f.message || '')}</div>`;
+
+            // Click line badge to jump to line in editor
+            if (f.line > 0) {
+                row.addEventListener('click', () => {
+                    if (monacoEditor) {
+                        monacoEditor.revealLineInCenter(f.line);
+                        monacoEditor.setPosition({ lineNumber: f.line, column: 1 });
+                        monacoEditor.focus();
+                    }
+                });
+                row.style.cursor = 'pointer';
+                row.title = `Jump to line ${f.line}`;
+            }
+
+            bodyEl.appendChild(row);
+        });
+    }
+
+    function escapeHtmlLocal(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    reviewBtn.addEventListener('click', async () => {
+        const lang = document.getElementById('canvas-lang-select')?.value || 'text';
+        const code = monacoEditor
+            ? monacoEditor.getValue()
+            : (window.neurodeckCanvas?.currentCode || '');
+        if (!code.trim()) {
+            openPanel();
+            bodyEl.innerHTML = '<div class="review-empty-state"><div class="review-empty-icon">✏️</div><p>Write some code first, then click Review.</p></div>';
+            summaryEl.innerHTML = '';
+            return;
+        }
+
+        openPanel();
+        setLoading(true);
+
+        try {
+            const raw = await invoke('review_code', { code, lang });
+            const parsed = JSON.parse(raw);
+            const findings = parsed.findings || [];
+            renderFindings(findings);
+        } catch (err) {
+            bodyEl.innerHTML = `<div class="review-empty-state" style="color:var(--error-color)">
+                <div class="review-empty-icon">✗</div>
+                <p>Review failed: ${escapeHtmlLocal(String(err))}</p>
+            </div>`;
+            summaryEl.innerHTML = '';
+        } finally {
+            setLoading(false);
+        }
+    });
+}
+
 export {
     buildPreviewDoc,
     renderCanvasPreview,
@@ -698,4 +845,5 @@ export {
 export function initCanvas() {
     initCanvasView();
     initCanvasCollab();
+    initCodeReview();
 }
