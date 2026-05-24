@@ -19,6 +19,7 @@ mod doc_indexer;
 pub mod scheduler;
 pub mod git;
 pub mod workflow;
+pub mod orchestrator;
 pub mod commands;
 use crate::commands::*;
 
@@ -817,6 +818,7 @@ pub fn run() {
         .manage(remote_control::RemoteControlState::default())
         .manage(transfer::SharedTransferState(Arc::new(Mutex::new(transfer::TransferState::new()))))
         .manage(scheduler_managed)
+        .manage(orchestrator::OrchestratorManaged::new())
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
@@ -1033,6 +1035,9 @@ pub fn run() {
             workflow::load_workflow,
             workflow::save_workflow,
             workflow::delete_workflow,
+            orchestrator::start_orchestrated_task,
+            orchestrator::get_orchestration_status,
+            orchestrator::stop_orchestration,
         ])
         .run(tauri::generate_context!())
 

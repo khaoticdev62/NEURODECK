@@ -962,6 +962,7 @@ document.querySelector('#app').innerHTML = `
                     <div class="agent-mode-bar">
                         <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
                         <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
+                        <button class="agent-mode-btn" id="agent-mode-orchestrate" data-mode="orchestrate">🔀 Orchestrate</button>
                     </div>
 
                     <!-- Task mode toolbar -->
@@ -990,6 +991,28 @@ document.querySelector('#app').innerHTML = `
                             </select>
                             <button class="agent-btn agent-btn-run" id="rt-start-btn">▶ Start</button>
                             <button class="agent-btn agent-btn-stop hidden" id="rt-stop-btn">■ Stop</button>
+                        </div>
+                    </div>
+
+                    <!-- Orchestrate mode panel -->
+                    <div class="agent-toolbar hidden" id="agent-toolbar-orchestrate">
+                        <input type="text" id="orch-goal-input" class="agent-task-input" placeholder="Describe a complex goal… e.g. Research and implement a REST API for user authentication">
+                        <button class="agent-btn agent-btn-run" id="orch-start-btn">▶ Orchestrate</button>
+                        <button class="agent-btn agent-btn-stop hidden" id="orch-stop-btn">■ Stop</button>
+                    </div>
+                    <div class="orch-panel hidden" id="orch-panel">
+                        <div class="orch-cards-wrap" id="orch-cards-wrap">
+                            <div class="orch-cards-header">
+                                <span class="orch-cards-title" id="orch-cards-title">Agent Tasks</span>
+                                <span class="orch-status-badge" id="orch-status-badge"></span>
+                            </div>
+                            <div class="orch-cards" id="orch-cards"></div>
+                        </div>
+                        <div class="orch-synthesis-wrap" id="orch-synthesis-wrap">
+                            <div class="orch-synthesis-header">Synthesis</div>
+                            <div class="orch-synthesis-body" id="orch-synthesis-body">
+                                <span class="orch-synthesis-empty">Awaiting agent results…</span>
+                            </div>
                         </div>
                     </div>
 
@@ -3080,6 +3103,10 @@ function getGamepadFocusableElements() {
         "#view-agent.active #agent-run-btn",
         "#view-agent.active #agent-stop-btn",
         "#view-agent.active #agent-send-canvas-btn",
+        "#view-agent.active #orch-goal-input",
+        "#view-agent.active #orch-start-btn",
+        "#view-agent.active #orch-stop-btn",
+        "#view-agent.active .agent-mode-btn",
 
         // Remote View
         "#view-remote.active #remote-port-input",
@@ -5073,6 +5100,10 @@ function initAgentView() {
         });
     }
 
+    const toolbarOrch = document.getElementById('agent-toolbar-orchestrate');
+    const orchPanel = document.getElementById('orch-panel');
+    const agentBody = document.querySelector('#view-agent .agent-body');
+
     modeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             modeBtns.forEach(b => b.classList.remove('active'));
@@ -5080,6 +5111,9 @@ function initAgentView() {
             const mode = btn.dataset.mode;
             toolbarTask.classList.toggle('hidden', mode !== 'task');
             toolbarRt.classList.toggle('hidden', mode !== 'roundtable');
+            if (toolbarOrch) toolbarOrch.classList.toggle('hidden', mode !== 'orchestrate');
+            if (orchPanel) orchPanel.classList.toggle('hidden', mode !== 'orchestrate');
+            if (agentBody) agentBody.classList.toggle('hidden', mode === 'orchestrate');
             if (mode === 'roundtable') {
                 invoke('get_personas').then(p => {
                     state.availablePersonas = p;
@@ -5192,6 +5226,135 @@ function initAgentView() {
         cleanupRtListeners();
         setRtRunning(false);
         appendLog('info', 'Roundtable stopped by user.');
+    });
+
+    // === ORCHESTRATE MODE ===
+    const orchGoalInput   = document.getElementById('orch-goal-input');
+    const orchStartBtn    = document.getElementById('orch-start-btn');
+    const orchStopBtn     = document.getElementById('orch-stop-btn');
+    const orchCards       = document.getElementById('orch-cards');
+    const orchCardsTitle  = document.getElementById('orch-cards-title');
+    const orchStatusBadge = document.getElementById('orch-status-badge');
+    const orchSynthBody   = document.getElementById('orch-synthesis-body');
+
+    let orchUnlistens = [];
+
+    function orchCleanupListeners() {
+        orchUnlistens.forEach(fn => fn && fn());
+        orchUnlistens = [];
+    }
+
+    function orchSetRunning(on) {
+        orchStartBtn.classList.toggle('hidden', on);
+        orchStopBtn.classList.toggle('hidden', !on);
+        orchGoalInput.disabled = on;
+        orchStatusBadge.textContent = on ? '⟳ Running…' : '';
+        orchStatusBadge.className = 'orch-status-badge' + (on ? ' orch-badge-running' : '');
+    }
+
+    function orchRenderCard(task) {
+        let card = document.getElementById(`orch-card-${task.id}`);
+        if (!card) {
+            card = document.createElement('div');
+            card.id = `orch-card-${task.id}`;
+            card.className = 'orch-card';
+            orchCards.appendChild(card);
+        }
+        const statusClass = {
+            pending: 'orch-card-pending',
+            running: 'orch-card-running',
+            done:    'orch-card-done',
+            error:   'orch-card-error',
+        }[task.status] || 'orch-card-pending';
+
+        const statusIcon = { pending: '⏳', running: '⟳', done: '✓', error: '✗' }[task.status] || '⏳';
+        const resultSnippet = task.result
+            ? `<div class="orch-card-result">${escapeHtml(task.result.slice(0, 200))}${task.result.length > 200 ? '…' : ''}</div>`
+            : (task.error ? `<div class="orch-card-error-msg">${escapeHtml(task.error)}</div>` : '');
+
+        card.className = `orch-card ${statusClass}`;
+        card.innerHTML = `
+            <div class="orch-card-header">
+                <span class="orch-card-role">${escapeHtml(task.role)}</span>
+                <span class="orch-card-status-icon">${statusIcon}</span>
+            </div>
+            <div class="orch-card-id">${escapeHtml(task.id)}</div>
+            <div class="orch-card-goal">${escapeHtml(task.goal)}</div>
+            ${resultSnippet}`;
+    }
+
+    async function startOrchestration() {
+        const goal = orchGoalInput ? orchGoalInput.value.trim() : '';
+        if (!goal) { orchGoalInput && orchGoalInput.focus(); return; }
+
+        orchCards.innerHTML = '';
+        orchSynthBody.innerHTML = '<span class="orch-synthesis-empty">Awaiting agent results…</span>';
+        orchCardsTitle.textContent = 'Generating plan…';
+        orchSetRunning(true);
+        orchCleanupListeners();
+
+        orchUnlistens.push(await listen('orchestrator_plan_ready', ({ payload }) => {
+            if (!payload || !payload.tasks) return;
+            orchCardsTitle.textContent = `${payload.tasks.length} Agents — ${escapeHtml(payload.goal).slice(0, 60)}`;
+            orchCards.innerHTML = '';
+            payload.tasks.forEach(t => orchRenderCard(t));
+        }));
+
+        orchUnlistens.push(await listen('agent_task_started', ({ payload }) => {
+            if (!payload) return;
+            orchRenderCard({ id: payload.id, role: payload.role, goal: '', status: 'running' });
+        }));
+
+        orchUnlistens.push(await listen('agent_task_done', ({ payload }) => {
+            if (!payload) return;
+            orchRenderCard({
+                id: payload.id,
+                role: payload.role,
+                goal: '',
+                status: payload.error ? 'error' : 'done',
+                result: payload.result || null,
+                error: payload.error || null,
+            });
+        }));
+
+        orchUnlistens.push(await listen('orchestration_complete', ({ payload }) => {
+            orchCleanupListeners();
+            orchSetRunning(false);
+            orchStatusBadge.textContent = `✓ Done — ${payload.task_count} agents`;
+            orchStatusBadge.className = 'orch-status-badge orch-badge-done';
+            if (payload.summary) {
+                orchSynthBody.innerHTML = '';
+                const pre = document.createElement('div');
+                pre.className = 'orch-synthesis-text';
+                pre.textContent = payload.summary;
+                orchSynthBody.appendChild(pre);
+            }
+            // Refresh task cards with final status from backend
+            invoke('get_orchestration_status').then(st => {
+                if (st && st.tasks) st.tasks.forEach(t => orchRenderCard(t));
+            }).catch(() => {});
+            addNotification('Orchestrator', `Completed: ${(payload.goal || '').slice(0,50)}`, 'success');
+        }));
+
+        invoke('start_orchestrated_task', { goal }).catch(e => {
+            orchCleanupListeners();
+            orchSetRunning(false);
+            orchStatusBadge.textContent = '✗ Error';
+            orchStatusBadge.className = 'orch-status-badge orch-badge-error';
+            orchSynthBody.innerHTML = `<span class="orch-synthesis-empty" style="color:var(--error-color)">Error: ${escapeHtml(String(e))}</span>`;
+        });
+    }
+
+    if (orchStartBtn) orchStartBtn.addEventListener('click', () => startOrchestration());
+    if (orchStopBtn) orchStopBtn.addEventListener('click', () => {
+        invoke('stop_orchestration').catch(() => {});
+        orchCleanupListeners();
+        orchSetRunning(false);
+        orchStatusBadge.textContent = '■ Stopped';
+        orchStatusBadge.className = 'orch-status-badge orch-badge-error';
+    });
+    if (orchGoalInput) orchGoalInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startOrchestration(); }
     });
 }
 
