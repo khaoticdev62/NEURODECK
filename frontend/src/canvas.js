@@ -386,6 +386,111 @@ function initCanvasView() {
         });
     }
 
+    let execLineUnlisten = null;
+    let execDoneUnlisten = null;
+    let execRunning = false;
+    let cancelBtn = document.getElementById("canvas-cancel-exec-btn");
+    if (!cancelBtn && runBtn) {
+        cancelBtn = document.createElement("button");
+        cancelBtn.className = "canvas-btn canvas-btn-sm";
+        cancelBtn.id = "canvas-cancel-exec-btn";
+        cancelBtn.textContent = "■ Cancel";
+        cancelBtn.style.display = "none";
+        cancelBtn.style.borderColor = "var(--error-color)";
+        cancelBtn.style.color = "var(--error-color)";
+        runBtn.insertAdjacentElement("afterend", cancelBtn);
+    }
+
+    function stopExecListeners() {
+        if (execLineUnlisten) {
+            execLineUnlisten();
+            execLineUnlisten = null;
+        }
+        if (execDoneUnlisten) {
+            execDoneUnlisten();
+            execDoneUnlisten = null;
+        }
+    }
+
+    function setExecRunning(running) {
+        execRunning = running;
+        if (runBtn) {
+            runBtn.disabled = running;
+            runBtn.textContent = running ? "⚡ Running..." : "▶ Run";
+        }
+        if (cancelBtn) {
+            cancelBtn.style.display = running ? "inline-block" : "none";
+        }
+    }
+
+    async function runStreamingExec(code, lang, outputPre) {
+        if (execRunning) return;
+
+        const frame = document.getElementById("canvas-preview-frame");
+        if (frame) frame.style.display = "none";
+        if (outputPre) {
+            outputPre.style.display = "block";
+            outputPre.textContent = "";
+        }
+
+        stopExecListeners();
+        setExecRunning(true);
+
+        const lineListener = await listen("canvas_exec_line", (event) => {
+            if (!outputPre) return;
+            const payload = event.payload || {};
+            const prefix = payload.stream === "stderr" ? "[err] " : "";
+            outputPre.textContent += `${prefix}${payload.line || ""}\n`;
+            outputPre.scrollTop = outputPre.scrollHeight;
+        });
+        const doneListener = await listen("canvas_exec_done", (event) => {
+            const payload = event.payload || {};
+            const exitCode = Number.isFinite(payload.exit_code) ? payload.exit_code : -1;
+            const durationMs = Number.isFinite(payload.duration_ms) ? payload.duration_ms : 0;
+            const duration = durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`;
+
+            if (outputPre) {
+                outputPre.textContent += `\n--- exited ${exitCode} (${duration}) ---`;
+                outputPre.scrollTop = outputPre.scrollHeight;
+            }
+
+            stopExecListeners();
+            setExecRunning(false);
+            if (runBtn) {
+                runBtn.textContent = exitCode === 0 ? "✓ Done" : "❌ Failed";
+                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+            }
+            if (typeof window.addNotification === "function") {
+                window.addNotification("Canvas Exec", `Finished in ${duration} (exit ${exitCode})`, exitCode === 0 ? "success" : "error");
+            }
+        });
+        execLineUnlisten = lineListener;
+        execDoneUnlisten = doneListener;
+
+        try {
+            await invoke("exec_code_stream", { code, lang });
+        } catch (err) {
+            stopExecListeners();
+            setExecRunning(false);
+            if (outputPre) outputPre.textContent = `Error executing code:\n${err}`;
+            if (runBtn) {
+                runBtn.textContent = "❌ Failed";
+                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+            }
+        }
+    }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = async () => {
+            cancelBtn.disabled = true;
+            try {
+                await invoke("cancel_exec");
+            } finally {
+                cancelBtn.disabled = false;
+            }
+        };
+    }
+
     // Run button
     if (runBtn) {
         runBtn.onclick = () => {
@@ -393,29 +498,8 @@ function initCanvasView() {
             const code = monacoEditor ? monacoEditor.getValue() : '';
             const outputPre = document.getElementById("canvas-preview-output");
 
-            if (lang === 'python' || lang === 'bash') {
-                runBtn.textContent = "⚡ Running...";
-                runBtn.disabled = true;
-                if (outputPre) outputPre.textContent = "Executing code on system...\n";
-
-                invoke("agent_exec_code", { code, lang })
-                    .then(res => {
-                        if (outputPre) {
-                            const frame = document.getElementById("canvas-preview-frame");
-                            if (frame) frame.style.display = 'none';
-                            outputPre.style.display = 'block';
-                            outputPre.textContent = res;
-                        }
-                        runBtn.textContent = "✓ Done";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    })
-                    .catch(err => {
-                        if (outputPre) outputPre.textContent = `Error executing code:\n${err}`;
-                        runBtn.textContent = "❌ Failed";
-                        runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
-                    });
+            if (['python', 'bash', 'powershell', 'javascript', 'js'].includes(lang)) {
+                runStreamingExec(code, lang, outputPre);
             } else if (lang === 'lua') {
                 runBtn.textContent = "⚡ Running...";
                 runBtn.disabled = true;

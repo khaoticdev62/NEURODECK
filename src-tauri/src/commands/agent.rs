@@ -4,6 +4,7 @@ use std::process::Stdio;
 use tauri::{AppHandle, Emitter, State};
 use futures_util::StreamExt;
 use std::sync::Mutex;
+use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
 
 // ─── Multi-Agent Switching ────────────────────────────────────────────────────
 
@@ -365,4 +366,157 @@ pub async fn agent_exec_code(code: String, lang: String) -> Result<String, Strin
         Ok(Err(join_err)) => Err(format!("Task panicked: {}", join_err)),
         Err(_) => Err("Execution timed out (30s limit exceeded)".to_string()),
     }
+}
+
+/// Start streaming execution of code from the Canvas view.
+/// Emits `canvas_exec_line` for stdout/stderr lines and `canvas_exec_done`
+/// when the child exits, is cancelled, or times out.
+#[tauri::command]
+pub async fn exec_code_stream(
+    code: String,
+    lang: String,
+    state: State<'_, Mutex<AppState>>,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
+        "python" | "python3" => {
+            if cfg!(target_os = "windows") {
+                ("python", vec!["-c", &code])
+            } else {
+                ("python3", vec!["-c", &code])
+            }
+        }
+        "bash" | "sh" | "shell" => {
+            if cfg!(target_os = "windows") {
+                ("powershell", vec!["-Command", &code])
+            } else {
+                ("bash", vec!["-c", &code])
+            }
+        }
+        "powershell" => ("powershell", vec!["-Command", &code]),
+        "javascript" | "js" | "node" => ("node", vec!["-e", &code]),
+        _ => return Err(format!("Unsupported language: {lang}")),
+    };
+
+    {
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
+            let _ = cancel_tx.send(());
+        }
+    }
+
+    let program_owned = program.to_string();
+    let args_owned: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+    {
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.canvas_exec_cancel_tx = Some(cancel_tx);
+    }
+
+    tokio::spawn(async move {
+        let start = std::time::Instant::now();
+        let mut child = match tokio::process::Command::new(&program_owned)
+            .args(&args_owned)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(child) => child,
+            Err(e) => {
+                emit_canvas_exec_line(
+                    &app_handle,
+                    "stderr",
+                    format!("[error] Failed to spawn '{program_owned}': {e}"),
+                );
+                emit_canvas_exec_done(&app_handle, -1, start);
+                return;
+            }
+        };
+
+        let Some(stdout) = child.stdout.take() else {
+            emit_canvas_exec_line(&app_handle, "stderr", "[error] Failed to capture stdout.");
+            let _ = child.kill().await;
+            emit_canvas_exec_done(&app_handle, -1, start);
+            return;
+        };
+        let Some(stderr) = child.stderr.take() else {
+            emit_canvas_exec_line(&app_handle, "stderr", "[error] Failed to capture stderr.");
+            let _ = child.kill().await;
+            emit_canvas_exec_done(&app_handle, -1, start);
+            return;
+        };
+
+        let stdout_handle = spawn_canvas_reader(app_handle.clone(), stdout, "stdout");
+        let stderr_handle = spawn_canvas_reader(app_handle.clone(), stderr, "stderr");
+
+        let exit_code = tokio::select! {
+            status = child.wait() => status.ok().and_then(|s| s.code()).unwrap_or(-1),
+            _ = &mut cancel_rx => {
+                let _ = child.kill().await;
+                emit_canvas_exec_line(&app_handle, "stderr", "[cancelled] Execution cancelled by user.");
+                -3
+            }
+            _ = tokio::time::sleep(std::time::Duration::from_secs(120)) => {
+                let _ = child.kill().await;
+                emit_canvas_exec_line(&app_handle, "stderr", "[error] Execution timed out (120s limit).");
+                -2
+            }
+        };
+
+        let _ = tokio::join!(stdout_handle, stderr_handle);
+        emit_canvas_exec_done(&app_handle, exit_code, start);
+    });
+
+    Ok(())
+}
+
+/// Cancel the active streaming Canvas execution, if one exists.
+#[tauri::command]
+pub fn cancel_exec(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
+        let _ = cancel_tx.send(());
+    }
+    Ok(())
+}
+
+fn spawn_canvas_reader<T>(
+    app_handle: AppHandle,
+    stream: T,
+    stream_name: &'static str,
+) -> tokio::task::JoinHandle<()>
+where
+    T: tokio::io::AsyncRead + Unpin + Send + 'static,
+{
+    tokio::spawn(async move {
+        let mut lines = TokioBufReader::new(stream).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            emit_canvas_exec_line(&app_handle, stream_name, line);
+        }
+    })
+}
+
+fn emit_canvas_exec_line(app_handle: &AppHandle, stream: &str, line: impl Into<String>) {
+    let _ = app_handle.emit(
+        "canvas_exec_line",
+        serde_json::json!({
+            "stream": stream,
+            "line": line.into(),
+        }),
+    );
+}
+
+fn emit_canvas_exec_done(
+    app_handle: &AppHandle,
+    exit_code: i32,
+    start: std::time::Instant,
+) {
+    let _ = app_handle.emit(
+        "canvas_exec_done",
+        serde_json::json!({
+            "exit_code": exit_code,
+            "duration_ms": start.elapsed().as_millis() as u64,
+        }),
+    );
 }

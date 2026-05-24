@@ -232,6 +232,8 @@ pub struct AppState {
     // P19 — Live Canvas Collab
     pub(crate) collab_abort: Option<tokio::task::AbortHandle>,
     pub(crate) collab_tx: Option<tokio::sync::mpsc::Sender<String>>,
+    // Canvas streaming execution cancellation.
+    pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -785,6 +787,7 @@ pub fn run() {
         whisper_model,
         collab_abort: None,
         collab_tx: None,
+        canvas_exec_cancel_tx: None,
     };
 
     tauri::Builder::default()
@@ -888,6 +891,8 @@ pub fn run() {
             get_game_context,
             agent_step,
             agent_exec_code,
+            agent::exec_code_stream,
+            agent::cancel_exec,
             ai_edit_code,
             list_agents,
             get_active_agent_id,
