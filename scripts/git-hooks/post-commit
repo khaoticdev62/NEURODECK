@@ -14,11 +14,22 @@ SCRIPT="$ROOT/scripts/khaotic-init.sh"
 echo "[KFMS] Stamping build block..."
 bash "$SCRIPT" stamp
 
-# If meta.json changed, fold it into the commit via amend (no new commit created)
-if ! git diff --quiet HEAD -- infra/meta/meta.json 2>/dev/null; then
-    git add "$ROOT/infra/meta/meta.json"
+echo "[KFMS] Syncing derived artifacts..."
+bash "$SCRIPT" sync
+
+# If KFMS-managed files changed, fold them into the commit via amend (no new commit created)
+if ! git diff --quiet HEAD -- \
+    infra/meta/meta.json \
+    infra/telemetry/health.json \
+    infra/meta/CODENAME_REGISTRY.md \
+    docs/IMPLEMENTATION_PLAN.md 2>/dev/null; then
+    git add \
+        "$ROOT/infra/meta/meta.json" \
+        "$ROOT/infra/telemetry/health.json" \
+        "$ROOT/infra/meta/CODENAME_REGISTRY.md" \
+        "$ROOT/docs/IMPLEMENTATION_PLAN.md"
     KFMS_HOOK_RUNNING=1 git commit --amend --no-edit --quiet
-    echo "[KFMS] meta.json amend applied."
+    echo "[KFMS] KFMS artifact amend applied."
 fi
 
 echo "[KFMS] Validating metadata..."

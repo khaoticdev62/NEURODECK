@@ -4,6 +4,18 @@
 
 ---
 
+## KFMS Snapshot
+
+<!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
+- Version: `1.2.0`
+- Codename: `Ra`
+- Tag: `v1.2.0-ra`
+- Workspace state: `manual-uncommitted`
+- Last stamped build: `2026-05-24T23:39:17Z`
+<!-- KFMS:PLAN_SNAPSHOT:END -->
+
+---
+
 ## Execution Model
 
 NEURODECK uses a solo-dev sprint model: one sprint at a time, one shippable feature per sprint, verified before commit, and pushed to GitHub after major updates.
