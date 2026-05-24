@@ -1072,7 +1072,7 @@ window.addEventListener("keydown", function(e) {
                     div.className = "message user";
                     div.innerHTML = `
                         <div class="message-card">
-                            ${msgStr.substring(6)}
+                            ${window.sanitizeHtml(msgStr.substring(6))}
                         </div>
                     `;
                 } else if (msgStr.startsWith("AI: ")) {

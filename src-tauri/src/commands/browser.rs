@@ -12,6 +12,10 @@ pub async fn browser_open(
     use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
 
     let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+    let scheme = nav_url.scheme();
+    if scheme != "http" && scheme != "https" {
+        return Err("Only http/https URLs are permitted".into());
+    }
 
     let main_win = app
         .get_webview_window("main")
@@ -54,6 +58,10 @@ pub async fn browser_open(
 pub fn browser_navigate(app: AppHandle, url: String) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("browser-view") {
         let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+        let scheme = nav_url.scheme();
+        if scheme != "http" && scheme != "https" {
+            return Err("Only http/https URLs are permitted".into());
+        }
         win.navigate(nav_url).map_err(|e| e.to_string())?;
     }
     Ok(())

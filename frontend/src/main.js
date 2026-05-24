@@ -163,6 +163,16 @@ window.sanitizeHtml = function(html) {
     }
 };
 
+window.escapeHtml = function(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+};
+
 window.applyThemeColors = function(theme) {
     if (!theme) return;
     const bg = theme.Background || theme.background || '#000000';
@@ -3912,8 +3922,8 @@ function renderPeers(peers) {
         }
         item.innerHTML = `
             <div class="peer-info">
-                <span class="peer-name">${peer.hostname}</span>
-                <span class="peer-ip-os">${peer.ip} (${peer.os})</span>
+                <span class="peer-name">${window.escapeHtml(peer.hostname)}</span>
+                <span class="peer-ip-os">${window.escapeHtml(peer.ip)} (${window.escapeHtml(peer.os)})</span>
             </div>
             <span class="peer-status">Online</span>
         `;
@@ -4013,7 +4023,7 @@ function renderTransfers(transfers) {
 
         item.innerHTML = `
             <div class="transfer-header">
-                <span class="transfer-filename" title="${t.filename}">${t.filename}</span>
+                <span class="transfer-filename" title="${window.escapeHtml(t.filename)}">${window.escapeHtml(t.filename)}</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="transfer-status ${t.status.toLowerCase()}">${t.status}</span>
                     ${cancelBtnHtml}
@@ -5502,12 +5512,12 @@ function renderNotificationsList() {
     }
     
     container.innerHTML = state.notifications.map(n => `
-        <div class="notif-item ${n.type}">
+        <div class="notif-item ${window.escapeHtml(n.type)}">
             <div class="notif-item-header">
-                <span>${n.title}</span>
-                <span class="notif-item-time">${n.time}</span>
+                <span>${window.escapeHtml(n.title)}</span>
+                <span class="notif-item-time">${window.escapeHtml(n.time)}</span>
             </div>
-            <div class="notif-item-text">${n.text}</div>
+            <div class="notif-item-text">${window.escapeHtml(n.text)}</div>
         </div>
     `).join("");
 }
