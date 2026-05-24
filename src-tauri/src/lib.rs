@@ -22,15 +22,11 @@ use crate::commands::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::Manager;
 use chrono::Utc;
-use futures_util::StreamExt;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider};
 use crate::memory::MemoryDB;
-use crate::storage::{Session, load_session};
 
 #[derive(Clone, serde::Serialize)]
 pub(crate) struct Theme {

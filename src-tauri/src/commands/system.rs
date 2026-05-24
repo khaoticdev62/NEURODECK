@@ -4,11 +4,7 @@ use std::sync::Mutex;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use tauri::{AppHandle, Emitter, Manager, State};
-use chrono::Utc;
-use futures_util::StreamExt;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use crate::memory::MemoryDB;
-use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider};
 use neurodeck_core::ipc::{Intent, StatePatch};
 
 #[tauri::command]
