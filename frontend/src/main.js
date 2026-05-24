@@ -3321,16 +3321,17 @@ function showTpScrollIndicator(active) {
 // Controller Prompt Picker state (declared here so pollGamepads can reference it)
 
 const RADIAL_SEGMENTS = [
-    { icon: "💬", label: "Chat",     view: "chat"     },
-    { icon: "🎨", label: "Canvas",   view: "canvas"   },
-    { icon: "💻", label: "Terminal", view: "terminal" },
-    { icon: "🔑", label: "SSH",      view: "ssh"      },
-    { icon: "🔗", label: "Tunnel",   view: "tunnel"   },
-    { icon: "🌐", label: "Browser",  view: "browser"  },
-    { icon: "🤖", label: "Agent",    view: "agent"    },
-    { icon: "🧠", label: "Memory",   view: "memory"   },
-    { icon: "📤", label: "Share",    view: "share"    },
-    { icon: "📱", label: "Remote",   view: "remote"   },
+    { icon: "💬", label: "Chat",       view: "chat"       },
+    { icon: "🎨", label: "Canvas",     view: "canvas"     },
+    { icon: "💻", label: "Terminal",   view: "terminal"   },
+    { icon: "🔑", label: "SSH",        view: "ssh"        },
+    { icon: "🔗", label: "Tunnel",     view: "tunnel"     },
+    { icon: "🌐", label: "Browser",    view: "browser"    },
+    { icon: "🤖", label: "Agent",      view: "agent"      },
+    { icon: "🧠", label: "Memory",     view: "memory"     },
+    { icon: "📤", label: "Share",      view: "share"      },
+    { icon: "📱", label: "Remote",     view: "remote"     },
+    { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
 ];
 
 function getGamepadFocusableElements() {
