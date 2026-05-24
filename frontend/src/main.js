@@ -96,6 +96,7 @@ import { getCtrlPromptVisible, getCtrlPromptTemplateMode,
 import { initRemoteControl } from './remote_control_view.js';
 import { initGraphView, loadGraphData } from './graph_view.js';
 import { initSchedulerView } from './scheduler_view.js';
+import { initGitPanel } from './git_panel.js';
 
 window.neurodeckCanvas = {
     currentLang: 'html',
@@ -482,8 +483,49 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
                         <button class="canvas-btn" id="canvas-clear-btn">Clear</button>
                         <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">✦ AI Edit</button>
+                        <button class="canvas-btn canvas-btn-git" id="canvas-git-btn" title="Git panel">⑂ Git</button>
                         <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
+                    </div>
+
+                    <!-- Git slide-in panel -->
+                    <div id="canvas-git-panel" class="canvas-git-panel">
+                        <div class="git-panel-header">
+                            <div class="git-panel-tabs">
+                                <button class="git-tab-btn active" data-git-tab="changes">Changes</button>
+                                <button class="git-tab-btn" data-git-tab="log">Log</button>
+                            </div>
+                            <div class="git-path-row">
+                                <input type="text" id="git-path-input" class="git-path-input" placeholder="Repo path (default: .)">
+                                <button class="git-path-apply" id="git-path-apply" title="Apply path">↵</button>
+                            </div>
+                        </div>
+
+                        <div id="git-status-line" class="git-status-line"></div>
+
+                        <!-- Changes pane -->
+                        <div id="git-changes-pane" class="git-pane">
+                            <div class="git-file-list" id="git-changes-body">
+                                <div class="git-empty">Click ⑂ Git to load repository status.</div>
+                            </div>
+                            <div id="git-diff-preview" class="git-diff-preview" style="display:none;"></div>
+                            <div class="git-actions">
+                                <button class="git-action-btn" id="git-stage-all-btn">Stage All</button>
+                                <button class="git-action-btn" id="git-stage-sel-btn">Stage Selected</button>
+                            </div>
+                            <div class="git-commit-row">
+                                <input type="text" id="git-commit-msg" class="git-commit-input" placeholder="Commit message…">
+                                <button class="git-action-btn git-gen-btn" id="git-gen-msg-btn" title="AI generate">✦</button>
+                                <button class="git-action-btn git-commit-btn" id="git-commit-btn">Commit</button>
+                            </div>
+                        </div>
+
+                        <!-- Log pane -->
+                        <div id="git-log-pane" class="git-pane" style="display:none;">
+                            <div class="git-log-list" id="git-log-body">
+                                <div class="git-empty">Switch to Log tab to load history.</div>
+                            </div>
+                        </div>
                     </div>
                     <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
                         <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
@@ -8105,3 +8147,4 @@ async function showOnboardingWizard() {
 initCtrlPromptPicker();
 initRemoteControl();
 initSchedulerView();
+initGitPanel();

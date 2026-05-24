@@ -17,6 +17,7 @@ mod remote_control;
 mod autocomplete;
 mod doc_indexer;
 pub mod scheduler;
+pub mod git;
 pub mod commands;
 use crate::commands::*;
 
@@ -1019,7 +1020,14 @@ pub fn run() {
             scheduler::add_scheduled_task,
             scheduler::delete_scheduled_task,
             scheduler::toggle_scheduled_task,
-            scheduler::run_task_now
+            scheduler::run_task_now,
+            git::git_status,
+            git::git_diff,
+            git::git_log,
+            git::git_stage,
+            git::git_stage_all,
+            git::git_commit,
+            git::generate_commit_message
         ])
         .run(tauri::generate_context!())
 
