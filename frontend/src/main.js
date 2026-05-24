@@ -605,22 +605,22 @@ document.querySelector('#app').innerHTML = `
                                     <button class="canvas-btn" id="tunnel-toggle-btn">Start Local Server</button>
                                 </div>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Host Command Executor</label>
-                                <div style="display:flex; gap:10px;">
+                                <div class="input-row">
                                     <input type="text" class="tunnel-text-input" id="tunnel-cmd-input" placeholder="e.g. echo 'Hello from S-Term' > test.txt">
                                     <button class="send-prompt-btn" id="tunnel-cmd-send">Execute</button>
                                 </div>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Write Host File</label>
                                 <input type="text" class="tunnel-text-input" id="tunnel-filepath-input" placeholder="File path (e.g. /home/deck/Desktop/note.txt)" style="margin-bottom: 8px;">
                                 <textarea class="tunnel-text-area" id="tunnel-filecontent-input" placeholder="File content..." rows="3"></textarea>
                                 <button class="send-prompt-btn" id="tunnel-file-send" style="margin-top:8px;">Write File</button>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Query Host Directory</label>
-                                <div style="display:flex; gap:10px;">
+                                <div class="input-row">
                                     <input type="text" class="tunnel-text-input" id="tunnel-dirpath-input" placeholder="/home/deck">
                                     <button class="send-prompt-btn" id="tunnel-dir-send">Read Dir</button>
                                 </div>
@@ -637,6 +637,10 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- LAN File Sharing / SFTP / FTP View -->
                 <div class="view-content" id="view-share">
+                    <div class="share-view-header">
+                        <span class="share-view-title">📤 Share &amp; Transfer</span>
+                        <span class="share-view-subtitle">LAN · SFTP · FTP</span>
+                    </div>
                     <div class="share-inner-tabs">
                         <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
                         <button class="share-inner-tab" data-panel="sftp">🔒 SFTP</button>
@@ -647,29 +651,29 @@ document.querySelector('#app').innerHTML = `
                     <div class="share-panel-section active" id="share-panel-lan">
                         <div class="share-grid">
                             <div class="share-panel">
-                                <h3>LAN Discovery & Sending</h3>
-                                <p class="share-desc">Discovers S-Term instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
-                                <div class="setting-field-group" style="margin-bottom: 15px;">
+                                <h3>LAN Discovery &amp; Sending</h3>
+                                <p class="share-desc">Discovers NEURODECK instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
+                                <div class="setting-field-group">
                                     <label>Warpinator Group Code</label>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex: 1; box-sizing: border-box; height: 36px; margin: 0;">
-                                        <button class="send-prompt-btn" id="share-group-code-save-btn" style="margin: 0; height: 36px; padding: 0 15px; font-size: 12px; white-space: nowrap;">Apply</button>
+                                    <div class="input-row">
+                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex:1;">
+                                        <button class="send-prompt-btn" id="share-group-code-save-btn">Apply</button>
                                     </div>
                                 </div>
-                                <div class="setting-field-group">
+                                <div class="setting-field-group tunnel-section">
                                     <label>Active Peers on LAN</label>
                                     <div class="peers-list" id="share-peers-list">
                                         <div class="peer-item-empty">Scanning local network for active peers...</div>
                                     </div>
                                 </div>
-                                <div class="setting-field-group" style="margin-top: 15px;">
-                                    <label>Drag & Drop File or Select Path</label>
+                                <div class="setting-field-group tunnel-section">
+                                    <label>Drag &amp; Drop File or Select Path</label>
                                     <div class="share-dropzone" id="share-dropzone">
                                         <div class="dropzone-text">Drag files here or click to select a file</div>
                                     </div>
-                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top: 8px; width: 100%; box-sizing: border-box;">
+                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top:8px;width:100%;box-sizing:border-box;">
                                 </div>
-                                <button class="send-prompt-btn" id="share-send-btn" style="margin-top: 15px; width: 100%;" disabled>Send File 🚀</button>
+                                <button class="send-prompt-btn share-send-full" id="share-send-btn" disabled>Send File 🚀</button>
                             </div>
                             <div class="share-panel">
                                 <h3>File Transfer Queue</h3>

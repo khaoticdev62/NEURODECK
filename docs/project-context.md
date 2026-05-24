@@ -12,7 +12,7 @@
 | **Name** | NEURODECK |
 | **Type** | Tauri v2 Desktop Application |
 | **Platform targets** | Steam Deck (primary, 1280×800), Windows, Linux |
-| **Version** | 0.1.0 |
+| **Version** | 1.2.1 |
 | **Repo** | https://github.com/khaoticdev62/NEURODECK |
 | **Dev** | khaoticdev |
 
@@ -65,16 +65,19 @@ Frontend (`frontend/src/main.js`) ↔ Rust backend (`src-tauri/src/lib.rs`) via 
 
 ### Frontend Structure
 
-Single-file vanilla JS (`frontend/src/main.js`, ~3700 lines):
-- Chat UI with markdown rendering via `marked.js`
-- Terminal emulator via `xterm.js` + `xterm-addon-fit`
-- Live Canvas (CodePen-style split: code editor + iframe preview)
+Single-file vanilla JS (`frontend/src/main.js`, ~7000+ lines):
+- Chat UI with markdown rendering via `marked.js`; welcome screen with 6 feature-card starters
+- Terminal emulator via `xterm.js` + `xterm-addon-fit`; multi-session tab support (up to 5)
+- Live Canvas (split: code editor + iframe preview); Python/Bash exec via `agent_exec_code`
 - Autonomous Agent loop (LLM → exec → iterate, up to 5 steps)
 - Memory UI (search, filter, pin, delete, add facts)
-- Browser (sandboxed iframe with speed dial)
-- LAN file sharing + tunnel client
+- Browser (sandboxed iframe with speed dial homepage, 8 bookmarks)
+- LAN/SFTP/FTP file sharing + tunnel client + Remote Control server
+- Docs / Knowledge Base (semantic search over indexed local documents)
+- SSH tab (PTY + password/key auth + saved profiles)
+- PromptLab (AIDA/SCQA/PASTOR/CoT/ToT formula templates)
 
-Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base reset)
+Stylesheet: `frontend/src/app.css` (~9000+ lines), `frontend/src/style.css` (base reset)
 
 ---
 
@@ -125,6 +128,17 @@ Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base
 - Commands: `browser_open_session`, `browser_navigate_session`, `browser_get_content`, `browser_click`, `browser_fill`, `browser_screenshot`, `browser_evaluate_js`, `browser_close_session`
 - Agent loop supports `action: "browser"` tool execution path
 
+### Sprint 6.1 — Surface Elevation (Share & Tunnel)
+- Share view: glass-pill inner tab strip, view header, eliminated all inline styles, `.tunnel-section` separators
+- Tunnel view: `.tunnel-section` + `.input-row` CSS utility classes replace inline `style=""` attributes
+- `project-context.md` synced to v1.2.1, 56 commands, full frontend feature list
+
+### Sprint 6.0 / 5.2 — UX Polish + Font System (v1.2.1-ra)
+- Global font: Space Grotesk (body) + Syne (display) + JetBrains Mono (mono)
+- Glass inputs, glow focus rings, code blocks, scrollbar, selection highlight
+- 12-segment radial menu (all 12 tabs reachable), Docs tab added
+- AppImage CI fixed (flatpak removed, apt deps completed), v1.2.1-ra tagged
+
 ### Sprint 5.1 — Real-Time Collaborative Workspaces
 - Upgraded Canvas collaboration host mode from one peer to a multi-peer LAN room
 - Workspace payload protocol now carries live code sync, shared chat, presence, invite metadata, and agent approval requests
@@ -134,21 +148,46 @@ Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base
 
 ---
 
-## Tauri Commands (26 registered)
+## Tauri Commands (56 registered across 28 modules)
+
+See `docs/ANTIGRAVITY_HANDOFF.md` for full command registry. Key commands by module:
 
 ```
-get_initial_state, execute_command, execute_command_stream,
-write_to_process, kill_process, start_recording, stop_recording,
-get_personas, get_themes, set_persona, set_theme,
+# Core / Chat / LLM
+get_initial_state, send_command, cancel_generation, execute_command_stream,
+get_personas, get_themes, set_persona, set_theme, get_config, set_config,
+save_gemini_api_key, get_gemini_api_key, test_llm_connection,
+
+# Sessions / Memory
 save_session, load_latest_session, list_sessions, load_session_by_id,
-delete_session, new_session, send_command, speak_text,
-cancel_generation, execute_lua, export_session_markdown,
+delete_session, new_session, export_session_markdown,
+memory_list_all, memory_delete, memory_pin, memory_add_fact, get_context_stats,
+
+# Terminal / PTY
 pty_spawn, pty_write, pty_resize, pty_kill,
-start_tunnel_server, stop_tunnel_server, send_tunnel_request,
-start_file_transfer, respond_to_transfer, get_discovered_peers, get_active_transfers,
-open_external, get_game_context,
+start_recording, stop_recording, speak_text, execute_lua,
+
+# Agent / Canvas
 agent_step, agent_exec_code,
-memory_list_all, memory_delete, memory_pin, memory_add_fact
+canvas_collab_host, canvas_collab_join, canvas_collab_send,
+canvas_collab_broadcast, canvas_collab_status, canvas_collab_stop,
+
+# Transfer / Network
+start_file_transfer, respond_to_transfer, get_discovered_peers, get_active_transfers,
+start_tunnel_server, stop_tunnel_server, send_tunnel_request,
+ftp_connect, ftp_list, ftp_download, ftp_upload_file, ftp_disconnect,
+
+# System / AI Features
+open_external, get_game_context, get_game_notes, save_game_notes,
+read_last_screenshot, shell_autocomplete, whisper_transcribe, index_directory,
+get_doc_count, get_terminal_autocomplete,
+
+# Ollama / Plugins / Keychain
+ollama_list_models, ollama_pull_model, ollama_delete_model,
+list_plugins, toggle_plugin, install_plugin, reload_plugins,
+get_personas, save_custom_persona, delete_custom_persona,
+start_sync, sync_now, get_sync_status, configure_sync,
+start_mcp_server, stop_mcp_server, get_mcp_status
 ```
 
 ---
