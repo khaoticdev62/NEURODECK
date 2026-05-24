@@ -4,6 +4,17 @@ One Egyptian god codename is assigned per **MINOR version line**.
 Patches within that MINOR line inherit the same codename.
 Codenames must be unique within a MAJOR release line.
 
+## Current Assignment Snapshot
+
+<!-- KFMS:CURRENT_ASSIGNMENT:BEGIN -->
+- Current version: `1.2.0`
+- Current codename: `Ra`
+- Current tag: `v1.2.0-ra`
+- Current MINOR line: `2`
+- Source of truth: `infra/meta/meta.json`
+- Last stamped build: `2026-05-24T22:39:36Z`
+<!-- KFMS:CURRENT_ASSIGNMENT:END -->
+
 ## Assignment Rules
 
 ```
@@ -13,28 +24,30 @@ tag format                →  v{semver}-{codename_lower}
 
 ## Registry (index = MINOR line)
 
+<!-- KFMS:REGISTRY_TABLE:BEGIN -->
 | Index | Codename  | Status    | Assigned To           |
 |------:|-----------|-----------|----------------------|
-|     0 | Anubis    | available | v?.0.x               |
-|     1 | **Thoth** | **active**| **v1.1.x (current)** |
-|     2 | Ra        | available | v?.2.x               |
-|     3 | Isis      | available | v?.3.x               |
-|     4 | Osiris    | available | v?.4.x               |
-|     5 | Horus     | available | v?.5.x               |
-|     6 | Bastet    | available | v?.6.x               |
-|     7 | Sekhmet   | available | v?.7.x               |
-|     8 | Ptah      | available | v?.8.x               |
-|     9 | Hathor    | available | v?.9.x               |
-|    10 | Set       | available | v?.10.x              |
-|    11 | Sobek     | available | v?.11.x              |
-|    12 | Khonsu    | available | v?.12.x              |
-|    13 | Maat      | available | v?.13.x              |
-|    14 | Amun      | available | v?.14.x              |
-|    15 | Nephthys  | available | v?.15.x              |
-|    16 | Atum      | available | v?.16.x              |
-|    17 | Anuket    | available | v?.17.x              |
-|    18 | Khepri    | available | v?.18.x              |
-|    19 | Taweret   | available | v?.19.x              |
+|     0 | Anubis | available | v1.0.x |
+|     1 | Thoth | available | v1.1.x |
+|     2 | **Ra** | **active** | **v1.2.x (current)** |
+|     3 | Isis | available | v1.3.x |
+|     4 | Osiris | available | v1.4.x |
+|     5 | Horus | available | v1.5.x |
+|     6 | Bastet | available | v1.6.x |
+|     7 | Sekhmet | available | v1.7.x |
+|     8 | Ptah | available | v1.8.x |
+|     9 | Hathor | available | v1.9.x |
+|    10 | Set | available | v1.10.x |
+|    11 | Sobek | available | v1.11.x |
+|    12 | Khonsu | available | v1.12.x |
+|    13 | Maat | available | v1.13.x |
+|    14 | Amun | available | v1.14.x |
+|    15 | Nephthys | available | v1.15.x |
+|    16 | Atum | available | v1.16.x |
+|    17 | Anuket | available | v1.17.x |
+|    18 | Khepri | available | v1.18.x |
+|    19 | Taweret | available | v1.19.x |
+<!-- KFMS:REGISTRY_TABLE:END -->
 
 ## When a New MAJOR Version Is Released
 

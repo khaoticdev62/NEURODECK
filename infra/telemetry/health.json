@@ -1,14 +1,17 @@
 {
-  "status":         "healthy",
-  "kfms_version":   "1.0",
-  "project":        "neurodeck",
-  "version":        "1.2.0",
-  "codename":       "Ra",
-  "stamped_at_utc": "2026-05-23T22:30:00Z",
+  "status": "healthy",
+  "kfms_version": "1.0",
+  "project": "neurodeck",
+  "version": "1.2.0",
+  "codename": "Ra",
+  "tag": "v1.2.0-ra",
+  "workspace_state": "manual-uncommitted",
+  "dirty_build": true,
+  "stamped_at_utc": "2026-05-24T22:39:36Z",
   "checks": {
-    "meta_json_present":   true,
-    "schema_valid":        true,
-    "tag_format_correct":  true,
+    "meta_json_present": true,
+    "schema_valid": true,
+    "tag_format_correct": true,
     "loose_zone_isolated": true,
     "no_secrets_in_build": true
   }

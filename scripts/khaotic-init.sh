@@ -5,7 +5,8 @@
 # Usage:
 #   ./scripts/khaotic-init.sh sweep     — move loose root files to .loose/inbox/
 #   ./scripts/khaotic-init.sh stamp     — regenerate infra/meta/meta.json build block
-#   ./scripts/khaotic-init.sh validate  — validate meta.json against meta.schema.json
+#   ./scripts/khaotic-init.sh sync      — regenerate derived KFMS artifacts from meta.json
+#   ./scripts/khaotic-init.sh validate  — validate meta.json and derived artifact consistency
 #   ./scripts/khaotic-init.sh status    — print current KFMS health summary
 # =============================================================================
 
@@ -27,6 +28,70 @@ info()  { echo -e "${CY}[KFMS]${NC} $*"; }
 ok()    { echo -e "${GR}[ OK ]${NC} $*"; }
 warn()  { echo -e "${YL}[WARN]${NC} $*"; }
 die()   { echo -e "${RD}[FAIL]${NC} $*"; exit 1; }
+
+resolve_python() {
+  if command -v python3 &>/dev/null; then
+    echo "python3"
+  elif command -v python &>/dev/null; then
+    echo "python"
+  else
+    return 1
+  fi
+}
+
+count_loose_root_files() {
+  local count
+  count=$(find "$ROOT" -maxdepth 1 -type f \
+    -not -name ".gitignore" \
+    -not -name ".gitattributes" \
+    -not -name "README.md" \
+    -not -name "CLAUDE.md" \
+    -not -name "ROADMAP.md" \
+    -not -name "Cargo.toml" \
+    -not -name "Cargo.lock" \
+    -not -name "package.json" \
+    -not -name "package-lock.json" \
+    -not -name "llm-term.toml" \
+    -not -name "custom_style.json" \
+    -not -name "install.sh" \
+    -not -name "launch_gamescope.sh" \
+    -not -name "build_flatpak.sh" \
+    -not -name "package_release.ps1" \
+    -not -name "epics.md" \
+    -not -name "gemini.md" \
+    -not -name "SteamOS_LLM_Terminal_PRD_SDS.md" \
+    -not -name "SteamOS_LLM_Terminal_PRD_SDS.pdf" \
+    | wc -l | tr -d ' ')
+  echo "${count:-0}"
+}
+
+derive_workspace_state() {
+  local status_lines generated_only=true line path
+  status_lines=$(git -C "$ROOT" status --porcelain 2>/dev/null || true)
+  if [[ -z "$status_lines" ]]; then
+    echo "clean"
+    return 0
+  fi
+
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    path="${line:3}"
+    case "$path" in
+      "infra/meta/meta.json"|"infra/telemetry/health.json"|"infra/meta/CODENAME_REGISTRY.md")
+        ;;
+      *)
+        generated_only=false
+        break
+        ;;
+    esac
+  done <<< "$status_lines"
+
+  if $generated_only; then
+    echo "generated-only"
+  else
+    echo "manual-uncommitted"
+  fi
+}
 
 # ---------------------------------------------------------------------------
 # Essential root files — never swept into .loose/
@@ -149,11 +214,7 @@ cmd_stamp() {
 
   # Require python3/python or node for JSON patch; prefer Python.
   local py_bin=""
-  if command -v python3 &>/dev/null; then
-    py_bin="python3"
-  elif command -v python &>/dev/null; then
-    py_bin="python"
-  fi
+  py_bin=$(resolve_python 2>/dev/null || true)
 
   if [[ -n "$py_bin" ]]; then
     "$py_bin" - "$meta" "$sha" "$git_tag" "$dirty_flag" "$built_at" <<'PYEOF'
@@ -189,6 +250,121 @@ JSEOF
   ok "  tag:  $git_tag"
   ok "  at:   $built_at"
   ok "  dirty: $dirty_flag"
+}
+
+# ---------------------------------------------------------------------------
+# cmd: sync
+# Regenerates health.json and the current sections of CODENAME_REGISTRY.md from
+# meta.json. meta.json remains the source of truth.
+# ---------------------------------------------------------------------------
+cmd_sync() {
+  local meta="$ROOT/infra/meta/meta.json"
+  local health="$ROOT/infra/telemetry/health.json"
+  local registry="$ROOT/infra/meta/CODENAME_REGISTRY.md"
+  local py_bin=""
+  local schema_valid=false
+  local loose_zone_isolated=false
+  local workspace_state
+
+  [[ -f "$meta" ]] || die "infra/meta/meta.json not found."
+  [[ -f "$registry" ]] || die "infra/meta/CODENAME_REGISTRY.md not found."
+
+  py_bin=$(resolve_python 2>/dev/null || true)
+  [[ -n "$py_bin" ]] || die "python3 or python required for sync command."
+
+  if cmd_validate >/dev/null 2>&1; then
+    schema_valid=true
+  fi
+  [[ -d "$ROOT/.loose/inbox" ]] && [[ "$(count_loose_root_files)" == "0" ]] && loose_zone_isolated=true
+  workspace_state=$(derive_workspace_state)
+
+  info "Syncing derived KFMS artifacts from meta.json..."
+
+  "$py_bin" - "$meta" "$health" "$registry" "$schema_valid" "$loose_zone_isolated" "$workspace_state" <<'PYEOF'
+import json
+import re
+import sys
+from pathlib import Path
+
+meta_path, health_path, registry_path, schema_valid, loose_zone_isolated, workspace_state = sys.argv[1:]
+
+REGISTRY = [
+    "Anubis", "Thoth", "Ra", "Isis", "Osiris", "Horus", "Bastet", "Sekhmet",
+    "Ptah", "Hathor", "Set", "Sobek", "Khonsu", "Maat", "Amun", "Nephthys",
+    "Atum", "Anuket", "Khepri", "Taweret",
+]
+
+meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+version = meta["version"]
+codename = meta["codename"]["name"]
+minor = int(version.split(".")[1])
+tag = meta["tag"]
+build = meta.get("build", {})
+stamped_at = build.get("built_at_utc")
+dirty = bool(build.get("dirty"))
+
+tag_format_correct = tag == f"v{version}-{codename.lower()}"
+health = {
+    "status": "healthy" if schema_valid == "true" and tag_format_correct else "degraded",
+    "kfms_version": meta["kfms_version"],
+    "project": meta["project"]["id"],
+    "version": version,
+    "codename": codename,
+    "tag": tag,
+    "workspace_state": workspace_state,
+    "dirty_build": dirty,
+    "stamped_at_utc": stamped_at,
+    "checks": {
+        "meta_json_present": True,
+        "schema_valid": schema_valid == "true",
+        "tag_format_correct": tag_format_correct,
+        "loose_zone_isolated": loose_zone_isolated == "true",
+        "no_secrets_in_build": bool(meta["studio"]["governance"].get("no_secrets_in_build")),
+    },
+}
+Path(health_path).write_text(json.dumps(health, indent=2) + "\n", encoding="utf-8")
+
+snapshot = (
+    f"- Current version: `{version}`\n"
+    f"- Current codename: `{codename}`\n"
+    f"- Current tag: `{tag}`\n"
+    f"- Current MINOR line: `{minor}`\n"
+    f"- Source of truth: `infra/meta/meta.json`\n"
+    f"- Last stamped build: `{stamped_at}`\n"
+)
+
+table_lines = [
+    "| Index | Codename  | Status    | Assigned To           |",
+    "|------:|-----------|-----------|----------------------|",
+]
+for idx, name in enumerate(REGISTRY):
+    status = "active" if idx == minor else "available"
+    assigned = f"v{version.split('.')[0]}.{idx}.x"
+    if idx == minor:
+        table_lines.append(f"| {idx:>5} | **{name}** | **{status}** | **{assigned} (current)** |")
+    else:
+        table_lines.append(f"| {idx:>5} | {name} | {status} | {assigned} |")
+table = "\n".join(table_lines)
+
+registry = Path(registry_path).read_text(encoding="utf-8")
+registry = re.sub(
+    r"<!-- KFMS:CURRENT_ASSIGNMENT:BEGIN -->.*?<!-- KFMS:CURRENT_ASSIGNMENT:END -->",
+    "<!-- KFMS:CURRENT_ASSIGNMENT:BEGIN -->\n" + snapshot + "<!-- KFMS:CURRENT_ASSIGNMENT:END -->",
+    registry,
+    flags=re.S,
+)
+registry = re.sub(
+    r"<!-- KFMS:REGISTRY_TABLE:BEGIN -->.*?<!-- KFMS:REGISTRY_TABLE:END -->",
+    "<!-- KFMS:REGISTRY_TABLE:BEGIN -->\n" + table + "\n<!-- KFMS:REGISTRY_TABLE:END -->",
+    registry,
+    flags=re.S,
+)
+Path(registry_path).write_text(registry, encoding="utf-8")
+PYEOF
+
+  ok "Derived artifacts synced from meta.json."
+  ok "  updated: infra/telemetry/health.json"
+  ok "  updated: infra/meta/CODENAME_REGISTRY.md"
 }
 
 # ---------------------------------------------------------------------------
@@ -283,6 +459,35 @@ PYEOF
       warn "Install: npm i -g ajv-cli  OR install Python."
     fi
   fi
+
+  local py_bin=""
+  py_bin=$(resolve_python 2>/dev/null || true)
+  if [[ -n "$py_bin" ]]; then
+    "$py_bin" - "$meta" "$ROOT/infra/telemetry/health.json" "$ROOT/infra/meta/CODENAME_REGISTRY.md" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+meta_path, health_path, registry_path = sys.argv[1:]
+meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+
+if Path(health_path).exists():
+    health = json.loads(Path(health_path).read_text(encoding="utf-8"))
+    if health.get("version") != meta.get("version"):
+        raise SystemExit("health.json version does not match meta.json")
+    if health.get("codename") != meta.get("codename", {}).get("name"):
+        raise SystemExit("health.json codename does not match meta.json")
+
+registry_text = Path(registry_path).read_text(encoding="utf-8")
+expected_tag = meta.get("tag")
+expected_codename = meta.get("codename", {}).get("name")
+expected_version = meta.get("version")
+for expected in (expected_version, expected_codename, expected_tag):
+    if expected and expected not in registry_text:
+        raise SystemExit(f"codename registry is not synced to meta.json: missing {expected}")
+PYEOF
+    ok "Derived KFMS artifacts are consistent."
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -292,22 +497,47 @@ PYEOF
 cmd_status() {
   local meta="$ROOT/infra/meta/meta.json"
   local health="$ROOT/infra/telemetry/health.json"
+  local py_bin=""
+  py_bin=$(resolve_python 2>/dev/null || true)
 
   echo ""
   echo -e "${CY}╔══════════════════════════════════════════╗${NC}"
   echo -e "${CY}║  KHAOTIC LABS — KFMS v1.0 STATUS        ║${NC}"
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
 
-  if [[ -f "$meta" ]]; then
-    local ver codename tag
-    if command -v python3 &>/dev/null; then
-      read -r ver codename tag < <(python3 -c "
-import json,sys
-with open('$meta') as f: m=json.load(f)
-print(m['version'], m['codename']['name'], m['tag'])
-")
-    fi
+  if [[ -f "$meta" && -n "$py_bin" ]]; then
+    local ver codename tag dirty stamped workspace health_status
+    read -r ver codename tag dirty stamped workspace health_status < <("$py_bin" - "$meta" "$health" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+meta_path, health_path = sys.argv[1:]
+meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+health_status = "missing"
+workspace = "unknown"
+if Path(health_path).exists():
+    health = json.loads(Path(health_path).read_text(encoding="utf-8"))
+    health_status = health.get("status", "unknown")
+    workspace = health.get("workspace_state", "unknown")
+print(
+    meta["version"],
+    meta["codename"]["name"],
+    meta["tag"],
+    str(meta.get("build", {}).get("dirty", False)).lower(),
+    meta.get("build", {}).get("built_at_utc", "unknown"),
+    workspace,
+    health_status,
+)
+PYEOF
+)
     ok "meta.json  → v${ver:-?} | ${codename:-?} | ${tag:-?}"
+    ok "build      → dirty=${dirty:-?} | workspace=${workspace:-?} | stamped=${stamped:-?}"
+    if [[ "$health_status" == "healthy" ]]; then
+      ok "health     → ${health_status}"
+    else
+      warn "health     → ${health_status}"
+    fi
   else
     warn "meta.json  → MISSING"
   fi
@@ -328,6 +558,7 @@ CMD="${1:-help}"
 case "$CMD" in
   sweep)    cmd_sweep    ;;
   stamp)    cmd_stamp    ;;
+  sync)     cmd_sync     ;;
   validate) cmd_validate ;;
   status)   cmd_status   ;;
   *)
@@ -337,6 +568,7 @@ case "$CMD" in
     echo "  Commands:"
     echo "    sweep     Move loose root files to .loose/inbox/"
     echo "    stamp     Re-stamp build block in infra/meta/meta.json"
+    echo "    sync      Regenerate derived KFMS artifacts from meta.json"
     echo "    validate  Validate meta.json against schema"
     echo "    status    Print KFMS health summary"
     echo ""
