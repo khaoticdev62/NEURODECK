@@ -14,6 +14,26 @@ const CANVAS_EXT_MAP = {
     lua: 'plugin.lua'
 };
 
+// Monaco language ID map
+const MONACO_LANG_MAP = {
+    html: 'html',
+    css: 'css',
+    javascript: 'javascript',
+    markdown: 'markdown',
+    bash: 'shell',
+    python: 'python',
+    lua: 'lua'
+};
+
+// Module-level Monaco editor reference
+let monacoEditor = null;
+let monacoReady = false;
+let _peerSyncing = false;
+
+function getMonacoLang(lang) {
+    return MONACO_LANG_MAP[lang] || 'plaintext';
+}
+
 function buildPreviewDoc(lang, code) {
     switch (lang) {
         case 'html':
@@ -28,7 +48,6 @@ console.log=(...a)=>{out.textContent+=a.map(x=>typeof x==='object'?JSON.stringif
 try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
 <\/script></body></html>`;
         case 'markdown':
-            // Use marked from parent via postMessage isn't available in srcdoc — render inline
             return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body id="md"></body><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script><script>document.getElementById('md').innerHTML=marked.parse(${JSON.stringify(code)});<\/script></html>`;
         default:
             return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem;white-space:pre-wrap}</style></head><body>Run this code in the Terminal tab (▶ Run is for HTML/CSS/JS/Markdown).\n\n${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
@@ -36,14 +55,13 @@ try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
 }
 
 function renderCanvasPreview() {
-    const editor = document.getElementById("canvas-editor");
+    const code = monacoEditor ? monacoEditor.getValue() : '';
     const frame = document.getElementById("canvas-preview-frame");
     const outputPre = document.getElementById("canvas-preview-output");
-    if (!editor || !frame || !outputPre) return;
+    if (!frame || !outputPre) return;
     const lang = window.neurodeckCanvas.currentLang;
-    const code = editor.value;
     window.neurodeckCanvas.currentCode = code;
-    
+
     if (lang === 'python' || lang === 'bash') {
         frame.style.display = 'none';
         outputPre.style.display = 'block';
@@ -66,40 +84,263 @@ function loadCanvasCode(lang, content, fileName = "") {
         : normalizedLang;
 
     const select = document.getElementById("canvas-lang-select");
-    const editor = document.getElementById("canvas-editor");
     const fileTitle = document.getElementById("canvas-file-title");
 
     if (select) select.value = mappedLang in CANVAS_EXT_MAP ? mappedLang : 'html';
     window.neurodeckCanvas.currentLang = select ? select.value : 'html';
 
-    if (editor) editor.value = content;
+    if (monacoEditor) {
+        monacoEditor.setValue(content);
+        const model = monacoEditor.getModel();
+        if (model) {
+            window.monaco?.editor.setModelLanguage(model, getMonacoLang(window.neurodeckCanvas.currentLang));
+        }
+    }
+
     if (fileTitle) {
         fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[window.neurodeckCanvas.currentLang] || 'untitled';
     }
 
     renderCanvasPreview();
-    if (typeof updateCanvasToolbarButtons === 'function') {
-        updateCanvasToolbarButtons();
+}
+
+// AI Edit modal — injected once, reused
+function ensureAiEditModal() {
+    if (document.getElementById('canvas-ai-edit-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'canvas-ai-edit-modal';
+    modal.className = 'canvas-ai-edit-modal';
+    modal.innerHTML = `
+        <div class="canvas-ai-edit-panel">
+            <div class="canvas-ai-edit-header">
+                <span>✦ AI Edit</span>
+                <button class="canvas-ai-edit-close" id="canvas-ai-edit-close">✕</button>
+            </div>
+            <div class="canvas-ai-edit-body">
+                <label class="canvas-ai-edit-label">Instruction</label>
+                <textarea id="canvas-ai-edit-instruction" class="canvas-ai-edit-input"
+                    placeholder="e.g. Add error handling, refactor to async/await, add type hints..."
+                    rows="3"></textarea>
+                <div class="canvas-ai-edit-scope">
+                    <label><input type="radio" name="ai-edit-scope" value="selection" id="ai-edit-scope-sel"> Selected text</label>
+                    <label><input type="radio" name="ai-edit-scope" value="all" id="ai-edit-scope-all" checked> Entire file</label>
+                </div>
+                <div id="canvas-ai-edit-status" class="canvas-ai-edit-status"></div>
+            </div>
+            <div class="canvas-ai-edit-footer">
+                <button class="canvas-btn" id="canvas-ai-edit-cancel">Cancel</button>
+                <button class="canvas-btn" id="canvas-ai-edit-apply" style="background:rgba(0,240,255,0.1);border-color:var(--accent-color);color:var(--accent-color);">Apply ✦</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('view-canvas')?.appendChild(modal);
+
+    document.getElementById('canvas-ai-edit-close').onclick = closeAiEditModal;
+    document.getElementById('canvas-ai-edit-cancel').onclick = closeAiEditModal;
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeAiEditModal(); });
+
+    document.getElementById('canvas-ai-edit-apply').onclick = async () => {
+        const instruction = document.getElementById('canvas-ai-edit-instruction').value.trim();
+        if (!instruction) return;
+        const useSelection = document.getElementById('ai-edit-scope-sel').checked;
+        const lang = window.neurodeckCanvas.currentLang;
+
+        let code;
+        let selection = null;
+        if (useSelection && monacoEditor) {
+            selection = monacoEditor.getSelection();
+            code = monacoEditor.getModel()?.getValueInRange(selection) || monacoEditor.getValue();
+            if (!code.trim()) code = monacoEditor.getValue();
+        } else {
+            code = monacoEditor ? monacoEditor.getValue() : '';
+        }
+
+        const statusEl = document.getElementById('canvas-ai-edit-status');
+        const applyBtn = document.getElementById('canvas-ai-edit-apply');
+        statusEl.textContent = '⚡ Applying AI edit...';
+        applyBtn.disabled = true;
+
+        try {
+            const result = await invoke('ai_edit_code', { code, instruction, lang });
+            // Strip any markdown fences the LLM may add
+            const cleaned = result.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+            if (monacoEditor) {
+                if (useSelection && selection && monacoEditor.getModel()?.getValueInRange(selection)?.trim()) {
+                    monacoEditor.executeEdits('ai-edit', [{
+                        range: selection,
+                        text: cleaned,
+                        forceMoveMarkers: true
+                    }]);
+                } else {
+                    monacoEditor.setValue(cleaned);
+                }
+            }
+            renderCanvasPreview();
+            statusEl.textContent = '✓ Applied';
+            setTimeout(closeAiEditModal, 800);
+        } catch (err) {
+            statusEl.textContent = `Error: ${err}`;
+            applyBtn.disabled = false;
+        }
+    };
+}
+
+function openAiEditModal() {
+    ensureAiEditModal();
+    const modal = document.getElementById('canvas-ai-edit-modal');
+    if (modal) {
+        modal.classList.add('active');
+        document.getElementById('canvas-ai-edit-instruction')?.focus();
+        document.getElementById('canvas-ai-edit-status').textContent = '';
+        document.getElementById('canvas-ai-edit-apply').disabled = false;
+        // Pre-select "selection" if Monaco has a non-empty selection
+        if (monacoEditor) {
+            const sel = monacoEditor.getSelection();
+            const hasSelection = sel && !monacoEditor.getModel()?.getValueInRange(sel)?.trim() === false;
+            if (hasSelection) document.getElementById('ai-edit-scope-sel').checked = true;
+            else document.getElementById('ai-edit-scope-all').checked = true;
+        }
     }
 }
 
+function closeAiEditModal() {
+    const modal = document.getElementById('canvas-ai-edit-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function initMonacoEditor(initialLang, initialCode) {
+    const MONACO_CDN = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs';
+    const container = document.getElementById('canvas-monaco');
+    if (!container) return;
+
+    // Load AMD loader
+    if (document.getElementById('monaco-loader-script')) {
+        _createMonacoInstance(container, initialLang, initialCode, MONACO_CDN);
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'monaco-loader-script';
+    script.src = `${MONACO_CDN}/loader.js`;
+    script.onload = () => _createMonacoInstance(container, initialLang, initialCode, MONACO_CDN);
+    script.onerror = () => {
+        console.warn('[Monaco] CDN load failed — canvas will use fallback textarea');
+        container.innerHTML = `<textarea id="canvas-editor-fallback" style="width:100%;height:100%;background:#060a0e;color:#c9d1d9;font-family:monospace;font-size:13px;border:none;outline:none;padding:14px;box-sizing:border-box;resize:none;">${initialCode}</textarea>`;
+    };
+    document.head.appendChild(script);
+}
+
+function _createMonacoInstance(container, initialLang, initialCode, cdnBase) {
+    window.require.config({ paths: { vs: cdnBase } });
+    window.require(['vs/editor/editor.main'], function() {
+        // Store global reference for Tauri CSP compat
+        window.monaco = window.monaco || monaco;
+
+        // Define NEURODECK theme
+        monaco.editor.defineTheme('neurodeck', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '4a5568', fontStyle: 'italic' },
+                { token: 'keyword', foreground: '00f0ff' },
+                { token: 'string', foreground: '9ae6b4' },
+                { token: 'number', foreground: 'fbb6ce' },
+                { token: 'type', foreground: '63b3ed' },
+                { token: 'function', foreground: 'a78bfa' },
+                { token: 'variable', foreground: 'd9f7ff' },
+            ],
+            colors: {
+                'editor.background': '#060a0e',
+                'editor.foreground': '#c9d1d9',
+                'editor.lineHighlightBackground': '#0d1117',
+                'editor.selectionBackground': '#1a3a5c',
+                'editor.inactiveSelectionBackground': '#112233',
+                'editorLineNumber.foreground': '#2d3748',
+                'editorLineNumber.activeForeground': '#00f0ff',
+                'editorCursor.foreground': '#00f0ff',
+                'editor.findMatchBackground': '#1a4a3a',
+                'editor.findMatchHighlightBackground': '#0d2a1e',
+                'editorWidget.background': '#0d1117',
+                'editorWidget.border': '#1a2a3a',
+                'input.background': '#0d1117',
+                'input.foreground': '#c9d1d9',
+                'scrollbarSlider.background': '#ffffff1a',
+                'scrollbarSlider.hoverBackground': '#ffffff2a',
+                'scrollbarSlider.activeBackground': '#00f0ff33',
+            }
+        });
+
+        monacoEditor = monaco.editor.create(container, {
+            value: initialCode,
+            language: getMonacoLang(initialLang),
+            theme: 'neurodeck',
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
+            fontLigatures: true,
+            lineHeight: 21,
+            scrollBeyondLastLine: false,
+            tabSize: 2,
+            insertSpaces: true,
+            wordWrap: 'off',
+            renderLineHighlight: 'line',
+            smoothScrolling: true,
+            cursorBlinking: 'phase',
+            cursorSmoothCaretAnimation: 'on',
+            bracketPairColorization: { enabled: true },
+            padding: { top: 14, bottom: 14 },
+            scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+            suggest: { showWords: true },
+            quickSuggestions: { other: true, comments: false, strings: false },
+        });
+
+        monacoReady = true;
+        window.neurodeckCanvas.currentCode = initialCode;
+
+        // Debounced live preview
+        let previewTimer = null;
+        monacoEditor.onDidChangeModelContent(() => {
+            clearTimeout(previewTimer);
+            previewTimer = setTimeout(renderCanvasPreview, 600);
+
+            // Collab broadcast
+            if (!_peerSyncing) {
+                clearTimeout(window._canvasCollabTimer);
+                window._canvasCollabTimer = setTimeout(() => {
+                    invoke('canvas_collab_send', {
+                        code: monacoEditor.getValue(),
+                        lang: window.neurodeckCanvas.currentLang
+                    }).catch(() => {});
+                }, 300);
+            }
+        });
+
+        // Ctrl+Enter → run immediately
+        monacoEditor.addCommand(
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+            () => document.getElementById('canvas-run-btn')?.click()
+        );
+
+        // Render initial preview
+        renderCanvasPreview();
+    });
+}
+
 function initCanvasView() {
-    const editor = document.getElementById("canvas-editor");
     const select = document.getElementById("canvas-lang-select");
     const runBtn = document.getElementById("canvas-run-btn");
     const clearBtn = document.getElementById("canvas-clear-btn");
     const copyBtn = document.getElementById("canvas-copy-btn");
     const refreshBtn = document.getElementById("canvas-refresh-btn");
+    const aiEditBtn = document.getElementById("canvas-ai-edit-btn");
     const fileTitle = document.getElementById("canvas-file-title");
     const divider = document.getElementById("canvas-divider");
     const split = document.getElementById("canvas-split");
 
-    if (!editor) return;
-
     // Set initial language
     window.neurodeckCanvas.currentLang = select ? select.value : 'html';
 
-    // Seed default HTML template
     const defaultHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,52 +365,32 @@ function initCanvasView() {
   <p>Edit this code or send a block from the Chat tab.</p>
 </body>
 </html>`;
-    editor.value = defaultHTML;
+
     window.neurodeckCanvas.currentCode = defaultHTML;
-    renderCanvasPreview();
 
-    // Live update with debounce
-    let debounceTimer = null;
-    editor.addEventListener("input", () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(renderCanvasPreview, 600);
-    });
+    // Initialize Monaco editor
+    initMonacoEditor(window.neurodeckCanvas.currentLang, defaultHTML);
 
-    // Ctrl+Enter to run immediately
-    editor.addEventListener("keydown", (e) => {
-        if (e.ctrlKey && e.key === "Enter") {
-            e.preventDefault();
-            clearTimeout(debounceTimer);
-            renderCanvasPreview();
-        }
-        // Tab key inserts spaces instead of losing focus
-        if (e.key === "Tab") {
-            e.preventDefault();
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            editor.value = editor.value.substring(0, start) + "  " + editor.value.substring(end);
-            editor.selectionStart = editor.selectionEnd = start + 2;
-        }
-    });
-
+    // Language selector
     if (select) {
         select.addEventListener("change", () => {
             window.neurodeckCanvas.currentLang = select.value;
             if (fileTitle) {
                 fileTitle.textContent = window.neurodeckCanvas.activePluginFile || CANVAS_EXT_MAP[select.value] || 'untitled';
             }
-            renderCanvasPreview();
-            if (typeof updateCanvasToolbarButtons === 'function') {
-                updateCanvasToolbarButtons();
+            if (monacoEditor) {
+                const model = monacoEditor.getModel();
+                if (model) monaco.editor.setModelLanguage(model, getMonacoLang(select.value));
             }
+            renderCanvasPreview();
         });
     }
 
+    // Run button
     if (runBtn) {
         runBtn.onclick = () => {
-            clearTimeout(debounceTimer);
             const lang = window.neurodeckCanvas.currentLang;
-            const code = editor.value;
+            const code = monacoEditor ? monacoEditor.getValue() : '';
             const outputPre = document.getElementById("canvas-preview-output");
 
             if (lang === 'python' || lang === 'bash') {
@@ -177,9 +398,14 @@ function initCanvasView() {
                 runBtn.disabled = true;
                 if (outputPre) outputPre.textContent = "Executing code on system...\n";
 
-                invoke("agent_exec_code", { code: code, lang: lang })
+                invoke("agent_exec_code", { code, lang })
                     .then(res => {
-                        if (outputPre) outputPre.textContent = res;
+                        if (outputPre) {
+                            const frame = document.getElementById("canvas-preview-frame");
+                            if (frame) frame.style.display = 'none';
+                            outputPre.style.display = 'block';
+                            outputPre.textContent = res;
+                        }
                         runBtn.textContent = "✓ Done";
                         runBtn.disabled = false;
                         setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
@@ -195,7 +421,7 @@ function initCanvasView() {
                 runBtn.disabled = true;
                 if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
 
-                invoke("execute_lua", { code: code })
+                invoke("execute_lua", { code })
                     .then(() => {
                         if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
                         runBtn.textContent = "✓ Done";
@@ -216,31 +442,40 @@ function initCanvasView() {
         };
     }
 
+    // Clear button
     if (clearBtn) {
         clearBtn.onclick = () => {
             if (confirm("Clear the editor?")) {
-                editor.value = "";
-                window.neurodeckCanvas.currentCode = "";
+                if (monacoEditor) monacoEditor.setValue('');
+                window.neurodeckCanvas.currentCode = '';
                 const frame = document.getElementById("canvas-preview-frame");
-                if (frame) frame.srcdoc = "";
+                if (frame) frame.srcdoc = '';
             }
         };
     }
 
+    // Copy button
     if (copyBtn) {
         copyBtn.onclick = () => {
-            navigator.clipboard.writeText(editor.value).then(() => {
+            const code = monacoEditor ? monacoEditor.getValue() : '';
+            navigator.clipboard.writeText(code).then(() => {
                 copyBtn.textContent = "Copied!";
                 setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
             });
         };
     }
 
+    // Refresh button
     if (refreshBtn) {
         refreshBtn.onclick = () => renderCanvasPreview();
     }
 
-    // Draggable divider for resizing panes
+    // AI Edit button
+    if (aiEditBtn) {
+        aiEditBtn.onclick = () => openAiEditModal();
+    }
+
+    // Draggable divider
     if (divider && split) {
         let isDragging = false;
         divider.addEventListener("mousedown", (e) => {
@@ -252,10 +487,9 @@ function initCanvasView() {
         document.addEventListener("mousemove", (e) => {
             if (!isDragging) return;
             const rect = split.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const totalW = rect.width;
-            const pct = Math.min(Math.max(offsetX / totalW * 100, 20), 80);
+            const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width * 100, 20), 80);
             split.style.setProperty("--editor-pct", `${pct}%`);
+            if (monacoEditor) monacoEditor.layout();
         });
         document.addEventListener("mouseup", () => {
             if (isDragging) {
@@ -320,10 +554,9 @@ function initCanvasCollab() {
 
     if (resyncBtn) {
         resyncBtn.addEventListener("click", () => {
-            const editor = document.getElementById("canvas-editor");
-            if (editor) {
+            if (monacoEditor) {
                 invoke("canvas_collab_send", {
-                    code: editor.value,
+                    code: monacoEditor.getValue(),
                     lang: document.getElementById("canvas-lang-select")?.value || 'html'
                 }).catch(() => {});
             }
@@ -361,7 +594,6 @@ function initCanvasCollab() {
         if (statusBar) statusBar.style.display = 'none';
     }
 
-    // Listen for collab events from Rust
     listen("canvas_collab_event", (event) => {
         const msg = event.payload || '';
         if (msg.startsWith('peer_connected')) {
@@ -380,26 +612,23 @@ function initCanvasCollab() {
         }
     }).catch(() => {});
 
-    // Listen for incoming canvas sync from peer
+    // Incoming canvas sync from peer
     listen("canvas_sync", (event) => {
         try {
             const data = typeof event.payload === 'string'
                 ? JSON.parse(event.payload) : event.payload;
             if (data.type === 'sync' && data.code !== undefined) {
-                const editor = document.getElementById("canvas-editor");
-                const langSelect = document.getElementById("canvas-lang-select");
-                if (editor) {
-                    // Suppress our own re-broadcast while updating
-                    editor.dataset.syncingFromPeer = '1';
-                    editor.value = data.code;
-                    editor.dataset.syncingFromPeer = '';
-                    // Fire input event so the preview updates
-                    editor.dispatchEvent(new Event('input'));
+                _peerSyncing = true;
+                if (monacoEditor) {
+                    monacoEditor.setValue(data.code);
                 }
+                _peerSyncing = false;
+                const langSelect = document.getElementById("canvas-lang-select");
                 if (langSelect && data.lang && data.lang !== langSelect.value) {
                     langSelect.value = data.lang;
                     langSelect.dispatchEvent(new Event('change'));
                 }
+                renderCanvasPreview();
             }
         } catch (e) {
             console.warn('[Collab] Failed to parse canvas_sync:', e);
@@ -452,22 +681,6 @@ function initCanvasCollab() {
             setDisconnected();
             if (hostStartBtn) hostStartBtn.disabled = false;
             if (joinStartBtn) joinStartBtn.disabled = false;
-        });
-    }
-
-    // Debounced canvas input → broadcast to peer
-    let collabDebounceTimer = null;
-    const canvasEditor = document.getElementById("canvas-editor");
-    if (canvasEditor) {
-        canvasEditor.addEventListener("input", () => {
-            if (canvasEditor.dataset.syncingFromPeer) return;
-            clearTimeout(collabDebounceTimer);
-            collabDebounceTimer = setTimeout(() => {
-                invoke("canvas_collab_send", {
-                    code: canvasEditor.value,
-                    lang: document.getElementById("canvas-lang-select")?.value || 'html'
-                }).catch(() => {});
-            }, 300);
         });
     }
 }

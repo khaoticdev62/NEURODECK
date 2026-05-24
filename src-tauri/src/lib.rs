@@ -884,6 +884,7 @@ pub fn run() {
             get_game_context,
             agent_step,
             agent_exec_code,
+            ai_edit_code,
             list_agents,
             get_active_agent_id,
             switch_agent,

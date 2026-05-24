@@ -270,6 +270,31 @@ RULES:
     Ok(full_response)
 }
 
+/// Apply an AI-generated inline edit to code. Sends the code + instruction to
+/// the active LLM provider via generate_oneshot and returns the modified code.
+#[tauri::command]
+pub async fn ai_edit_code(
+    code: String,
+    instruction: String,
+    lang: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        std::sync::Arc::clone(&app.provider)
+    };
+
+    let prompt = format!(
+        "You are a code editor assistant. Apply the following instruction to the {} code below.\n\
+         Return ONLY the modified code with no explanation, no markdown code fences, and no preamble.\n\n\
+         INSTRUCTION: {}\n\n\
+         CODE:\n{}",
+        lang, instruction, code
+    );
+
+    provider.generate_oneshot(&prompt, 4096).await
+}
+
 /// Execute agent-generated code in a sandboxed subprocess with a 30-second
 /// timeout. Returns stdout + stderr combined.
 #[tauri::command]

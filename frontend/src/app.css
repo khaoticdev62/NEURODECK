@@ -2476,7 +2476,16 @@ code {
     flex-shrink: 0;
 }
 
-.canvas-editor {
+/* Monaco editor container — fills the editor pane */
+.canvas-monaco-container {
+    flex: 1;
+    overflow: hidden;
+    background: #060a0e;
+    min-height: 0;
+}
+
+/* Fallback textarea (shown if Monaco CDN fails) */
+#canvas-editor-fallback {
     flex: 1;
     background: #060a0e;
     color: #c9d1d9;
@@ -2493,12 +2502,116 @@ code {
     scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
-.canvas-editor::placeholder {
-    color: rgba(255, 255, 255, 0.2);
+/* AI Edit button accent */
+.canvas-btn-ai {
+    background: rgba(0, 240, 255, 0.06) !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+    color: var(--accent-color) !important;
+}
+.canvas-btn-ai:hover {
+    background: rgba(0, 240, 255, 0.14) !important;
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.15) !important;
 }
 
-.canvas-editor:focus {
-    background: #06090d;
+/* AI Edit Modal */
+.canvas-ai-edit-modal {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+}
+.canvas-ai-edit-modal.active { display: flex; }
+
+.canvas-ai-edit-panel {
+    background: linear-gradient(135deg, rgba(6,8,14,0.98) 0%, rgba(10,14,22,0.98) 100%);
+    border: 1px solid rgba(0,240,255,0.2);
+    border-top-color: rgba(0,240,255,0.4);
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0,240,255,0.08), inset 0 1px 0 rgba(0,240,255,0.08);
+    width: min(480px, 90%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.canvas-ai-edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0,240,255,0.1);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent-color);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.canvas-ai-edit-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+}
+.canvas-ai-edit-close:hover { color: var(--accent-color); }
+
+.canvas-ai-edit-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.canvas-ai-edit-label {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--font-mono);
+}
+
+.canvas-ai-edit-input {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(0,240,255,0.15);
+    border-radius: 6px;
+    color: var(--fg-color);
+    font-family: var(--font-sans);
+    font-size: 0.83rem;
+    padding: 10px 12px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+}
+.canvas-ai-edit-input:focus { border-color: var(--accent-color); }
+
+.canvas-ai-edit-scope {
+    display: flex;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.6);
+}
+.canvas-ai-edit-scope label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+.canvas-ai-edit-status {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--accent-color);
+    min-height: 16px;
+}
+
+.canvas-ai-edit-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
 }
 
 /* Draggable divider */

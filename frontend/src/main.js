@@ -477,6 +477,7 @@ document.querySelector('#app').innerHTML = `
                         <button class="canvas-btn" id="canvas-run-btn">▶ Run</button>
                         <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
                         <button class="canvas-btn" id="canvas-clear-btn">Clear</button>
+                        <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">✦ AI Edit</button>
                         <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
                     </div>
@@ -490,7 +491,7 @@ document.querySelector('#app').innerHTML = `
                             <div class="canvas-pane-header">
                                 <span id="canvas-file-title">untitled.html</span>
                             </div>
-                            <textarea id="canvas-editor" class="canvas-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="// Code sent from chat will appear here&#10;// You can also type directly..."></textarea>
+                            <div id="canvas-monaco" class="canvas-monaco-container"></div>
                         </div>
                         <div class="canvas-divider" id="canvas-divider"></div>
                         <div class="canvas-preview-pane" id="canvas-preview-pane">
