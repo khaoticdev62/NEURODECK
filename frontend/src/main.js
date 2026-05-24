@@ -2972,6 +2972,7 @@ const RADIAL_SEGMENTS = [
     { icon: "📤", label: "Share",      view: "share"      },
     { icon: "📱", label: "Remote",     view: "remote"     },
     { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
+    { icon: "📚", label: "Docs",       view: "docs"       },
 ];
 
 function getGamepadFocusableElements() {
