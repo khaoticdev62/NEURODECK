@@ -1282,35 +1282,7 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Task Scheduler View -->
                 <div class="view-content" id="view-scheduler">
-                    <div class="scheduler-container" style="padding: 20px; max-width: 800px; margin: 0 auto; color: var(--fg-color);">
-                        <div class="scheduler-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2>⏱️ Scheduled Tasks</h2>
-                        </div>
-                        
-                        <div class="scheduler-add-form" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
-                            <h3 style="margin-top: 0;">Add New Task</h3>
-                            <div class="setting-field-group">
-                                <label>Task Name</label>
-                                <input type="text" id="scheduler-name-input" class="tunnel-text-input" placeholder="e.g. Morning Summary" style="width: 100%; box-sizing: border-box;">
-                            </div>
-                            <div class="setting-field-group">
-                                <label>Cron Expression (5-field)</label>
-                                <input type="text" id="scheduler-cron-input" class="tunnel-text-input" placeholder="e.g. 0 9 * * *" style="width: 100%; box-sizing: border-box; font-family: var(--font-mono);">
-                            </div>
-                            <div class="setting-field-group">
-                                <label>Agent Goal</label>
-                                <textarea id="scheduler-goal-input" class="tunnel-text-area" placeholder="e.g. Summarize all my unread emails and tasks..." rows="3" style="width: 100%; box-sizing: border-box; margin-bottom: 10px;"></textarea>
-                            </div>
-                            <button id="scheduler-add-btn" class="send-prompt-btn">Add Task</button>
-                        </div>
-
-                        <div class="scheduler-list-section">
-                            <h3>Active Tasks</h3>
-                            <div id="scheduler-task-list" class="scheduler-task-list">
-                                <!-- Tasks rendered here -->
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Populated by initSchedulerView() in scheduler_view.js -->
                 </div>
 
             </div>
@@ -3021,12 +2993,14 @@ function getGamepadFocusableElements() {
         "#view-remote.active #remote-copy-url-btn",
 
         // Scheduler View
-        "#view-scheduler.active #scheduler-name-input",
-        "#view-scheduler.active #scheduler-cron-input",
-        "#view-scheduler.active #scheduler-goal-input",
-        "#view-scheduler.active #scheduler-add-btn",
-        "#view-scheduler.active .scheduler-task-list input",
-        "#view-scheduler.active .scheduler-task-list button",
+        "#view-scheduler.active #sched-open-add",
+        "#view-scheduler.active #sched-name-input",
+        "#view-scheduler.active #sched-cron-input",
+        "#view-scheduler.active #sched-goal-input",
+        "#view-scheduler.active #sched-save-btn",
+        "#view-scheduler.active .sched-run-btn",
+        "#view-scheduler.active .sched-del-btn",
+        "#view-scheduler.active .sched-toggle-chk",
 
         // Inspect Drawer if not collapsed
         "#inspect-drawer:not(.collapsed) #inspect-close-btn"
