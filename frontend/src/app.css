@@ -2318,7 +2318,7 @@ code {
     flex: 0 0 calc(100% + 40px);        /* span full header including side padding */
     margin: 0 -20px;                    /* offset the parent's 20px padding */
     background: rgba(6, 9, 13, 0.96);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-color);
     padding: 3px 12px;
     overflow-x: auto;
     scrollbar-width: none;
@@ -2358,6 +2358,10 @@ code {
     box-shadow: inset 0 1px 0 rgba(0, 240, 255, 0.12),
                 0 0 8px rgba(0, 240, 255, 0.06);
     font-weight: 600;
+}
+.nav-tab:active:not(.active) {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* ==========================================================================
@@ -4446,7 +4450,7 @@ body.crt-flicker-disabled .crt-flicker {
     gap: 8px;
     padding: 0 12px;
     height: 44px;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid var(--border-color);
     background: rgba(8, 12, 18, 0.97);
     flex-shrink: 0;
     z-index: 10;
@@ -4460,29 +4464,29 @@ body.crt-flicker-disabled .crt-flicker {
     padding: 4px 12px;
     font-size: 0.78rem;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
     font-family: var(--font-mono);
 }
 .graph-toolbar-btn:hover {
     background: rgba(0,240,255,0.14);
     border-color: rgba(0,240,255,0.45);
 }
+.graph-toolbar-btn:active {
+    background: rgba(0,240,255,0.18);
+    transform: scale(0.95);
+}
 
 .graph-toolbar-sep {
-    width: 1px;
-    height: 20px;
-    background: rgba(255,255,255,0.1);
-    margin: 0 4px;
+    flex: 1;
 }
 
 .graph-node-legend {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 0.73rem;
-    color: rgba(255,255,255,0.45);
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
     font-family: var(--font-mono);
-    margin-left: auto;
 }
 
 .graph-legend-dot {
@@ -4490,9 +4494,13 @@ body.crt-flicker-disabled .crt-flicker {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 3px;
+    margin-right: 4px;
     vertical-align: middle;
+    flex-shrink: 0;
 }
+.graph-legend-dot-memory  { background: #00f0ff; }
+.graph-legend-dot-fact    { background: #f59e0b; }
+.graph-legend-dot-session { background: #a78bfa; }
 
 .graph-loading {
     position: absolute;
@@ -4610,12 +4618,14 @@ body.crt-flicker-disabled .crt-flicker {
     font-family: var(--font-mono);
     padding: 24px;
     text-align: center;
+    z-index: 5;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TASK SCHEDULER VIEW
    ═══════════════════════════════════════════════════════════════════════════ */
 
+#view-graph     { flex-direction: column; overflow: hidden; position: relative; }
 #view-scheduler { flex-direction: column; overflow: hidden; }
 
 .sched-header {
@@ -4642,7 +4652,8 @@ body.crt-flicker-disabled .crt-flicker {
     cursor: pointer;
     transition: background 0.15s;
 }
-.sched-add-btn:hover { background: rgba(0,240,255,0.16); }
+.sched-add-btn:hover  { background: rgba(0,240,255,0.16); }
+.sched-add-btn:active { background: rgba(0,240,255,0.24); transform: scale(0.97); }
 
 .sched-main {
     display: flex;
@@ -4758,8 +4769,10 @@ body.crt-flicker-disabled .crt-flicker {
     display: flex; align-items: center; justify-content: center;
     transition: background 0.15s, color 0.15s;
 }
-.sched-run-btn:hover { background: rgba(0,255,136,0.12); color: var(--response-color); border-color: rgba(0,255,136,0.3); }
-.sched-del-btn:hover { background: rgba(255,60,90,0.12); color: var(--error-color); border-color: rgba(255,60,90,0.3); }
+.sched-run-btn:hover  { background: rgba(0,255,136,0.12); color: var(--response-color); border-color: rgba(0,255,136,0.3); }
+.sched-run-btn:active { background: rgba(0,255,136,0.22); transform: scale(0.93); }
+.sched-del-btn:hover  { background: rgba(255,60,90,0.12); color: var(--error-color); border-color: rgba(255,60,90,0.3); }
+.sched-del-btn:active { background: rgba(255,60,90,0.22); transform: scale(0.93); }
 
 /* ── Side column ──────────────────────────────────── */
 .sched-side-col {
@@ -4819,7 +4832,10 @@ body.crt-flicker-disabled .crt-flicker {
     font-size: 0.75rem;
     cursor: pointer;
     white-space: nowrap;
+    outline: none;
+    transition: border-color 0.15s;
 }
+.sched-select:focus { border-color: rgba(0,240,255,0.4); }
 
 .sched-cron-human {
     font-size: 0.72rem;
@@ -4846,8 +4862,9 @@ body.crt-flicker-disabled .crt-flicker {
     cursor: pointer;
     transition: background 0.15s;
 }
-.sched-btn-primary:hover:not(:disabled) { background: rgba(0,240,255,0.2); }
-.sched-btn-primary:disabled { opacity: 0.4; cursor: default; }
+.sched-btn-primary:hover:not(:disabled)  { background: rgba(0,240,255,0.2); }
+.sched-btn-primary:active:not(:disabled) { background: rgba(0,240,255,0.28); transform: scale(0.97); }
+.sched-btn-primary:disabled { opacity: 0.35; cursor: default; background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); }
 .sched-btn-ghost {
     background: transparent;
     border: 1px solid rgba(255,255,255,0.12);
@@ -4857,7 +4874,8 @@ body.crt-flicker-disabled .crt-flicker {
     font-size: 0.8rem;
     cursor: pointer;
 }
-.sched-btn-ghost:hover { border-color: rgba(255,255,255,0.3); color: var(--fg-color); }
+.sched-btn-ghost:hover  { border-color: rgba(255,255,255,0.3); color: var(--fg-color); }
+.sched-btn-ghost:active { background: rgba(255,255,255,0.06); transform: scale(0.97); }
 
 .sched-form-status { font-size: 0.75rem; margin-top: 6px; min-height: 16px; }
 .sched-status-error { color: var(--error-color); }
@@ -4894,7 +4912,7 @@ body.crt-flicker-disabled .crt-flicker {
     font-family: var(--font-mono);
     color: rgba(255,255,255,0.5);
     line-height: 1.4;
-    padding: 2px 4px;
+    padding: 3px 8px;
     border-radius: 3px;
 }
 .sched-log-run { color: var(--accent-color); }
@@ -9198,7 +9216,8 @@ button.tab-btn:active,
     color: var(--accent-color, #00F0FF);
     cursor: pointer;
 }
-#git-path-apply:hover { background: rgba(0,240,255,0.2); }
+#git-path-apply:hover  { background: rgba(0,240,255,0.2); }
+#git-path-apply:active { background: rgba(0,240,255,0.3); transform: scale(0.96); }
 
 /* Tab bar */
 .git-tab-bar {
@@ -9216,8 +9235,13 @@ button.tab-btn:active,
     color: rgba(255,255,255,0.5);
     transition: color 0.15s, background 0.15s;
 }
-.git-tab-btn:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.04); }
-.git-tab-btn.active { color: var(--accent-color, #00F0FF); border-bottom: 2px solid var(--accent-color, #00F0FF); }
+.git-tab-btn:hover  { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.04); }
+.git-tab-btn:active { background: rgba(255,255,255,0.08); }
+.git-tab-btn.active {
+    color: var(--accent-color, #00F0FF);
+    background: rgba(0,240,255,0.06);
+    box-shadow: inset 0 -2px 0 var(--accent-color, #00F0FF);
+}
 
 /* Panes */
 .git-pane {
@@ -9291,7 +9315,8 @@ button.tab-btn:active,
     line-height: 1;
     transition: background 0.1s;
 }
-.git-diff-btn:hover { background: rgba(0,240,255,0.12); }
+.git-diff-btn:hover  { background: rgba(0,240,255,0.12); }
+.git-diff-btn:active { background: rgba(0,240,255,0.22); transform: scale(0.93); }
 
 /* Log rows */
 .git-log-row {
@@ -9387,7 +9412,9 @@ button.tab-btn:active,
     background: rgba(100,220,100,0.12);
     color: #64dc64;
 }
-.git-btn-primary:hover { background: rgba(100,220,100,0.22); }
+.git-btn-primary:hover  { background: rgba(100,220,100,0.22); }
+.git-btn-primary:active { background: rgba(100,220,100,0.32); transform: scale(0.96); }
+.git-btn:active:not(.git-btn-primary) { background: rgba(0,240,255,0.24); transform: scale(0.96); }
 
 /* Status line */
 .git-status-line {

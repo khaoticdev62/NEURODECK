@@ -52,12 +52,12 @@ export async function initGraphView() {
             <button class="graph-toolbar-btn" id="graph-center-btn" title="Center view">⊕ Center</button>
             <span class="graph-toolbar-sep"></span>
             <span class="graph-node-legend">
-                <span class="graph-legend-dot" style="background:#00f0ff"></span>Memory
-                <span class="graph-legend-dot" style="background:#f59e0b"></span>Fact
-                <span class="graph-legend-dot" style="background:#a78bfa"></span>Session
+                <span class="graph-legend-dot graph-legend-dot-memory"></span>Memory
+                <span class="graph-legend-dot graph-legend-dot-fact"></span>Fact
+                <span class="graph-legend-dot graph-legend-dot-session"></span>Session
             </span>
         </div>
-        <svg id="graph-svg" style="width:100%;height:calc(100% - 44px);display:block;"></svg>
+        <svg id="graph-svg"></svg>
         <div id="graph-tooltip" class="graph-tooltip" style="display:none;"></div>
         <div id="graph-empty" class="graph-empty" style="display:none;">
             <div class="graph-empty-icon">🧠</div>
