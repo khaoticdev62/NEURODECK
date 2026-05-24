@@ -895,6 +895,7 @@ pub fn run() {
             memory_delete,
             memory_pin,
             memory_add_fact,
+            get_memory_graph_data,
             ftp::ftp_list_dir,
             ftp::ftp_download_file,
             ftp::ftp_upload_file,

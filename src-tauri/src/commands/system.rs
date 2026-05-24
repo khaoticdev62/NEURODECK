@@ -612,6 +612,89 @@ pub fn memory_add_fact(content: String, state: State<'_, Mutex<AppState>>) -> Re
     Ok(id)
 }
 
+// ── Knowledge Graph ──────────────────────────────────────────────────────────
+
+#[derive(serde::Serialize, Clone)]
+pub struct GraphNode {
+    pub id: String,
+    pub label: String,
+    pub node_type: String, // "memory" | "fact" | "session"
+    pub weight: f32,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct GraphEdge {
+    pub source: String,
+    pub target: String,
+    pub similarity: f32,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct GraphData {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+}
+
+#[tauri::command]
+pub fn get_memory_graph_data(state: State<'_, Mutex<AppState>>) -> Result<GraphData, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let all_records = db.list_all()?;
+
+    // Cap at 50 nodes — prefer records with embeddings (semantically linked)
+    let mut scored: Vec<_> = all_records.iter()
+        .map(|r| (r.content.len() as f32 * if r.embedding.is_empty() { 0.5 } else { 1.0 }, r))
+        .collect();
+    scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    let records: Vec<_> = scored.into_iter().take(50).map(|(_, r)| r).collect();
+
+    let nodes: Vec<GraphNode> = records.iter().map(|r| {
+        let node_type = r.metadata.get("role")
+            .map(|v| match v.as_str() {
+                "fact" => "fact",
+                "session" => "session",
+                _ => "memory",
+            })
+            .unwrap_or("memory")
+            .to_string();
+        let label = r.content
+            .chars().take(60).collect::<String>()
+            .replace('\n', " ");
+        GraphNode {
+            id: r.id.clone(),
+            label,
+            node_type,
+            weight: 1.0,
+        }
+    }).collect();
+
+    // Compute edges — cosine similarity > 0.60, cap at top 100
+    let mut edges: Vec<GraphEdge> = Vec::new();
+    for i in 0..records.len() {
+        for j in (i + 1)..records.len() {
+            if records[i].embedding.is_empty() || records[j].embedding.is_empty() {
+                continue;
+            }
+            let sim = crate::memory::cosine_similarity(&records[i].embedding, &records[j].embedding);
+            if sim >= 0.60 {
+                edges.push(GraphEdge {
+                    source: records[i].id.clone(),
+                    target: records[j].id.clone(),
+                    similarity: sim,
+                });
+            }
+        }
+    }
+    // Sort by similarity desc and cap at 100
+    edges.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap_or(std::cmp::Ordering::Equal));
+    edges.truncate(100);
+
+    Ok(GraphData { nodes, edges })
+}
+
 #[tauri::command]
 pub async fn start_oauth_flow(state: State<'_, Mutex<AppState>>) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
     let client_id = {

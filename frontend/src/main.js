@@ -94,6 +94,7 @@ import { getCtrlPromptVisible, getCtrlPromptTemplateMode,
     confirmTemplateAndSend, navigateCtrlPromptList, navigateCtrlPromptCat,
     initCtrlPromptPicker } from './ctrl_prompt.js';
 import { initRemoteControl } from './remote_control_view.js';
+import { initGraphView, loadGraphData } from './graph_view.js';
 
 window.neurodeckCanvas = {
     currentLang: 'html',
@@ -302,6 +303,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="browser">🌐 Browser</button>
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
+                    <button class="nav-tab" data-view="graph">⬡ Graph</button>
                     <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
                     <button class="nav-tab" data-view="remote">📱 Remote</button>
                 </div>
@@ -1180,6 +1182,11 @@ document.querySelector('#app').innerHTML = `
                         <span class="memory-sep">·</span>
                         <span id="memory-filtered-count">showing 0</span>
                     </div>
+                </div>
+
+                <!-- Knowledge Graph View -->
+                <div class="view-content" id="view-graph">
+                    <!-- Populated by initGraphView() in graph_view.js -->
                 </div>
 
                 <!-- Remote Control View -->
@@ -3710,7 +3717,8 @@ invoke("get_initial_state").then((initialState) => {
     initAgentView();
     initMemoryView();
     initRadialMenu();
-    
+    initGraphView();
+
     // Check Onboarding
     checkOnboarding();
 }).catch((err) => {
@@ -5130,6 +5138,11 @@ function initMemoryView() {
     // Load on tab activation
     document.querySelector('[data-view="memory"]')?.addEventListener("click", () => {
         setTimeout(loadMemory, 50);
+    });
+
+    // Reload graph data when graph tab is activated
+    document.querySelector('[data-view="graph"]')?.addEventListener("click", () => {
+        setTimeout(() => loadGraphData(), 80);
     });
 
     if (refreshBtn) refreshBtn.onclick = loadMemory;

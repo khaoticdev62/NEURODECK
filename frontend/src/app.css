@@ -4425,6 +4425,193 @@ body.crt-flicker-disabled .crt-flicker {
     overflow: hidden;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   KNOWLEDGE GRAPH VIEW
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#view-graph {
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: rgba(4, 8, 14, 0.98);
+}
+
+.graph-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    height: 44px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: rgba(8, 12, 18, 0.97);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.graph-toolbar-btn {
+    background: rgba(0,240,255,0.06);
+    border: 1px solid rgba(0,240,255,0.2);
+    color: var(--accent-color);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: var(--font-mono);
+}
+.graph-toolbar-btn:hover {
+    background: rgba(0,240,255,0.14);
+    border-color: rgba(0,240,255,0.45);
+}
+
+.graph-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.1);
+    margin: 0 4px;
+}
+
+.graph-node-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.73rem;
+    color: rgba(255,255,255,0.45);
+    font-family: var(--font-mono);
+    margin-left: auto;
+}
+
+.graph-legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+.graph-loading {
+    position: absolute;
+    inset: 44px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 5;
+}
+.graph-loading-icon {
+    font-size: 2.2rem;
+    color: var(--accent-color);
+    animation: graph-pulse 2s ease-in-out infinite;
+}
+.graph-loading-text {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.4);
+    font-family: var(--font-mono);
+}
+@keyframes graph-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+#graph-svg {
+    flex: 1;
+    display: block;
+}
+
+.graph-node-group { cursor: pointer; }
+.graph-node-group:hover circle {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.graph-node-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: rgba(160, 174, 192, 0.65);
+    user-select: none;
+}
+
+.graph-edge {
+    stroke: rgba(255,255,255,0.25);
+}
+
+.graph-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 50;
+    min-width: 200px;
+    max-width: 280px;
+    background: rgba(8, 14, 22, 0.96);
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.graph-tooltip-type {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+.graph-tooltip-id {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 6px;
+    word-break: break-all;
+}
+.graph-tooltip-preview {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.45;
+    margin-bottom: 8px;
+}
+.graph-tooltip-hint {
+    font-size: 0.7rem;
+    color: rgba(0,240,255,0.5);
+    font-style: italic;
+}
+
+.graph-empty {
+    position: absolute;
+    inset: 44px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+.graph-empty-icon { font-size: 2.5rem; opacity: 0.25; }
+.graph-empty-text {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    line-height: 1.6;
+}
+
+.graph-error {
+    position: absolute;
+    inset: 44px 0 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    color: var(--error-color);
+    font-family: var(--font-mono);
+    padding: 24px;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MEMORY VIEW
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .memory-toolbar {
     height: 52px;
     border-bottom: 1px solid var(--border-color);
