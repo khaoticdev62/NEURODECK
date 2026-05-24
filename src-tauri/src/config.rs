@@ -115,6 +115,41 @@ pub struct Config {
     pub llm: LlmConfig,
     #[serde(default)]
     pub stt: SttConfig,
+    #[serde(default)]
+    pub sync: SyncConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_sync_memory")]
+    pub sync_memory: bool,
+    #[serde(default = "default_sync_sessions")]
+    pub sync_sessions: bool,
+    #[serde(default)]
+    pub api_base_url: String,
+    #[serde(default)]
+    pub last_sync_at: Option<String>,
+    #[serde(default = "default_sync_device_id")]
+    pub device_id: String,
+}
+
+fn default_sync_memory() -> bool { true }
+fn default_sync_sessions() -> bool { true }
+fn default_sync_device_id() -> String { uuid::Uuid::new_v4().to_string() }
+
+impl Default for SyncConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            sync_memory: default_sync_memory(),
+            sync_sessions: default_sync_sessions(),
+            api_base_url: String::new(),
+            last_sync_at: None,
+            device_id: default_sync_device_id(),
+        }
+    }
 }
 
 pub fn load_config<P: AsRef<Path>>(path: P) -> Config {

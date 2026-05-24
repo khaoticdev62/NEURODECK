@@ -366,6 +366,9 @@ function openSettingsModal() {
         window._customThemes.renderList();
         window._customThemes.refreshThemeSelect();
     }
+    if (window._syncSettings) {
+        window._syncSettings.refresh();
+    }
 }
 
 
@@ -1099,6 +1102,97 @@ function initWhisperSettings() {
 
 // ==========================================================================
 
+function initSyncSettings() {
+    const enabledToggle = document.getElementById("sync-enabled-toggle");
+    const memoryToggle = document.getElementById("sync-memory-toggle");
+    const sessionsToggle = document.getElementById("sync-sessions-toggle");
+    const apiUrlInput = document.getElementById("sync-api-url-input");
+    const saveBtn = document.getElementById("sync-save-btn");
+    const syncNowBtn = document.getElementById("sync-now-btn");
+    const statusLine = document.getElementById("sync-status-line");
+    const deviceId = document.getElementById("sync-device-id");
+    const lastAt = document.getElementById("sync-last-at");
+    const pendingCount = document.getElementById("sync-pending-count");
+    const conflictCount = document.getElementById("sync-conflict-count");
+
+    if (!saveBtn) return;
+
+    function setStatus(text, color = "") {
+        if (!statusLine) return;
+        statusLine.textContent = text;
+        statusLine.style.color = color;
+    }
+
+    function renderStatus(status) {
+        if (!status) return;
+        if (enabledToggle) enabledToggle.checked = !!status.enabled;
+        if (memoryToggle) memoryToggle.checked = status.sync_memory !== false;
+        if (sessionsToggle) sessionsToggle.checked = status.sync_sessions !== false;
+        if (apiUrlInput) apiUrlInput.value = status.api_base_url || "";
+        if (deviceId) deviceId.textContent = status.device_id || "-";
+        if (lastAt) lastAt.textContent = status.last_sync_at ? new Date(status.last_sync_at).toLocaleString() : "Never";
+        if (pendingCount) pendingCount.textContent = String(status.pending_records || 0);
+        if (conflictCount) conflictCount.textContent = String(status.conflict_count || 0);
+        if (status.last_error) setStatus(status.last_error, "var(--error-color)");
+    }
+
+    async function refresh() {
+        try {
+            renderStatus(await invoke("get_sync_status"));
+        } catch (err) {
+            setStatus(`Sync status unavailable: ${err}`, "var(--error-color)");
+        }
+    }
+
+    saveBtn.addEventListener("click", async () => {
+        saveBtn.disabled = true;
+        setStatus("Saving sync settings...", "var(--accent-color)");
+        try {
+            const status = await invoke("configure_sync", {
+                request: {
+                    enabled: !!enabledToggle?.checked,
+                    sync_memory: memoryToggle?.checked !== false,
+                    sync_sessions: sessionsToggle?.checked !== false,
+                    api_base_url: apiUrlInput?.value?.trim() || ""
+                }
+            });
+            renderStatus(status);
+            setStatus("Sync settings saved.", "var(--response-color)");
+        } catch (err) {
+            setStatus(`Save failed: ${err}`, "var(--error-color)");
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    syncNowBtn?.addEventListener("click", async () => {
+        syncNowBtn.disabled = true;
+        setStatus("Starting encrypted sync...", "var(--accent-color)");
+        try {
+            const status = await invoke("sync_now");
+            renderStatus(status);
+            setStatus(`Sync complete. Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`, "var(--response-color)");
+            if (typeof addNotification === "function") {
+                addNotification("Cloud Sync Complete", `Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`, "success");
+            }
+        } catch (err) {
+            setStatus(`Sync failed: ${err}`, "var(--error-color)");
+        } finally {
+            syncNowBtn.disabled = false;
+        }
+    });
+
+    listen("sync_progress", (event) => {
+        const label = String(event.payload || "");
+        if (label) setStatus(`Sync ${label}...`, "var(--accent-color)");
+    }).catch(() => {});
+
+    refresh();
+    window._syncSettings = { refresh };
+}
+
+// ==========================================================================
+
 
 export {
     applySettings,
@@ -1111,6 +1205,7 @@ export {
     initDocRag,
     initBmadInstaller,
     initWhisperSettings,
+    initSyncSettings,
     toggleSettingsLlmGroups
 };
 
@@ -1153,6 +1248,7 @@ export function initSettings() {
     initDocRag();
     initBmadInstaller();
     initWhisperSettings();
+    initSyncSettings();
 
     // Shell Switcher (terminal top bar)
     document.querySelectorAll(".term-shell-btn").forEach(pill => {

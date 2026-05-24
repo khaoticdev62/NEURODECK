@@ -17,6 +17,7 @@ mod canvas_collab;
 mod remote_control;
 mod autocomplete;
 mod doc_indexer;
+pub mod sync;
 pub mod commands;
 use crate::commands::*;
 
@@ -977,7 +978,11 @@ pub fn run() {
             remote_control::start_remote_server,
             remote_control::stop_remote_server,
             remote_control::get_remote_server_info,
-            remote_control::remote_send_to_clients
+            remote_control::remote_send_to_clients,
+            sync::start_sync,
+            sync::get_sync_status,
+            sync::sync_now,
+            sync::configure_sync,
         ])
         .run(tauri::generate_context!())
 

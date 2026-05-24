@@ -1407,6 +1407,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="stv-nav-item" data-panel="sp-memory"><span class="stv-nav-icon">🧠</span> Memory</button>
                     <button class="stv-nav-item" data-panel="sp-network"><span class="stv-nav-icon">🌐</span> Network</button>
                     <button class="stv-nav-item" data-panel="sp-computer"><span class="stv-nav-icon">🖥️</span> Computer</button>
+                    <button class="stv-nav-item" data-panel="sp-sync"><span class="stv-nav-icon">⇄</span> Sync</button>
                     <button class="stv-nav-item" data-panel="sp-voice"><span class="stv-nav-icon">🎙️</span> Voice</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
@@ -1807,6 +1808,47 @@ document.querySelector('#app').innerHTML = `
                                 <img id="computer-preview-img" class="computer-preview-img" alt="Desktop screenshot preview">
                                 <div id="computer-preview-empty" class="computer-preview-empty">No screenshot captured.</div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- ░ Sync ░ -->
+                    <div class="settings-panel" id="sp-sync">
+                        <p class="stv-section-title">Cloud Sync</p>
+                        <p class="stv-section-sub">Encrypted sync for memory records and chat sessions.</p>
+
+                        <div class="stv-group-label">Sync Scope</div>
+                        <div class="stv-card">
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Enable Cloud Sync</div><div class="stv-toggle-desc">Opt in before any data leaves this device.</div></div>
+                                <input type="checkbox" id="sync-enabled-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Memory Records</div><div class="stv-toggle-desc">Sync RAG facts and embedded chat memory.</div></div>
+                                <input type="checkbox" id="sync-memory-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Chat Sessions</div><div class="stv-toggle-desc">Sync saved conversation files.</div></div>
+                                <input type="checkbox" id="sync-sessions-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                        </div>
+
+                        <div class="stv-group-label">Sync API</div>
+                        <div class="stv-card">
+                            <div class="setting-field-group" style="margin-bottom:10px;">
+                                <label>Base URL</label>
+                                <input type="text" id="sync-api-url-input" placeholder="https://your-neurodeck-sync-api.fly.dev">
+                            </div>
+                            <div class="sync-status-grid">
+                                <div><span>Device</span><strong id="sync-device-id">-</strong></div>
+                                <div><span>Last Sync</span><strong id="sync-last-at">Never</strong></div>
+                                <div><span>Pending</span><strong id="sync-pending-count">0</strong></div>
+                                <div><span>Conflicts</span><strong id="sync-conflict-count">0</strong></div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:12px;">
+                                <button class="stv-btn-primary" id="sync-save-btn" style="flex:1;">Save Sync Settings</button>
+                                <button class="stv-btn-ghost" id="sync-now-btn" style="flex:1;">Sync Now</button>
+                            </div>
+                            <div id="sync-status-line" class="stv-status-line"></div>
                         </div>
                     </div>
 

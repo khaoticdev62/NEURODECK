@@ -2253,6 +2253,37 @@ body::before {
     }
 }
 
+.sync-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+.sync-status-grid div {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.24);
+}
+.sync-status-grid span {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.65rem;
+    opacity: 0.45;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.sync-status-grid strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--accent-color);
+}
+
 /* ── Setting field group (legacy compat) ── */
 .setting-field-group {
     margin-bottom: 14px;
