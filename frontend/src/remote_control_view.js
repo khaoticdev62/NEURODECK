@@ -189,6 +189,25 @@ export function initRemoteControl() {
         if (btn) btn.click();
     });
 
+    listen('remote_new_session', function() {
+        invoke('new_session').catch(function() {});
+    });
+
+    listen('remote_cancel_generation', function() {
+        invoke('cancel_generation').catch(function() {});
+    });
+
+    listen('remote_mute_toggle', function() {
+        var muteBtn = document.getElementById('mute-btn');
+        if (muteBtn) muteBtn.click();
+    });
+
+    listen('remote_switch_agent', function(ev) {
+        var id = ev.payload;
+        if (!id) return;
+        invoke('switch_agent', { id: id }).catch(function() {});
+    });
+
     document.addEventListener('click', async function(e) {
         var tab = e.target.closest('.nav-tab[data-view="remote"]');
         if (!tab) return;
