@@ -4980,6 +4980,66 @@ function initAgentView() {
         }
     }
 
+    async function runBrowserTool(tool, args = {}) {
+        switch (tool) {
+            case "browser_open_session": {
+                const url = String(args.url || "");
+                if (!url) throw new Error("browser_open_session requires args.url.");
+                const sessionId = await invoke("browser_open_session", { url });
+                return `Browser session opened: ${sessionId}`;
+            }
+            case "browser_navigate_session": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                const url = String(args.url || "");
+                if (!sessionId || !url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
+                await invoke("browser_navigate_session", { sessionId, url });
+                return `Navigated session ${sessionId} to ${url}.`;
+            }
+            case "browser_get_content": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                if (!sessionId) throw new Error("browser_get_content requires args.session_id.");
+                const content = await invoke("browser_get_content", { sessionId });
+                return typeof content === "string" ? content.slice(0, 6000) : String(content);
+            }
+            case "browser_click": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                const selector = String(args.selector || "");
+                if (!sessionId || !selector) throw new Error("browser_click requires args.session_id and args.selector.");
+                await invoke("browser_click", { sessionId, selector });
+                return `Clicked ${selector} in session ${sessionId}.`;
+            }
+            case "browser_fill": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                const selector = String(args.selector || "");
+                const value = String(args.value || "");
+                if (!sessionId || !selector) throw new Error("browser_fill requires args.session_id and args.selector.");
+                await invoke("browser_fill", { sessionId, selector, value });
+                return `Filled ${selector} in session ${sessionId}.`;
+            }
+            case "browser_screenshot": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                if (!sessionId) throw new Error("browser_screenshot requires args.session_id.");
+                const base64 = await invoke("browser_screenshot", { sessionId });
+                return `Screenshot captured (base64 bytes: ${String(base64 || "").length}).`;
+            }
+            case "browser_evaluate_js": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                const script = String(args.script || "");
+                if (!sessionId || !script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
+                const result = await invoke("browser_evaluate_js", { sessionId, script });
+                return typeof result === "string" ? result : JSON.stringify(result);
+            }
+            case "browser_close_session": {
+                const sessionId = String(args.session_id || args.sessionId || "");
+                if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
+                await invoke("browser_close_session", { sessionId });
+                return `Closed browser session ${sessionId}.`;
+            }
+            default:
+                throw new Error(`Unsupported browser tool: ${tool}`);
+        }
+    }
+
     async function runAgentLoop(task) {
         const history = [];
         const MAX_STEPS = 5;
@@ -5035,6 +5095,22 @@ function initAgentView() {
                 }
                 outputEl.textContent = toolOut;
                 appendLog(toolOut.startsWith("[Computer Use Error]") ? "error" : "output", toolOut, step);
+                history.push({ role: "step", content: JSON.stringify(parsed) });
+                history.push({ role: "output", content: toolOut });
+                continue;
+            }
+
+            if (parsed.action === "browser") {
+                const tool = parsed.tool || parsed.browser_tool || "";
+                appendLog("exec", `Requesting browser tool: ${tool}`, step);
+                let toolOut;
+                try {
+                    toolOut = await runBrowserTool(tool, parsed.args || {});
+                } catch (e) {
+                    toolOut = `[Browser Tool Error] ${e}`;
+                }
+                outputEl.textContent = toolOut;
+                appendLog(toolOut.startsWith("[Browser Tool Error]") ? "error" : "output", toolOut, step);
                 history.push({ role: "step", content: JSON.stringify(parsed) });
                 history.push({ role: "output", content: toolOut });
                 continue;

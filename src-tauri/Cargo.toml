@@ -51,4 +51,5 @@ tower = "0.4"
 walkdir = "2.3"
 uuid = { version = "1", features = ["v4"] }
 ring = "0.17.14"
+headless_chrome = "1.0.18"
 

@@ -228,10 +228,10 @@ RESPONSE FORMAT — always output ONLY valid JSON with these exact fields, no ma
   "thought": "reasoning about what to do",
   "code": "executable code (empty string if done)",
   "lang": "python|bash|javascript|powershell",
-  "action": "run_code|computer|done|error",
+  "action": "run_code|computer|browser|done|error",
   "summary": "one-line description of this step",
-  "tool": "computer tool name when action is computer",
-  "args": {{"key": "value arguments when action is computer"}}
+  "tool": "tool name when action is computer/browser",
+  "args": {{"key": "value arguments when action is computer/browser"}}
 }}
 
 RULES:
@@ -244,6 +244,9 @@ RULES:
 - For desktop automation, set action to "computer" with one of these tools:
   computer_screenshot, computer_find_text, computer_mouse_move, computer_mouse_click, computer_type, computer_key.
 - Computer actions are user-approved by NEURODECK before execution. Use them only when desktop UI control is necessary.
+- For web automation, set action to "browser" with one of these tools:
+  browser_open_session, browser_navigate_session, browser_get_content, browser_click,
+  browser_fill, browser_screenshot, browser_evaluate_js, browser_close_session.
 - Max 5 iterations total — be efficient."#,
         os = os_name,
         lang = preferred_lang

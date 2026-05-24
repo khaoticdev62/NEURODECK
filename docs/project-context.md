@@ -119,6 +119,12 @@ Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base
 - Settings Sync panel exposes opt-in toggles, API URL, device ID, last sync, pending count, and conflicts
 - Emits `sync_progress` events for collecting, pushing, pulling, merging, and done states
 
+### Sprint 4.3 — Browser Automation
+- Embedded browser window controls for viewport navigation and JS execution
+- Headless automation sessions via `headless_chrome` with session IDs
+- Commands: `browser_open_session`, `browser_navigate_session`, `browser_get_content`, `browser_click`, `browser_fill`, `browser_screenshot`, `browser_evaluate_js`, `browser_close_session`
+- Agent loop supports `action: "browser"` tool execution path
+
 ### Sprint 5.1 — Real-Time Collaborative Workspaces
 - Upgraded Canvas collaboration host mode from one peer to a multi-peer LAN room
 - Workspace payload protocol now carries live code sync, shared chat, presence, invite metadata, and agent approval requests

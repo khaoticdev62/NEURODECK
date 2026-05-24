@@ -65,7 +65,7 @@ Core shipped capabilities:
 | 3.5 | Git Integration | BRANCH-COMPLETE | Local branch `feature/sprint-3.5-git`; integration audit still required |
 | 4.1 | Workflow Visual Builder | BRANCH-COMPLETE | Local branch `feature/sprint-4.1-workflow`; integration audit still required |
 | 4.2 | Multi-Agent Orchestrator | BRANCH-COMPLETE | Local branch `feature/sprint-4.2-orchestrator`; integration audit still required |
-| 4.3 | Browser Automation | PARTIAL | Secure embedded browser commands exist in `src-tauri/src/commands/browser.rs`; headless automation acceptance remains open |
+| 4.3 | Browser Automation | COMPLETE | Headless session command set implemented in `src-tauri/src/commands/browser.rs` and wired into the agent loop |
 | 4.4 | Plugin Marketplace | COMPLETE | `src-tauri/src/plugin_mgr.rs`, Settings Marketplace UI |
 | 4.5 | Desktop Computer Use | COMPLETE | `src-tauri/src/computer_use.rs`, approval UI, agent tool wiring, commit `7a25eca` |
 | 4.6 | Cloud Sync | COMPLETE | `src-tauri/src/sync.rs`, Settings Sync UI, commit `0c29d8c` |
@@ -169,7 +169,7 @@ Integration tasks:
 - Verify stop behavior under concurrent agent tasks.
 
 ### Sprint 4.3 - Browser Automation
-Status: PARTIAL
+Status: COMPLETE
 
 Delivered on current branch:
 - Secure embedded browser window commands:
@@ -179,17 +179,17 @@ Delivered on current branch:
   - `browser_show`
   - `browser_get_url`
   - `browser_exec`
+- Headless browser session commands:
+  - `browser_open_session`
+  - `browser_navigate_session`
+  - `browser_get_content`
+  - `browser_click`
+  - `browser_fill`
+  - `browser_screenshot`
+  - `browser_evaluate_js`
+  - `browser_close_session`
 - URL scheme allowlist for `http` and `https`.
-- External-open hardening that avoids shell metacharacter injection on Windows.
-
-Still open from original acceptance criteria:
-- Headless browser session management.
-- DOM extraction, selector click/fill, screenshot capture, and JS result return.
-- Agent browser tool loop beyond basic embedded WebView control.
-
-Decision:
-- Keep the embedded browser implementation as the lean MVP.
-- Treat full headless browser automation as a follow-up sprint unless the branch `feature/sprint-4.3-command-palette` contains a better integration candidate.
+- Agent loop support for `action: "browser"` tool calls.
 
 ### Sprint 4.4 - Plugin Marketplace
 Status: COMPLETE
@@ -302,7 +302,7 @@ Immediate integration backlog:
 3. Audit and integrate Sprint 3.5 Git from `feature/sprint-3.5-git`.
 4. Audit and integrate Sprint 4.1 Workflow from `feature/sprint-4.1-workflow`.
 5. Audit and integrate Sprint 4.2 Orchestrator from `feature/sprint-4.2-orchestrator`.
-6. Decide whether Sprint 4.3 should remain embedded-browser MVP or become full headless automation.
+6. Validate Sprint 4.3 browser automation on target machines with installed Chromium/Chrome.
 
 Next net-new sprint:
 1. Sprint 5.2 Mobile Companion App.
@@ -334,7 +334,7 @@ Completed elsewhere, needs integration:
 - [ ] Sprint 4.2 Multi-Agent Orchestrator
 
 Partial or follow-up:
-- [ ] Sprint 4.3 Browser Automation full headless tool layer
+- [x] Sprint 4.3 Browser Automation full headless tool layer
 - [ ] Sprint 5.1 WebSocket/CRDT collaboration hardening
 
 Planned:
@@ -353,7 +353,7 @@ Planned:
 | 3.5 Git | v1.3.4 | Anubis | BRANCH-COMPLETE |
 | 4.1 Workflow | v2.0.0 | Osiris | BRANCH-COMPLETE |
 | 4.2 Multi-Agent | v2.0.1 | Osiris | BRANCH-COMPLETE |
-| 4.3 Browser Automation | v2.0.2 | Osiris | PARTIAL |
+| 4.3 Browser Automation | v2.0.2 | Osiris | COMPLETE |
 | 4.4 Marketplace | v2.0.3 | Osiris | COMPLETE |
 | 4.5 Computer Use | v2.0.4 | Osiris | COMPLETE |
 | 4.6 Cloud Sync | v2.0.5 | Osiris | COMPLETE |

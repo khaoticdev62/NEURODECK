@@ -1,4 +1,59 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
+use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
+use serde_json::Value;
 use tauri::{AppHandle, Manager};
+
+lazy_static::lazy_static! {
+    static ref AUTOMATION_STATE: Mutex<BrowserAutomationState> = Mutex::new(BrowserAutomationState::default());
+}
+
+#[derive(Default)]
+struct BrowserAutomationState {
+    browser: Option<Browser>,
+    sessions: HashMap<String, Arc<Tab>>,
+}
+
+fn parse_http_url(url: &str) -> Result<(), String> {
+    let parsed = reqwest::Url::parse(url).map_err(|e| e.to_string())?;
+    let scheme = parsed.scheme();
+    if scheme != "http" && scheme != "https" {
+        return Err("Only http/https URLs are permitted".to_string());
+    }
+    Ok(())
+}
+
+fn with_state<T>(
+    f: impl FnOnce(&mut BrowserAutomationState) -> Result<T, String>,
+) -> Result<T, String> {
+    let mut state = AUTOMATION_STATE
+        .lock()
+        .map_err(|_| "Browser automation state lock poisoned".to_string())?;
+    f(&mut state)
+}
+
+fn ensure_browser(state: &mut BrowserAutomationState) -> Result<(), String> {
+    if state.browser.is_none() {
+        let options = LaunchOptionsBuilder::default()
+            .headless(true)
+            .build()
+            .map_err(|e| e.to_string())?;
+        let browser = Browser::new(options).map_err(|e| e.to_string())?;
+        state.browser = Some(browser);
+    }
+    Ok(())
+}
+
+fn get_session_tab(state: &BrowserAutomationState, session_id: &str) -> Result<Arc<Tab>, String> {
+    state
+        .sessions
+        .get(session_id)
+        .cloned()
+        .ok_or_else(|| format!("Browser session '{}' not found", session_id))
+}
 
 #[tauri::command]
 pub async fn browser_open(
@@ -118,6 +173,96 @@ pub fn browser_exec(app: AppHandle, js: String) -> Result<(), String> {
         win.eval(&js).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn browser_open_session(url: String) -> Result<String, String> {
+    parse_http_url(&url)?;
+    with_state(|state| {
+        ensure_browser(state)?;
+        let browser = state
+            .browser
+            .as_ref()
+            .ok_or_else(|| "Headless browser not initialized".to_string())?;
+        let tab = browser.new_tab().map_err(|e| e.to_string())?;
+        tab.navigate_to(&url).map_err(|e| e.to_string())?;
+        tab.wait_until_navigated().map_err(|e| e.to_string())?;
+
+        let session_id = uuid::Uuid::new_v4().to_string();
+        state.sessions.insert(session_id.clone(), tab);
+        Ok(session_id)
+    })
+}
+
+#[tauri::command]
+pub fn browser_navigate_session(session_id: String, url: String) -> Result<(), String> {
+    parse_http_url(&url)?;
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        tab.navigate_to(&url).map_err(|e| e.to_string())?;
+        tab.wait_until_navigated().map_err(|e| e.to_string())?;
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn browser_get_content(session_id: String) -> Result<String, String> {
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        tab.get_content().map_err(|e| e.to_string())
+    })
+}
+
+#[tauri::command]
+pub fn browser_click(session_id: String, selector: String) -> Result<(), String> {
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
+        element.click().map_err(|e| e.to_string())?;
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn browser_fill(session_id: String, selector: String, value: String) -> Result<(), String> {
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
+        element.click().map_err(|e| e.to_string())?;
+        element.type_into(&value).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn browser_screenshot(session_id: String) -> Result<String, String> {
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        let png = tab
+            .capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)
+            .map_err(|e| e.to_string())?;
+        Ok(STANDARD.encode(png))
+    })
+}
+
+#[tauri::command]
+pub fn browser_evaluate_js(session_id: String, script: String) -> Result<Value, String> {
+    with_state(|state| {
+        let tab = get_session_tab(state, &session_id)?;
+        let eval_result = tab.evaluate(&script, false).map_err(|e| e.to_string())?;
+        Ok(eval_result.value.unwrap_or(Value::Null))
+    })
+}
+
+#[tauri::command]
+pub fn browser_close_session(session_id: String) -> Result<(), String> {
+    with_state(|state| {
+        state.sessions.remove(&session_id);
+        if state.sessions.is_empty() {
+            state.browser = None;
+        }
+        Ok(())
+    })
 }
 
 #[tauri::command]
