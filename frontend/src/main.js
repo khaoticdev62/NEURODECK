@@ -2827,11 +2827,61 @@ const RADIAL_SEGMENTS = [
     { icon: "📤", label: "Share",      view: "share"      },
     { icon: "📱", label: "Remote",     view: "remote"     },
     { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
+    { icon: "⏱️", label: "Tasks",      view: "scheduler"  },
 ];
 
 function getGamepadFocusableElements() {
     // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
     if (getCtrlPromptVisible()) return [];
+
+    // If onboarding wizard is open, focus only its elements
+    const obOverlay = document.getElementById("onboarding-overlay");
+    if (obOverlay && !obOverlay.classList.contains("hidden")) {
+        const selectors = [
+            "#onboarding-overlay .onboarding-choice-card",
+            "#onboarding-overlay .onboarding-persona-card",
+            "#onboarding-overlay .onboarding-theme-card",
+            "#onboarding-overlay button",
+            "#onboarding-overlay input",
+            "#onboarding-overlay select",
+            "#onboarding-overlay textarea"
+        ];
+        const elements = [];
+        selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && !el.disabled) {
+                    elements.push(el);
+                }
+            });
+        });
+        return elements;
+    }
+
+    // If agent switcher panel is open, focus only its elements
+    const agentSwitcher = document.getElementById("agent-switcher-panel");
+    if (agentSwitcher && !agentSwitcher.classList.contains("hidden")) {
+        const selectors = [
+            "#agent-switcher-panel .agent-tab",
+            "#agent-switcher-panel .agent-switcher-close",
+            "#agent-switcher-panel .agent-card",
+            "#agent-switcher-panel .agent-card-delete",
+            "#agent-switcher-panel .agent-rec-card",
+            "#agent-switcher-panel input",
+            "#agent-switcher-panel select",
+            "#agent-switcher-panel button"
+        ];
+        const elements = [];
+        selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && !el.disabled) {
+                    elements.push(el);
+                }
+            });
+        });
+        return elements;
+    }
 
     // If state.notifications modal is open, focus only notif modal elements
     const notifModal = document.getElementById("notif-modal");
@@ -2884,11 +2934,13 @@ function getGamepadFocusableElements() {
         // Top nav buttons
         "#sidebar-toggle-btn",
         ".nav-tab",
+        "#model-name",
         "#mute-btn",
         "#notif-btn",
         "#settings-btn",
         
         // Chat View
+        "#view-chat.active #new-chat-btn-header",
         "#view-chat.active #user-input",
         "#view-chat.active #mic-btn",
         "#view-chat.active #toggle-drawer-btn",
@@ -2904,6 +2956,17 @@ function getGamepadFocusableElements() {
         
         // Terminal View
         "#view-terminal.active #pty-reconnect-btn",
+
+        // SSH View
+        "#view-ssh.active #ssh-host-input",
+        "#view-ssh.active #ssh-port-input",
+        "#view-ssh.active #ssh-user-input",
+        "#view-ssh.active #ssh-auth-type",
+        "#view-ssh.active #ssh-pass-input",
+        "#view-ssh.active #ssh-key-path-input",
+        "#view-ssh.active #ssh-connect-btn",
+        "#view-ssh.active #ssh-save-profile-btn",
+        "#view-ssh.active #ssh-disconnect-btn",
         
         // Tunnel View
         "#view-tunnel.active #tunnel-check-btn",
@@ -2921,6 +2984,19 @@ function getGamepadFocusableElements() {
         "#view-share.active #share-dropzone",
         "#view-share.active #share-filepath-input",
         "#view-share.active #share-send-btn",
+
+        // Browser View
+        "#view-browser.active #browser-back-btn",
+        "#view-browser.active #browser-forward-btn",
+        "#view-browser.active #browser-refresh-btn",
+        "#view-browser.active #browser-home-btn",
+        "#view-browser.active #browser-url-input",
+        "#view-browser.active #browser-url-clear-btn",
+        "#view-browser.active #browser-go-btn",
+        "#view-browser.active #browser-open-ext-btn",
+        "#view-browser.active #browser-home-search-input",
+        "#view-browser.active #browser-home-search-btn",
+        "#view-browser.active .speed-dial-card",
         
         // Memory View
         "#view-memory.active #memory-search-input",
@@ -2928,11 +3004,29 @@ function getGamepadFocusableElements() {
         "#view-memory.active #memory-fact-input",
         "#view-memory.active #memory-fact-save-btn",
 
+        // Graph View
+        "#view-graph.active #graph-refresh-btn",
+        "#view-graph.active #graph-center-btn",
+
         // Agent View
         "#view-agent.active #agent-task-input",
         "#view-agent.active #agent-run-btn",
         "#view-agent.active #agent-stop-btn",
         "#view-agent.active #agent-send-canvas-btn",
+
+        // Remote View
+        "#view-remote.active #remote-port-input",
+        "#view-remote.active #remote-start-btn",
+        "#view-remote.active #remote-stop-btn",
+        "#view-remote.active #remote-copy-url-btn",
+
+        // Scheduler View
+        "#view-scheduler.active #scheduler-name-input",
+        "#view-scheduler.active #scheduler-cron-input",
+        "#view-scheduler.active #scheduler-goal-input",
+        "#view-scheduler.active #scheduler-add-btn",
+        "#view-scheduler.active .scheduler-task-list input",
+        "#view-scheduler.active .scheduler-task-list button",
 
         // Inspect Drawer if not collapsed
         "#inspect-drawer:not(.collapsed) #inspect-close-btn"
@@ -3172,10 +3266,13 @@ function pollGamepads() {
         const sidebar = document.getElementById("sidebar");
         const notifModal = document.getElementById("notif-modal");
         const gameModal = document.getElementById("game-context-modal");
+        const agentSwitcher = document.getElementById("agent-switcher-panel");
         if (notifModal && notifModal.classList.contains("active")) {
             document.getElementById("close-notif-btn").click();
         } else if (gameModal && gameModal.classList.contains("active")) {
             document.getElementById("close-game-context").click();
+        } else if (agentSwitcher && !agentSwitcher.classList.contains("hidden")) {
+            toggleAgentSwitcher();
         } else if (settingsOverlay && settingsOverlay.classList.contains("active")) {
             document.getElementById("close-settings").click();
         } else if (transferModal && transferModal.classList.contains("active")) {
