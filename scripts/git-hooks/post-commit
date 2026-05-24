@@ -21,4 +21,7 @@ if ! git diff --quiet HEAD -- infra/meta/meta.json 2>/dev/null; then
     echo "[KFMS] meta.json amend applied."
 fi
 
+echo "[KFMS] Validating metadata..."
+bash "$SCRIPT" validate
+
 bash "$SCRIPT" status

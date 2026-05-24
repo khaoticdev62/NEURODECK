@@ -147,9 +147,16 @@ cmd_stamp() {
   git_tag=$(git -C "$ROOT" describe --tags --exact-match 2>/dev/null || echo "null")
   built_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-  # Require python3 or node for JSON patch; prefer python3
+  # Require python3/python or node for JSON patch; prefer Python.
+  local py_bin=""
   if command -v python3 &>/dev/null; then
-    python3 - "$meta" "$sha" "$git_tag" "$dirty_flag" "$built_at" <<'PYEOF'
+    py_bin="python3"
+  elif command -v python &>/dev/null; then
+    py_bin="python"
+  fi
+
+  if [[ -n "$py_bin" ]]; then
+    "$py_bin" - "$meta" "$sha" "$git_tag" "$dirty_flag" "$built_at" <<'PYEOF'
 import sys, json
 meta_path, sha, tag, dirty, ts = sys.argv[1:]
 with open(meta_path) as f:
@@ -174,7 +181,7 @@ data.build.built_at_utc = ts;
 fs.writeFileSync(meta_path, JSON.stringify(data, null, 2) + '\n');
 JSEOF
   else
-    die "python3 or node required for stamp command."
+    die "python3, python, or node required for stamp command."
   fi
 
   ok "Build block stamped:"
@@ -197,12 +204,20 @@ cmd_validate() {
   [[ -f "$meta" ]]   || die "infra/meta/meta.json not found."
   [[ -f "$schema" ]] || die "infra/meta/meta.schema.json not found."
 
-  # Use ajv-cli if available, else fallback to structural checks via python3
+  # Use ajv-cli if available, else fallback to structural checks via Python.
   if command -v ajv &>/dev/null; then
     ajv validate -s "$schema" -d "$meta" && ok "meta.json passes schema validation." || \
       die "meta.json failed schema validation."
-  elif command -v python3 &>/dev/null; then
-    python3 - "$meta" "$schema" <<'PYEOF'
+  else
+    local py_bin=""
+    if command -v python3 &>/dev/null; then
+      py_bin="python3"
+    elif command -v python &>/dev/null; then
+      py_bin="python"
+    fi
+
+    if [[ -n "$py_bin" ]]; then
+      "$py_bin" - "$meta" "$schema" <<'PYEOF'
 import sys, json, re
 
 meta_path, schema_path = sys.argv[1], sys.argv[2]
@@ -262,10 +277,11 @@ if errors:
 else:
     print("  All checks passed.")
 PYEOF
-    ok "meta.json is valid."
-  else
-    warn "No validator found (ajv or python3). Skipping schema check."
-    warn "Install: npm i -g ajv-cli  OR  apt install python3"
+      ok "meta.json is valid."
+    else
+      warn "No validator found (ajv, python3, or python). Skipping schema check."
+      warn "Install: npm i -g ajv-cli  OR install Python."
+    fi
   fi
 }
 

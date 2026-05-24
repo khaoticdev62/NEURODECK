@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types: [published, prereleased, released]
+  workflow_dispatch:
 
 jobs:
   kfms-validate:
@@ -32,8 +35,10 @@ jobs:
         run: bash scripts/khaotic-init.sh status
 
       - name: Verify tag matches meta.json version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${RELEASE_TAG}"
           META_VERSION="$(grep '"version"' infra/meta/meta.json | head -1 | sed 's/.*": "\(.*\)".*/\1/')"
           META_CODENAME="$(grep '"name"' infra/meta/meta.json | grep -v 'NEURODECK\|Khaotic' | head -1 | sed 's/.*": "\(.*\)".*/\1/' | tr '[:upper:]' '[:lower:]')"
           EXPECTED_TAG="v${META_VERSION}-${META_CODENAME}"
