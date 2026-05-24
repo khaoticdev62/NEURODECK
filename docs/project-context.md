@@ -60,6 +60,7 @@ Frontend (`frontend/src/main.js`) ↔ Rust backend (`src-tauri/src/lib.rs`) via 
 | Config | `config.rs` | Parses `llm-term.toml` at startup |
 | Tunnel | `tunnel.rs` | SteamOS LAN tunneling |
 | Transfer | `transfer.rs` | P2P file sharing over LAN |
+| Sync | `sync.rs` | Encrypted cloud sync for memory records and saved chat sessions |
 
 ### Frontend Structure
 
@@ -109,6 +110,13 @@ Stylesheet: `frontend/src/app.css` (~2600 lines), `frontend/src/style.css` (base
 - Keyboard shortcut: backtick `` ` `` toggles radial; arrow keys select; Enter navigates
 - D-pad left/right cycles tabs when no slider/select is focused
 - `steam_input.vdf` controller mapping file for Steam Deck Game Mode import
+
+### Sprint 4.6 — Cloud Sync
+- Encrypted sync module for memory records and saved chat sessions
+- AES-GCM payload encryption via `ring`; sync server receives encrypted blobs only
+- Commands: `start_sync`, `get_sync_status`, `sync_now`, `configure_sync`
+- Settings Sync panel exposes opt-in toggles, API URL, device ID, last sync, pending count, and conflicts
+- Emits `sync_progress` events for collecting, pushing, pulling, merging, and done states
 
 ---
 

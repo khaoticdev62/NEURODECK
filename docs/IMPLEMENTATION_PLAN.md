@@ -605,7 +605,7 @@ MEDIUM (v2.0 milestone):
 
 LOWER (post v2.0):
 [ ] Desktop Computer Use (Sprint 4.5)
-[ ] Cloud Sync (Sprint 4.6)
+[x] Cloud Sync (Sprint 4.6)
 [ ] Real-Time Collaboration (Sprint 5.1)
 [ ] Mobile Companion App (Sprint 5.2)
 ```
