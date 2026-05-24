@@ -3,6 +3,92 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 
+// ── Chat Welcome State HTML ────────────────────────────────────────────────────
+const CHAT_WELCOME_HTML = `
+<div class="chat-welcome" id="chat-welcome">
+    <div class="chat-welcome-logo">🧠</div>
+    <div class="chat-welcome-title">NEURODECK</div>
+    <div class="chat-welcome-sub">AI-native terminal OS. Ask anything.</div>
+    <div class="chat-starters-grid">
+        <div class="chat-starter-card" data-prompt="Explain how RAG (Retrieval-Augmented Generation) works in plain English.">
+            <div class="chat-starter-icon">🔍</div>
+            <div class="chat-starter-label">Explain RAG</div>
+            <div class="chat-starter-hint">How retrieval-augmented generation works</div>
+        </div>
+        <div class="chat-starter-card" data-prompt="Write a Rust async HTTP handler using Axum with proper error handling using map_err.">
+            <div class="chat-starter-icon">⚡</div>
+            <div class="chat-starter-label">Rust Handler</div>
+            <div class="chat-starter-hint">Async Axum endpoint with error handling</div>
+        </div>
+        <div class="chat-starter-card" data-prompt="Design a unique roguelike game mechanic that subverts genre expectations.">
+            <div class="chat-starter-icon">🎮</div>
+            <div class="chat-starter-label">Game Mechanic</div>
+            <div class="chat-starter-hint">Unique roguelike system design concept</div>
+        </div>
+        <div class="chat-starter-card" data-prompt="Review the following code for security vulnerabilities, bugs, and performance issues:\n\n">
+            <div class="chat-starter-icon">🔒</div>
+            <div class="chat-starter-label">Code Review</div>
+            <div class="chat-starter-hint">Security, bugs, and performance audit</div>
+        </div>
+        <div class="chat-starter-card" data-prompt="Create a RICE-prioritized product backlog for a solo developer AI terminal app.">
+            <div class="chat-starter-icon">📊</div>
+            <div class="chat-starter-label">Sprint Planning</div>
+            <div class="chat-starter-hint">RICE-scored backlog for a solo dev AI app</div>
+        </div>
+        <div class="chat-starter-card" data-prompt="I'm getting this error and I can't figure out why. Help me debug it:\n\n">
+            <div class="chat-starter-icon">🐛</div>
+            <div class="chat-starter-label">Debug Help</div>
+            <div class="chat-starter-hint">Paste your error for AI-powered diagnosis</div>
+        </div>
+    </div>
+</div>
+`;
+
+function wireWelcomeStarters() {
+    const viewport = document.getElementById("chat-viewport");
+    if (!viewport) return;
+    viewport.querySelectorAll(".chat-starter-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const prompt = card.dataset.prompt;
+            if (inputElement && prompt) {
+                inputElement.value = prompt;
+                inputElement.focus();
+                inputElement.style.height = "auto";
+                inputElement.style.height = Math.min(inputElement.scrollHeight, 300) + "px";
+            }
+        });
+    });
+}
+
+function dismissWelcome() {
+    const welcome = document.getElementById("chat-welcome");
+    if (welcome) welcome.remove();
+}
+
+function updateContextBar() {
+    const bar = document.getElementById("chat-input-context");
+    if (!bar) return;
+    const provider = (state.activeProvider || "gemini").toUpperCase();
+    bar.innerHTML = `
+        <span class="chat-input-context-persona">🧠 ${state.activePersona || "Default"}</span>
+        <span class="chat-input-context-sep">·</span>
+        <span class="chat-input-context-model">${provider}</span>
+    `;
+}
+
+function makeCopyBtn(getText) {
+    const btn = document.createElement("button");
+    btn.className = "msg-copy-btn";
+    btn.textContent = "Copy";
+    btn.title = "Copy message";
+    btn.addEventListener("click", () => {
+        navigator.clipboard.writeText(getText());
+        btn.textContent = "✓";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+    });
+    return btn;
+}
+
 // Auto-growing Textarea Logic
 let inputElement = null;
 
@@ -57,6 +143,9 @@ function sendMessage() {
         return;
     }
 
+    // Dismiss welcome state on first real message
+    dismissWelcome();
+
     // Collect any pending screenshot attachment
     const attachment = window.pendingScreenshot || null;
 
@@ -76,6 +165,9 @@ function sendMessage() {
             ${attachmentHTML}${text}
         </div>
     `;
+    // Add copy button to user message
+    const userCard = msg.querySelector(".message-card");
+    if (userCard) userCard.appendChild(makeCopyBtn(() => text));
     chatViewport.appendChild(msg);
 
     // Create a placeholder for AI response
@@ -521,6 +613,9 @@ listen("stream_done", function () {
         if (msgCard) {
             msgCard.innerHTML = window.sanitizeHtml(marked.parse(state.currentAIText));
             formatCodeBlocks(msgCard);
+            // Add copy button — capture text before state is cleared
+            const capturedText = state.currentAIText;
+            msgCard.appendChild(makeCopyBtn(() => capturedText));
         }
     }
     
@@ -771,14 +866,11 @@ function startNewSession() {
         state.currentSessionId = newId;
         document.getElementById("session-id").innerText = state.currentSessionId;
         document.getElementById("session-title").innerText = "New Session";
-        
-        let chatViewport = document.getElementById("chat-viewport");
-        chatViewport.innerHTML = `
-            <div class="message system">
-                <div class="message-card">System initialized. Welcome to NEURODECK.</div>
-            </div>
-        `;
-        
+
+        const chatViewport = document.getElementById("chat-viewport");
+        chatViewport.innerHTML = CHAT_WELCOME_HTML;
+        wireWelcomeStarters();
+
         refreshSessionsList();
     }).catch(err => {
         console.error("Error starting new session:", err);
@@ -1029,6 +1121,7 @@ function handlePersonaChange() {
     let val = this.value;
     invoke("set_persona", { name: val }).then((msg) => {
         state.activePersona = val;
+        updateContextBar();
         let chatViewport = document.getElementById("chat-viewport");
         let viewport = document.getElementById("chat-workspace");
         let div = document.createElement("div");
@@ -1127,4 +1220,14 @@ export function initChat() {
         };
     }
     updateMuteButtonUI();
+
+    // Render welcome state on initial load
+    const chatViewport = document.getElementById("chat-viewport");
+    if (chatViewport && !chatViewport.querySelector(".message")) {
+        chatViewport.innerHTML = CHAT_WELCOME_HTML;
+        wireWelcomeStarters();
+    }
+
+    // Populate context bar (defer so state.activePersona is set by boot)
+    setTimeout(updateContextBar, 300);
 }

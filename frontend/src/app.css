@@ -371,6 +371,148 @@ body::before {
 }
 
 
+/* ── Chat Welcome State ─────────────────────────────────────────────────────── */
+.chat-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px 100px;
+    text-align: center;
+    animation: view-slide-in 320ms var(--ease-out-expo) both;
+    width: 100%;
+}
+.chat-welcome-logo {
+    font-size: 3.2rem;
+    line-height: 1;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.3));
+}
+.chat-welcome-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+}
+.chat-welcome-sub {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.38);
+    margin: 0 0 36px;
+    letter-spacing: 0.3px;
+}
+.chat-starters-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 640px;
+}
+.chat-starter-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--dur-fast) var(--ease-snap),
+                border-color var(--dur-fast) var(--ease-snap),
+                transform var(--dur-base) var(--ease-out-expo);
+}
+.chat-starter-card:hover {
+    background: rgba(var(--accent-rgb), 0.06);
+    border-color: rgba(var(--accent-rgb), 0.28);
+    transform: translateY(-3px);
+}
+.chat-starter-card:active {
+    transform: scale(0.96);
+}
+.chat-starter-icon {
+    font-size: 1.15rem;
+    margin-bottom: 7px;
+    line-height: 1;
+}
+.chat-starter-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.82);
+    margin-bottom: 3px;
+    letter-spacing: 0.2px;
+}
+.chat-starter-hint {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.32);
+    line-height: 1.35;
+}
+
+/* ── Chat Input Context Bar ──────────────────────────────────────────────────── */
+.chat-input-context {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px 7px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 4px;
+    font-size: 0.71rem;
+    color: rgba(255, 255, 255, 0.3);
+    min-height: 20px;
+}
+.chat-input-context-persona {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(var(--accent-rgb), 0.65);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+.chat-input-context-sep {
+    opacity: 0.25;
+}
+.chat-input-context-model {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 1px 7px;
+    border-radius: 9px;
+    font-size: 0.66rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* ── Message Copy Button ─────────────────────────────────────────────────────── */
+.message-card {
+    position: relative;
+}
+.msg-copy-btn {
+    position: absolute;
+    bottom: 7px;
+    right: 9px;
+    background: rgba(10, 13, 16, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.67rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-snap),
+                color var(--dur-micro) var(--ease-snap),
+                background var(--dur-micro) var(--ease-snap);
+    letter-spacing: 0.2px;
+    pointer-events: none;
+}
+.message-card:hover .msg-copy-btn {
+    opacity: 1;
+    pointer-events: all;
+}
+.msg-copy-btn:hover {
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent-color);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+
 /* Chat Stream Workspace Area */
 .chat-workspace {
     flex: 1;
@@ -425,17 +567,28 @@ body::before {
 .message.ai .message-card {
     background: rgba(18, 25, 34, 0.95);
     border: 1px solid var(--border-color);
+    border-left: 2px solid rgba(var(--response-rgb), 0.35);
     color: var(--response-color);
+    padding-bottom: 28px; /* space for copy btn */
+}
+.message.user .message-card {
+    padding-bottom: 28px; /* space for copy btn */
 }
 
 .message.system .message-card {
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px dashed var(--border-color);
-    color: #94a3b8;
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.28);
     max-width: 100%;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     letter-spacing: 0.5px;
+    border-radius: 0;
+    padding: 7px 20px;
+    box-shadow: none;
+    font-style: italic;
 }
 
 .message.system.error .message-card {

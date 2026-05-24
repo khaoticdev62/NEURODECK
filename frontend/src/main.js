@@ -934,15 +934,14 @@ document.querySelector('#app').innerHTML = `
                     <!-- Chat Workspace -->
                     <div class="chat-workspace" id="chat-workspace">
                         <div class="chat-viewport" id="chat-viewport">
-                            <div class="message system">
-                                <div class="message-card">System initialized. Welcome to NEURODECK.</div>
-                            </div>
+                            <!-- Welcome state rendered by initChat() -->
                         </div>
                     </div>
 
                     <!-- Floating Input Console -->
                     <div class="floating-input-container">
                         <div class="input-console-bar">
+                            <div class="chat-input-context" id="chat-input-context"></div>
                             <div class="input-textarea-wrapper">
                                 <div class="chat-attachment-bar hidden" id="chat-attachment-bar"></div>
                                 <textarea id="user-input" placeholder="Enter command or type message..." rows="1" autocomplete="off"></textarea>
