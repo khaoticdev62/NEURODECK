@@ -1,6 +1,6 @@
 mod config;
 mod llm;
-mod memory;
+pub mod memory;
 mod storage;
 mod lua;
 mod pty_manager;
@@ -859,6 +859,8 @@ pub fn run() {
             export_session_markdown,
             autocomplete::get_terminal_autocomplete,
             doc_indexer::get_indexed_docs,
+            doc_indexer::search_docs_semantic,
+            doc_indexer::remove_indexed_doc,
             pty_manager::pty_spawn,
             pty_manager::pty_write,
             pty_manager::pty_resize,
@@ -922,8 +924,11 @@ pub fn run() {
             add_custom_persona,
             delete_custom_persona,
             plugin_mgr::list_plugins,
+            plugin_mgr::fetch_plugin_registry,
             plugin_mgr::toggle_plugin,
             plugin_mgr::install_plugin,
+            plugin_mgr::install_plugin_from_registry,
+            plugin_mgr::uninstall_plugin,
             plugin_mgr::read_plugin,
             plugin_mgr::save_plugin,
             plugin_mgr::reload_plugins,

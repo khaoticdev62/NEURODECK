@@ -304,6 +304,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
                     <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
                     <button class="nav-tab" data-view="remote">📱 Remote</button>
+                    <button class="nav-tab" data-view="docs">📚 Docs</button>
                 </div>
 
                 <div class="top-nav-right">
@@ -1271,6 +1272,47 @@ document.querySelector('#app').innerHTML = `
                     </div>
                 </div>
 
+                <!-- ============================================================ -->
+                <!-- VIEW: DOCS — Knowledge Base Viewer                           -->
+                <!-- ============================================================ -->
+                <div class="view-content" id="view-docs">
+                    <div class="docs-container">
+                        <div class="docs-header">
+                            <div class="docs-header-left">
+                                <span class="docs-title">📚 Knowledge Base</span>
+                                <span class="docs-subtitle" id="docs-count-badge">0 documents indexed</span>
+                            </div>
+                            <div class="docs-header-right">
+                                <button class="docs-index-btn" id="docs-index-btn" title="Index a folder">+ Index Folder</button>
+                                <button class="docs-clear-btn" id="docs-clear-btn" title="Clear all indexed docs">Clear All</button>
+                            </div>
+                        </div>
+
+                        <div class="docs-search-bar">
+                            <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Semantic search across indexed documents…">
+                            <button class="docs-search-btn" id="docs-search-btn">Search</button>
+                        </div>
+
+                        <div class="docs-body">
+                            <!-- Left: file list -->
+                            <div class="docs-file-panel">
+                                <div class="docs-panel-label">Indexed Files</div>
+                                <div class="docs-file-list" id="docs-file-list">
+                                    <div class="docs-empty-msg">No documents indexed yet.</div>
+                                </div>
+                            </div>
+
+                            <!-- Right: results -->
+                            <div class="docs-results-panel">
+                                <div class="docs-panel-label" id="docs-results-label">Results</div>
+                                <div class="docs-results-list" id="docs-results-list">
+                                    <div class="docs-empty-msg">Search to find relevant passages.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
 
@@ -1627,6 +1669,21 @@ document.querySelector('#app').innerHTML = `
                             <div id="settings-plugin-status" class="stv-status-line"></div>
                             <div id="settings-plugins-list" style="display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
                                 <span style="opacity:0.4;font-style:italic;">Loading…</span>
+                            </div>
+                        </div>
+
+                        <div class="stv-group-label">Plugin Marketplace</div>
+                        <div class="stv-card">
+                            <div class="marketplace-toolbar">
+                                <input type="text" id="plugin-marketplace-search" placeholder="Search community plugins">
+                                <select id="plugin-marketplace-tag">
+                                    <option value="">All Tags</option>
+                                </select>
+                                <button class="stv-btn-ghost" id="plugin-marketplace-refresh-btn">Refresh</button>
+                            </div>
+                            <div id="plugin-marketplace-status" class="stv-status-line"></div>
+                            <div id="plugin-marketplace-grid" class="plugin-marketplace-grid">
+                                <span style="opacity:0.4;font-style:italic;">Registry not loaded.</span>
                             </div>
                         </div>
 
@@ -2891,6 +2948,13 @@ function getGamepadFocusableElements() {
         "#view-agent.active #agent-run-btn",
         "#view-agent.active #agent-stop-btn",
         "#view-agent.active #agent-send-canvas-btn",
+
+        // Docs View
+        "#view-docs.active #docs-search-input",
+        "#view-docs.active #docs-search-btn",
+        "#view-docs.active #docs-index-btn",
+        "#view-docs.active #docs-clear-btn",
+        "#view-docs.active .docs-remove-btn",
 
         // Inspect Drawer if not collapsed
         "#inspect-drawer:not(.collapsed) #inspect-close-btn"
@@ -5382,6 +5446,137 @@ function loadPluginsList() {
     });
 }
 
+const pluginMarketplaceState = {
+    plugins: [],
+    search: "",
+    tag: ""
+};
+
+function escapeMarketplaceHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function renderPluginMarketplace() {
+    const grid = document.getElementById("plugin-marketplace-grid");
+    const tagSelect = document.getElementById("plugin-marketplace-tag");
+    if (!grid) return;
+
+    const tags = [...new Set(pluginMarketplaceState.plugins.flatMap(p => p.tags || []))].sort();
+    if (tagSelect) {
+        const selected = tagSelect.value || pluginMarketplaceState.tag;
+        tagSelect.innerHTML = `<option value="">All Tags</option>` + tags.map(tag =>
+            `<option value="${escapeMarketplaceHtml(tag)}">${escapeMarketplaceHtml(tag)}</option>`
+        ).join("");
+        tagSelect.value = tags.includes(selected) ? selected : "";
+        pluginMarketplaceState.tag = tagSelect.value;
+    }
+
+    const query = pluginMarketplaceState.search.trim().toLowerCase();
+    const selectedTag = pluginMarketplaceState.tag;
+    const filtered = pluginMarketplaceState.plugins.filter(plugin => {
+        const haystack = `${plugin.name} ${plugin.description} ${plugin.author} ${(plugin.tags || []).join(" ")}`.toLowerCase();
+        const matchesQuery = !query || haystack.includes(query);
+        const matchesTag = !selectedTag || (plugin.tags || []).includes(selectedTag);
+        return matchesQuery && matchesTag;
+    });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div style="opacity:0.45;font-style:italic;">No marketplace plugins match this filter.</div>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(plugin => {
+        const tagsHtml = (plugin.tags || []).map(tag =>
+            `<span class="plugin-marketplace-tag">${escapeMarketplaceHtml(tag)}</span>`
+        ).join("");
+        const action = plugin.installed
+            ? `<button class="stv-btn-ghost marketplace-uninstall-btn" data-plugin-id="${escapeMarketplaceHtml(plugin.id)}">Uninstall</button>`
+            : `<button class="stv-btn-primary marketplace-install-btn" data-plugin-id="${escapeMarketplaceHtml(plugin.id)}">Install</button>`;
+        const secondary = plugin.installed && !plugin.enabled
+            ? `<span class="plugin-marketplace-badge">Disabled</span>`
+            : plugin.installed
+                ? `<span class="plugin-marketplace-badge">Installed</span>`
+                : `<span class="plugin-marketplace-badge">v${escapeMarketplaceHtml(plugin.version)}</span>`;
+
+        return `
+            <div class="plugin-marketplace-card ${plugin.installed ? "installed" : ""}">
+                <div class="plugin-marketplace-title">
+                    <strong>${escapeMarketplaceHtml(plugin.name)}</strong>
+                    ${secondary}
+                </div>
+                <div class="plugin-marketplace-meta">${escapeMarketplaceHtml(plugin.author)} · ${escapeMarketplaceHtml(plugin.lua_file)}</div>
+                <div class="plugin-marketplace-desc">${escapeMarketplaceHtml(plugin.description)}</div>
+                <div class="plugin-marketplace-tags">${tagsHtml || '<span class="plugin-marketplace-tag">utility</span>'}</div>
+                <div class="plugin-marketplace-actions">${action}</div>
+            </div>
+        `;
+    }).join("");
+
+    grid.querySelectorAll(".marketplace-install-btn").forEach(btn => {
+        btn.onclick = async () => {
+            const pluginId = btn.getAttribute("data-plugin-id");
+            const statusEl = document.getElementById("plugin-marketplace-status");
+            btn.disabled = true;
+            if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
+            try {
+                await invoke("install_plugin_from_registry", { pluginId });
+                if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded.";
+                await loadPluginMarketplace();
+                loadPluginsList();
+            } catch (err) {
+                if (statusEl) statusEl.innerText = `Install failed: ${err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    });
+
+    grid.querySelectorAll(".marketplace-uninstall-btn").forEach(btn => {
+        btn.onclick = async () => {
+            const pluginId = btn.getAttribute("data-plugin-id");
+            const statusEl = document.getElementById("plugin-marketplace-status");
+            if (!confirm(`Uninstall marketplace plugin '${pluginId}'?`)) return;
+            btn.disabled = true;
+            if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
+            try {
+                await invoke("uninstall_plugin", { pluginId });
+                if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded.";
+                await loadPluginMarketplace();
+                loadPluginsList();
+            } catch (err) {
+                if (statusEl) statusEl.innerText = `Uninstall failed: ${err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    });
+}
+
+async function loadPluginMarketplace() {
+    const grid = document.getElementById("plugin-marketplace-grid");
+    const statusEl = document.getElementById("plugin-marketplace-status");
+    if (!grid) return;
+
+    grid.innerHTML = `<div style="opacity:0.5;font-style:italic;">Loading marketplace registry...</div>`;
+    if (statusEl) statusEl.innerText = "Fetching GitHub plugin registry...";
+
+    try {
+        const registry = await invoke("fetch_plugin_registry");
+        pluginMarketplaceState.plugins = registry.plugins || [];
+        if (statusEl) statusEl.innerText = `${pluginMarketplaceState.plugins.length} marketplace plugin${pluginMarketplaceState.plugins.length === 1 ? "" : "s"} available.`;
+        renderPluginMarketplace();
+    } catch (err) {
+        pluginMarketplaceState.plugins = [];
+        grid.innerHTML = `<div style="color:var(--error-color);">Failed to load marketplace: ${escapeMarketplaceHtml(err)}</div>`;
+        if (statusEl) statusEl.innerText = "Registry unavailable.";
+    }
+}
+
 function initPluginsManager() {
     // Wire install plugin from URL
     const installBtn = document.getElementById("settings-plugin-install-btn");
@@ -5389,6 +5584,9 @@ function initPluginsManager() {
     const statusEl = document.getElementById("settings-plugin-status");
     const newBtn = document.getElementById("settings-plugin-new-btn");
     const reloadBtn = document.getElementById("settings-plugin-reload-btn");
+    const marketplaceSearch = document.getElementById("plugin-marketplace-search");
+    const marketplaceTag = document.getElementById("plugin-marketplace-tag");
+    const marketplaceRefresh = document.getElementById("plugin-marketplace-refresh-btn");
 
     if (installBtn && urlInput) {
         installBtn.onclick = () => {
@@ -5404,6 +5602,7 @@ function initPluginsManager() {
                 if (statusEl) statusEl.innerText = "Plugin installed successfully!";
                 urlInput.value = "";
                 loadPluginsList();
+                loadPluginMarketplace();
             }).catch((err) => {
                 if (statusEl) statusEl.innerText = `Installation failed: ${err}`;
             }).finally(() => {
@@ -5454,6 +5653,7 @@ print("[Plugin] New plugin loaded successfully!")
             invoke("reload_plugins").then(() => {
                 if (statusEl) statusEl.innerText = "Plugins reloaded successfully!";
                 loadPluginsList();
+                loadPluginMarketplace();
             }).catch((err) => {
                 if (statusEl) statusEl.innerText = `Reload failed: ${err}`;
             }).finally(() => {
@@ -5461,6 +5661,24 @@ print("[Plugin] New plugin loaded successfully!")
             });
         };
     }
+
+    if (marketplaceSearch) {
+        marketplaceSearch.oninput = () => {
+            pluginMarketplaceState.search = marketplaceSearch.value || "";
+            renderPluginMarketplace();
+        };
+    }
+    if (marketplaceTag) {
+        marketplaceTag.onchange = () => {
+            pluginMarketplaceState.tag = marketplaceTag.value || "";
+            renderPluginMarketplace();
+        };
+    }
+    if (marketplaceRefresh) {
+        marketplaceRefresh.onclick = () => loadPluginMarketplace();
+    }
+
+    loadPluginMarketplace();
 }
 
 function updateCanvasToolbarButtons() {
@@ -7979,3 +8197,115 @@ async function showOnboardingWizard() {
 // ── Module init calls ────────────────────────────────────────────────────
 initCtrlPromptPicker();
 initRemoteControl();
+
+// ============================= DOCS VIEW =================================
+function initDocsView() {
+    const searchInput  = document.getElementById('docs-search-input');
+    const searchBtn    = document.getElementById('docs-search-btn');
+    const indexBtn     = document.getElementById('docs-index-btn');
+    const clearBtn     = document.getElementById('docs-clear-btn');
+    const fileList     = document.getElementById('docs-file-list');
+    const resultsList  = document.getElementById('docs-results-list');
+    const resultsLabel = document.getElementById('docs-results-label');
+    const countBadge   = document.getElementById('docs-count-badge');
+
+    let indexedFiles = [];
+
+    async function refreshFileList() {
+        try {
+            const files = await invoke('get_indexed_docs');
+            indexedFiles = files;
+            const count = await invoke('get_doc_count');
+            countBadge.textContent = `${count} chunk${count === 1 ? '' : 's'} indexed`;
+
+            if (files.length === 0) {
+                fileList.innerHTML = '<div class="docs-empty-msg">No documents indexed yet.</div>';
+                return;
+            }
+            fileList.innerHTML = files.map(f => {
+                const name = f.replace(/\\/g, '/').split('/').pop();
+                return `<div class="docs-file-row" data-path="${f}" title="${f}">
+                    <span class="docs-file-icon">📄</span>
+                    <span class="docs-file-name">${name}</span>
+                    <button class="docs-remove-btn" data-path="${f}" title="Remove from index">✕</button>
+                </div>`;
+            }).join('');
+
+            fileList.querySelectorAll('.docs-remove-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const path = btn.dataset.path;
+                    btn.textContent = '…';
+                    btn.disabled = true;
+                    await invoke('remove_indexed_doc', { filePath: path });
+                    await refreshFileList();
+                });
+            });
+        } catch (err) {
+            countBadge.textContent = 'Error loading';
+        }
+    }
+
+    async function runSearch() {
+        const query = searchInput.value.trim();
+        if (!query) return;
+        resultsList.innerHTML = '<div class="docs-search-spinner"></div>';
+        resultsLabel.textContent = 'Searching…';
+        try {
+            const results = await invoke('search_docs_semantic', { query, limit: 10 });
+            if (results.length === 0) {
+                resultsList.innerHTML = '<div class="docs-empty-msg">No relevant passages found.</div>';
+                resultsLabel.textContent = 'Results — 0 found';
+                return;
+            }
+            resultsLabel.textContent = `Results — ${results.length} found`;
+            resultsList.innerHTML = results.map((r, i) => {
+                const pct = Math.round(r.score * 100);
+                const name = r.file.replace(/\\/g, '/').split('/').pop();
+                const snippet = r.snippet.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<div class="docs-result-row">
+                    <div class="docs-result-header">
+                        <span class="docs-result-file" title="${r.file}">📄 ${name}</span>
+                        <span class="docs-result-score">${pct}%</span>
+                    </div>
+                    <div class="docs-result-snippet">${snippet}</div>
+                </div>`;
+            }).join('');
+        } catch (err) {
+            resultsList.innerHTML = `<div class="docs-empty-msg" style="color:var(--error-color)">Search failed: ${err}</div>`;
+            resultsLabel.textContent = 'Results — error';
+        }
+    }
+
+    searchBtn.addEventListener('click', runSearch);
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+    indexBtn.addEventListener('click', async () => {
+        const dir = prompt('Enter absolute folder path to index:');
+        if (!dir || !dir.trim()) return;
+        try {
+            indexBtn.disabled = true;
+            indexBtn.textContent = 'Indexing…';
+            await invoke('index_directory', { path: dir.trim() });
+            await refreshFileList();
+        } catch (err) {
+            alert(`Indexing failed: ${err}`);
+        } finally {
+            indexBtn.disabled = false;
+            indexBtn.textContent = '+ Index Folder';
+        }
+    });
+
+    clearBtn.addEventListener('click', async () => {
+        if (!confirm('Remove all indexed documents from the knowledge base?')) return;
+        await invoke('clear_doc_index');
+        await refreshFileList();
+        resultsList.innerHTML = '<div class="docs-empty-msg">Search to find relevant passages.</div>';
+        resultsLabel.textContent = 'Results';
+    });
+
+    // Refresh when tab is activated
+    document.querySelector('.nav-tab[data-view="docs"]')?.addEventListener('click', refreshFileList);
+}
+
+initDocsView();
