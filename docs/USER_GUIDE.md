@@ -213,7 +213,60 @@ Profiles are saved locally so you don't re-enter them.
 
 ## Browser Tab
 
-An in-app web browser. Useful for checking documentation, viewing web pages, or referencing local HTML files from Canvas — all without leaving NEURODECK.
+An in-app web browser. NEURODECK opens it as a native overlay window positioned inside the app frame — not an iframe. This means it can display sites that refuse to load in iframes (Google, GitHub, etc.).
+
+**Speed-dial bookmarks** — the home screen shows 8 pre-loaded tiles (DuckDuckGo, Wikipedia, Hacker News, r/SteamDeck, Google Gravity, CodePen, Internet Archive, Can I Use). Click any tile to navigate.
+
+**URL bar** — type any URL or search term and press Enter / click Go. Plain search terms go to DuckDuckGo automatically.
+
+**Keyboard shortcuts** (browser view must be active):
+
+| Key | Action |
+|---|---|
+| `F5` | Reload current page |
+| `Ctrl+L` | Focus the URL bar |
+| `Alt+←` | Go back |
+| `Alt+→` | Go forward |
+
+**Open Ext** button — launches the current URL in your default system browser if the site refuses to load inside the app.
+
+---
+
+## Model Switcher
+
+Click the **`[ MODEL: GEMINI ]`** button in the top navigation bar to open the model switcher panel.
+
+**My Agents tab** — shows all configured AI agents. Click a card to make it the active agent. The active agent is used for all Chat, Agent loop, and RAG calls.
+
+**Recommended tab** — a curated list of suggested models with:
+- Provider badge (Gemini Cloud / Ollama Local)
+- Steam Deck compatibility flag (RAM/VRAM estimate)
+- Tier label (Fast / Balanced / Smart / Local Fast / Local Smart)
+
+Click a recommended model to add it as an agent and make it active immediately.
+
+**Custom tab** — add your own agent by specifying:
+- A short ID (slug used internally)
+- Display name
+- Provider (`gemini` or `ollama`)
+- Model ID (e.g. `gemini-1.5-pro`, `llama3.2:1b`)
+- Base URL (Ollama only — default `http://localhost:11434`)
+
+The active agent label in the top bar updates in real time when you switch.
+
+---
+
+## Remote Control Tab
+
+Control NEURODECK from your iPhone (or any device with a browser) over your local Wi-Fi.
+
+1. Open the **Remote** tab
+2. Enter a port number (default: `9898`) and click **Start Server**
+3. A QR code appears — scan it with iPhone Camera
+4. Safari opens a webapp — no install required
+5. From your phone: type commands, switch views, watch live terminal output
+
+The connection is unencrypted (HTTP/WS) — use it only on trusted home networks. The server PIN resets each time you restart the server.
 
 ---
 
@@ -228,25 +281,70 @@ Click the gear icon (top right) to open the settings panel:
 | **Personas** | Create custom AI personalities with a name and system prompt |
 | **Whisper STT** | Set up offline speech recognition (requires whisper.cpp) |
 | **Plugins** | Enable/disable Lua plugins in the plugins/ folder |
+| **Plugin Marketplace** | Browse, search, and install community plugins from the registry |
+
+### Plugin Marketplace
+
+The Plugin Marketplace connects to the [neurodeck-plugins registry](https://github.com/khaoticdev62/neurodeck-plugins) on GitHub. From inside NEURODECK:
+
+1. Open **Settings → Plugins → Marketplace** tab
+2. Browse available plugins or search by name/tag
+3. Click **Install** on any plugin — it downloads the `.lua` file to your `plugins/` folder
+4. Restart NEURODECK (or reload plugins) to activate it
+
+**Tags**: plugins are tagged by category — `automation`, `ai`, `utility`, `personas`, `prompting`. Use the tag filter to narrow results.
+
+If the registry is unreachable (no internet, GitHub down), the marketplace shows an empty state without an error — offline operation is not blocked.
 
 ---
 
 ## Keyboard Shortcuts
 
+### Global
 | Key | Action |
 |---|---|
-| `` ` `` (backtick) | Open the radial quick-switcher menu |
-| `Enter` | Send chat message |
-| `Tab` | AI autocomplete in terminal |
+| `` ` `` (backtick) | Open / close radial menu |
 | `Escape` | Close modals and overlays |
+
+### Chat
+| Key | Action |
+|---|---|
+| `Enter` | Send message |
+| `Ctrl+Space` | AI terminal autocomplete (terminal) |
+| `Ctrl+H` | AI shell history search (terminal) |
+
+### Radial Menu (while open)
+| Key | Action |
+|---|---|
+| `Arrow keys` | Highlight a segment |
+| `Enter` | Jump to highlighted view |
+| `` ` `` | Close without navigating |
+
+### Browser (browser view active)
+| Key | Action |
+|---|---|
+| `F5` | Reload |
+| `Ctrl+L` | Focus URL bar |
+| `Alt+←` | Back |
+| `Alt+→` | Forward |
+
+### Canvas
+| Key | Action |
+|---|---|
+| `Ctrl+Enter` | Run / render current code |
 
 ### Steam Deck Gamepad
 | Button | Action |
 |---|---|
-| **L2** | Open radial menu |
-| **Right stick** | Navigate radial menu |
+| **L2 (hold)** | Open radial menu |
+| **Left Stick** | Select radial segment |
+| **L2 (release)** | Jump to selected view |
+| **D-Pad** | Navigate inner tabs / lists |
 | **A** | Select / confirm |
-| **B** | Back / cancel |
+| **B** | Back / cancel / close overlay |
+| **X** | Open prompt picker |
+| **Y** | Toggle virtual keyboard |
+| **START** | New chat session |
 
 ---
 

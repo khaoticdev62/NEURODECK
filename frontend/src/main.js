@@ -7327,6 +7327,8 @@ async function showOnboardingWizard() {
                         <span class="ob-tag">Gemini / Ollama</span>
                         <span class="ob-tag">Warpinator gRPC</span>
                         <span class="ob-tag">Lua Plugins</span>
+                        <span class="ob-tag">Plugin Marketplace</span>
+                        <span class="ob-tag">Prompt Lab</span>
                         <span class="ob-tag">1280×800</span>
                     </div>
                 </div>
@@ -7334,7 +7336,7 @@ async function showOnboardingWizard() {
                 <!-- Slide 2: Feature Tour -->
                 <div class="onboarding-slide" id="slide-2">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">SYSTEM_FEATURE_MANIFEST</h3>
-                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">10 integrated views. One fullscreen command center.</p>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">12 integrated views. One fullscreen command center.</p>
                     <div class="ob-feature-grid">
                         <div class="ob-feature-card" style="animation-delay: 0.02s">
                             <span class="ob-feature-icon">💬</span>
@@ -7354,7 +7356,7 @@ async function showOnboardingWizard() {
                         <div class="ob-feature-card" style="animation-delay: 0.17s">
                             <span class="ob-feature-icon">🔑</span>
                             <span class="ob-feature-name">SSH</span>
-                            <span class="ob-feature-desc">Full SSH client. Password + key auth. Session tab per connection.</span>
+                            <span class="ob-feature-desc">Full SSH client. Password + key auth. Saved profiles. Session tab per connection.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.22s">
                             <span class="ob-feature-icon">🔗</span>
@@ -7364,12 +7366,12 @@ async function showOnboardingWizard() {
                         <div class="ob-feature-card" style="animation-delay: 0.27s">
                             <span class="ob-feature-icon">🌐</span>
                             <span class="ob-feature-name">Browser</span>
-                            <span class="ob-feature-desc">Embedded WebView for quick reference without leaving NEURODECK.</span>
+                            <span class="ob-feature-desc">Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.32s">
                             <span class="ob-feature-icon">🤖</span>
                             <span class="ob-feature-name">Agent</span>
-                            <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate.</span>
+                            <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.37s">
                             <span class="ob-feature-icon">🧠</span>
@@ -7382,9 +7384,19 @@ async function showOnboardingWizard() {
                             <span class="ob-feature-desc">LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.47s">
+                            <span class="ob-feature-icon">🔬</span>
+                            <span class="ob-feature-name">Prompt Lab</span>
+                            <span class="ob-feature-desc">Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode.</span>
+                        </div>
+                        <div class="ob-feature-card" style="animation-delay: 0.52s">
                             <span class="ob-feature-icon">📱</span>
                             <span class="ob-feature-name">Remote</span>
-                            <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari.</span>
+                            <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.</span>
+                        </div>
+                        <div class="ob-feature-card" style="animation-delay: 0.57s">
+                            <span class="ob-feature-icon">⚙️</span>
+                            <span class="ob-feature-name">Settings</span>
+                            <span class="ob-feature-desc">Themes, personas, LLM config, OS keychain, and Plugin Marketplace — all in one panel.</span>
                         </div>
                     </div>
                 </div>
@@ -7504,7 +7516,7 @@ async function showOnboardingWizard() {
                         </div>
                         <div class="ob-ctrl-section">
                             <div class="ob-ctrl-header">RADIAL MENU <span style="opacity:0.5;font-size:0.65rem;">(L2 or backtick)</span></div>
-                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">8 quick-access views: Chat, Terminal, Agent, Canvas, Memory, FTP, Transfer, Remote</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">12 quick-access views: Chat, Canvas, Terminal, SSH, Tunnel, Share, Browser, Agent, Memory, Prompt Lab, Remote, Docs</span></div>
                             <div class="ob-ctrl-header" style="margin-top: 8px;">PROMPT PICKER <span style="opacity:0.5;font-size:0.65rem;">(X button)</span></div>
                             <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">Browse &amp; send AI prompts without typing. D-Pad to navigate, A to send, L1/R1 to switch categories.</span></div>
                         </div>
@@ -7589,7 +7601,7 @@ async function showOnboardingWizard() {
     let oauthPollAbortController = null;
 
     // Welcome screen typing animation
-    const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live code canvas, real shell, SSH client, vector memory — all in one 1280×800 window.";
+    const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
     const typingEl = document.getElementById("onboarding-welcome-typing");
     let charIdx = 0;
     function typeChar() {
@@ -7612,8 +7624,8 @@ async function showOnboardingWizard() {
         }, 40);
     }
     setTimeout(() => {
-        animateCounter(document.getElementById("ob-stat-features"), 22, 800);
-        animateCounter(document.getElementById("ob-stat-views"), 10, 600);
+        animateCounter(document.getElementById("ob-stat-features"), 56, 900);
+        animateCounter(document.getElementById("ob-stat-views"), 12, 600);
     }, 300);
 
     // DOM selectors
