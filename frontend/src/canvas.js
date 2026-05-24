@@ -324,7 +324,7 @@ function _createMonacoInstance(container, initialLang, initialCode, cdnBase) {
                         code: monacoEditor.getValue(),
                         lang: window.neurodeckCanvas.currentLang,
                         sender: COLLAB_CLIENT_ID
-                    }).catch(() => {});
+                    }).catch(err => console.warn("[Collab] sync send failed:", err));
                 }, 300);
             }
         });
@@ -770,7 +770,7 @@ function initCanvasCollab() {
                     code: monacoEditor.getValue(),
                     lang: document.getElementById("canvas-lang-select")?.value || 'html',
                     sender: COLLAB_CLIENT_ID
-                }).catch(() => {});
+                }).catch(err => console.warn("[Collab] resync send failed:", err));
             }
         });
     }

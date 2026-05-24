@@ -212,10 +212,13 @@ function handleTestConnectionClick() {
     const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
 
     const statusEl = document.getElementById("settings-llm-status");
+    const testBtn = document.getElementById("settings-test-connection-btn");
+
     if (statusEl) {
         statusEl.style.color = "var(--accent-color)";
         statusEl.innerText = "Connecting & testing...";
     }
+    if (testBtn) testBtn.disabled = true;
 
     const model = provider === "gemini" ? geminiModel : ollamaModel;
     const url = provider === "gemini" ? "" : ollamaUrl;
@@ -232,6 +235,9 @@ function handleTestConnectionClick() {
                 statusEl.style.color = "var(--error-color)";
                 statusEl.innerText = `Error: ${err}`;
             }
+        })
+        .finally(() => {
+            if (testBtn) testBtn.disabled = false;
         });
 }
 
@@ -646,6 +652,10 @@ function initCustomThemes() {
         }).catch(() => {});
     }
 
+    const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+
+    function isValidHex(v) { return HEX_RE.test(v.trim()); }
+
     function updatePreview() {
         const map = {
             "ct-preview-bg": "ct-bg",
@@ -657,7 +667,13 @@ function initCustomThemes() {
         Object.entries(map).forEach(([previewId, inputId]) => {
             const el = document.getElementById(previewId);
             const inp = document.getElementById(inputId);
-            if (el && inp) el.style.background = inp.value;
+            if (!el || !inp) return;
+            if (isValidHex(inp.value)) {
+                el.style.background = inp.value.trim();
+                inp.style.borderColor = "";
+            } else {
+                inp.style.borderColor = "var(--error-color)";
+            }
         });
     }
 
@@ -675,6 +691,16 @@ function initCustomThemes() {
             if (!name) {
                 const s = document.getElementById("ct-status");
                 if (s) { s.textContent = "Enter a theme name."; setTimeout(() => { s.textContent = ""; }, 2000); }
+                return;
+            }
+            const colorFields = ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"];
+            const invalidField = colorFields.find(id => {
+                const v = document.getElementById(id)?.value;
+                return v && !isValidHex(v);
+            });
+            if (invalidField) {
+                const s = document.getElementById("ct-status");
+                if (s) { s.textContent = "Fix invalid hex color values (must be #RGB or #RRGGBB)."; setTimeout(() => { s.textContent = ""; }, 3000); }
                 return;
             }
             const theme = {

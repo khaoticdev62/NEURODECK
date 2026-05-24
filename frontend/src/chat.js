@@ -1332,7 +1332,12 @@ export function initChat() {
     const genStopBtn = document.getElementById("chat-gen-stop");
     if (genStopBtn) {
         genStopBtn.onclick = () => {
-            invoke("cancel_generation").catch(err => console.error("Error cancelling:", err));
+            invoke("cancel_generation").catch(err => {
+                console.error("Error cancelling generation:", err);
+                if (typeof addNotification === "function") {
+                    addNotification("Stop Failed", `Could not cancel: ${err}`, "error");
+                }
+            });
         };
     }
 }
