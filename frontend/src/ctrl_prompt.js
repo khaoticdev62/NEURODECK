@@ -29,6 +29,21 @@ const CTRL_PROMPT_CATS = [
     { id: "custom",    icon: "plusCircle",  label: "Custom",    color: CAT_COLORS.custom    },
 ];
 
+const CTRL_PROMPT_ICON_ALIASES = {
+    "⚡": "zap",
+    "💻": "squareTerminal",
+    "🔍": "search",
+    "🎨": "sparkles",
+    "⚙️": "settings2",
+    "🎭": "messageSquare",
+    "⭐": "plusCircle",
+    "📝": "fileText",
+};
+
+function resolveCtrlPromptIcon(value) {
+    return CTRL_PROMPT_ICON_ALIASES[value] || value || "fileText";
+}
+
 const CTRL_PROMPT_LIBRARY = [
     // ── Quick ──────────────────────────────────────────────────────────────────
     {
@@ -465,7 +480,7 @@ function renderCtrlPromptList() {
         const borderStyle = isFocused ? `border-left-color:${color};` : "";
         const iconBg = `background:${color}1a;`;
         return `<div class="ctrl-prompt-row${isFocused ? " focused" : ""}" data-idx="${i}" style="${borderStyle}">
-            <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${createIcon(p.icon || "fileText", { size: 18 })}</div>
+            <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${createIcon(resolveCtrlPromptIcon(p.icon), { size: 18 })}</div>
             <div class="ctrl-prompt-row-content">
                 <div class="ctrl-prompt-row-title" style="${isFocused ? `color:${color};` : ""}">${p.title}${hasTemplate ? ` <span class="ctrl-prompt-template-badge" style="background:${color}22;color:${color};">template</span>` : ""}</div>
                 <div class="ctrl-prompt-row-text">${p.text.replace(/\n/g, " ").slice(0, 90)}${p.text.length > 90 ? "…" : ""}</div>

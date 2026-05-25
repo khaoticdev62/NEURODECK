@@ -14,6 +14,26 @@ const ICONS = {
     <path d="M15 4v16"></path>
     <path d="m9 9 3 3-3 3"></path>
   `,
+  arrowLeft: `
+    <path d="M19 12H5"></path>
+    <path d="m12 19-7-7 7-7"></path>
+  `,
+  arrowRight: `
+    <path d="M5 12h14"></path>
+    <path d="m12 5 7 7-7 7"></path>
+  `,
+  arrowUpRight: `
+    <path d="M7 17 17 7"></path>
+    <path d="M7 7h10v10"></path>
+  `,
+  house: `
+    <path d="M3 11 12 4l9 7"></path>
+    <path d="M5 10v10h14V10"></path>
+  `,
+  clock3: `
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 7v5l3 3"></path>
+  `,
   plus: `
     <path d="M12 5v14"></path>
     <path d="M5 12h14"></path>
@@ -124,6 +144,11 @@ const ICONS = {
   copy: `
     <rect x="9" y="9" width="11" height="11" rx="2"></rect>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  `,
+  save: `
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
+    <path d="M7 3v6h8"></path>
+    <path d="M8 21V13h8v8"></path>
   `,
   eraser: `
     <path d="m7 21 10-10"></path>
@@ -300,6 +325,7 @@ export function applyNeurodeckIconography() {
     ["#sidebar-toggle-btn", { icon: "menu", iconOnly: true }],
     ["#inspect-close-btn", { icon: "panelRightOpen", iconOnly: true }],
     ["#close-collab-x", { icon: "x", iconOnly: true }],
+    ["#close-settings-x", { icon: "x", iconOnly: true }],
     ["#transfer-modal-close-x", { icon: "x", iconOnly: true }],
     ["#close-game-context-x", { icon: "x", iconOnly: true }],
     ["#computer-use-deny-x", { icon: "x", iconOnly: true }],
@@ -329,6 +355,37 @@ export function applyNeurodeckIconography() {
     ["#share-send-btn", { icon: "sendHorizontal", label: "Send File", trailingIcon: true }],
     ["#ftp-save-profile-btn", { icon: "plus", label: "Save Profile" }],
     ["#ftp-upload-btn", { icon: "upload", label: "Upload" }],
+    ["#sftp-save-profile-btn", { icon: "plus", label: "Save Profile" }],
+    ["#sftp-upload-btn", { icon: "upload", label: "Upload" }],
+    ["#ftp-connect-btn", { icon: "globe", label: "Connect & List" }],
+    ["#sftp-connect-btn", { icon: "server", label: "Connect & List" }],
+    ["#share-group-code-save-btn", { icon: "shieldCheck", label: "Apply" }],
+    ["#browser-back-btn", { icon: "arrowLeft", iconOnly: true }],
+    ["#browser-forward-btn", { icon: "arrowRight", iconOnly: true }],
+    ["#browser-refresh-btn", { icon: "refreshCw", iconOnly: true }],
+    ["#browser-home-btn", { icon: "house", iconOnly: true }],
+    ["#browser-url-clear-btn", { icon: "x", iconOnly: true }],
+    ["#browser-go-btn", { icon: "sendHorizontal", label: "Go", trailingIcon: true }],
+    ["#browser-open-ext-btn", { icon: "arrowUpRight", label: "Open Ext", trailingIcon: true }],
+    ["#remote-start-btn", { icon: "play", label: "Start Server" }],
+    ["#remote-stop-btn", { icon: "x", label: "Stop Server" }],
+    ["#remote-copy-url-btn", { icon: "copy", iconOnly: true }],
+    ["#docs-index-btn", { icon: "plusCircle", label: "Index Folder" }],
+    ["#docs-clear-btn", { icon: "x", label: "Clear" }],
+    ["#pl-open-gallery-btn", { icon: "fileText", label: "Templates" }],
+    ["#pl-save-preset-btn", { icon: "save", label: "Save" }],
+    ["#pl-toggle-preset-input-btn", { icon: "save", iconOnly: true }],
+    ["#pl-optimize-ai-btn", { icon: "zap", label: "AI Optimize" }],
+    ["#pl-generate-btn", { icon: "zap", label: "Generate Prompt" }],
+    ["#pl-history-btn", { icon: "clock3", iconOnly: true }],
+    ["#pl-copy-prompt-btn", { icon: "copy", label: "Copy" }],
+    ["#pl-send-chat-btn", { icon: "messageSquare", label: "Chat" }],
+    ["#pl-export-json-btn", { icon: "fileText", label: "JSON" }],
+    ["#pl-export-lua-btn", { icon: "settings2", label: "Lua" }],
+    ["#pl-explain-jpe-btn", { icon: "search", label: "Explain" }],
+    ["#pl-copy-jpe-btn", { icon: "copy", label: "Copy" }],
+    ["#pl-gallery-close", { icon: "x", iconOnly: true }],
+    ["#pl-advanced-toggle", { icon: "settings2", label: "Few-Shot Examples" }],
   ].forEach(([selector, config]) => applyButtonIcon(selector, config));
 
   [
@@ -360,9 +417,24 @@ export function applyNeurodeckIconography() {
     ["#agent-switcher-title", "sparkles", "Agent Switch"],
     [".share-view-title", "share2", "Share & Transfer"],
     [".history-search-title", "search", "AI Shell History Search"],
+    [".remote-title", "panelRightOpen", "Remote Control"],
+    [".docs-title", "fileText", "Knowledge Base"],
   ].forEach(([selector, icon, label]) => applyInlineTitleIcon(selector, icon, label));
 
   applyButtonIcon(".agent-switcher-close", { icon: "x", iconOnly: true });
+
+  [
+    [".stv-nav-item[data-panel='sp-general']", "zap", "General"],
+    [".stv-nav-item[data-panel='sp-ai']", "bot", "AI Model"],
+    [".stv-nav-item[data-panel='sp-appearance']", "sparkles", "Appearance"],
+    [".stv-nav-item[data-panel='sp-terminal']", "squareTerminal", "Terminal"],
+    [".stv-nav-item[data-panel='sp-extensions']", "plusCircle", "Extensions"],
+    [".stv-nav-item[data-panel='sp-memory']", "brain", "Memory"],
+    [".stv-nav-item[data-panel='sp-network']", "globe", "Network"],
+    [".stv-nav-item[data-panel='sp-computer']", "panelRightOpen", "Computer"],
+    [".stv-nav-item[data-panel='sp-sync']", "refreshCw", "Sync"],
+    [".stv-nav-item[data-panel='sp-voice']", "mic", "Voice"],
+  ].forEach(([selector, icon, label]) => applyButtonIcon(selector, { icon, label }));
 }
 
 export { createIcon, applyButtonIcon, applyInlineTitleIcon, normalizeLabel };
