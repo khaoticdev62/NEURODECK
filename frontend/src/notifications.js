@@ -16,7 +16,7 @@ function renderNotificationsList() {
     if (!container) return;
 
     if (state.notifications.length === 0) {
-        container.innerHTML = `<div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications yet.</div>`;
+        container.innerHTML = `<div class="notif-empty-state">No notifications yet.</div>`;
         return;
     }
 

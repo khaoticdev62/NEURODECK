@@ -287,6 +287,7 @@ test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ p
   await page.locator('.nav-tab[data-view="browser"]').click();
   await expect(page.locator("#view-browser")).toHaveClass(/active/);
   await expect(page.locator(".browser-kicker")).toBeVisible();
+  await expect(page.locator(".browser-home-kicker")).toBeVisible();
 
   await page.locator('.nav-tab[data-view="tunnel"]').click();
   await expect(page.locator("#view-tunnel")).toHaveClass(/active/);
@@ -305,4 +306,11 @@ test("ssh and share transfer surfaces expose the refined shell hierarchy", async
   await page.locator('.share-inner-tab[data-panel="torrent"]').click();
   await expect(page.locator("#share-panel-torrent")).toHaveClass(/active/);
   await expect(page.locator(".torrent-kicker")).toBeVisible();
+});
+
+test("notification center opens with the refined modal hierarchy", async ({ page }) => {
+  await page.locator("#notif-btn").click();
+  const modal = page.locator("#notif-modal");
+  await expect(modal).toHaveClass(/active/);
+  await expect(modal.locator(".notif-modal-card").last()).toBeVisible();
 });

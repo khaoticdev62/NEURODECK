@@ -292,7 +292,7 @@ document.querySelector('#app').innerHTML = `
             <!-- Top Nav -->
             <header class="top-nav">
                 <div class="top-nav-left">
-                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">☰</button>
+                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">${createIcon('menu', { size: 18 })}</button>
                     <span class="top-nav-title" id="session-title">Active Session</span>
                 </div>
                 
@@ -306,10 +306,10 @@ document.querySelector('#app').innerHTML = `
                         <span class="status-dot"></span>
                         <span id="tool-status">Idle</span>
                     </span>
-                    <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">🔊</button>
-                    <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">🔔<span class="notif-badge hidden" id="notif-badge">0</span></button>
+                    <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">${createIcon('volume2', { size: 18 })}</button>
+                    <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">${createIcon('bell', { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon('search', { size: 18 })}</button>
-                    <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
+                    <button class="input-btn" id="settings-btn" title="Settings">${createIcon('settings2', { size: 18 })}</button>
                 </div>
             </header>
 
@@ -929,17 +929,17 @@ document.querySelector('#app').innerHTML = `
                                 <span class="browser-kicker">Sandboxed Web</span>
                             </div>
                             <div class="browser-nav-buttons">
-                                <button class="browser-btn" id="browser-back-btn" title="Go Back">◀</button>
-                                <button class="browser-btn" id="browser-forward-btn" title="Go Forward">▶</button>
-                                <button class="browser-btn" id="browser-refresh-btn" title="Refresh">🔄</button>
-                                <button class="browser-btn" id="browser-home-btn" title="New Tab / Home">🏠</button>
+                                <button class="browser-btn" id="browser-back-btn" title="Go Back">${createIcon('arrowLeft', { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-forward-btn" title="Go Forward">${createIcon('arrowRight', { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-refresh-btn" title="Refresh">${createIcon('refreshCw', { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-home-btn" title="New Tab / Home">${createIcon('house', { size: 16 })}</button>
                             </div>
                             <div class="browser-address-bar-wrapper">
                                 <input type="text" id="browser-url-input" class="browser-url-input" placeholder="Enter URL or search term...">
-                                <button class="browser-url-clear" id="browser-url-clear-btn" title="Clear">✕</button>
+                                <button class="browser-url-clear" id="browser-url-clear-btn" title="Clear">${createIcon('x', { size: 14 })}</button>
                             </div>
-                            <button class="browser-btn go-btn" id="browser-go-btn">Go 🚀</button>
-                            <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">Open Ext ↗️</button>
+                            <button class="browser-btn go-btn" id="browser-go-btn">${createIcon('sendHorizontal', { size: 14 })}<span>Go</span></button>
+                            <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">${createIcon('arrowUpRight', { size: 14 })}<span>Open Ext</span></button>
                         </div>
 
                         <!-- Loading progress bar (sits between toolbar and viewport) -->
@@ -950,6 +950,7 @@ document.querySelector('#app').innerHTML = `
                             <!-- New Tab / Home View -->
                             <div class="browser-home-screen" id="browser-home-screen">
                                 <div class="browser-home-content">
+                                    <span class="browser-home-kicker">Navigation Hub</span>
                                     <div class="browser-home-logo">NEURODECK<span>BROWSER</span></div>
                                     <p class="browser-home-subtitle">Built-in Sandbox Navigation Engine</p>
                                     
@@ -961,51 +962,51 @@ document.querySelector('#app').innerHTML = `
                                     <div class="speed-dial-title">Quick Bookmarks</div>
                                     <div class="speed-dial-grid">
                                         <div class="speed-dial-card" data-url="https://html.duckduckgo.com/html/">
-                                            <div class="sd-icon">🔍</div>
+                                            <div class="sd-icon">${createIcon('search', { size: 24 })}</div>
                                             <div class="sd-label">DuckDuckGo</div>
                                             <div class="sd-desc">Privacy-first web search</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://en.m.wikipedia.org/wiki/Main_Page">
-                                            <div class="sd-icon">📚</div>
+                                            <div class="sd-icon">${createIcon('fileText', { size: 24 })}</div>
                                             <div class="sd-label">Wikipedia</div>
                                             <div class="sd-desc">Mobile encyclopedia</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://news.ycombinator.com/">
-                                            <div class="sd-icon">📰</div>
+                                            <div class="sd-icon">${createIcon('chartColumn', { size: 24 })}</div>
                                             <div class="sd-label">Hacker News</div>
                                             <div class="sd-desc">Tech & Dev community board</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://reddit.com/r/SteamDeck">
-                                            <div class="sd-icon">🎮</div>
+                                            <div class="sd-icon">${createIcon('gamepad2', { size: 24 })}</div>
                                             <div class="sd-label">r/SteamDeck</div>
                                             <div class="sd-desc">Steam Deck community</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://mrdoob.com/projects/chromeexperiments/google-gravity/">
-                                            <div class="sd-icon">🌐</div>
+                                            <div class="sd-icon">${createIcon('globe', { size: 24 })}</div>
                                             <div class="sd-label">Google Gravity</div>
                                             <div class="sd-desc">Anti-gravity Easter egg</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://codepen.io/trending">
-                                            <div class="sd-icon">✏️</div>
+                                            <div class="sd-icon">${createIcon('code2', { size: 24 })}</div>
                                             <div class="sd-label">CodePen</div>
                                             <div class="sd-desc">Live front-end code demos</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://archive.org/search">
-                                            <div class="sd-icon">🏛️</div>
+                                            <div class="sd-icon">${createIcon('folderOpen', { size: 24 })}</div>
                                             <div class="sd-label">Internet Archive</div>
                                             <div class="sd-desc">Web history & media vault</div>
                                         </div>
                                         <div class="speed-dial-card" data-url="https://caniuse.com/">
-                                            <div class="sd-icon">🔧</div>
+                                            <div class="sd-icon">${createIcon('bug', { size: 24 })}</div>
                                             <div class="sd-label">Can I Use</div>
                                             <div class="sd-desc">Browser feature support tables</div>
                                         </div>
                                     </div>
 
                                     <div class="browser-info-panel">
-                                        <div class="info-icon">⚠️</div>
+                                        <div class="info-icon">${createIcon('info', { size: 18 })}</div>
                                         <div class="info-text">
-                                            <strong>Framing Notice:</strong> Many modern websites (like Google, GitHub, or YouTube) send headers that restrict them from running inside an embedded iframe for security. If a website refuses to connect, use the <strong>Open Ext ↗️</strong> button to launch it in your default desktop browser.
+                                            <strong>Framing Notice:</strong> Many modern websites (like Google, GitHub, or YouTube) send headers that restrict them from running inside an embedded iframe for security. If a website refuses to connect, use the <strong>Open Ext</strong> button to launch it in your default desktop browser.
                                         </div>
                                     </div>
                                 </div>
@@ -1017,11 +1018,12 @@ document.querySelector('#app').innerHTML = `
                             <!-- Blocked / Error Screen -->
                             <div class="browser-blocked-screen hidden" id="browser-blocked-screen">
                                 <div class="blocked-content">
-                                    <div class="blocked-icon">🚫</div>
+                                    <span class="blocked-kicker">Embed Guard</span>
+                                    <div class="blocked-icon">${createIcon('shieldCheck', { size: 34 })}</div>
                                     <h2 class="blocked-title">Connection Blocked</h2>
                                     <p class="blocked-msg">This site uses <strong>X-Frame-Options</strong> or <strong>CSP</strong> headers that prevent embedding inside NEURODECK Browser.</p>
                                     <p class="blocked-url" id="blocked-url-display"></p>
-                                    <button class="browser-btn go-btn blocked-ext-btn" id="blocked-open-ext-btn">Open in System Browser ↗️</button>
+                                    <button class="browser-btn go-btn blocked-ext-btn" id="blocked-open-ext-btn">${createIcon('arrowUpRight', { size: 14 })}<span>Open in System Browser</span></button>
                                 </div>
                             </div>
                         </div>
@@ -1075,7 +1077,7 @@ document.querySelector('#app').innerHTML = `
                                 <div class="agent-pane-header">Execution Log</div>
                                 <div class="agent-log" id="agent-log">
                                     <div class="agent-empty-state">
-                                        <div class="agent-empty-icon">🤖</div>
+                                        <div class="agent-empty-icon">${createIcon('bot', { size: 32 })}</div>
                                         <p>Describe a task above and click <strong>Run Agent</strong>.</p>
                                         <p class="agent-empty-hint">The agent will write code, execute it, and iterate until the task is complete — up to 5 steps.</p>
                                     </div>
@@ -1110,7 +1112,7 @@ document.querySelector('#app').innerHTML = `
                                 <span>Template Gallery</span>
                                 <div style="display:flex;gap:8px;align-items:center;">
                                     <input type="text" id="pl-gallery-search" class="pl-gallery-search" placeholder="Search templates...">
-                                    <button class="pl-gallery-close" id="pl-gallery-close">✕</button>
+                                    <button class="pl-gallery-close" id="pl-gallery-close">${createIcon('x', { size: 16 })}</button>
                                 </div>
                             </div>
                             <div class="pl-gallery-body" id="pl-gallery-body"></div>
@@ -2047,7 +2049,7 @@ document.querySelector('#app').innerHTML = `
                 </div><!-- end stv-content-area -->
 
                 <!-- Close button (floating) -->
-                <button class="stv-close-btn" id="close-settings-x">✕</button>
+                <button class="stv-close-btn" id="close-settings-x">${createIcon('x', { size: 16 })}</button>
                 <!-- Legacy close (hidden — JS still binds to it) -->
                 <button id="close-settings" style="display:none;"></button>
 
@@ -2059,10 +2061,13 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Canvas Collaboration Modal -->
         <div class="settings-overlay" id="collab-modal">
-            <div class="settings-modal-card collab-workspace-card">
+            <div class="settings-modal-card collab-workspace-card collab-modal-card">
                 <div class="settings-modal-header">
-                    <h3>LIVE WORKSPACE</h3>
-                    <button class="sidebar-toggle-btn" id="close-collab-x">✕</button>
+                    <div class="modal-title-stack">
+                        <span class="collab-modal-kicker">Live Mesh</span>
+                        <h3>Live Workspace</h3>
+                    </div>
+                    <button class="sidebar-toggle-btn" id="close-collab-x">${createIcon('x', { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <div class="setting-field-group collab-field">
@@ -2126,10 +2131,13 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Incoming Transfer Confirmation Modal -->
         <div class="settings-overlay" id="transfer-modal">
-            <div class="settings-modal-card">
+            <div class="settings-modal-card transfer-modal-card">
                 <div class="settings-modal-header">
-                    <h3>INCOMING FILE TRANSFER</h3>
-                    <button class="sidebar-toggle-btn" id="transfer-modal-close-x">✕</button>
+                    <div class="modal-title-stack">
+                        <span class="transfer-modal-kicker">Trust Gate</span>
+                        <h3>Incoming File Transfer</h3>
+                    </div>
+                    <button class="sidebar-toggle-btn" id="transfer-modal-close-x">${createIcon('x', { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <p>Another S-Term peer is requesting to send you a file.</p>
@@ -2147,7 +2155,7 @@ document.querySelector('#app').innerHTML = `
                             <span class="detail-value" id="transfer-modal-size">45.2 MB</span>
                         </div>
                     </div>
-                    <p class="transfer-modal-warning">⚠️ WARNING: Only accept files from trusted sources on your local network.</p>
+                    <p class="transfer-modal-warning">${createIcon('shieldCheck', { size: 16 })}<span>Only accept files from trusted sources on your local network.</span></p>
                 </div>
                 <div class="settings-modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button class="canvas-btn" id="transfer-modal-reject" style="background: rgba(255, 60, 90, 0.2); border-color: var(--error-color);">Reject</button>
@@ -2161,7 +2169,7 @@ document.querySelector('#app').innerHTML = `
             <div class="settings-modal-card game-context-card">
                 <div class="settings-modal-header">
                     <h3>Active Game Context</h3>
-                    <button class="sidebar-toggle-btn" id="close-game-context-x">✕</button>
+                    <button class="sidebar-toggle-btn" id="close-game-context-x">${createIcon('x', { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <div class="game-context-hero">
@@ -2207,7 +2215,7 @@ document.querySelector('#app').innerHTML = `
             <div class="settings-modal-card computer-use-modal-card">
                 <div class="settings-modal-header">
                     <h3>Computer Use Approval</h3>
-                    <button class="sidebar-toggle-btn" id="computer-use-deny-x">✕</button>
+                    <button class="sidebar-toggle-btn" id="computer-use-deny-x">${createIcon('x', { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content computer-use-modal-content">
                     <div class="computer-use-modal-copy">
@@ -2230,13 +2238,16 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Notification Center Modal -->
         <div class="settings-overlay" id="notif-modal">
-            <div class="settings-modal-card" style="max-width: 400px;">
+            <div class="settings-modal-card notif-modal-card" style="max-width: 400px;">
                 <div class="settings-modal-header">
-                    <h3>🔔 NOTIFICATION CENTER</h3>
-                    <button class="sidebar-toggle-btn" id="close-notif-x">✕</button>
+                    <div class="modal-title-stack">
+                        <span class="notif-center-kicker">Activity Feed</span>
+                        <h3>Notification Center</h3>
+                    </div>
+                    <button class="sidebar-toggle-btn" id="close-notif-x">${createIcon('x', { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content" style="max-height: 350px; overflow-y: auto;" id="notif-list-container">
-                    <div style="opacity: 0.5; text-align: center; padding: 20px; font-style: italic;">No notifications yet.</div>
+                    <div class="notif-empty-state">No notifications yet.</div>
                 </div>
                 <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
                     <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
