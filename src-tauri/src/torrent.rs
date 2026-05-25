@@ -39,6 +39,7 @@ struct TorrentRecord {
     torrent: Torrent,
     label: String,
     source_kind: String,
+    source_display: String,
     source_value: String,
     added_at_utc: String,
 }
@@ -48,6 +49,7 @@ pub struct TorrentSnapshot {
     pub id: String,
     pub name: String,
     pub source_kind: String,
+    pub source_display: String,
     pub source_value: String,
     pub status: String,
     pub progress_pct: f64,
@@ -142,7 +144,8 @@ impl TorrentManager {
         } else {
             "file".to_string()
         };
-        let source_value = shorten_for_display(cleaned, 96);
+        let source_display = shorten_for_display(cleaned, 96);
+        let source_value = cleaned.to_string();
         let added_at_utc = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
         self.torrents.insert(
@@ -153,6 +156,7 @@ impl TorrentManager {
                 torrent,
                 label,
                 source_kind,
+                source_display,
                 source_value,
                 added_at_utc,
             },
@@ -264,6 +268,7 @@ async fn snapshot_record(record: &TorrentRecord, download_root: &Path) -> Result
         id: record.id.clone(),
         name: record.label.clone(),
         source_kind: record.source_kind.clone(),
+        source_display: record.source_display.clone(),
         source_value: record.source_value.clone(),
         status: status.to_string(),
         progress_pct: (progress_pct * 10.0).round() / 10.0,

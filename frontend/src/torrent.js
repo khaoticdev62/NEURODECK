@@ -80,7 +80,7 @@ function notifyError(title, err) {
 }
 
 function formatTorrentMeta(entry) {
-  return `${entry.source_kind.toUpperCase()} | ${entry.source_value}`;
+  return `${entry.source_kind.toUpperCase()} | ${entry.source_display || entry.source_value}`;
 }
 
 function formatTorrentDetails(entry) {
@@ -97,6 +97,7 @@ function getFilteredItems() {
   if (search) {
     items = items.filter((entry) =>
       (entry.name || '').toLowerCase().includes(search) ||
+      (entry.source_display || '').toLowerCase().includes(search) ||
       (entry.source_value || '').toLowerCase().includes(search) ||
       (entry.info_hash || '').toLowerCase().includes(search),
     );
@@ -205,7 +206,7 @@ function renderInspector(entry) {
 
   const source = document.createElement('div');
   source.className = 'torrent-inspector-source';
-  source.textContent = entry.source_value || '';
+  source.textContent = entry.source_value || entry.source_display || '';
   torrentUi.inspectorEl.appendChild(source);
 
   const actions = document.createElement('div');

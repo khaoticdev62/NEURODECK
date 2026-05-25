@@ -307,8 +307,12 @@ function activateSettingsPanel(panelId, themeName) {
     document.querySelectorAll(".stv-nav-item").forEach((b) => b.classList.remove("active"));
     document.querySelectorAll(".settings-panel").forEach((p) => p.classList.remove("active"));
 
-    const activeButton = document.querySelector(`.stv-nav-item[data-panel="${panelId}"]`);
-    const activePanel = document.getElementById(panelId);
+    const fallbackPanelId = "sp-general";
+    const requestedButton = document.querySelector(`.stv-nav-item[data-panel="${panelId}"]`);
+    const requestedPanel = document.getElementById(panelId);
+    const resolvedPanelId = requestedButton && requestedPanel ? panelId : fallbackPanelId;
+    const activeButton = document.querySelector(`.stv-nav-item[data-panel="${resolvedPanelId}"]`);
+    const activePanel = document.getElementById(resolvedPanelId);
     if (activeButton) activeButton.classList.add("active");
     if (activePanel) activePanel.classList.add("active");
 
@@ -316,7 +320,7 @@ function activateSettingsPanel(panelId, themeName) {
     if (modalCard) {
         modalCard.dataset.settingsTheme = resolvedTheme;
     }
-    localStorage.setItem("settingsActivePanel", panelId);
+    localStorage.setItem("settingsActivePanel", resolvedPanelId);
 }
 
 function initSettingsSidebar() {

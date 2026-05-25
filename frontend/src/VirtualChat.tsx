@@ -14,7 +14,7 @@ function sanitizeRenderedHtml(html: string): string {
       "ul", "ol", "li", "pre", "code", "em", "strong", "br", "img",
       "table", "thead", "tbody", "tr", "th", "td", "blockquote", "hr"
     ]);
-    const allowedAttrs = new Set(["class", "href", "src", "alt", "title", "target", "style"]);
+    const allowedAttrs = new Set(["class", "href", "src", "alt", "title"]);
 
     const cleanNode = (node: Node) => {
       const children = Array.from(node.childNodes);
@@ -46,6 +46,24 @@ function sanitizeRenderedHtml(html: string): string {
             el.removeAttribute(attr.name);
           } else if ((name === "href" || name === "src") && (value.startsWith("javascript:") || value.startsWith("data:") || value.startsWith("vbscript:"))) {
             el.removeAttribute(attr.name);
+          } else if (name === "href" && !/^(https?:|mailto:|#|\/)/i.test(attr.value.trim())) {
+            el.removeAttribute(attr.name);
+          } else if (name === "src" && !/^(https?:\/\/|\/)/i.test(attr.value.trim())) {
+            el.removeAttribute(attr.name);
+          }
+        }
+
+        if (tagName === "a") {
+          const href = el.getAttribute("href");
+          if (href) {
+            el.setAttribute("rel", "noopener noreferrer nofollow");
+          }
+        }
+
+        if (tagName === "img") {
+          const src = el.getAttribute("src");
+          if (src && /^https?:\/\//i.test(src)) {
+            el.removeAttribute("src");
           }
         }
 

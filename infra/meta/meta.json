@@ -14,9 +14,9 @@
   },
   "tag": "v1.2.1-ra",
   "build": {
-    "git_sha": "7b41efe2e1584df57129d142db496288afa4e548",
+    "git_sha": "9728a9ae562b31ee7ecc33995e74473bfecb109d",
     "git_tag": null,
-    "built_at_utc": "2026-05-25T05:57:41Z",
+    "built_at_utc": "2026-05-25T06:02:23Z",
     "dirty": true
   },
   "studio": {
