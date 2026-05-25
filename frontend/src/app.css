@@ -473,6 +473,9 @@ body::before {
     flex-shrink: 0;
 }
 .agent-switcher-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--font-display);
     font-size: 0.78rem;
     color: var(--accent-color);
@@ -1987,6 +1990,9 @@ body::before {
     border-radius: 12px;
     cursor: pointer;
     transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+}
+.command-palette-close .nd-icon-svg {
+    flex-shrink: 0;
 }
 .command-palette-close:hover {
     background: rgba(255,255,255,0.08);
@@ -4605,6 +4611,10 @@ body.crt-flicker-disabled .crt-flicker {
     gap: 10px;
     flex-wrap: wrap;
 }
+.agent-switcher-title .nd-icon-svg,
+.agent-switcher-close .nd-icon-svg {
+    flex-shrink: 0;
+}
 
 .share-view-kicker,
 .torrent-kicker,
@@ -5190,7 +5200,7 @@ body.crt-flicker-disabled .crt-flicker {
     margin: 0;
 }
 
-.transfer-modal-warning .icon-svg {
+.transfer-modal-warning .nd-icon-svg {
     flex-shrink: 0;
     margin-top: 1px;
 }
@@ -5611,7 +5621,7 @@ body.crt-flicker-disabled .crt-flicker {
     transform: scale(1.15);
 }
 
-.sd-icon .icon-svg {
+.sd-icon .nd-icon-svg {
     width: 28px;
     height: 28px;
 }
@@ -7479,6 +7489,9 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .history-search-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--font-display);
     font-size: 0.75rem;
     font-weight: 600;
@@ -7505,8 +7518,13 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .history-search-icon {
-    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
     opacity: 0.5;
+    flex-shrink: 0;
+}
+.history-search-icon .nd-icon-svg,
+.history-search-title .nd-icon-svg {
     flex-shrink: 0;
 }
 
@@ -8098,8 +8116,10 @@ body.crt-flicker-disabled .crt-flicker {
     color: rgba(255,255,255,0.72);
 }
 .pl-header-icon {
-    font-size: 1.2rem;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--accent-rgb), 0.9);
 }
 .pl-header-title h3 {
     margin: 0;
@@ -8109,8 +8129,18 @@ body.crt-flicker-disabled .crt-flicker {
     letter-spacing: 0.5px;
 }
 
+.pl-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 /* ── Prompt Lab: Gallery Button ────────────────────────────────────────────── */
 .pl-gallery-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     background: rgba(var(--accent-rgb), 0.08);
     border: 1px solid rgba(var(--accent-rgb), 0.25);
     color: var(--accent-color);
@@ -8125,6 +8155,9 @@ body.crt-flicker-disabled .crt-flicker {
 .pl-gallery-btn:hover {
     background: rgba(var(--accent-rgb), 0.16);
     border-color: rgba(var(--accent-rgb), 0.5);
+}
+.pl-gallery-btn .nd-icon-svg {
+    flex-shrink: 0;
 }
 
 /* ── Prompt Lab: Quick-Fill Chips ──────────────────────────────────────────── */
@@ -8167,6 +8200,9 @@ body.crt-flicker-disabled .crt-flicker {
     margin-bottom: 0;
 }
 .pl-optimize-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: transparent;
     border: 1px solid rgba(var(--accent-rgb), 0.3);
     color: var(--accent-color);
@@ -8181,6 +8217,9 @@ body.crt-flicker-disabled .crt-flicker {
 .pl-optimize-btn:hover {
     background: rgba(var(--accent-rgb), 0.12);
     border-color: rgba(var(--accent-rgb), 0.55);
+}
+.pl-optimize-btn .nd-icon-svg {
+    flex-shrink: 0;
 }
 
 /* ── Prompt Lab: Formula Card Section ─────────────────────────────────────── */

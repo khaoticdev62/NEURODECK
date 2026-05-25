@@ -277,12 +277,20 @@ test("chat, memory, and prompt lab expose the refined shell hierarchy", async ({
   await page.locator('.nav-tab[data-view="prompt-lab"]').click();
   await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
   await expect(page.locator(".pl-header-kicker")).toBeVisible();
+  await expect(page.locator("#pl-open-gallery-btn .nd-icon-svg")).toBeVisible();
+  await expect(page.locator("#pl-optimize-ai-btn .nd-icon-svg")).toBeVisible();
 });
 
 test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ page }) => {
   await page.locator('.nav-tab[data-view="agent"]').click();
   await expect(page.locator("#view-agent")).toHaveClass(/active/);
   await expect(page.locator(".agent-kicker")).toBeVisible();
+  await page.locator("#model-name").click();
+  await expect(page.locator("#agent-switcher-panel")).not.toHaveClass(/hidden/);
+  await expect(page.locator(".agent-switcher-title .nd-icon-svg")).toBeVisible();
+  await expect(page.locator(".agent-switcher-close .nd-icon-svg")).toBeVisible();
+  await page.locator(".agent-switcher-close").click();
+  await expect(page.locator("#agent-switcher-panel")).toHaveClass(/hidden/);
 
   await page.locator('.nav-tab[data-view="browser"]').click();
   await expect(page.locator("#view-browser")).toHaveClass(/active/);

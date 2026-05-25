@@ -338,13 +338,13 @@ document.querySelector('#app').innerHTML = `
                  ═══════════════════════════════════════════════════════════ -->
             <div id="agent-switcher-panel" class="agent-switcher-panel hidden">
                 <div class="agent-switcher-header">
-                    <span class="agent-switcher-title">⚡ Agent Switch</span>
+                    <span class="agent-switcher-title">${createIcon('zap', { size: 14 })}<span>Agent Switch</span></span>
                     <div class="agent-switcher-tabs">
                         <button class="agent-tab active" data-atab="agents">Agents</button>
                         <button class="agent-tab" data-atab="recommended">Steam Deck Best</button>
                         <button class="agent-tab" data-atab="custom">+ Custom</button>
                     </div>
-                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()">✕</button>
+                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()">${createIcon('x', { size: 14 })}</button>
                 </div>
                 <div class="agent-tab-body" id="agent-tab-agents">
                     <div class="agent-card-grid" id="agent-card-grid">
@@ -405,7 +405,7 @@ document.querySelector('#app').innerHTML = `
                                 aria-label="Command palette search"
                             />
                         </div>
-                        <button class="command-palette-close" id="command-palette-close" aria-label="Close command palette">✕</button>
+                        <button class="command-palette-close" id="command-palette-close" aria-label="Close command palette">${createIcon('x', { size: 16 })}</button>
                     </div>
                     <div class="command-palette-help" id="command-palette-title">
                         Use Enter to run the highlighted action. Esc closes. Ctrl+K reopens the palette.
@@ -479,9 +479,9 @@ document.querySelector('#app').innerHTML = `
                 <div id="history-search-overlay" class="hidden">
                     <div class="history-search-panel">
                         <div class="history-search-header">
-                            <div class="history-search-title">⚡ AI Shell History Search</div>
+                            <div class="history-search-title">${createIcon('zap', { size: 14 })}<span>AI Shell History Search</span></div>
                             <div class="history-search-input-wrap">
-                                <span class="history-search-icon">🔍</span>
+                                <span class="history-search-icon">${createIcon('search', { size: 16 })}</span>
                                 <input type="text" id="history-search-input" placeholder="Describe the command you're looking for..." autocomplete="off" spellcheck="false">
                             </div>
                             <div class="history-search-status" id="history-search-status">Press Enter to search • Esc to close</div>
@@ -1125,14 +1125,14 @@ document.querySelector('#app').innerHTML = `
                             <div class="prompt-lab-header">
                                 <div class="pl-header-title">
                                     <span class="pl-header-kicker">Prompt Studio</span>
-                                    <span class="pl-header-icon">⚗️</span>
+                                    <span class="pl-header-icon">${createIcon('sparkles', { size: 18 })}</span>
                                     <h3>Prompt Lab</h3>
                                 </div>
-                                <div style="display:flex;gap:6px;align-items:center;">
-                                    <button class="pl-gallery-btn" id="pl-open-gallery-btn" title="Browse Template Gallery">📚 Templates</button>
+                                <div class="pl-header-actions">
+                                    <button class="pl-gallery-btn" id="pl-open-gallery-btn" title="Browse Template Gallery">${createIcon('fileText', { size: 14 })}<span>Templates</span></button>
                                     <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display:none;width:96px;padding:4px 8px;font-size:0.8rem;background:rgba(0,0,0,0.3);">
-                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display:none;font-size:0.75rem;">💾 Save</button>
-                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset">💾</button>
+                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display:none;font-size:0.75rem;">${createIcon('save', { size: 13 })}<span>Save</span></button>
+                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset">${createIcon('save', { size: 13 })}</button>
                                 </div>
                             </div>
 
@@ -1160,7 +1160,7 @@ document.querySelector('#app').innerHTML = `
                             <div class="pl-field">
                                 <div class="pl-field-header">
                                     <label>Task / Objective</label>
-                                    <button class="pl-optimize-btn" id="pl-optimize-ai-btn" title="AI Decompose & Optimize">⚡ AI Optimize</button>
+                                    <button class="pl-optimize-btn" id="pl-optimize-ai-btn" title="AI Decompose & Optimize">${createIcon('zap', { size: 13 })}<span>AI Optimize</span></button>
                                 </div>
                                 <input type="text" id="pl-task" placeholder="e.g. Design an endless runner game.">
                             </div>
@@ -5752,7 +5752,7 @@ function updateCanvasToolbarButtons() {
             saveBtn = document.createElement("button");
             saveBtn.className = "canvas-btn";
             saveBtn.id = "canvas-save-plugin-btn";
-            saveBtn.innerText = "💾 Save Plugin";
+            saveBtn.innerHTML = `${createIcon('save', { size: 14 })}<span>Save Plugin</span>`;
             saveBtn.style.marginLeft = "8px";
             
             // Insert it after canvas-run-btn
