@@ -7,6 +7,11 @@ use chrono::Utc;
 use futures_util::StreamExt;
 use crate::storage::{Session, load_session};
 
+lazy_static::lazy_static! {
+    static ref RE_FILE_REF: regex::Regex = regex::Regex::new(r"@file:([^\s]+)").unwrap();
+    static ref RE_DISCUSS: regex::Regex = regex::Regex::new(r"^/discuss\s+(\w+)\s+(\w+)\s+(.+)$").unwrap();
+}
+
 #[tauri::command]
 pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -338,8 +343,7 @@ pub async fn send_command(
 
     // Handle @file:path pattern
     let mut full_prompt = prompt.clone();
-    let re = regex::Regex::new(r"@file:([^\s]+)").map_err(|e| format!("Regex error: {}", e))?;
-    if let Some(caps) = re.captures(&prompt) {
+    if let Some(caps) = RE_FILE_REF.captures(&prompt) {
         let file_path_str = caps.get(1).ok_or("Failed to extract file path")?.as_str();
         let target_path = std::path::Path::new(file_path_str);
         
@@ -446,8 +450,7 @@ pub async fn send_command(
 
     // Check for roundtable discussion command
     if prompt.trim().starts_with("/discuss") {
-        let re_discuss = regex::Regex::new(r"^/discuss\s+(\w+)\s+(\w+)\s+(.+)$").map_err(|e| format!("Regex error: {}", e))?;
-        if let Some(caps) = re_discuss.captures(prompt.trim()) {
+        if let Some(caps) = RE_DISCUSS.captures(prompt.trim()) {
             let p1 = caps.get(1).ok_or("Participant 1 missing")?.as_str().to_string();
             let p2 = caps.get(2).ok_or("Participant 2 missing")?.as_str().to_string();
             let topic = caps.get(3).ok_or("Topic missing")?.as_str().to_string();

@@ -138,9 +138,11 @@ impl MemoryDB {
             return Ok(Vec::new());
         }
 
-        // Calculate cosine similarities
+        // Skip records with no embedding (e.g. manually-added facts) so they
+        // don't surface as 0.0-similarity entries and pollute RAG top-N results.
         let mut similarities: Vec<(f32, &MemoryRecord)> = records
             .iter()
+            .filter(|r| !r.embedding.is_empty())
             .map(|record| {
                 let sim = cosine_similarity(query_embedding, &record.embedding);
                 (sim, record)

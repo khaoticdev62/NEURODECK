@@ -14,7 +14,7 @@ export function initAgentView() {
     const outputEl = document.getElementById("agent-output");
     const sendCanvasBtn = document.getElementById("agent-send-canvas-btn");
 
-    if (!taskInput || !runBtn) return;
+    if (!taskInput || !runBtn || !sendCanvasBtn) return;
 
     let agentRunning = false;
     let agentShouldStop = false;

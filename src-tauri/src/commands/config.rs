@@ -70,18 +70,11 @@ pub async fn test_llm_connection(
             _ => std::env::var("GEMINI_API_KEY").map_err(|_| "Gemini API key is required but not set".to_string())?,
         };
 
-        let original_key = std::env::var("GEMINI_API_KEY").ok();
-        std::env::set_var("GEMINI_API_KEY", &api_key);
-
-        let test_provider = GeminiProvider::new(model);
+        // Use the key directly rather than mutating the global env var, which
+        // would race with concurrent send_command / embedding calls on other threads.
+        let test_provider = GeminiProvider::new_with_key(model, api_key);
         let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
         let first_chunk = stream.next().await;
-
-        if let Some(orig) = original_key {
-            std::env::set_var("GEMINI_API_KEY", orig);
-        } else {
-            std::env::remove_var("GEMINI_API_KEY");
-        }
 
         match first_chunk {
             Some(Ok(_)) => Ok("Gemini Connection Successful!".to_string()),

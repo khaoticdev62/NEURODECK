@@ -7,12 +7,12 @@ fn to_string_err<E: std::fmt::Display>(e: E) -> String {
 
 fn validate_sftp_path(path: &str) -> Result<(), String> {
     lazy_static::lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"^[a-zA-Z0-9_\.\-\/ ]+$").unwrap();
+        static ref RE: regex::Regex = regex::Regex::new(r"^[a-zA-Z0-9_\.\-\/:@ ]+$").unwrap();
     }
     if RE.is_match(path) {
         Ok(())
     } else {
-        Err("Invalid characters in SFTP path. Only alphanumeric, dashes, dots, underscores, spaces, and slashes are allowed.".to_string())
+        Err("Invalid characters in SFTP path. Only alphanumeric, dashes, dots, underscores, colons, slashes, and spaces are allowed.".to_string())
     }
 }
 

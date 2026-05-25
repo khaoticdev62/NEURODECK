@@ -185,6 +185,10 @@ pub fn pty_spawn(
     });
 
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
+    // Drop any existing session for this ID before inserting.  Dropping the
+    // PtySession closes the writer and master fd, which causes the old reader
+    // thread's read() to return an error and exit — preventing a thread leak.
+    sessions.remove(&id);
     sessions.insert(id, PtySession { writer, master });
 
     Ok(())

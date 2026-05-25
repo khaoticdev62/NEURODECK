@@ -41,42 +41,52 @@ pub async fn host(port: u16, app: AppHandle) -> Result<(u16, CollabSession), Str
     let accept_count = Arc::clone(&peer_count);
     let relay_tx = tx.clone();
 
+    // Run the accept loop and broadcast relay in the same task so that
+    // aborting abort_handle cancels both simultaneously.  Each run_peer_io
+    // task receives its peer_tx sender via the peers Vec; when this outer
+    // task is dropped the peers Vec drops, closing all peer channels and
+    // allowing those tasks to exit naturally.
     let task = tokio::spawn(async move {
-        let broadcast_peers = Arc::clone(&peers);
-        tokio::spawn(async move {
-            while let Some(msg) = rx.recv().await {
-                let senders = {
-                    let guard = broadcast_peers.lock().await;
-                    guard.clone()
-                };
-                for peer_tx in senders {
-                    let _ = peer_tx.send(msg.clone()).await;
-                }
-            }
-        });
-
         loop {
-            match listener.accept().await {
-                Ok((stream, peer)) => {
-                    let peer_str = peer.to_string();
-                    let (peer_tx, peer_rx) = mpsc::channel::<String>(128);
-                    {
-                        let mut guard = accept_peers.lock().await;
-                        guard.push(peer_tx);
+            tokio::select! {
+                accept_result = listener.accept() => {
+                    match accept_result {
+                        Ok((stream, peer)) => {
+                            let peer_str = peer.to_string();
+                            let (peer_tx, peer_rx) = mpsc::channel::<String>(128);
+                            {
+                                let mut guard = accept_peers.lock().await;
+                                guard.push(peer_tx);
+                            }
+                            accept_count.fetch_add(1, Ordering::SeqCst);
+                            let _ = app.emit("canvas_collab_event", format!("peer_connected:{}", peer_str));
+                            tokio::spawn(run_peer_io(
+                                stream,
+                                app.clone(),
+                                peer_rx,
+                                Some(relay_tx.clone()),
+                                Some(Arc::clone(&accept_count)),
+                            ));
+                        }
+                        Err(e) => {
+                            let _ = app.emit("canvas_collab_event", format!("error:{}", e));
+                            break;
+                        }
                     }
-                    accept_count.fetch_add(1, Ordering::SeqCst);
-                    let _ = app.emit("canvas_collab_event", format!("peer_connected:{}", peer_str));
-                    tokio::spawn(run_peer_io(
-                        stream,
-                        app.clone(),
-                        peer_rx,
-                        Some(relay_tx.clone()),
-                        Some(Arc::clone(&accept_count)),
-                    ));
                 }
-                Err(e) => {
-                    let _ = app.emit("canvas_collab_event", format!("error:{}", e));
-                    break;
+                msg = rx.recv() => {
+                    match msg {
+                        Some(msg) => {
+                            let senders = {
+                                let guard = peers.lock().await;
+                                guard.clone()
+                            };
+                            for peer_tx in senders {
+                                let _ = peer_tx.send(msg.clone()).await;
+                            }
+                        }
+                        None => break,
+                    }
                 }
             }
         }

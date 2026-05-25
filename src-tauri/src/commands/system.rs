@@ -52,23 +52,27 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
 
 #[tauri::command]
 pub async fn execute_command(cmd_str: String) -> String {
-    let mut cmd = if cfg!(target_os = "windows") {
-        let mut c = std::process::Command::new("cmd.exe");
-        c.arg("/c").arg(&cmd_str);
-        c
-    } else {
-        let mut c = std::process::Command::new("sh");
-        c.arg("-c").arg(&cmd_str);
-        c
-    };
+    tokio::task::spawn_blocking(move || {
+        let mut cmd = if cfg!(target_os = "windows") {
+            let mut c = std::process::Command::new("cmd.exe");
+            c.arg("/c").arg(&cmd_str);
+            c
+        } else {
+            let mut c = std::process::Command::new("sh");
+            c.arg("-c").arg(&cmd_str);
+            c
+        };
 
-    match cmd.output() {
-        Ok(output) => {
-            let combined = [output.stdout, output.stderr].concat();
-            String::from_utf8_lossy(&combined).into_owned()
+        match cmd.output() {
+            Ok(output) => {
+                let combined = [output.stdout, output.stderr].concat();
+                String::from_utf8_lossy(&combined).into_owned()
+            }
+            Err(e) => format!("Error: {}", e),
         }
-        Err(e) => format!("Error: {}", e),
-    }
+    })
+    .await
+    .unwrap_or_else(|e| format!("Error: spawn_blocking panicked: {}", e))
 }
 
 #[cfg(debug_assertions)]
@@ -821,40 +825,46 @@ pub struct ContextStats {
 
 #[tauri::command]
 pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    
-    let active_provider = app.config.llm.default_provider.clone();
-    let active_model = if active_provider == "gemini" {
-        app.config.llm.gemini_model.clone()
-    } else {
-        app.config.llm.ollama_model.clone()
-    };
+    // Scope the lock so it is released before the blocking OS RAM query below.
+    let (active_provider, active_model, memory_records_count, memory_pinned_count,
+         memory_last_store, session_id, session_messages_count, session_created, active_persona) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
 
-    let mut memory_records_count = 0;
-    let mut memory_pinned_count = 0;
-    let mut memory_last_store = "Never".to_string();
+        let active_provider = app.config.llm.default_provider.clone();
+        let active_model = if active_provider == "gemini" {
+            app.config.llm.gemini_model.clone()
+        } else {
+            app.config.llm.ollama_model.clone()
+        };
 
-    if let Some(ref db) = app.mem_db {
-        if let Ok(records) = db.list_all() {
-            memory_records_count = records.len();
-            memory_pinned_count = records.iter().filter(|r| r.metadata.get("pinned") == Some(&"true".to_string())).count();
-            if memory_records_count > 0 {
-                memory_last_store = "Connected".to_string();
+        let mut memory_records_count = 0;
+        let mut memory_pinned_count = 0;
+        let mut memory_last_store = "Never".to_string();
+
+        if let Some(ref db) = app.mem_db {
+            if let Ok(records) = db.list_all() {
+                memory_records_count = records.len();
+                memory_pinned_count = records.iter().filter(|r| r.metadata.get("pinned") == Some(&"true".to_string())).count();
+                if memory_records_count > 0 {
+                    memory_last_store = "Connected".to_string();
+                }
             }
         }
-    }
 
-    let session_id = app.session_id.clone();
-    let session_messages_count = app.messages.len();
-    let session_created = if session_id.len() >= 15 {
-        let date = &session_id[0..8];
-        let time = &session_id[9..15];
-        format!("{}-{}-{} {}:{}:{}", &date[0..4], &date[4..6], &date[6..8], &time[0..2], &time[2..4], &time[4..6])
-    } else {
-        "N/A".to_string()
-    };
+        let session_id = app.session_id.clone();
+        let session_messages_count = app.messages.len();
+        let session_created = if session_id.len() >= 15 {
+            let date = &session_id[0..8];
+            let time = &session_id[9..15];
+            format!("{}-{}-{} {}:{}:{}", &date[0..4], &date[4..6], &date[6..8], &time[0..2], &time[2..4], &time[4..6])
+        } else {
+            "N/A".to_string()
+        };
 
-    let active_persona = app.active_persona.clone();
+        let active_persona = app.active_persona.clone();
+        (active_provider, active_model, memory_records_count, memory_pinned_count,
+         memory_last_store, session_id, session_messages_count, session_created, active_persona)
+    }; // AppState lock released here — RAM query below does not block other commands
 
     let ram_available = if cfg!(target_os = "windows") {
         let output = std::process::Command::new("cmd")

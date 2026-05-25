@@ -40,6 +40,7 @@ pub trait LlmProvider: Send + Sync {
 
 pub struct GeminiProvider {
     pub model: String,
+    api_key_override: Option<String>,
 }
 
 impl GeminiProvider {
@@ -49,10 +50,22 @@ impl GeminiProvider {
         } else {
             model
         };
-        Self { model: m }
+        Self { model: m, api_key_override: None }
+    }
+
+    pub fn new_with_key(model: String, key: String) -> Self {
+        let m = if model.is_empty() {
+            "gemini-1.5-flash".to_string()
+        } else {
+            model
+        };
+        Self { model: m, api_key_override: Some(key) }
     }
 
     fn get_api_key(&self) -> Result<String, String> {
+        if let Some(ref k) = self.api_key_override {
+            return Ok(k.clone());
+        }
         if let Ok(key) = std::env::var("GEMINI_API_KEY") {
             if !key.is_empty() {
                 return Ok(key);
