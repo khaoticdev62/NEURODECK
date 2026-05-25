@@ -7636,10 +7636,38 @@ body.crt-flicker-disabled .crt-flicker {
 
 .history-empty-state {
     padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     text-align: center;
-    color: rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.42);
     font-style: italic;
     font-size: 0.85rem;
+    min-height: 180px;
+}
+
+.history-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 240, 255, 0.16);
+    background: rgba(0, 240, 255, 0.07);
+    color: var(--accent-color);
+}
+
+.history-empty-icon .nd-icon-svg {
+    width: 18px;
+    height: 18px;
+}
+
+.history-empty-copy {
+    max-width: 320px;
+    line-height: 1.45;
 }
 
 .history-ai-loading {
@@ -9453,6 +9481,9 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .ctrl-prompt-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: var(--font-mono, monospace);
     font-size: 0.78rem;
     font-weight: 700;
@@ -9460,6 +9491,11 @@ body.crt-flicker-disabled .crt-flicker {
     color: var(--accent-color, #00f0ff);
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+.ctrl-prompt-title .nd-icon-svg,
+.ctrl-prompt-cat-icon .nd-icon-svg {
+    flex-shrink: 0;
 }
 
 .ctrl-prompt-search-wrap {
@@ -9549,8 +9585,10 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .ctrl-prompt-cat-icon {
-    font-size: 1rem;
     width: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     flex-shrink: 0;
 }

@@ -487,7 +487,10 @@ document.querySelector('#app').innerHTML = `
                             <div class="history-search-status" id="history-search-status">Press Enter to search • Esc to close</div>
                         </div>
                         <div class="history-search-body" id="history-search-body">
-                            <div class="history-empty-state">Start typing to search your shell history with AI</div>
+                            <div class="history-empty-state">
+                                <span class="history-empty-icon">${createIcon('search', { size: 18 })}</span>
+                                <span class="history-empty-copy">Start typing to search your shell history with AI</span>
+                            </div>
                         </div>
                         <div class="history-search-footer">
                             <span><kbd>↑↓</kbd> navigate</span>
@@ -2259,9 +2262,9 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Controller Prompt Picker Overlay -->
         <div class="ctrl-prompt-overlay" id="ctrl-prompt-overlay" aria-hidden="true">
-            <div class="ctrl-prompt-modal">
-                <div class="ctrl-prompt-header">
-                    <span class="ctrl-prompt-title">&#x25B6; PROMPT LIBRARY</span>
+                <div class="ctrl-prompt-modal">
+                    <div class="ctrl-prompt-header">
+                    <span class="ctrl-prompt-title">${createIcon('play', { size: 14 })}<span>PROMPT LIBRARY</span></span>
                     <div class="ctrl-prompt-search-wrap">
                         <input type="text" id="ctrl-prompt-search" class="ctrl-prompt-search" placeholder="Search prompts..." autocomplete="off" spellcheck="false">
                     </div>

@@ -418,7 +418,7 @@ function getCatColor(catId) {
 function renderCtrlPromptCats() {
     const container = document.getElementById("ctrl-prompt-cats");
     if (!container) return;
-    const allCats = [{ id: "all", icon: "🗂️", label: "All", color: CAT_COLORS.all }, ...CTRL_PROMPT_CATS];
+    const allCats = [{ id: "all", icon: "fileText", label: "All", color: CAT_COLORS.all }, ...CTRL_PROMPT_CATS];
     container.innerHTML = allCats.map((cat, i) => {
         const count = cat.id === "all"
             ? CTRL_PROMPT_LIBRARY.length + getCustomCtrlPrompts().length
@@ -431,7 +431,7 @@ function renderCtrlPromptCats() {
             ? `border-left-color:${color};color:${color};background:${color}18;`
             : `--cat-hover-color:${color};`;
         return `<button class="ctrl-prompt-cat-btn${isActive ? " active" : ""}" data-catidx="${i}" style="${activeStyle}">
-            <span class="ctrl-prompt-cat-icon">${cat.icon}</span>
+            <span class="ctrl-prompt-cat-icon">${createIcon(resolveCtrlPromptIcon(cat.icon), { size: 16 })}</span>
             <span>${cat.label}</span>
             <span class="ctrl-prompt-cat-count" style="${isActive ? `background:${color}30;color:${color};` : ""}">${count}</span>
         </button>`;

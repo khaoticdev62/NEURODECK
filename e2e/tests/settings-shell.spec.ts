@@ -322,3 +322,18 @@ test("notification center opens with the refined modal hierarchy", async ({ page
   await expect(modal).toHaveClass(/active/);
   await expect(modal.locator(".notif-modal-card").last()).toBeVisible();
 });
+
+test("controller prompt picker and history search expose refined utility chrome", async ({ page }) => {
+  await page.keyboard.press("Control+Shift+P");
+  await expect(page.locator("#ctrl-prompt-overlay")).toHaveClass(/active/);
+  await expect(page.locator(".ctrl-prompt-title .nd-icon-svg")).toBeVisible();
+  await expect(page.locator(".ctrl-prompt-cat-icon .nd-icon-svg").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#ctrl-prompt-overlay")).not.toHaveClass(/active/);
+
+  await page.evaluate(() => {
+    document.getElementById("history-search-overlay")?.classList.remove("hidden");
+  });
+  await expect(page.locator(".history-search-title .nd-icon-svg")).toBeVisible();
+  await expect(page.locator(".history-empty-icon .nd-icon-svg")).toBeVisible();
+});
