@@ -91,20 +91,24 @@ pub async fn browser_open(
         return Ok(());
     }
 
-    let builder = WebviewWindowBuilder::new(
-        &app,
-        "browser-view",
-        WebviewUrl::External(nav_url),
-    )
-    .title("NEURODECK Browser")
-    .decorations(false)
-    .position(screen_x, screen_y)
-    .inner_size(width, height)
-    .skip_taskbar(true);
+    let make_builder = |nav: tauri::Url| {
+        WebviewWindowBuilder::new(&app, "browser-view", WebviewUrl::External(nav))
+            .title("NEURODECK Browser")
+            .decorations(false)
+            .position(screen_x, screen_y)
+            .inner_size(width, height)
+            .skip_taskbar(true)
+    };
 
-    let builder = builder.parent(&main_win).map_err(|e| e.to_string())?;
+    // Attempt child-window parenting (preferred — keeps browser clipped to main window).
+    // Falls back to a standalone overlay window if the platform rejects it (e.g. Windows
+    // desktop mode where the parent HWND relationship isn't supported by WebView2).
+    let built = make_builder(nav_url.clone())
+        .parent(&main_win)
+        .and_then(|b| b.build())
+        .or_else(|_| make_builder(nav_url).build());
 
-    builder.build().map_err(|e| e.to_string())?;
+    built.map_err(|e| e.to_string())?;
 
     Ok(())
 }

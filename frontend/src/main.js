@@ -558,7 +558,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             <div class="setting-field-group">
                                 <label>Auth Type</label>
-                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;">
                                     <option value="password">Password</option>
                                     <option value="key">Key File</option>
                                 </select>
@@ -605,22 +605,22 @@ document.querySelector('#app').innerHTML = `
                                     <button class="canvas-btn" id="tunnel-toggle-btn">Start Local Server</button>
                                 </div>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Host Command Executor</label>
-                                <div style="display:flex; gap:10px;">
+                                <div class="input-row">
                                     <input type="text" class="tunnel-text-input" id="tunnel-cmd-input" placeholder="e.g. echo 'Hello from S-Term' > test.txt">
                                     <button class="send-prompt-btn" id="tunnel-cmd-send">Execute</button>
                                 </div>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Write Host File</label>
                                 <input type="text" class="tunnel-text-input" id="tunnel-filepath-input" placeholder="File path (e.g. /home/deck/Desktop/note.txt)" style="margin-bottom: 8px;">
                                 <textarea class="tunnel-text-area" id="tunnel-filecontent-input" placeholder="File content..." rows="3"></textarea>
                                 <button class="send-prompt-btn" id="tunnel-file-send" style="margin-top:8px;">Write File</button>
                             </div>
-                            <div class="setting-field-group" style="margin-top: 15px;">
+                            <div class="setting-field-group tunnel-section">
                                 <label>Query Host Directory</label>
-                                <div style="display:flex; gap:10px;">
+                                <div class="input-row">
                                     <input type="text" class="tunnel-text-input" id="tunnel-dirpath-input" placeholder="/home/deck">
                                     <button class="send-prompt-btn" id="tunnel-dir-send">Read Dir</button>
                                 </div>
@@ -637,6 +637,10 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- LAN File Sharing / SFTP / FTP View -->
                 <div class="view-content" id="view-share">
+                    <div class="share-view-header">
+                        <span class="share-view-title">📤 Share &amp; Transfer</span>
+                        <span class="share-view-subtitle">LAN · SFTP · FTP</span>
+                    </div>
                     <div class="share-inner-tabs">
                         <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
                         <button class="share-inner-tab" data-panel="sftp">🔒 SFTP</button>
@@ -647,29 +651,29 @@ document.querySelector('#app').innerHTML = `
                     <div class="share-panel-section active" id="share-panel-lan">
                         <div class="share-grid">
                             <div class="share-panel">
-                                <h3>LAN Discovery & Sending</h3>
-                                <p class="share-desc">Discovers S-Term instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
-                                <div class="setting-field-group" style="margin-bottom: 15px;">
+                                <h3>LAN Discovery &amp; Sending</h3>
+                                <p class="share-desc">Discovers NEURODECK instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
+                                <div class="setting-field-group">
                                     <label>Warpinator Group Code</label>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex: 1; box-sizing: border-box; height: 36px; margin: 0;">
-                                        <button class="send-prompt-btn" id="share-group-code-save-btn" style="margin: 0; height: 36px; padding: 0 15px; font-size: 12px; white-space: nowrap;">Apply</button>
+                                    <div class="input-row">
+                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex:1;">
+                                        <button class="send-prompt-btn" id="share-group-code-save-btn">Apply</button>
                                     </div>
                                 </div>
-                                <div class="setting-field-group">
+                                <div class="setting-field-group tunnel-section">
                                     <label>Active Peers on LAN</label>
                                     <div class="peers-list" id="share-peers-list">
                                         <div class="peer-item-empty">Scanning local network for active peers...</div>
                                     </div>
                                 </div>
-                                <div class="setting-field-group" style="margin-top: 15px;">
-                                    <label>Drag & Drop File or Select Path</label>
+                                <div class="setting-field-group tunnel-section">
+                                    <label>Drag &amp; Drop File or Select Path</label>
                                     <div class="share-dropzone" id="share-dropzone">
                                         <div class="dropzone-text">Drag files here or click to select a file</div>
                                     </div>
-                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top: 8px; width: 100%; box-sizing: border-box;">
+                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top:8px;width:100%;box-sizing:border-box;">
                                 </div>
-                                <button class="send-prompt-btn" id="share-send-btn" style="margin-top: 15px; width: 100%;" disabled>Send File 🚀</button>
+                                <button class="send-prompt-btn share-send-full" id="share-send-btn" disabled>Send File 🚀</button>
                             </div>
                             <div class="share-panel">
                                 <h3>File Transfer Queue</h3>
@@ -760,7 +764,7 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                                 <div class="setting-field-group">
                                     <label>Auth Type</label>
-                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;background:#1a242f;color:#e2e8f0;border:1px solid var(--border-color);border-radius:4px;padding:6px;">
+                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;">
                                         <option value="password">Password</option>
                                         <option value="key">Key File</option>
                                     </select>
@@ -1442,6 +1446,8 @@ document.querySelector('#app').innerHTML = `
                             <div class="stv-row">
                                 <span class="stv-row-label">UI Font</span>
                                 <select id="font-select" style="flex:1;">
+                                    <option value="spacegrotesk">Space Grotesk (Default — AI Terminal)</option>
+                                    <option value="syne">Syne (Brand Display)</option>
                                     <option value="inter">Inter (Modern Clean)</option>
                                     <option value="outfit">Outfit (Premium Rounded)</option>
                                     <option value="jetbrains">JetBrains Mono (Sleek Coding)</option>
@@ -2972,6 +2978,7 @@ const RADIAL_SEGMENTS = [
     { icon: "📤", label: "Share",      view: "share"      },
     { icon: "📱", label: "Remote",     view: "remote"     },
     { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
+    { icon: "📚", label: "Docs",       view: "docs"       },
 ];
 
 function getGamepadFocusableElements() {
@@ -3801,6 +3808,8 @@ inspectCloseBtn.onclick = function() {
 // Expose main.js functions to global scope for submodules
 window.hideRadialMenu = hideRadialMenu;
 window.showRadialMenu = showRadialMenu;
+window.updateRadialDisplay = updateRadialDisplay;
+window.activateRadialSegment = activateRadialSegment;
 window.updateContextDrawer = updateContextDrawer;
 window.updateGameBadge = updateGameBadge;
 window.cycleTheme = cycleTheme;
@@ -4732,6 +4741,7 @@ function initBrowser() {
             }
         } catch (e) {
             console.error("[Browser] Navigation error:", e);
+            window.addNotification("Browser Error", String(e), "error");
         }
     }
 
@@ -5842,17 +5852,20 @@ async function loadPluginMarketplace() {
     const statusEl = document.getElementById("plugin-marketplace-status");
     if (!grid) return;
 
-    grid.innerHTML = `<div style="opacity:0.5;font-style:italic;">Loading marketplace registry...</div>`;
-    if (statusEl) statusEl.innerText = "Fetching GitHub plugin registry...";
+    grid.innerHTML = `<div class="marketplace-loading">Loading marketplace registry…</div>`;
+    if (statusEl) statusEl.innerText = "Fetching plugin registry…";
 
     try {
         const registry = await invoke("fetch_plugin_registry");
         pluginMarketplaceState.plugins = registry.plugins || [];
-        if (statusEl) statusEl.innerText = `${pluginMarketplaceState.plugins.length} marketplace plugin${pluginMarketplaceState.plugins.length === 1 ? "" : "s"} available.`;
+        const count = pluginMarketplaceState.plugins.length;
+        if (statusEl) statusEl.innerText = count > 0
+            ? `${count} community plugin${count === 1 ? "" : "s"} available.`
+            : "Registry is empty — check back soon.";
         renderPluginMarketplace();
     } catch (err) {
         pluginMarketplaceState.plugins = [];
-        grid.innerHTML = `<div style="color:var(--error-color);">Failed to load marketplace: ${escapeMarketplaceHtml(err)}</div>`;
+        grid.innerHTML = `<div class="marketplace-error">Could not reach the plugin registry. Check your internet connection and try Refresh.<br><span style="opacity:0.5;font-size:0.8em;">${escapeMarketplaceHtml(String(err))}</span></div>`;
         if (statusEl) statusEl.innerText = "Registry unavailable.";
     }
 }
@@ -6461,6 +6474,12 @@ function instantiateRecommended(provider, model, name) {
         });
     }).catch(err => pushNotification("Add agent failed", err, "error"));
 }
+
+// Expose agent switcher functions for inline onclick handlers
+window.toggleAgentSwitcher = toggleAgentSwitcher;
+window.activateAgent = activateAgent;
+window.deleteAgentById = deleteAgentById;
+window.instantiateRecommended = instantiateRecommended;
 
 // Agent custom form — show/hide URL field by provider
 document.addEventListener("change", (e) => {
@@ -7308,6 +7327,8 @@ async function showOnboardingWizard() {
                         <span class="ob-tag">Gemini / Ollama</span>
                         <span class="ob-tag">Warpinator gRPC</span>
                         <span class="ob-tag">Lua Plugins</span>
+                        <span class="ob-tag">Plugin Marketplace</span>
+                        <span class="ob-tag">Prompt Lab</span>
                         <span class="ob-tag">1280×800</span>
                     </div>
                 </div>
@@ -7315,7 +7336,7 @@ async function showOnboardingWizard() {
                 <!-- Slide 2: Feature Tour -->
                 <div class="onboarding-slide" id="slide-2">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">SYSTEM_FEATURE_MANIFEST</h3>
-                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">10 integrated views. One fullscreen command center.</p>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">12 integrated views. One fullscreen command center.</p>
                     <div class="ob-feature-grid">
                         <div class="ob-feature-card" style="animation-delay: 0.02s">
                             <span class="ob-feature-icon">💬</span>
@@ -7335,7 +7356,7 @@ async function showOnboardingWizard() {
                         <div class="ob-feature-card" style="animation-delay: 0.17s">
                             <span class="ob-feature-icon">🔑</span>
                             <span class="ob-feature-name">SSH</span>
-                            <span class="ob-feature-desc">Full SSH client. Password + key auth. Session tab per connection.</span>
+                            <span class="ob-feature-desc">Full SSH client. Password + key auth. Saved profiles. Session tab per connection.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.22s">
                             <span class="ob-feature-icon">🔗</span>
@@ -7345,12 +7366,12 @@ async function showOnboardingWizard() {
                         <div class="ob-feature-card" style="animation-delay: 0.27s">
                             <span class="ob-feature-icon">🌐</span>
                             <span class="ob-feature-name">Browser</span>
-                            <span class="ob-feature-desc">Embedded WebView for quick reference without leaving NEURODECK.</span>
+                            <span class="ob-feature-desc">Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.32s">
                             <span class="ob-feature-icon">🤖</span>
                             <span class="ob-feature-name">Agent</span>
-                            <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate.</span>
+                            <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.37s">
                             <span class="ob-feature-icon">🧠</span>
@@ -7363,9 +7384,19 @@ async function showOnboardingWizard() {
                             <span class="ob-feature-desc">LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.47s">
+                            <span class="ob-feature-icon">🔬</span>
+                            <span class="ob-feature-name">Prompt Lab</span>
+                            <span class="ob-feature-desc">Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode.</span>
+                        </div>
+                        <div class="ob-feature-card" style="animation-delay: 0.52s">
                             <span class="ob-feature-icon">📱</span>
                             <span class="ob-feature-name">Remote</span>
-                            <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari.</span>
+                            <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.</span>
+                        </div>
+                        <div class="ob-feature-card" style="animation-delay: 0.57s">
+                            <span class="ob-feature-icon">⚙️</span>
+                            <span class="ob-feature-name">Settings</span>
+                            <span class="ob-feature-desc">Themes, personas, LLM config, OS keychain, and Plugin Marketplace — all in one panel.</span>
                         </div>
                     </div>
                 </div>
@@ -7485,7 +7516,7 @@ async function showOnboardingWizard() {
                         </div>
                         <div class="ob-ctrl-section">
                             <div class="ob-ctrl-header">RADIAL MENU <span style="opacity:0.5;font-size:0.65rem;">(L2 or backtick)</span></div>
-                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">8 quick-access views: Chat, Terminal, Agent, Canvas, Memory, FTP, Transfer, Remote</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">12 quick-access views: Chat, Canvas, Terminal, SSH, Tunnel, Share, Browser, Agent, Memory, Prompt Lab, Remote, Docs</span></div>
                             <div class="ob-ctrl-header" style="margin-top: 8px;">PROMPT PICKER <span style="opacity:0.5;font-size:0.65rem;">(X button)</span></div>
                             <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">Browse &amp; send AI prompts without typing. D-Pad to navigate, A to send, L1/R1 to switch categories.</span></div>
                         </div>
@@ -7570,7 +7601,7 @@ async function showOnboardingWizard() {
     let oauthPollAbortController = null;
 
     // Welcome screen typing animation
-    const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live code canvas, real shell, SSH client, vector memory — all in one 1280×800 window.";
+    const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
     const typingEl = document.getElementById("onboarding-welcome-typing");
     let charIdx = 0;
     function typeChar() {
@@ -7593,8 +7624,8 @@ async function showOnboardingWizard() {
         }, 40);
     }
     setTimeout(() => {
-        animateCounter(document.getElementById("ob-stat-features"), 22, 800);
-        animateCounter(document.getElementById("ob-stat-views"), 10, 600);
+        animateCounter(document.getElementById("ob-stat-features"), 56, 900);
+        animateCounter(document.getElementById("ob-stat-views"), 12, 600);
     }, 300);
 
     // DOM selectors

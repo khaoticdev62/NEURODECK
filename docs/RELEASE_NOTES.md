@@ -2,6 +2,64 @@
 
 ---
 
+## v1.2.1-Ra — Bug Fix & Docs Update
+
+**Release Date:** 2026-05-24
+**Platform:** Windows (MSI + NSIS), Linux (AppImage + deb), macOS (DMG + app)
+**KFMS Codename:** Ra
+
+### Fixes
+
+- **Model switcher modal** — `toggleAgentSwitcher`, `activateAgent`, `deleteAgentById`, and `instantiateRecommended` were module-scoped in the ES module and invisible to inline `onclick` handlers. Exposed all four on `window`. The model button and agent card grid now work correctly.
+- **Chat keyboard shortcuts** — `updateRadialDisplay` and `activateRadialSegment` were not exposed on `window`, breaking the radial menu arrow-key navigation (Ctrl+Up/Down/Left/Right, Enter to activate) from chat.js keyboard handlers.
+- **Browser speed dial** — `browser_open` Rust command now falls back to a standalone overlay window if `.parent()` is rejected by the platform (WebView2 on Windows desktop mode may refuse HWND child-window parenting). Navigation errors are now surfaced as a visible toast notification instead of being silently logged to the console.
+- **Plugin marketplace HTTP 404** — `REGISTRY_URL` pointed at a non-existent GitHub repo. Registry created at `github.com/khaoticdev62/neurodeck-plugins` with 4 initial plugins. Backend now returns an empty registry (graceful degradation) instead of an error on HTTP 404.
+
+### Documentation
+
+- README fully rewritten — v1.2.1 feature set, 11 screenshots, Model Switcher and Plugin Marketplace sections, updated to 12 tabs
+- `docs/screenshots/` directory created with curated UI screenshots
+- Onboarding wizard updated — 12 views, 56 commands, Prompt Lab card added, radial menu segment list corrected
+- Plugin Development Guide added (`docs/PLUGIN_DEV_GUIDE.md`)
+- USER_GUIDE.md updated — Model Switcher, Plugin Marketplace, Remote Control, and Browser sections added
+
+---
+
+## v1.2.0-Ra — Share / Tunnel Elevation + Release Packaging
+
+**Release Date:** 2026-05-24
+**Platform:** Windows (MSI + NSIS), Linux (AppImage + deb), macOS (DMG + app)
+**KFMS Codename:** Ra
+
+### What's New in v1.2.0
+
+#### CI/CD & Release Packaging (Sprint 6.0-B)
+- `.github/workflows/ci.yml` fully rebuilt — three-platform matrix (ubuntu-22.04, windows-latest, macos-latest)
+- Linux produces AppImage + deb; Windows produces MSI + NSIS; macOS produces DMG + app
+- Removed invalid `flatpak` bundle target (not supported in Tauri 2.x)
+- Added missing `pkg-config libssl-dev libasound2-dev` apt deps for Ubuntu Rust compilation
+- `install.sh` version bumped `1.0.0 → 1.2.0`
+- `src-tauri/Cargo.toml` and `tauri.conf.json` versions bumped to `1.2.0`
+
+#### Share & Tunnel View Elevation (Sprint 6.1)
+- Tunnel view: inline styles replaced with semantic CSS classes (`tunnel-section`, `input-row`) across all three control groups (start/stop server, client connect, status)
+- Share view: header strip (`share-view-header`) with title and subtitle above the inner tabs; inner tabs upgraded to glass-pill style
+- LAN panel: inline layout styles replaced with classes matching the share design system
+- `loadPluginMarketplace()`: uses semantic CSS classes (`marketplace-loading`, `marketplace-error`) for consistent status feedback
+
+#### Plugin Marketplace
+- `src-tauri/src/plugin_mgr.rs`: registry URL set to `https://raw.githubusercontent.com/khaoticdev62/neurodeck-plugins/main/registry.json`
+- HTTP 404 returns empty registry (graceful) instead of propagating an error
+- User-Agent header and 10-second timeout added to registry fetch
+- `github.com/khaoticdev62/neurodeck-plugins` repo created with `registry.json` and 4 Lua plugins (bmad, promptgen, ip_lookup, auto_responder)
+
+#### Settings Improvements
+- Test Connection button: `.finally(() => testBtn.disabled = false)` ensures the button is always re-enabled even when the test throws
+- Custom hex color inputs: validated with `/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/` — invalid hex shows red border, Save is blocked until fixed
+- Agent canvas stop: `cancel_generation` failure now surfaces a toast notification instead of silently failing
+
+---
+
 ## v1.1.0 — Touch & Onboarding Update
 
 **Release Date:** 2026-05-23

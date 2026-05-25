@@ -12,7 +12,7 @@ Codenames must be unique within a MAJOR release line.
 - Current tag: `v1.2.0-ra`
 - Current MINOR line: `2`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-05-24T23:56:39Z`
+- Last stamped build: `2026-05-25T00:00:23Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules
@@ -25,8 +25,8 @@ tag format                →  v{semver}-{codename_lower}
 ## Registry (index = MINOR line)
 
 <!-- KFMS:REGISTRY_TABLE:BEGIN -->
-| Index | Codename | Status | Assigned To |
-|------:|----------|--------|-------------|
+| Index | Codename  | Status    | Assigned To           |
+|------:|-----------|-----------|----------------------|
 |     0 | Anubis | available | v1.0.x |
 |     1 | Thoth | available | v1.1.x |
 |     2 | **Ra** | **active** | **v1.2.x (current)** |

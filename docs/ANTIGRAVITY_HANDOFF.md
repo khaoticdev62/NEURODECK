@@ -6,13 +6,13 @@
 
 ## Quick State Summary
 
-> Last updated: 2026-05-22 — ALL 11 MUST-HAVE ITEMS SHIPPED ✅ | Notification Center + Game Context Panel wired
+> Last updated: 2026-05-24 — **OMEGA PASS COMPLETE** — ALL P1–P22 + C13–C22 SHIPPED ✅ | 56 Tauri commands wired across 28 modules | Sprint 5.2
 
 | Layer | Status |
 |---|---|
 | Chat + RAG | ✅ Wired end-to-end (memory injection confirmed in `send_command`) |
 | Canvas (HTML/CSS/JS) | ✅ Live iframe preview works |
-| Canvas (Python/Bash) | ✅ `agent_exec_code` command + run handler fully wired; stdout shown in `canvas-preview-output` |
+| Canvas (Python/Bash) | ✅ `exec_code_stream` streaming exec; stdout line-by-line in `canvas-preview-output` |
 | Terminal (PTY shell) | ✅ Multi-session tabs (up to 5), shell switcher pills, restart per session |
 | SSH Tab | ✅ PTY + system `ssh`; password auth + key-file auth supported |
 | Share → LAN | ✅ P2P wired via `transfer.rs` |
@@ -21,7 +21,7 @@
 | Voice STT / TTS | ✅ Wired (`arecord` + `espeak`); quality is system-tool-limited |
 | Memory UI | ✅ Full CRUD + search wired |
 | Agent Loop | ✅ 5-step max; works with Gemini and Ollama |
-| Radial Menu | ✅ L2 / backtick; 8 segments |
+| Radial Menu | ✅ L2 / backtick; **12 segments** — all views reachable |
 | Game Detection + Context Panel | ✅ ACF scanner + badge + clickable modal (header art, notes, persona switch, ask AI) |
 | Notification Center | ✅ Toast + center modal wired; hooks: agent loop, SSH connect/exit, FTP/SFTP, file transfer, game detection |
 | BMAD Personas | ✅ 6 personas via Lua plugins |
@@ -36,6 +36,16 @@
 | FTP Drag-Drop (P12) | ✅ `#ftp-dropzone` + `#sftp-dropzone` fully wired; populates local path + remote dest on drop |
 | D-Pad Inner Nav (P21) | ✅ D-pad Up/Down cycles Share inner tabs; SSH view D-pad Up/Down highlights profiles; L1/R1 loads focused profile |
 | AI Shell History (P15) | ✅ Ctrl+H opens overlay; xterm.js interception fixed; full keyboard nav + PTY paste |
+| AI Terminal Autocomplete (C13) | ✅ Tab → LLM ghost text in PTY; `get_terminal_autocomplete` + `shell_autocomplete` commands; Tab accept, Escape dismiss |
+| Screenshot → Chat OCR (C14) | ✅ `read_last_screenshot` command; screenshot-btn in terminal toolbar; base64 → Gemini Vision |
+| Whisper.cpp STT (C17) | ✅ `whisper_transcribe` command in `whisper.rs`; Settings Whisper panel wired; replaces arecord path when enabled |
+| MCP Server (C16) | ✅ `mcp.rs` HTTP server on `localhost:13337`; `tools/list` + `tools/call` endpoints; toggle in Settings |
+| Local Document RAG (C18) | ✅ `index_directory` command in `commands/system.rs`; docs namespace in vector DB; Settings Knowledge Base panel |
+| Live Canvas Collaboration (C19) | ✅ `canvas_collab.rs` multi-peer TCP host/join; `canvas_collab_*` commands wired; Collab modal in Canvas view |
+| Game Session Notes (C20) | ✅ `get_game_notes` + `save_game_notes` commands; `data/game_notes/<app_id>.md` per-game persistence |
+| Chat Welcome Screen | ✅ NEURODECK branded welcome with 6 feature-card starters; dismissed on first message |
+| Boot Sequence | ✅ Cinematic 28-step boot at 220–350ms/step; v1.2.0-ra branding; real system stats |
+| Nav Layout (1280px) | ✅ 12 tabs in dedicated `nav-tab-row` strip; `flex: 1` even distribution; no overflow |
 
 ---
 
