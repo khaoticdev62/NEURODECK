@@ -224,9 +224,18 @@ cmd_stamp() {
 
   local sha dirty_flag git_tag built_at
   sha=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")
+  # Exclude KFMS-managed artifacts from the dirty check — they're updated by the
+  # post-commit hook itself, so their presence in the working tree is expected.
   dirty_flag=false
-  [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ]] && dirty_flag=true
-  git_tag=$(git -C "$ROOT" describe --tags --exact-match 2>/dev/null || echo "null")
+  local non_kfms_changes
+  non_kfms_changes=$(git -C "$ROOT" status --porcelain 2>/dev/null | \
+    grep -v '^.. infra/meta/meta\.json$' | \
+    grep -v '^.. infra/telemetry/health\.json$' | \
+    grep -v '^.. infra/meta/CODENAME_REGISTRY\.md$' | \
+    grep -v '^.. docs/IMPLEMENTATION_PLAN\.md$' || true)
+  [[ -n "$non_kfms_changes" ]] && dirty_flag=true
+  git_tag=$(git -C "$ROOT" tag --points-at HEAD 2>/dev/null | head -1 || echo "null")
+  [[ -z "$git_tag" ]] && git_tag="null"
   built_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
   # Require python3/python or node for JSON patch; prefer Python.
@@ -526,6 +535,7 @@ PYEOF
   if [[ -n "$py_bin" ]]; then
     "$py_bin" - "$meta" "$ROOT/infra/telemetry/health.json" "$ROOT/infra/meta/CODENAME_REGISTRY.md" "$ROOT/docs/IMPLEMENTATION_PLAN.md" <<'PYEOF'
 import json
+import os
 import sys
 from pathlib import Path
 
