@@ -169,6 +169,47 @@ npm run tauri dev
 
 ---
 
+## Steam Deck Game Mode
+
+NEURODECK ships full custom artwork for the Steam library and Game Mode. All assets use the NEURODECK brand: dark `#050505` background, `#00F0FF` cyan circuit-N monogram, `#00CC88` teal accents.
+
+### Steam Grid Assets
+
+| File | Dimensions | Purpose |
+|---|---|---|
+| `assets/steam-grid/hero.png` | 1920×620 | Game detail hero banner |
+| `assets/steam-grid/capsule-portrait.png` | 600×900 | Portrait capsule (shelf view) |
+| `assets/steam-grid/capsule-landscape.png` | 920×430 | Landscape capsule |
+| `assets/steam-grid/logo.png` | 600×200 | Library logo (transparent bg) |
+| `src-tauri/icons/icon.png` | 512×512 | Linux `.desktop` app icon |
+| `src-tauri/icons/icon.ico` | multi-res (16–256px) | Windows app icon |
+
+See [`assets/steam-grid/README.md`](assets/steam-grid/README.md) for step-by-step Steam library installation instructions. To regenerate all brand assets from source:
+
+```bash
+python assets/brand/generate_assets.py
+```
+
+### Install to Steam Deck
+
+```bash
+# 1. Deploy to ~/Applications/neurodeck/
+chmod +x install.sh && ./install.sh
+
+# 2. Add as non-Steam game in Steam Desktop Mode
+#    Then copy Steam grid assets:
+GRID=~/.local/share/Steam/userdata/{userId}/config/grid
+cp assets/steam-grid/hero.png              "$GRID/{appid}_hero.png"
+cp assets/steam-grid/capsule-landscape.png "$GRID/{appid}.png"
+cp assets/steam-grid/capsule-portrait.png  "$GRID/{appid}p.png"
+cp assets/steam-grid/logo.png              "$GRID/{appid}_logo.png"
+
+# 3. Launch in Game Mode via gamescope (1280×800, fullscreen)
+./launch_gamescope.sh
+```
+
+---
+
 ## All 12 Tabs — What Each One Does
 
 Switch tabs with the radial menu (`` ` `` backtick or gamepad **L2**), or click the tab bar.
@@ -202,12 +243,21 @@ NEURODECK is two processes talking through [Tauri v2 IPC](https://tauri.app/):
 ┌─────────────────────────────────────────────────────────────┐
 │  FRONTEND  (WebView — Chromium engine)                      │
 │                                                             │
-│  frontend/src/main.js          ~9,000 lines, vanilla JS    │
-│  frontend/src/chat.js          streaming chat + shortcuts  │
-│  frontend/src/canvas.js        canvas + live collab        │
-│  frontend/src/settings.js      settings modal + keychain   │
-│  frontend/src/ctrl_prompt.js   AI terminal autocomplete    │
-│  frontend/src/remote_control_view.js  iPhone remote UI     │
+│  frontend/src/main.js      ~8,200 lines — HTML templates,  │
+│                            view routing, IPC wiring, radial │
+│                            menu, boot sequence, onboarding  │
+│  frontend/src/chat.js      send flow, RAG, streaming,       │
+│                            history, persona/theme switching  │
+│  frontend/src/agent.js     agent loop, roundtable,          │
+│                            computer/browser tool dispatch    │
+│  frontend/src/canvas.js    Monaco editor, live preview,     │
+│                            collab host/join/stop             │
+│  frontend/src/terminal.js  xterm.js, multi-session PTY,     │
+│                            SSH tab wiring                    │
+│  frontend/src/memory.js    memory list, filter, pin, delete │
+│  frontend/src/notifications.js  toast stack, badge mgmt     │
+│  frontend/src/state.js     shared mutable state singleton   │
+│  frontend/src/icons.js     Lucide SVG icon factory          │
 │                                                             │
 │  invoke("command", { args })  ──────────────────────────►  │
 │  listen("event", handler)     ◄────────────────────────── │
@@ -216,18 +266,20 @@ NEURODECK is two processes talking through [Tauri v2 IPC](https://tauri.app/):
 ┌─────────────────────────────────────────────────────────────┐
 │  BACKEND  (Rust / Tauri v2)                                 │
 │                                                             │
-│  src-tauri/src/lib.rs       ~1,800 lines — all commands    │
+│  src-tauri/src/lib.rs       ~1,600 lines — all commands,   │
+│                             AppState, themes, personas,     │
+│                             game detection, voice I/O       │
 │  ├── llm.rs                 Gemini SSE + Ollama streaming  │
 │  ├── pty_manager.rs         PTY sessions (portable-pty)    │
 │  ├── memory.rs              Cosine-similarity vector DB    │
 │  ├── ftp.rs / sftp.rs       FTP + SFTP clients            │
 │  ├── transfer.rs            LAN P2P + Warpinator gRPC      │
 │  ├── canvas_collab.rs       TCP live canvas sync           │
-│  ├── remote_control.rs      axum WebSocket server          │
-│  ├── plugin_mgr.rs          Plugin registry + installer    │
+│  ├── sync.rs                Cross-device encrypted sync    │
 │  ├── lua.rs                 mlua 5.4 plugin runtime        │
-│  ├── browser.rs             Native WebView browser overlay │
-│  └── tunnel.rs              Game Mode TCP bridge           │
+│  ├── tunnel.rs              Game Mode TCP bridge           │
+│  └── commands/              session, config, system,       │
+│                             agent, browser sub-modules      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -376,16 +428,15 @@ The built-in **Plugin Marketplace** tab (inside Settings → Plugins) connects t
 # src-tauri/llm-term.toml  ←  the file the binary reads at runtime
 
 [llm]
-provider = "gemini"           # "gemini" or "ollama"
-model = "gemini-pro"
-google_client_id = ""         # For Google OAuth Device Flow sign-in
-
-[ollama]
-base_url = "http://localhost:11434"
-model = "llama3"
+default_provider  = "gemini"           # "gemini" or "ollama"
+gemini_model      = "gemini-1.5-flash"
+google_client_id  = ""                 # For Google OAuth Device Flow sign-in
+ollama_model      = "llama3"
+ollama_base_url   = "http://localhost:11434"
+temperature       = 0.7
 
 [app]
-theme = "BLACKSITE"
+theme   = "BLACKSITE"
 persona = "default"
 ```
 
@@ -426,11 +477,8 @@ npx tauri build --bundles nsis,msi
 # Linux — AppImage + deb
 npx tauri build --bundles appimage,deb
 
-# SteamOS — direct deploy to ~/Applications/neurodeck/
+# SteamOS / Steam Deck — see "Steam Deck Game Mode" section above
 chmod +x install.sh && ./install.sh
-
-# Steam Deck Game Mode (gamescope 1280×800)
-./launch_gamescope.sh
 ```
 
 CI builds (`.github/workflows/ci.yml`) run automatically on every push and produce AppImage + deb (Ubuntu), MSI + NSIS (Windows), and DMG + app (macOS).
@@ -446,6 +494,8 @@ CI builds (`.github/workflows/ci.yml`) run automatically on every push and produ
 | [`docs/project-context.md`](docs/project-context.md) | Project identity, command registry, sprint log |
 | [`docs/gamescope_guide.md`](docs/gamescope_guide.md) | SteamOS Game Mode integration, gamescope flags |
 | [`docs/steam_input_guide.md`](docs/steam_input_guide.md) | Steam Input controller mapping and `.vdf` profile |
+| [`assets/steam-grid/README.md`](assets/steam-grid/README.md) | Steam library artwork install instructions |
+| [`GEMINI.md`](GEMINI.md) | Gemini API integration reference — auth, RAG, SSE, OAuth |
 | [`CLAUDE.md`](CLAUDE.md) | AI coding context — architecture rules, gotchas, tribal knowledge |
 
 ---
@@ -486,7 +536,7 @@ MIT — see [`LICENSE`](LICENSE) for full terms.
 
 **Built for the Steam Deck. Runs anywhere.**
 
-`com.neurodeck.app` &nbsp;·&nbsp; v1.2.1-Ra &nbsp;·&nbsp; KFMS Codename: Thoth → Ra
+`com.neurodeck.app` &nbsp;·&nbsp; v1.2.1-Ra &nbsp;·&nbsp; KFMS Codename: Ra
 
 [github.com/khaoticdev62/NEURODECK](https://github.com/khaoticdev62/NEURODECK)
 
