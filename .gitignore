@@ -45,3 +45,4 @@ Thumbs.db
 .loose/inbox/*.zip
 .loose/inbox/neurodeck
 .loose/inbox/kfms-release-logs/
+.loose/inbox/security-hardening/
