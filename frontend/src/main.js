@@ -693,8 +693,8 @@ document.querySelector('#app').innerHTML = `
 
                     <!-- Torrent Panel -->
                     <div class="share-panel-section" id="share-panel-torrent">
-                        <div class="share-grid">
-                            <div class="share-panel">
+                        <div class="share-grid torrent-grid">
+                            <div class="share-panel torrent-control-panel">
                                 <h3>Secure Torrent Client</h3>
                                 <p class="share-desc">Accepts magnet links or validated local .torrent files. Downloads stay inside the app-managed torrent root and start paused by default.</p>
                                 <div class="setting-field-group">
@@ -705,15 +705,46 @@ document.querySelector('#app').innerHTML = `
                                     <button class="send-prompt-btn nd-icon-button torrent-action-btn" id="torrent-add-btn">${createIcon('download', { size: 14 })}<span class="nd-button-label">Add Paused</span></button>
                                     <button class="send-prompt-btn nd-icon-button torrent-action-btn torrent-action-btn-secondary" id="torrent-refresh-btn">${createIcon('refreshCw', { size: 14 })}<span class="nd-button-label">Refresh</span></button>
                                 </div>
+                                <div class="torrent-toolbar">
+                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-pause-all-btn">${createIcon('pause', { size: 14 })}<span class="nd-button-label">Pause All</span></button>
+                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-resume-all-btn">${createIcon('play', { size: 14 })}<span class="nd-button-label">Resume All</span></button>
+                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-open-root-btn">${createIcon('folderOpen', { size: 14 })}<span class="nd-button-label">Open Folder</span></button>
+                                </div>
                                 <div class="setting-field-group">
                                     <label>Session Summary</label>
                                     <div class="torrent-root-line" id="torrent-root-label">Download root: initializing...</div>
                                     <div class="torrent-root-line" id="torrent-count-label">0 active</div>
                                 </div>
+                                <div class="torrent-summary-grid" id="torrent-summary-grid">
+                                    <div class="torrent-summary-card"><span>Total</span><strong id="torrent-total-count">0</strong></div>
+                                    <div class="torrent-summary-card"><span>Running</span><strong id="torrent-running-count">0</strong></div>
+                                    <div class="torrent-summary-card"><span>Paused</span><strong id="torrent-paused-count">0</strong></div>
+                                    <div class="torrent-summary-card"><span>Done</span><strong id="torrent-complete-count">0</strong></div>
+                                </div>
+                                <div class="torrent-inspector" id="torrent-inspector">
+                                    <div class="torrent-inspector-title">Torrent Inspector</div>
+                                    <div class="torrent-inspector-empty">Select a torrent to inspect swarm, source, and hash details.</div>
+                                </div>
                             </div>
-                            <div class="share-panel">
+                            <div class="share-panel torrent-list-panel">
                                 <h3>Active Torrents</h3>
                                 <p class="share-desc">Paused by default. Resume only the swarm you trust.</p>
+                                <div class="torrent-filter-grid">
+                                    <input type="text" id="torrent-search-input" class="tunnel-text-input" placeholder="Search torrent name or source">
+                                    <select id="torrent-filter-select" class="tunnel-text-input">
+                                        <option value="all">All states</option>
+                                        <option value="running">Running</option>
+                                        <option value="paused">Paused</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="metadata">Metadata</option>
+                                    </select>
+                                    <select id="torrent-sort-select" class="tunnel-text-input">
+                                        <option value="recent">Newest first</option>
+                                        <option value="progress">Highest progress</option>
+                                        <option value="name">Name A-Z</option>
+                                        <option value="peers">Most peers</option>
+                                    </select>
+                                </div>
                                 <div class="torrent-list" id="torrent-list">
                                     <div class="peer-item-empty">No torrents loaded yet.</div>
                                 </div>
@@ -2067,13 +2098,22 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Game Context Panel Modal -->
         <div class="settings-overlay" id="game-context-modal">
-            <div class="settings-modal-card" style="max-width: 450px;">
+            <div class="settings-modal-card game-context-card">
                 <div class="settings-modal-header">
                     <h3>Active Game Context</h3>
                     <button class="sidebar-toggle-btn" id="close-game-context-x">✕</button>
                 </div>
                 <div class="settings-modal-content">
-                    <img id="game-context-header" class="game-context-header-img" src="" alt="Game Header" onerror="this.style.display='none'">
+                    <div class="game-context-hero">
+                        <img id="game-context-header" class="game-context-header-img" src="" alt="Game Header">
+                        <div id="game-context-fallback" class="game-context-fallback">
+                            <div class="game-context-fallback-icon">${createIcon('gamepad2', { size: 20 })}</div>
+                            <div class="game-context-fallback-copy">
+                                <strong id="game-context-fallback-name">No Active Game</strong>
+                                <span>Open a title to inject live deck-aware assistance and notes.</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="game-context-row">
                         <span class="game-context-label">Game Name:</span>
                         <span class="game-context-val" id="game-context-name">None Detected</span>
@@ -5913,7 +5953,42 @@ function initGameContextPanel() {
     const gameModal = document.getElementById("game-context-modal");
     const closeX = document.getElementById("close-game-context-x");
     const closeBtn = document.getElementById("close-game-context");
-    
+    const headerImg = document.getElementById("game-context-header");
+    const fallbackEl = document.getElementById("game-context-fallback");
+    const fallbackNameEl = document.getElementById("game-context-fallback-name");
+
+    const dismiss = () => {
+        if (gameModal) gameModal.classList.remove("active");
+    };
+
+    const applyHeaderState = (appId, name) => {
+        if (!headerImg || !fallbackEl) return;
+        const fallbackName = name || "No Active Game";
+        if (fallbackNameEl) fallbackNameEl.innerText = fallbackName;
+
+        if (!appId || appId === "-") {
+            headerImg.removeAttribute("src");
+            headerImg.style.display = "none";
+            fallbackEl.classList.add("active");
+            return;
+        }
+
+        fallbackEl.classList.remove("active");
+        headerImg.style.display = "block";
+        headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
+    };
+
+    if (headerImg && fallbackEl) {
+        headerImg.addEventListener("load", () => {
+            fallbackEl.classList.remove("active");
+            headerImg.style.display = "block";
+        });
+        headerImg.addEventListener("error", () => {
+            headerImg.style.display = "none";
+            fallbackEl.classList.add("active");
+        });
+    }
+
     if (gameBadge && gameModal) {
         gameBadge.onclick = () => {
             invoke("get_game_context").then(ctx => {
@@ -5921,7 +5996,6 @@ function initGameContextPanel() {
                 const appidEl = document.getElementById("game-context-appid");
                 const statusEl = document.getElementById("game-context-status");
                 const notesEl = document.getElementById("game-context-notes");
-                const headerImg = document.getElementById("game-context-header");
                 const promptView = document.getElementById("game-context-prompt-view");
                 const sessionNotesEl = document.getElementById("game-session-notes");
 
@@ -5938,14 +6012,7 @@ function initGameContextPanel() {
                 }
                 if (notesEl) notesEl.innerText = notes;
 
-                if (headerImg) {
-                    if (appId !== "-") {
-                        headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
-                        headerImg.style.display = "block";
-                    } else {
-                        headerImg.style.display = "none";
-                    }
-                }
+                applyHeaderState(appId, name);
 
                 if (promptView) {
                     promptView.value = `[Active SteamOS Game Context]\nThe user is currently playing the game: ${name} (Steam AppID: ${appId}).\nSteam Deck Optimization Notes: ${notes}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.`;
@@ -5988,12 +6055,20 @@ function initGameContextPanel() {
         });
     }
     
-    const dismiss = () => {
-        if (gameModal) gameModal.classList.remove("active");
-    };
-    
     if (closeX) closeX.onclick = dismiss;
     if (closeBtn) closeBtn.onclick = dismiss;
+    if (gameModal) {
+        gameModal.addEventListener("click", (event) => {
+            if (event.target === gameModal) {
+                dismiss();
+            }
+        });
+    }
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && gameModal?.classList.contains("active")) {
+            dismiss();
+        }
+    });
 }
 
 

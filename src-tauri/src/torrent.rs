@@ -198,6 +198,30 @@ impl TorrentManager {
         snapshot_record(record, &self.download_root).await
     }
 
+    async fn pause_all(&self) -> Result<Vec<TorrentSnapshot>, String> {
+        let mut items: Vec<&TorrentRecord> = self.torrents.values().collect();
+        items.sort_by(|a, b| b.seq.cmp(&a.seq));
+
+        let mut snapshots = Vec::with_capacity(items.len());
+        for record in items {
+            record.torrent.pause().await;
+            snapshots.push(snapshot_record(record, &self.download_root).await?);
+        }
+        Ok(snapshots)
+    }
+
+    async fn resume_all(&self) -> Result<Vec<TorrentSnapshot>, String> {
+        let mut items: Vec<&TorrentRecord> = self.torrents.values().collect();
+        items.sort_by(|a, b| b.seq.cmp(&a.seq));
+
+        let mut snapshots = Vec::with_capacity(items.len());
+        for record in items {
+            record.torrent.resume().await;
+            snapshots.push(snapshot_record(record, &self.download_root).await?);
+        }
+        Ok(snapshots)
+    }
+
     fn download_root(&self) -> String {
         self.download_root.to_string_lossy().to_string()
     }
@@ -350,7 +374,54 @@ pub async fn torrent_resume(state: State<'_, TorrentState>, id: String) -> Resul
 }
 
 #[tauri::command]
+pub async fn torrent_pause_all(state: State<'_, TorrentState>) -> Result<Vec<TorrentSnapshot>, String> {
+    let guard = state.inner.lock().await;
+    guard.pause_all().await
+}
+
+#[tauri::command]
+pub async fn torrent_resume_all(state: State<'_, TorrentState>) -> Result<Vec<TorrentSnapshot>, String> {
+    let guard = state.inner.lock().await;
+    guard.resume_all().await
+}
+
+#[tauri::command]
 pub async fn torrent_get_download_root(state: State<'_, TorrentState>) -> Result<String, String> {
     let guard = state.inner.lock().await;
     Ok(guard.download_root())
+}
+
+#[tauri::command]
+pub async fn torrent_open_download_root(state: State<'_, TorrentState>) -> Result<(), String> {
+    let guard = state.inner.lock().await;
+    let root = PathBuf::from(guard.download_root());
+    drop(guard);
+
+    if !root.exists() || !root.is_dir() {
+        return Err(format!("Torrent download root is unavailable: {}", root.display()));
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer.exe")
+            .arg(&root)
+            .spawn()
+            .map_err(|e| format!("Failed to open torrent download root: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&root)
+            .spawn()
+            .map_err(|e| format!("Failed to open torrent download root: {}", e))?;
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&root)
+            .spawn()
+            .map_err(|e| format!("Failed to open torrent download root: {}", e))?;
+    }
+
+    Ok(())
 }

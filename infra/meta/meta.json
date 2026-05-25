@@ -14,10 +14,10 @@
   },
   "tag": "v1.2.1-ra",
   "build": {
-    "git_sha": "a2a77d8d69326f0397b454012d00bb1492a90013",
+    "git_sha": "4a839a4e13d1224731c6760d515e40ad23a93bfa",
     "git_tag": null,
-    "built_at_utc": "2026-05-25T05:00:40Z",
-    "dirty": false
+    "built_at_utc": "2026-05-25T05:15:31Z",
+    "dirty": true
   },
   "studio": {
     "name": "Khaotic Labs",

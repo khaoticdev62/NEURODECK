@@ -149,10 +149,27 @@ const ICONS = {
     <rect x="9" y="9" width="11" height="11" rx="2"></rect>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
   `,
+  clipboard: `
+    <rect x="7" y="4" width="10" height="16" rx="2"></rect>
+    <path d="M9 4.5h6"></path>
+    <path d="M10 2h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1z"></path>
+  `,
+  info: `
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 10v6"></path>
+    <path d="M12 7h.01"></path>
+  `,
   save: `
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
     <path d="M7 3v6h8"></path>
     <path d="M8 21V13h8v8"></path>
+  `,
+  folderOpen: `
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"></path>
+    <path d="M3 10h18l-2 8a2 2 0 0 1-2 1.5H6a2 2 0 0 1-2-1.5z"></path>
+  `,
+  loaderCircle: `
+    <path d="M21 12a9 9 0 1 1-6.22-8.56"></path>
   `,
   eraser: `
     <path d="m7 21 10-10"></path>

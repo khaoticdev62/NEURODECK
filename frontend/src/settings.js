@@ -316,6 +316,8 @@ function initSettingsSidebar() {
 
 function openSettingsModal() {
     if (settingsOverlay) settingsOverlay.classList.add("active");
+    const defaultTab = document.querySelector(".stv-nav-item[data-panel='sp-general']");
+    if (defaultTab) defaultTab.click();
     
     // Clear status text
     const statusEl = document.getElementById("settings-llm-status");
@@ -1366,6 +1368,20 @@ export function initSettings() {
             if (settingsOverlay) settingsOverlay.classList.remove("active");
         };
     }
+
+    if (settingsOverlay) {
+        settingsOverlay.addEventListener("click", (event) => {
+            if (event.target === settingsOverlay) {
+                settingsOverlay.classList.remove("active");
+            }
+        });
+    }
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && settingsOverlay?.classList.contains("active")) {
+            settingsOverlay.classList.remove("active");
+        }
+    });
 
     initCustomPersonas();
 }
