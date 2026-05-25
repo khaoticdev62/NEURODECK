@@ -214,7 +214,10 @@ function restartTerminalSession(id) {
     if (!session) return;
 
     session.term.write("\r\n\x1b[1;33mRestarting shell session...\x1b[0m\r\n");
-    invoke("pty_kill", { id: id }).catch(() => {}).then(() => {
+    // Brief delay after kill lets the old reader thread exit before the new
+    // one starts, preventing a transient window where both emit pty_output
+    // events on the same session ID and corrupt the terminal display.
+    invoke("pty_kill", { id: id }).catch(() => {}).then(() => new Promise(r => setTimeout(r, 150))).then(() => {
         const dims = session.fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
         invoke("pty_spawn", {
             id: id,

@@ -1,7 +1,6 @@
 use crate::*;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::path::Path;
 use tauri::{AppHandle, Emitter, Manager, State};
 use chrono::Utc;
 use futures_util::StreamExt;
@@ -21,21 +20,21 @@ pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String>
         messages: app.messages.clone(),
     };
 
-    storage::save_session("./sessions", &session)?;
+    storage::save_session(user_config_dir().join("sessions"), &session)?;
     Ok(format!("Session saved as {}", app.session_id))
 }
 
 #[tauri::command]
 pub fn export_session_markdown(id: String) -> Result<String, String> {
-    let path = Path::new("./sessions").join(format!("{}.json", id));
+    let path = user_config_dir().join("sessions").join(format!("{}.json", id));
     if !path.exists() {
         return Err(format!("Session {} does not exist on disk", id));
     }
     let session = storage::load_session(&path)?;
-    
-    let export_dir = Path::new("./exports");
-    std::fs::create_dir_all(export_dir).map_err(|e| format!("Failed to create exports directory: {}", e))?;
-    
+
+    let export_dir = user_config_dir().join("exports");
+    std::fs::create_dir_all(&export_dir).map_err(|e| format!("Failed to create exports directory: {}", e))?;
+
     let file_path = export_dir.join(format!("{}.md", id));
     storage::export_to_markdown(&file_path, &session)?;
     
@@ -44,7 +43,7 @@ pub fn export_session_markdown(id: String) -> Result<String, String> {
 
 #[tauri::command]
 pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<String, serde_json::Value>, String> {
-    let read_dir = std::fs::read_dir("./sessions")
+    let read_dir = std::fs::read_dir(user_config_dir().join("sessions"))
         .map_err(|e| format!("Error reading sessions dir: {}", e))?;
 
     let mut latest_file = std::path::PathBuf::new();
@@ -84,7 +83,7 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
 #[tauri::command]
 pub fn list_sessions() -> Result<Vec<String>, String> {
     let mut sessions = Vec::new();
-    let dir = Path::new("./sessions");
+    let dir = user_config_dir().join("sessions");
     if !dir.exists() {
         return Ok(sessions);
     }
@@ -111,7 +110,7 @@ pub fn load_session_by_id(id: String, state: State<'_, Mutex<AppState>>) -> Resu
         return Err(format!("Invalid session ID: {}", id));
     }
 
-    let file_path = Path::new("./sessions").join(format!("{}.json", id));
+    let file_path = user_config_dir().join("sessions").join(format!("{}.json", id));
     if !file_path.exists() {
         return Err(format!("Session {} does not exist", id));
     }
@@ -138,7 +137,7 @@ pub fn delete_session(id: String) -> Result<(), String> {
         return Err(format!("Invalid session ID: {}", id));
     }
 
-    let file_path = Path::new("./sessions").join(format!("{}.json", id));
+    let file_path = user_config_dir().join("sessions").join(format!("{}.json", id));
     if file_path.exists() {
         std::fs::remove_file(file_path)
             .map_err(|e| format!("Failed to delete session file: {}", e))?;

@@ -467,6 +467,7 @@ function formatCodeBlocks(container) {
             execBtn.className = "code-header-btn execute-btn";
             execBtn.innerText = "Execute";
             execBtn.onclick = function() {
+                if (!window.confirm(`Execute this ${lang} snippet?\n\nReview the command before running.`)) return;
                 if (state.isProcessRunning) {
                     invoke("kill_process").catch(e => console.error("Error killing process:", e));
                 }

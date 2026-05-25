@@ -17,6 +17,7 @@ mod canvas_collab;
 mod remote_control;
 mod autocomplete;
 mod doc_indexer;
+mod torrent;
 pub mod sync;
 pub mod commands;
 use crate::commands::*;
@@ -777,7 +778,10 @@ pub fn run() {
 
     let provider = create_provider(&config);
 
-    let mem_db = match MemoryDB::init("./data/memory") {
+    let data_dir = user_config_dir().join("data");
+    let _ = std::fs::create_dir_all(&data_dir);
+
+    let mem_db = match MemoryDB::init(data_dir.join("memory")) {
         Ok(db) => Some(db),
         Err(e) => {
             println!("Error initializing memory: {}", e);
@@ -785,14 +789,15 @@ pub fn run() {
         }
     };
 
-    let _ = std::fs::create_dir_all("./data");
-    let custom_personas = match std::fs::read_to_string("./data/personas.json") {
+    let custom_personas = match std::fs::read_to_string(data_dir.join("personas.json")) {
         Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
         Err(_) => Vec::new(),
     };
 
     let whisper_binary = config.stt.whisper_binary.clone();
     let whisper_model  = config.stt.whisper_model.clone();
+    let torrent_download_root = data_dir.join("torrents/downloads");
+    let _ = std::fs::create_dir_all(&torrent_download_root);
 
     let app_state = AppState {
         provider,
@@ -827,6 +832,7 @@ pub fn run() {
         })
         .manage(remote_control::RemoteControlState::default())
         .manage(transfer::SharedTransferState(Arc::new(Mutex::new(transfer::TransferState::new()))))
+        .manage(torrent::TorrentState::new(torrent_download_root))
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
@@ -909,6 +915,12 @@ pub fn run() {
             transfer::cancel_transfer,
             transfer::set_group_code,
             transfer::get_group_code,
+            torrent::torrent_get_status,
+            torrent::torrent_list,
+            torrent::torrent_add,
+            torrent::torrent_pause,
+            torrent::torrent_resume,
+            torrent::torrent_get_download_root,
             open_external,
             browser_open,
             browser_navigate,

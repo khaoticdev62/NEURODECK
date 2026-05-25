@@ -3930,6 +3930,71 @@ body.crt-flicker-disabled .crt-flicker {
     line-height: 1.5;
 }
 
+.torrent-action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.torrent-action-btn {
+    flex: 1 1 0;
+    min-width: 150px;
+}
+
+.torrent-action-btn-secondary {
+    opacity: 0.9;
+}
+
+.torrent-root-line {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.torrent-list {
+    flex: 1;
+    background: #020406;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 480px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.torrent-item {
+    gap: 8px;
+}
+
+.torrent-title {
+    max-width: 72%;
+}
+
+.torrent-meta,
+.torrent-details {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.58);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.torrent-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.torrent-actions .send-prompt-btn {
+    flex: 1 1 140px;
+    justify-content: center;
+}
+
 .peers-list {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);

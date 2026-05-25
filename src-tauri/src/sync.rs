@@ -6,13 +6,12 @@ use ring::{aead, digest, rand};
 use ring::rand::SecureRandom;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{Emitter, State};
 
-const SYNC_DIR: &str = "./data/sync";
-const STATUS_FILE: &str = "./data/sync/status.json";
-const SESSION_DIR: &str = "./sessions";
+fn sync_dir() -> std::path::PathBuf { crate::user_config_dir().join("data/sync") }
+fn status_file() -> std::path::PathBuf { crate::user_config_dir().join("data/sync/status.json") }
+fn session_dir() -> std::path::PathBuf { crate::user_config_dir().join("sessions") }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncRecord {
@@ -361,12 +360,12 @@ fn derive_key(token: &str) -> Result<[u8; 32], String> {
 
 fn list_session_payloads() -> Result<Vec<SessionPayload>, String> {
     let mut sessions = Vec::new();
-    let dir = Path::new(SESSION_DIR);
+    let dir = session_dir();
     if !dir.exists() {
         return Ok(sessions);
     }
 
-    for entry in fs::read_dir(dir).map_err(|e| format!("Failed to read sessions dir: {}", e))? {
+    for entry in fs::read_dir(&dir).map_err(|e| format!("Failed to read sessions dir: {}", e))? {
         let path = entry.map_err(|e| e.to_string())?.path();
         if path.extension().and_then(|e| e.to_str()) != Some("json") {
             continue;
@@ -386,7 +385,7 @@ fn save_remote_session(session: SessionPayload, timestamp: &str) -> Result<(), S
         return Err(format!("Invalid synced session ID: {}", session.id));
     }
 
-    let path = PathBuf::from(SESSION_DIR).join(format!("{}.json", session.id));
+    let path = session_dir().join(format!("{}.json", session.id));
     if path.exists() {
         let local_modified = fs::metadata(&path)
             .and_then(|m| m.modified())
@@ -403,7 +402,7 @@ fn save_remote_session(session: SessionPayload, timestamp: &str) -> Result<(), S
         created_at: session.created_at,
         messages: session.messages,
     };
-    storage::save_session(SESSION_DIR, &stored)
+    storage::save_session(session_dir(), &stored)
 }
 
 fn count_pending_records(app: &AppState) -> Result<usize, String> {
@@ -420,17 +419,17 @@ fn count_pending_records(app: &AppState) -> Result<usize, String> {
 }
 
 fn load_status() -> SyncStatus {
-    fs::read_to_string(STATUS_FILE)
+    fs::read_to_string(status_file())
         .ok()
         .and_then(|raw| serde_json::from_str::<SyncStatus>(&raw).ok())
         .unwrap_or_default()
 }
 
 fn save_status(status: &SyncStatus) -> Result<(), String> {
-    fs::create_dir_all(SYNC_DIR).map_err(|e| format!("Failed to create sync dir: {}", e))?;
+    fs::create_dir_all(sync_dir()).map_err(|e| format!("Failed to create sync dir: {}", e))?;
     let raw = serde_json::to_string_pretty(status)
         .map_err(|e| format!("Failed to serialize sync status: {}", e))?;
-    fs::write(STATUS_FILE, raw).map_err(|e| format!("Failed to write sync status: {}", e))
+    fs::write(status_file(), raw).map_err(|e| format!("Failed to write sync status: {}", e))
 }
 
 fn persist_error(message: String) -> String {

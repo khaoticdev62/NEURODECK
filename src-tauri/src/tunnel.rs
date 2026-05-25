@@ -102,6 +102,13 @@ fn sanitize_tunnel_path(path_str: &str) -> Result<std::path::PathBuf, String> {
 async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
     match req {
         TunnelRequest::RunCmd { command } => {
+            // SECURITY MODEL: RunCmd is intentionally unrestricted — the tunnel
+            // is a trusted local-only channel (loopback + shared keychain token)
+            // that lets the Game Mode sandbox drive the host Desktop.  The token
+            // is never logged or transmitted over the network.  Callers outside
+            // this process cannot reach this handler without a valid token.
+            // WriteFile/ReadDir are sandboxed to a base path; RunCmd is not,
+            // by design — it is the mechanism for full host automation.
             let mut cmd = if cfg!(target_os = "windows") {
                 let mut c = tokio::process::Command::new("cmd.exe");
                 c.arg("/c").arg(&command);

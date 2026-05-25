@@ -1056,30 +1056,31 @@ pub async fn generate_jpe_explanation_with_level(
 
 #[tauri::command]
 pub fn save_prompt_preset(name: String, schema_json: String) -> Result<(), String> {
-    let _ = std::fs::create_dir_all("./data");
-    let path = std::path::Path::new("./data/prompt_presets.json");
-    
+    let data_dir = user_config_dir().join("data");
+    let _ = std::fs::create_dir_all(&data_dir);
+    let path = data_dir.join("prompt_presets.json");
+
     let mut presets = if path.exists() {
-        let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
         serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default()
     } else {
         std::collections::HashMap::new()
     };
-    
+
     presets.insert(name, schema_json);
-    
+
     let serialized = serde_json::to_string_pretty(&presets).map_err(|e| e.to_string())?;
-    std::fs::write(path, serialized).map_err(|e| e.to_string())?;
+    std::fs::write(&path, serialized).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>, String> {
-    let path = std::path::Path::new("./data/prompt_presets.json");
+    let path = user_config_dir().join("data/prompt_presets.json");
     if !path.exists() {
         return Ok(std::collections::HashMap::new());
     }
-    let content = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let presets = serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default();
     Ok(presets)
 }
@@ -1460,7 +1461,7 @@ pub fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, Strin
 }
 
 fn game_notes_path(app_id: &str) -> PathBuf {
-    PathBuf::from("./data/game_notes").join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
+    user_config_dir().join("data/game_notes").join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
 }
 
 #[tauri::command]

@@ -844,6 +844,9 @@ function initCanvasCollab() {
             }
         } else if (msg === 'peer_disconnected') {
             setDisconnected();
+            // Stop the backend session so canvas_collab_status correctly reports
+            // inactive; otherwise collab_abort stays Some even after the peer gone.
+            invoke("canvas_collab_stop").catch(() => {});
             if (typeof addNotification === "function") {
                 addNotification("Collab Disconnected", "The peer has left the session.", "info");
             }

@@ -27,6 +27,7 @@ import { applyNeurodeckIconography, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
 import { initAgentView } from './agent.js';
 import { initMemoryView } from './memory.js';
+import { initTorrentClient } from './torrent.js';
 
 async function triggerOAuthLogin() {
     let chatViewport = document.getElementById("chat-viewport");
@@ -643,12 +644,13 @@ document.querySelector('#app').innerHTML = `
                 <div class="view-content" id="view-share">
                     <div class="share-view-header">
                         <span class="share-view-title">📤 Share &amp; Transfer</span>
-                        <span class="share-view-subtitle">LAN · SFTP · FTP</span>
+                        <span class="share-view-subtitle">LAN · SFTP · FTP · BT</span>
                     </div>
                     <div class="share-inner-tabs">
                         <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
                         <button class="share-inner-tab" data-panel="sftp">🔒 SFTP</button>
                         <button class="share-inner-tab" data-panel="ftp">📁 FTP</button>
+                        <button class="share-inner-tab nd-icon-button" data-panel="torrent">${createIcon('download', { size: 14 })}<span class="nd-button-label">Torrent</span></button>
                     </div>
 
                     <!-- LAN Panel -->
@@ -684,6 +686,36 @@ document.querySelector('#app').innerHTML = `
                                 <p class="share-desc">Active and historical file transfers. Files are saved to Downloads/neurodeck_transfers/.</p>
                                 <div class="transfers-list" id="share-transfers-list">
                                     <div class="transfer-item-empty">No active or past transfers in this session.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Torrent Panel -->
+                    <div class="share-panel-section" id="share-panel-torrent">
+                        <div class="share-grid">
+                            <div class="share-panel">
+                                <h3>Secure Torrent Client</h3>
+                                <p class="share-desc">Accepts magnet links or validated local .torrent files. Downloads stay inside the app-managed torrent root and start paused by default.</p>
+                                <div class="setting-field-group">
+                                    <label>Magnet URI or .torrent Path</label>
+                                    <input type="text" id="torrent-source-input" class="tunnel-text-input" placeholder="magnet:?xt=urn:btih:... or /absolute/path/file.torrent" style="width:100%;box-sizing:border-box;">
+                                </div>
+                                <div class="torrent-action-row">
+                                    <button class="send-prompt-btn nd-icon-button torrent-action-btn" id="torrent-add-btn">${createIcon('download', { size: 14 })}<span class="nd-button-label">Add Paused</span></button>
+                                    <button class="send-prompt-btn nd-icon-button torrent-action-btn torrent-action-btn-secondary" id="torrent-refresh-btn">${createIcon('refreshCw', { size: 14 })}<span class="nd-button-label">Refresh</span></button>
+                                </div>
+                                <div class="setting-field-group">
+                                    <label>Session Summary</label>
+                                    <div class="torrent-root-line" id="torrent-root-label">Download root: initializing...</div>
+                                    <div class="torrent-root-line" id="torrent-count-label">0 active</div>
+                                </div>
+                            </div>
+                            <div class="share-panel">
+                                <h3>Active Torrents</h3>
+                                <p class="share-desc">Paused by default. Resume only the swarm you trust.</p>
+                                <div class="torrent-list" id="torrent-list">
+                                    <div class="peer-item-empty">No torrents loaded yet.</div>
                                 </div>
                             </div>
                         </div>
@@ -3933,6 +3965,7 @@ invoke("get_initial_state").then((initialState) => {
     initGameContextPanel();
     initTunnelClient();
     initFileShare();
+    initTorrentClient();
     initBrowser();
     initAgentView();
     initMemoryView();

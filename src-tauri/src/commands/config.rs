@@ -162,7 +162,7 @@ pub fn add_custom_persona(name: String, prompt: String, state: State<'_, Mutex<A
     let json_data = serde_json::to_string_pretty(&app.custom_personas)
         .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
     
-    std::fs::write("./data/personas.json", json_data)
+    std::fs::write(user_config_dir().join("data/personas.json"), json_data)
         .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
 
     Ok(())
@@ -182,7 +182,7 @@ pub fn delete_custom_persona(name: String, state: State<'_, Mutex<AppState>>) ->
     let json_data = serde_json::to_string_pretty(&app.custom_personas)
         .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
     
-    std::fs::write("./data/personas.json", json_data)
+    std::fs::write(user_config_dir().join("data/personas.json"), json_data)
         .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
 
     Ok(())
@@ -212,8 +212,8 @@ pub fn save_profiles(key: String, data: String) -> Result<(), String> {
     if !allowed.contains(&key.as_str()) {
         return Err(format!("Invalid profile key: {}", key));
     }
-    let dir = std::path::Path::new("./data/profiles");
-    std::fs::create_dir_all(dir).map_err(|e| format!("Cannot create profiles dir: {}", e))?;
+    let dir = user_config_dir().join("data/profiles");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create profiles dir: {}", e))?;
     let path = dir.join(format!("{}.json", key));
     std::fs::write(&path, &data).map_err(|e| format!("Cannot save profiles: {}", e))
 }
@@ -226,15 +226,15 @@ pub fn load_profiles(key: String) -> String {
     if !allowed.contains(&key.as_str()) {
         return "[]".to_string();
     }
-    let path = std::path::Path::new("./data/profiles").join(format!("{}.json", key));
+    let path = user_config_dir().join("data/profiles").join(format!("{}.json", key));
     std::fs::read_to_string(&path).unwrap_or_else(|_| "[]".to_string())
 }
 
 /// Persist custom themes to `./data/themes/custom.json`.
 #[tauri::command]
 pub fn save_custom_themes(data: String) -> Result<(), String> {
-    let dir = std::path::Path::new("./data/themes");
-    std::fs::create_dir_all(dir).map_err(|e| format!("Cannot create themes dir: {}", e))?;
+    let dir = user_config_dir().join("data/themes");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create themes dir: {}", e))?;
     std::fs::write(dir.join("custom.json"), &data)
         .map_err(|e| format!("Cannot save themes: {}", e))
 }
@@ -242,7 +242,7 @@ pub fn save_custom_themes(data: String) -> Result<(), String> {
 /// Load custom themes from disk. Returns `"[]"` if not found.
 #[tauri::command]
 pub fn load_custom_themes() -> String {
-    std::fs::read_to_string("./data/themes/custom.json")
+    std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
         .unwrap_or_else(|_| "[]".to_string())
 }
 
