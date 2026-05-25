@@ -435,8 +435,9 @@ function initScreenshotVision() {
 
                 const removeBtn = document.createElement("button");
                 removeBtn.className = "chat-attachment-remove";
-                removeBtn.innerHTML = "✕";
+                removeBtn.innerHTML = createIcon("x", { size: 12 });
                 removeBtn.title = "Remove attachment";
+                removeBtn.setAttribute("aria-label", "Remove attachment");
                 removeBtn.onclick = () => {
                     window.pendingScreenshot = null;
                     bar.innerHTML = "";

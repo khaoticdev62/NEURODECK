@@ -756,7 +756,7 @@ function handleMicAction() {
     let viewport = document.getElementById("chat-workspace");
     if (!state.isRecording) {
         state.isRecording = true;
-        micBtn.innerText = "🛑";
+        applyButtonIcon("#mic-btn", { icon: "x", iconOnly: true });
         micBtn.classList.add("recording");
         invoke("start_recording").then((msg) => {
             let div = document.createElement("div");
@@ -770,7 +770,7 @@ function handleMicAction() {
             viewport.scrollTop = viewport.scrollHeight;
         }).catch((err) => {
             state.isRecording = false;
-            micBtn.innerText = "🎙️";
+            applyButtonIcon("#mic-btn", { icon: "mic", iconOnly: true });
             micBtn.classList.remove("recording");
             let div = document.createElement("div");
             div.className = "message system error";
@@ -784,7 +784,7 @@ function handleMicAction() {
         });
     } else {
         state.isRecording = false;
-        micBtn.innerText = "🎙️";
+        applyButtonIcon("#mic-btn", { icon: "mic", iconOnly: true });
         micBtn.classList.remove("recording");
         
         let div = document.createElement("div");

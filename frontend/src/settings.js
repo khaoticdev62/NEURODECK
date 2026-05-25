@@ -9,6 +9,12 @@ import {
 } from './terminal.js';
 import { applyButtonIcon, createIcon } from './icons.js';
 
+function setStatusMarkup(el, icon, text, color) {
+    if (!el) return;
+    el.style.color = color || "";
+    el.innerHTML = `${createIcon(icon, { size: 14 })}<span>${text}</span>`;
+}
+
 let settingsOverlay = null;
 let settingsBtn = null;
 let closeSettings = null;
@@ -597,9 +603,11 @@ function initCustomThemes() {
             };
 
             const delBtn = document.createElement("button");
-            delBtn.textContent = "✕";
             delBtn.className = "canvas-btn";
             delBtn.style.cssText = "height:22px; padding:0 6px; font-size:0.7rem; border-color:var(--error-color);";
+            delBtn.title = `Delete ${t.name}`;
+            delBtn.setAttribute("aria-label", `Delete ${t.name}`);
+            delBtn.innerHTML = createIcon("trash2", { size: 14 });
             delBtn.onclick = () => {
                 const themes2 = loadThemes();
                 themes2.splice(idx, 1);
@@ -1004,7 +1012,7 @@ function initBmadInstaller() {
         try {
             const msg = await invoke("install_bmad_to_dir", { targetDir: dir });
             statusLine.style.color = "var(--response-color)";
-            statusLine.textContent = "✓ " + msg;
+            setStatusMarkup(statusLine, "shieldCheck", msg, "var(--response-color)");
             addNotification("BMAD Installed", `Framework installed to ${dir}`, "success");
         } catch (err) {
             statusLine.style.color = "var(--error-color)";
@@ -1058,7 +1066,7 @@ function initWhisperSettings() {
                     downloadBtn.disabled = false;
                     if (path) {
                         if (modelInput) modelInput.value = path;
-                        if (statusLine) statusLine.innerHTML = `<span style="color:var(--response-color);">✓ ${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span>`;
+                        if (statusLine) statusLine.innerHTML = `<span style="color:var(--response-color);display:inline-flex;align-items:center;gap:6px;">${createIcon("shieldCheck", { size: 14 })}<span>${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span></span>`;
                         if (typeof addNotification === "function") {
                             addNotification("Whisper Model Ready", `ggml-${model}.bin downloaded.`, "success");
                         }
@@ -1081,15 +1089,15 @@ function initWhisperSettings() {
 
     // Load current config on modal open
     invoke("get_whisper_status").then(status => {
-        if (status) {
-            if (binaryInput) binaryInput.value = status.binary || '';
-            if (modelInput) modelInput.value = status.model || '';
-            if (status.configured) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Whisper configured and ready.</span>`;
-            } else if (status.model) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">⚠ Model file not found at configured path.</span>`;
+            if (status) {
+                if (binaryInput) binaryInput.value = status.binary || '';
+                if (modelInput) modelInput.value = status.model || '';
+                if (status.configured) {
+                if (statusLine) setStatusMarkup(statusLine, "shieldCheck", "Whisper configured and ready.", "var(--response-color)");
+                } else if (status.model) {
+                if (statusLine) setStatusMarkup(statusLine, "bell", "Model file not found at configured path.", "var(--warning-color)");
+                }
             }
-        }
     }).catch(() => {});
 
     saveBtn.addEventListener("click", async () => {
@@ -1099,7 +1107,7 @@ function initWhisperSettings() {
             await invoke("set_whisper_config", { binary, model });
             const status = await invoke("get_whisper_status");
             if (status.configured) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--response-color);">✓ Saved. Whisper ready — mic button will use offline STT.</span>`;
+                if (statusLine) setStatusMarkup(statusLine, "shieldCheck", "Saved. Whisper ready - mic button will use offline STT.", "var(--response-color)");
                 if (typeof addNotification === "function") {
                     addNotification("Whisper STT Configured", "Offline transcription is now active.", "success");
                 }

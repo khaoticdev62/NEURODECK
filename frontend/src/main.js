@@ -23,7 +23,7 @@ import './app.css';
 
 import { invoke } from '@tauri-apps/api/core';
 import QRCode from 'qrcode';
-import { applyNeurodeckIconography } from './icons.js';
+import { applyNeurodeckIconography, createIcon } from './icons.js';
 
 async function triggerOAuthLogin() {
     let chatViewport = document.getElementById("chat-viewport");
@@ -8776,9 +8776,9 @@ function initDocsView() {
             fileList.innerHTML = files.map(f => {
                 const name = f.replace(/\\/g, '/').split('/').pop();
                 return `<div class="docs-file-row" data-path="${f}" title="${f}">
-                    <span class="docs-file-icon">📄</span>
+                    <span class="docs-file-icon">${createIcon('file', { size: 14 })}</span>
                     <span class="docs-file-name">${name}</span>
-                    <button class="docs-remove-btn" data-path="${f}" title="Remove from index">✕</button>
+                    <button class="docs-remove-btn" data-path="${f}" title="Remove from index" aria-label="Remove ${name} from index">${createIcon('x', { size: 12 })}</button>
                 </div>`;
             }).join('');
 
@@ -8786,7 +8786,7 @@ function initDocsView() {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const path = btn.dataset.path;
-                    btn.textContent = '…';
+                    btn.innerHTML = createIcon('zap', { size: 12 });
                     btn.disabled = true;
                     await invoke('remove_indexed_doc', { filePath: path });
                     await refreshFileList();
@@ -8816,7 +8816,7 @@ function initDocsView() {
                 const snippet = r.snippet.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 return `<div class="docs-result-row">
                     <div class="docs-result-header">
-                        <span class="docs-result-file" title="${r.file}">📄 ${name}</span>
+                        <span class="docs-result-file" title="${r.file}">${createIcon('fileText', { size: 13 })}<span>${name}</span></span>
                         <span class="docs-result-score">${pct}%</span>
                     </div>
                     <div class="docs-result-snippet">${snippet}</div>

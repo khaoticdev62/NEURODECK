@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { applyButtonIcon, createIcon } from './icons.js';
 
 // --- LIVE CODE CANVAS SYSTEM ---
 
@@ -125,8 +126,8 @@ function ensureAiEditModal() {
     modal.innerHTML = `
         <div class="canvas-ai-edit-panel">
             <div class="canvas-ai-edit-header">
-                <span>✦ AI Edit</span>
-                <button class="canvas-ai-edit-close" id="canvas-ai-edit-close">✕</button>
+                <span>${createIcon('wand2', { size: 14 })}<span>AI Edit</span></span>
+                <button class="canvas-ai-edit-close" id="canvas-ai-edit-close" aria-label="Close AI edit">${createIcon('x', { size: 14 })}</button>
             </div>
             <div class="canvas-ai-edit-body">
                 <label class="canvas-ai-edit-label">Instruction</label>
@@ -141,7 +142,7 @@ function ensureAiEditModal() {
             </div>
             <div class="canvas-ai-edit-footer">
                 <button class="canvas-btn" id="canvas-ai-edit-cancel">Cancel</button>
-                <button class="canvas-btn" id="canvas-ai-edit-apply" style="background:rgba(0,240,255,0.1);border-color:var(--accent-color);color:var(--accent-color);">Apply ✦</button>
+                <button class="canvas-btn" id="canvas-ai-edit-apply" style="background:rgba(0,240,255,0.1);border-color:var(--accent-color);color:var(--accent-color);">Apply</button>
             </div>
         </div>
     `;
@@ -169,7 +170,7 @@ function ensureAiEditModal() {
 
         const statusEl = document.getElementById('canvas-ai-edit-status');
         const applyBtn = document.getElementById('canvas-ai-edit-apply');
-        statusEl.textContent = '⚡ Applying AI edit...';
+        statusEl.innerHTML = `${createIcon('zap', { size: 14 })}<span>Applying AI edit...</span>`;
         applyBtn.disabled = true;
 
         try {
@@ -188,7 +189,7 @@ function ensureAiEditModal() {
                 }
             }
             renderCanvasPreview();
-            statusEl.textContent = '✓ Applied';
+            statusEl.innerHTML = `${createIcon('shieldCheck', { size: 14 })}<span>Applied</span>`;
             setTimeout(closeAiEditModal, 800);
         } catch (err) {
             statusEl.textContent = `Error: ${err}`;
@@ -407,7 +408,7 @@ function initCanvasView() {
         cancelBtn = document.createElement("button");
         cancelBtn.className = "canvas-btn canvas-btn-sm";
         cancelBtn.id = "canvas-cancel-exec-btn";
-        cancelBtn.textContent = "■ Cancel";
+        cancelBtn.innerHTML = `${createIcon('x', { size: 12 })}<span class="nd-button-label">Cancel</span>`;
         cancelBtn.style.display = "none";
         cancelBtn.style.borderColor = "var(--error-color)";
         cancelBtn.style.color = "var(--error-color)";
@@ -429,7 +430,10 @@ function initCanvasView() {
         execRunning = running;
         if (runBtn) {
             runBtn.disabled = running;
-            runBtn.textContent = running ? "⚡ Running..." : "▶ Run";
+            applyButtonIcon("#canvas-run-btn", {
+                icon: running ? "zap" : "play",
+                label: running ? "Running..." : "Run"
+            });
         }
         if (cancelBtn) {
             cancelBtn.style.display = running ? "inline-block" : "none";
@@ -470,8 +474,13 @@ function initCanvasView() {
             stopExecListeners();
             setExecRunning(false);
             if (runBtn) {
-                runBtn.textContent = exitCode === 0 ? "✓ Done" : "❌ Failed";
-                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                applyButtonIcon("#canvas-run-btn", {
+                    icon: exitCode === 0 ? "shieldCheck" : "x",
+                    label: exitCode === 0 ? "Done" : "Failed"
+                });
+                setTimeout(() => {
+                    applyButtonIcon("#canvas-run-btn", { icon: "play", label: "Run" });
+                }, 1500);
             }
             if (typeof window.addNotification === "function") {
                 window.addNotification("Canvas Exec", `Finished in ${duration} (exit ${exitCode})`, exitCode === 0 ? "success" : "error");
@@ -487,8 +496,10 @@ function initCanvasView() {
             setExecRunning(false);
             if (outputPre) outputPre.textContent = `Error executing code:\n${err}`;
             if (runBtn) {
-                runBtn.textContent = "❌ Failed";
-                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                applyButtonIcon("#canvas-run-btn", { icon: "x", label: "Failed" });
+                setTimeout(() => {
+                    applyButtonIcon("#canvas-run-btn", { icon: "play", label: "Run" });
+                }, 1500);
             }
         }
     }
@@ -514,27 +525,27 @@ function initCanvasView() {
             if (['python', 'bash', 'powershell', 'javascript', 'js'].includes(lang)) {
                 runStreamingExec(code, lang, outputPre);
             } else if (lang === 'lua') {
-                runBtn.textContent = "⚡ Running...";
+                applyButtonIcon("#canvas-run-btn", { icon: "zap", label: "Running..." });
                 runBtn.disabled = true;
                 if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
 
                 invoke("execute_lua", { code })
                     .then(() => {
                         if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
-                        runBtn.textContent = "✓ Done";
+                        applyButtonIcon("#canvas-run-btn", { icon: "shieldCheck", label: "Done" });
                         runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                        setTimeout(() => { applyButtonIcon("#canvas-run-btn", { icon: "play", label: "Run" }); }, 1500);
                     })
                     .catch(err => {
                         if (outputPre) outputPre.textContent = `Lua Error:\n${err}`;
-                        runBtn.textContent = "❌ Failed";
+                        applyButtonIcon("#canvas-run-btn", { icon: "x", label: "Failed" });
                         runBtn.disabled = false;
-                        setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1500);
+                        setTimeout(() => { applyButtonIcon("#canvas-run-btn", { icon: "play", label: "Run" }); }, 1500);
                     });
             } else {
                 renderCanvasPreview();
-                runBtn.textContent = "✓ Done";
-                setTimeout(() => { runBtn.textContent = "▶ Run"; }, 1200);
+                applyButtonIcon("#canvas-run-btn", { icon: "shieldCheck", label: "Done" });
+                setTimeout(() => { applyButtonIcon("#canvas-run-btn", { icon: "play", label: "Run" }); }, 1200);
             }
         };
     }
@@ -556,8 +567,8 @@ function initCanvasView() {
         copyBtn.onclick = () => {
             const code = monacoEditor ? monacoEditor.getValue() : '';
             navigator.clipboard.writeText(code).then(() => {
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+                applyButtonIcon("#canvas-copy-btn", { icon: "shieldCheck", label: "Copied" });
+                setTimeout(() => { applyButtonIcon("#canvas-copy-btn", { icon: "copy", label: "Copy" }); }, 1500);
             });
         };
     }

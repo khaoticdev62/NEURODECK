@@ -3110,6 +3110,11 @@ code {
     font-weight: 600;
     letter-spacing: 0.05em;
 }
+.canvas-ai-edit-header > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 
 .canvas-ai-edit-close {
     background: none;
@@ -6334,6 +6339,10 @@ body.crt-flicker-disabled .crt-flicker {
     line-height: 1;
     transition: background 0.15s ease;
 }
+.chat-attachment-remove .nd-icon-svg {
+    width: 11px;
+    height: 11px;
+}
 
 .chat-attachment-remove:hover {
     background: rgba(255, 60, 90, 1);
@@ -9494,7 +9503,12 @@ button.tab-btn:active,
 }
 .docs-file-row:hover { background: rgba(255,255,255,0.06); }
 
-.docs-file-icon { flex-shrink: 0; font-size: 0.8rem; }
+.docs-file-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    color: rgba(var(--accent-rgb), 0.82);
+}
 .docs-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .docs-remove-btn {
@@ -9507,6 +9521,10 @@ button.tab-btn:active,
     border-radius: 3px;
     flex-shrink: 0;
     transition: color 0.12s, background 0.12s;
+}
+.docs-remove-btn .nd-icon-svg {
+    width: 12px;
+    height: 12px;
 }
 .docs-remove-btn:hover { color: #FF4466; background: rgba(255,0,0,0.1); }
 
@@ -9533,6 +9551,9 @@ button.tab-btn:active,
 .docs-result-file {
     font-size: 0.72rem;
     color: var(--primary-color, #00F0FF);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
