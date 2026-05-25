@@ -23,6 +23,7 @@ import './app.css';
 
 import { invoke } from '@tauri-apps/api/core';
 import QRCode from 'qrcode';
+import { applyNeurodeckIconography } from './icons.js';
 
 async function triggerOAuthLogin() {
     let chatViewport = document.getElementById("chat-viewport");
@@ -3750,6 +3751,8 @@ requestAnimationFrame(pollGamepads);
 // let totalTokens = 0; (Moved to state.js)
 
 // Sidebar & Drawer Collapsing Event Listeners
+applyNeurodeckIconography();
+
 const sidebar = document.getElementById("sidebar");
 const sidebarToggleBtn = document.getElementById("sidebar-toggle-btn");
 const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
