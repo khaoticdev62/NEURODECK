@@ -278,3 +278,17 @@ test("chat, memory, and prompt lab expose the refined shell hierarchy", async ({
   await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
   await expect(page.locator(".pl-header-kicker")).toBeVisible();
 });
+
+test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ page }) => {
+  await page.locator('.nav-tab[data-view="agent"]').click();
+  await expect(page.locator("#view-agent")).toHaveClass(/active/);
+  await expect(page.locator(".agent-kicker")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="browser"]').click();
+  await expect(page.locator("#view-browser")).toHaveClass(/active/);
+  await expect(page.locator(".browser-kicker")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="tunnel"]').click();
+  await expect(page.locator("#view-tunnel")).toHaveClass(/active/);
+  await expect(page.locator(".tunnel-kicker").first()).toBeVisible();
+});

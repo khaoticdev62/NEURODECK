@@ -623,8 +623,10 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- SteamOS Tunnel View -->
                 <div class="view-content" id="view-tunnel">
+                    <div class="tunnel-shell">
                     <div class="tunnel-grid">
                         <div class="tunnel-panel">
+                            <span class="tunnel-kicker">Host Bridge</span>
                             <h3>SteamOS Host Tunnel</h3>
                             <p class="tunnel-desc">Enables local TCP loopback command execution and file operations from the sandboxed Game Mode environment to the host Desktop Mode.</p>
                             <div class="setting-field-group">
@@ -657,11 +659,13 @@ document.querySelector('#app').innerHTML = `
                             </div>
                         </div>
                         <div class="tunnel-panel">
+                            <span class="tunnel-kicker">Telemetry</span>
                             <h3>Tunnel Operations Log</h3>
                             <div class="tunnel-log" id="tunnel-log">
                                 <div class="log-entry system">System: Log initialized. Tunnel operates on 127.0.0.1:18337.</div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -916,6 +920,9 @@ document.querySelector('#app').innerHTML = `
                 <div class="view-content" id="view-browser">
                     <div class="browser-container">
                         <div class="browser-toolbar">
+                            <div class="browser-toolbar-title">
+                                <span class="browser-kicker">Sandboxed Web</span>
+                            </div>
                             <div class="browser-nav-buttons">
                                 <button class="browser-btn" id="browser-back-btn" title="Go Back">◀</button>
                                 <button class="browser-btn" id="browser-forward-btn" title="Go Forward">▶</button>
@@ -1019,6 +1026,9 @@ document.querySelector('#app').innerHTML = `
                 <!-- Autonomous Coding Agent View -->
                 <div class="view-content" id="view-agent">
                     <div class="agent-shell">
+                        <div class="agent-shell-header">
+                            <span class="agent-kicker">Execution Fabric</span>
+                        </div>
                         <!-- Mode toggle -->
                         <div class="agent-mode-bar">
                             <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
