@@ -261,6 +261,7 @@ cmd_sync() {
   local meta="$ROOT/infra/meta/meta.json"
   local health="$ROOT/infra/telemetry/health.json"
   local registry="$ROOT/infra/meta/CODENAME_REGISTRY.md"
+  local plan="$ROOT/docs/IMPLEMENTATION_PLAN.md"
   local py_bin=""
   local schema_valid=false
   local loose_zone_isolated=false
@@ -268,6 +269,7 @@ cmd_sync() {
 
   [[ -f "$meta" ]] || die "infra/meta/meta.json not found."
   [[ -f "$registry" ]] || die "infra/meta/CODENAME_REGISTRY.md not found."
+  [[ -f "$plan" ]] || die "docs/IMPLEMENTATION_PLAN.md not found."
 
   py_bin=$(resolve_python 2>/dev/null || true)
   [[ -n "$py_bin" ]] || die "python3 or python required for sync command."
@@ -280,13 +282,13 @@ cmd_sync() {
 
   info "Syncing derived KFMS artifacts from meta.json..."
 
-  "$py_bin" - "$meta" "$health" "$registry" "$schema_valid" "$loose_zone_isolated" "$workspace_state" <<'PYEOF'
+  "$py_bin" - "$meta" "$health" "$registry" "$plan" "$schema_valid" "$loose_zone_isolated" "$workspace_state" <<'PYEOF'
 import json
 import re
 import sys
 from pathlib import Path
 
-meta_path, health_path, registry_path, schema_valid, loose_zone_isolated, workspace_state = sys.argv[1:]
+meta_path, health_path, registry_path, plan_path, schema_valid, loose_zone_isolated, workspace_state = sys.argv[1:]
 
 REGISTRY = [
     "Anubis", "Thoth", "Ra", "Isis", "Osiris", "Horus", "Bastet", "Sekhmet",
@@ -360,11 +362,28 @@ registry = re.sub(
     flags=re.S,
 )
 Path(registry_path).write_text(registry, encoding="utf-8")
+
+plan_snapshot = (
+    f"- Version: `{version}`\n"
+    f"- Codename: `{codename}`\n"
+    f"- Tag: `{tag}`\n"
+    f"- Workspace state: `{workspace_state}`\n"
+    f"- Last stamped build: `{stamped_at}`\n"
+)
+plan = Path(plan_path).read_text(encoding="utf-8")
+plan = re.sub(
+    r"<!-- KFMS:PLAN_SNAPSHOT:BEGIN -->.*?<!-- KFMS:PLAN_SNAPSHOT:END -->",
+    "<!-- KFMS:PLAN_SNAPSHOT:BEGIN -->\n" + plan_snapshot + "<!-- KFMS:PLAN_SNAPSHOT:END -->",
+    plan,
+    flags=re.S,
+)
+Path(plan_path).write_text(plan, encoding="utf-8")
 PYEOF
 
   ok "Derived artifacts synced from meta.json."
   ok "  updated: infra/telemetry/health.json"
   ok "  updated: infra/meta/CODENAME_REGISTRY.md"
+  ok "  updated: docs/IMPLEMENTATION_PLAN.md"
 }
 
 # ---------------------------------------------------------------------------
@@ -463,12 +482,12 @@ PYEOF
   local py_bin=""
   py_bin=$(resolve_python 2>/dev/null || true)
   if [[ -n "$py_bin" ]]; then
-    "$py_bin" - "$meta" "$ROOT/infra/telemetry/health.json" "$ROOT/infra/meta/CODENAME_REGISTRY.md" <<'PYEOF'
+    "$py_bin" - "$meta" "$ROOT/infra/telemetry/health.json" "$ROOT/infra/meta/CODENAME_REGISTRY.md" "$ROOT/docs/IMPLEMENTATION_PLAN.md" <<'PYEOF'
 import json
 import sys
 from pathlib import Path
 
-meta_path, health_path, registry_path = sys.argv[1:]
+meta_path, health_path, registry_path, plan_path = sys.argv[1:]
 meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
 
 if Path(health_path).exists():
@@ -477,14 +496,24 @@ if Path(health_path).exists():
         raise SystemExit("health.json version does not match meta.json")
     if health.get("codename") != meta.get("codename", {}).get("name"):
         raise SystemExit("health.json codename does not match meta.json")
+    if health.get("tag") != meta.get("tag"):
+        raise SystemExit("health.json tag does not match meta.json")
+    if health.get("stamped_at_utc") != meta.get("build", {}).get("built_at_utc"):
+        raise SystemExit("health.json stamped_at_utc does not match meta.json")
 
 registry_text = Path(registry_path).read_text(encoding="utf-8")
 expected_tag = meta.get("tag")
 expected_codename = meta.get("codename", {}).get("name")
 expected_version = meta.get("version")
-for expected in (expected_version, expected_codename, expected_tag):
+expected_stamped_at = meta.get("build", {}).get("built_at_utc")
+for expected in (expected_version, expected_codename, expected_tag, expected_stamped_at):
     if expected and expected not in registry_text:
         raise SystemExit(f"codename registry is not synced to meta.json: missing {expected}")
+
+plan_text = Path(plan_path).read_text(encoding="utf-8")
+for expected in (expected_version, expected_codename, expected_tag, expected_stamped_at):
+    if expected and expected not in plan_text:
+        raise SystemExit(f"implementation plan snapshot is not synced to meta.json: missing {expected}")
 PYEOF
     ok "Derived KFMS artifacts are consistent."
   fi
