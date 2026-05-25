@@ -17,9 +17,6 @@ bash "$SCRIPT" stamp
 echo "[KFMS] Syncing derived artifacts..."
 bash "$SCRIPT" sync
 
-echo "[KFMS] Refreshing release plan..."
-bash "$SCRIPT" release-plan -Json >/dev/null 2>&1 || true
-
 # If KFMS-managed files changed, fold them into the commit via amend (no new commit created)
 if ! git diff --quiet HEAD -- \
     infra/meta/meta.json \
@@ -33,6 +30,15 @@ if ! git diff --quiet HEAD -- \
         "$ROOT/docs/IMPLEMENTATION_PLAN.md"
     KFMS_HOOK_RUNNING=1 git commit --amend --no-edit --quiet
     echo "[KFMS] KFMS artifact amend applied."
+fi
+
+echo "[KFMS] Refreshing release plan..."
+bash "$SCRIPT" release-plan -Json >/dev/null 2>&1 || true
+
+if ! git diff --quiet HEAD -- infra/telemetry/health.json 2>/dev/null; then
+    git add "$ROOT/infra/telemetry/health.json"
+    KFMS_HOOK_RUNNING=1 git commit --amend --no-edit --quiet
+    echo "[KFMS] Release snapshot amend applied."
 fi
 
 echo "[KFMS] Validating metadata..."
