@@ -3,12 +3,25 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
+import { createIcon } from './icons.js';
 
 // --- PTY TERMINAL SYSTEM ---
 // let terminalSessions = []; (Moved to state.js) // list of { id, shell, term, fitAddon, containerEl }
 // let activeTerminalSessionId = null; (Moved to state.js)
 // let ptySessionId = null; (Moved to state.js) // compatibility pointer for active session id
 const MAX_TERMINAL_SESSIONS = 5;
+
+function iconButtonMarkup(icon, label, extraClass = "", iconOnly = false) {
+    const classes = [iconOnly ? "nd-icon-button nd-icon-only" : "nd-icon-button", extraClass].filter(Boolean).join(" ");
+    const labelMarkup = iconOnly ? "" : `<span class="nd-button-label">${window.sanitizeHtml(label)}</span>`;
+    return `<span class="${classes}">${createIcon(icon, { size: 14 })}${labelMarkup}</span>`;
+}
+
+function profileActionButton(className, index, icon, label, { danger = false, iconOnly = false } = {}) {
+    const style = danger ? "padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;color:#ff6b81;" : "padding:3px 8px;font-size:0.75rem;";
+    const title = window.sanitizeHtml(label);
+    return `<button class="canvas-btn ${className}" style="${style}" data-index="${index}" title="${title}" aria-label="${title}">${iconButtonMarkup(icon, label, "", iconOnly)}</button>`;
+}
 
 function getActiveShellPath() {
     const selectedShell = localStorage.getItem("selectedShell") || "default";
@@ -220,22 +233,14 @@ function renderTerminalTabs() {
     const list = document.getElementById("terminal-tabs-list");
     if (!list) return;
 
-    const SHELL_ICONS = {
-        "/bin/bash":     "$",
-        "/bin/zsh":      "%",
-        "/bin/fish":     "~",
-        "powershell.exe":"PS",
-        "cmd.exe":       ">",
-    };
     list.innerHTML = state.terminalSessions.map((s, idx) => {
-        const icon  = s.shell ? (SHELL_ICONS[s.shell] || s.shell.replace(/.*[/\\]/, '').replace('.exe','').slice(0,3).toLowerCase()) : ">_";
-        const defaultLabel = `${icon} ${idx + 1}`;
+        const defaultLabel = `Shell ${idx + 1}`;
         const label = s.name || defaultLabel;
         const activeClass = s.id === state.activeTerminalSessionId ? "active" : "";
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
-                <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${window.sanitizeHtml(label)}</span>
-                <span class="terminal-tab-close" data-session-id="${s.id}">✕</span>
+                <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${createIcon("squareTerminal", { size: 14 })}<span>${window.sanitizeHtml(label)}</span></span>
+                <span class="terminal-tab-close" data-session-id="${s.id}" aria-label="Close terminal tab">${createIcon("x", { size: 12 })}</span>
             </div>
         `;
     }).join("");
@@ -944,8 +949,8 @@ function renderSshProfiles() {
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
-                <button class="canvas-btn ssh-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+                ${profileActionButton("ssh-profile-load-btn", i, "upload", "Load")}
+                ${profileActionButton("ssh-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
             </div>
         </div>
     `).join("");
@@ -1008,7 +1013,7 @@ function renderSshProfilesSettings() {
                 <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
-            <button class="canvas-btn ssh-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            ${profileActionButton("ssh-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
         </div>
     `).join("");
     list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
@@ -1120,8 +1125,8 @@ function renderFtpProfiles() {
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
-                <button class="canvas-btn ftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+                ${profileActionButton("ftp-profile-load-btn", i, "upload", "Load")}
+                ${profileActionButton("ftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
             </div>
         </div>
     `).join("");
@@ -1163,7 +1168,7 @@ function renderFtpProfilesSettings() {
                 <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
-            <button class="canvas-btn ftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            ${profileActionButton("ftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
         </div>
     `).join("");
     list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
@@ -1221,7 +1226,7 @@ function renderFtpFiles(entries) {
 
         const icon = document.createElement("span");
         icon.className = "ftp-file-icon";
-        icon.textContent = e.is_dir ? "📁" : "📄";
+        icon.innerHTML = createIcon(e.is_dir ? "folder" : "file", { size: 16 });
 
         const name = document.createElement("span");
         name.className = "ftp-file-name";
@@ -1240,7 +1245,9 @@ function renderFtpFiles(entries) {
             btn.className = "canvas-btn ftp-download-btn";
             btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
             btn.setAttribute("data-name", e.name);
-            btn.textContent = "⬇ Download";
+            btn.title = "Download";
+            btn.setAttribute("aria-label", `Download ${e.name}`);
+            btn.innerHTML = iconButtonMarkup("download", "Download");
             item.appendChild(btn);
         }
         list.appendChild(item);
@@ -1299,7 +1306,7 @@ function loadFtpDir(path) {
 
     setFtpStatus("Loading...");
     const cwdLabel = document.getElementById("ftp-cwd-label");
-    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
+    if (cwdLabel) cwdLabel.innerHTML = `${createIcon("folder", { size: 14 })}<span>${window.sanitizeHtml(path)}</span>`;
 
     invoke("ftp_list_dir", { host, port, user, password: pass, path })
         .then(entries => {
@@ -1371,7 +1378,7 @@ function renderSftpFiles(entries) {
 
         const icon = document.createElement("span");
         icon.className = "ftp-file-icon";
-        icon.textContent = e.is_dir ? "📁" : "📄";
+        icon.innerHTML = createIcon(e.is_dir ? "folder" : "file", { size: 16 });
 
         const name = document.createElement("span");
         name.className = "ftp-file-name";
@@ -1390,7 +1397,9 @@ function renderSftpFiles(entries) {
             btn.className = "canvas-btn sftp-download-btn";
             btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
             btn.setAttribute("data-name", e.name);
-            btn.textContent = "⬇ Download";
+            btn.title = "Download";
+            btn.setAttribute("aria-label", `Download ${e.name}`);
+            btn.innerHTML = iconButtonMarkup("download", "Download");
             item.appendChild(btn);
         }
         list.appendChild(item);
@@ -1453,7 +1462,7 @@ function loadSftpDir(path) {
 
     setSftpStatus("Loading...");
     const cwdLabel = document.getElementById("sftp-cwd-label");
-    if (cwdLabel) cwdLabel.textContent = `📁 ${path}`;
+    if (cwdLabel) cwdLabel.innerHTML = `${createIcon("folder", { size: 14 })}<span>${window.sanitizeHtml(path)}</span>`;
 
     invoke("sftp_list_dir", { host, port, user, authType, password: pass, keyPath, path })
         .then(entries => {
@@ -1542,8 +1551,8 @@ function renderSftpProfiles() {
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
             <div class="ssh-profile-actions">
-                <button class="canvas-btn sftp-profile-load-btn" style="padding:3px 8px;font-size:0.75rem;" data-index="${i}">Load</button>
-                <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+                ${profileActionButton("sftp-profile-load-btn", i, "upload", "Load")}
+                ${profileActionButton("sftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
             </div>
         </div>
     `).join("");
@@ -1607,7 +1616,7 @@ function renderSftpProfilesSettings() {
                 <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
                 <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
             </div>
-            <button class="canvas-btn sftp-profile-del-btn" style="padding:3px 8px;font-size:0.75rem;border-color:#ff3c5a;" data-index="${i}">✕</button>
+            ${profileActionButton("sftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
         </div>
     `).join("");
     list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {

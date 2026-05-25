@@ -224,9 +224,14 @@ body::before {
     border: none;
     color: var(--fg-color);
     cursor: pointer;
-    padding: 2px;
+    padding: 4px;
     font-size: 0.8rem;
-    border-radius: 4px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
 }
 
 .history-action-btn:hover {
@@ -980,10 +985,19 @@ body::before {
 }
 
 .chat-starter-icon {
-    font-size: 1.25rem;
     margin-bottom: 8px;
     line-height: 1;
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(var(--accent-rgb), 0.82);
+}
+.chat-starter-icon .nd-icon-wrap {
+    display: inline-flex;
+}
+.chat-starter-icon .nd-icon-svg {
+    width: 18px;
+    height: 18px;
 }
 .chat-starter-label {
     font-size: 0.83rem;
@@ -1062,6 +1076,10 @@ body::before {
     letter-spacing: 0.3px;
     pointer-events: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.msg-copy-btn .nd-icon-svg {
+    width: 13px;
+    height: 13px;
 }
 .message-card:hover .msg-copy-btn {
     opacity: 1;
@@ -1243,8 +1261,19 @@ body::before {
     background: rgba(var(--error-rgb), 0.8);
 }
 .tool-pill-icon {
-    font-size: 0.8rem;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+.tool-pill-icon .nd-icon-svg,
+.tool-pill-status .nd-icon-svg {
+    width: 13px;
+    height: 13px;
+}
+.tool-pill-icon-fallback {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8rem;
 }
 .tool-pill-cmd {
     flex: 1;
@@ -3283,9 +3312,7 @@ code {
 }
 
 .terminal-tab-close {
-    font-size: 0.62rem;
     line-height: 1;
-    color: transparent;
     cursor: pointer;
     width: 14px;
     height: 14px;
@@ -3297,12 +3324,22 @@ code {
     flex-shrink: 0;
 }
 
-.terminal-tab:hover .terminal-tab-close {
-    color: rgba(255, 255, 255, 0.35);
+.terminal-tab-close .nd-icon-svg {
+    width: 12px;
+    height: 12px;
+    color: rgba(255, 255, 255, 0.28);
+    transition: color var(--dur-fast) var(--ease-snap);
+}
+
+.terminal-tab:hover .terminal-tab-close .nd-icon-svg {
+    color: rgba(255, 255, 255, 0.45);
 }
 
 .terminal-tab-close:hover {
     background: rgba(255, 55, 75, 0.22);
+}
+
+.terminal-tab-close:hover .nd-icon-svg {
     color: #ff3c5a !important;
 }
 
@@ -5649,6 +5686,20 @@ body.crt-flicker-disabled .crt-flicker {
     flex-shrink: 0;
 }
 
+.ssh-profile-actions .canvas-btn .nd-icon-button,
+.ssh-profile-item > .canvas-btn .nd-icon-button,
+.ftp-download-btn .nd-icon-button,
+.sftp-download-btn .nd-icon-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ssh-profile-actions .canvas-btn .nd-icon-button.nd-icon-only,
+.ssh-profile-item > .canvas-btn .nd-icon-button.nd-icon-only {
+    justify-content: center;
+}
+
 .ssh-settings-profiles-list {
     display: flex;
     flex-direction: column;
@@ -5795,8 +5846,15 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .ftp-file-icon {
-    font-size: 1rem;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    color: rgba(var(--accent-rgb), 0.78);
+}
+
+.ftp-file-icon .nd-icon-svg {
+    width: 16px;
+    height: 16px;
 }
 
 .ftp-file-name {

@@ -7,6 +7,7 @@ import {
     renderFtpProfilesSettings, 
     renderSftpProfilesSettings 
 } from './terminal.js';
+import { applyButtonIcon, createIcon } from './icons.js';
 
 let settingsOverlay = null;
 let settingsBtn = null;
@@ -434,7 +435,9 @@ function loadCustomPersonas() {
             deleteBtn.className = "canvas-btn persona-delete-btn";
             deleteBtn.setAttribute("data-name", p.name);
             deleteBtn.style.cssText = "padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);";
-            deleteBtn.textContent = "✕";
+            deleteBtn.title = `Delete ${p.name}`;
+            deleteBtn.setAttribute("aria-label", `Delete ${p.name}`);
+            deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
 
             item.appendChild(info);
             item.appendChild(deleteBtn);
@@ -1268,6 +1271,8 @@ export function initSettings() {
     document.getElementById("llm-provider-select")?.addEventListener("change", handleLlmProviderChange);
     document.getElementById("settings-test-connection-btn")?.addEventListener("click", handleTestConnectionClick);
     document.getElementById("settings-save-llm-btn")?.addEventListener("click", handleSaveLlmClick);
+    applyButtonIcon("#settings-test-connection-btn", { icon: "globe", label: "Test Connection" });
+    applyButtonIcon("#settings-save-llm-btn", { icon: "shieldCheck", label: "Save & Apply" });
 
     initCustomThemes();
     initMcpSettings();

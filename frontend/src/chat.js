@@ -2,41 +2,42 @@ import { state } from './state.js';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
+import { applyButtonIcon, createIcon } from './icons.js';
 
 // ── Chat Welcome State HTML ────────────────────────────────────────────────────
 const CHAT_WELCOME_HTML = `
 <div class="chat-welcome" id="chat-welcome">
-    <div class="chat-welcome-logo">🧠</div>
+    <div class="chat-welcome-logo">${createIcon("brain", { size: 28 })}</div>
     <div class="chat-welcome-title">NEURODECK</div>
     <div class="chat-welcome-sub">AI-native terminal OS. Ask anything.</div>
     <div class="chat-starters-grid">
         <div class="chat-starter-card" data-prompt="Explain how RAG (Retrieval-Augmented Generation) works in plain English.">
-            <div class="chat-starter-icon">🔍</div>
+            <div class="chat-starter-icon">${createIcon("search", { size: 18 })}</div>
             <div class="chat-starter-label">Explain RAG</div>
             <div class="chat-starter-hint">How retrieval-augmented generation works</div>
         </div>
         <div class="chat-starter-card" data-prompt="Write a Rust async HTTP handler using Axum with proper error handling using map_err.">
-            <div class="chat-starter-icon">⚡</div>
+            <div class="chat-starter-icon">${createIcon("zap", { size: 18 })}</div>
             <div class="chat-starter-label">Rust Handler</div>
             <div class="chat-starter-hint">Async Axum endpoint with error handling</div>
         </div>
         <div class="chat-starter-card" data-prompt="Design a unique roguelike game mechanic that subverts genre expectations.">
-            <div class="chat-starter-icon">🎮</div>
+            <div class="chat-starter-icon">${createIcon("gamepad2", { size: 18 })}</div>
             <div class="chat-starter-label">Game Mechanic</div>
             <div class="chat-starter-hint">Unique roguelike system design concept</div>
         </div>
         <div class="chat-starter-card" data-prompt="Review the following code for security vulnerabilities, bugs, and performance issues:\n\n">
-            <div class="chat-starter-icon">🔒</div>
+            <div class="chat-starter-icon">${createIcon("shieldCheck", { size: 18 })}</div>
             <div class="chat-starter-label">Code Review</div>
             <div class="chat-starter-hint">Security, bugs, and performance audit</div>
         </div>
         <div class="chat-starter-card" data-prompt="Create a RICE-prioritized product backlog for a solo developer AI terminal app.">
-            <div class="chat-starter-icon">📊</div>
+            <div class="chat-starter-icon">${createIcon("chartColumn", { size: 18 })}</div>
             <div class="chat-starter-label">Sprint Planning</div>
             <div class="chat-starter-hint">RICE-scored backlog for a solo dev AI app</div>
         </div>
         <div class="chat-starter-card" data-prompt="I'm getting this error and I can't figure out why. Help me debug it:\n\n">
-            <div class="chat-starter-icon">🐛</div>
+            <div class="chat-starter-icon">${createIcon("bug", { size: 18 })}</div>
             <div class="chat-starter-label">Debug Help</div>
             <div class="chat-starter-hint">Paste your error for AI-powered diagnosis</div>
         </div>
@@ -70,7 +71,7 @@ function updateContextBar() {
     if (!bar) return;
     const provider = (state.activeProvider || "gemini").toUpperCase();
     bar.innerHTML = `
-        <span class="chat-input-context-persona">🧠 ${state.activePersona || "Default"}</span>
+        <span class="chat-input-context-persona">${createIcon("brain", { size: 14 })}<span>${state.activePersona || "Default"}</span></span>
         <span class="chat-input-context-sep">·</span>
         <span class="chat-input-context-model">${provider}</span>
     `;
@@ -123,13 +124,15 @@ export function appendToolPill(icon, cmd, status = "done", duration = null) {
     if (!state.currentAIMessage) return;
     const msgCard = state.currentAIMessage.querySelector(".message-card");
     if (!msgCard) return;
+    const iconMarkup = createIcon(icon, { size: 14 })
+        || `<span class="tool-pill-icon-fallback">${window.sanitizeHtml ? window.sanitizeHtml(String(icon || "")) : String(icon || "")}</span>`;
     const pill = document.createElement("div");
     pill.className = `tool-pill ${status}`;
     pill.innerHTML = `
         <span class="tool-pill-dot"></span>
-        <span class="tool-pill-icon">${icon}</span>
+        <span class="tool-pill-icon">${iconMarkup}</span>
         <span class="tool-pill-cmd">${cmd}</span>
-        ${status !== "running" ? `<span class="tool-pill-status">${status === "error" ? "✗" : "✓"}</span>` : ""}
+        ${status !== "running" ? `<span class="tool-pill-status">${createIcon(status === "error" ? "x" : "shieldCheck", { size: 12 })}</span>` : ""}
         ${duration ? `<span class="tool-pill-duration">${duration}</span>` : ""}
     `;
     msgCard.appendChild(pill);
@@ -140,12 +143,15 @@ export function appendToolPill(icon, cmd, status = "done", duration = null) {
 function makeCopyBtn(getText) {
     const btn = document.createElement("button");
     btn.className = "msg-copy-btn";
-    btn.textContent = "Copy";
     btn.title = "Copy message";
+    btn.setAttribute("aria-label", "Copy message");
+    btn.innerHTML = `${createIcon("copy", { size: 14 })}<span class="nd-button-label">Copy</span>`;
     btn.addEventListener("click", () => {
         navigator.clipboard.writeText(getText());
-        btn.textContent = "✓";
-        setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+        btn.innerHTML = `${createIcon("shieldCheck", { size: 14 })}<span class="nd-button-label">Copied</span>`;
+        setTimeout(() => {
+            btn.innerHTML = `${createIcon("copy", { size: 14 })}<span class="nd-button-label">Copy</span>`;
+        }, 1600);
     });
     return btn;
 }
@@ -156,8 +162,13 @@ let inputElement = null;
 function updateMuteButtonUI() {
     let muteBtn = document.getElementById("mute-btn");
     if (muteBtn) {
-        muteBtn.innerText = state.isMuted ? "🔇" : "🔊";
         muteBtn.title = state.isMuted ? "Unmute Speech (Ctrl+M)" : "Mute Speech (Ctrl+M)";
+        muteBtn.setAttribute("aria-label", muteBtn.title);
+        applyButtonIcon("#mute-btn", {
+            icon: state.isMuted ? "volumeX" : "volume2",
+            iconOnly: true,
+            keepBadge: true
+        });
         if (state.isMuted) {
             muteBtn.classList.add("muted");
         } else {
@@ -836,8 +847,9 @@ function refreshSessionsList() {
             
             const exportBtn = document.createElement("button");
             exportBtn.className = "history-action-btn";
-            exportBtn.innerHTML = "📤";
             exportBtn.title = "Export to Markdown";
+            exportBtn.setAttribute("aria-label", "Export to Markdown");
+            exportBtn.innerHTML = createIcon("upload", { size: 14 });
             exportBtn.onclick = function(e) {
                 e.stopPropagation();
                 invoke("export_session_markdown", { id: sid }).then((msg) => {
@@ -850,8 +862,9 @@ function refreshSessionsList() {
             
             const deleteBtn = document.createElement("button");
             deleteBtn.className = "history-action-btn";
-            deleteBtn.innerHTML = "🗑️";
             deleteBtn.title = "Delete Session";
+            deleteBtn.setAttribute("aria-label", "Delete Session");
+            deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
             deleteBtn.onclick = function(e) {
                 e.stopPropagation();
                 if (confirm(`Delete session ${sid}?`)) {

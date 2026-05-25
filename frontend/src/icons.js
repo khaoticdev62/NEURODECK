@@ -158,6 +158,65 @@ const ICONS = {
     <circle cx="11" cy="11" r="7"></circle>
     <path d="m21 21-4.3-4.3"></path>
   `,
+  zap: `
+    <path d="M13 2 4 14h6l-1 8 9-12h-6z"></path>
+  `,
+  gamepad2: `
+    <line x1="6" y1="11" x2="10" y2="11"></line>
+    <line x1="8" y1="9" x2="8" y2="13"></line>
+    <line x1="15" y1="12" x2="15.01" y2="12"></line>
+    <line x1="18" y1="10" x2="18.01" y2="10"></line>
+    <path d="M6 12h-.8a2.2 2.2 0 0 1-2.2-2.2V9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v.8a2.2 2.2 0 0 1-2.2 2.2H18"></path>
+    <path d="m6 12-2 6"></path>
+    <path d="m18 12 2 6"></path>
+    <path d="M8 18h8"></path>
+  `,
+  shieldCheck: `
+    <path d="M12 3 5 6v6c0 5 3.4 8.7 7 10 3.6-1.3 7-5 7-10V6z"></path>
+    <path d="m9 12 2 2 4-4"></path>
+  `,
+  chartColumn: `
+    <path d="M3 3v18h18"></path>
+    <path d="M7 15v-3"></path>
+    <path d="M12 15V8"></path>
+    <path d="M17 15v-6"></path>
+  `,
+  bug: `
+    <path d="m8 2 1.9 1.9"></path>
+    <path d="M14.1 3.9 16 2"></path>
+    <path d="M9 7h6"></path>
+    <rect x="7" y="7" width="10" height="12" rx="5"></rect>
+    <path d="M5 13h2"></path>
+    <path d="M17 13h2"></path>
+    <path d="M5 9h2"></path>
+    <path d="M17 9h2"></path>
+    <path d="M10 19v3"></path>
+    <path d="M14 19v3"></path>
+  `,
+  volumeX: `
+    <polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"></polygon>
+    <path d="m16 9 5 5"></path>
+    <path d="m21 9-5 5"></path>
+  `,
+  trash2: `
+    <path d="M3 6h18"></path>
+    <path d="M8 6V4h8v2"></path>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+    <path d="M10 11v6"></path>
+    <path d="M14 11v6"></path>
+  `,
+  download: `
+    <path d="M12 3v12"></path>
+    <path d="m7 10 5 5 5-5"></path>
+    <path d="M5 21h14"></path>
+  `,
+  folder: `
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+  `,
+  file: `
+    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+    <path d="M14 2v5h5"></path>
+  `,
   upload: `
     <path d="M12 16V6"></path>
     <path d="m7 11 5-5 5 5"></path>
@@ -305,3 +364,5 @@ export function applyNeurodeckIconography() {
 
   applyButtonIcon(".agent-switcher-close", { icon: "x", iconOnly: true });
 }
+
+export { createIcon, applyButtonIcon, applyInlineTitleIcon, normalizeLabel };
