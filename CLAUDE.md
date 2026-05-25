@@ -34,20 +34,37 @@ All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All r
 ### The One Big File Problem
 `lib.rs` (~1600 lines) owns everything: command handlers, app state structs, persona definitions, theme palettes, game detection, voice I/O, and the agent loop. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
-`main.js` (~4300 lines) is similarly monolithic by design (no framework). Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file.
+`main.js` (~8150 lines) is the frontend shell — HTML templates, view routing, IPC wiring, boot sequence, radial menu, and all one-off UI logic. Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file. **Do not search for partial strings in template literals** — always match a full containing element.
 
-### Module Responsibilities
+The heavy logic modules have been extracted from `main.js` into ES modules:
+
+### Frontend Module Split (ES Modules under `frontend/src/`)
 | Module | What It Owns |
 |---|---|
-| `lib.rs` | All `#[tauri::command]` handlers, `AppState`, themes, personas, game detection, voice I/O, agent loop |
+| `main.js` | HTML templates, view routing, IPC wiring, radial menu, boot/onboarding, one-off view init |
+| `chat.js` | All chat logic — send flow, RAG context, streaming, history, persona/theme switching, welcome screen |
+| `agent.js` | Agent loop, roundtable mode, computer/browser tool dispatch |
+| `memory.js` | Memory view — list, filter, pin, delete, add fact |
+| `notifications.js` | `addNotification()`, toast rendering, badge management; also sets `window.addNotification` for legacy callers |
+| `canvas.js` | Monaco editor, live preview, collab host/join/stop, AI edit modal |
+| `terminal.js` | xterm.js sessions, tab management, PTY wiring, SSH tab |
+| `state.js` | Shared mutable state object (singleton) |
+| `icons.js` | `createIcon()` / `applyButtonIcon()` — Lucide SVG icon factory |
+
+### Rust Module Responsibilities
+| Module | What It Owns |
+|---|---|
+| `lib.rs` | All `#[tauri::command]` handlers, `AppState`, themes, personas, game detection, voice I/O |
 | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
 | `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
 | `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
-| `memory.rs` | Cosine-similarity vector DB; persists to `data/memory/chat_history.json` |
+| `memory.rs` | Cosine-similarity vector DB; persists to `user_config_dir()/data/memory/` |
 | `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
 | `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
 | `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
+| `sync.rs` | Cross-device encrypted sync over HTTPS |
+| `commands/` | Sub-module split: `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` |
 
 ### Infrastructure Crate (`infrastructure/`)
 A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
@@ -65,7 +82,9 @@ A workspace crate (`neurodeck_infrastructure`) providing platform services. Used
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
-Memory context injection is live in `send_command` (lib.rs ~line 1030): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
+Memory context injection is live in `send_command` (commands/session.rs): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
+
+**RAG search skips zero-embedding records** — facts added via `memory_add_fact` are stored with an empty embedding vector. `MemoryDB::search()` filters them out before similarity ranking so they don't crowd out real context at 0.0 similarity.
 
 ### PTY Session Routing
 `pty_output` and `pty_exit` events carry a session `id` field. Multiple PTY sessions can coexist in `PtyState.sessions`. The main terminal uses `ptySessionId = "main_pty_session"`. The SSH tab creates sessions named `ssh_session_<timestamp>`. Both are routed in the same `listen("pty_output", ...)` handler by ID.
@@ -80,8 +99,9 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`. The dev-mode mock IPC shim has been removed — commands are no longer duplicated there.
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
-- **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
+- **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. The backend now auto-evicts via `sessions.remove(&id)` before insert, but the rule still stands — double-spawning without kill leaves a brief reader-thread overlap that can emit duplicate output events.
 - **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
+- **All persistent data paths** must use `user_config_dir()` (defined in `lib.rs`) — never `./data/` or `./sessions/` relative paths. CWD-relative paths fail silently on read-only SteamOS install paths.
 - **Window size**: all new views must fit within 1280×800. The flex column layout in `.view-container` is `position: absolute; top: 0; left: 0; width: 100%; height: 100%`. Use `overflow: hidden` on view roots and scroll internally.
 
 ---
@@ -95,6 +115,9 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
 - **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and Tauri's JS API (all CDN or vendored). Adding a bundled npm package will bloat the Tauri WebView bundle.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
+- **Never use `./data/` or `./sessions/` relative paths** in Rust — always call `user_config_dir().join("data/...")`. CWD-relative paths work in `tauri dev` but fail on read-only SteamOS installs.
+- **Never mutate `GEMINI_API_KEY` env var globally** — use `GeminiProvider::new_with_key(model, key)` for key injection in test/one-off paths. Mutating the env var races with concurrent `send_command` calls.
+- **Blocking commands in async Tauri handlers must use `spawn_blocking`** — `std::process::Command::output()` blocks the Tokio executor thread. Only `execute_command` and `get_context_stats` were patched; apply the same pattern to any new sync I/O.
 
 ---
 
@@ -140,6 +163,20 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 
+- **`GeminiProvider::new_with_key(model, key)`** — added constructor that stores the API key directly on the struct, bypassing global env var lookup. Use this for any one-off or test invocation where you need a specific key without touching `GEMINI_API_KEY`. The default `new()` constructor still reads from env/keychain.
+
+- **All persistent data is stored under `user_config_dir()`** — resolves to `%APPDATA%\neurodeck` (Windows), `~/Library/Application Support/neurodeck` (macOS), `~/.config/neurodeck` (Linux/SteamOS). The subdirectory layout: `data/memory/`, `data/personas.json`, `data/profiles/`, `data/themes/`, `data/prompt_presets.json`, `data/game_notes/`, `data/sync/`, `sessions/`, `exports/`, `logs/`.
+
+- **PTY restart in `restartTerminalSession`** includes a 150ms delay between `pty_kill` and `pty_spawn` — this is intentional. The old reader thread needs time to exit after its master fd closes; without the delay both threads briefly co-exist and emit duplicate `pty_output` events on the same session ID.
+
+- **Canvas collab task lifecycle** — `canvas_collab_stop` must be called explicitly to clean up the backend; the frontend calls it when the user clicks Stop AND when a `peer_disconnected` event fires. The backend `collab_abort` handle being `Some` does NOT mean the connection is alive — always check `peer_count` too.
+
+- **AI-generated shell code has a `window.confirm` gate** in `chat.js` — the Execute button on `bash`/`sh`/`powershell`/`cmd` code blocks shows a confirmation dialog before calling `execute_command_stream`. Lua has the same gate via `runLuaScript()`. Both are intentional security checkpoints.
+
+- **KFMS dirty-flag filtering** — `khaotic-init.sh stamp` excludes the 4 KFMS-managed artifact files (`meta.json`, `health.json`, `CODENAME_REGISTRY.md`, `IMPLEMENTATION_PLAN.md`) from the `git status --porcelain` dirty check. Without this, every post-commit amend would mark the build as dirty on the next stamp.
+
+- **`#[tauri::command]` handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs` and imported into `lib.rs` with `use crate::commands::*`. New commands go into the most appropriate sub-module, not directly into `lib.rs`.
+
 ---
 
 ## KFMS v1.0 — Khaotic Foundation Metadata Standard
@@ -151,8 +188,8 @@ Version governance for this project. One Egyptian god codename per MINOR version
 REGISTRY[MINOR] = codename
 tag format      = v{semver}-{codename_lower}
 
-current: v1.1.x → Thoth  (MINOR=1, index 1)
-next:    v1.2.x → Ra     (MINOR=2, index 2)
+current: v1.2.x → Ra     (MINOR=2, index 2)
+next:    v1.3.x → Osiris  (MINOR=3, index 3)
 ```
 
 ### Key Files
