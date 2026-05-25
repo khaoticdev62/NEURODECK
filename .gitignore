@@ -29,6 +29,7 @@ src-tauri/data/logs/
 # --- Local tool state ---
 .claude/settings.local.json
 .playwright-mcp/
+.serena/
 
 # --- OS junk ---
 .DS_Store
@@ -43,3 +44,4 @@ Thumbs.db
 .loose/inbox/*.msi
 .loose/inbox/*.zip
 .loose/inbox/neurodeck
+.loose/inbox/kfms-release-logs/
