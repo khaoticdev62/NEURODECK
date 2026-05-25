@@ -1017,66 +1017,68 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Autonomous Coding Agent View -->
                 <div class="view-content" id="view-agent">
-                    <!-- Mode toggle -->
-                    <div class="agent-mode-bar">
-                        <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
-                        <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
-                    </div>
-
-                    <!-- Task mode toolbar -->
-                    <div class="agent-toolbar" id="agent-toolbar-task">
-                        <input type="text" id="agent-task-input" class="agent-task-input" placeholder="Describe your task… e.g. Write a Python script that lists all .txt files in the current directory">
-                        <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
-                        <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
-                        <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
-                    </div>
-
-                    <!-- Roundtable mode toolbar -->
-                    <div class="agent-toolbar hidden" id="agent-toolbar-roundtable">
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
-                            <select id="rt-persona-a" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
-                                <option value="">Persona A…</option>
-                            </select>
-                            <select id="rt-persona-b" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
-                                <option value="">Persona B…</option>
-                            </select>
-                            <input type="text" id="rt-topic-input" class="agent-task-input" placeholder="Topic or question to debate…" style="flex:1;min-width:180px;">
-                            <select id="rt-rounds" class="agent-task-input" style="flex:0 0 auto;width:90px;padding:0 8px;" title="Number of rounds">
-                                <option value="2">2 rounds</option>
-                                <option value="3">3 rounds</option>
-                                <option value="4" selected>4 rounds</option>
-                                <option value="6">6 rounds</option>
-                            </select>
-                            <button class="agent-btn agent-btn-run" id="rt-start-btn">▶ Start</button>
-                            <button class="agent-btn agent-btn-stop hidden" id="rt-stop-btn">■ Stop</button>
+                    <div class="agent-shell">
+                        <!-- Mode toggle -->
+                        <div class="agent-mode-bar">
+                            <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
+                            <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
                         </div>
-                    </div>
 
-                    <div class="agent-body">
-                        <!-- Left: step-by-step log -->
-                        <div class="agent-log-pane" id="agent-log-pane">
-                            <div class="agent-pane-header">Execution Log</div>
-                            <div class="agent-log" id="agent-log">
-                                <div class="agent-empty-state">
-                                    <div class="agent-empty-icon">🤖</div>
-                                    <p>Describe a task above and click <strong>Run Agent</strong>.</p>
-                                    <p class="agent-empty-hint">The agent will write code, execute it, and iterate until the task is complete — up to 5 steps.</p>
+                        <!-- Task mode toolbar -->
+                        <div class="agent-toolbar" id="agent-toolbar-task">
+                            <input type="text" id="agent-task-input" class="agent-task-input" placeholder="Describe your task… e.g. Write a Python script that lists all .txt files in the current directory">
+                            <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
+                            <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
+                            <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
+                        </div>
+
+                        <!-- Roundtable mode toolbar -->
+                        <div class="agent-toolbar hidden" id="agent-toolbar-roundtable">
+                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
+                                <select id="rt-persona-a" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
+                                    <option value="">Persona A…</option>
+                                </select>
+                                <select id="rt-persona-b" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
+                                    <option value="">Persona B…</option>
+                                </select>
+                                <input type="text" id="rt-topic-input" class="agent-task-input" placeholder="Topic or question to debate…" style="flex:1;min-width:180px;">
+                                <select id="rt-rounds" class="agent-task-input" style="flex:0 0 auto;width:90px;padding:0 8px;" title="Number of rounds">
+                                    <option value="2">2 rounds</option>
+                                    <option value="3">3 rounds</option>
+                                    <option value="4" selected>4 rounds</option>
+                                    <option value="6">6 rounds</option>
+                                </select>
+                                <button class="agent-btn agent-btn-run" id="rt-start-btn">▶ Start</button>
+                                <button class="agent-btn agent-btn-stop hidden" id="rt-stop-btn">■ Stop</button>
+                            </div>
+                        </div>
+
+                        <div class="agent-body">
+                            <!-- Left: step-by-step log -->
+                            <div class="agent-log-pane" id="agent-log-pane">
+                                <div class="agent-pane-header">Execution Log</div>
+                                <div class="agent-log" id="agent-log">
+                                    <div class="agent-empty-state">
+                                        <div class="agent-empty-icon">🤖</div>
+                                        <p>Describe a task above and click <strong>Run Agent</strong>.</p>
+                                        <p class="agent-empty-hint">The agent will write code, execute it, and iterate until the task is complete — up to 5 steps.</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Right: code + live output -->
-                        <div class="agent-code-pane" id="agent-code-pane">
-                            <div class="agent-pane-header">
-                                <span>Current Code</span>
-                                <button class="agent-btn agent-btn-sm" id="agent-send-canvas-btn" title="Open in Canvas">→ Canvas</button>
-                            </div>
-                            <div class="agent-code-display" id="agent-code-display">
-                                <pre id="agent-code-pre"><code id="agent-code-content" class="agent-code"></code></pre>
-                            </div>
-                            <div class="agent-output-header">Output</div>
-                            <div class="agent-output" id="agent-output">
-                                <span class="agent-output-empty">No output yet.</span>
+                            <!-- Right: code + live output -->
+                            <div class="agent-code-pane" id="agent-code-pane">
+                                <div class="agent-pane-header">
+                                    <span>Current Code</span>
+                                    <button class="agent-btn agent-btn-sm" id="agent-send-canvas-btn" title="Open in Canvas">→ Canvas</button>
+                                </div>
+                                <div class="agent-code-display" id="agent-code-display">
+                                    <pre id="agent-code-pre"><code id="agent-code-content" class="agent-code"></code></pre>
+                                </div>
+                                <div class="agent-output-header">Output</div>
+                                <div class="agent-output" id="agent-output">
+                                    <span class="agent-output-empty">No output yet.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1253,39 +1255,41 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- Memory UI View -->
                 <div class="view-content" id="view-memory">
-                    <div class="memory-toolbar">
-                        <input type="text" id="memory-search-input" class="memory-search-input" placeholder="🔍  Search memory records…">
-                        <div class="memory-filter-tabs">
-                            <button class="memory-filter-btn active" data-filter="all">All</button>
-                            <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>
-                            <button class="memory-filter-btn" data-filter="user">User</button>
-                            <button class="memory-filter-btn" data-filter="ai">AI</button>
-                            <button class="memory-filter-btn" data-filter="fact">Facts</button>
+                    <div class="memory-shell">
+                        <div class="memory-toolbar">
+                            <input type="text" id="memory-search-input" class="memory-search-input" placeholder="🔍  Search memory records…">
+                            <div class="memory-filter-tabs">
+                                <button class="memory-filter-btn active" data-filter="all">All</button>
+                                <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>
+                                <button class="memory-filter-btn" data-filter="user">User</button>
+                                <button class="memory-filter-btn" data-filter="ai">AI</button>
+                                <button class="memory-filter-btn" data-filter="fact">Facts</button>
+                            </div>
+                            <button class="memory-btn memory-btn-refresh" id="memory-refresh-btn">↺ Refresh</button>
                         </div>
-                        <button class="memory-btn memory-btn-refresh" id="memory-refresh-btn">↺ Refresh</button>
-                    </div>
 
-                    <div class="memory-add-fact-bar" id="memory-add-fact-bar">
-                        <input type="text" id="memory-fact-input" class="memory-fact-input" placeholder="Add a pinned fact or note to memory…">
-                        <button class="memory-btn memory-btn-pin" id="memory-fact-save-btn">📌 Save Fact</button>
-                    </div>
+                        <div class="memory-add-fact-bar" id="memory-add-fact-bar">
+                            <input type="text" id="memory-fact-input" class="memory-fact-input" placeholder="Add a pinned fact or note to memory…">
+                            <button class="memory-btn memory-btn-pin" id="memory-fact-save-btn">📌 Save Fact</button>
+                        </div>
 
-                    <div class="memory-body">
-                        <div class="memory-list" id="memory-list">
-                            <div class="memory-empty-state" id="memory-empty-state">
-                                <div class="memory-empty-icon">🧠</div>
-                                <p>No memory records yet.</p>
-                                <p class="memory-empty-hint">Records are stored automatically during chat sessions. You can also add pinned facts above.</p>
+                        <div class="memory-body">
+                            <div class="memory-list" id="memory-list">
+                                <div class="memory-empty-state" id="memory-empty-state">
+                                    <div class="memory-empty-icon">🧠</div>
+                                    <p>No memory records yet.</p>
+                                    <p class="memory-empty-hint">Records are stored automatically during chat sessions. You can also add pinned facts above.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="memory-status-bar" id="memory-status-bar">
-                        <span id="memory-total-count">0 records</span>
-                        <span class="memory-sep">·</span>
-                        <span id="memory-pinned-count">0 pinned</span>
-                        <span class="memory-sep">·</span>
-                        <span id="memory-filtered-count">showing 0</span>
+                        <div class="memory-status-bar" id="memory-status-bar">
+                            <span id="memory-total-count">0 records</span>
+                            <span class="memory-sep">·</span>
+                            <span id="memory-pinned-count">0 pinned</span>
+                            <span class="memory-sep">·</span>
+                            <span id="memory-filtered-count">showing 0</span>
+                        </div>
                     </div>
                 </div>
 
@@ -4062,9 +4066,12 @@ const navTabRow = document.querySelector(".nav-tab-row");
 
 function ensureTabVisible(tab) {
     if (!tab || !navTabRow) return;
-    tab.scrollIntoView({
-        block: "nearest",
-        inline: "center",
+    const rowRect = navTabRow.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    const currentLeft = navTabRow.scrollLeft;
+    const targetLeft = currentLeft + (tabRect.left - rowRect.left) - ((rowRect.width - tabRect.width) / 2);
+    navTabRow.scrollTo({
+        left: Math.max(0, targetLeft),
         behavior: "smooth",
     });
 }

@@ -227,3 +227,36 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
   await expect(page.locator(".docs-search-input")).toBeVisible();
   await expect(page.locator("#view-docs .docs-search-input")).toBeVisible();
 });
+
+test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.reload();
+  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+
+  const centeredTabs = [
+    ["browser", ".browser-container"],
+    ["agent", ".agent-shell"],
+    ["memory", ".memory-shell"],
+    ["remote", ".remote-container"],
+    ["docs", ".docs-container"],
+  ] as const;
+
+  for (const [view, shellSelector] of centeredTabs) {
+    await page.locator(`.nav-tab[data-view="${view}"]`).click();
+    await expect(page.locator(`#view-${view}`)).toHaveClass(/active/);
+    await page.waitForTimeout(350);
+
+    const metrics = await page.locator(shellSelector).evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        left: rect.left,
+        width: rect.width,
+        centerX: rect.left + rect.width / 2,
+        viewportCenterX: window.innerWidth / 2,
+      };
+    });
+
+    expect(Math.abs(metrics.centerX - metrics.viewportCenterX)).toBeLessThanOrEqual(2);
+    expect(metrics.left).toBeGreaterThanOrEqual(0);
+  }
+});

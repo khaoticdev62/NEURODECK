@@ -37,6 +37,7 @@
     --ease-in-out-smooth:  cubic-bezier(0.45, 0, 0.15, 1);
 
     --primary-color: #00F0FF;
+    --view-shell-max-width: 1480px;
 }
 
 html,
@@ -3196,6 +3197,28 @@ code {
     display: flex;
 }
 
+.browser-container,
+.remote-container,
+.docs-container {
+    width: min(var(--view-shell-max-width), calc(100% - 24px));
+    max-width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
+}
+
+.agent-shell,
+.memory-shell {
+    width: min(var(--view-shell-max-width), calc(100% - 24px));
+    max-width: 100%;
+    height: 100%;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
 /* Chat view adjustments */
 #view-chat {
     height: 100%;
@@ -5044,7 +5067,7 @@ body.crt-flicker-disabled .crt-flicker {
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 100%;
+    min-width: 0;
     box-sizing: border-box;
 }
 
@@ -5587,6 +5610,7 @@ body.crt-flicker-disabled .crt-flicker {
     border-bottom: 1px solid var(--border-color);
     background: rgba(4, 8, 14, 0.95);
     flex-shrink: 0;
+    min-width: 0;
 }
 
 .agent-mode-btn {
@@ -5624,6 +5648,7 @@ body.crt-flicker-disabled .crt-flicker {
     padding: 0 14px;
     gap: 10px;
     flex-shrink: 0;
+    min-width: 0;
 }
 
 /* Roundtable toolbar needs auto-height for wrapping inputs */
@@ -5738,6 +5763,8 @@ body.crt-flicker-disabled .crt-flicker {
     flex: 1;
     display: flex;
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
 }
 
 /* Log pane */
@@ -5957,6 +5984,8 @@ body.crt-flicker-disabled .crt-flicker {
     padding: 0 14px;
     gap: 10px;
     flex-shrink: 0;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .memory-search-input {
@@ -6052,6 +6081,8 @@ body.crt-flicker-disabled .crt-flicker {
     border-bottom: 1px solid var(--border-color);
     background: rgba(124, 58, 237, 0.03);
     flex-shrink: 0;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .memory-fact-input {
@@ -6079,6 +6110,8 @@ body.crt-flicker-disabled .crt-flicker {
 /* Body / list */
 .memory-body {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow-y: auto;
     padding: 10px 14px;
     scrollbar-width: thin;
@@ -6246,6 +6279,8 @@ body.crt-flicker-disabled .crt-flicker {
     font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.35);
     flex-shrink: 0;
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .memory-sep {
