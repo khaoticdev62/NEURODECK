@@ -512,18 +512,18 @@ document.querySelector('#app').innerHTML = `
                             <option value="python">Python</option>
                             <option value="lua">Lua</option>
                         </select>
-                        <button class="canvas-btn" id="canvas-run-btn">▶ Run</button>
-                        <button class="canvas-btn" id="canvas-copy-btn">Copy</button>
-                        <button class="canvas-btn" id="canvas-clear-btn">Clear</button>
-                        <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">✦ AI Edit</button>
-                        <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">🤝 Collab</button>
+                        <button class="canvas-btn" id="canvas-run-btn">${createIcon('play', { size: 14 })}<span>Run</span></button>
+                        <button class="canvas-btn" id="canvas-copy-btn">${createIcon('copy', { size: 14 })}<span>Copy</span></button>
+                        <button class="canvas-btn" id="canvas-clear-btn">${createIcon('eraser', { size: 14 })}<span>Clear</span></button>
+                        <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">${createIcon('wand2', { size: 14 })}<span>AI Edit</span></button>
+                        <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">${createIcon('users', { size: 14 })}<span>Collab</span></button>
                         <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
                     </div>
                     <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
                         <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
                         <span id="canvas-collab-status-text" style="color:var(--response-color);">Collab Active: Syncing edits live</span>
                         <span id="canvas-collab-peer-count" class="canvas-collab-peer-count">0 peers</span>
-                        <button class="canvas-btn canvas-btn-sm" id="canvas-collab-resync-btn" style="margin-left: auto; padding: 2px 8px; font-size: 0.72rem;">Force Resync 🔄</button>
+                        <button class="canvas-btn canvas-btn-sm" id="canvas-collab-resync-btn" style="margin-left: auto; padding: 2px 8px; font-size: 0.72rem;">${createIcon('refreshCw', { size: 12 })}<span>Force Resync</span></button>
                     </div>
                     <div class="canvas-split" id="canvas-split">
                         <div class="canvas-editor-pane" id="canvas-editor-pane">

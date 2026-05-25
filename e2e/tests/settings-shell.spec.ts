@@ -337,3 +337,13 @@ test("controller prompt picker and history search expose refined utility chrome"
   await expect(page.locator(".history-search-title .nd-icon-svg")).toBeVisible();
   await expect(page.locator(".history-empty-icon .nd-icon-svg")).toBeVisible();
 });
+
+test("canvas toolbar exposes shared icon actions", async ({ page }) => {
+  await page.locator('.nav-tab[data-view="canvas"]').click();
+  await expect(page.locator("#view-canvas")).toHaveClass(/active/);
+  await expect(page.locator("#canvas-run-btn .nd-icon-svg")).toBeVisible();
+  await expect(page.locator("#canvas-copy-btn .nd-icon-svg")).toBeVisible();
+  await expect(page.locator("#canvas-clear-btn .nd-icon-svg")).toBeVisible();
+  await expect(page.locator("#canvas-ai-edit-btn .nd-icon-svg")).toBeVisible();
+  await expect(page.locator("#canvas-collab-btn .nd-icon-svg")).toBeVisible();
+});

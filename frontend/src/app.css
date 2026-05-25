@@ -3460,9 +3460,16 @@ code {
     font-family: var(--font-sans);
     font-size: 0.8rem;
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+}
+
+.canvas-btn .nd-icon-svg {
+    flex-shrink: 0;
 }
 
 .canvas-btn:hover {
