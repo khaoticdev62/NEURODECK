@@ -8,6 +8,7 @@
 #   ./scripts/khaotic-init.sh sync      — regenerate derived KFMS artifacts from meta.json
 #   ./scripts/khaotic-init.sh validate  — validate meta.json and derived artifact consistency
 #   ./scripts/khaotic-init.sh status    — print current KFMS health summary
+#   ./scripts/khaotic-init.sh release-plan — delegate to native Windows release runner when available
 # =============================================================================
 
 set -euo pipefail
@@ -37,6 +38,22 @@ resolve_python() {
   else
     return 1
   fi
+}
+
+resolve_powershell() {
+  if command -v powershell.exe &>/dev/null; then
+    echo "powershell.exe"
+  elif command -v powershell &>/dev/null; then
+    echo "powershell"
+  elif command -v pwsh &>/dev/null; then
+    echo "pwsh"
+  else
+    return 1
+  fi
+}
+
+is_wsl_shell() {
+  [[ -n "${WSL_INTEROP:-}" ]] || [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null
 }
 
 count_loose_root_files() {
@@ -297,6 +314,9 @@ REGISTRY = [
 ]
 
 meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+existing_health = {}
+if Path(health_path).exists():
+    existing_health = json.loads(Path(health_path).read_text(encoding="utf-8-sig"))
 version = meta["version"]
 codename = meta["codename"]["name"]
 minor = int(version.split(".")[1])
@@ -324,6 +344,8 @@ health = {
         "no_secrets_in_build": bool(meta["studio"]["governance"].get("no_secrets_in_build")),
     },
 }
+if isinstance(existing_health.get("release_plan"), dict):
+    health["release_plan"] = existing_health["release_plan"]
 Path(health_path).write_text(json.dumps(health, indent=2) + "\n", encoding="utf-8")
 
 snapshot = (
@@ -491,7 +513,7 @@ meta_path, health_path, registry_path, plan_path = sys.argv[1:]
 meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
 
 if Path(health_path).exists():
-    health = json.loads(Path(health_path).read_text(encoding="utf-8"))
+    health = json.loads(Path(health_path).read_text(encoding="utf-8-sig"))
     if health.get("version") != meta.get("version"):
         raise SystemExit("health.json version does not match meta.json")
     if health.get("codename") != meta.get("codename", {}).get("name"):
@@ -535,7 +557,7 @@ cmd_status() {
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
 
   if [[ -f "$meta" && -n "$py_bin" ]]; then
-    local ver codename tag dirty stamped workspace health_status
+    local ver codename tag dirty stamped workspace health_status release_decision release_score release_gates
     read -r ver codename tag dirty stamped workspace health_status < <("$py_bin" - "$meta" "$health" <<'PYEOF'
 import json
 import sys
@@ -546,7 +568,7 @@ meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
 health_status = "missing"
 workspace = "unknown"
 if Path(health_path).exists():
-    health = json.loads(Path(health_path).read_text(encoding="utf-8"))
+    health = json.loads(Path(health_path).read_text(encoding="utf-8-sig"))
     health_status = health.get("status", "unknown")
     workspace = health.get("workspace_state", "unknown")
 print(
@@ -560,15 +582,38 @@ print(
 )
 PYEOF
 )
+    read -r release_decision release_score release_gates < <("$py_bin" - "$health" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+health_path = sys.argv[1]
+release = {}
+if Path(health_path).exists():
+    health = json.loads(Path(health_path).read_text(encoding="utf-8-sig"))
+    release = health.get("release_plan", {})
+print(
+    release.get("release_decision", "unknown"),
+    release.get("readiness_score", "unknown"),
+    release.get("gate_summary", "unknown"),
+)
+PYEOF
+)
     health_status="${health_status//$'\r'/}"
     workspace="${workspace//$'\r'/}"
     dirty="${dirty//$'\r'/}"
+    release_decision="${release_decision//$'\r'/}"
+    release_score="${release_score//$'\r'/}"
+    release_gates="${release_gates//$'\r'/}"
     ok "meta.json  → v${ver:-?} | ${codename:-?} | ${tag:-?}"
     ok "build      → dirty=${dirty:-?} | workspace=${workspace:-?} | stamped=${stamped:-?}"
     if [[ "$health_status" == "healthy" ]]; then
       ok "health     → ${health_status}"
     else
       warn "health     → ${health_status}"
+    fi
+    if [[ "$release_decision" != "unknown" ]]; then
+      ok "release    → ${release_decision} | score=${release_score} | gates=${release_gates}"
     fi
   else
     warn "meta.json  → MISSING"
@@ -583,6 +628,32 @@ PYEOF
 }
 
 # ---------------------------------------------------------------------------
+# cmd: release-plan
+# Delegates to the native Windows PowerShell runner when available.
+# ---------------------------------------------------------------------------
+cmd_release_plan() {
+  local ps_bin=""
+  local ps_script="$ROOT/scripts/kfms-release-plan.ps1"
+  local ps_script_arg="$ps_script"
+  ps_bin=$(resolve_powershell 2>/dev/null || true)
+  [[ -n "$ps_bin" ]] || die "PowerShell is required for release-plan. Run scripts/kfms-release-plan.ps1 from Windows PowerShell."
+  [[ -f "$ps_script" ]] || die "scripts/kfms-release-plan.ps1 not found."
+
+  if is_wsl_shell && command -v wslpath &>/dev/null; then
+    ps_script_arg="$(wslpath -w "$ps_script")"
+    if [[ "$ps_bin" == *".exe" || "$ps_bin" == *"/mnt/"* ]]; then
+      die "release-plan requires a native Windows shell from WSL. Run: powershell -ExecutionPolicy Bypass -File scripts/kfms-release-plan.ps1"
+    fi
+  fi
+
+  if [[ "$ps_bin" == "pwsh" ]]; then
+    "$ps_bin" -NoProfile -ExecutionPolicy Bypass -File "$ps_script_arg" "$@"
+  else
+    "$ps_bin" -NoProfile -ExecutionPolicy Bypass -File "$ps_script_arg" "$@"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
 CMD="${1:-help}"
@@ -593,6 +664,7 @@ case "$CMD" in
   sync)     cmd_sync     ;;
   validate) cmd_validate ;;
   status)   cmd_status   ;;
+  release-plan) shift; cmd_release_plan "$@" ;;
   *)
     echo ""
     echo "  Usage: ./scripts/khaotic-init.sh <command>"
@@ -603,6 +675,7 @@ case "$CMD" in
     echo "    sync      Regenerate derived KFMS artifacts from meta.json"
     echo "    validate  Validate meta.json against schema"
     echo "    status    Print KFMS health summary"
+    echo "    release-plan  Delegate to the native Windows release runner"
     echo ""
     ;;
 esac

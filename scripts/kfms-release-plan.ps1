@@ -47,6 +47,16 @@ function Write-KfmsLine {
     Write-Host "$prefix $Message"
 }
 
+function Write-Utf8NoBomFile {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+}
+
 function Get-JsonFile {
     param([string]$Path)
     if (-not (Test-Path $Path)) {
@@ -310,10 +320,34 @@ $summary = [pscustomobject]@{
     stamped_at_utc = if ($metadata.meta) { $metadata.meta.build.built_at_utc } else { $null }
 }
 
-$summary | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $script:LogsDir "release-plan-summary.json") -Encoding utf8
+$healthDocument = Get-JsonFile $script:HealthPath
+if (-not $healthDocument) {
+    $healthDocument = [pscustomobject]@{}
+}
+
+$gateSummary = "cargo_check=$($cargoCheck.status),cargo_test=$($cargoTest.status),frontend_build=$($frontendBuild.status)"
+$healthDocument | Add-Member -NotePropertyName release_plan -NotePropertyValue ([pscustomobject]@{
+    release_decision = $releaseState
+    readiness_score = $score
+    gate_summary = $gateSummary
+    metadata = $summary.metadata
+    diff_hygiene = $summary.diff_hygiene
+    workspace_state = $workspaceState
+    loose_root_files = $looseRootFiles
+    cargo_check = $cargoCheck.status
+    cargo_test = $cargoTest.status
+    frontend_build = $frontendBuild.status
+    blockers = @($blockers)
+    checked_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+}) -Force
+
+$healthJson = $healthDocument | ConvertTo-Json -Depth 8
+$summaryJson = $summary | ConvertTo-Json -Depth 5
+Write-Utf8NoBomFile -Path $script:HealthPath -Content $healthJson
+Write-Utf8NoBomFile -Path (Join-Path $script:LogsDir "release-plan-summary.json") -Content $summaryJson
 
 if ($Json) {
-    $summary | ConvertTo-Json -Depth 5
+    $summaryJson
     exit $(if ($releaseState -eq "GO") { 0 } else { 1 })
 }
 

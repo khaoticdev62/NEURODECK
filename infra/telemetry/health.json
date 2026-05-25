@@ -7,12 +7,28 @@
   "tag": "v1.2.0-ra",
   "workspace_state": "manual-uncommitted",
   "dirty_build": true,
-  "stamped_at_utc": "2026-05-25T00:12:29Z",
+  "stamped_at_utc": "2026-05-25T00:16:55Z",
   "checks": {
     "meta_json_present": true,
     "schema_valid": true,
     "tag_format_correct": true,
     "loose_zone_isolated": true,
     "no_secrets_in_build": true
+  },
+  "release_plan": {
+    "release_decision": "HOLD",
+    "readiness_score": 80,
+    "gate_summary": "cargo_check=pass,cargo_test=pass,frontend_build=pass",
+    "metadata": "aligned",
+    "diff_hygiene": "pass",
+    "workspace_state": "manual-uncommitted",
+    "loose_root_files": 0,
+    "cargo_check": "pass",
+    "cargo_test": "pass",
+    "frontend_build": "pass",
+    "blockers": [
+      "Workspace is not clean: manual-uncommitted."
+    ],
+    "checked_at_utc": "2026-05-25T00:16:20Z"
   }
 }
