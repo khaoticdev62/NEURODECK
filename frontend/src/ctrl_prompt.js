@@ -1,5 +1,6 @@
 // ctrl_prompt.js — Controller Prompt Picker System
 // Extracted ES module. State is exported as live bindings for the gamepad polling loop.
+import { createIcon } from './icons.js';
 
 // Shared overlay state (live-exported so pollGamepads can read current values)
 let ctrlPromptVisible = false;
@@ -19,13 +20,13 @@ const CAT_COLORS = {
 };
 
 const CTRL_PROMPT_CATS = [
-    { id: "quick",     icon: "⚡", label: "Quick",     color: CAT_COLORS.quick     },
-    { id: "code",      icon: "💻", label: "Code",      color: CAT_COLORS.code      },
-    { id: "analysis",  icon: "🔍", label: "Analysis",  color: CAT_COLORS.analysis  },
-    { id: "creative",  icon: "🎨", label: "Creative",  color: CAT_COLORS.creative  },
-    { id: "technical", icon: "⚙️", label: "Technical", color: CAT_COLORS.technical },
-    { id: "roleplay",  icon: "🎭", label: "Roleplay",  color: CAT_COLORS.roleplay  },
-    { id: "custom",    icon: "⭐", label: "Custom",    color: CAT_COLORS.custom    },
+    { id: "quick",     icon: "zap",         label: "Quick",     color: CAT_COLORS.quick     },
+    { id: "code",      icon: "squareTerminal", label: "Code",      color: CAT_COLORS.code      },
+    { id: "analysis",  icon: "search",      label: "Analysis",  color: CAT_COLORS.analysis  },
+    { id: "creative",  icon: "sparkles",    label: "Creative",  color: CAT_COLORS.creative  },
+    { id: "technical", icon: "settings2",   label: "Technical", color: CAT_COLORS.technical },
+    { id: "roleplay",  icon: "messageSquare", label: "Roleplay",  color: CAT_COLORS.roleplay  },
+    { id: "custom",    icon: "plusCircle",  label: "Custom",    color: CAT_COLORS.custom    },
 ];
 
 const CTRL_PROMPT_LIBRARY = [
@@ -464,7 +465,7 @@ function renderCtrlPromptList() {
         const borderStyle = isFocused ? `border-left-color:${color};` : "";
         const iconBg = `background:${color}1a;`;
         return `<div class="ctrl-prompt-row${isFocused ? " focused" : ""}" data-idx="${i}" style="${borderStyle}">
-            <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${p.icon || "📝"}</div>
+            <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${createIcon(p.icon || "fileText", { size: 18 })}</div>
             <div class="ctrl-prompt-row-content">
                 <div class="ctrl-prompt-row-title" style="${isFocused ? `color:${color};` : ""}">${p.title}${hasTemplate ? ` <span class="ctrl-prompt-template-badge" style="background:${color}22;color:${color};">template</span>` : ""}</div>
                 <div class="ctrl-prompt-row-text">${p.text.replace(/\n/g, " ").slice(0, 90)}${p.text.length > 90 ? "…" : ""}</div>

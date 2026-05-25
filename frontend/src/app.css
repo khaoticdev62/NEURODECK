@@ -4947,9 +4947,11 @@ body.crt-flicker-disabled .crt-flicker {
 .agent-log-info     { border-color: rgba(255, 255, 255, 0.06); }
 
 .agent-log-icon {
-    font-size: 1rem;
     flex-shrink: 0;
     margin-top: 1px;
+    display: inline-flex;
+    align-items: center;
+    color: rgba(var(--accent-rgb), 0.84);
 }
 
 .agent-log-body {
@@ -5306,6 +5308,10 @@ body.crt-flicker-disabled .crt-flicker {
     opacity: 0.4;
     transition: all 0.15s;
     line-height: 1;
+}
+.memory-icon-btn .nd-icon-svg {
+    width: 13px;
+    height: 13px;
 }
 
 .memory-icon-btn:hover {
@@ -6497,7 +6503,9 @@ body.crt-flicker-disabled .crt-flicker {
     color: var(--accent-color);
     cursor: pointer;
     margin-bottom: 12px;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     user-select: none;
 }
 
@@ -7619,6 +7627,10 @@ body.crt-flicker-disabled .crt-flicker {
     padding: 0;
     line-height: 1;
 }
+.cancel-transfer-btn .nd-icon-svg {
+    width: 12px;
+    height: 12px;
+}
 
 .cancel-transfer-btn:hover {
     background: rgba(255, 60, 90, 0.15);
@@ -8051,10 +8063,18 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .ctrl-prompt-row-icon {
-    font-size: 1.5rem;
     flex-shrink: 0;
     width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
     text-align: center;
+}
+.ctrl-prompt-row-icon .nd-icon-svg {
+    width: 18px;
+    height: 18px;
 }
 
 .ctrl-prompt-row-content {

@@ -1094,7 +1094,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
 
                             <!-- Few-shot examples (collapsible) -->
-                            <div class="pl-advanced-toggle" id="pl-advanced-toggle">⚙️ Few-Shot Examples</div>
+                                <div class="pl-advanced-toggle" id="pl-advanced-toggle">${createIcon('settings2', { size: 14 })}<span>Few-Shot Examples</span></div>
                             <div class="pl-advanced-fields hidden" id="pl-advanced-fields">
                                 <div class="pl-field">
                                     <label>Examples</label>
@@ -1102,7 +1102,7 @@ document.querySelector('#app').innerHTML = `
                                 </div>
                             </div>
 
-                            <button class="pl-btn-primary" id="pl-generate-btn">⚡ Generate Prompt</button>
+                            <button class="pl-btn-primary" id="pl-generate-btn">${createIcon('zap', { size: 14 })}<span>Generate Prompt</span></button>
                         </div>
 
                         <!-- Right pane: Output & JPE -->
@@ -1114,11 +1114,11 @@ document.querySelector('#app').innerHTML = `
                                         <span class="pl-token-counter" id="pl-token-counter">~0 tokens</span>
                                     </div>
                                     <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History">🕐</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">📋 Copy</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">💬 Chat</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">📄 JSON</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Macro">⚙️ Lua</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History">${createIcon('refreshCw', { size: 13 })}</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">${createIcon('copy', { size: 13 })}<span>Copy</span></button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">${createIcon('messageSquare', { size: 13 })}<span>Chat</span></button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">${createIcon('fileText', { size: 13 })}<span>JSON</span></button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Macro">${createIcon('settings2', { size: 13 })}<span>Lua</span></button>
                                     </div>
                                 </div>
                                 <div class="pl-history-drawer hidden" id="pl-history-drawer">
@@ -1143,8 +1143,8 @@ document.querySelector('#app').innerHTML = `
                                         </select>
                                     </div>
                                     <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain in JPE">🔍 Explain</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">📋 Copy</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain in JPE">${createIcon('search', { size: 13 })}<span>Explain</span></button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">${createIcon('copy', { size: 13 })}<span>Copy</span></button>
                                     </div>
                                 </div>
                                 <div id="pl-result-jpe" class="pl-result-jpe">
@@ -4321,8 +4321,8 @@ function renderTransfers(transfers) {
         }
 
         const isCancelable = t.status === "Pending" || t.status === "Accepted" || t.status === "Transferring";
-        const cancelBtnHtml = isCancelable 
-            ? `<button class="cancel-transfer-btn" onclick="cancelTransfer('${t.id}')" title="Cancel Transfer">✕</button>` 
+        const cancelBtnHtml = isCancelable
+            ? `<button class="cancel-transfer-btn" onclick="cancelTransfer('${t.id}')" title="Cancel Transfer" aria-label="Cancel Transfer">${createIcon('x', { size: 12 })}</button>`
             : '';
 
         item.innerHTML = `
@@ -4920,10 +4920,10 @@ function initAgentView() {
         const entry = document.createElement("div");
         entry.className = `agent-log-entry agent-log-${type}`;
 
-        const icons = { thought: "💭", code: "📄", exec: "⚡", output: "📟", done: "✅", error: "❌", info: "ℹ️" };
+        const icons = { thought: "brain", code: "fileText", exec: "zap", output: "squareTerminal", done: "shieldCheck", error: "x", info: "bell" };
         const labels = { thought: "Thinking", code: "Code Written", exec: "Executing", output: "Output", done: "Done", error: "Error", info: "Info" };
 
-        entry.innerHTML = `<span class="agent-log-icon">${icons[type] || "•"}</span>
+        entry.innerHTML = `<span class="agent-log-icon">${createIcon(icons[type] || "fileText", { size: 16 })}</span>
             <div class="agent-log-body">
                 <div class="agent-log-label">${step !== undefined ? `Step ${step} — ` : ""}${labels[type] || type}</div>
                 <div class="agent-log-text">${escapeHtml(String(content))}</div>
@@ -5249,7 +5249,7 @@ function initAgentView() {
         if (empty) empty.remove();
         const entry = document.createElement('div');
         entry.className = 'agent-log-entry agent-log-info agent-log-rt-msg';
-        entry.innerHTML = `<span class="agent-log-icon">🗣</span>
+        entry.innerHTML = `<span class="agent-log-icon">${createIcon('messageSquare', { size: 16 })}</span>
             <div class="agent-log-body">
                 <div class="agent-log-label">${escapeHtml(speaker)}</div>
                 <div class="agent-log-text rt-msg-text"></div>
@@ -5435,8 +5435,8 @@ function initMemoryView() {
                     <span class="memory-record-role ${roleBadgeClass(role)}">${roleLabel(role)}</span>
                     <span class="memory-record-ts">${tsFromId(record.id)}</span>
                     <div class="memory-record-actions">
-                        <button class="memory-icon-btn mem-pin-btn${isPinned ? " pinned" : ""}" title="${isPinned ? "Unpin" : "Pin"}" data-id="${escHtml(record.id)}" data-pinned="${isPinned}">📌</button>
-                        <button class="memory-icon-btn mem-del-btn" title="Delete" data-id="${escHtml(record.id)}">🗑</button>
+                        <button class="memory-icon-btn mem-pin-btn${isPinned ? " pinned" : ""}" title="${isPinned ? "Unpin" : "Pin"}" data-id="${escHtml(record.id)}" data-pinned="${isPinned}">${createIcon('plusCircle', { size: 13 })}</button>
+                        <button class="memory-icon-btn mem-del-btn" title="Delete" data-id="${escHtml(record.id)}">${createIcon('trash2', { size: 13 })}</button>
                     </div>
                 </div>
                 <div class="memory-record-content">${escHtml(record.content)}</div>
@@ -5471,7 +5471,7 @@ function initMemoryView() {
     }
 
     async function loadMemory() {
-        if (refreshBtn) refreshBtn.textContent = "⟳";
+        if (refreshBtn) refreshBtn.innerHTML = `${createIcon('refreshCw', { size: 13 })}`;
         try {
             allRecords = await invoke("memory_list_all");
         } catch(e) {
@@ -5481,7 +5481,7 @@ function initMemoryView() {
         // Sort newest first by id string (IDs start with date prefix)
         allRecords.sort((a, b) => b.id.localeCompare(a.id));
         renderList();
-        if (refreshBtn) refreshBtn.textContent = "↺ Refresh";
+        if (refreshBtn) refreshBtn.innerHTML = `${createIcon('refreshCw', { size: 13 })}<span>Refresh</span>`;
     }
 
     // Load on tab activation
@@ -5513,14 +5513,14 @@ function initMemoryView() {
     async function saveFact() {
         const content = factInput ? factInput.value.trim() : "";
         if (!content) { if (factInput) factInput.focus(); return; }
-        if (factSaveBtn) { factSaveBtn.textContent = "Saving…"; factSaveBtn.disabled = true; }
+        if (factSaveBtn) { factSaveBtn.innerHTML = `${createIcon('zap', { size: 13 })}<span>Saving...</span>`; factSaveBtn.disabled = true; }
         try {
             const id = await invoke("memory_add_fact", { content });
             allRecords.unshift({ id, content, metadata: { role: "fact", pinned: "true" } });
             if (factInput) factInput.value = "";
             renderList();
         } catch(e) { console.error("memory_add_fact error", e); }
-        if (factSaveBtn) { factSaveBtn.textContent = "📌 Save Fact"; factSaveBtn.disabled = false; }
+        if (factSaveBtn) { factSaveBtn.innerHTML = `${createIcon('plusCircle', { size: 13 })}<span>Save Fact</span>`; factSaveBtn.disabled = false; }
     }
 
     if (factSaveBtn) factSaveBtn.onclick = saveFact;
@@ -6398,7 +6398,7 @@ function renderAgentSwitcher() {
             <div class="agent-card-model">${window.escapeHtml(agent.model)}</div>
             <div class="agent-card-desc">${window.escapeHtml(agent.description)}</div>
             ${active ? '<div class="agent-card-active-chip">ACTIVE</div>' : ''}
-            ${!active ? `<button class="agent-card-delete" title="Delete agent" onclick="event.stopPropagation(); deleteAgentById('${window.escapeHtml(agent.id)}')">✕</button>` : ''}
+            ${!active ? `<button class="agent-card-delete" title="Delete agent" onclick="event.stopPropagation(); deleteAgentById('${window.escapeHtml(agent.id)}')">${createIcon('x', { size: 12 })}</button>` : ''}
         </div>`;
     }).join("");
 }
@@ -7084,7 +7084,7 @@ function initPromptLab() {
                 presetNameInput.style.display = "none";
                 savePresetBtn.style.display = "none";
                 presetNameInput.value = "";
-                togglePresetInputBtn.textContent = "💾";
+                togglePresetInputBtn.innerHTML = `${createIcon('upload', { size: 13 })}`;
             }
         });
     }
@@ -7105,7 +7105,7 @@ function initPromptLab() {
                     presetNameInput.style.display = "none";
                     savePresetBtn.style.display = "none";
                     presetNameInput.value = "";
-                    togglePresetInputBtn.textContent = "💾";
+                    togglePresetInputBtn.innerHTML = `${createIcon('upload', { size: 13 })}`;
                     refreshCustomPresets();
                 })
                 .catch(err => addNotification("Prompt Lab", "Failed: " + err, "error"));
@@ -7118,8 +7118,8 @@ function initPromptLab() {
             const currentTask = taskInput.value.trim();
             if (!currentTask) { addNotification("Prompt Lab", "Add a task first.", "error"); return; }
             optimizeAiBtn.disabled = true;
-            const orig = optimizeAiBtn.textContent;
-            optimizeAiBtn.textContent = "…";
+            const orig = optimizeAiBtn.innerHTML;
+            optimizeAiBtn.innerHTML = `${createIcon('zap', { size: 13 })}<span>Working...</span>`;
             try {
                 const schema = await invoke("optimize_raw_prompt", { rawText: currentTask });
                 personaInput.value     = schema.persona;
@@ -7135,7 +7135,7 @@ function initPromptLab() {
                 addNotification("Prompt Lab", "Optimization failed: " + err, "error");
             } finally {
                 optimizeAiBtn.disabled = false;
-                optimizeAiBtn.textContent = orig;
+                optimizeAiBtn.innerHTML = orig;
             }
         });
     }
@@ -7144,8 +7144,9 @@ function initPromptLab() {
     if (advancedToggle) {
         advancedToggle.addEventListener("click", () => {
             advancedFields.classList.toggle("hidden");
-            advancedToggle.textContent = advancedFields.classList.contains("hidden")
-                ? "⚙️ Few-Shot Examples" : "⚙️ Hide Examples";
+            advancedToggle.innerHTML = advancedFields.classList.contains("hidden")
+                ? `${createIcon('settings2', { size: 14 })}<span>Few-Shot Examples</span>`
+                : `${createIcon('settings2', { size: 14 })}<span>Hide Examples</span>`;
         });
     }
 
