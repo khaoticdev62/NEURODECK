@@ -48,11 +48,15 @@ Write-Output "Building Tauri app in release mode..."
 npx tauri build
 
 # ── 3. Locate outputs ───────────────────────────────────────────────────────
-$binaryPath = "target/release/app.exe"
-$setupPath  = "target/release/bundle/nsis/neurodeck_1.0.0_x64-setup.exe"
+$binaryPath = "src-tauri/target/release/neurodeck.exe"
+
+# Installer path includes the version — discover it dynamically
+$nsisDir   = "src-tauri/target/release/bundle/nsis"
+$setupPath = Get-ChildItem -Path $nsisDir -Filter "*x64-setup.exe" -ErrorAction SilentlyContinue |
+             Select-Object -First 1 -ExpandProperty FullName
 
 if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found: $binaryPath" }
-if (-not (Test-Path $setupPath))  { Write-Error "Installer not found: $setupPath" }
+if (-not $setupPath -or -not (Test-Path $setupPath)) { Write-Error "NSIS installer not found in $nsisDir" }
 
 # ── 4. Sign the installer (before copying) ──────────────────────────────────
 if (-not $canSign) {
@@ -69,7 +73,7 @@ if (Test-Path $stagingDir) { Remove-Item $stagingDir -Recurse -Force }
 $null = New-Item -ItemType Directory -Path $stagingDir
 
 Write-Output "Staging release files..."
-Copy-Item $binaryPath "$stagingDir/neurodeck.exe"
+Copy-Item $binaryPath "$stagingDir/neurodeck.exe" -Force
 Sign-File "$stagingDir/neurodeck.exe"
 
 foreach ($dir in @("scripts", "plugins", "_bmad", ".agents")) {

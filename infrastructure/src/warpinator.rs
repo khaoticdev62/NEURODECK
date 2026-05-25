@@ -213,7 +213,7 @@ async fn stream_path_to_channel(
                 relative_path: filename.clone(),
                 file_type: 0,
                 symlink_target: "".to_string(),
-                chunk: buffer[..n].to_vec().into(),
+                chunk: buffer[..n].to_vec(),
                 file_mode: 0o644,
                 time: None,
             };
@@ -230,7 +230,7 @@ async fn stream_path_to_channel(
             relative_path: root_dir_name.clone(),
             file_type: 1,
             symlink_target: "".to_string(),
-            chunk: Vec::new().into(),
+            chunk: Vec::new(),
             file_mode: 0o755,
             time: None,
         })).await?;
@@ -253,7 +253,7 @@ async fn stream_path_to_channel(
                         relative_path: rel_path_str,
                         file_type: 1,
                         symlink_target: "".to_string(),
-                        chunk: Vec::new().into(),
+                        chunk: Vec::new(),
                         file_mode: 0o755,
                         time: None,
                     })).await?;
@@ -273,7 +273,7 @@ async fn stream_path_to_channel(
                             relative_path: rel_path_str.clone(),
                             file_type: 0,
                             symlink_target: "".to_string(),
-                            chunk: buffer[..n].to_vec().into(),
+                            chunk: buffer[..n].to_vec(),
                             file_mode: 0o644,
                             time: None,
                         };
@@ -325,7 +325,7 @@ async fn run_grpc_incoming_transfer(
             &chunk.relative_path,
             chunk.file_type,
             &chunk.chunk,
-        ).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        ).await.map_err(|e| std::io::Error::other(e))?;
 
         received_bytes += chunk.chunk.len() as u64;
         callbacks.on_transfer_progress(transfer_id, received_bytes);
