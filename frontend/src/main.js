@@ -1299,6 +1299,7 @@ document.querySelector('#app').innerHTML = `
                         <!-- Header -->
                         <div class="remote-header">
                             <div class="remote-header-left">
+                                <span class="remote-kicker">LAN Bridge</span>
                                 <span class="remote-title">🖥️ Remote Control</span>
                                 <span class="remote-subtitle">Connect your iPhone via local Wi-Fi</span>
                             </div>
@@ -1369,7 +1370,7 @@ document.querySelector('#app').innerHTML = `
 
                         <!-- Security notice -->
                         <div class="remote-security-notice">
-                            <span class="remote-security-icon">🔒</span>
+                            <span class="remote-security-icon">${createIcon('shieldCheck', { size: 14 })}</span>
                             <span>Connection is unencrypted (HTTP/WS). Use on trusted home networks only. PIN expires when the server is restarted.</span>
                         </div>
 
@@ -1389,17 +1390,23 @@ document.querySelector('#app').innerHTML = `
                     <div class="docs-container">
                         <div class="docs-header">
                             <div class="docs-header-left">
+                                <span class="docs-kicker">Knowledge Mesh</span>
                                 <span class="docs-title">📚 Knowledge Base</span>
                                 <span class="docs-subtitle" id="docs-count-badge">0 documents indexed</span>
                             </div>
                             <div class="docs-header-right">
-                                <button class="docs-index-btn" id="docs-index-btn" title="Index a folder">+ Index Folder</button>
-                                <button class="docs-clear-btn" id="docs-clear-btn" title="Clear all indexed docs">Clear All</button>
+                                <div class="docs-toolbar-actions">
+                                    <button class="docs-index-btn" id="docs-index-btn" title="Index a folder">+ Index Folder</button>
+                                    <button class="docs-clear-btn" id="docs-clear-btn" title="Clear all indexed docs">Clear All</button>
+                                </div>
                             </div>
                         </div>
 
                         <div class="docs-search-bar">
-                            <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Semantic search across indexed documents…">
+                            <div class="docs-search-shell">
+                                <span class="docs-search-icon">${createIcon('search', { size: 14 })}</span>
+                                <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Semantic search across indexed documents…">
+                            </div>
                             <button class="docs-search-btn" id="docs-search-btn">Search</button>
                         </div>
 
@@ -1506,6 +1513,7 @@ document.querySelector('#app').innerHTML = `
                 <!-- ── Sidebar nav ── -->
                 <nav class="stv-sidebar">
                     <div class="stv-sidebar-brand">
+                        <div class="stv-sidebar-brand-chip">${createIcon('sparkles', { size: 12 })}<span>Preference Center</span></div>
                         <div class="stv-sidebar-brand-title">NEURODECK</div>
                         <div class="stv-sidebar-brand-sub">SYSTEM PREFERENCES</div>
                     </div>

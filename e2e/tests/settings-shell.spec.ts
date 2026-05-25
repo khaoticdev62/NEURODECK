@@ -114,6 +114,7 @@ test("settings shell opens, switches themed tabs, and closes", async ({ page }) 
   const settingsOverlay = page.locator("#settings-overlay");
   await expect(modal).toBeVisible();
   await expect(modal).toHaveAttribute("data-settings-theme", "general");
+  await expect(page.locator(".stv-sidebar-brand-chip")).toBeVisible();
 
   await settingsOverlay.getByRole("button", { name: "Appearance" }).click();
   await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
@@ -210,6 +211,7 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
 
   await page.locator('.nav-tab[data-view="remote"]').click();
   await expect(page.locator("#view-remote")).toHaveClass(/active/);
+  await expect(page.locator(".remote-kicker")).toBeVisible();
   const remoteMetrics = await page.locator(".remote-container").evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
@@ -219,12 +221,13 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
 
   await page.locator('.nav-tab[data-view="docs"]').click();
   await expect(page.locator("#view-docs")).toHaveClass(/active/);
+  await expect(page.locator(".docs-kicker")).toBeVisible();
   const docsMetrics = await page.locator(".docs-container").evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
   }));
   expect(docsMetrics.scrollWidth).toBeLessThanOrEqual(docsMetrics.clientWidth + 2);
-  await expect(page.locator(".docs-search-input")).toBeVisible();
+  await expect(page.locator(".docs-search-shell")).toBeVisible();
   await expect(page.locator("#view-docs .docs-search-input")).toBeVisible();
 });
 
