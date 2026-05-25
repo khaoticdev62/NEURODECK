@@ -38,6 +38,14 @@ test.beforeEach(async ({ page }) => {
           return ["Default", "Developer"];
         case "get_themes":
           return ["Neurodeck", "Midnight"];
+        case "list_plugins":
+          return [];
+        case "get_doc_count":
+          return 0;
+        case "get_mcp_status":
+          return { running: "false", port: "13337" };
+        case "test_llm_connection":
+          return "Gemini Connection Successful!";
         case "list_custom_personas":
         case "get_themes_list":
         case "get_plugins":
@@ -171,4 +179,51 @@ test("all primary nav tabs remain clickable across the full strip", async ({ pag
     await expect(tab).toHaveClass(/active/);
     await expect(page.locator(panel)).toHaveClass(/active/);
   }
+});
+
+test("settings modal remains in viewport on compact window sizes", async ({ page }) => {
+  await page.setViewportSize({ width: 1180, height: 720 });
+  await page.reload();
+  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+
+  await page.locator("#settings-btn").click();
+  const modal = page.locator("#settings-overlay .settings-modal-card");
+  await expect(modal).toBeVisible();
+
+  const box = await modal.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(1180);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(720);
+
+  const panel = page.locator("#sp-network");
+  await page.locator("#settings-overlay").getByRole("button", { name: "Network" }).click();
+  await expect(panel).toHaveClass(/active/);
+  await expect(panel).toBeVisible();
+});
+
+test("docs and remote views stay usable without horizontal overflow on narrow windows", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  await page.reload();
+  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+
+  await page.locator('.nav-tab[data-view="remote"]').click();
+  await expect(page.locator("#view-remote")).toHaveClass(/active/);
+  const remoteMetrics = await page.locator(".remote-container").evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+  }));
+  expect(remoteMetrics.scrollWidth).toBeLessThanOrEqual(remoteMetrics.clientWidth + 2);
+  await expect(page.locator("#view-remote .remote-status-badge")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="docs"]').click();
+  await expect(page.locator("#view-docs")).toHaveClass(/active/);
+  const docsMetrics = await page.locator(".docs-container").evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+  }));
+  expect(docsMetrics.scrollWidth).toBeLessThanOrEqual(docsMetrics.clientWidth + 2);
+  await expect(page.locator(".docs-search-input")).toBeVisible();
+  await expect(page.locator("#view-docs .docs-search-input")).toBeVisible();
 });
