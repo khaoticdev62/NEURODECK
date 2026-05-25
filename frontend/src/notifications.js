@@ -16,19 +16,39 @@ function renderNotificationsList() {
     if (!container) return;
 
     if (state.notifications.length === 0) {
-        container.innerHTML = `<div class="notif-empty-state">No notifications yet.</div>`;
+        const empty = document.createElement("div");
+        empty.className = "notif-empty-state";
+        empty.textContent = "No notifications yet.";
+        container.replaceChildren(empty);
         return;
     }
 
-    container.innerHTML = state.notifications.map(n => `
-        <div class="notif-item ${window.escapeHtml(n.type)}">
-            <div class="notif-item-header">
-                <span>${window.escapeHtml(n.title)}</span>
-                <span class="notif-item-time">${window.escapeHtml(n.time)}</span>
-            </div>
-            <div class="notif-item-text">${window.escapeHtml(n.text)}</div>
-        </div>
-    `).join("");
+    const fragment = document.createDocumentFragment();
+    state.notifications.forEach((n) => {
+        const item = document.createElement("div");
+        item.className = "notif-item";
+        item.classList.add(String(n.type || "info"));
+
+        const header = document.createElement("div");
+        header.className = "notif-item-header";
+
+        const title = document.createElement("span");
+        title.textContent = String(n.title ?? "");
+
+        const time = document.createElement("span");
+        time.className = "notif-item-time";
+        time.textContent = String(n.time ?? "");
+
+        const text = document.createElement("div");
+        text.className = "notif-item-text";
+        text.textContent = String(n.text ?? "");
+
+        header.append(title, time);
+        item.append(header, text);
+        fragment.appendChild(item);
+    });
+
+    container.replaceChildren(fragment);
 }
 
 export function addNotification(title, text, type = 'info') {
@@ -48,13 +68,23 @@ export function addNotification(title, text, type = 'info') {
     if (toastContainer) {
         const toast = document.createElement("div");
         toast.className = `toast-notif ${type}`;
-        toast.innerHTML = `
-            <div class="toast-notif-title">
-                <span>${title}</span>
-                <span style="font-size: 0.65rem; opacity: 0.5;">${timestamp}</span>
-            </div>
-            <div class="toast-notif-text">${text}</div>
-        `;
+        const titleRow = document.createElement("div");
+        titleRow.className = "toast-notif-title";
+
+        const titleText = document.createElement("span");
+        titleText.textContent = String(title);
+
+        const timeText = document.createElement("span");
+        timeText.style.fontSize = "0.65rem";
+        timeText.style.opacity = "0.5";
+        timeText.textContent = timestamp;
+
+        const body = document.createElement("div");
+        body.className = "toast-notif-text";
+        body.textContent = String(text);
+
+        titleRow.append(titleText, timeText);
+        toast.append(titleRow, body);
         toastContainer.appendChild(toast);
 
         setTimeout(() => {

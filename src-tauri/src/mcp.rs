@@ -45,106 +45,127 @@ fn rpc_err(id: &Value, code: i64, message: &str) -> Value {
     json!({ "jsonrpc": "2.0", "id": id, "error": { "code": code, "message": message } })
 }
 
+fn env_flag_enabled(value: &str) -> bool {
+    matches!(
+        value.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
+}
+
+fn mcp_exec_tools_enabled() -> bool {
+    std::env::var("NEURODECK_ENABLE_MCP_EXEC")
+        .map(|value| env_flag_enabled(&value))
+        .unwrap_or(false)
+}
+
 // ──────────────────────────────────────────────
 // Tool definitions (MCP schema)
 // ──────────────────────────────────────────────
 
 fn tool_list() -> Value {
-    json!({
-        "tools": [
-            {
-                "name": "neurodeck_chat",
-                "description": "Send a message to the NEURODECK AI and receive a full response. Uses the currently configured LLM provider (Gemini or Ollama).",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "prompt": {
-                            "type": "string",
-                            "description": "The message or question to send to the AI."
-                        },
-                        "system_prompt": {
-                            "type": "string",
-                            "description": "Optional system prompt override. Defaults to helpful assistant."
-                        }
+    let mut tools = vec![
+        json!({
+            "name": "neurodeck_chat",
+            "description": "Send a message to the NEURODECK AI and receive a full response. Uses the currently configured LLM provider (Gemini or Ollama).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "The message or question to send to the AI."
                     },
-                    "required": ["prompt"]
-                }
-            },
-            {
-                "name": "run_shell",
-                "description": "Execute a shell command on the NEURODECK host system and return its combined stdout+stderr output.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "command": {
-                            "type": "string",
-                            "description": "The shell command to execute."
-                        }
-                    },
-                    "required": ["command"]
-                }
-            },
-            {
-                "name": "run_code",
-                "description": "Execute code in a specified language and return its output. Supported: python, bash, javascript.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {
-                            "type": "string",
-                            "description": "The code to execute."
-                        },
-                        "lang": {
-                            "type": "string",
-                            "enum": ["python", "bash", "javascript"],
-                            "description": "The programming language."
-                        }
-                    },
-                    "required": ["code", "lang"]
-                }
-            },
-            {
-                "name": "read_file",
-                "description": "Read the text contents of a file on the NEURODECK host filesystem.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Absolute or relative path to the file."
-                        }
-                    },
-                    "required": ["path"]
-                }
-            },
-            {
-                "name": "write_file",
-                "description": "Write text content to a file on the NEURODECK host filesystem. Creates the file if it does not exist.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Absolute or relative path to write."
-                        },
-                        "content": {
-                            "type": "string",
-                            "description": "Text content to write."
-                        }
-                    },
-                    "required": ["path", "content"]
-                }
-            },
-            {
-                "name": "get_status",
-                "description": "Get the current status of the running NEURODECK instance: AI provider, version info, and server uptime.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "Optional system prompt override. Defaults to helpful assistant."
+                    }
+                },
+                "required": ["prompt"]
             }
-        ]
+        }),
+    ];
+
+    if mcp_exec_tools_enabled() {
+        tools.push(json!({
+            "name": "run_shell",
+            "description": "Execute a shell command on the NEURODECK host system and return its combined stdout+stderr output.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The shell command to execute."
+                    }
+                },
+                "required": ["command"]
+            }
+        }));
+        tools.push(json!({
+            "name": "run_code",
+            "description": "Execute code in a specified language and return its output. Supported: python, bash, javascript.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The code to execute."
+                    },
+                    "lang": {
+                        "type": "string",
+                        "enum": ["python", "bash", "javascript"],
+                        "description": "The programming language."
+                    }
+                },
+                "required": ["code", "lang"]
+            }
+        }));
+    }
+
+    tools.extend([
+        json!({
+            "name": "read_file",
+            "description": "Read the text contents of a file on the NEURODECK host filesystem.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Absolute or relative path to the file."
+                    }
+                },
+                "required": ["path"]
+            }
+        }),
+        json!({
+            "name": "write_file",
+            "description": "Write text content to a file on the NEURODECK host filesystem. Creates the file if it does not exist.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Absolute or relative path to write."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Text content to write."
+                    }
+                },
+                "required": ["path", "content"]
+            }
+        }),
+        json!({
+            "name": "get_status",
+            "description": "Get the current status of the running NEURODECK instance: AI provider, version info, and server uptime.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }),
+    ]);
+
+    json!({
+        "tools": tools
     })
 }
 
@@ -209,6 +230,9 @@ async fn call_tool(
         }
 
         "run_shell" => {
+            if !mcp_exec_tools_enabled() {
+                return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_shell.".to_string());
+            }
             let cmd_str = args["command"].as_str().ok_or("Missing required arg: 'command'")?;
             let cmd_owned = cmd_str.to_string();
             let output = tokio::task::spawn_blocking(move || {
@@ -239,6 +263,9 @@ async fn call_tool(
         }
 
         "run_code" => {
+            if !mcp_exec_tools_enabled() {
+                return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_code.".to_string());
+            }
             let code = args["code"].as_str().ok_or("Missing required arg: 'code'")?;
             let lang = args["lang"].as_str().ok_or("Missing required arg: 'lang'")?;
 
@@ -352,6 +379,25 @@ async fn call_tool(
         }
 
         unknown => Err(format!("Unknown tool: '{}'", unknown)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::env_flag_enabled;
+
+    #[test]
+    fn env_flag_enabled_accepts_common_truthy_values() {
+        for value in ["1", "true", "TRUE", "yes", "on", " On "] {
+            assert!(env_flag_enabled(value), "expected '{value}' to be truthy");
+        }
+    }
+
+    #[test]
+    fn env_flag_enabled_rejects_other_values() {
+        for value in ["0", "false", "no", "off", "", "maybe"] {
+            assert!(!env_flag_enabled(value), "expected '{value}' to be falsy");
+        }
     }
 }
 

@@ -881,7 +881,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_initial_state,
-            execute_command,
             execute_command_stream,
             write_to_process,
             kill_process,
