@@ -310,7 +310,7 @@ export function initAgentView() {
     const rtStartBtn = document.getElementById('rt-start-btn');
     const rtStopBtn = document.getElementById('rt-stop-btn');
 
-    if (!rtStartBtn) return;
+    if (!rtStartBtn || !toolbarTask || !toolbarRt || !rtPersonaA || !rtPersonaB) return;
 
     let rtRunning = false;
     let rtUnlistenChunk = null;

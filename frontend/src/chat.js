@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 import { applyButtonIcon, createIcon } from './icons.js';
+import { addNotification } from './notifications.js';
 
 // ── Chat Welcome State HTML ────────────────────────────────────────────────────
 const CHAT_WELCOME_HTML = `

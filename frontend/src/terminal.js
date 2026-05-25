@@ -4,6 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { createIcon } from './icons.js';
+import { addNotification } from './notifications.js';
 
 // --- PTY TERMINAL SYSTEM ---
 // let terminalSessions = []; (Moved to state.js) // list of { id, shell, term, fitAddon, containerEl }

@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { marked } from 'marked';
+import { addNotification } from './notifications.js';
 
 // --- LIVE CODE CANVAS SYSTEM ---
 

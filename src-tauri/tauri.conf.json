@@ -5,7 +5,7 @@
   "identifier": "com.neurodeck.app",
   "build": {
     "frontendDist": "../frontend/dist",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:1420",
     "beforeDevCommand": "npm run --prefix frontend dev",
     "beforeBuildCommand": "npm run --prefix frontend build"
   },

@@ -8,6 +8,7 @@ import {
     renderSftpProfilesSettings 
 } from './terminal.js';
 import { applyButtonIcon, createIcon } from './icons.js';
+import { addNotification } from './notifications.js';
 
 function setStatusMarkup(el, icon, text, color) {
     if (!el) return;

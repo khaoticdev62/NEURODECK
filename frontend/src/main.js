@@ -3553,7 +3553,7 @@ function pollGamepads() {
         if (sshView && sshView.classList.contains("active")) {
             // L1 in SSH: load the currently D-pad-focused profile (A-button equivalent)
             // R1 in SSH: same — pressing either loads the selected profile
-            const focused = document.querySelector("#sidebar-ssh-profiles .ssh-profile-item.gamepad-focused");
+            const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
             if (focused) {
                 focused.click();
             } else {
@@ -3626,7 +3626,7 @@ function pollGamepads() {
                 subtabs[nextIdx].click();
             }
         } else if (sshView && sshView.classList.contains("active")) {
-            const profileItems = Array.from(document.querySelectorAll("#sidebar-ssh-profiles .ssh-profile-item"));
+            const profileItems = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
             if (profileItems.length > 0) {
                 const selectedIdx = profileItems.findIndex(el => el.classList.contains("gamepad-focused"));
                 const nextIdx = goUp
