@@ -25,6 +25,11 @@ neurodeck_win_release.zip
 test-*.png
 *.bak
 src-tauri/data/logs/
+e2e/playwright-report/
+e2e/test-results/
+
+# --- TypeScript build cache ---
+*.tsbuildinfo
 
 # --- Local tool state ---
 .claude/settings.local.json
