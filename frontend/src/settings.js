@@ -802,20 +802,22 @@ function initMcpSettings() {
 
     if (!startBtn) return;
 
-    function setRunningUI(port) {
+    function setRunningUI(port, token) {
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <a href="http://127.0.0.1:${port}" style="color: var(--accent-color); text-decoration: none;" onclick="return false;">http://127.0.0.1:${port}</a>`;
+        statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <a href="http://127.0.0.1:${window.escapeHtml(String(port))}" style="color: var(--accent-color); text-decoration: none;" onclick="return false;">http://127.0.0.1:${window.escapeHtml(String(port))}</a>`;
         toolsInfo.style.display = "block";
         claudeConfig.style.display = "block";
         if (configSnippet) {
-            configSnippet.textContent = JSON.stringify({
+            const snippet = {
                 mcpServers: {
                     neurodeck: {
-                        url: `http://127.0.0.1:${port}/`
+                        url: `http://127.0.0.1:${port}/`,
+                        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
                     }
                 }
-            }, null, 2);
+            };
+            configSnippet.textContent = JSON.stringify(snippet, null, 2);
         }
     }
 
@@ -833,7 +835,7 @@ function initMcpSettings() {
             const status = await invoke("get_mcp_status");
             if (status.running === "true") {
                 portInput.value = status.port || "13337";
-                setRunningUI(status.port);
+                setRunningUI(status.port, status.token);
             } else {
                 setStoppedUI();
             }
@@ -845,10 +847,10 @@ function initMcpSettings() {
         startBtn.disabled = true;
         statusLine.textContent = "Starting...";
         try {
-            const msg = await invoke("start_mcp_server", { port });
-            setRunningUI(port);
+            const result = await invoke("start_mcp_server", { port });
+            setRunningUI(result.url ? port : port, result.token);
             if (typeof addNotification === "function") {
-                addNotification("MCP Server Started", `Listening on port ${port}. Add to Claude Desktop config.`, "success");
+                addNotification("MCP Server Started", `Listening on port ${port}. Copy the config snippet below.`, "success");
             }
         } catch (err) {
             statusLine.innerHTML = "";
@@ -882,7 +884,7 @@ function initMcpSettings() {
     invoke("get_mcp_status").then(status => {
         if (status && status.running === "true") {
             portInput.value = status.port || "13337";
-            setRunningUI(status.port);
+            setRunningUI(status.port, status.token);
         } else {
             setStoppedUI();
         }

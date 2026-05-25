@@ -230,6 +230,7 @@ pub struct AppState {
     pub custom_personas: Vec<CustomPersona>,
     pub(crate) mcp_abort: Option<tokio::task::AbortHandle>,
     pub(crate) mcp_port: u16,
+    pub(crate) mcp_token: Option<String>,
     // P17 — Whisper.cpp offline STT
     pub(crate) whisper_binary: String,
     pub(crate) whisper_model: String,
@@ -809,6 +810,7 @@ pub fn run() {
         custom_personas,
         mcp_abort: None,
         mcp_port: 13337,
+        mcp_token: None,
         whisper_binary,
         whisper_model,
         collab_abort: None,

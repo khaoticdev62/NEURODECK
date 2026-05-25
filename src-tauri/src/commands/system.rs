@@ -1,4 +1,5 @@
 use crate::*;
+use crate::llm::GeminiProvider;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -285,13 +286,15 @@ pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     
     if cfg!(target_os = "linux") {
+        let wav_path = user_config_dir().join("temp_record.wav");
+        let wav_str = wav_path.to_string_lossy().to_string();
         match std::process::Command::new("arecord")
             .arg("-f")
             .arg("cd")
             .arg("-t")
             .arg("wav")
-            .arg("record.wav")
-            .spawn() 
+            .arg(&wav_str)
+            .spawn()
         {
             Ok(child) => {
                 app.record_child = Some(child);
@@ -350,8 +353,9 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
             "Whisper model path not set. Configure it in Settings → Whisper STT.".to_string(),
         );
     }
+    let wav_str = user_config_dir().join("temp_record.wav").to_string_lossy().to_string();
     tokio::task::spawn_blocking(move || {
-        whisper::transcribe("record.wav", &binary, &model)
+        whisper::transcribe(&wav_str, &binary, &model)
     })
     .await
     .map_err(|e| format!("Thread error: {}", e))?
@@ -369,7 +373,8 @@ pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String,
         let _ = child.wait();
     }
 
-    let audio_data = std::fs::read("record.wav");
+    let wav_path = user_config_dir().join("temp_record.wav");
+    let audio_data = std::fs::read(&wav_path);
     if let Ok(data) = audio_data {
         // Try whisper.cpp first if model is configured and file exists
         let (whisper_binary, whisper_model) = {
@@ -379,8 +384,9 @@ pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String,
         if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
             let bin = whisper_binary.clone();
             let mdl = whisper_model.clone();
+            let wav_str = wav_path.to_string_lossy().to_string();
             let result = tokio::task::spawn_blocking(move || {
-                crate::whisper::transcribe("record.wav", &bin, &mdl)
+                crate::whisper::transcribe(&wav_str, &bin, &mdl)
             })
             .await;
             if let Ok(Ok(text)) = result {
@@ -624,11 +630,13 @@ pub async fn poll_oauth_token(device_code: String, interval: u64, state: State<'
     
     // Save to OS Keychain
     neurodeck_infrastructure::secrets::save_gemini_api_key(&token)?;
-    
-    // Update active provider
+
+    // Update active provider using the key directly — never mutate the global env var
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    std::env::set_var("GEMINI_API_KEY", &token);
-    app.provider = create_provider(&app.config);
+    app.provider = Arc::new(GeminiProvider::new_with_key(
+        app.config.llm.gemini_model.clone(),
+        token.clone(),
+    ));
     
     Ok(())
 }
@@ -1497,7 +1505,7 @@ pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Result<serde_json::Value, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
@@ -1509,18 +1517,19 @@ pub async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> R
         app.provider.clone()
     };
 
-    let (bound_port, abort_handle) = mcp::start(port, provider).await?;
+    let (bound_port, abort_handle, token) = mcp::start(port, provider).await?;
 
     {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mcp_abort = Some(abort_handle);
         app.mcp_port = bound_port;
+        app.mcp_token = Some(token.clone());
     }
 
-    Ok(format!(
-        "MCP server started on http://127.0.0.1:{}",
-        bound_port
-    ))
+    Ok(serde_json::json!({
+        "url": format!("http://127.0.0.1:{}", bound_port),
+        "token": token
+    }))
 }
 
 #[tauri::command]
@@ -1547,6 +1556,9 @@ pub fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, Stri
             "url".to_string(),
             format!("http://127.0.0.1:{}", app.mcp_port),
         );
+        if let Some(ref tok) = app.mcp_token {
+            result.insert("token".to_string(), tok.clone());
+        }
     } else {
         result.insert("running".to_string(), "false".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());

@@ -359,7 +359,17 @@ async fn call_tool(
 // Per-connection HTTP handler
 // ──────────────────────────────────────────────
 
-async fn handle_connection(mut stream: tokio::net::TcpStream, provider: Arc<dyn LlmProvider>) {
+fn extract_header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
+    let needle = format!("\r\n{}:", name.to_lowercase());
+    let headers_lower = headers.to_lowercase();
+    let pos = headers_lower.find(&needle)?;
+    let value_start = pos + needle.len();
+    let rest = &headers[value_start..];
+    let end = rest.find("\r\n").unwrap_or(rest.len());
+    Some(rest[..end].trim())
+}
+
+async fn handle_connection(mut stream: tokio::net::TcpStream, provider: Arc<dyn LlmProvider>, token: Arc<String>) {
     let mut buf = vec![0u8; 131_072]; // 128 KiB — enough for any reasonable tool call
     let n = match stream.read(&mut buf).await {
         Ok(n) if n > 0 => n,
@@ -382,9 +392,19 @@ async fn handle_connection(mut stream: tokio::net::TcpStream, provider: Arc<dyn 
             .write_all(
                 b"HTTP/1.1 200 OK\r\n\
                   Access-Control-Allow-Methods: POST, OPTIONS\r\n\
-                  Access-Control-Allow-Headers: Content-Type\r\n\
+                  Access-Control-Allow-Headers: Content-Type, Authorization\r\n\
                   Content-Length: 0\r\n\r\n",
             )
+            .await;
+        return;
+    }
+
+    // Validate Bearer token — reject all non-preflight requests missing or with wrong auth
+    let expected_auth = format!("Bearer {}", token);
+    let provided_auth = extract_header_value(header_section, "authorization").unwrap_or("");
+    if provided_auth != expected_auth {
+        let _ = stream
+            .write_all(b"HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer realm=\"neurodeck-mcp\"\r\nContent-Length: 0\r\n\r\n")
             .await;
         return;
     }
@@ -462,11 +482,21 @@ async fn send_response(stream: &mut tokio::net::TcpStream, body: &Value) {
 
 /// Start the MCP HTTP server on `127.0.0.1:{port}`.
 ///
-/// Returns `(actual_port, abort_handle)`. Call `abort_handle.abort()` to stop the server.
+/// Returns `(actual_port, abort_handle, session_token)`.
+/// All non-preflight requests must include `Authorization: Bearer <session_token>`.
 pub async fn start(
     port: u16,
     provider: Arc<dyn LlmProvider>,
-) -> Result<(u16, tokio::task::AbortHandle), String> {
+) -> Result<(u16, tokio::task::AbortHandle, String), String> {
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    let token: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+    let token_arc = Arc::new(token.clone());
+
     let addr = format!("127.0.0.1:{}", port);
     let listener = TcpListener::bind(&addr)
         .await
@@ -480,10 +510,11 @@ pub async fn start(
     let task = tokio::spawn(async move {
         while let Ok((stream, _peer)) = listener.accept().await {
             let prov = provider.clone();
-            tokio::spawn(handle_connection(stream, prov));
+            let tok = token_arc.clone();
+            tokio::spawn(handle_connection(stream, prov, tok));
         }
     });
 
     let abort_handle = task.abort_handle();
-    Ok((bound_port, abort_handle))
+    Ok((bound_port, abort_handle, token))
 }

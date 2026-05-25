@@ -124,7 +124,7 @@ window.sanitizeHtml = function(html) {
             'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 'hr'
         ]);
         
-        const allowedAttrs = new Set(['class', 'href', 'src', 'alt', 'title', 'target', 'style']);
+        const allowedAttrs = new Set(['class', 'href', 'src', 'alt', 'title', 'target']);
         
         function cleanNode(node) {
             const children = Array.from(node.childNodes);
@@ -164,7 +164,7 @@ window.sanitizeHtml = function(html) {
         return doc.body.innerHTML;
     } catch (e) {
         console.error("HTML Sanitization failed:", e);
-        return html.replace(/<[^>]*>/g, '');
+        return '';
     }
 };
 
