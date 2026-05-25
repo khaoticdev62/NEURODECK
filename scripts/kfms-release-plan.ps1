@@ -65,6 +65,42 @@ function Get-JsonFile {
     return Get-Content $Path -Raw | ConvertFrom-Json
 }
 
+function Get-ReleasePolicy {
+    $meta = Get-JsonFile $script:MetaPath
+    $policy = $null
+    if ($meta -and $meta.studio -and $meta.studio.governance) {
+        $policy = $meta.studio.governance.release_policy
+    }
+
+    if (-not $policy) {
+        return [pscustomobject]@{
+            go_threshold = 85
+            hold_threshold = 60
+            penalties = [pscustomobject]@{
+                metadata = 35
+                diff_hygiene = 20
+                workspace_state = 20
+                loose_root_files = 10
+                cargo_check = 25
+                cargo_test = 25
+                frontend_build = 20
+            }
+        }
+    }
+
+    return $policy
+}
+
+function Get-RelativePath {
+    param([string]$Path)
+    return $Path.Replace($script:Root + [IO.Path]::DirectorySeparatorChar, "").Replace("\", "/")
+}
+
+function ConvertTo-CanonicalJson {
+    param([object]$Value)
+    return ($Value | ConvertTo-Json -Depth 8 -Compress)
+}
+
 function Get-WorkspaceState {
     $status = git -C $script:Root status --porcelain 2>$null
     if (-not $status) {
@@ -138,12 +174,20 @@ function Invoke-Gate {
         [string]$LogPath
     )
 
+    $startedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $watch = [System.Diagnostics.Stopwatch]::StartNew()
+
     if (-not (Get-Command $Executable -ErrorAction SilentlyContinue)) {
+        $watch.Stop()
+        Write-Utf8NoBomFile -Path $LogPath -Content "$Executable is not installed.`n"
         return [pscustomobject]@{
             name = $Name
             status = "missing-tool"
-            log = $LogPath
+            log_path = (Get-RelativePath $LogPath)
             message = "$Executable is not installed."
+            duration_ms = [int]$watch.ElapsedMilliseconds
+            started_at_utc = $startedAt
+            finished_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
         }
     }
 
@@ -168,23 +212,30 @@ function Invoke-Gate {
     $stderr = $process.StandardError.ReadToEnd()
     $process.WaitForExit()
     $exitCode = $process.ExitCode
+    $watch.Stop()
 
-    ($stdout + $stderr) | Out-File -FilePath $LogPath -Encoding utf8
+    Write-Utf8NoBomFile -Path $LogPath -Content ($stdout + $stderr)
 
     if ($exitCode -eq 0) {
         return [pscustomobject]@{
             name = $Name
             status = "pass"
-            log = $LogPath
+            log_path = (Get-RelativePath $LogPath)
             message = ""
+            duration_ms = [int]$watch.ElapsedMilliseconds
+            started_at_utc = $startedAt
+            finished_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
         }
     }
 
     return [pscustomobject]@{
         name = $Name
         status = "fail"
-        log = $LogPath
-        message = "$Name failed. See $($LogPath.Replace($script:Root + '\', '').Replace('\', '/'))"
+        log_path = (Get-RelativePath $LogPath)
+        message = "$Name failed. See $(Get-RelativePath $LogPath)"
+        duration_ms = [int]$watch.ElapsedMilliseconds
+        started_at_utc = $startedAt
+        finished_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     }
 }
 
@@ -219,6 +270,27 @@ function Test-MetadataAlignment {
         if ($health.stamped_at_utc -ne $meta.build.built_at_utc) {
             $errors.Add("health.json stamped_at_utc does not match meta.json.")
         }
+        if ($meta.studio.governance.release_policy) {
+            if (-not $health.release_plan) {
+                $errors.Add("health.json release_plan is missing.")
+            } elseif ((ConvertTo-CanonicalJson $health.release_plan.policy) -ne (ConvertTo-CanonicalJson $meta.studio.governance.release_policy)) {
+                $errors.Add("health.json release_plan policy does not match meta.json.")
+            }
+        }
+    }
+
+    $policy = $meta.studio.governance.release_policy
+    if (-not $policy) {
+        $errors.Add("meta.json release policy is missing.")
+    } else {
+        if ($policy.hold_threshold -gt $policy.go_threshold) {
+            $errors.Add("release_policy.hold_threshold must be <= go_threshold.")
+        }
+        foreach ($name in @("metadata", "diff_hygiene", "workspace_state", "loose_root_files", "cargo_check", "cargo_test", "frontend_build")) {
+            if ($null -eq $policy.penalties.$name) {
+                $errors.Add("release_policy.penalties.$name is missing.")
+            }
+        }
     }
 
     if ($meta -and $plan) {
@@ -244,41 +316,46 @@ $metadata = Test-MetadataAlignment
 $workspaceState = Get-WorkspaceState
 $looseRootFiles = Get-LooseRootFileCount
 $diffHygieneOk = Test-DiffHygiene
+$policy = Get-ReleasePolicy
 
+$overallWatch = [System.Diagnostics.Stopwatch]::StartNew()
 $cargoCheck = Invoke-Gate -Name "cargo check" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("check") -LogPath (Join-Path $script:LogsDir "cargo-check.log")
 $cargoTest = Invoke-Gate -Name "cargo test" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("test") -LogPath (Join-Path $script:LogsDir "cargo-test.log")
 $frontendBuild = Invoke-Gate -Name "frontend build" -WorkingDirectory $script:Root -Executable "npm.cmd" -Arguments @("run", "--prefix", "frontend", "build") -LogPath (Join-Path $script:LogsDir "frontend-build.log")
+$overallWatch.Stop()
 
 $blockers = New-Object System.Collections.Generic.List[string]
 $score = 100
 
 if (-not $metadata.ok) {
-    $score -= 35
+    $score -= [int]$policy.penalties.metadata
     foreach ($metadataError in $metadata.errors) {
         $blockers.Add($metadataError)
     }
 }
 if (-not $diffHygieneOk) {
-    $score -= 20
+    $score -= [int]$policy.penalties.diff_hygiene
     $blockers.Add("Whitespace or merge-marker issues exist in the working tree.")
 }
 if ($workspaceState -ne "clean") {
-    $score -= 20
+    $score -= [int]$policy.penalties.workspace_state
     $blockers.Add("Workspace is not clean: $workspaceState.")
 }
 if ($looseRootFiles -ne 0) {
-    $score -= 10
+    $score -= [int]$policy.penalties.loose_root_files
     $blockers.Add("Loose root files are present outside the preserved set.")
 }
 
 foreach ($gate in @($cargoCheck, $cargoTest)) {
     switch ($gate.status) {
         "fail" {
-            $score -= 25
+            $gateKey = ($gate.name -replace '[^a-zA-Z0-9]+', '_')
+            $score -= [int]$policy.penalties.$gateKey
             $blockers.Add($gate.message)
         }
         "missing-tool" {
-            $score -= 25
+            $gateKey = ($gate.name -replace '[^a-zA-Z0-9]+', '_')
+            $score -= [int]$policy.penalties.$gateKey
             $blockers.Add($gate.message)
         }
     }
@@ -286,11 +363,11 @@ foreach ($gate in @($cargoCheck, $cargoTest)) {
 
 switch ($frontendBuild.status) {
     "fail" {
-        $score -= 20
+        $score -= [int]$policy.penalties.frontend_build
         $blockers.Add($frontendBuild.message)
     }
     "missing-tool" {
-        $score -= 20
+        $score -= [int]$policy.penalties.frontend_build
         $blockers.Add($frontendBuild.message)
     }
 }
@@ -300,15 +377,16 @@ if ($score -lt 0) {
 }
 
 $releaseState = "NO-GO"
-if ($metadata.ok -and $diffHygieneOk -and $workspaceState -eq "clean" -and $looseRootFiles -eq 0 -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge 85) {
+if ($metadata.ok -and $diffHygieneOk -and $workspaceState -eq "clean" -and $looseRootFiles -eq 0 -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge [int]$policy.go_threshold) {
     $releaseState = "GO"
-} elseif ($score -ge 60) {
+} elseif ($score -ge [int]$policy.hold_threshold) {
     $releaseState = "HOLD"
 }
 
 $summary = [pscustomobject]@{
     release_decision = $releaseState
     readiness_score = $score
+    policy = $policy
     metadata = if ($metadata.ok) { "aligned" } else { "blocked" }
     diff_hygiene = if ($diffHygieneOk) { "pass" } else { "fail" }
     workspace_state = $workspaceState
@@ -316,7 +394,9 @@ $summary = [pscustomobject]@{
     cargo_check = $cargoCheck.status
     cargo_test = $cargoTest.status
     frontend_build = $frontendBuild.status
+    gates = @($cargoCheck, $cargoTest, $frontendBuild)
     blockers = $blockers
+    duration_ms = [int]$overallWatch.ElapsedMilliseconds
     stamped_at_utc = if ($metadata.meta) { $metadata.meta.build.built_at_utc } else { $null }
 }
 
@@ -329,6 +409,7 @@ $gateSummary = "cargo_check=$($cargoCheck.status),cargo_test=$($cargoTest.status
 $healthDocument | Add-Member -NotePropertyName release_plan -NotePropertyValue ([pscustomobject]@{
     release_decision = $releaseState
     readiness_score = $score
+    policy = $policy
     gate_summary = $gateSummary
     metadata = $summary.metadata
     diff_hygiene = $summary.diff_hygiene
@@ -337,7 +418,9 @@ $healthDocument | Add-Member -NotePropertyName release_plan -NotePropertyValue (
     cargo_check = $cargoCheck.status
     cargo_test = $cargoTest.status
     frontend_build = $frontendBuild.status
+    gates = @($cargoCheck, $cargoTest, $frontendBuild)
     blockers = @($blockers)
+    duration_ms = [int]$overallWatch.ElapsedMilliseconds
     checked_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 }) -Force
 
@@ -364,6 +447,7 @@ Write-KfmsLine ok "metadata         -> $($summary.metadata)"
 Write-KfmsLine ok "diff hygiene     -> $($summary.diff_hygiene)"
 Write-KfmsLine ok "workspace state  -> $workspaceState"
 Write-KfmsLine ok "loose root files -> $looseRootFiles"
+Write-KfmsLine ok "policy           -> go=$($policy.go_threshold) | hold=$($policy.hold_threshold)"
 Write-KfmsLine ok "cargo check      -> $($cargoCheck.status)"
 Write-KfmsLine ok "cargo test       -> $($cargoTest.status)"
 Write-KfmsLine ok "frontend build   -> $($frontendBuild.status)"

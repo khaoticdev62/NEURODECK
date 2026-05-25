@@ -14,9 +14,9 @@
   },
   "tag": "v1.2.1-ra",
   "build": {
-    "git_sha": "0519e496ef12ced714c4cfdb43a6aa14a64a89dd",
+    "git_sha": "3e98a2dbf405f4b984dfa9670d2b60e320fe6715",
     "git_tag": null,
-    "built_at_utc": "2026-05-25T01:28:16Z",
+    "built_at_utc": "2026-05-25T01:37:55Z",
     "dirty": true
   },
   "studio": {
@@ -24,7 +24,20 @@
     "governance": {
       "codename_unique_per_major": true,
       "no_secrets_in_build": true,
-      "loose_zone": ".loose/"
+      "loose_zone": ".loose/",
+      "release_policy": {
+        "go_threshold": 85,
+        "hold_threshold": 60,
+        "penalties": {
+          "metadata": 35,
+          "diff_hygiene": 20,
+          "workspace_state": 20,
+          "loose_root_files": 10,
+          "cargo_check": 25,
+          "cargo_test": 25,
+          "frontend_build": 20
+        }
+      }
     }
   }
 }

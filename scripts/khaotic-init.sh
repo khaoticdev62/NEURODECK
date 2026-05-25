@@ -291,7 +291,7 @@ cmd_sync() {
   py_bin=$(resolve_python 2>/dev/null || true)
   [[ -n "$py_bin" ]] || die "python3 or python required for sync command."
 
-  if cmd_validate >/dev/null 2>&1; then
+  if KFMS_SKIP_RELEASE_PLAN_CHECK=1 cmd_validate >/dev/null 2>&1; then
     schema_valid=true
   fi
   [[ -d "$ROOT/.loose/inbox" ]] && [[ "$(count_loose_root_files)" == "0" ]] && loose_zone_isolated=true
@@ -436,6 +436,7 @@ cmd_validate() {
     if [[ -n "$py_bin" ]]; then
       "$py_bin" - "$meta" "$schema" <<'PYEOF'
 import sys, json, re
+import os
 
 meta_path, schema_path = sys.argv[1], sys.argv[2]
 with open(meta_path) as f:
@@ -486,6 +487,25 @@ if not gov.get("no_secrets_in_build"):
     errors.append("governance.no_secrets_in_build must be true")
 if not gov.get("codename_unique_per_major"):
     errors.append("governance.codename_unique_per_major must be true")
+policy = gov.get("release_policy")
+if not isinstance(policy, dict):
+    errors.append("governance.release_policy must be present and structured")
+else:
+    if not isinstance(policy.get("go_threshold"), int):
+        errors.append("governance.release_policy.go_threshold must be an integer")
+    if not isinstance(policy.get("hold_threshold"), int):
+        errors.append("governance.release_policy.hold_threshold must be an integer")
+    if isinstance(policy.get("go_threshold"), int) and isinstance(policy.get("hold_threshold"), int):
+        if policy["hold_threshold"] > policy["go_threshold"]:
+            errors.append("governance.release_policy.hold_threshold must be <= go_threshold")
+    penalties = policy.get("penalties")
+    expected_penalties = ["metadata", "diff_hygiene", "workspace_state", "loose_root_files", "cargo_check", "cargo_test", "frontend_build"]
+    if not isinstance(penalties, dict):
+        errors.append("governance.release_policy.penalties must be an object")
+    else:
+        for key in expected_penalties:
+            if key not in penalties or not isinstance(penalties.get(key), int):
+                errors.append(f"governance.release_policy.penalties.{key} must be an integer")
 
 if errors:
     for e in errors:
@@ -522,6 +542,10 @@ if Path(health_path).exists():
         raise SystemExit("health.json tag does not match meta.json")
     if health.get("stamped_at_utc") != meta.get("build", {}).get("built_at_utc"):
         raise SystemExit("health.json stamped_at_utc does not match meta.json")
+    if os.getenv("KFMS_SKIP_RELEASE_PLAN_CHECK") != "1" and health.get("release_plan"):
+        policy = meta.get("studio", {}).get("governance", {}).get("release_policy")
+        if health["release_plan"].get("policy") != policy:
+            raise SystemExit("health.json release_plan policy does not match meta.json")
 
 registry_text = Path(registry_path).read_text(encoding="utf-8")
 expected_tag = meta.get("tag")
@@ -557,6 +581,14 @@ cmd_status() {
   echo -e "${CY}╚══════════════════════════════════════════╝${NC}"
 
   if [[ -f "$meta" && -n "$py_bin" ]]; then
+    local json_mode=false
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --json|-j) json_mode=true ;;
+      esac
+      shift || true
+    done
+
     local ver codename tag dirty stamped workspace health_status release_decision release_score release_gates
     read -r ver codename tag dirty stamped workspace health_status < <("$py_bin" - "$meta" "$health" <<'PYEOF'
 import json
@@ -599,6 +631,31 @@ print(
 )
 PYEOF
 )
+    if $json_mode; then
+      "$py_bin" - "$meta" "$health" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+meta_path, health_path = sys.argv[1:3]
+meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+health = {}
+if Path(health_path).exists():
+    health = json.loads(Path(health_path).read_text(encoding="utf-8-sig"))
+summary = {
+    "version": meta.get("version"),
+    "codename": meta.get("codename", {}).get("name"),
+    "tag": meta.get("tag"),
+    "build": meta.get("build", {}),
+    "status": health.get("status", "unknown"),
+    "workspace_state": health.get("workspace_state", "unknown"),
+    "release_plan": health.get("release_plan", {}),
+    "checks": health.get("checks", {}),
+}
+print(json.dumps(summary, indent=2))
+PYEOF
+      return 0
+    fi
     health_status="${health_status//$'\r'/}"
     workspace="${workspace//$'\r'/}"
     dirty="${dirty//$'\r'/}"
@@ -663,7 +720,7 @@ case "$CMD" in
   stamp)    cmd_stamp    ;;
   sync)     cmd_sync     ;;
   validate) cmd_validate ;;
-  status)   cmd_status   ;;
+  status)   shift; cmd_status "$@"   ;;
   release-plan) shift; cmd_release_plan "$@" ;;
   *)
     echo ""
