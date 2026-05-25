@@ -527,13 +527,35 @@ pub(crate) fn get_config_path() -> PathBuf {
 }
 
 pub(crate) fn user_config_dir() -> PathBuf {
-    if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home).join(".config").join("neurodeck")
-    } else if let Ok(up) = std::env::var("USERPROFILE") {
-        PathBuf::from(up).join(".config").join("neurodeck")
-    } else {
-        PathBuf::from(".")
+    // Use the OS-conventional config directory so the path works correctly
+    // on Windows (%APPDATA%), macOS (~/Library/Application Support), and
+    // Linux/SteamOS (~/.config — XDG standard).
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            return PathBuf::from(appdata).join("neurodeck");
+        }
+        if let Ok(up) = std::env::var("USERPROFILE") {
+            return PathBuf::from(up).join("AppData").join("Roaming").join("neurodeck");
+        }
     }
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home)
+                .join("Library")
+                .join("Application Support")
+                .join("neurodeck");
+        }
+    }
+    // Linux / SteamOS: XDG_CONFIG_HOME → ~/.config/neurodeck
+    if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
+        return PathBuf::from(xdg).join("neurodeck");
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home).join(".config").join("neurodeck");
+    }
+    PathBuf::from(".")
 }
 
 pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
