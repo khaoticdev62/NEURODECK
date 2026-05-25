@@ -194,15 +194,14 @@ impl LuaEngine {
         let mut names = Vec::new();
         if let Ok(commands) = self.lua.globals().get::<_, Table>("_commands") {
             let pairs = commands.pairs::<String, Value>();
-            for pair in pairs {
-                if let Ok((name, _)) = pair {
-                    names.push(name);
-                }
+            for (name, _) in pairs.flatten() {
+                names.push(name);
             }
         }
         names
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn assemble_prompt(
         &self,
         persona: &str,
@@ -241,7 +240,7 @@ impl LuaEngine {
             .map_err(|e| format!("Failed to read plugins directory: {}", e))?;
         for entry in read_dir.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "lua") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "lua") {
                 println!("Loading plugin: {}", path.display());
                 let code = std::fs::read_to_string(&path)
                     .map_err(|e| format!("Failed to read script file {}: {}", path.display(), e))?;

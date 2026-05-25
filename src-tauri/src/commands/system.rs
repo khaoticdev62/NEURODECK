@@ -858,7 +858,7 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
 
     let ram_available = if cfg!(target_os = "windows") {
         let output = std::process::Command::new("cmd")
-            .args(&["/c", "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value"])
+            .args(["/c", "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value"])
             .output();
         if let Ok(out) = output {
             let res = String::from_utf8_lossy(&out.stdout);
@@ -866,10 +866,10 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
             let mut total_kb = 0u64;
             for line in res.lines() {
                 let trimmed = line.trim();
-                if trimmed.starts_with("FreePhysicalMemory=") {
-                    free_kb = trimmed["FreePhysicalMemory=".len()..].trim().parse().unwrap_or(0);
-                } else if trimmed.starts_with("TotalVisibleMemorySize=") {
-                    total_kb = trimmed["TotalVisibleMemorySize=".len()..].trim().parse().unwrap_or(0);
+                if let Some(stripped) = trimmed.strip_prefix("FreePhysicalMemory=") {
+                    free_kb = stripped.trim().parse().unwrap_or(0);
+                } else if let Some(stripped) = trimmed.strip_prefix("TotalVisibleMemorySize=") {
+                    total_kb = stripped.trim().parse().unwrap_or(0);
                 }
             }
             if total_kb > 0 {
@@ -944,6 +944,7 @@ pub struct PromptSchema {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn assemble_prompt_via_lua_cmd(
     persona: String,
     task: String,

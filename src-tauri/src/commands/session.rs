@@ -47,7 +47,7 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
 
     for entry in read_dir.flatten() {
         let path = entry.path();
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
             let name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
             if latest_name.is_empty() || name > latest_name {
                 latest_name = name;
@@ -88,7 +88,7 @@ pub fn list_sessions() -> Result<Vec<String>, String> {
 
     for entry in read_dir.flatten() {
         let path = entry.path();
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
             if let Some(stem) = path.file_stem() {
                 sessions.push(stem.to_string_lossy().into_owned());
             }
@@ -213,8 +213,8 @@ pub async fn send_command(
 
     // Check for registered Lua custom commands
     let trimmed_prompt = prompt.trim();
-    let (cmd_name, cmd_args) = if trimmed_prompt.starts_with('/') {
-        let mut parts = trimmed_prompt[1..].splitn(2, ' ');
+    let (cmd_name, cmd_args) = if let Some(stripped) = trimmed_prompt.strip_prefix('/') {
+        let mut parts = stripped.splitn(2, ' ');
         (parts.next().unwrap_or(""), parts.next().unwrap_or(""))
     } else {
         let mut parts = trimmed_prompt.splitn(2, ' ');
@@ -406,7 +406,7 @@ pub async fn send_command(
 
     // Check for persona change command
     if prompt.trim().starts_with("/persona") {
-        let parts: Vec<&str> = prompt.trim().split_whitespace().collect();
+        let parts: Vec<&str> = prompt.split_whitespace().collect();
         if parts.len() == 1 {
             let mut available_personas: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
             let (active, custom_list) = {

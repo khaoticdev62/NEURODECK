@@ -1,5 +1,5 @@
 use suppaftp::{FtpStream, FtpError};
-use std::io::{Read, Write};
+use std::io::Read;
 use tauri::{AppHandle, Emitter};
 
 const UPLOAD_EMIT_INTERVAL: u64 = 65_536; // emit every 64 KB

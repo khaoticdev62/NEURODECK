@@ -200,8 +200,8 @@ impl LlmProvider for GeminiProvider {
                     let line = buffer[..line_idx].trim().to_string();
                     buffer.drain(..=line_idx);
 
-                    if line.starts_with("data:") {
-                        let json_str = line["data:".len()..].trim();
+                    if let Some(stripped) = line.strip_prefix("data:") {
+                        let json_str = stripped.trim();
                         if let Ok(gemini_res) = serde_json::from_str::<GeminiResponse>(json_str) {
                             if let Some(candidates) = gemini_res.candidates {
                                 for candidate in candidates {

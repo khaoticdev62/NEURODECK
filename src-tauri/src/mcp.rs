@@ -478,14 +478,9 @@ pub async fn start(
         .unwrap_or(port);
 
     let task = tokio::spawn(async move {
-        loop {
-            match listener.accept().await {
-                Ok((stream, _peer)) => {
-                    let prov = provider.clone();
-                    tokio::spawn(handle_connection(stream, prov));
-                }
-                Err(_) => break,
-            }
+        while let Ok((stream, _peer)) = listener.accept().await {
+            let prov = provider.clone();
+            tokio::spawn(handle_connection(stream, prov));
         }
     });
 

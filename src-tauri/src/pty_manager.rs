@@ -66,12 +66,10 @@ fn build_shell_candidates(requested_shell: &str) -> Vec<String> {
             ],
             other => vec![other.to_string(), "powershell.exe".into(), "cmd.exe".into()],
         }
+    } else if requested_shell.is_empty() {
+        vec!["/bin/bash".into(), "/bin/sh".into()]
     } else {
-        if requested_shell.is_empty() {
-            vec!["/bin/bash".into(), "/bin/sh".into()]
-        } else {
-            vec![requested_shell.to_string(), "/bin/bash".into(), "/bin/sh".into()]
-        }
+        vec![requested_shell.to_string(), "/bin/bash".into(), "/bin/sh".into()]
     }
 }
 

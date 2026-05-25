@@ -324,8 +324,8 @@ fn file_name_from_url(url: &reqwest::Url) -> Result<String, String> {
         return Err("Plugin downloads must use HTTPS".to_string());
     }
 
-    let path_segments = url.path_segments().ok_or("URL has no path segments")?;
-    let last_segment = path_segments.last().unwrap_or("plugin.lua");
+    let mut path_segments = url.path_segments().ok_or("URL has no path segments")?;
+    let last_segment = path_segments.next_back().unwrap_or("plugin.lua");
     let mut file_name = if last_segment.is_empty() {
         "plugin.lua".to_string()
     } else {

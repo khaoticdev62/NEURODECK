@@ -107,7 +107,7 @@ fn parse_sftp_line(line: &str) -> Option<FtpFileEntry> {
         return None;
     }
     let perms = parts[0];
-    if perms.len() < 9 || !perms.chars().next().map_or(false, |c| "d-lcbsp".contains(c)) {
+    if perms.len() < 9 || !perms.chars().next().is_some_and(|c| "d-lcbsp".contains(c)) {
         return None;
     }
     let is_dir = perms.starts_with('d');
@@ -183,6 +183,7 @@ pub async fn sftp_list_dir(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn sftp_download_file(
     host: String,
     port: u16,
@@ -215,6 +216,7 @@ pub async fn sftp_download_file(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn sftp_upload_file(
     host: String,
     port: u16,

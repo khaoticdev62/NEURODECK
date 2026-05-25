@@ -143,15 +143,10 @@ async fn run_peer_io(
     });
 
     // Inbound: relay each received line to the frontend as a `canvas_sync` event
-    loop {
-        match lines.next_line().await {
-            Ok(Some(line)) => {
-                let _ = app.emit("canvas_sync", line.clone());
-                if let Some(relay) = &inbound_relay {
-                    let _ = relay.send(line).await;
-                }
-            }
-            _ => break,
+    while let Ok(Some(line)) = lines.next_line().await {
+        let _ = app.emit("canvas_sync", line.clone());
+        if let Some(relay) = &inbound_relay {
+            let _ = relay.send(line).await;
         }
     }
 

@@ -2,7 +2,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use serde::Serialize;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -132,7 +132,7 @@ fn capture_screenshot_bytes() -> Result<Vec<u8>, String> {
     result
 }
 
-fn capture_screenshot_to_path(path: &PathBuf) -> Result<(), String> {
+fn capture_screenshot_to_path(path: &Path) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let script = r#"
@@ -426,11 +426,11 @@ fn temp_png_path(prefix: &str) -> PathBuf {
     ))
 }
 
-fn path_string(path: &PathBuf) -> String {
+fn path_string(path: &Path) -> String {
     path.to_string_lossy().to_string()
 }
 
-fn ensure_file_exists(path: &PathBuf, label: &str) -> Result<(), String> {
+fn ensure_file_exists(path: &Path, label: &str) -> Result<(), String> {
     if path.exists() {
         Ok(())
     } else {

@@ -400,7 +400,7 @@ pub(crate) fn get_game_details(app_id: &str, name: &str) -> (String, String) {
             if name.is_empty() {
                 ("Unknown Game".to_string(), "No specific Steam Deck settings profile found. Use default Proton settings.".to_string())
             } else {
-                (name.to_string(), format!("Steam Deck settings recommendations: Match resolution to 1280x800, use FSR if framerate drops below 30, and run with Proton Experimental if startup issues occur."))
+                (name.to_string(), "Steam Deck settings recommendations: Match resolution to 1280x800, use FSR if framerate drops below 30, and run with Proton Experimental if startup issues occur.".to_string())
             }
         }
     }
@@ -420,8 +420,8 @@ pub(crate) fn get_game_details(app_id: &str, name: &str) -> (String, String) {
 
 
 
-/// Transcribe `record.wav` (the last recorded audio) using whisper.cpp.
-/// Falls back gracefully with an error if not configured.
+// Transcribe `record.wav` (the last recorded audio) using whisper.cpp.
+// Falls back gracefully with an error if not configured.
 
 
 
@@ -469,11 +469,11 @@ pub(crate) fn get_game_details(app_id: &str, name: &str) -> (String, String) {
 
 
 
-/// Call the LLM with the agent system prompt, collect the full response, and
-/// return the raw text. The frontend parses the JSON step from the text.
+// Call the LLM with the agent system prompt, collect the full response, and
+// return the raw text. The frontend parses the JSON step from the text.
 
-/// Execute agent-generated code in a sandboxed subprocess with a 30-second
-/// timeout. Returns stdout + stderr combined.
+// Execute agent-generated code in a sandboxed subprocess with a 30-second
+// timeout. Returns stdout + stderr combined.
 
 pub(crate) fn get_home_dir() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
@@ -650,7 +650,7 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 // CATEGORY B COMMANDS
 // ============================================================
 
-/// Explains a generated prompt in Just Plain English (JPE).
+// Explains a generated prompt in Just Plain English (JPE).
 
 
 
@@ -660,14 +660,14 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 
 
-/// AI-powered terminal autocomplete.
-/// Takes the current terminal input buffer and returns suggested completion suffix.
+// AI-powered terminal autocomplete.
+// Takes the current terminal input buffer and returns suggested completion suffix.
 
-/// Read the most recent screenshot from Steam or system Pictures directories.
-/// Returns a map with keys: `path`, `data` (base64), `mime`.
+// Read the most recent screenshot from Steam or system Pictures directories.
+// Returns a map with keys: `path`, `data` (base64), `mime`.
 
-/// AI-powered shell history search.
-/// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
+// AI-powered shell history search.
+// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
 
 // ──────────────────────────────────────────────────────────────────────────
 // P18: Local Document RAG
@@ -697,32 +697,32 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 // §4 Production — Profile & Theme Persistence
 // ──────────────────────────────────────────────
 
-/// Persist a profile list to `./data/profiles/<key>.json`.
-/// `key` must be one of: "ssh", "ftp", "sftp"
+// Persist a profile list to `./data/profiles/<key>.json`.
+// `key` must be one of: "ssh", "ftp", "sftp"
 
-/// Load a profile list from `./data/profiles/<key>.json`.
-/// Returns `"[]"` if the file does not exist.
+// Load a profile list from `./data/profiles/<key>.json`.
+// Returns `"[]"` if the file does not exist.
 
-/// Persist custom themes to `./data/themes/custom.json`.
+// Persist custom themes to `./data/themes/custom.json`.
 
-/// Load custom themes from disk. Returns `"[]"` if not found.
+// Load custom themes from disk. Returns `"[]"` if not found.
 
-/// Return this machine's primary LAN IP address (best-effort).
+// Return this machine's primary LAN IP address (best-effort).
 
 // ──────────────────────────────────────────────
 // P19 — Live Canvas Collaboration
 // ──────────────────────────────────────────────
 
-/// Start the host collab session. Returns the actual bound port.
+// Start the host collab session. Returns the actual bound port.
 
-/// Connect to a host's collab session. `addr` = "IP:port", e.g. "192.168.1.5:13338".
+// Connect to a host's collab session. `addr` = "IP:port", e.g. "192.168.1.5:13338".
 
-/// Broadcast the current canvas state to the connected peer.
-
-
+// Broadcast the current canvas state to the connected peer.
 
 
-/// Stop the active collab session.
+
+
+// Stop the active collab session.
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

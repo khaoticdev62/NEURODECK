@@ -129,10 +129,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
 
         let _ = self.app_handle.emit("transfer_incoming", transfer);
         
-        match accept_rx.await {
-            Ok(val) => val,
-            Err(_) => false,
-        }
+        (accept_rx.await).unwrap_or_default()
     }
 
     async fn on_chunk_received(
@@ -315,8 +312,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
 
                     if peer_group == local_group {
                         let ip = info.get_addresses().iter()
-                            .filter(|ip| ip.is_ipv4())
-                            .next()
+                            .find(|ip| ip.is_ipv4())
                             .map(|ip| ip.to_string())
                             .unwrap_or_else(|| {
                                 info.get_addresses().iter()
@@ -417,8 +413,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
 
                     if peer_group.to_lowercase() == local_group.to_lowercase() {
                         let ip = info.get_addresses().iter()
-                            .filter(|ip| ip.is_ipv4())
-                            .next()
+                            .find(|ip| ip.is_ipv4())
                             .map(|ip| ip.to_string())
                             .unwrap_or_else(|| {
                                 info.get_addresses().iter()
@@ -575,10 +570,7 @@ async fn handle_incoming_connection(
     
     let _ = app_handle.emit("transfer_incoming", transfer.clone());
     
-    let accepted = match accept_rx.await {
-        Ok(val) => val,
-        Err(_) => false,
-    };
+    let accepted: bool = (accept_rx.await).unwrap_or_default();
     
     if !accepted {
         let resp = ResponseHeader { status: "rejected".to_string() };
@@ -655,7 +647,7 @@ async fn handle_incoming_connection(
             break;
         }
         
-        if let Err(_) = file.write_all(&buffer[..n]).await {
+        if (file.write_all(&buffer[..n]).await).is_err() {
             transfer_success = false;
             break;
         }
@@ -739,6 +731,7 @@ async fn handle_incoming_connection(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_outgoing_transfer(
     transfer_id: String,
     peer_ip: String,
@@ -837,7 +830,7 @@ async fn run_outgoing_transfer(
             break;
         }
         
-        if let Err(_) = tx.write_all(&buffer[..n]).await {
+        if (tx.write_all(&buffer[..n]).await).is_err() {
             transfer_success = false;
             break;
         }
@@ -1051,16 +1044,14 @@ pub fn cancel_transfer(
             t.status = "Cancelled".to_string();
         }
         Ok(())
-    } else {
-        if let Some(tx) = s.accept_txs.remove(&transfer_id) {
-            let _ = tx.send(false);
-            if let Some(t) = s.transfers.get_mut(&transfer_id) {
-                t.status = "Cancelled".to_string();
-            }
-            Ok(())
-        } else {
-            Err("No active or pending transfer found to cancel".to_string())
+    } else if let Some(tx) = s.accept_txs.remove(&transfer_id) {
+        let _ = tx.send(false);
+        if let Some(t) = s.transfers.get_mut(&transfer_id) {
+            t.status = "Cancelled".to_string();
         }
+        Ok(())
+    } else {
+        Err("No active or pending transfer found to cancel".to_string())
     }
 }
 

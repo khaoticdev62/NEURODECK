@@ -325,7 +325,7 @@ async fn run_grpc_incoming_transfer(
             &chunk.relative_path,
             chunk.file_type,
             &chunk.chunk,
-        ).await.map_err(|e| std::io::Error::other(e))?;
+        ).await.map_err(std::io::Error::other)?;
 
         received_bytes += chunk.chunk.len() as u64;
         callbacks.on_transfer_progress(transfer_id, received_bytes);
