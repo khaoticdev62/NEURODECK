@@ -347,3 +347,19 @@ test("canvas toolbar exposes shared icon actions", async ({ page }) => {
   await expect(page.locator("#canvas-ai-edit-btn .nd-icon-svg")).toBeVisible();
   await expect(page.locator("#canvas-collab-btn .nd-icon-svg")).toBeVisible();
 });
+
+test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
+  await page.setViewportSize({ width: 920, height: 720 });
+  await page.reload();
+  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  await page.locator('.nav-tab[data-view="canvas"]').click();
+  await expect(page.locator("#view-canvas")).toHaveClass(/active/);
+
+  const metrics = await page.locator(".canvas-toolbar").evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+    clientHeight: el.clientHeight,
+  }));
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2);
+  expect(metrics.clientHeight).toBeGreaterThan(46);
+});

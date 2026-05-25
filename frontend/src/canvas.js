@@ -224,8 +224,22 @@ function closeAiEditModal() {
 }
 
 function createFallbackEditor(container, initialCode) {
-    container.innerHTML = `<textarea id="canvas-editor-fallback" style="width:100%;height:100%;background:#060a0e;color:#c9d1d9;font-family:monospace;font-size:13px;border:none;outline:none;padding:14px;box-sizing:border-box;resize:none;">${initialCode}</textarea>`;
-    const textarea = container.querySelector('#canvas-editor-fallback');
+    container.replaceChildren();
+    const textarea = document.createElement('textarea');
+    textarea.id = 'canvas-editor-fallback';
+    textarea.style.width = '100%';
+    textarea.style.height = '100%';
+    textarea.style.background = '#060a0e';
+    textarea.style.color = '#c9d1d9';
+    textarea.style.fontFamily = 'monospace';
+    textarea.style.fontSize = '13px';
+    textarea.style.border = 'none';
+    textarea.style.outline = 'none';
+    textarea.style.padding = '14px';
+    textarea.style.boxSizing = 'border-box';
+    textarea.style.resize = 'none';
+    textarea.value = initialCode;
+    container.appendChild(textarea);
     if (!textarea) {
         return null;
     }
@@ -294,6 +308,24 @@ function createFallbackEditor(container, initialCode) {
             textarea.focus();
         }
     };
+}
+
+function setCanvasStatusLine(statusLine, message = '', tone = 'neutral') {
+    if (!statusLine) return;
+    if (!message) {
+        statusLine.replaceChildren();
+        return;
+    }
+    const span = document.createElement('span');
+    if (tone === 'error') {
+        span.style.color = 'var(--error-color)';
+    } else if (tone === 'warning') {
+        span.style.color = 'var(--warning-color)';
+    } else if (tone === 'muted') {
+        span.style.opacity = '0.6';
+    }
+    span.textContent = message;
+    statusLine.replaceChildren(span);
 }
 
 function initMonacoEditor(initialLang, initialCode) {
@@ -833,7 +865,7 @@ function initCanvasCollab() {
                 addNotification("Collab Disconnected", "The peer has left the session.", "info");
             }
         } else if (msg.startsWith('error:')) {
-            if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">${msg}</span>`;
+            setCanvasStatusLine(statusLine, msg, 'error');
         }
     }).catch(() => {});
 
@@ -887,7 +919,7 @@ function initCanvasCollab() {
         hostStartBtn.addEventListener("click", async () => {
             const port = parseInt(portInput?.value || '13338', 10);
             hostStartBtn.disabled = true;
-            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Binding port ${port}...</span>`;
+            setCanvasStatusLine(statusLine, `Binding port ${port}...`, 'muted');
             try {
                 const boundPort = await invoke("canvas_collab_host", { port });
                 if (hostWaiting) hostWaiting.style.display = '';
@@ -895,10 +927,10 @@ function initCanvasCollab() {
                 const address = `${lanIp}:${boundPort}`;
                 if (hostAddr) hostAddr.innerText = address;
                 updateInvitePayload(address);
-                if (statusLine) statusLine.innerHTML = '';
+                setCanvasStatusLine(statusLine);
                 refreshCollabStatus();
             } catch (err) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+                setCanvasStatusLine(statusLine, `Error: ${String(err)}`, 'error');
                 hostStartBtn.disabled = false;
             }
         });
@@ -909,17 +941,17 @@ function initCanvasCollab() {
         joinStartBtn.addEventListener("click", async () => {
             const addr = addrInput?.value.trim() || '';
             if (!addr) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--warning-color);">Enter the host address first.</span>`;
+                setCanvasStatusLine(statusLine, 'Enter the host address first.', 'warning');
                 return;
             }
             joinStartBtn.disabled = true;
-            if (statusLine) statusLine.innerHTML = `<span style="opacity: 0.6;">Connecting to ${addr}...</span>`;
+            setCanvasStatusLine(statusLine, `Connecting to ${addr}...`, 'muted');
             try {
                 await invoke("canvas_collab_join", { addr });
                 setPeerConnected(addr);
                 updateInvitePayload(addr);
             } catch (err) {
-                if (statusLine) statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+                setCanvasStatusLine(statusLine, `Error: ${String(err)}`, 'error');
                 joinStartBtn.disabled = false;
             }
         });
