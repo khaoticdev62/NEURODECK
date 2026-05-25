@@ -31,6 +31,15 @@ src-tauri/data/logs/
 .playwright-mcp/
 .serena/
 
+# --- Python / UV ---
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+dist/
+*.egg-info/
+
 # --- OS junk ---
 .DS_Store
 Thumbs.db

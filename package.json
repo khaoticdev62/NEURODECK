@@ -1,13 +1,35 @@
 {
-  "name": "s-term-root",
-  "version": "0.1.0",
+  "name": "neurodeck",
+  "version": "1.2.1",
+  "description": "AI-native terminal OS for Steam Deck — Tauri v2 + Rust + Gemini",
   "private": true,
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "tauri build"
+    "build": "tauri build",
+    "tauri": "tauri",
+
+    "frontend:dev": "npm -w frontend run dev",
+    "frontend:build": "npm -w frontend run build",
+    "frontend:preview": "npm -w frontend run preview",
+    "frontend:typecheck": "npm -w frontend run typecheck",
+
+    "rust:check": "cargo check",
+    "rust:clippy": "cargo clippy",
+    "rust:build": "cargo build",
+    "rust:test": "cargo test",
+
+    "assets": "python assets/brand/generate_assets.py",
+
+    "setup": "npm install && echo \"\\nAll JS/Node deps installed. Next: uv sync (Python tooling) — then set GEMINI_API_KEY and run: npm run dev\""
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
