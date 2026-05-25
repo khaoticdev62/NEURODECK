@@ -115,6 +115,8 @@ derive_workspace_state() {
 # These are project manifests and tracked source files.
 # ---------------------------------------------------------------------------
 PRESERVE=(
+  ".gitignore"
+  ".gitattributes"
   "README.md"
   "CLAUDE.md"
   "ROADMAP.md"

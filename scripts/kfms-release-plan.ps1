@@ -12,6 +12,8 @@ $script:PlanPath = Join-Path $script:Root "docs/IMPLEMENTATION_PLAN.md"
 $script:LogsDir = Join-Path $script:Root ".loose/inbox/kfms-release-logs"
 
 $preserveFiles = @(
+    ".gitignore",
+    ".gitattributes",
     "README.md",
     "CLAUDE.md",
     "ROADMAP.md",
@@ -27,6 +29,8 @@ $preserveFiles = @(
     "package_release.ps1",
     "epics.md",
     "gemini.md",
+    "pyproject.toml",
+    "uv.lock",
     "SteamOS_LLM_Terminal_PRD_SDS.md",
     "SteamOS_LLM_Terminal_PRD_SDS.pdf"
 )
