@@ -420,6 +420,7 @@ document.querySelector('#app').innerHTML = `
                     <!-- Session Context Header -->
                     <div class="chat-session-header" id="chat-session-header">
                         <div class="chat-session-header-left">
+                            <span class="chat-session-kicker">Conversation Core</span>
                             <span class="chat-session-status-dot" id="chat-status-dot"></span>
                             <span class="chat-session-name" id="chat-session-name">New Session</span>
                         </div>
@@ -1106,6 +1107,7 @@ document.querySelector('#app').innerHTML = `
                         <div class="prompt-lab-form">
                             <div class="prompt-lab-header">
                                 <div class="pl-header-title">
+                                    <span class="pl-header-kicker">Prompt Studio</span>
                                     <span class="pl-header-icon">⚗️</span>
                                     <h3>Prompt Lab</h3>
                                 </div>
@@ -1257,7 +1259,14 @@ document.querySelector('#app').innerHTML = `
                 <div class="view-content" id="view-memory">
                     <div class="memory-shell">
                         <div class="memory-toolbar">
-                            <input type="text" id="memory-search-input" class="memory-search-input" placeholder="🔍  Search memory records…">
+                            <div class="memory-toolbar-title">
+                                <span class="memory-kicker">Long-Term Context</span>
+                                <span class="memory-title">Memory Ledger</span>
+                            </div>
+                            <div class="memory-search-shell">
+                                <span class="memory-search-icon">${createIcon('search', { size: 14 })}</span>
+                                <input type="text" id="memory-search-input" class="memory-search-input" placeholder="Search memory records…">
+                            </div>
                             <div class="memory-filter-tabs">
                                 <button class="memory-filter-btn active" data-filter="all">All</button>
                                 <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>

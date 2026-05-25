@@ -263,3 +263,18 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
     expect(metrics.left).toBeGreaterThanOrEqual(0);
   }
 });
+
+test("chat, memory, and prompt lab expose the refined shell hierarchy", async ({ page }) => {
+  await page.locator('.nav-tab[data-view="chat"]').click();
+  await expect(page.locator("#view-chat")).toHaveClass(/active/);
+  await expect(page.locator(".chat-session-kicker")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="memory"]').click();
+  await expect(page.locator("#view-memory")).toHaveClass(/active/);
+  await expect(page.locator(".memory-kicker")).toBeVisible();
+  await expect(page.locator(".memory-search-shell")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="prompt-lab"]').click();
+  await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
+  await expect(page.locator(".pl-header-kicker")).toBeVisible();
+});
