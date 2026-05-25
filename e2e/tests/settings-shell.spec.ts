@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    localStorage.setItem("neurodeck_onboarding_complete", "true");
     const noop = async () => {};
     const listeners = new Map();
     const defaultConfig = {
@@ -95,20 +96,22 @@ test.beforeEach(async ({ page }) => {
   });
 
   await page.goto("/");
+  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
 });
 
 test("settings shell opens, switches themed tabs, and closes", async ({ page }) => {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.locator("#settings-btn").click();
 
   const modal = page.locator("#settings-overlay .settings-modal-card");
+  const settingsOverlay = page.locator("#settings-overlay");
   await expect(modal).toBeVisible();
   await expect(modal).toHaveAttribute("data-settings-theme", "general");
 
-  await page.getByRole("button", { name: "Appearance" }).click();
+  await settingsOverlay.getByRole("button", { name: "Appearance" }).click();
   await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
   await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
 
-  await page.getByRole("button", { name: "Terminal" }).click();
+  await settingsOverlay.getByRole("button", { name: "Terminal" }).click();
   await expect(modal).toHaveAttribute("data-settings-theme", "terminal");
   await expect(page.locator("#sp-terminal")).toHaveClass(/active/);
 
@@ -119,7 +122,7 @@ test("settings shell opens, switches themed tabs, and closes", async ({ page }) 
 test("stale settings tab state falls back to General", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("settingsActivePanel", "sp-does-not-exist"));
   await page.reload();
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.locator("#settings-btn").click();
 
   const modal = page.locator("#settings-overlay .settings-modal-card");
   await expect(modal).toHaveAttribute("data-settings-theme", "general");
