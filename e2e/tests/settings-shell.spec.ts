@@ -292,3 +292,17 @@ test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ p
   await expect(page.locator("#view-tunnel")).toHaveClass(/active/);
   await expect(page.locator(".tunnel-kicker").first()).toBeVisible();
 });
+
+test("ssh and share transfer surfaces expose the refined shell hierarchy", async ({ page }) => {
+  await page.locator('.nav-tab[data-view="ssh"]').click();
+  await expect(page.locator("#view-ssh")).toHaveClass(/active/);
+  await expect(page.locator(".ssh-kicker")).toBeVisible();
+
+  await page.locator('.nav-tab[data-view="share"]').click();
+  await expect(page.locator("#view-share")).toHaveClass(/active/);
+  await expect(page.locator(".share-view-kicker")).toBeVisible();
+
+  await page.locator('.share-inner-tab[data-panel="torrent"]').click();
+  await expect(page.locator("#share-panel-torrent")).toHaveClass(/active/);
+  await expect(page.locator(".torrent-kicker")).toBeVisible();
+});

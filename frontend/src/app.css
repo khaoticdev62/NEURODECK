@@ -4602,6 +4602,24 @@ body.crt-flicker-disabled .crt-flicker {
     border-bottom: 1px solid rgba(var(--accent-rgb), 0.1);
     background: rgba(4, 8, 14, 0.5);
     flex-shrink: 0;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.share-view-kicker,
+.torrent-kicker,
+.ssh-kicker {
+    display: inline-flex;
+    width: fit-content;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.18);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.72);
 }
 
 .share-view-title {
@@ -4791,6 +4809,10 @@ body.crt-flicker-disabled .crt-flicker {
 .torrent-inspector-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-top: 12px;
+}
+
+.torrent-kicker {
+    margin-bottom: 10px;
 }
 
 .torrent-list {
@@ -6753,14 +6775,38 @@ body.crt-flicker-disabled .crt-flicker {
     overflow: hidden;
 }
 
+.ssh-shell {
+    width: min(100%, 1240px);
+    height: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+
+.ssh-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(var(--response-rgb), 0.08), transparent 24%);
+    opacity: 0.82;
+}
+
 .ssh-sidebar {
     background: rgba(6, 9, 12, 0.95);
-    border-right: 1px solid var(--border-color);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-right: none;
+    border-radius: 18px 0 0 18px;
     padding: 16px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+.ssh-kicker {
+    margin-bottom: 8px;
 }
 
 .ssh-panel-header {
@@ -6785,10 +6831,13 @@ body.crt-flicker-disabled .crt-flicker {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0 18px 18px 0;
+    background: rgba(8, 11, 18, 0.74);
 }
 
 .ssh-status-bar {
-    height: 36px;
+    min-height: 44px;
     background: rgba(6, 9, 12, 0.95);
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -6797,6 +6846,7 @@ body.crt-flicker-disabled .crt-flicker {
     gap: 8px;
     font-size: 0.8rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .ssh-status-dot {
@@ -6912,6 +6962,7 @@ body.crt-flicker-disabled .crt-flicker {
     border-bottom: 1px solid rgba(var(--accent-rgb), 0.1);
     background: rgba(4, 8, 14, 0.5);
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .share-inner-tab {
@@ -7068,6 +7119,19 @@ body.crt-flicker-disabled .crt-flicker {
     color: rgba(255, 255, 255, 0.3);
     font-size: 0.85rem;
     font-style: italic;
+}
+
+@media (max-width: 980px) {
+    .ssh-layout,
+    .ftp-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .ssh-sidebar,
+    .ssh-terminal-area {
+        border-radius: 18px;
+    }
 }
 
 /* Toast Notifications styling */

@@ -569,8 +569,10 @@ document.querySelector('#app').innerHTML = `
 
                 <!-- SSH Client View -->
                 <div class="view-content" id="view-ssh">
+                    <div class="ssh-shell">
                     <div class="ssh-layout">
                         <div class="ssh-sidebar">
+                            <span class="ssh-kicker">Secure Link</span>
                             <div class="ssh-panel-header">SSH Connection</div>
                             <div class="setting-field-group">
                                 <label>Host / IP</label>
@@ -618,6 +620,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             <div id="ssh-terminal-container"></div>
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -672,6 +675,7 @@ document.querySelector('#app').innerHTML = `
                 <!-- LAN File Sharing / SFTP / FTP View -->
                 <div class="view-content" id="view-share">
                     <div class="share-view-header">
+                        <span class="share-view-kicker">Transfer Mesh</span>
                         <span class="share-view-title">📤 Share &amp; Transfer</span>
                         <span class="share-view-subtitle">LAN · SFTP · FTP · BT</span>
                     </div>
@@ -724,6 +728,7 @@ document.querySelector('#app').innerHTML = `
                     <div class="share-panel-section" id="share-panel-torrent">
                         <div class="share-grid torrent-grid">
                             <div class="share-panel torrent-control-panel">
+                                <span class="torrent-kicker">Managed Swarm</span>
                                 <h3>Secure Torrent Client</h3>
                                 <p class="share-desc">Accepts magnet links or validated local .torrent files. Downloads stay inside the app-managed torrent root and start paused by default.</p>
                                 <div class="setting-field-group">
