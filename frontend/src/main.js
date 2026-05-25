@@ -732,6 +732,12 @@ document.querySelector('#app').innerHTML = `
                                     <input type="text" id="ftp-remote-dest-input" class="tunnel-text-input" placeholder="/uploads/file.txt" style="width:100%;box-sizing:border-box;">
                                 </div>
                                 <button class="canvas-btn" id="ftp-upload-btn" style="width:100%;margin-top:8px;">⬆ Upload</button>
+                                <div id="ftp-upload-progress-wrap" style="display:none;margin-top:6px;">
+                                    <div style="background:#2a2a2a;border-radius:3px;height:5px;overflow:hidden;">
+                                        <div id="ftp-upload-progress-fill" style="background:var(--accent,#7c3aed);height:5px;width:0%;transition:width 0.15s linear;"></div>
+                                    </div>
+                                    <div id="ftp-upload-progress-label" style="font-size:10px;color:#888;margin-top:3px;text-align:right;"></div>
+                                </div>
                             </div>
                             <div class="ftp-browser">
                                 <div class="ftp-browser-header">

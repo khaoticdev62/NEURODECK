@@ -1340,20 +1340,46 @@ function initFtpClientListeners() {
             return;
         }
         setFtpStatus("Uploading...");
+        const progressWrap = document.getElementById("ftp-upload-progress-wrap");
+        const progressFill = document.getElementById("ftp-upload-progress-fill");
+        const progressLabel = document.getElementById("ftp-upload-progress-label");
+        if (progressWrap) { progressWrap.style.display = "block"; }
+        if (progressFill) { progressFill.style.width = "0%"; }
+        if (progressLabel) { progressLabel.textContent = ""; }
+
         invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
             .then(() => {
                 setFtpStatus("Upload complete.");
+                if (progressFill) progressFill.style.width = "100%";
+                if (progressLabel) progressLabel.textContent = "Done";
+                setTimeout(() => {
+                    if (progressWrap) progressWrap.style.display = "none";
+                }, 2000);
                 if (typeof addNotification === "function") {
-                    addNotification("FTP Upload Complete", `Uploaded file to: ${remotePath}`, "success");
+                    addNotification("FTP Upload Complete", `Uploaded to: ${remotePath}`, "success");
                 }
                 loadFtpDir(state.ftpCurrentPath);
             })
             .catch(err => {
                 setFtpStatus(`Upload error: ${err}`);
+                if (progressWrap) progressWrap.style.display = "none";
                 if (typeof addNotification === "function") {
-                    addNotification("FTP Upload Failed", `Failed to upload file: ${err}`, "error");
+                    addNotification("FTP Upload Failed", `Failed: ${err}`, "error");
                 }
             });
+    });
+
+    listen("ftp_upload_progress", (event) => {
+        const { bytes_sent, total_bytes } = event.payload;
+        const pct = total_bytes > 0 ? Math.round((bytes_sent / total_bytes) * 100) : 0;
+        const progressFill = document.getElementById("ftp-upload-progress-fill");
+        const progressLabel = document.getElementById("ftp-upload-progress-label");
+        if (progressFill) progressFill.style.width = `${pct}%`;
+        if (progressLabel) {
+            const mb = (bytes_sent / 1048576).toFixed(1);
+            const total = (total_bytes / 1048576).toFixed(1);
+            progressLabel.textContent = `${mb} / ${total} MB (${pct}%)`;
+        }
     });
 }
 
