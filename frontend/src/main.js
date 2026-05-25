@@ -1481,16 +1481,16 @@ document.querySelector('#app').innerHTML = `
                         <div class="stv-sidebar-brand-title">NEURODECK</div>
                         <div class="stv-sidebar-brand-sub">SYSTEM PREFERENCES</div>
                     </div>
-                    <button class="stv-nav-item active" data-panel="sp-general"><span class="stv-nav-icon">⚡</span> General</button>
-                    <button class="stv-nav-item" data-panel="sp-ai"><span class="stv-nav-icon">🤖</span> AI Model</button>
-                    <button class="stv-nav-item" data-panel="sp-appearance"><span class="stv-nav-icon">🎨</span> Appearance</button>
-                    <button class="stv-nav-item" data-panel="sp-terminal"><span class="stv-nav-icon">⌨️</span> Terminal</button>
-                    <button class="stv-nav-item" data-panel="sp-extensions"><span class="stv-nav-icon">🧩</span> Extensions</button>
-                    <button class="stv-nav-item" data-panel="sp-memory"><span class="stv-nav-icon">🧠</span> Memory</button>
-                    <button class="stv-nav-item" data-panel="sp-network"><span class="stv-nav-icon">🌐</span> Network</button>
-                    <button class="stv-nav-item" data-panel="sp-computer"><span class="stv-nav-icon">🖥️</span> Computer</button>
-                    <button class="stv-nav-item" data-panel="sp-sync"><span class="stv-nav-icon">⇄</span> Sync</button>
-                    <button class="stv-nav-item" data-panel="sp-voice"><span class="stv-nav-icon">🎙️</span> Voice</button>
+                    <button class="stv-nav-item active" data-panel="sp-general" data-settings-theme="general"><span class="stv-nav-icon">${createIcon('settings2', { size: 15 })}</span> General</button>
+                    <button class="stv-nav-item" data-panel="sp-ai" data-settings-theme="ai"><span class="stv-nav-icon">${createIcon('bot', { size: 15 })}</span> AI Model</button>
+                    <button class="stv-nav-item" data-panel="sp-appearance" data-settings-theme="appearance"><span class="stv-nav-icon">${createIcon('sparkles', { size: 15 })}</span> Appearance</button>
+                    <button class="stv-nav-item" data-panel="sp-terminal" data-settings-theme="terminal"><span class="stv-nav-icon">${createIcon('squareTerminal', { size: 15 })}</span> Terminal</button>
+                    <button class="stv-nav-item" data-panel="sp-extensions" data-settings-theme="extensions"><span class="stv-nav-icon">${createIcon('code2', { size: 15 })}</span> Extensions</button>
+                    <button class="stv-nav-item" data-panel="sp-memory" data-settings-theme="memory"><span class="stv-nav-icon">${createIcon('brain', { size: 15 })}</span> Memory</button>
+                    <button class="stv-nav-item" data-panel="sp-network" data-settings-theme="network"><span class="stv-nav-icon">${createIcon('globe', { size: 15 })}</span> Network</button>
+                    <button class="stv-nav-item" data-panel="sp-computer" data-settings-theme="computer"><span class="stv-nav-icon">${createIcon('camera', { size: 15 })}</span> Computer</button>
+                    <button class="stv-nav-item" data-panel="sp-sync" data-settings-theme="sync"><span class="stv-nav-icon">${createIcon('share2', { size: 15 })}</span> Sync</button>
+                    <button class="stv-nav-item" data-panel="sp-voice" data-settings-theme="voice"><span class="stv-nav-icon">${createIcon('mic', { size: 15 })}</span> Voice</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
 
@@ -1498,7 +1498,7 @@ document.querySelector('#app').innerHTML = `
                 <div class="stv-content-area">
 
                     <!-- ░ General ░ -->
-                    <div class="settings-panel active" id="sp-general">
+                    <div class="settings-panel active settings-panel--general" id="sp-general" data-settings-theme="general">
                         <p class="stv-section-title">General</p>
                         <p class="stv-section-sub">Persona, theme, font, and display preferences.</p>
 
@@ -1546,7 +1546,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ AI Model ░ -->
-                    <div class="settings-panel" id="sp-ai">
+                    <div class="settings-panel settings-panel--ai" id="sp-ai" data-settings-theme="ai">
                         <p class="stv-section-title">AI Model</p>
                         <p class="stv-section-sub">Configure your LLM provider, credentials, and local models.</p>
 
@@ -1611,7 +1611,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Appearance ░ -->
-                    <div class="settings-panel" id="sp-appearance">
+                    <div class="settings-panel settings-panel--appearance" id="sp-appearance" data-settings-theme="appearance">
                         <p class="stv-section-title">Appearance</p>
                         <p class="stv-section-sub">Background, custom themes, and visual tuning.</p>
 
@@ -1680,7 +1680,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Terminal ░ -->
-                    <div class="settings-panel" id="sp-terminal">
+                    <div class="settings-panel settings-panel--terminal" id="sp-terminal" data-settings-theme="terminal">
                         <p class="stv-section-title">Terminal</p>
                         <p class="stv-section-sub">Shell, display, and saved connection profiles.</p>
 
@@ -1738,7 +1738,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Extensions ░ -->
-                    <div class="settings-panel" id="sp-extensions">
+                    <div class="settings-panel settings-panel--extensions" id="sp-extensions" data-settings-theme="extensions">
                         <p class="stv-section-title">Extensions</p>
                         <p class="stv-section-sub">Lua plugins and the BMAD AI framework installer.</p>
 
@@ -1789,7 +1789,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Memory ░ -->
-                    <div class="settings-panel" id="sp-memory">
+                    <div class="settings-panel settings-panel--memory" id="sp-memory" data-settings-theme="memory">
                         <p class="stv-section-title">Memory</p>
                         <p class="stv-section-sub">RAG knowledge base and custom AI personas.</p>
 
@@ -1833,7 +1833,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Network ░ -->
-                    <div class="settings-panel" id="sp-network">
+                    <div class="settings-panel settings-panel--network" id="sp-network" data-settings-theme="network">
                         <p class="stv-section-title">Network</p>
                         <p class="stv-section-sub">MCP server and remote connection settings.</p>
 
@@ -1861,7 +1861,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Computer Use ░ -->
-                    <div class="settings-panel" id="sp-computer">
+                    <div class="settings-panel settings-panel--computer" id="sp-computer" data-settings-theme="computer">
                         <p class="stv-section-title">Computer Use</p>
                         <p class="stv-section-sub">Desktop screenshot, mouse, keyboard, and OCR controls for approved agent actions.</p>
 
@@ -1896,7 +1896,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Sync ░ -->
-                    <div class="settings-panel" id="sp-sync">
+                    <div class="settings-panel settings-panel--sync" id="sp-sync" data-settings-theme="sync">
                         <p class="stv-section-title">Cloud Sync</p>
                         <p class="stv-section-sub">Encrypted sync for memory records and chat sessions.</p>
 
@@ -1937,7 +1937,7 @@ document.querySelector('#app').innerHTML = `
                     </div>
 
                     <!-- ░ Voice ░ -->
-                    <div class="settings-panel" id="sp-voice">
+                    <div class="settings-panel settings-panel--voice" id="sp-voice" data-settings-theme="voice">
                         <p class="stv-section-title">Voice</p>
                         <p class="stv-section-sub">Offline speech-to-text via whisper.cpp.</p>
 

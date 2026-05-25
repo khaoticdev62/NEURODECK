@@ -302,22 +302,35 @@ function handleSaveLlmClick() {
 // Settings Modal Event Listeners registered in initSettings()
 
 // ── Apple TV sidebar nav ──────────────────────────────────────────────
+function activateSettingsPanel(panelId, themeName) {
+    const modalCard = document.querySelector("#settings-overlay .settings-modal-card");
+    document.querySelectorAll(".stv-nav-item").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".settings-panel").forEach((p) => p.classList.remove("active"));
+
+    const activeButton = document.querySelector(`.stv-nav-item[data-panel="${panelId}"]`);
+    const activePanel = document.getElementById(panelId);
+    if (activeButton) activeButton.classList.add("active");
+    if (activePanel) activePanel.classList.add("active");
+
+    const resolvedTheme = themeName || activeButton?.dataset.settingsTheme || activePanel?.dataset.settingsTheme || "general";
+    if (modalCard) {
+        modalCard.dataset.settingsTheme = resolvedTheme;
+    }
+    localStorage.setItem("settingsActivePanel", panelId);
+}
+
 function initSettingsSidebar() {
     document.querySelectorAll(".stv-nav-item").forEach(btn => {
         btn.onclick = () => {
-            document.querySelectorAll(".stv-nav-item").forEach(b => b.classList.remove("active"));
-            document.querySelectorAll(".settings-panel").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            const panel = document.getElementById(btn.dataset.panel);
-            if (panel) panel.classList.add("active");
+            activateSettingsPanel(btn.dataset.panel, btn.dataset.settingsTheme);
         };
     });
 }
 
 function openSettingsModal() {
     if (settingsOverlay) settingsOverlay.classList.add("active");
-    const defaultTab = document.querySelector(".stv-nav-item[data-panel='sp-general']");
-    if (defaultTab) defaultTab.click();
+    const lastPanel = localStorage.getItem("settingsActivePanel") || "sp-general";
+    activateSettingsPanel(lastPanel);
     
     // Clear status text
     const statusEl = document.getElementById("settings-llm-status");
@@ -1254,6 +1267,7 @@ export function initSettings() {
     }
     applySettings();
     initSettingsSidebar();
+    activateSettingsPanel(localStorage.getItem("settingsActivePanel") || "sp-general");
 
     // Focus the main input
     const userInput = document.getElementById("user-input");

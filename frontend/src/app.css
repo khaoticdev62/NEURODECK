@@ -1894,11 +1894,70 @@ body::before {
     border-radius: 0 3px 3px 0;
     box-shadow: 0 0 8px var(--accent-color);
 }
+.settings-modal-card[data-settings-theme="general"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 184, 77, 0.06) inset; }
+.settings-modal-card[data-settings-theme="ai"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(0, 240, 255, 0.08) inset; }
+.settings-modal-card[data-settings-theme="appearance"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 112, 214, 0.08) inset; }
+.settings-modal-card[data-settings-theme="terminal"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(122, 255, 158, 0.08) inset; }
+.settings-modal-card[data-settings-theme="extensions"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(167, 139, 250, 0.08) inset; }
+.settings-modal-card[data-settings-theme="memory"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 153, 92, 0.08) inset; }
+.settings-modal-card[data-settings-theme="network"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(77, 163, 255, 0.08) inset; }
+.settings-modal-card[data-settings-theme="computer"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 102, 148, 0.08) inset; }
+.settings-modal-card[data-settings-theme="sync"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(0, 219, 182, 0.08) inset; }
+.settings-modal-card[data-settings-theme="voice"] { box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255, 128, 74, 0.08) inset; }
+
+.settings-modal-card[data-settings-theme="general"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="general"] .stv-group-label,
+.settings-modal-card[data-settings-theme="general"] .stv-sidebar-brand-title { color: rgb(255, 199, 112); }
+.settings-modal-card[data-settings-theme="ai"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="ai"] .stv-group-label,
+.settings-modal-card[data-settings-theme="ai"] .stv-sidebar-brand-title { color: rgb(96, 233, 255); }
+.settings-modal-card[data-settings-theme="appearance"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="appearance"] .stv-group-label,
+.settings-modal-card[data-settings-theme="appearance"] .stv-sidebar-brand-title { color: rgb(255, 145, 221); }
+.settings-modal-card[data-settings-theme="terminal"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="terminal"] .stv-group-label,
+.settings-modal-card[data-settings-theme="terminal"] .stv-sidebar-brand-title { color: rgb(143, 255, 177); }
+.settings-modal-card[data-settings-theme="extensions"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="extensions"] .stv-group-label,
+.settings-modal-card[data-settings-theme="extensions"] .stv-sidebar-brand-title { color: rgb(191, 174, 255); }
+.settings-modal-card[data-settings-theme="memory"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="memory"] .stv-group-label,
+.settings-modal-card[data-settings-theme="memory"] .stv-sidebar-brand-title { color: rgb(255, 175, 125); }
+.settings-modal-card[data-settings-theme="network"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="network"] .stv-group-label,
+.settings-modal-card[data-settings-theme="network"] .stv-sidebar-brand-title { color: rgb(126, 188, 255); }
+.settings-modal-card[data-settings-theme="computer"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="computer"] .stv-group-label,
+.settings-modal-card[data-settings-theme="computer"] .stv-sidebar-brand-title { color: rgb(255, 136, 171); }
+.settings-modal-card[data-settings-theme="sync"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="sync"] .stv-group-label,
+.settings-modal-card[data-settings-theme="sync"] .stv-sidebar-brand-title { color: rgb(98, 233, 209); }
+.settings-modal-card[data-settings-theme="voice"] .stv-nav-item.active,
+.settings-modal-card[data-settings-theme="voice"] .stv-group-label,
+.settings-modal-card[data-settings-theme="voice"] .stv-sidebar-brand-title { color: rgb(255, 157, 116); }
+
+.settings-modal-card[data-settings-theme="general"] .stv-nav-item.active::before { background: rgb(255, 199, 112); box-shadow: 0 0 8px rgba(255, 199, 112, 0.8); }
+.settings-modal-card[data-settings-theme="ai"] .stv-nav-item.active::before { background: rgb(96, 233, 255); box-shadow: 0 0 8px rgba(96, 233, 255, 0.8); }
+.settings-modal-card[data-settings-theme="appearance"] .stv-nav-item.active::before { background: rgb(255, 145, 221); box-shadow: 0 0 8px rgba(255, 145, 221, 0.8); }
+.settings-modal-card[data-settings-theme="terminal"] .stv-nav-item.active::before { background: rgb(143, 255, 177); box-shadow: 0 0 8px rgba(143, 255, 177, 0.8); }
+.settings-modal-card[data-settings-theme="extensions"] .stv-nav-item.active::before { background: rgb(191, 174, 255); box-shadow: 0 0 8px rgba(191, 174, 255, 0.8); }
+.settings-modal-card[data-settings-theme="memory"] .stv-nav-item.active::before { background: rgb(255, 175, 125); box-shadow: 0 0 8px rgba(255, 175, 125, 0.8); }
+.settings-modal-card[data-settings-theme="network"] .stv-nav-item.active::before { background: rgb(126, 188, 255); box-shadow: 0 0 8px rgba(126, 188, 255, 0.8); }
+.settings-modal-card[data-settings-theme="computer"] .stv-nav-item.active::before { background: rgb(255, 136, 171); box-shadow: 0 0 8px rgba(255, 136, 171, 0.8); }
+.settings-modal-card[data-settings-theme="sync"] .stv-nav-item.active::before { background: rgb(98, 233, 209); box-shadow: 0 0 8px rgba(98, 233, 209, 0.8); }
+.settings-modal-card[data-settings-theme="voice"] .stv-nav-item.active::before { background: rgb(255, 157, 116); box-shadow: 0 0 8px rgba(255, 157, 116, 0.8); }
 .stv-nav-icon {
     font-size: 1rem;
     width: 20px;
     text-align: center;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.stv-nav-icon svg {
+    width: 15px;
+    height: 15px;
 }
 .stv-nav-spacer {
     flex: 1;
@@ -1933,6 +1992,7 @@ body::before {
 #sp-ai,
 #sp-appearance,
 #sp-terminal,
+#sp-extensions,
 #sp-memory,
 #sp-network,
 #sp-computer,
@@ -1942,7 +2002,51 @@ body::before {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     column-gap: 16px;
     align-content: start;
+    row-gap: 2px;
+    isolation: isolate;
+    --settings-panel-accent: 0, 240, 255;
 }
+
+.settings-panel::before,
+.settings-panel::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.settings-panel::before {
+    inset: 0;
+    background:
+        radial-gradient(circle at top right, rgba(var(--settings-panel-accent), 0.18), transparent 36%),
+        radial-gradient(circle at bottom left, rgba(var(--settings-panel-accent), 0.1), transparent 32%),
+        linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0));
+    opacity: 0.9;
+}
+
+.settings-panel::after {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 140px;
+    background: linear-gradient(180deg, rgba(6, 10, 15, 0.58), rgba(6, 10, 15, 0));
+}
+
+.settings-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
+.settings-panel--general { --settings-panel-accent: 255, 184, 77; }
+.settings-panel--ai { --settings-panel-accent: 0, 240, 255; }
+.settings-panel--appearance { --settings-panel-accent: 255, 112, 214; }
+.settings-panel--terminal { --settings-panel-accent: 122, 255, 158; }
+.settings-panel--extensions { --settings-panel-accent: 167, 139, 250; }
+.settings-panel--memory { --settings-panel-accent: 255, 153, 92; }
+.settings-panel--network { --settings-panel-accent: 77, 163, 255; }
+.settings-panel--computer { --settings-panel-accent: 255, 102, 148; }
+.settings-panel--sync { --settings-panel-accent: 0, 219, 182; }
+.settings-panel--voice { --settings-panel-accent: 255, 128, 74; }
 
 #sp-general > .stv-section-title,
 #sp-general > .stv-section-sub,
@@ -1960,6 +2064,10 @@ body::before {
 #sp-terminal > .stv-section-sub,
 #sp-terminal > .stv-group-label,
 #sp-terminal > .stv-card,
+#sp-extensions > .stv-section-title,
+#sp-extensions > .stv-section-sub,
+#sp-extensions > .stv-group-label,
+#sp-extensions > .stv-card,
 #sp-memory > .stv-section-title,
 #sp-memory > .stv-section-sub,
 #sp-memory > .stv-group-label,
@@ -1986,6 +2094,7 @@ body::before {
 #sp-general > .stv-card,
 #sp-ai > .stv-card,
 #sp-terminal > .stv-card,
+#sp-extensions > .stv-card,
 #sp-memory > .stv-card,
 #sp-network > .stv-card,
 #sp-computer > .stv-card,
@@ -2042,13 +2151,20 @@ body::before {
     opacity: 0.45;
     margin: 0 0 22px;
     line-height: 1.5;
+    max-width: 72ch;
 }
 .stv-group-label {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(var(--settings-panel-accent), 0.08);
+    border: 1px solid rgba(var(--settings-panel-accent), 0.14);
     font-size: 0.67rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--accent-color);
     opacity: 0.7;
     margin: 20px 0 8px;
 }
@@ -2056,13 +2172,24 @@ body::before {
 
 /* ── Glass cards ── */
 .stv-card {
-    background: rgba(255,255,255,0.028);
-    border: 1px solid rgba(255,255,255,0.07);
+    background:
+        linear-gradient(180deg, rgba(var(--settings-panel-accent), 0.045), rgba(255,255,255,0.016)),
+        rgba(255,255,255,0.028);
+    border: 1px solid rgba(var(--settings-panel-accent), 0.12);
     border-radius: 12px;
     padding: 16px 18px;
     margin-bottom: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 28px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
 }
 .stv-card + .stv-card { margin-top: 0; }
+.stv-card:hover {
+    border-color: rgba(var(--settings-panel-accent), 0.2);
+    background:
+        linear-gradient(180deg, rgba(var(--settings-panel-accent), 0.065), rgba(255,255,255,0.02)),
+        rgba(255,255,255,0.032);
+}
 
 /* ── Row layout inside cards ── */
 .stv-row {
@@ -2093,6 +2220,7 @@ body::before {
     #sp-general > .stv-card,
     #sp-ai > .stv-card,
     #sp-terminal > .stv-card,
+    #sp-extensions > .stv-card,
     #sp-memory > .stv-card,
     #sp-network > .stv-card,
     #sp-computer > .stv-card,
@@ -2223,8 +2351,13 @@ body::before {
     font-family: var(--font-mono);
     font-size: 0.73rem;
     min-height: 16px;
-    margin-top: 8px;
-    opacity: 0.8;
+    margin-top: 10px;
+    opacity: 0.82;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    line-height: 1.45;
 }
 
 /* ── Toggle switches ── */
