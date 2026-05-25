@@ -326,7 +326,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="nav-tab" data-view="agent">🤖 Agent</button>
                     <button class="nav-tab" data-view="memory">🧠 Memory</button>
                     <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
-                    <button class="nav-tab" data-view="remote">📱 Remote</button>
+                    <button class="nav-tab" data-view="remote">🖥️ Remote</button>
                     <button class="nav-tab" data-view="docs">📚 Docs</button>
                 </div>
             </nav>
@@ -1208,7 +1208,7 @@ document.querySelector('#app').innerHTML = `
                         <!-- Header -->
                         <div class="remote-header">
                             <div class="remote-header-left">
-                                <span class="remote-title">📱 Remote Control</span>
+                                <span class="remote-title">🖥️ Remote Control</span>
                                 <span class="remote-subtitle">Connect your iPhone via local Wi-Fi</span>
                             </div>
                             <div class="remote-header-right">
@@ -1228,7 +1228,7 @@ document.querySelector('#app').innerHTML = `
                                     <div class="remote-server-controls">
                                         <div class="remote-port-row">
                                             <label class="remote-field-label">Port</label>
-                                            <input type="number" id="remote-port-input" class="remote-port-input" value="9090" min="1024" max="65535">
+                                            <input type="number" id="remote-port-input" class="remote-port-input" value="9890" min="1024" max="65535">
                                         </div>
                                         <button class="remote-start-btn" id="remote-start-btn">▶ Start Server</button>
                                         <button class="remote-stop-btn" id="remote-stop-btn" style="display:none">■ Stop Server</button>
