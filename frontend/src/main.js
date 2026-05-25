@@ -308,6 +308,7 @@ document.querySelector('#app').innerHTML = `
                     </span>
                     <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">🔊</button>
                     <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">🔔<span class="notif-badge hidden" id="notif-badge">0</span></button>
+                    <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon('search', { size: 18 })}</button>
                     <button class="input-btn" id="settings-btn" title="Settings">⚙️</button>
                 </div>
             </header>
@@ -387,6 +388,29 @@ document.querySelector('#app').innerHTML = `
                         <div class="agent-form-status" id="new-agent-status"></div>
                         <button class="agent-save-btn" onclick="handleAddAgent()">Save Agent</button>
                     </div>
+                </div>
+            </div>
+
+            <div class="command-palette-overlay hidden" id="command-palette-overlay" aria-hidden="true">
+                <div class="command-palette-card" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
+                    <div class="command-palette-header">
+                        <div class="command-palette-search-shell">
+                            <span class="command-palette-search-icon">${createIcon('search', { size: 16 })}</span>
+                            <input
+                                id="command-palette-input"
+                                type="text"
+                                autocomplete="off"
+                                spellcheck="false"
+                                placeholder="Search commands, tabs, and settings…"
+                                aria-label="Command palette search"
+                            />
+                        </div>
+                        <button class="command-palette-close" id="command-palette-close" aria-label="Close command palette">✕</button>
+                    </div>
+                    <div class="command-palette-help" id="command-palette-title">
+                        Use Enter to run the highlighted action. Esc closes. Ctrl+K reopens the palette.
+                    </div>
+                    <div class="command-palette-list" id="command-palette-list"></div>
                 </div>
             </div>
 
@@ -4002,6 +4026,7 @@ invoke("get_initial_state").then((initialState) => {
     initTerminal();
     initCanvas();
     initNotificationCenter();
+    initCommandPalette();
     initGameContextPanel();
     initTunnelClient();
     initFileShare();
@@ -4072,6 +4097,236 @@ navTabs.forEach(tab => {
         }
     };
 });
+
+function activateViewByName(targetView) {
+    const tab = document.querySelector(`.nav-tab[data-view="${targetView}"]`);
+    if (tab) tab.click();
+}
+
+function openSettingsPanelById(panelId) {
+    const settingsBtn = document.getElementById("settings-btn");
+    if (settingsBtn) settingsBtn.click();
+    setTimeout(() => {
+        document.querySelector(`.stv-nav-item[data-panel="${panelId}"]`)?.click();
+    }, 0);
+}
+
+function clickFirstAvailableButton(...ids) {
+    for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.click();
+            return true;
+        }
+    }
+    return false;
+}
+
+const COMMAND_PALETTE_ACTIONS = [
+    { label: "Open Chat", group: "Views", icon: "messageSquare", keywords: ["chat", "messages", "conversation"], run: () => activateViewByName("chat") },
+    { label: "Open Canvas", group: "Views", icon: "sparkles", keywords: ["canvas", "draw", "visual"], run: () => activateViewByName("canvas") },
+    { label: "Open Terminal", group: "Views", icon: "squareTerminal", keywords: ["terminal", "shell", "console"], run: () => activateViewByName("terminal") },
+    { label: "Open SSH", group: "Views", icon: "server", keywords: ["ssh", "remote shell", "server"], run: () => activateViewByName("ssh") },
+    { label: "Open Tunnel", group: "Views", icon: "route", keywords: ["tunnel", "port forward", "forwarding"], run: () => activateViewByName("tunnel") },
+    { label: "Open Share", group: "Views", icon: "share2", keywords: ["share", "transfer", "sync"], run: () => activateViewByName("share") },
+    { label: "Open Browser", group: "Views", icon: "globe", keywords: ["browser", "web", "search"], run: () => activateViewByName("browser") },
+    { label: "Open Agent", group: "Views", icon: "bot", keywords: ["agent", "switch", "model"], run: () => activateViewByName("agent") },
+    { label: "Open Memory", group: "Views", icon: "brain", keywords: ["memory", "notes", "context"], run: () => activateViewByName("memory") },
+    { label: "Open Prompt Lab", group: "Views", icon: "sparkles", keywords: ["prompt", "prompt lab", "templates"], run: () => activateViewByName("prompt-lab") },
+    { label: "Open Remote", group: "Views", icon: "panelRightOpen", keywords: ["remote", "screen", "desktop"], run: () => activateViewByName("remote") },
+    { label: "Open Docs", group: "Views", icon: "fileText", keywords: ["docs", "documents", "search"], run: () => activateViewByName("docs") },
+    { label: "Settings: General", group: "Settings", icon: "settings2", keywords: ["settings", "general", "theme"], run: () => openSettingsPanelById("sp-general") },
+    { label: "Settings: AI Model", group: "Settings", icon: "bot", keywords: ["settings", "ai", "model", "provider"], run: () => openSettingsPanelById("sp-ai") },
+    { label: "Settings: Appearance", group: "Settings", icon: "sparkles", keywords: ["settings", "appearance", "theme", "font"], run: () => openSettingsPanelById("sp-appearance") },
+    { label: "Settings: Terminal", group: "Settings", icon: "squareTerminal", keywords: ["settings", "terminal", "shell"], run: () => openSettingsPanelById("sp-terminal") },
+    { label: "Settings: Extensions", group: "Settings", icon: "code2", keywords: ["settings", "extensions", "plugins"], run: () => openSettingsPanelById("sp-extensions") },
+    { label: "Settings: Memory", group: "Settings", icon: "brain", keywords: ["settings", "memory", "context"], run: () => openSettingsPanelById("sp-memory") },
+    { label: "Settings: Network", group: "Settings", icon: "globe", keywords: ["settings", "network", "sync"], run: () => openSettingsPanelById("sp-network") },
+    { label: "Settings: Computer", group: "Settings", icon: "camera", keywords: ["settings", "computer", "capture"], run: () => openSettingsPanelById("sp-computer") },
+    { label: "Settings: Sync", group: "Settings", icon: "share2", keywords: ["settings", "sync", "devices"], run: () => openSettingsPanelById("sp-sync") },
+    { label: "Settings: Voice", group: "Settings", icon: "mic", keywords: ["settings", "voice", "speech"], run: () => openSettingsPanelById("sp-voice") },
+    { label: "New Chat", group: "Session", icon: "plus", keywords: ["new chat", "session", "start"], run: () => clickFirstAvailableButton("new-chat-btn-header", "new-chat-btn") },
+    { label: "Toggle Sidebar", group: "Layout", icon: "panelLeftClose", keywords: ["sidebar", "layout", "collapse"], run: () => clickFirstAvailableButton("sidebar-toggle-btn", "sidebar-close-btn") },
+    { label: "Open Game Context", group: "Context", icon: "gamepad2", keywords: ["game", "steam", "context"], run: () => document.getElementById("game-badge")?.click() },
+    { label: "Notifications", group: "System", icon: "bell", keywords: ["notifications", "alerts", "messages"], run: () => document.getElementById("notif-btn")?.click() },
+    { label: "Settings", group: "System", icon: "settings2", keywords: ["settings", "preferences"], run: () => document.getElementById("settings-btn")?.click() },
+];
+
+const commandPaletteState = {
+    open: false,
+    query: "",
+    activeIndex: 0,
+    filtered: [],
+};
+
+function commandPaletteMatches(action, query) {
+    if (!query) return true;
+    const haystack = `${action.label} ${action.group} ${(action.keywords || []).join(" ")}`.toLowerCase();
+    return haystack.includes(query);
+}
+
+function getCommandPaletteFilteredActions() {
+    const query = commandPaletteState.query.trim().toLowerCase();
+    return COMMAND_PALETTE_ACTIONS.filter(action => commandPaletteMatches(action, query));
+}
+
+function renderCommandPalette() {
+    const list = document.getElementById("command-palette-list");
+    const input = document.getElementById("command-palette-input");
+    if (!list || !input) return;
+
+    commandPaletteState.filtered = getCommandPaletteFilteredActions();
+    if (commandPaletteState.activeIndex >= commandPaletteState.filtered.length) {
+        commandPaletteState.activeIndex = Math.max(0, commandPaletteState.filtered.length - 1);
+    }
+
+    if (!commandPaletteState.filtered.length) {
+        list.innerHTML = `<div class="command-palette-empty">No commands match “${window.escapeHtml(input.value)}”.</div>`;
+        return;
+    }
+
+    list.innerHTML = commandPaletteState.filtered.map((action, index) => {
+        const activeClass = index === commandPaletteState.activeIndex ? " active" : "";
+        return `
+            <button type="button" class="command-palette-item${activeClass}" data-command-index="${index}">
+                <span class="command-palette-item-main">
+                    <span class="command-palette-item-icon">${createIcon(action.icon, { size: 15 })}</span>
+                    <span class="command-palette-item-copy">
+                        <span class="command-palette-item-title">${action.label}</span>
+                        <span class="command-palette-item-subtitle">${action.group}</span>
+                    </span>
+                </span>
+            </button>
+        `;
+    }).join("");
+
+    list.querySelectorAll(".command-palette-item").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-command-index"));
+            const action = commandPaletteState.filtered[idx];
+            if (!action) return;
+            closeCommandPalette();
+            action.run();
+        });
+    });
+}
+
+function openCommandPalette(initialQuery = "") {
+    const overlay = document.getElementById("command-palette-overlay");
+    const input = document.getElementById("command-palette-input");
+    if (!overlay || !input) return;
+    commandPaletteState.open = true;
+    commandPaletteState.query = initialQuery;
+    commandPaletteState.activeIndex = 0;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("active");
+    overlay.setAttribute("aria-hidden", "false");
+    input.value = initialQuery;
+    renderCommandPalette();
+    setTimeout(() => {
+        try {
+            input.focus({ preventScroll: true });
+            input.select();
+        } catch (_) {
+            input.focus();
+        }
+    }, 0);
+}
+
+function closeCommandPalette() {
+    const overlay = document.getElementById("command-palette-overlay");
+    const input = document.getElementById("command-palette-input");
+    if (!overlay) return;
+    commandPaletteState.open = false;
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.classList.add("hidden");
+    commandPaletteState.query = "";
+    commandPaletteState.activeIndex = 0;
+    commandPaletteState.filtered = [];
+    if (input) input.value = "";
+}
+
+function moveCommandPaletteSelection(delta) {
+    if (!commandPaletteState.filtered.length) return;
+    const next = (commandPaletteState.activeIndex + delta + commandPaletteState.filtered.length) % commandPaletteState.filtered.length;
+    commandPaletteState.activeIndex = next;
+    renderCommandPalette();
+    const list = document.getElementById("command-palette-list");
+    const item = list?.querySelector(`.command-palette-item[data-command-index="${next}"]`);
+    if (item) {
+        item.scrollIntoView({ block: "nearest" });
+    }
+}
+
+function runCommandPaletteActiveAction() {
+    const action = commandPaletteState.filtered[commandPaletteState.activeIndex];
+    if (!action) return;
+    closeCommandPalette();
+    action.run();
+}
+
+function initCommandPalette() {
+    const overlay = document.getElementById("command-palette-overlay");
+    const openBtn = document.getElementById("command-palette-btn");
+    const closeBtn = document.getElementById("command-palette-close");
+    const input = document.getElementById("command-palette-input");
+
+    if (openBtn) {
+        openBtn.onclick = () => openCommandPalette();
+    }
+    if (closeBtn) {
+        closeBtn.onclick = closeCommandPalette;
+    }
+    if (overlay) {
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) {
+                closeCommandPalette();
+            }
+        });
+    }
+    if (input) {
+        input.addEventListener("input", () => {
+            commandPaletteState.query = input.value;
+            commandPaletteState.activeIndex = 0;
+            renderCommandPalette();
+        });
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                moveCommandPaletteSelection(1);
+            } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                moveCommandPaletteSelection(-1);
+            } else if (event.key === "Enter") {
+                event.preventDefault();
+                runCommandPaletteActiveAction();
+            } else if (event.key === "Escape") {
+                event.preventDefault();
+                closeCommandPalette();
+            }
+        });
+    }
+
+    document.addEventListener("keydown", (event) => {
+        const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+        if (isShortcut) {
+            event.preventDefault();
+            if (commandPaletteState.open) {
+                closeCommandPalette();
+            } else {
+                openCommandPalette();
+            }
+            return;
+        }
+
+        if (!commandPaletteState.open) return;
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeCommandPalette();
+        }
+    }, true);
+}
 
 
 

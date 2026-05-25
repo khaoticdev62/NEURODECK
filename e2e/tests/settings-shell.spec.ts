@@ -128,3 +128,22 @@ test("stale settings tab state falls back to General", async ({ page }) => {
   await expect(modal).toHaveAttribute("data-settings-theme", "general");
   await expect(page.locator("#sp-general")).toHaveClass(/active/);
 });
+
+test("command palette opens and drives view and settings shortcuts", async ({ page }) => {
+  await page.keyboard.press("Control+K");
+  await expect(page.locator("#command-palette-overlay")).toHaveClass(/active/);
+
+  await page.locator("#command-palette-input").fill("prompt lab");
+  await page.locator("#command-palette-list .command-palette-item").first().click();
+  await expect(page.locator('.nav-tab[data-view="prompt-lab"]')).toHaveClass(/active/);
+  await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
+
+  await page.keyboard.press("Control+K");
+  await page.locator("#command-palette-input").fill("appearance");
+  await page.locator("#command-palette-list .command-palette-item").first().click();
+
+  const modal = page.locator("#settings-overlay .settings-modal-card");
+  await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
+  await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
+  await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
+});
