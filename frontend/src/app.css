@@ -2206,6 +2206,7 @@ body::before {
     min-height: 0;
 }
 .settings-panel {
+    display: none;
     position: absolute;
     inset: 0;
     overflow-y: auto;
@@ -2220,6 +2221,7 @@ body::before {
     scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 .settings-panel.active {
+    display: grid;
     opacity: 1;
     pointer-events: auto;
     transform: translateX(0);
@@ -2480,23 +2482,26 @@ body::before {
         min-width: 0;
         border-right: none;
         border-bottom: 1px solid rgba(255,255,255,0.055);
-        flex-direction: row;
-        align-items: center;
-        overflow-x: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        align-items: stretch;
+        overflow-x: hidden;
+        overflow-y: auto;
         padding: 14px 12px;
         gap: 8px;
     }
 
     .stv-sidebar-brand {
-        flex: 0 0 auto;
+        grid-column: 1 / -1;
         border-bottom: none;
         margin-bottom: 0;
-        padding: 0 8px 0 0;
+        padding: 0 0 4px 0;
     }
 
     .stv-nav-item {
-        flex: 0 0 auto;
+        width: 100%;
         margin: 0;
+        min-width: 0;
     }
 
     .stv-nav-spacer {
@@ -2526,6 +2531,7 @@ body::before {
 
     .stv-sidebar {
         padding: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     }
 
     .settings-panel {
@@ -9703,6 +9709,7 @@ body.crt-flicker-disabled .crt-flicker {
 @media (max-width: 860px) {
     .remote-container {
         padding: 12px;
+        overflow-y: auto;
     }
 
     .remote-header {
@@ -9712,7 +9719,7 @@ body.crt-flicker-disabled .crt-flicker {
 
     .remote-grid {
         grid-template-columns: 1fr;
-        overflow-y: auto;
+        overflow: visible;
     }
 
     .remote-panel {
@@ -9745,6 +9752,29 @@ body.crt-flicker-disabled .crt-flicker {
     .remote-pin-display,
     .remote-stat-value {
         word-break: break-word;
+    }
+}
+
+@media (max-height: 620px) {
+    .remote-container {
+        overflow-y: auto;
+    }
+
+    .remote-grid {
+        overflow: visible;
+    }
+
+    .remote-panel {
+        overflow: visible;
+    }
+
+    .remote-log {
+        min-height: 120px;
+        max-height: 180px;
+    }
+
+    .remote-instructions {
+        flex-direction: column;
     }
 }
 
@@ -10656,17 +10686,18 @@ button.tab-btn:active,
     .docs-body {
         flex-direction: column;
         overflow-y: auto;
+        align-items: stretch;
     }
 
     .docs-file-panel {
         width: 100%;
-        min-height: 160px;
-        max-height: 220px;
+        min-height: 120px;
+        max-height: 180px;
         flex: 0 0 auto;
     }
 
     .docs-results-panel {
-        min-height: 260px;
+        min-height: 0;
         flex: 1 1 auto;
     }
 }
@@ -10694,5 +10725,24 @@ button.tab-btn:active,
 
     .docs-result-file {
         max-width: 100%;
+    }
+}
+
+@media (max-height: 620px) {
+    .docs-container {
+        overflow-y: auto;
+    }
+
+    .docs-body {
+        overflow: visible;
+    }
+
+    .docs-file-panel {
+        min-height: 110px;
+        max-height: 150px;
+    }
+
+    .docs-results-panel {
+        min-height: 180px;
     }
 }
