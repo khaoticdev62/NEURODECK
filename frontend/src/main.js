@@ -4049,6 +4049,16 @@ invoke("get_initial_state").then((initialState) => {
 // Tab Switching System
 const navTabs = document.querySelectorAll(".nav-tab");
 const viewContents = document.querySelectorAll(".view-content");
+const navTabRow = document.querySelector(".nav-tab-row");
+
+function ensureTabVisible(tab) {
+    if (!tab || !navTabRow) return;
+    tab.scrollIntoView({
+        block: "nearest",
+        inline: "center",
+        behavior: "smooth",
+    });
+}
 
 navTabs.forEach(tab => {
     tab.onclick = function() {
@@ -4056,6 +4066,7 @@ navTabs.forEach(tab => {
         
         navTabs.forEach(t => t.classList.remove("active"));
         tab.classList.add("active");
+        ensureTabVisible(tab);
         
         viewContents.forEach(view => {
             if (view.id === `view-${targetView}`) {

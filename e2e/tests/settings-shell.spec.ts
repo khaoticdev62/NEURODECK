@@ -147,3 +147,28 @@ test("command palette opens and drives view and settings shortcuts", async ({ pa
   await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
   await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
 });
+
+test("all primary nav tabs remain clickable across the full strip", async ({ page }) => {
+  const tabs = [
+    ["chat", "#view-chat"],
+    ["canvas", "#view-canvas"],
+    ["terminal", "#view-terminal"],
+    ["ssh", "#view-ssh"],
+    ["tunnel", "#view-tunnel"],
+    ["share", "#view-share"],
+    ["browser", "#view-browser"],
+    ["agent", "#view-agent"],
+    ["memory", "#view-memory"],
+    ["prompt-lab", "#view-prompt-lab"],
+    ["remote", "#view-remote"],
+    ["docs", "#view-docs"],
+  ] as const;
+
+  for (const [view, panel] of tabs) {
+    const tab = page.locator(`.nav-tab[data-view="${view}"]`);
+    await tab.scrollIntoViewIfNeeded();
+    await tab.click();
+    await expect(tab).toHaveClass(/active/);
+    await expect(page.locator(panel)).toHaveClass(/active/);
+  }
+});
