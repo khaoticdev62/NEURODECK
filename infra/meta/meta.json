@@ -6,17 +6,17 @@
     "description": "AI-powered terminal OS for Steam Deck \u00e2\u20ac\u201d LLM chat, live canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280\u00c3\u2014800 window.",
     "repo": "https://github.com/khaoticdev62/NEURODECK"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "codename": {
     "name": "Ra",
     "minor_line": 2,
     "registry_index": 2
   },
-  "tag": "v1.2.0-ra",
+  "tag": "v1.2.1-ra",
   "build": {
-    "git_sha": "fa249684491a0c5063d6805d222a8506bf8040da",
+    "git_sha": "eb57b74dd966432b7a26f727eb0cea9ef9acbe1c",
     "git_tag": null,
-    "built_at_utc": "2026-05-25T00:29:06Z",
+    "built_at_utc": "2026-05-25T00:36:56Z",
     "dirty": true
   },
   "studio": {

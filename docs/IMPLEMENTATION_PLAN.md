@@ -7,11 +7,11 @@
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.2.0`
+- Version: `1.2.1`
 - Codename: `Ra`
-- Tag: `v1.2.0-ra`
+- Tag: `v1.2.1-ra`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-25T00:29:06Z`
+- Last stamped build: `2026-05-25T00:36:56Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
