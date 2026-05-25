@@ -129,7 +129,10 @@ PRESERVE=(
   "build_flatpak.sh"
   "package_release.ps1"
   "epics.md"
+  "GEMINI.md"
   "gemini.md"
+  "pyproject.toml"
+  "uv.lock"
   "SteamOS_LLM_Terminal_PRD_SDS.md"
   "SteamOS_LLM_Terminal_PRD_SDS.pdf"
 )
