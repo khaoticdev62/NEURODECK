@@ -20,12 +20,14 @@ mod doc_indexer;
 mod torrent;
 pub mod sync;
 pub mod commands;
+mod self_heal;
 use crate::commands::*;
 
 use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tauri::Manager;
 use chrono::Utc;
 
@@ -239,6 +241,7 @@ pub struct AppState {
     pub(crate) collab_peer_count: Option<Arc<AtomicUsize>>,
     // Canvas streaming execution cancellation.
     pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
+    pub(crate) boot_self_heal: self_heal::SelfHealReport,
 }
 
 /// Returns the Steam library steamapps directories to scan, ordered by platform.
@@ -728,8 +731,11 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let config_root = user_config_dir();
+    let _ = std::fs::create_dir_all(&config_root);
+
     // Initialize tracing
-    let log_dir = user_config_dir().join("logs");
+    let log_dir = config_root.join("logs");
     let _ = std::fs::create_dir_all(&log_dir);
     let file_appender = tracing_appender::rolling::daily(log_dir, "neurodeck.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
@@ -753,7 +759,8 @@ pub fn run() {
     load_env_file();
 
     let config_path = get_config_path();
-    let mut config = config::load_config(&config_path);
+    let boot_self_heal = self_heal::boot_self_heal(&config_root, &config_path);
+    let mut config = boot_self_heal.config;
 
     // Seed default agent profiles on first run
     if config.llm.agents.is_empty() {
@@ -778,21 +785,9 @@ pub fn run() {
 
     let provider = create_provider(&config);
 
-    let data_dir = user_config_dir().join("data");
-    let _ = std::fs::create_dir_all(&data_dir);
-
-    let mem_db = match MemoryDB::init(data_dir.join("memory")) {
-        Ok(db) => Some(db),
-        Err(e) => {
-            println!("Error initializing memory: {}", e);
-            None
-        }
-    };
-
-    let custom_personas = match std::fs::read_to_string(data_dir.join("personas.json")) {
-        Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
-        Err(_) => Vec::new(),
-    };
+    let data_dir = config_root.join("data");
+    let mem_db = boot_self_heal.mem_db;
+    let custom_personas = boot_self_heal.custom_personas;
 
     let whisper_binary = config.stt.whisper_binary.clone();
     let whisper_model  = config.stt.whisper_model.clone();
@@ -822,6 +817,7 @@ pub fn run() {
         collab_addr: None,
         collab_peer_count: None,
         canvas_exec_cancel_tx: None,
+        boot_self_heal: boot_self_heal.report,
     };
 
     tauri::Builder::default()
@@ -855,6 +851,14 @@ pub fn run() {
             // Create directories if they don't exist
             let _ = std::fs::create_dir_all(&plugins_dir);
             let _ = std::fs::create_dir_all("./scripts");
+
+            let config_root = crate::user_config_dir();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    crate::self_heal::maintain_runtime_layout(&config_root);
+                    tokio::time::sleep(Duration::from_secs(45)).await;
+                }
+            });
 
             // Load plugins on startup
             if let Err(e) = lua_engine.load_plugins(&plugins_dir) {

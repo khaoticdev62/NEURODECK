@@ -3968,6 +3968,9 @@ invoke("get_initial_state").then((initialState) => {
 
     const toolStatusEl = document.getElementById("tool-status");
     if (toolStatusEl) toolStatusEl.innerText = initialState.tool_status;
+    if (toolStatusEl && initialState.boot_health_status && initialState.boot_health_status !== "healthy") {
+        toolStatusEl.innerText = "Recovered Boot";
+    }
 
     const sessionIdEl = document.getElementById("session-id");
     if (sessionIdEl) sessionIdEl.innerText = initialState.session_id;
@@ -4026,6 +4029,12 @@ invoke("get_initial_state").then((initialState) => {
     initTerminal();
     initCanvas();
     initNotificationCenter();
+    if (initialState.boot_health_status && initialState.boot_health_status !== "healthy" && typeof addNotification === "function") {
+        const level = initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0
+            ? "warning"
+            : "info";
+        addNotification("Boot Recovery", initialState.boot_health_summary || "Startup self-heal applied recovery actions.", level);
+    }
     initCommandPalette();
     initGameContextPanel();
     initTunnelClient();

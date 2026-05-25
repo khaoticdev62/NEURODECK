@@ -41,6 +41,19 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
         if app.mem_db.is_some() { "Stable" } else { "Offline" }.to_string(),
     );
     initial.insert("tool_status".to_string(), "Idle".to_string());
+    initial.insert("boot_health_status".to_string(), app.boot_self_heal.status.clone());
+    initial.insert(
+        "boot_health_summary".to_string(),
+        app.boot_self_heal.summary(),
+    );
+    initial.insert(
+        "boot_health_recovered_count".to_string(),
+        app.boot_self_heal.recovered_count.to_string(),
+    );
+    initial.insert(
+        "boot_health_warning_count".to_string(),
+        app.boot_self_heal.warning_count.to_string(),
+    );
 
     let (game_name, game_id, game_running) = detect_game();
     initial.insert("game_name".to_string(), game_name);
