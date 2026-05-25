@@ -2968,18 +2968,18 @@ function showTpScrollIndicator(active) {
 // Controller Prompt Picker state (declared here so pollGamepads can reference it)
 
 const RADIAL_SEGMENTS = [
-    { icon: "💬", label: "Chat",       view: "chat"       },
-    { icon: "🎨", label: "Canvas",     view: "canvas"     },
-    { icon: "💻", label: "Terminal",   view: "terminal"   },
-    { icon: "🔑", label: "SSH",        view: "ssh"        },
-    { icon: "🔗", label: "Tunnel",     view: "tunnel"     },
-    { icon: "🌐", label: "Browser",    view: "browser"    },
-    { icon: "🤖", label: "Agent",      view: "agent"      },
-    { icon: "🧠", label: "Memory",     view: "memory"     },
-    { icon: "📤", label: "Share",      view: "share"      },
-    { icon: "📱", label: "Remote",     view: "remote"     },
-    { icon: "✨", label: "PromptLab",  view: "prompt-lab" },
-    { icon: "📚", label: "Docs",       view: "docs"       },
+    { icon: "messageSquare", label: "Chat", view: "chat" },
+    { icon: "code2", label: "Canvas", view: "canvas" },
+    { icon: "squareTerminal", label: "Terminal", view: "terminal" },
+    { icon: "server", label: "SSH", view: "ssh" },
+    { icon: "route", label: "Tunnel", view: "tunnel" },
+    { icon: "globe", label: "Browser", view: "browser" },
+    { icon: "bot", label: "Agent", view: "agent" },
+    { icon: "brain", label: "Memory", view: "memory" },
+    { icon: "share2", label: "Share", view: "share" },
+    { icon: "panelRightOpen", label: "Remote", view: "remote" },
+    { icon: "sparkles", label: "PromptLab", view: "prompt-lab" },
+    { icon: "fileText", label: "Docs", view: "docs" },
 ];
 
 function getGamepadFocusableElements() {
@@ -6736,27 +6736,27 @@ function initPromptLab() {
 
     // ── Formula Definitions ────────────────────────────────────────────────────
     const FORMULAS = [
-        { id: "default",  icon: "📝", label: "Default",  desc: "Standard structure: Persona → Task → Context → Constraints → Format." },
-        { id: "aida",     icon: "📣", label: "AIDA",     desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing." },
-        { id: "scqa",     icon: "🔍", label: "SCQA",     desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis." },
-        { id: "pastor",   icon: "🎯", label: "PASTOR",   desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches." },
-        { id: "pas",      icon: "⚡", label: "PAS",      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points." },
-        { id: "cot",      icon: "🧠", label: "CoT",      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code." },
-        { id: "tot",      icon: "🌳", label: "ToT",      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design." },
-        { id: "star",     icon: "⭐", label: "STAR",     desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples." },
-        { id: "rice",     icon: "📊", label: "RICE",     desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions." },
-        { id: "icio",     icon: "🔄", label: "ICIO",     desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks." },
-        { id: "react",    icon: "🤖", label: "ReAct",    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks." },
-        { id: "spin",     icon: "💬", label: "SPIN",     desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework." },
-        { id: "rtf",      icon: "📐", label: "RTF",      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation." },
-        { id: "expert",   icon: "🎓", label: "Expert",   desc: "Expert persona activation with domain calibration, constraints, and output spec." },
-        { id: "socratic", icon: "🦉", label: "Socratic", desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions." },
+        { id: "default",  icon: "fileText", label: "Default",  desc: "Standard structure: Persona → Task → Context → Constraints → Format." },
+        { id: "aida",     icon: "messageSquare", label: "AIDA",     desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing." },
+        { id: "scqa",     icon: "search", label: "SCQA",     desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis." },
+        { id: "pastor",   icon: "sparkles", label: "PASTOR",   desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches." },
+        { id: "pas",      icon: "zap", label: "PAS",      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points." },
+        { id: "cot",      icon: "brain", label: "CoT",      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code." },
+        { id: "tot",      icon: "sparkles", label: "ToT",      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design." },
+        { id: "star",     icon: "sparkles", label: "STAR",     desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples." },
+        { id: "rice",     icon: "chartColumn", label: "RICE",     desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions." },
+        { id: "icio",     icon: "refreshCw", label: "ICIO",     desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks." },
+        { id: "react",    icon: "bot", label: "ReAct",    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks." },
+        { id: "spin",     icon: "messageSquare", label: "SPIN",     desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework." },
+        { id: "rtf",      icon: "fileText", label: "RTF",      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation." },
+        { id: "expert",   icon: "sparkles", label: "Expert",   desc: "Expert persona activation with domain calibration, constraints, and output spec." },
+        { id: "socratic", icon: "brain", label: "Socratic", desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions." },
     ];
 
     // ── Template Gallery Data ──────────────────────────────────────────────────
     const TEMPLATE_CATEGORIES = [
         {
-            label: "🎮 Game Design",
+            label: "Game Design",
             templates: [
                 {
                     title: "Endless Runner Concept",
@@ -6779,7 +6779,7 @@ function initPromptLab() {
             ]
         },
         {
-            label: "💻 Engineering",
+            label: "Engineering",
             templates: [
                 {
                     title: "Lua Script Template",
@@ -6808,7 +6808,7 @@ function initPromptLab() {
             ]
         },
         {
-            label: "📋 Product & Strategy",
+            label: "Product & Strategy",
             templates: [
                 {
                     title: "Product Feature List",
@@ -6886,7 +6886,7 @@ function initPromptLab() {
             const card = document.createElement("div");
             card.className = "pl-formula-card" + (f.id === "default" ? " active" : "");
             card.dataset.formulaId = f.id;
-            card.innerHTML = `<div class="pl-formula-card-icon">${f.icon}</div><div class="pl-formula-card-label">${f.label}</div>`;
+            card.innerHTML = `<div class="pl-formula-card-icon">${createIcon(f.icon, { size: 18 })}</div><div class="pl-formula-card-label">${f.label}</div>`;
             card.addEventListener("click", () => selectFormula(f.id));
             formulaGrid.appendChild(card);
         });
@@ -7343,62 +7343,62 @@ async function showOnboardingWizard() {
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">12 integrated views. One fullscreen command center.</p>
                     <div class="ob-feature-grid">
                         <div class="ob-feature-card" style="animation-delay: 0.02s">
-                            <span class="ob-feature-icon">💬</span>
+                            <span class="ob-feature-icon">${createIcon('messageSquare', { size: 18 })}</span>
                             <span class="ob-feature-name">Chat</span>
                             <span class="ob-feature-desc">LLM streaming chat with RAG memory injection and game context awareness.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.07s">
-                            <span class="ob-feature-icon">🎨</span>
+                            <span class="ob-feature-icon">${createIcon('sparkles', { size: 18 })}</span>
                             <span class="ob-feature-name">Canvas</span>
                             <span class="ob-feature-desc">Live HTML/JS preview. Run Python, Bash, Lua. LAN collaboration mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.12s">
-                            <span class="ob-feature-icon">💻</span>
+                            <span class="ob-feature-icon">${createIcon('squareTerminal', { size: 18 })}</span>
                             <span class="ob-feature-name">Terminal</span>
                             <span class="ob-feature-desc">Multi-session real shell. AI autocomplete Ctrl+Space. History search Ctrl+H.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.17s">
-                            <span class="ob-feature-icon">🔑</span>
+                            <span class="ob-feature-icon">${createIcon('server', { size: 18 })}</span>
                             <span class="ob-feature-name">SSH</span>
                             <span class="ob-feature-desc">Full SSH client. Password + key auth. Saved profiles. Session tab per connection.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.22s">
-                            <span class="ob-feature-icon">🔗</span>
+                            <span class="ob-feature-icon">${createIcon('route', { size: 18 })}</span>
                             <span class="ob-feature-name">Tunnel</span>
                             <span class="ob-feature-desc">TCP bridge between SteamOS Desktop Mode and Game Mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.27s">
-                            <span class="ob-feature-icon">🌐</span>
+                            <span class="ob-feature-icon">${createIcon('globe', { size: 18 })}</span>
                             <span class="ob-feature-name">Browser</span>
                             <span class="ob-feature-desc">Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.32s">
-                            <span class="ob-feature-icon">🤖</span>
+                            <span class="ob-feature-icon">${createIcon('bot', { size: 18 })}</span>
                             <span class="ob-feature-name">Agent</span>
                             <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.37s">
-                            <span class="ob-feature-icon">🧠</span>
+                            <span class="ob-feature-icon">${createIcon('brain', { size: 18 })}</span>
                             <span class="ob-feature-name">Memory</span>
                             <span class="ob-feature-desc">Vector DB with cosine similarity. RAG search + local doc indexing.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.42s">
-                            <span class="ob-feature-icon">📤</span>
+                            <span class="ob-feature-icon">${createIcon('share2', { size: 18 })}</span>
                             <span class="ob-feature-name">Share</span>
                             <span class="ob-feature-desc">LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.47s">
-                            <span class="ob-feature-icon">🔬</span>
+                            <span class="ob-feature-icon">${createIcon('sparkles', { size: 18 })}</span>
                             <span class="ob-feature-name">Prompt Lab</span>
                             <span class="ob-feature-desc">Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.52s">
-                            <span class="ob-feature-icon">📱</span>
+                            <span class="ob-feature-icon">${createIcon('panelRightOpen', { size: 18 })}</span>
                             <span class="ob-feature-name">Remote</span>
                             <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.57s">
-                            <span class="ob-feature-icon">⚙️</span>
+                            <span class="ob-feature-icon">${createIcon('settings2', { size: 18 })}</span>
                             <span class="ob-feature-name">Settings</span>
                             <span class="ob-feature-desc">Themes, personas, LLM config, OS keychain, and Plugin Marketplace — all in one panel.</span>
                         </div>
@@ -7412,17 +7412,17 @@ async function showOnboardingWizard() {
 
                     <div class="onboarding-choice-container" style="margin-bottom: 12px;">
                         <div class="onboarding-choice-card active" data-provider="gemini-key">
-                            <span class="onboarding-choice-icon">🔑</span>
+                            <span class="onboarding-choice-icon">${createIcon('shieldCheck', { size: 16 })}</span>
                             <span class="onboarding-choice-title">Gemini API Key</span>
                             <span class="onboarding-choice-desc">Manual entry of Google Gemini API key. Saved to secure OS keychain.</span>
                         </div>
                         <div class="onboarding-choice-card" data-provider="gemini-oauth">
-                            <span class="onboarding-choice-icon">📱</span>
+                            <span class="onboarding-choice-icon">${createIcon('panelRightOpen', { size: 16 })}</span>
                             <span class="onboarding-choice-title">Google Login (QR)</span>
                             <span class="onboarding-choice-desc">Authenticate via device code grant. Scan QR code with your phone.</span>
                         </div>
                         <div class="onboarding-choice-card" data-provider="ollama">
-                            <span class="onboarding-choice-icon">🦙</span>
+                            <span class="onboarding-choice-icon">${createIcon('server', { size: 16 })}</span>
                             <span class="onboarding-choice-title">Ollama (Offline)</span>
                             <span class="onboarding-choice-desc">Local Ollama server on Steam Deck. Completely offline operation.</span>
                         </div>
@@ -7538,42 +7538,42 @@ async function showOnboardingWizard() {
                     <div class="onboarding-diagnostic-list">
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">💻</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('squareTerminal', { size: 16 })}</span>
                                 <span>PTY Shell Spawning Subsystem</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-pty">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">🌐</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('globe', { size: 16 })}</span>
                                 <span>External LLM Network Endpoint Reachability</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-net">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">🔒</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('shieldCheck', { size: 16 })}</span>
                                 <span>OS Keychain Secure Storage Access</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-key">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">🎙️</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('mic', { size: 16 })}</span>
                                 <span>Audio Capture (arecord / Voice STT)</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-audio">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">🔑</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('server', { size: 16 })}</span>
                                 <span>SSH Binary (OpenSSH Client)</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-ssh">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">🔊</span>
+                                <span class="onboarding-diagnostic-icon">${createIcon('volume2', { size: 16 })}</span>
                                 <span>TTS Engine (espeak / Voice Output)</span>
                             </div>
                             <span class="onboarding-diagnostic-status pending" id="diag-tts">PENDING</span>
@@ -7942,10 +7942,10 @@ async function showOnboardingWizard() {
     const themeGrid = document.getElementById("ob-theme-grid");
 
     const personaIconMap = {
-        "Default": "🤖", "Developer": "💻", "Cyberpunk": "⚡",
-        "John": "📋", "Sally": "🎨", "Winston": "🏗️",
-        "Amelia": "🦾", "Paige": "📝", "Mary": "📊",
-        "Sarcastic Hacker": "🃏", "Elden Ring Scholar": "⚔️"
+        "Default": "bot", "Developer": "squareTerminal", "Cyberpunk": "zap",
+        "John": "fileText", "Sally": "sparkles", "Winston": "panelRightOpen",
+        "Amelia": "server", "Paige": "fileText", "Mary": "chartColumn",
+        "Sarcastic Hacker": "messageSquare", "Elden Ring Scholar": "shieldCheck"
     };
     const personaDescMap = {
         "Default": "Helpful, balanced assistant.",
@@ -7966,7 +7966,7 @@ async function showOnboardingWizard() {
     try { allPersonas = await invoke("get_personas"); } catch (_) {}
     personaCarousel.innerHTML = allPersonas.map(name => `
         <div class="onboarding-persona-card ${name === selectedPersona ? 'active' : ''}" data-name="${name}">
-            <span class="onboarding-persona-icon">${personaIconMap[name] || '🤖'}</span>
+            <span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>
             <span class="onboarding-persona-name">${name}</span>
             <span class="onboarding-persona-desc">${personaDescMap[name] || 'Custom persona.'}</span>
         </div>

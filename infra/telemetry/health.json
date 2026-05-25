@@ -7,7 +7,7 @@
   "tag": "v1.2.1-ra",
   "workspace_state": "manual-uncommitted",
   "dirty_build": true,
-  "stamped_at_utc": "2026-05-25T00:59:05Z",
+  "stamped_at_utc": "2026-05-25T01:08:52Z",
   "checks": {
     "meta_json_present": true,
     "schema_valid": true,
