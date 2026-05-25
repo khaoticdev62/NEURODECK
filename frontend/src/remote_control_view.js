@@ -1,7 +1,8 @@
-// remote_control_view.js — Remote Control View
+// remote_control_view.js – Remote Control View
 // Extracted ES module.
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import QRCode from 'qrcode';
 
 
 export function initRemoteControl() {
@@ -58,25 +59,21 @@ export function initRemoteControl() {
         }
     }
 
-    function generateQR(url) {
+    async function generateQR(url) {
         var wrap = el('remote-qr-canvas');
         if (!wrap) return;
         wrap.innerHTML = '';
-        if (window.QRCode) {
-            new window.QRCode(wrap, { text: url, width: 180, height: 180, colorDark: '#00f0ff', colorLight: '#06080e' });
-            return;
-        }
-        var script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-        script.onload = function() {
-            if (window.QRCode) {
-                new window.QRCode(wrap, { text: url, width: 180, height: 180, colorDark: '#00f0ff', colorLight: '#06080e' });
-            }
-        };
-        script.onerror = function() {
+        try {
+            var canvas = document.createElement('canvas');
+            await QRCode.toCanvas(canvas, url, {
+                width: 180,
+                margin: 1,
+                color: { dark: '#00f0ff', light: '#06080e' }
+            });
+            wrap.appendChild(canvas);
+        } catch (_) {
             wrap.innerHTML = '<div class="remote-qr-fallback">' + url + '</div>';
-        };
-        document.head.appendChild(script);
+        }
     }
 
     async function startServer() {

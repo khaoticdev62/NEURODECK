@@ -81,6 +81,7 @@ function Get-ReleasePolicy {
                 diff_hygiene = 20
                 workspace_state = 20
                 loose_root_files = 10
+                hardening_check = 30
                 cargo_check = 25
                 cargo_test = 25
                 frontend_build = 20
@@ -286,7 +287,7 @@ function Test-MetadataAlignment {
         if ($policy.hold_threshold -gt $policy.go_threshold) {
             $errors.Add("release_policy.hold_threshold must be <= go_threshold.")
         }
-        foreach ($name in @("metadata", "diff_hygiene", "workspace_state", "loose_root_files", "cargo_check", "cargo_test", "frontend_build")) {
+        foreach ($name in @("metadata", "diff_hygiene", "workspace_state", "loose_root_files", "hardening_check", "cargo_check", "cargo_test", "frontend_build")) {
             if ($null -eq $policy.penalties.$name) {
                 $errors.Add("release_policy.penalties.$name is missing.")
             }
@@ -319,6 +320,7 @@ $diffHygieneOk = Test-DiffHygiene
 $policy = Get-ReleasePolicy
 
 $overallWatch = [System.Diagnostics.Stopwatch]::StartNew()
+$hardeningCheck = Invoke-Gate -Name "security hardening" -WorkingDirectory $script:Root -Executable "powershell.exe" -Arguments @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $script:Root "scripts/security-hardening.ps1"), "-Json") -LogPath (Join-Path $script:LogsDir "security-hardening.log")
 $cargoCheck = Invoke-Gate -Name "cargo check" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("check") -LogPath (Join-Path $script:LogsDir "cargo-check.log")
 $cargoTest = Invoke-Gate -Name "cargo test" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("test") -LogPath (Join-Path $script:LogsDir "cargo-test.log")
 $frontendBuild = Invoke-Gate -Name "frontend build" -WorkingDirectory $script:Root -Executable "npm.cmd" -Arguments @("run", "--prefix", "frontend", "build") -LogPath (Join-Path $script:LogsDir "frontend-build.log")
@@ -344,6 +346,16 @@ if ($workspaceState -ne "clean") {
 if ($looseRootFiles -ne 0) {
     $score -= [int]$policy.penalties.loose_root_files
     $blockers.Add("Loose root files are present outside the preserved set.")
+}
+switch ($hardeningCheck.status) {
+    "fail" {
+        $score -= [int]$policy.penalties.hardening_check
+        $blockers.Add($hardeningCheck.message)
+    }
+    "missing-tool" {
+        $score -= [int]$policy.penalties.hardening_check
+        $blockers.Add($hardeningCheck.message)
+    }
 }
 
 foreach ($gate in @($cargoCheck, $cargoTest)) {
@@ -377,7 +389,7 @@ if ($score -lt 0) {
 }
 
 $releaseState = "NO-GO"
-if ($metadata.ok -and $diffHygieneOk -and $workspaceState -eq "clean" -and $looseRootFiles -eq 0 -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge [int]$policy.go_threshold) {
+if ($metadata.ok -and $diffHygieneOk -and $workspaceState -eq "clean" -and $looseRootFiles -eq 0 -and $hardeningCheck.status -eq "pass" -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge [int]$policy.go_threshold) {
     $releaseState = "GO"
 } elseif ($score -ge [int]$policy.hold_threshold) {
     $releaseState = "HOLD"
@@ -391,10 +403,11 @@ $summary = [pscustomobject]@{
     diff_hygiene = if ($diffHygieneOk) { "pass" } else { "fail" }
     workspace_state = $workspaceState
     loose_root_files = $looseRootFiles
+    hardening_check = $hardeningCheck.status
     cargo_check = $cargoCheck.status
     cargo_test = $cargoTest.status
     frontend_build = $frontendBuild.status
-    gates = @($cargoCheck, $cargoTest, $frontendBuild)
+    gates = @($hardeningCheck, $cargoCheck, $cargoTest, $frontendBuild)
     blockers = $blockers
     duration_ms = [int]$overallWatch.ElapsedMilliseconds
     stamped_at_utc = if ($metadata.meta) { $metadata.meta.build.built_at_utc } else { $null }
@@ -405,7 +418,7 @@ if (-not $healthDocument) {
     $healthDocument = [pscustomobject]@{}
 }
 
-$gateSummary = "cargo_check=$($cargoCheck.status),cargo_test=$($cargoTest.status),frontend_build=$($frontendBuild.status)"
+$gateSummary = "hardening_check=$($hardeningCheck.status),cargo_check=$($cargoCheck.status),cargo_test=$($cargoTest.status),frontend_build=$($frontendBuild.status)"
 $healthDocument | Add-Member -NotePropertyName release_plan -NotePropertyValue ([pscustomobject]@{
     release_decision = $releaseState
     readiness_score = $score
@@ -415,10 +428,11 @@ $healthDocument | Add-Member -NotePropertyName release_plan -NotePropertyValue (
     diff_hygiene = $summary.diff_hygiene
     workspace_state = $workspaceState
     loose_root_files = $looseRootFiles
+    hardening_check = $hardeningCheck.status
     cargo_check = $cargoCheck.status
     cargo_test = $cargoTest.status
     frontend_build = $frontendBuild.status
-    gates = @($cargoCheck, $cargoTest, $frontendBuild)
+    gates = @($hardeningCheck, $cargoCheck, $cargoTest, $frontendBuild)
     blockers = @($blockers)
     duration_ms = [int]$overallWatch.ElapsedMilliseconds
     checked_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -448,6 +462,7 @@ Write-KfmsLine ok "diff hygiene     -> $($summary.diff_hygiene)"
 Write-KfmsLine ok "workspace state  -> $workspaceState"
 Write-KfmsLine ok "loose root files -> $looseRootFiles"
 Write-KfmsLine ok "policy           -> go=$($policy.go_threshold) | hold=$($policy.hold_threshold)"
+Write-KfmsLine ok "hardening check  -> $($hardeningCheck.status)"
 Write-KfmsLine ok "cargo check      -> $($cargoCheck.status)"
 Write-KfmsLine ok "cargo test       -> $($cargoTest.status)"
 Write-KfmsLine ok "frontend build   -> $($frontendBuild.status)"

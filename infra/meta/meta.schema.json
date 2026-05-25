@@ -119,13 +119,14 @@
                 },
                 "penalties": {
                   "type": "object",
-                  "required": ["metadata", "diff_hygiene", "workspace_state", "loose_root_files", "cargo_check", "cargo_test", "frontend_build"],
+                  "required": ["metadata", "diff_hygiene", "workspace_state", "loose_root_files", "hardening_check", "cargo_check", "cargo_test", "frontend_build"],
                   "additionalProperties": false,
                   "properties": {
                     "metadata": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "diff_hygiene": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "workspace_state": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "loose_root_files": { "type": "integer", "minimum": 0, "maximum": 100 },
+                    "hardening_check": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "cargo_check": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "cargo_test": { "type": "integer", "minimum": 0, "maximum": 100 },
                     "frontend_build": { "type": "integer", "minimum": 0, "maximum": 100 }

@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { applyButtonIcon, createIcon } from './icons.js';
+import { marked } from 'marked';
 
 // --- LIVE CODE CANVAS SYSTEM ---
 
@@ -52,7 +53,7 @@ console.log=(...a)=>{out.textContent+=a.map(x=>typeof x==='object'?JSON.stringif
 try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
 <\/script></body></html>`;
         case 'markdown':
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body id="md"></body><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script><script>document.getElementById('md').innerHTML=marked.parse(${JSON.stringify(code)});<\/script></html>`;
+            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body>${window.sanitizeHtml ? window.sanitizeHtml(marked.parse(code)) : marked.parse(code)}</body></html>`;
         default:
             return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem;white-space:pre-wrap}</style></head><body>Run this code in the Terminal tab (▶ Run is for HTML/CSS/JS/Markdown).\n\n${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
     }
@@ -221,124 +222,104 @@ function closeAiEditModal() {
     if (modal) modal.classList.remove('active');
 }
 
-function initMonacoEditor(initialLang, initialCode) {
-    const MONACO_CDN = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs';
-    const container = document.getElementById('canvas-monaco');
-    if (!container) return;
-
-    // Load AMD loader
-    if (document.getElementById('monaco-loader-script')) {
-        _createMonacoInstance(container, initialLang, initialCode, MONACO_CDN);
-        return;
+function createFallbackEditor(container, initialCode) {
+    container.innerHTML = `<textarea id="canvas-editor-fallback" style="width:100%;height:100%;background:#060a0e;color:#c9d1d9;font-family:monospace;font-size:13px;border:none;outline:none;padding:14px;box-sizing:border-box;resize:none;">${initialCode}</textarea>`;
+    const textarea = container.querySelector('#canvas-editor-fallback');
+    if (!textarea) {
+        return null;
     }
 
-    const script = document.createElement('script');
-    script.id = 'monaco-loader-script';
-    script.src = `${MONACO_CDN}/loader.js`;
-    script.onload = () => _createMonacoInstance(container, initialLang, initialCode, MONACO_CDN);
-    script.onerror = () => {
-        console.warn('[Monaco] CDN load failed — canvas will use fallback textarea');
-        container.innerHTML = `<textarea id="canvas-editor-fallback" style="width:100%;height:100%;background:#060a0e;color:#c9d1d9;font-family:monospace;font-size:13px;border:none;outline:none;padding:14px;box-sizing:border-box;resize:none;">${initialCode}</textarea>`;
+    const listeners = [];
+    const notifyChange = () => {
+        window.neurodeckCanvas.currentCode = textarea.value;
+        for (const listener of listeners) {
+            listener();
+        }
     };
-    document.head.appendChild(script);
+
+    textarea.addEventListener('input', notifyChange);
+    textarea.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            document.getElementById('canvas-run-btn')?.click();
+        }
+    });
+
+    return {
+        getValue() {
+            return textarea.value;
+        },
+        setValue(value) {
+            textarea.value = value;
+            notifyChange();
+        },
+        getModel() {
+            return {
+                getValueInRange(range) {
+                    const start = Math.max(0, Math.min(range?.startOffset ?? 0, textarea.value.length));
+                    const end = Math.max(start, Math.min(range?.endOffset ?? textarea.value.length, textarea.value.length));
+                    return textarea.value.slice(start, end);
+                }
+            };
+        },
+        getSelection() {
+            return {
+                startOffset: textarea.selectionStart ?? 0,
+                endOffset: textarea.selectionEnd ?? 0
+            };
+        },
+        executeEdits(_source, edits) {
+            const edit = edits?.[0];
+            if (!edit) return;
+            const start = Math.max(0, Math.min(edit.range?.startOffset ?? 0, textarea.value.length));
+            const end = Math.max(start, Math.min(edit.range?.endOffset ?? textarea.value.length, textarea.value.length));
+            textarea.value = `${textarea.value.slice(0, start)}${edit.text}${textarea.value.slice(end)}`;
+            textarea.selectionStart = start;
+            textarea.selectionEnd = start + edit.text.length;
+            notifyChange();
+        },
+        onDidChangeModelContent(listener) {
+            listeners.push(listener);
+            return {
+                dispose() {
+                    const idx = listeners.indexOf(listener);
+                    if (idx >= 0) listeners.splice(idx, 1);
+                }
+            };
+        },
+        addCommand() {},
+        layout() {},
+        focus() {
+            textarea.focus();
+        }
+    };
 }
 
-function _createMonacoInstance(container, initialLang, initialCode, cdnBase) {
-    window.require.config({ paths: { vs: cdnBase } });
-    window.require(['vs/editor/editor.main'], function() {
-        // Store global reference for Tauri CSP compat
-        window.monaco = window.monaco || monaco;
+function initMonacoEditor(initialLang, initialCode) {
+    const container = document.getElementById('canvas-monaco');
+    if (!container) return;
+    monacoEditor = createFallbackEditor(container, initialCode);
+    monacoReady = true;
+    window.neurodeckCanvas.currentCode = initialCode;
 
-        // Define NEURODECK theme
-        monaco.editor.defineTheme('neurodeck', {
-            base: 'vs-dark',
-            inherit: true,
-            rules: [
-                { token: 'comment', foreground: '4a5568', fontStyle: 'italic' },
-                { token: 'keyword', foreground: '00f0ff' },
-                { token: 'string', foreground: '9ae6b4' },
-                { token: 'number', foreground: 'fbb6ce' },
-                { token: 'type', foreground: '63b3ed' },
-                { token: 'function', foreground: 'a78bfa' },
-                { token: 'variable', foreground: 'd9f7ff' },
-            ],
-            colors: {
-                'editor.background': '#060a0e',
-                'editor.foreground': '#c9d1d9',
-                'editor.lineHighlightBackground': '#0d1117',
-                'editor.selectionBackground': '#1a3a5c',
-                'editor.inactiveSelectionBackground': '#112233',
-                'editorLineNumber.foreground': '#2d3748',
-                'editorLineNumber.activeForeground': '#00f0ff',
-                'editorCursor.foreground': '#00f0ff',
-                'editor.findMatchBackground': '#1a4a3a',
-                'editor.findMatchHighlightBackground': '#0d2a1e',
-                'editorWidget.background': '#0d1117',
-                'editorWidget.border': '#1a2a3a',
-                'input.background': '#0d1117',
-                'input.foreground': '#c9d1d9',
-                'scrollbarSlider.background': '#ffffff1a',
-                'scrollbarSlider.hoverBackground': '#ffffff2a',
-                'scrollbarSlider.activeBackground': '#00f0ff33',
-            }
-        });
+    let previewTimer = null;
+    monacoEditor?.onDidChangeModelContent(() => {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(renderCanvasPreview, 600);
 
-        monacoEditor = monaco.editor.create(container, {
-            value: initialCode,
-            language: getMonacoLang(initialLang),
-            theme: 'neurodeck',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-            fontLigatures: true,
-            lineHeight: 21,
-            scrollBeyondLastLine: false,
-            tabSize: 2,
-            insertSpaces: true,
-            wordWrap: 'off',
-            renderLineHighlight: 'line',
-            smoothScrolling: true,
-            cursorBlinking: 'phase',
-            cursorSmoothCaretAnimation: 'on',
-            bracketPairColorization: { enabled: true },
-            padding: { top: 14, bottom: 14 },
-            scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
-            suggest: { showWords: true },
-            quickSuggestions: { other: true, comments: false, strings: false },
-        });
-
-        monacoReady = true;
-        window.neurodeckCanvas.currentCode = initialCode;
-
-        // Debounced live preview
-        let previewTimer = null;
-        monacoEditor.onDidChangeModelContent(() => {
-            clearTimeout(previewTimer);
-            previewTimer = setTimeout(renderCanvasPreview, 600);
-
-            // Collab broadcast
-            if (!_peerSyncing) {
-                clearTimeout(window._canvasCollabTimer);
-                window._canvasCollabTimer = setTimeout(() => {
-                    invoke('canvas_collab_send', {
-                        code: monacoEditor.getValue(),
-                        lang: window.neurodeckCanvas.currentLang,
-                        sender: COLLAB_CLIENT_ID
-                    }).catch(err => console.warn("[Collab] sync send failed:", err));
-                }, 300);
-            }
-        });
-
-        // Ctrl+Enter → run immediately
-        monacoEditor.addCommand(
-            monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-            () => document.getElementById('canvas-run-btn')?.click()
-        );
-
-        // Render initial preview
-        renderCanvasPreview();
+        if (!_peerSyncing) {
+            clearTimeout(window._canvasCollabTimer);
+            window._canvasCollabTimer = setTimeout(() => {
+                invoke('canvas_collab_send', {
+                    code: monacoEditor.getValue(),
+                    lang: window.neurodeckCanvas.currentLang,
+                    sender: COLLAB_CLIENT_ID
+                }).catch(err => console.warn("[Collab] sync send failed:", err));
+            }, 300);
+        }
     });
+
+    renderCanvasPreview();
 }
 
 function initCanvasView() {
@@ -394,7 +375,7 @@ function initCanvasView() {
             }
             if (monacoEditor) {
                 const model = monacoEditor.getModel();
-                if (model) monaco.editor.setModelLanguage(model, getMonacoLang(select.value));
+                if (model && window.monaco?.editor) window.monaco.editor.setModelLanguage(model, getMonacoLang(select.value));
             }
             renderCanvasPreview();
         });

@@ -3,6 +3,63 @@ import { useStore } from "zustand";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAppStore, ChatMessage } from "./store";
 
+function sanitizeRenderedHtml(html: string): string {
+  if (!html) return "";
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const allowedTags = new Set([
+      "a", "span", "div", "p", "h1", "h2", "h3", "h4", "h5", "h6",
+      "ul", "ol", "li", "pre", "code", "em", "strong", "br", "img",
+      "table", "thead", "tbody", "tr", "th", "td", "blockquote", "hr"
+    ]);
+    const allowedAttrs = new Set(["class", "href", "src", "alt", "title", "target", "style"]);
+
+    const cleanNode = (node: Node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType !== Node.ELEMENT_NODE) {
+          continue;
+        }
+
+        const el = child as Element;
+        const tagName = el.tagName.toLowerCase();
+        if (!allowedTags.has(tagName)) {
+          if (["script", "style", "iframe", "object", "embed", "noscript", "meta", "link"].includes(tagName)) {
+            el.remove();
+            continue;
+          }
+
+          cleanNode(el);
+          while (el.firstChild) {
+            el.parentNode?.insertBefore(el.firstChild, el);
+          }
+          el.remove();
+          continue;
+        }
+
+        for (const attr of Array.from(el.attributes)) {
+          const name = attr.name.toLowerCase();
+          const value = attr.value.trim().toLowerCase();
+          if (!allowedAttrs.has(name) || name.startsWith("on")) {
+            el.removeAttribute(attr.name);
+          } else if ((name === "href" || name === "src") && (value.startsWith("javascript:") || value.startsWith("data:") || value.startsWith("vbscript:"))) {
+            el.removeAttribute(attr.name);
+          }
+        }
+
+        cleanNode(el);
+      }
+    };
+
+    cleanNode(doc.body);
+    return doc.body.innerHTML;
+  } catch {
+    return html.replace(/<[^>]*>/g, "");
+  }
+}
+
 export const VirtualChat: React.FC = () => {
   // Bind to our Zustand vanilla store
   const messages = useStore(useAppStore, (state) => state.chatMessages);
@@ -48,8 +105,7 @@ export const VirtualChat: React.FC = () => {
               }}
             >
               <div className={`chat-message ${msg.role}`}>
-                {/* HTML content will be rendered here. For safety we use dangerouslySetInnerHTML after worker parses markdown */}
-                <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeRenderedHtml(msg.content) }} />
               </div>
             </div>
           );

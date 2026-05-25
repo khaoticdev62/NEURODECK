@@ -14,10 +14,10 @@
   },
   "tag": "v1.2.1-ra",
   "build": {
-    "git_sha": "ae686ff02782b12f482ffbd975a0e4ef5735d6c5",
+    "git_sha": "bc63e08cfa14b4c7f089678c820e311b6edcd30d",
     "git_tag": null,
-    "built_at_utc": "2026-05-25T04:42:40Z",
-    "dirty": false
+    "built_at_utc": "2026-05-25T04:57:59Z",
+    "dirty": true
   },
   "studio": {
     "name": "Khaotic Labs",
@@ -33,6 +33,7 @@
           "diff_hygiene": 20,
           "workspace_state": 20,
           "loose_root_files": 10,
+          "hardening_check": 30,
           "cargo_check": 25,
           "cargo_test": 25,
           "frontend_build": 20
