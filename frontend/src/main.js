@@ -227,8 +227,8 @@ document.querySelector('#app').innerHTML = `
 ██║  ██║██╔══╝  ██║     ██╔═██╗
 ██████╔╝███████╗╚██████╗██║  ██╗
 ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝</pre>
-                <div class="boot-subtitle">AI TERMINAL OS · v1.2.0-ra · Ra</div>
-                <div class="boot-build-tag">BUILD 20260524 · STEAM DECK EDITION · KFMS THOTH</div>
+                <div class="boot-subtitle">AI TERMINAL OS · LIVE STARTUP DIAGNOSTICS</div>
+                <div class="boot-build-tag">BUILD 20260525 · SELF-HEAL ACTIVE · KFMS RA</div>
                 <div class="boot-status-dot" id="boot-status-dot"></div>
             </div>
             <div class="boot-log-panel">
@@ -8199,146 +8199,150 @@ async function showOnboardingWizard() {
     const progressFill = document.getElementById('boot-progress-fill');
     const progressPct = document.getElementById('boot-progress-pct');
     const progressLabel = document.getElementById('boot-progress-label-text');
-    const _delay = ms => new Promise(r => setTimeout(r, ms));
     // Guarantee event fires even on early return or unexpected error
     if (!overlay || !logScroll) {
         document.dispatchEvent(new CustomEvent('neurodeck-boot-complete'));
         return;
     }
     try {
+        const delay = ms => new Promise(r => setTimeout(r, ms));
+        const escapeBootHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        const token = (value, cls = 'boot-val') => `<span class="${cls}">${escapeBootHtml(value)}</span>`;
+        const statusToken = (label, tone = 'boot-ok') => `<span class="${tone}">${escapeBootHtml(label)}</span>`;
 
-    // Dynamic step count — each addLine() call increments step automatically
-    const TOTAL_STEPS = 28;
-    let step = 0;
+        let totalSteps = 16;
+        let step = 0;
+        let addrIndex = 1;
 
-    function setProgress(pct, label) {
-        if (progressFill) progressFill.style.width = Math.min(pct, 100) + '%';
-        if (progressPct) progressPct.textContent = Math.round(Math.min(pct, 100)) + '%';
-        if (label && progressLabel) progressLabel.textContent = label.toUpperCase().slice(0, 45);
-    }
+        function nextAddr() {
+            return `[0x${(addrIndex++).toString(16).padStart(4, '0')}]`;
+        }
 
-    function addLine(addr, html, extraClass) {
-        const line = document.createElement('div');
-        line.className = 'boot-log-line' + (extraClass ? ' ' + extraClass : '');
-        line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
-        logScroll.appendChild(line);
-        logScroll.scrollTop = logScroll.scrollHeight;
-        step++;
-        setProgress((step / TOTAL_STEPS) * 100, line.innerText.replace(addr, '').trim());
-    }
+        function setProgress(pct, label) {
+            const clamped = Math.min(pct, 100);
+            if (progressFill) progressFill.style.width = `${clamped}%`;
+            if (progressPct) progressPct.textContent = `${Math.round(clamped)}%`;
+            if (label && progressLabel) progressLabel.textContent = label.toUpperCase().slice(0, 48);
+        }
 
-    const delay = ms => new Promise(r => setTimeout(r, ms));
+        function addLine(addr, html, extraClass) {
+            const line = document.createElement('div');
+            line.className = `boot-log-line${extraClass ? ` ${extraClass}` : ''}`;
+            line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
+            logScroll.appendChild(line);
+            logScroll.scrollTop = logScroll.scrollHeight;
+            step += 1;
+            const pct = Math.min((step / Math.max(totalSteps, 1)) * 100, 97);
+            setProgress(pct, line.innerText.replace(addr, '').trim());
+        }
 
-    addLine('[0x0001]', 'Initializing kernel space&hellip; KFMS <span class="boot-val">v1.2.0-ra</span> · Codename <span class="boot-val">Ra</span>');
-    await delay(320);
+        addLine(nextAddr(), `Initializing kernel space... KFMS ${token('v1.2.x-ra')} · Codename ${token('Ra')}`);
+        await delay(240);
 
-    addLine('[0x0002]', 'Loading configuration: <span class="boot-val">llm-term.toml</span>');
-    let cfg = null;
-    try { cfg = await invoke('get_config'); } catch (_) {}
-    await delay(280);
+        addLine(nextAddr(), `Loading configuration ${token('llm-term.toml')}`);
+        const [cfg, initialState, plugins, personas, themes, mcpStatus, memCount] = await Promise.all([
+            invoke('get_config').catch(() => null),
+            invoke('get_initial_state').catch(() => null),
+            invoke('list_plugins').catch(() => []),
+            invoke('get_personas').catch(() => []),
+            invoke('get_themes').catch(() => []),
+            invoke('get_mcp_status').catch(() => null),
+            invoke('get_doc_count').catch(() => 0),
+        ]);
+        totalSteps = 12 + Math.max(Array.isArray(plugins) ? plugins.length : 0, 1);
+        await delay(200);
 
-    const prov = cfg?.llm?.default_provider ?? 'ollama';
-    const model = prov === 'gemini' ? (cfg?.llm?.gemini_model ?? 'gemini-1.5-flash') : (cfg?.llm?.ollama_model ?? 'llama2');
-    addLine('[0x0003]', `Provider: <span class="boot-val">${prov.toUpperCase()}</span>  &middot;  Model: <span class="boot-val">${model}</span>  <span class="boot-ok">&check;</span>`);
-    await delay(300);
+        const provider = cfg?.llm?.default_provider ?? initialState?.provider ?? 'ollama';
+        const model = provider === 'gemini'
+            ? (cfg?.llm?.gemini_model ?? initialState?.model ?? 'gemini-1.5-flash')
+            : (cfg?.llm?.ollama_model ?? initialState?.model ?? 'llama2');
+        addLine(nextAddr(), `Provider ${token(provider.toUpperCase())} · Model ${token(model)} ${statusToken('READY')}`);
+        await delay(180);
 
-    addLine('[0x0004]', 'Scanning plugin directory: <span class="boot-val">plugins/</span>');
-    let plugins = [];
-    try { plugins = await invoke('list_plugins'); } catch (_) {}
-    await delay(240);
+        const bootHealthStatus = initialState?.boot_health_status ?? 'unknown';
+        const bootHealthTone = bootHealthStatus === 'healthy' ? 'boot-ok' : (bootHealthStatus === 'recovered' ? 'boot-warn' : 'boot-err');
+        const bootHealthLabel = bootHealthStatus === 'healthy' ? 'HEALTHY' : bootHealthStatus.toUpperCase();
+        const bootHealthSummary = initialState?.boot_health_summary ?? 'Startup health unavailable';
+        addLine(nextAddr(), `Startup recovery ${statusToken(bootHealthLabel, bootHealthTone)} · ${escapeBootHtml(bootHealthSummary)}`);
+        await delay(180);
 
-    const pluginDescMap = {
-        'bmad.lua': 'BMad Framework &mdash; /john /sally /winston /amelia /paige /mary',
-        'ip_lookup.lua': 'IP Lookup Utility',
-        'auto_responder.lua': 'Auto-Responder Hooks',
-        'promptgen.lua': 'Prompt Lab &mdash; /promptlab /promptgen',
-    };
-    let addrIdx = 5;
-    for (const p of plugins) {
-        const fname = p.file_name || p;
-        const desc = pluginDescMap[fname] || (p.description || 'Custom Plugin');
-        const status = p.enabled === false ? '<span style="color:#ff4466">DISABLED</span>' : '<span class="boot-ok">LOADED</span>';
-        addLine(`[0x${addrIdx.toString(16).padStart(4,'0')}]`, `Plugin: <span class="boot-val">${fname}</span>  ${status}  <span style="opacity:0.4">// ${desc}</span>`);
-        addrIdx++;
-        await delay(220);
-    }
-    if (plugins.length === 0) {
-        addLine('[0x0005]', 'No plugins found in plugins/  <span style="opacity:0.5">(dir may be empty)</span>');
-        addrIdx = 6;
-    }
+        addLine(nextAddr(), `Scanning plugin directory ${token('plugins/')}`);
+        await delay(140);
 
-    const luaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(luaAddr, `Starting Lua runtime <span class="boot-val">(v5.4 &mdash; vendored via mlua)</span>&hellip;  <span class="boot-ok">&check;</span>`);
-    addrIdx++;
-    await delay(300);
+        const pluginDescMap = {
+            'bmad.lua': 'BMad Framework',
+            'ip_lookup.lua': 'IP Lookup Utility',
+            'auto_responder.lua': 'Auto-Responder Hooks',
+            'promptgen.lua': 'Prompt Lab',
+        };
+        if (Array.isArray(plugins) && plugins.length > 0) {
+            for (const plugin of plugins) {
+                const fileName = plugin?.file_name || plugin?.name || String(plugin);
+                const description = pluginDescMap[fileName] || plugin?.description || 'Custom Plugin';
+                const enabled = plugin?.enabled !== false;
+                addLine(
+                    nextAddr(),
+                    `Plugin ${token(fileName)} ${statusToken(enabled ? 'LOADED' : 'DISABLED', enabled ? 'boot-ok' : 'boot-warn')} <span style="opacity:0.42">// ${escapeBootHtml(description)}</span>`
+                );
+                await delay(110);
+            }
+        } else {
+            addLine(nextAddr(), `Plugin registry ${statusToken('EMPTY', 'boot-warn')} <span style="opacity:0.42">// no runtime plugins discovered</span>`);
+            await delay(150);
+        }
 
-    const personaAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(personaAddr, 'Enumerating persona registry&hellip;');
-    addrIdx++;
-    let personas = [];
-    try { personas = await invoke('get_personas'); } catch (_) {}
-    await delay(240);
-    const personaAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(personaAddr2, `Registered <span class="boot-val">${personas.length || 9}</span> personas  <span class="boot-ok">&check;</span>`);
-    addrIdx++;
-    await delay(260);
+        addLine(nextAddr(), `Persona registry ${token(Array.isArray(personas) ? personas.length : 0)} online`);
+        await delay(150);
 
-    const themeAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(themeAddr, 'Loading theme palette&hellip;');
-    addrIdx++;
-    let themes = [];
-    try { themes = await invoke('get_themes'); } catch (_) {}
-    await delay(240);
-    const themeAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(themeAddr2, `<span class="boot-val">${themes.length || 6}</span> themes indexed  <span class="boot-ok">&check;</span>`);
-    addrIdx++;
-    await delay(260);
+        addLine(nextAddr(), `Theme palette ${token(Array.isArray(themes) ? themes.length : 0)} variants indexed`);
+        await delay(150);
 
-    const memAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(memAddr, 'Initializing vector memory subsystem&hellip;');
-    addrIdx++;
-    let memCount = 0;
-    try { memCount = await invoke('get_doc_count'); } catch (_) {}
-    await delay(260);
-    const memAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(memAddr2, `Vector memory: <span class="boot-val">${memCount}</span> documents indexed  &middot;  RAG pipeline: <span class="boot-ok">ARMED</span>`);
-    addrIdx++;
-    await delay(280);
+        const memoryReady = initialState?.memory_status === 'Stable';
+        addLine(
+            nextAddr(),
+            `Vector memory ${statusToken(memoryReady ? 'ATTACHED' : 'OFFLINE', memoryReady ? 'boot-ok' : 'boot-warn')} · ${token(memCount)} docs indexed`
+        );
+        await delay(170);
 
-    // Knowledge Base / Docs subsystem
-    const kbAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(kbAddr, 'Knowledge Base module: <span class="boot-val">doc_indexer</span>  &middot;  Semantic search: <span class="boot-ok">READY</span>');
-    addrIdx++;
-    await delay(300);
+        const mcpRunning = mcpStatus?.running === 'true';
+        addLine(
+            nextAddr(),
+            `MCP loopback ${statusToken(mcpRunning ? 'ONLINE' : 'STANDBY', mcpRunning ? 'boot-ok' : 'boot-warn')} · ${token(mcpRunning ? mcpStatus?.url ?? '127.0.0.1' : `port ${mcpStatus?.port ?? '13337'}`)}`
+        );
+        await delay(170);
 
-    const ptyAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(ptyAddr, 'PTY manager: <span class="boot-ok">READY</span>  &middot;  SSH bridge: <span class="boot-ok">READY</span>  &middot;  Collab TCP: <span class="boot-ok">STANDBY</span>');
-    addrIdx++;
-    await delay(300);
+        addLine(nextAddr(), `Running provider handshake against ${token(provider.toUpperCase())}...`);
+        await delay(120);
 
-    // Canvas streaming exec subsystem
-    const cvAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(cvAddr, 'Canvas engine: <span class="boot-ok">READY</span>  &middot;  Streaming exec: <span class="boot-val">exec_code_stream</span>  <span class="boot-ok">&check;</span>');
-    addrIdx++;
-    await delay(320);
+        const llmResult = await invoke('test_llm_connection', {
+            provider,
+            model,
+            url: cfg?.llm?.ollama_base_url ?? 'http://localhost:11434',
+            key: null,
+        }).then((message) => ({ ok: true, message }))
+          .catch((error) => ({ ok: false, message: String(error) }));
 
-    // Real LLM connectivity test
-    const llmAddr = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(llmAddr, `Testing LLM provider [<span class="boot-val">${prov.toUpperCase()}</span>]&hellip;`);
-    addrIdx++;
-    await delay(280);
-    let llmStats = null;
-    try { llmStats = await invoke('get_context_stats'); } catch (_) {}
-    const llmStatus = llmStats ? '<span class="boot-ok">ONLINE</span>' : '<span style="color:#ffaa00">STANDBY</span>';
-    const llmModel = llmStats?.active_model ?? model;
-    const llmAddr2 = `[0x${addrIdx.toString(16).padStart(4,'0')}]`;
-    addLine(llmAddr2, `LLM [<span class="boot-val">${llmModel}</span>]: ${llmStatus}  &middot;  Infrastructure: <span class="boot-ok">ONLINE</span>`);
-    addrIdx++;
-    await delay(350);
+        const llmTone = llmResult.ok ? 'boot-ok' : 'boot-warn';
+        const llmLabel = llmResult.ok ? 'CONNECTED' : 'DEGRADED';
+        addLine(
+            nextAddr(),
+            `LLM session ${statusToken(llmLabel, llmTone)} · ${token(model)} <span style="opacity:0.52">${escapeBootHtml(llmResult.message)}</span>`
+        );
+        await delay(200);
 
-    addLine(`[0x${addrIdx.toString(16).padStart(4,'0')}]`, '<strong style="color:#00ff88;letter-spacing:0.06em">ALL SYSTEMS NOMINAL &mdash; NEURODECK ONLINE &check;</strong>', 'boot-final');
-    setProgress(100, 'NEURODECK ONLINE');
-    await delay(1400);
+        const finalTone = llmResult.ok && memoryReady ? 'boot-ok' : 'boot-warn';
+        addLine(
+            nextAddr(),
+            `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`,
+            'boot-final'
+        );
+        setProgress(100, 'NEURODECK ONLINE');
+        await delay(1100);
 
         overlay.classList.add('fade-out');
         await delay(680);

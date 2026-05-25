@@ -39,13 +39,21 @@
     --primary-color: #00F0FF;
 }
 
+html,
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+}
+
 body {
     background-color: var(--bg-color);
     color: var(--fg-color);
     font-family: var(--font-sans);
     margin: 0;
     padding: 0;
-    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -55,6 +63,13 @@ body {
     touch-action: manipulation;
     /* Remove WebKit tap flash on touch */
     -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
 }
 
 /* Subtle background digital grid and scanlines */
@@ -74,8 +89,10 @@ body::before {
 /* Sleek App Layout Container */
 .app-layout {
     display: flex;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
     position: relative;
     z-index: 10;
@@ -247,6 +264,8 @@ body::before {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
     position: relative;
     overflow: hidden;
     background: transparent;
@@ -259,6 +278,7 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 0 20px;
     background: linear-gradient(180deg,
         rgba(10, 14, 20, 0.98) 0%,
@@ -272,6 +292,8 @@ body::before {
     display: flex;
     align-items: center;
     gap: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .sidebar-toggle-btn {
@@ -362,13 +384,24 @@ body::before {
     font-size: 0.92rem;
     letter-spacing: 0.02em;
     opacity: 0.9;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .top-nav-right {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scrollbar-width: none;
 }
+.top-nav-right::-webkit-scrollbar { display: none; }
 
 .status-badge {
     font-family: var(--font-display);
@@ -1794,12 +1827,15 @@ body::before {
 /* ─── Settings Modal — Apple TV Style ───────────────────────────────────── */
 .settings-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    inset: 0;
     background: rgba(0, 0, 0, 0.88);
     z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow: auto;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -1815,9 +1851,9 @@ body::before {
 /* Modal shell */
 .settings-modal-card {
     width: min(1120px, calc(100vw - 32px));
-    height: min(760px, calc(100vh - 32px));
+    height: min(760px, calc(100dvh - 32px));
     max-width: calc(100vw - 32px);
-    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     background: linear-gradient(145deg, rgba(14,18,26,0.98) 0%, rgba(8,10,16,0.98) 100%);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 18px;
@@ -1825,6 +1861,8 @@ body::before {
     display: flex;
     flex-direction: row;
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
     transform: scale(0.92) translateY(12px);
     transition: transform var(--dur-spring) var(--ease-out-spring),
                 opacity   var(--dur-base)   var(--ease-standard);
@@ -2033,6 +2071,8 @@ body::before {
     flex-direction: column;
     padding: 20px 0 16px;
     gap: 2px;
+    min-height: 0;
+    overflow-y: auto;
 }
 .stv-sidebar-brand {
     padding: 0 18px 18px;
@@ -2162,6 +2202,8 @@ body::before {
     flex: 1;
     overflow: hidden;
     position: relative;
+    min-width: 0;
+    min-height: 0;
 }
 .settings-panel {
     position: absolute;
@@ -3086,6 +3128,8 @@ code {
     overflow: hidden;
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
 }
 
 .view-content {
@@ -3096,6 +3140,9 @@ code {
     top: 0;
     left: 0;
     flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     touch-action: manipulation;
 }
 
@@ -8451,6 +8498,7 @@ body.crt-flicker-disabled .crt-flicker {
     display: flex;
     flex: 1;
     overflow: hidden;
+    min-height: 0;
 }
 .boot-ascii-panel {
     width: 42%;
@@ -8511,6 +8559,8 @@ body.crt-flicker-disabled .crt-flicker {
     flex-direction: column;
     padding: 28px 24px 16px;
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
 }
 .boot-log-header {
     color: rgba(0,240,255,0.35);
@@ -8544,6 +8594,8 @@ body.crt-flicker-disabled .crt-flicker {
 }
 .boot-log-line .boot-addr { color: rgba(0,240,255,0.4); }
 .boot-log-line .boot-ok   { color: var(--response-color); }
+.boot-log-line .boot-warn { color: var(--warning-color); }
+.boot-log-line .boot-err  { color: var(--error-color); }
 .boot-log-line .boot-val  { color: #c0ffc8; font-weight: 600; }
 .boot-log-line.boot-final { color: var(--response-color); font-size: 0.75rem; }
 .boot-progress-bar-wrap {
@@ -8573,6 +8625,51 @@ body.crt-flicker-disabled .crt-flicker {
     border-radius: 2px;
     transition: width 0.45s ease;
     box-shadow: 0 0 8px rgba(94, 235, 255, 0.15);
+}
+
+@media (max-width: 980px), (max-height: 760px) {
+    .top-nav {
+        padding: 0 12px;
+    }
+
+    .boot-main {
+        flex-direction: column;
+    }
+
+    .boot-ascii-panel {
+        width: 100%;
+        min-height: clamp(170px, 28vh, 250px);
+        padding: 20px 16px 14px;
+        border-right: none;
+        border-bottom: 1px solid rgba(0,240,255,0.08);
+    }
+
+    .boot-log-panel {
+        padding: 18px 16px 12px;
+    }
+
+    .boot-progress-bar-wrap {
+        padding: 12px 16px 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .boot-ascii-art {
+        font-size: 0.48rem;
+        max-width: 100%;
+        overflow: auto;
+    }
+
+    .boot-subtitle {
+        font-size: 0.66rem;
+        letter-spacing: 0.16em;
+        text-align: center;
+    }
+
+    .boot-build-tag {
+        font-size: 0.58rem;
+        text-align: center;
+    }
 }
 
 /* Sidebar Diagnostics Footer */
