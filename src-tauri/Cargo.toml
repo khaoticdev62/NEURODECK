@@ -33,7 +33,7 @@ chrono = { version = "0.4", features = ["serde"] }
 lazy_static = "1.5"
 regex = "1"
 mlua = { version = "0.9", features = ["lua54", "vendored", "send"] }
-portable-pty = "0.8"
+portable-pty = "0.9"
 tokio-util = { version = "0.7", features = ["codec"] }
 rand = "0.8"
 anyhow = "1.0"
