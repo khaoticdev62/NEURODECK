@@ -9,6 +9,7 @@ import {
 } from './terminal.js';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
+import { FocusTrap } from './focus-trap.js';
 
 function setStatusMarkup(el, icon, text, color) {
     if (!el) return;
@@ -18,6 +19,7 @@ function setStatusMarkup(el, icon, text, color) {
 
 let settingsOverlay = null;
 let settingsBtn = null;
+let settingsFocusTrap = null;
 let closeSettings = null;
 let closeSettingsX = null;
 
@@ -369,6 +371,8 @@ function openSettingsModal() {
     if (settingsOverlay) settingsOverlay.classList.add("active");
     const lastPanel = localStorage.getItem("settingsActivePanel") || "sp-general";
     activateSettingsPanel(lastPanel);
+    if (!settingsFocusTrap) settingsFocusTrap = new FocusTrap(settingsOverlay);
+    settingsFocusTrap.activate();
     
     // Clear status text
     const statusEl = document.getElementById("settings-llm-status");
@@ -1421,12 +1425,14 @@ export function initSettings() {
     if (closeSettings) {
         closeSettings.onclick = function() {
             if (settingsOverlay) settingsOverlay.classList.remove("active");
+            if (settingsFocusTrap) settingsFocusTrap.deactivate();
         };
     }
 
     if (closeSettingsX) {
         closeSettingsX.onclick = function() {
             if (settingsOverlay) settingsOverlay.classList.remove("active");
+            if (settingsFocusTrap) settingsFocusTrap.deactivate();
         };
     }
 

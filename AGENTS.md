@@ -17,7 +17,7 @@ NEURODECK is an AI-powered terminal OS designed for Steam Deck (and general Linu
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Frontend (React + Vite + TypeScript)       │  <- runs in WebView
+│  Frontend (Vanilla JS + Vite + React islands)│  <- runs in WebView
 │  • Single-page app, 12 view tabs            │
 │  • Gamepad nav, command palette, settings   │
 ├─────────────────────────────────────────────┤
@@ -39,8 +39,8 @@ NEURODECK is an AI-powered terminal OS designed for Steam Deck (and general Linu
 | Layer | Tech |
 |-------|------|
 | Desktop Framework | Tauri v2 (Rust 1.77.2+) |
-| Frontend UI | React 19, TypeScript 5.8, Vite 8 |
-| Frontend State | Zustand |
+| Frontend UI | Vanilla JavaScript (selective React 19 for chat virtualization) |
+| Frontend State | Mutable global plain object (`state.js`); Zustand used only for chat messages |
 | Terminal Emulation | xterm.js |
 | Markdown Rendering | marked (in web worker) |
 | AI Providers | Google Gemini (SSE streaming), Ollama (local) |
@@ -117,7 +117,7 @@ C:\Users\thecr\Desktop\S-Term  (project root)
 │   └── src/
 │       └── main.rs / Cargo.toml
 │
-├── frontend/                   # React + Vite SPA
+├── frontend/                   # Vite-bundled SPA (vanilla JS + selective React)
 │   ├── package.json            # Frontend-only deps
 │   ├── tsconfig.json           # ES2021, React JSX, strict
 │   ├── vite.config.ts          # Port 1420, esbuild minify in release
@@ -244,8 +244,9 @@ The e2e suite mocks Tauri's `__TAURI_INTERNALS__.invoke` so tests run in a pure 
 ### TypeScript / Frontend
 
 - Strict mode enabled. `allowJs: true`, `checkJs: false`.
-- React functional components with hooks.
-- State management via Zustand (`store.ts`).
+- Vanilla JavaScript with imperative DOM manipulation for most views.
+- React used selectively: `VirtualChat.tsx` (chat virtualization) only.
+- State management: mutable global plain object (`state.js`); Zustand (`store.ts`) used only for chat message list.
 - DOM sanitization is mandatory for any HTML injected into chat (`sanitizeRenderedHtml` in `VirtualChat.tsx`).
 - CSS: **never** add `display: flex` or `display: block` to `#view-*` ID rules. Views are shown/hidden via class toggles (`active`) on parent containers.
 - Icons use `.nd-icon-svg` class hierarchy.
@@ -329,7 +330,7 @@ Before any release tag, run `npm run tauri dev` and verify:
 
 ## Key Architectural Decisions
 
-1. **Vanilla frontend bundled as React**: The README mentions "vanilla JavaScript — no React, no Vue" historically, but the current frontend is React 19 + Vite. Treat the current code as source-of-truth.
+1. **Vanilla JS frontend with selective React**: The app bootstraps via vanilla JavaScript (`main.js`, ~8,800 lines). React is used selectively for the chat virtualization layer (`VirtualChat.tsx`) only. All other UI views, state, and DOM manipulation are imperative vanilla JS. `OAuthLogin.tsx` is dead code — OAuth UI is built via `innerHTML` in `main.js`. Treat the current code as source-of-truth.
 2. **Single-Window Tauri App**: One main window (1280×800) plus a splash screen. No multi-window support.
 3. **Streaming LLM via SSE**: Gemini uses Server-Sent Events; Ollama uses its streaming JSON API. Both implement the `LlmProvider` trait.
 4. **Plugin Runtime in Same Process**: Lua runs inside the Tauri process (not sandboxed to a separate OS process). Malicious plugins could execute arbitrary shell commands—this is by design for power-user extensibility, but the marketplace registry is trusted.

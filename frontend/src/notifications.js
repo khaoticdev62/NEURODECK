@@ -1,6 +1,6 @@
 import { state } from './state.js';
 
-function updateNotifBadge() {
+export function updateNotifBadge() {
     const badge = document.getElementById("notif-badge");
     if (!badge) return;
     if (state.unreadNotifCount > 0) {
@@ -11,7 +11,7 @@ function updateNotifBadge() {
     }
 }
 
-function renderNotificationsList() {
+export function renderNotificationsList() {
     const container = document.getElementById("notif-list-container");
     if (!container) return;
 
@@ -61,8 +61,16 @@ export function addNotification(title, text, type = 'info') {
         time: timestamp
     };
     state.notifications.unshift(notif);
+    // Cap notification history to prevent unbounded growth
+    if (state.notifications.length > 100) {
+        state.notifications = state.notifications.slice(0, 100);
+    }
     state.unreadNotifCount++;
     updateNotifBadge();
+
+    if (typeof window.announceToScreenReader === 'function') {
+        window.announceToScreenReader(`${title}: ${text}`);
+    }
 
     const toastContainer = document.getElementById("toast-container");
     if (toastContainer) {
@@ -87,10 +95,14 @@ export function addNotification(title, text, type = 'info') {
         toast.append(titleRow, body);
         toastContainer.appendChild(toast);
 
+        const toastId = notif.id;
         setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-20px)';
-            setTimeout(() => toast.remove(), 300);
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                toast.remove();
+                // Auto-prune dismissed toast from state array
+                state.notifications = state.notifications.filter(n => n.id !== toastId);
+            }, 300);
         }, 4000);
     }
 

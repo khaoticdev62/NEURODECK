@@ -1,5 +1,6 @@
-use crate::*;
 use crate::llm::GeminiProvider;
+use crate::*;
+use neurodeck_core::ipc::{Intent, StatePatch};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -7,7 +8,6 @@ use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use neurodeck_core::ipc::{Intent, StatePatch};
 
 #[tauri::command]
 pub fn get_game_context() -> HashMap<String, String> {
@@ -25,7 +25,7 @@ pub fn get_game_context() -> HashMap<String, String> {
 pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut initial = HashMap::new();
-    
+
     let model_name = if app.config.llm.default_provider == "gemini" {
         &app.config.llm.gemini_model
     } else {
@@ -33,16 +33,30 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
     };
 
     initial.insert("model".to_string(), model_name.clone());
-    initial.insert("provider".to_string(), app.config.llm.default_provider.clone());
-    initial.insert("active_agent_id".to_string(), app.config.llm.active_agent_id.clone());
+    initial.insert(
+        "provider".to_string(),
+        app.config.llm.default_provider.clone(),
+    );
+    initial.insert(
+        "active_agent_id".to_string(),
+        app.config.llm.active_agent_id.clone(),
+    );
     initial.insert("session_id".to_string(), app.session_id.clone());
     initial.insert("active_persona".to_string(), app.active_persona.clone());
     initial.insert(
         "memory_status".to_string(),
-        if app.mem_db.is_some() { "Stable" } else { "Offline" }.to_string(),
+        if app.mem_db.is_some() {
+            "Stable"
+        } else {
+            "Offline"
+        }
+        .to_string(),
     );
     initial.insert("tool_status".to_string(), "Idle".to_string());
-    initial.insert("boot_health_status".to_string(), app.boot_self_heal.status.clone());
+    initial.insert(
+        "boot_health_status".to_string(),
+        app.boot_self_heal.status.clone(),
+    );
     initial.insert(
         "boot_health_summary".to_string(),
         app.boot_self_heal.summary(),
@@ -91,10 +105,7 @@ pub async fn execute_command(cmd_str: String) -> String {
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub async fn execute_lua(
-    code: String,
-    app_handle: AppHandle,
-) -> Result<(), String> {
+pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
     let app_handle_clone = app_handle.clone();
     tokio::task::spawn_blocking(move || {
         let lua_state = app_handle_clone.state::<LuaState>();
@@ -110,7 +121,9 @@ pub async fn execute_lua(
                 Err(e)
             }
         }
-    }).await.map_err(|e| format!("Task join error: {}", e))?
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
 }
 
 #[tauri::command]
@@ -252,14 +265,19 @@ pub async fn execute_command_stream(
 }
 
 #[tauri::command]
-pub async fn write_to_process(input: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+pub async fn write_to_process(
+    input: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
     let tx = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.process_stdin_tx.clone()
     };
 
     if let Some(tx) = tx {
-        tx.send(input).await.map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
+        tx.send(input)
+            .await
+            .map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
         Ok(())
     } else {
         Err("No active process running to write to".to_string())
@@ -284,7 +302,7 @@ pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), Strin
 #[tauri::command]
 pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    
+
     if cfg!(target_os = "linux") {
         let wav_path = user_config_dir().join("temp_record.wav");
         let wav_str = wav_path.to_string_lossy().to_string();
@@ -332,8 +350,17 @@ pub fn set_whisper_config(
     // SECURITY: Validate model path to prevent command injection via model arg.
     if !model.is_empty() {
         let model_path = std::path::Path::new(&model);
-        let model_name = model_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        if model_name.is_empty() || model.contains(';') || model.contains('&') || model.contains('|') || model.contains('$') || model.contains('`') {
+        let model_name = model_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        if model_name.is_empty()
+            || model.contains(';')
+            || model.contains('&')
+            || model.contains('|')
+            || model.contains('$')
+            || model.contains('`')
+        {
             return Err("Invalid whisper model path: contains dangerous characters.".into());
         }
     }
@@ -354,8 +381,8 @@ pub fn set_whisper_config(
 #[tauri::command]
 pub fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let model_exists = !app.whisper_model.is_empty()
-        && std::path::Path::new(&app.whisper_model).exists();
+    let model_exists =
+        !app.whisper_model.is_empty() && std::path::Path::new(&app.whisper_model).exists();
     let available = whisper::is_available(&app.whisper_binary);
     serde_json::json!({
         "configured": model_exists && available,
@@ -377,12 +404,13 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
             "Whisper model path not set. Configure it in Settings → Whisper STT.".to_string(),
         );
     }
-    let wav_str = user_config_dir().join("temp_record.wav").to_string_lossy().to_string();
-    tokio::task::spawn_blocking(move || {
-        whisper::transcribe(&wav_str, &binary, &model)
-    })
-    .await
-    .map_err(|e| format!("Thread error: {}", e))?
+    let wav_str = user_config_dir()
+        .join("temp_record.wav")
+        .to_string_lossy()
+        .to_string();
+    tokio::task::spawn_blocking(move || whisper::transcribe(&wav_str, &binary, &model))
+        .await
+        .map_err(|e| format!("Thread error: {}", e))?
 }
 
 #[tauri::command]
@@ -438,14 +466,29 @@ pub async fn download_whisper_model(
     model: String,
     app_handle: AppHandle,
 ) -> Result<String, String> {
-    const VALID: &[&str] = &["tiny.en", "base.en", "small.en", "medium.en", "tiny", "base", "small", "medium"];
+    const VALID: &[&str] = &[
+        "tiny.en",
+        "base.en",
+        "small.en",
+        "medium.en",
+        "tiny",
+        "base",
+        "small",
+        "medium",
+    ];
     if !VALID.contains(&model.as_str()) {
-        return Err(format!("Unknown model '{}'. Valid: tiny.en, base.en, small.en, medium.en", model));
+        return Err(format!(
+            "Unknown model '{}'. Valid: tiny.en, base.en, small.en, medium.en",
+            model
+        ));
     }
 
     let models_dir = get_home_dir()
         .ok_or("Cannot determine home dir")?
-        .join(".local").join("share").join("neurodeck").join("models");
+        .join(".local")
+        .join("share")
+        .join("neurodeck")
+        .join("models");
     std::fs::create_dir_all(&models_dir).map_err(|e| format!("mkdir: {}", e))?;
 
     let filename = format!("ggml-{}.bin", model);
@@ -453,8 +496,10 @@ pub async fn download_whisper_model(
 
     if target.exists() {
         let path_str = target.to_string_lossy().to_string();
-        let _ = app_handle.emit("whisper_download_progress",
-            serde_json::json!({ "done": true, "pct": 100, "path": &path_str, "skipped": true }));
+        let _ = app_handle.emit(
+            "whisper_download_progress",
+            serde_json::json!({ "done": true, "pct": 100, "path": &path_str, "skipped": true }),
+        );
         return Ok(path_str);
     }
 
@@ -463,8 +508,10 @@ pub async fn download_whisper_model(
         model
     );
 
-    let _ = app_handle.emit("whisper_download_progress",
-        serde_json::json!({ "done": false, "pct": 0, "file": &filename }));
+    let _ = app_handle.emit(
+        "whisper_download_progress",
+        serde_json::json!({ "done": false, "pct": 0, "file": &filename }),
+    );
 
     let app2 = app_handle.clone();
     let target2 = target.clone();
@@ -520,8 +567,14 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<()
         if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
             copy_dir_recursive(&src_path, &dst_path)?;
         } else {
-            std::fs::copy(&src_path, &dst_path)
-                .map_err(|e| format!("copy {} → {}: {}", src_path.display(), dst_path.display(), e))?;
+            std::fs::copy(&src_path, &dst_path).map_err(|e| {
+                format!(
+                    "copy {} → {}: {}",
+                    src_path.display(),
+                    dst_path.display(),
+                    e
+                )
+            })?;
         }
     }
     Ok(())
@@ -544,7 +597,9 @@ pub async fn install_bmad_to_dir(
         bmad_source
     } else {
         let dev_path = std::path::PathBuf::from("../assets/bmad-bundle");
-        if dev_path.exists() { dev_path } else {
+        if dev_path.exists() {
+            dev_path
+        } else {
             return Err("BMAD bundle not found. Please reinstall NEURODECK.".to_string());
         }
     };
@@ -554,8 +609,7 @@ pub async fn install_bmad_to_dir(
         return Err(format!("Target directory does not exist: {}", target_dir));
     }
 
-    copy_dir_recursive(&bmad_source, &target)
-        .map_err(|e| format!("BMAD install failed: {}", e))?;
+    copy_dir_recursive(&bmad_source, &target).map_err(|e| format!("BMAD install failed: {}", e))?;
 
     Ok(format!(
         "BMAD installed to {}  (_bmad/ + .claude/skills/ with 44 skill sets)",
@@ -571,18 +625,23 @@ pub struct MemoryRecordFrontend {
 }
 
 #[tauri::command]
-pub fn memory_list_all(state: State<'_, Mutex<AppState>>) -> Result<Vec<MemoryRecordFrontend>, String> {
+pub fn memory_list_all(
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<MemoryRecordFrontend>, String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
     };
     let db = mem_db.ok_or("Memory database not initialized")?;
     let records = db.list_all()?;
-    Ok(records.into_iter().map(|r| MemoryRecordFrontend {
-        id: r.id,
-        content: r.content,
-        metadata: r.metadata,
-    }).collect())
+    Ok(records
+        .into_iter()
+        .map(|r| MemoryRecordFrontend {
+            id: r.id,
+            content: r.content,
+            metadata: r.metadata,
+        })
+        .collect())
 }
 
 #[tauri::command]
@@ -596,7 +655,11 @@ pub fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<()
 }
 
 #[tauri::command]
-pub fn memory_pin(id: String, pinned: bool, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+pub fn memory_pin(
+    id: String,
+    pinned: bool,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.mem_db.clone()
@@ -606,7 +669,10 @@ pub fn memory_pin(id: String, pinned: bool, state: State<'_, Mutex<AppState>>) -
 }
 
 #[tauri::command]
-pub fn memory_add_fact(content: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub fn memory_add_fact(
+    content: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
     if content.trim().is_empty() {
         return Err("Fact content cannot be empty".to_string());
     }
@@ -621,7 +687,9 @@ pub fn memory_add_fact(content: String, state: State<'_, Mutex<AppState>>) -> Re
 }
 
 #[tauri::command]
-pub async fn start_oauth_flow(state: State<'_, Mutex<AppState>>) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
+pub async fn start_oauth_flow(
+    state: State<'_, Mutex<AppState>>,
+) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
     let client_id = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.config.llm.google_client_id.clone()
@@ -637,7 +705,11 @@ pub async fn start_oauth_flow(state: State<'_, Mutex<AppState>>) -> Result<neuro
 }
 
 #[tauri::command]
-pub async fn poll_oauth_token(device_code: String, interval: u64, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+pub async fn poll_oauth_token(
+    device_code: String,
+    interval: u64,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
     let client_id = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.config.llm.google_client_id.clone()
@@ -650,8 +722,9 @@ pub async fn poll_oauth_token(device_code: String, interval: u64, state: State<'
             ..neurodeck_infrastructure::oauth::OAuthConfig::default()
         }
     };
-    let token = neurodeck_infrastructure::oauth::poll_for_token(&config, &device_code, interval).await?;
-    
+    let token =
+        neurodeck_infrastructure::oauth::poll_for_token(&config, &device_code, interval).await?;
+
     // Save to OS Keychain
     neurodeck_infrastructure::secrets::save_gemini_api_key(&token)?;
 
@@ -661,7 +734,7 @@ pub async fn poll_oauth_token(device_code: String, interval: u64, state: State<'
         app.config.llm.gemini_model.clone(),
         token.clone(),
     ));
-    
+
     Ok(())
 }
 
@@ -686,16 +759,23 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     // 1. Check PTY access
     let pty_ok = std::panic::catch_unwind(|| {
         let pty_system = portable_pty::native_pty_system();
-        pty_system.openpty(portable_pty::PtySize {
-            rows: 24,
-            cols: 80,
-            pixel_width: 0,
-            pixel_height: 0,
-        }).is_ok()
-    }).unwrap_or(false);
-    
+        pty_system
+            .openpty(portable_pty::PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .is_ok()
+    })
+    .unwrap_or(false);
+
     let pty_details = if pty_ok {
-        let shell = if cfg!(target_os = "windows") { "powershell.exe" } else { "bash" };
+        let shell = if cfg!(target_os = "windows") {
+            "powershell.exe"
+        } else {
+            "bash"
+        };
         format!("Shell Subsystem active (Default: {})", shell)
     } else {
         "Failed to open PTY device".to_string()
@@ -706,16 +786,20 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         .timeout(std::time::Duration::from_secs(3))
         .build()
         .map_err(|e| e.to_string())?;
-        
-    let network_res = client.get("https://generativelanguage.googleapis.com/")
+
+    let network_res = client
+        .get("https://generativelanguage.googleapis.com/")
         .send()
         .await;
-        
+
     let (network_ok, network_details) = match network_res {
         Ok(_) => (true, "Gemini API endpoint reachable".to_string()),
         Err(e) => {
             if client.get("https://www.google.com").send().await.is_ok() {
-                (true, "Internet active, but Gemini endpoint restricted".to_string())
+                (
+                    true,
+                    "Internet active, but Gemini endpoint restricted".to_string(),
+                )
             } else {
                 (false, format!("Network unreachable: {}", e))
             }
@@ -723,9 +807,8 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     };
 
     // 3. Check Keychain access
-    let keychain_res = std::panic::catch_unwind(|| {
-        neurodeck_infrastructure::secrets::test_keychain_access()
-    });
+    let keychain_res =
+        std::panic::catch_unwind(neurodeck_infrastructure::secrets::test_keychain_access);
 
     let (keychain_ok, keychain_details) = match keychain_res {
         Ok(Ok(())) => (true, "Secure credential storage active".to_string()),
@@ -798,7 +881,9 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         } else {
             (false, "SSH binary not found in PATH".to_string())
         }
-    }).await.unwrap_or((false, "SSH check panicked".to_string()));
+    })
+    .await
+    .unwrap_or((false, "SSH check panicked".to_string()));
 
     // 6. Check TTS binary availability
     let (tts_ok, tts_details) = tokio::task::spawn_blocking(|| {
@@ -824,19 +909,27 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         {
             // Linux: check espeak-ng or espeak
-            if std::process::Command::new("which").arg("espeak-ng").output()
-                .map(|o| o.status.success()).unwrap_or(false)
+            if std::process::Command::new("which")
+                .arg("espeak-ng")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
             {
                 (true, "espeak-ng TTS available".to_string())
-            } else if std::process::Command::new("which").arg("espeak").output()
-                .map(|o| o.status.success()).unwrap_or(false)
+            } else if std::process::Command::new("which")
+                .arg("espeak")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
             {
                 (true, "espeak TTS available".to_string())
             } else {
                 (false, "No TTS engine found (install espeak-ng)".to_string())
             }
         }
-    }).await.unwrap_or((false, "TTS check panicked".to_string()));
+    })
+    .await
+    .unwrap_or((false, "TTS check panicked".to_string()));
 
     Ok(DiagnosticResult {
         pty_ok,
@@ -871,8 +964,17 @@ pub struct ContextStats {
 #[tauri::command]
 pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
     // Scope the lock so it is released before the blocking OS RAM query below.
-    let (active_provider, active_model, memory_records_count, memory_pinned_count,
-         memory_last_store, session_id, session_messages_count, session_created, active_persona) = {
+    let (
+        active_provider,
+        active_model,
+        memory_records_count,
+        memory_pinned_count,
+        memory_last_store,
+        session_id,
+        session_messages_count,
+        session_created,
+        active_persona,
+    ) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
 
         let active_provider = app.config.llm.default_provider.clone();
@@ -889,7 +991,10 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
         if let Some(ref db) = app.mem_db {
             if let Ok(records) = db.list_all() {
                 memory_records_count = records.len();
-                memory_pinned_count = records.iter().filter(|r| r.metadata.get("pinned") == Some(&"true".to_string())).count();
+                memory_pinned_count = records
+                    .iter()
+                    .filter(|r| r.metadata.get("pinned") == Some(&"true".to_string()))
+                    .count();
                 if memory_records_count > 0 {
                     memory_last_store = "Connected".to_string();
                 }
@@ -901,19 +1006,39 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
         let session_created = if session_id.len() >= 15 {
             let date = &session_id[0..8];
             let time = &session_id[9..15];
-            format!("{}-{}-{} {}:{}:{}", &date[0..4], &date[4..6], &date[6..8], &time[0..2], &time[2..4], &time[4..6])
+            format!(
+                "{}-{}-{} {}:{}:{}",
+                &date[0..4],
+                &date[4..6],
+                &date[6..8],
+                &time[0..2],
+                &time[2..4],
+                &time[4..6]
+            )
         } else {
             "N/A".to_string()
         };
 
         let active_persona = app.active_persona.clone();
-        (active_provider, active_model, memory_records_count, memory_pinned_count,
-         memory_last_store, session_id, session_messages_count, session_created, active_persona)
+        (
+            active_provider,
+            active_model,
+            memory_records_count,
+            memory_pinned_count,
+            memory_last_store,
+            session_id,
+            session_messages_count,
+            session_created,
+            active_persona,
+        )
     }; // AppState lock released here — RAM query below does not block other commands
 
     let ram_available = if cfg!(target_os = "windows") {
         let output = std::process::Command::new("cmd")
-            .args(["/c", "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value"])
+            .args([
+                "/c",
+                "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value",
+            ])
             .output();
         if let Ok(out) = output {
             let res = String::from_utf8_lossy(&out.stdout);
@@ -971,7 +1096,10 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
 
 /// Explains a generated prompt in Just Plain English (JPE).
 #[tauri::command]
-pub async fn generate_jpe_explanation(prompt_text: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn generate_jpe_explanation(
+    prompt_text: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
@@ -982,9 +1110,14 @@ pub async fn generate_jpe_explanation(prompt_text: String, state: State<'_, Mute
     }
 
     let system_prompt = "You are a prompt engineering expert. Your task is to explain the intent of the following prompt in Just Plain English (JPE), so that anyone can understand it. Use simple, grade-8 reading level language. Summarize the role, the task, the constraints, and the expected format concisely. Do not evaluate the prompt, just explain what it asks the AI to do.";
-    let query = format!("Explain the following prompt in simple English, step by step:\n\n{}", prompt_text);
+    let query = format!(
+        "Explain the following prompt in simple English, step by step:\n\n{}",
+        prompt_text
+    );
 
-    let result = provider.chat_with_image(&query, system_prompt, None, None).await?;
+    let result = provider
+        .chat_with_image(&query, system_prompt, None, None)
+        .await?;
     Ok(result.trim().to_string())
 }
 
@@ -1033,7 +1166,7 @@ pub async fn optimize_raw_prompt(
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
     };
-    
+
     if raw_text.trim().is_empty() {
         return Err("Input draft cannot be empty".to_string());
     }
@@ -1050,17 +1183,24 @@ JSON Schema:\n\
   \"format\": \"the expected output structure or format (e.g. 'markdown table', 'code block')\"\n\
 }";
 
-    let result = provider.chat_with_image(&raw_text, system_prompt, None, None).await?;
-    
+    let result = provider
+        .chat_with_image(&raw_text, system_prompt, None, None)
+        .await?;
+
     // Clean JSON markdown codeblocks if returned
-    let cleaned = result.trim()
+    let cleaned = result
+        .trim()
         .trim_start_matches("```json")
         .trim_start_matches("```")
         .trim_end_matches("```")
         .trim();
 
-    let schema: PromptSchema = serde_json::from_str(cleaned)
-        .map_err(|e| format!("Failed to parse LLM response into prompt schema: {}. Raw response: {}", e, result))?;
+    let schema: PromptSchema = serde_json::from_str(cleaned).map_err(|e| {
+        format!(
+            "Failed to parse LLM response into prompt schema: {}. Raw response: {}",
+            e, result
+        )
+    })?;
 
     Ok(schema)
 }
@@ -1093,9 +1233,14 @@ pub async fn generate_jpe_explanation_with_level(
         tone_instruction
     );
 
-    let query = format!("Explain the following prompt in simple English, step by step:\n\n{}", prompt_text);
+    let query = format!(
+        "Explain the following prompt in simple English, step by step:\n\n{}",
+        prompt_text
+    );
 
-    let result = provider.chat_with_image(&query, &system_prompt, None, None).await?;
+    let result = provider
+        .chat_with_image(&query, &system_prompt, None, None)
+        .await?;
     Ok(result.trim().to_string())
 }
 
@@ -1107,7 +1252,8 @@ pub fn save_prompt_preset(name: String, schema_json: String) -> Result<(), Strin
 
     let mut presets = if path.exists() {
         let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default()
+        serde_json::from_str::<std::collections::HashMap<String, String>>(&content)
+            .unwrap_or_default()
     } else {
         std::collections::HashMap::new()
     };
@@ -1126,14 +1272,18 @@ pub fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>
         return Ok(std::collections::HashMap::new());
     }
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let presets = serde_json::from_str::<std::collections::HashMap<String, String>>(&content).unwrap_or_default();
+    let presets = serde_json::from_str::<std::collections::HashMap<String, String>>(&content)
+        .unwrap_or_default();
     Ok(presets)
 }
 
 /// AI-powered terminal autocomplete.
 /// Takes the current terminal input buffer and returns suggested completion suffix.
 #[tauri::command]
-pub async fn shell_autocomplete(buffer: String, state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn shell_autocomplete(
+    buffer: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
@@ -1148,7 +1298,9 @@ pub async fn shell_autocomplete(buffer: String, state: State<'_, Mutex<AppState>
     let prompt = format!("Complete this shell command: {}", buffer);
 
     // Use chat_with_image (text-only, no image) for a single-shot non-streaming response
-    let result = provider.chat_with_image(&prompt, system_prompt, None, None).await?;
+    let result = provider
+        .chat_with_image(&prompt, system_prompt, None, None)
+        .await?;
 
     // Clean the result: strip any leading text the model may have added
     let completion = result.trim().to_string();
@@ -1242,7 +1394,8 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                let ext = path.extension()
+                let ext = path
+                    .extension()
                     .and_then(|e| e.to_str())
                     .map(|e| e.to_lowercase())
                     .unwrap_or_default();
@@ -1263,7 +1416,8 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 
     let path = best_path.ok_or_else(|| "No screenshot files found".to_string())?;
 
-    let ext = path.extension()
+    let ext = path
+        .extension()
         .and_then(|e| e.to_str())
         .map(|e| e.to_lowercase())
         .unwrap_or_else(|| "png".to_string());
@@ -1275,8 +1429,7 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
         _ => "image/png",
     };
 
-    let data = std::fs::read(&path)
-        .map_err(|e| format!("Failed to read screenshot: {}", e))?;
+    let data = std::fs::read(&path).map_err(|e| format!("Failed to read screenshot: {}", e))?;
 
     use base64::prelude::*;
     let b64 = BASE64_STANDARD.encode(&data);
@@ -1292,7 +1445,10 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 /// AI-powered shell history search.
 /// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
 #[tauri::command]
-pub async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
+pub async fn search_history_ai(
+    query: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<String>, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.provider.clone()
@@ -1308,7 +1464,11 @@ pub async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>)
         {
             if let Ok(home) = std::env::var("HOME") {
                 let home_path = PathBuf::from(&home);
-                for rel in &[".bash_history", ".zsh_history", ".local/share/fish/fish_history"] {
+                for rel in &[
+                    ".bash_history",
+                    ".zsh_history",
+                    ".local/share/fish/fish_history",
+                ] {
                     let p = home_path.join(rel);
                     if p.exists() {
                         files.push(p);
@@ -1367,11 +1527,17 @@ pub async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>)
 
     let history_text = history_sample.join("\n");
     let system_prompt = "You are a shell history search assistant. The user provides a natural-language search query and a list of past shell commands. You must return ONLY the 10 most relevant commands from the list, ordered from most to least relevant. Return exactly one command per line, with no numbering, commentary, or extra text. If fewer than 10 commands are relevant, return only the relevant ones.";
-    let prompt = format!("Search query: \"{}\"\n\nShell history:\n{}", query, history_text);
+    let prompt = format!(
+        "Search query: \"{}\"\n\nShell history:\n{}",
+        query, history_text
+    );
 
-    let raw = provider.chat_with_image(&prompt, system_prompt, None, None).await?;
+    let raw = provider
+        .chat_with_image(&prompt, system_prompt, None, None)
+        .await?;
 
-    let results: Vec<String> = raw.lines()
+    let results: Vec<String> = raw
+        .lines()
         .map(|l| l.trim().to_string())
         .filter(|l| !l.is_empty())
         .take(10)
@@ -1381,7 +1547,9 @@ pub async fn search_history_ai(query: String, state: State<'_, Mutex<AppState>>)
 }
 
 fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
-    let extensions = ["txt", "md", "rs", "py", "js", "ts", "json", "toml", "yaml", "yml", "csv", "log"];
+    let extensions = [
+        "txt", "md", "rs", "py", "js", "ts", "json", "toml", "yaml", "yml", "csv", "log",
+    ];
     if collected.len() >= max {
         return;
     }
@@ -1396,12 +1564,17 @@ fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
         let path = entry.path();
         if path.is_dir() {
             // Skip hidden directories
-            if path.file_name().map(|n| n.to_string_lossy().starts_with('.')).unwrap_or(false) {
+            if path
+                .file_name()
+                .map(|n| n.to_string_lossy().starts_with('.'))
+                .unwrap_or(false)
+            {
                 continue;
             }
             collect_text_files(&path, collected, max);
         } else if path.is_file() {
-            let ext = path.extension()
+            let ext = path
+                .extension()
                 .and_then(|e| e.to_str())
                 .map(|e| e.to_lowercase())
                 .unwrap_or_default();
@@ -1432,7 +1605,9 @@ pub async fn index_directory(
     if !dir.is_dir() {
         return Err(format!("'{}' is not a directory", path));
     }
-    let canonical_dir = dir.canonicalize().map_err(|e| format!("Failed to canonicalize directory: {}", e))?;
+    let canonical_dir = dir
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize directory: {}", e))?;
     let mut safe = false;
     if let Some(home) = crate::get_home_dir() {
         if let Ok(canonical_home) = home.canonicalize() {
@@ -1458,7 +1633,10 @@ pub async fn index_directory(
     collect_text_files(&canonical_dir, &mut files, 500);
 
     let total = files.len();
-    let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": 0, "total": total }));
+    let _ = app_handle.emit(
+        "doc_index_progress",
+        serde_json::json!({ "indexed": 0, "total": total }),
+    );
 
     let mut indexed = 0usize;
     for file in files {
@@ -1478,10 +1656,16 @@ pub async fn index_directory(
             let _ = db.store_message(id, snippet, embedding, metadata);
             indexed += 1;
         }
-        let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total }));
+        let _ = app_handle.emit(
+            "doc_index_progress",
+            serde_json::json!({ "indexed": indexed, "total": total }),
+        );
     }
 
-    let _ = app_handle.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total, "done": true }));
+    let _ = app_handle.emit(
+        "doc_index_progress",
+        serde_json::json!({ "indexed": indexed, "total": total, "done": true }),
+    );
     Ok(indexed)
 }
 
@@ -1506,7 +1690,9 @@ pub fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, Strin
 }
 
 fn game_notes_path(app_id: &str) -> PathBuf {
-    user_config_dir().join("data/game_notes").join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
+    user_config_dir()
+        .join("data/game_notes")
+        .join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
 }
 
 #[tauri::command]
@@ -1529,7 +1715,10 @@ pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn start_mcp_server(port: u16, state: State<'_, Mutex<AppState>>) -> Result<serde_json::Value, String> {
+pub async fn start_mcp_server(
+    port: u16,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<serde_json::Value, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
@@ -1714,7 +1903,10 @@ pub fn canvas_collab_status(state: State<'_, Mutex<AppState>>) -> HashMap<String
         "mode".to_string(),
         s.collab_mode.clone().unwrap_or_else(|| "idle".to_string()),
     );
-    result.insert("addr".to_string(), s.collab_addr.clone().unwrap_or_default());
+    result.insert(
+        "addr".to_string(),
+        s.collab_addr.clone().unwrap_or_default(),
+    );
     let peers = s
         .collab_peer_count
         .as_ref()
@@ -1753,23 +1945,26 @@ pub async fn close_splashscreen(window: tauri::Window) {
 pub async fn dispatch_action(
     action: Intent,
     app_handle: AppHandle,
-    _state: State<'_, Mutex<AppState>>
+    _state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
     tracing::info!("Received Intent: {:?}", action);
 
     match action {
         Intent::StartTerminal { id, shell } => {
             tracing::info!("StartTerminal called for id {} with shell {:?}", id, shell);
-            let patch = StatePatch::TerminalOutput { 
-                id: id.clone(), 
-                data: format!("Initializing terminal {}...\n", id) 
+            let patch = StatePatch::TerminalOutput {
+                id: id.clone(),
+                data: format!("Initializing terminal {}...\n", id),
             };
             let _ = app_handle.emit("state_patch", patch);
-        },
+        }
         _ => {
-            tracing::warn!("Intent not fully handled yet in backend migration: {:?}", action);
+            tracing::warn!(
+                "Intent not fully handled yet in backend migration: {:?}",
+                action
+            );
         }
     }
-    
+
     Ok(())
 }

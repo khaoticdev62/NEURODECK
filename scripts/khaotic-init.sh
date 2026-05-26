@@ -137,6 +137,9 @@ PRESERVE=(
   "uv.lock"
   "SteamOS_LLM_Terminal_PRD_SDS.md"
   "SteamOS_LLM_Terminal_PRD_SDS.pdf"
+  ".rustfmt.toml"
+  "clippy.toml"
+  ".prettierrc"
 )
 
 # ---------------------------------------------------------------------------

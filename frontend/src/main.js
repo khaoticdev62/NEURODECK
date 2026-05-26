@@ -24,10 +24,25 @@ import './app.css';
 import { invoke } from '@tauri-apps/api/core';
 import QRCode from 'qrcode';
 import { applyNeurodeckIconography, createIcon } from './icons.js';
-import { addNotification } from './notifications.js';
+import { addNotification, updateNotifBadge, renderNotificationsList } from './notifications.js';
 import { initAgentView } from './agent.js';
 import { initMemoryView } from './memory.js';
 import { initTorrentClient } from './torrent.js';
+import { FocusTrap } from './focus-trap.js';
+
+// ==========================================================================
+// SCREEN-READER ANNOUNCER (a11y)
+// ==========================================================================
+function announceToScreenReader(message) {
+    const announcer = document.getElementById("sr-announcer");
+    if (!announcer) return;
+    // Clear first so identical messages re-announce
+    announcer.textContent = "";
+    requestAnimationFrame(() => {
+        announcer.textContent = String(message);
+    });
+}
+window.announceToScreenReader = announceToScreenReader;
 
 async function triggerOAuthLogin() {
     let chatViewport = document.getElementById("chat-viewport");
@@ -187,10 +202,16 @@ window.applyThemeColors = function(theme) {
     if (!theme) return;
     const bg = theme.Background || theme.background || '#000000';
     const fg = theme.Foreground || theme.foreground || '#e2e8f0';
-    const accent = theme.Accent || theme.accent || '#00F0FF';
+    const accent = theme.Accent || theme.accent || '#5EEBFF';
     const response = theme.Response || theme.response || '#00FF88';
     const warning = theme.Warning || theme.warning || '#FFB000';
     const error = theme.Error || theme.error || '#FF3C5A';
+    const name = theme.Name || theme.name || '';
+    const color = theme.Color || theme.color || '';
+    let pulse = theme.Pulse || theme.pulse || [];
+    if (typeof pulse === 'string') {
+        try { pulse = JSON.parse(pulse); } catch { pulse = []; }
+    }
 
     document.documentElement.style.setProperty('--bg-color', bg);
     document.documentElement.style.setProperty('--fg-color', fg);
@@ -198,6 +219,15 @@ window.applyThemeColors = function(theme) {
     document.documentElement.style.setProperty('--response-color', response);
     document.documentElement.style.setProperty('--warning-color', warning);
     document.documentElement.style.setProperty('--error-color', error);
+    document.documentElement.style.setProperty('--theme-name', `"${name}"`);
+    document.documentElement.style.setProperty('--theme-color', color);
+
+    // Expose pulse gradient stops as CSS variables for animation use
+    if (Array.isArray(pulse)) {
+        for (let i = 0; i < 10; i++) {
+            document.documentElement.style.setProperty(`--pulse-${i}`, pulse[i] || accent);
+        }
+    }
 
     const xtermTheme = {
         background: bg,
@@ -506,7 +536,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Live Code Canvas View -->
-                <div class="view-content" id="view-canvas">
+                <div class="view-content view-layout-column" id="view-canvas">
                     <div class="canvas-toolbar">
                         <select id="canvas-lang-select" class="canvas-lang-select">
                             <option value="html">HTML</option>
@@ -550,7 +580,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Interactive PTY Terminal View -->
-                <div class="view-content" id="view-terminal">
+                <div class="view-content view-layout-column" id="view-terminal">
                     <!-- Unified top bar: session tabs + shell selector + actions in one row -->
                     <div class="term-topbar">
                         <div class="term-session-tabs" id="terminal-tabs-list"></div>
@@ -681,7 +711,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- LAN File Sharing / SFTP / FTP View -->
-                <div class="view-content" id="view-share">
+                <div class="view-content view-layout-column" id="view-share">
                     <div class="share-view-header">
                         <span class="share-view-kicker">Transfer Mesh</span>
                         <span class="share-view-title">📤 Share &amp; Transfer</span>
@@ -1039,7 +1069,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Autonomous Coding Agent View -->
-                <div class="view-content" id="view-agent">
+                <div class="view-content view-layout-column" id="view-agent">
                     <div class="agent-shell">
                         <div class="agent-shell-header">
                             <span class="agent-kicker">Execution Fabric</span>
@@ -1281,7 +1311,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Memory UI View -->
-                <div class="view-content" id="view-memory">
+                <div class="view-content view-layout-column" id="view-memory">
                     <div class="memory-shell">
                         <div class="memory-toolbar">
                             <div class="memory-toolbar-title">
@@ -1420,7 +1450,7 @@ document.querySelector('#app').innerHTML = `
                 <!-- ============================================================ -->
                 <!-- VIEW: DOCS — Knowledge Base Viewer                           -->
                 <!-- ============================================================ -->
-                <div class="view-content" id="view-docs">
+                <div class="view-content view-layout-column" id="view-docs">
                     <div class="docs-container">
                         <div class="docs-header">
                             <div class="docs-header-left">
@@ -1672,11 +1702,11 @@ document.querySelector('#app').innerHTML = `
                             </div>
                         </div>
 
-                        <div style="display:flex;gap:10px;margin:14px 0 4px;">
-                            <button class="stv-btn-ghost" id="settings-test-connection-btn" style="flex:1;">Test Connection</button>
-                            <button class="stv-btn-primary" id="settings-save-llm-btn" style="flex:1;">Save &amp; Apply</button>
+                        <div class="stv-action-bar">
+                            <button class="stv-btn-ghost" id="settings-test-connection-btn">Test Connection</button>
+                            <button class="stv-btn-primary" id="settings-save-llm-btn">Save &amp; Apply</button>
                         </div>
-                        <div id="settings-llm-status" class="stv-status-line"></div>
+                        <div id="settings-llm-status" class="stv-status-line stv-status-row"></div>
 
                         <div class="stv-group-label">Local Models</div>
                         <div class="stv-card" id="settings-ollama-models-section" style="display:none;">
@@ -2306,12 +2336,53 @@ document.querySelector('#app').innerHTML = `
 
         <!-- Toast Notifications Container -->
         <div class="toast-container" id="toast-container"></div>
+
+        <!-- Screen-reader live region for dynamic announcements -->
+        <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="false"></div>
     </div>
     <div class="app-background-container" id="app-background-container">
         <div class="app-background-image" id="app-background-image"></div>
         <canvas class="app-background-canvas" id="app-background-canvas"></canvas>
         <div class="app-background-css" id="app-background-css"></div>
     </div>
+    <!-- Keyboard Shortcuts Cheat Sheet -->
+    <div class="shortcuts-overlay hidden" id="shortcuts-overlay" aria-hidden="true">
+        <div class="shortcuts-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+            <div class="shortcuts-header">
+                <h3 id="shortcuts-title">Keyboard Shortcuts</h3>
+                <button class="shortcuts-close" id="shortcuts-close" aria-label="Close shortcuts">${createIcon('x', { size: 16 })}</button>
+            </div>
+            <div class="shortcuts-grid">
+                <div class="shortcuts-group">
+                    <h4>Navigation</h4>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>K</kbd><span>Command Palette</span></div>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd><span>Prompt Library</span></div>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd><span>Agent Switcher</span></div>
+                    <div class="shortcuts-row"><kbd>?</kbd><span>This Help</span></div>
+                </div>
+                <div class="shortcuts-group">
+                    <h4>Chat</h4>
+                    <div class="shortcuts-row"><kbd>Enter</kbd><span>Send Message</span></div>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>M</kbd><span>Mute / Unmute TTS</span></div>
+                </div>
+                <div class="shortcuts-group">
+                    <h4>System</h4>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>N</kbd><span>New Chat Session</span></div>
+                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>H</kbd><span>Toggle Sidebar</span></div>
+                    <div class="shortcuts-row"><kbd>Esc</kbd><span>Close Modal / Palette</span></div>
+                </div>
+                <div class="shortcuts-group">
+                    <h4>Gamepad</h4>
+                    <div class="shortcuts-row"><kbd>A</kbd><span>Select / Click</span></div>
+                    <div class="shortcuts-row"><kbd>B</kbd><span>Back / Close</span></div>
+                    <div class="shortcuts-row"><kbd>Start</kbd><span>Settings</span></div>
+                    <div class="shortcuts-row"><kbd>X</kbd><span>Chat View</span></div>
+                    <div class="shortcuts-row"><kbd>Y</kbd><span>Cycle Persona</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="crt-overlay crt-flicker"></div>
 `;
 
@@ -4316,6 +4387,8 @@ function renderCommandPalette() {
     });
 }
 
+let commandPaletteFocusTrap = null;
+
 function openCommandPalette(initialQuery = "") {
     const overlay = document.getElementById("command-palette-overlay");
     const input = document.getElementById("command-palette-input");
@@ -4328,6 +4401,8 @@ function openCommandPalette(initialQuery = "") {
     overlay.setAttribute("aria-hidden", "false");
     input.value = initialQuery;
     renderCommandPalette();
+    if (!commandPaletteFocusTrap) commandPaletteFocusTrap = new FocusTrap(overlay);
+    commandPaletteFocusTrap.activate();
     setTimeout(() => {
         try {
             input.focus({ preventScroll: true });
@@ -4350,6 +4425,7 @@ function closeCommandPalette() {
     commandPaletteState.activeIndex = 0;
     commandPaletteState.filtered = [];
     if (input) input.value = "";
+    if (commandPaletteFocusTrap) commandPaletteFocusTrap.deactivate();
 }
 
 function moveCommandPaletteSelection(delta) {
@@ -6377,15 +6453,15 @@ function activateAgent(id) {
         renderAgentSwitcher();
         const modelNameEl = document.getElementById("model-name");
         if (modelNameEl) modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
-        pushNotification("Agent switched", `Now using ${agent.name} (${agent.model})`, "info");
-    }).catch(err => pushNotification("Agent switch failed", err, "error"));
+        addNotification("Agent switched", `Now using ${agent.name} (${agent.model})`, "info");
+    }).catch(err => addNotification("Agent switch failed", err, "error"));
 }
 
 function deleteAgentById(id) {
     invoke("delete_agent", { id }).then(() => {
         state.agents = state.agents.filter(a => a.id !== id);
         renderAgentSwitcher();
-    }).catch(err => pushNotification("Delete failed", err, "error"));
+    }).catch(err => addNotification("Delete failed", err, "error"));
 }
 
 function instantiateRecommended(provider, model, name) {
@@ -6410,7 +6486,7 @@ function instantiateRecommended(provider, model, name) {
             state.agents = agents;
             activateAgent(id);
         });
-    }).catch(err => pushNotification("Add agent failed", err, "error"));
+    }).catch(err => addNotification("Add agent failed", err, "error"));
 }
 
 // Expose agent switcher functions for inline onclick handlers

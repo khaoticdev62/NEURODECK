@@ -1,7 +1,7 @@
+use base64::prelude::*;
 use futures_util::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
-use base64::prelude::*;
 
 pub trait LlmProvider: Send + Sync {
     fn stream_response(
@@ -50,7 +50,10 @@ impl GeminiProvider {
         } else {
             model
         };
-        Self { model: m, api_key_override: None }
+        Self {
+            model: m,
+            api_key_override: None,
+        }
     }
 
     pub fn new_with_key(model: String, key: String) -> Self {
@@ -59,7 +62,10 @@ impl GeminiProvider {
         } else {
             model
         };
-        Self { model: m, api_key_override: Some(key) }
+        Self {
+            model: m,
+            api_key_override: Some(key),
+        }
     }
 
     fn get_api_key(&self) -> Result<String, String> {
@@ -275,7 +281,8 @@ impl LlmProvider for GeminiProvider {
             };
 
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
@@ -284,10 +291,14 @@ impl LlmProvider for GeminiProvider {
             if !res.status().is_success() {
                 let status = res.status();
                 let err_text = res.text().await.unwrap_or_default();
-                return Err(format!("Gemini transcription error ({}): {}", status, err_text));
+                return Err(format!(
+                    "Gemini transcription error ({}): {}",
+                    status, err_text
+                ));
             }
 
-            let response_body = res.json::<GeminiResponse>()
+            let response_body = res
+                .json::<GeminiResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
@@ -295,9 +306,8 @@ impl LlmProvider for GeminiProvider {
                 if let Some(candidate) = candidates.first() {
                     if let Some(content) = &candidate.content {
                         if let Some(parts) = &content.parts {
-                            let text: String = parts.iter()
-                                .filter_map(|p| p.text.clone())
-                                .collect();
+                            let text: String =
+                                parts.iter().filter_map(|p| p.text.clone()).collect();
                             return Ok(text);
                         }
                     }
@@ -334,7 +344,8 @@ impl LlmProvider for GeminiProvider {
             };
 
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
@@ -346,7 +357,8 @@ impl LlmProvider for GeminiProvider {
                 return Err(format!("Gemini embedding error ({}): {}", status, err_text));
             }
 
-            let response_body = res.json::<GeminiEmbedResponse>()
+            let response_body = res
+                .json::<GeminiEmbedResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
@@ -373,7 +385,9 @@ impl LlmProvider for GeminiProvider {
         let prompt_str = prompt.to_string();
         let sys_str = system_prompt.to_string();
         let img_b64 = image_base64.map(|s| s.to_string());
-        let img_mime = image_mime.map(|s| s.to_string()).unwrap_or_else(|| "image/jpeg".to_string());
+        let img_mime = image_mime
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "image/jpeg".to_string());
 
         Box::pin(async move {
             let url = format!(
@@ -414,7 +428,8 @@ impl LlmProvider for GeminiProvider {
             };
 
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
@@ -426,7 +441,8 @@ impl LlmProvider for GeminiProvider {
                 return Err(format!("Gemini vision error ({}): {}", status, err_text));
             }
 
-            let response_body = res.json::<GeminiResponse>()
+            let response_body = res
+                .json::<GeminiResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
@@ -434,9 +450,8 @@ impl LlmProvider for GeminiProvider {
                 if let Some(candidate) = candidates.first() {
                     if let Some(content) = &candidate.content {
                         if let Some(parts) = &content.parts {
-                            let text: String = parts.iter()
-                                .filter_map(|p| p.text.clone())
-                                .collect();
+                            let text: String =
+                                parts.iter().filter_map(|p| p.text.clone()).collect();
                             return Ok(text);
                         }
                     }
@@ -492,7 +507,8 @@ impl LlmProvider for GeminiProvider {
             };
 
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
@@ -504,7 +520,8 @@ impl LlmProvider for GeminiProvider {
                 return Err(format!("Gemini oneshot error ({}): {}", status, err_text));
             }
 
-            let response_body = res.json::<GeminiResponse>()
+            let response_body = res
+                .json::<GeminiResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
@@ -512,9 +529,8 @@ impl LlmProvider for GeminiProvider {
                 if let Some(candidate) = candidates.first() {
                     if let Some(content) = &candidate.content {
                         if let Some(parts) = &content.parts {
-                            let text: String = parts.iter()
-                                .filter_map(|p| p.text.clone())
-                                .collect();
+                            let text: String =
+                                parts.iter().filter_map(|p| p.text.clone()).collect();
                             return Ok(text);
                         }
                     }
@@ -543,7 +559,10 @@ impl OllamaProvider {
         } else {
             base_url
         };
-        Self { model: m, base_url: url }
+        Self {
+            model: m,
+            base_url: url,
+        }
     }
 }
 
@@ -623,18 +642,16 @@ impl LlmProvider for OllamaProvider {
         &self,
         _audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        Box::pin(async move {
-            Err("Audio transcription not supported by Ollama provider".to_string())
-        })
+        Box::pin(
+            async move { Err("Audio transcription not supported by Ollama provider".to_string()) },
+        )
     }
 
     fn generate_embedding(
         &self,
         _text: &str,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
-        Box::pin(async move {
-            Err("Embeddings not supported by Ollama provider yet".to_string())
-        })
+        Box::pin(async move { Err("Embeddings not supported by Ollama provider yet".to_string()) })
     }
 
     fn chat_with_image(
@@ -657,7 +674,8 @@ impl LlmProvider for OllamaProvider {
                 stream: false,
             };
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
@@ -667,7 +685,8 @@ impl LlmProvider for OllamaProvider {
                 let err_text = res.text().await.unwrap_or_default();
                 return Err(format!("Ollama error ({}): {}", status, err_text));
             }
-            let response = res.json::<OllamaResponse>()
+            let response = res
+                .json::<OllamaResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
             Ok(response.response)
@@ -682,7 +701,7 @@ impl LlmProvider for OllamaProvider {
         let prompt_str = prompt.to_string();
         let url = format!("{}/api/generate", self.base_url.trim_end_matches('/'));
         let model = self.model.clone();
-        
+
         Box::pin(async move {
             let request_body = OllamaRequest {
                 model,
@@ -690,24 +709,26 @@ impl LlmProvider for OllamaProvider {
                 system: "".to_string(), // No system prompt for autocomplete
                 stream: false,
             };
-            
+
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .json(&request_body)
                 .send()
                 .await
                 .map_err(|e| format!("Request failed: {}", e))?;
-                
+
             if !res.status().is_success() {
                 let status = res.status();
                 let err_text = res.text().await.unwrap_or_default();
                 return Err(format!("Ollama oneshot error ({}): {}", status, err_text));
             }
-            
-            let response = res.json::<OllamaResponse>()
+
+            let response = res
+                .json::<OllamaResponse>()
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
-                
+
             Ok(response.response)
         })
     }
@@ -751,7 +772,11 @@ impl HuggingFaceProvider {
         } else {
             base_url.trim_end_matches('/').to_string()
         };
-        Self { model: m, api_key, base_url: url }
+        Self {
+            model: m,
+            api_key,
+            base_url: url,
+        }
     }
 
     fn get_api_key(&self) -> Result<String, String> {
@@ -773,7 +798,10 @@ impl HuggingFaceProvider {
         if system_prompt.is_empty() {
             prompt.to_string()
         } else {
-            format!("<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n", system_prompt, prompt)
+            format!(
+                "<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n",
+                system_prompt, prompt
+            )
         }
     }
 }
@@ -842,9 +870,9 @@ impl LlmProvider for HuggingFaceProvider {
         &self,
         _text: &str,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
-        Box::pin(async move {
-            Err("Embeddings not supported by Hugging Face provider yet".to_string())
-        })
+        Box::pin(
+            async move { Err("Embeddings not supported by Hugging Face provider yet".to_string()) },
+        )
     }
 
     fn chat_with_image(
@@ -863,7 +891,14 @@ impl LlmProvider for HuggingFaceProvider {
         };
         Box::pin(async move {
             let request_body = HfRequest {
-                inputs: if sys_str.is_empty() { prompt_str } else { format!("<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n", sys_str, prompt_str) },
+                inputs: if sys_str.is_empty() {
+                    prompt_str
+                } else {
+                    format!(
+                        "<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n",
+                        sys_str, prompt_str
+                    )
+                },
                 parameters: HfParameters {
                     max_new_tokens: 2048,
                     return_full_text: false,
@@ -871,7 +906,8 @@ impl LlmProvider for HuggingFaceProvider {
                 },
             };
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&request_body)
                 .send()
@@ -882,14 +918,21 @@ impl LlmProvider for HuggingFaceProvider {
                 let err_text = res.text().await.unwrap_or_default();
                 return Err(format!("HF error ({}): {}", status, err_text));
             }
-            let body = res.text().await.map_err(|e| format!("HF read failed: {}", e))?;
+            let body = res
+                .text()
+                .await
+                .map_err(|e| format!("HF read failed: {}", e))?;
             let text = if body.trim().starts_with('[') {
-                let parsed: Vec<HfResponse> = serde_json::from_str(&body)
-                    .map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed.into_iter().next().map(|r| r.generated_text).unwrap_or_default()
+                let parsed: Vec<HfResponse> =
+                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed
+                    .into_iter()
+                    .next()
+                    .map(|r| r.generated_text)
+                    .unwrap_or_default()
             } else {
-                let parsed: HfResponse = serde_json::from_str(&body)
-                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                let parsed: HfResponse =
+                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
                 parsed.generated_text
             };
             Ok(text)
@@ -917,7 +960,8 @@ impl LlmProvider for HuggingFaceProvider {
                 },
             };
             let client = reqwest::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&request_body)
                 .send()
@@ -928,14 +972,21 @@ impl LlmProvider for HuggingFaceProvider {
                 let err_text = res.text().await.unwrap_or_default();
                 return Err(format!("HF oneshot error ({}): {}", status, err_text));
             }
-            let body = res.text().await.map_err(|e| format!("HF read failed: {}", e))?;
+            let body = res
+                .text()
+                .await
+                .map_err(|e| format!("HF read failed: {}", e))?;
             let text = if body.trim().starts_with('[') {
-                let parsed: Vec<HfResponse> = serde_json::from_str(&body)
-                    .map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed.into_iter().next().map(|r| r.generated_text).unwrap_or_default()
+                let parsed: Vec<HfResponse> =
+                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed
+                    .into_iter()
+                    .next()
+                    .map(|r| r.generated_text)
+                    .unwrap_or_default()
             } else {
-                let parsed: HfResponse = serde_json::from_str(&body)
-                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                let parsed: HfResponse =
+                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
                 parsed.generated_text
             };
             Ok(text)
@@ -958,7 +1009,10 @@ mod tests {
 
     #[test]
     fn test_ollama_provider_new() {
-        let provider = OllamaProvider::new("custom-model".to_string(), "http://127.0.0.1:11434".to_string());
+        let provider = OllamaProvider::new(
+            "custom-model".to_string(),
+            "http://127.0.0.1:11434".to_string(),
+        );
         assert_eq!(provider.model, "custom-model");
         assert_eq!(provider.base_url, "http://127.0.0.1:11434");
 
@@ -969,12 +1023,19 @@ mod tests {
 
     #[test]
     fn test_hf_provider_new() {
-        let provider = HuggingFaceProvider::new("custom-model".to_string(), Some("key".to_string()), "https://hf.co".to_string());
+        let provider = HuggingFaceProvider::new(
+            "custom-model".to_string(),
+            Some("key".to_string()),
+            "https://hf.co".to_string(),
+        );
         assert_eq!(provider.model, "custom-model");
         assert_eq!(provider.base_url, "https://hf.co");
 
         let provider_default = HuggingFaceProvider::new("".to_string(), None, "".to_string());
         assert_eq!(provider_default.model, "meta-llama/Llama-3.2-1B-Instruct");
-        assert_eq!(provider_default.base_url, "https://api-inference.huggingface.co");
+        assert_eq!(
+            provider_default.base_url,
+            "https://api-inference.huggingface.co"
+        );
     }
 }

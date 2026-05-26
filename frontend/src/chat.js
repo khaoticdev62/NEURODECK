@@ -814,6 +814,9 @@ listen("stream_chunk", function (event) {
 
 listen("stream_error", function (event) {
     let err = event.payload;
+    if (typeof window.announceToScreenReader === 'function') {
+        window.announceToScreenReader(`Chat error: ${String(err)}`);
+    }
     let chatViewport = document.getElementById("chat-viewport");
     let viewport = document.getElementById("chat-workspace");
     let msg = document.createElement("div");
@@ -870,8 +873,12 @@ listen("stream_done", function () {
             // Copy button
             msgCard.appendChild(makeCopyBtn(() => capturedText));
         }
+        if (typeof window.announceToScreenReader === 'function') {
+            const preview = state.currentAIText.slice(0, 120).replace(/\s+/g, ' ').trim();
+            window.announceToScreenReader(`Response received. ${preview}${state.currentAIText.length > 120 ? '...' : ''}`);
+        }
     }
-    
+
     if (!state.isMuted && state.currentAIText && state.currentAIText.trim().length > 0) {
         let speechText = cleanTextForSpeech(state.currentAIText);
         if (speechText.length > 0) {

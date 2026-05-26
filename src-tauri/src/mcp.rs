@@ -63,26 +63,24 @@ fn mcp_exec_tools_enabled() -> bool {
 // ──────────────────────────────────────────────
 
 fn tool_list() -> Value {
-    let mut tools = vec![
-        json!({
-            "name": "neurodeck_chat",
-            "description": "Send a message to the NEURODECK AI and receive a full response. Uses the currently configured LLM provider (Gemini or Ollama).",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "prompt": {
-                        "type": "string",
-                        "description": "The message or question to send to the AI."
-                    },
-                    "system_prompt": {
-                        "type": "string",
-                        "description": "Optional system prompt override. Defaults to helpful assistant."
-                    }
+    let mut tools = vec![json!({
+        "name": "neurodeck_chat",
+        "description": "Send a message to the NEURODECK AI and receive a full response. Uses the currently configured LLM provider (Gemini or Ollama).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "The message or question to send to the AI."
                 },
-                "required": ["prompt"]
-            }
-        }),
-    ];
+                "system_prompt": {
+                    "type": "string",
+                    "description": "Optional system prompt override. Defaults to helpful assistant."
+                }
+            },
+            "required": ["prompt"]
+        }
+    })];
 
     if mcp_exec_tools_enabled() {
         tools.push(json!({
@@ -170,15 +168,16 @@ fn tool_list() -> Value {
 }
 
 fn sanitize_mcp_path(path_str: &str) -> Result<std::path::PathBuf, String> {
-    let base_dir = std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let base_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
     let target_path = std::path::Path::new(path_str);
-    
+
     let absolute_path = if target_path.is_absolute() {
         target_path.to_path_buf()
     } else {
         base_dir.join(target_path)
     };
-    
+
     let canonical_path = match absolute_path.canonicalize() {
         Ok(p) => p,
         Err(_) => {
@@ -195,10 +194,11 @@ fn sanitize_mcp_path(path_str: &str) -> Result<std::path::PathBuf, String> {
             }
         }
     };
-    
-    let canonical_base = base_dir.canonicalize()
+
+    let canonical_base = base_dir
+        .canonicalize()
         .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
-        
+
     if canonical_path.starts_with(&canonical_base) {
         Ok(canonical_path)
     } else {
@@ -217,13 +217,13 @@ async fn call_tool(
 ) -> Result<Value, String> {
     match name {
         "neurodeck_chat" => {
-            let prompt = args["prompt"].as_str().ok_or("Missing required arg: 'prompt'")?;
+            let prompt = args["prompt"]
+                .as_str()
+                .ok_or("Missing required arg: 'prompt'")?;
             let system = args["system_prompt"]
                 .as_str()
                 .unwrap_or("You are a helpful assistant.");
-            let response = provider
-                .chat_with_image(prompt, system, None, None)
-                .await?;
+            let response = provider.chat_with_image(prompt, system, None, None).await?;
             Ok(json!({
                 "content": [{ "type": "text", "text": response }]
             }))
@@ -233,7 +233,9 @@ async fn call_tool(
             if !mcp_exec_tools_enabled() {
                 return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_shell.".to_string());
             }
-            let cmd_str = args["command"].as_str().ok_or("Missing required arg: 'command'")?;
+            let cmd_str = args["command"]
+                .as_str()
+                .ok_or("Missing required arg: 'command'")?;
             let cmd_owned = cmd_str.to_string();
             let output = tokio::task::spawn_blocking(move || {
                 let mut c = if cfg!(target_os = "windows") {
@@ -266,8 +268,12 @@ async fn call_tool(
             if !mcp_exec_tools_enabled() {
                 return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_code.".to_string());
             }
-            let code = args["code"].as_str().ok_or("Missing required arg: 'code'")?;
-            let lang = args["lang"].as_str().ok_or("Missing required arg: 'lang'")?;
+            let code = args["code"]
+                .as_str()
+                .ok_or("Missing required arg: 'code'")?;
+            let lang = args["lang"]
+                .as_str()
+                .ok_or("Missing required arg: 'lang'")?;
 
             let (program, prog_args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
                 "python" | "python3" => {
@@ -334,7 +340,9 @@ async fn call_tool(
         }
 
         "read_file" => {
-            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
+            let path_str = args["path"]
+                .as_str()
+                .ok_or("Missing required arg: 'path'")?;
             let safe_path = sanitize_mcp_path(path_str)?;
             let content = std::fs::read_to_string(safe_path)
                 .map_err(|e| format!("Cannot read '{}': {}", path_str, e))?;
@@ -344,8 +352,12 @@ async fn call_tool(
         }
 
         "write_file" => {
-            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
-            let content = args["content"].as_str().ok_or("Missing required arg: 'content'")?;
+            let path_str = args["path"]
+                .as_str()
+                .ok_or("Missing required arg: 'path'")?;
+            let content = args["content"]
+                .as_str()
+                .ok_or("Missing required arg: 'content'")?;
             let safe_path = sanitize_mcp_path(path_str)?;
             // Create parent dirs if needed
             if let Some(parent) = safe_path.parent() {
@@ -382,25 +394,6 @@ async fn call_tool(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::env_flag_enabled;
-
-    #[test]
-    fn env_flag_enabled_accepts_common_truthy_values() {
-        for value in ["1", "true", "TRUE", "yes", "on", " On "] {
-            assert!(env_flag_enabled(value), "expected '{value}' to be truthy");
-        }
-    }
-
-    #[test]
-    fn env_flag_enabled_rejects_other_values() {
-        for value in ["0", "false", "no", "off", "", "maybe"] {
-            assert!(!env_flag_enabled(value), "expected '{value}' to be falsy");
-        }
-    }
-}
-
 // ──────────────────────────────────────────────
 // Per-connection HTTP handler
 // ──────────────────────────────────────────────
@@ -415,7 +408,11 @@ fn extract_header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
     Some(rest[..end].trim())
 }
 
-async fn handle_connection(mut stream: tokio::net::TcpStream, provider: Arc<dyn LlmProvider>, token: Arc<String>) {
+async fn handle_connection(
+    mut stream: tokio::net::TcpStream,
+    provider: Arc<dyn LlmProvider>,
+    token: Arc<String>,
+) {
     let mut buf = vec![0u8; 131_072]; // 128 KiB — enough for any reasonable tool call
     let n = match stream.read(&mut buf).await {
         Ok(n) if n > 0 => n,
@@ -548,10 +545,7 @@ pub async fn start(
         .await
         .map_err(|e| format!("MCP server bind failed on {}: {}", addr, e))?;
 
-    let bound_port = listener
-        .local_addr()
-        .map(|a| a.port())
-        .unwrap_or(port);
+    let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(port);
 
     let task = tokio::spawn(async move {
         while let Ok((stream, _peer)) = listener.accept().await {
@@ -563,4 +557,23 @@ pub async fn start(
 
     let abort_handle = task.abort_handle();
     Ok((bound_port, abort_handle, token))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::env_flag_enabled;
+
+    #[test]
+    fn env_flag_enabled_accepts_common_truthy_values() {
+        for value in ["1", "true", "TRUE", "yes", "on", " On "] {
+            assert!(env_flag_enabled(value), "expected '{value}' to be truthy");
+        }
+    }
+
+    #[test]
+    fn env_flag_enabled_rejects_other_values() {
+        for value in ["0", "false", "no", "off", "", "maybe"] {
+            assert!(!env_flag_enabled(value), "expected '{value}' to be falsy");
+        }
+    }
 }
