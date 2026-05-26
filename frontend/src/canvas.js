@@ -40,10 +40,22 @@ function getMonacoLang(lang) {
     return MONACO_LANG_MAP[lang] || 'plaintext';
 }
 
+/**
+ * Lightweight script stripper for Canvas HTML preview.
+ * Removes <script> tags (including content) and inline on* event handlers.
+ * Preserves <style> and all other markup for live preview fidelity.
+ */
+function stripCanvasScripts(html) {
+    if (!html) return "";
+    let clean = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+    clean = clean.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+    return clean;
+}
+
 function buildPreviewDoc(lang, code) {
     switch (lang) {
         case 'html':
-            return code;
+            return stripCanvasScripts(code);
         case 'css':
             return `<!DOCTYPE html><html><head><style>${code}</style></head><body><p style="color:#888;font-family:sans-serif;padding:1rem">CSS Preview — add HTML in the editor to see styled content.</p></body></html>`;
         case 'javascript':
@@ -873,6 +885,50 @@ function initCanvasCollab() {
         }
     }).catch(() => {});
 
+    // Peer sync approval gate
+    const approvedSyncPeers = new Set();
+    const pendingSyncs = new Map();
+    let syncApprovalCounter = 0;
+
+    function applyPeerSync(data) {
+        _peerSyncing = true;
+        if (monacoEditor) {
+            monacoEditor.setValue(data.code);
+        }
+        _peerSyncing = false;
+        const langSelect = document.getElementById("canvas-lang-select");
+        if (langSelect && data.lang && data.lang !== langSelect.value) {
+            langSelect.value = data.lang;
+            langSelect.dispatchEvent(new Event('change'));
+        }
+        renderCanvasPreview();
+    }
+
+    function appendSyncApproval(sender, name) {
+        if (!chatLog) return;
+        const id = ++syncApprovalCounter;
+        const row = document.createElement('div');
+        row.className = 'collab-chat-row';
+        row.innerHTML = `<span>${escapeCanvasHtml(name || 'Peer')}</span><p>wants to sync canvas code. <button class="canvas-btn canvas-btn-sm" id="approve-sync-${id}">Accept</button> <button class="canvas-btn canvas-btn-sm" id="reject-sync-${id}" style="border-color:var(--error-color);color:var(--error-color)">Reject</button></p>`;
+        chatLog.appendChild(row);
+        chatLog.scrollTop = chatLog.scrollHeight;
+
+        document.getElementById(`approve-sync-${id}`)?.addEventListener('click', () => {
+            approvedSyncPeers.add(sender);
+            row.innerHTML = `<span>${escapeCanvasHtml(name || 'Peer')}</span><p>Sync approved. Future updates from this peer will apply automatically.</p>`;
+            const pending = pendingSyncs.get(sender);
+            if (pending) {
+                applyPeerSync(pending);
+                pendingSyncs.delete(sender);
+            }
+        });
+
+        document.getElementById(`reject-sync-${id}`)?.addEventListener('click', () => {
+            row.innerHTML = `<span>${escapeCanvasHtml(name || 'Peer')}</span><p>Sync rejected. Updates from this peer will be ignored.</p>`;
+            pendingSyncs.delete(sender);
+        });
+    }
+
     // Incoming canvas sync from peer
     listen("canvas_sync", (event) => {
         try {
@@ -880,17 +936,13 @@ function initCanvasCollab() {
                 ? JSON.parse(event.payload) : event.payload;
             if (data.sender && data.sender === COLLAB_CLIENT_ID) return;
             if (data.type === 'sync' && data.code !== undefined) {
-                _peerSyncing = true;
-                if (monacoEditor) {
-                    monacoEditor.setValue(data.code);
+                const sender = data.sender || 'unknown';
+                if (!approvedSyncPeers.has(sender)) {
+                    pendingSyncs.set(sender, data);
+                    appendSyncApproval(sender, data.name);
+                    return;
                 }
-                _peerSyncing = false;
-                const langSelect = document.getElementById("canvas-lang-select");
-                if (langSelect && data.lang && data.lang !== langSelect.value) {
-                    langSelect.value = data.lang;
-                    langSelect.dispatchEvent(new Event('change'));
-                }
-                renderCanvasPreview();
+                applyPeerSync(data);
             } else if (data.type === 'presence') {
                 collabPresence.set(data.sender || `peer-${Date.now()}`, {
                     name: data.name || 'Peer',
