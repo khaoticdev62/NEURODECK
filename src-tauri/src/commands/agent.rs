@@ -347,6 +347,7 @@ pub async fn agent_step(
     task: String,
     history: Vec<AgentHistoryEntry>,
     state: State<'_, Mutex<AppState>>,
+    app_handle: AppHandle,
 ) -> Result<String, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -414,15 +415,29 @@ RULES:
         prompt.push_str("\nBased on the above history, what is your next step?");
     }
 
+    // Emit thinking event so frontend can show a spinner / cancel button
+    let _ = app_handle.emit("agent_thinking", serde_json::json!({ "task": &task }));
+
     // Collect full streaming response
     let mut stream = provider.stream_response(&prompt, &system_prompt);
     let mut full_response = String::new();
     while let Some(chunk) = stream.next().await {
         match chunk {
             Ok(text) => full_response.push_str(&text),
-            Err(e) => return Err(format!("LLM error: {}", e)),
+            Err(e) => {
+                let _ = app_handle.emit(
+                    "agent_step_error",
+                    serde_json::json!({ "error": e.to_string() }),
+                );
+                return Err(crate::error::NeurodeckError::llm_error(e.to_string()).to_string());
+            }
         }
     }
+
+    let _ = app_handle.emit(
+        "agent_step_complete",
+        serde_json::json!({ "task": &task, "length": full_response.len() }),
+    );
 
     Ok(full_response)
 }

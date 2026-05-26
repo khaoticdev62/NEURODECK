@@ -272,7 +272,10 @@ pub fn set_theme(name: String) -> Option<HashMap<String, String>> {
         let mut map = HashMap::new();
         map.insert("Name".to_string(), t.name.clone());
         map.insert("Color".to_string(), t.color.clone());
-        map.insert("Pulse".to_string(), serde_json::to_string(&t.pulse).unwrap_or_default());
+        map.insert(
+            "Pulse".to_string(),
+            serde_json::to_string(&t.pulse).unwrap_or_default(),
+        );
         map.insert("Background".to_string(), t.background.clone());
         map.insert("Foreground".to_string(), t.foreground.clone());
         map.insert("Accent".to_string(), t.accent.clone());

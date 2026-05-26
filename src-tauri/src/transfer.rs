@@ -4,7 +4,7 @@ use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -72,6 +72,103 @@ impl TransferState {
 }
 
 pub struct SharedTransferState(pub Arc<Mutex<TransferState>>);
+
+fn sanitize_relative_transfer_path(relative_path: &str) -> Result<PathBuf, String> {
+    let candidate = Path::new(relative_path);
+    if candidate.as_os_str().is_empty() {
+        return Err("Transfer path was empty".to_string());
+    }
+
+    let mut sanitized = PathBuf::new();
+    for component in candidate.components() {
+        match component {
+            Component::Normal(part) => sanitized.push(part),
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err(
+                    "Transfer path attempted to escape the destination directory".to_string(),
+                )
+            }
+        }
+    }
+
+    if sanitized.as_os_str().is_empty() {
+        return Err("Transfer path did not contain a writable destination".to_string());
+    }
+
+    Ok(sanitized)
+}
+
+fn unique_destination_path(base_dir: &Path, requested_name: &str) -> PathBuf {
+    let candidate = Path::new(requested_name);
+    let stem = candidate
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "transfer".to_string());
+    let extension = candidate
+        .extension()
+        .map(|s| s.to_string_lossy().to_string());
+
+    let build_name = |index: usize| {
+        if index == 0 {
+            requested_name.to_string()
+        } else if let Some(ext) = extension.as_deref() {
+            format!("{stem} ({index}).{ext}")
+        } else {
+            format!("{stem} ({index})")
+        }
+    };
+
+    for index in 0..10_000usize {
+        let path = base_dir.join(build_name(index));
+        if !path.exists() {
+            return path;
+        }
+    }
+
+    base_dir.join(format!("{stem}-{}", Utc::now().timestamp_millis()))
+}
+
+fn safe_extract_tar_archive(archive_path: &Path, dest_dir: &Path) -> Result<(), String> {
+    let file = std::fs::File::open(archive_path)
+        .map_err(|e| format!("Failed to open transfer archive: {e}"))?;
+    let mut archive = tar::Archive::new(file);
+    let entries = archive
+        .entries()
+        .map_err(|e| format!("Failed to inspect transfer archive: {e}"))?;
+
+    for entry in entries {
+        let mut entry = entry.map_err(|e| format!("Failed to read archive entry: {e}"))?;
+        let entry_path = entry
+            .path()
+            .map_err(|e| format!("Failed to resolve archive entry path: {e}"))?;
+        let safe_relative = sanitize_relative_transfer_path(&entry_path.to_string_lossy())?;
+        let target_path = dest_dir.join(&safe_relative);
+
+        if entry.header().entry_type().is_dir() {
+            std::fs::create_dir_all(&target_path)
+                .map_err(|e| format!("Failed to create archive directory: {e}"))?;
+            continue;
+        }
+
+        if let Some(parent) = target_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create archive parent directory: {e}"))?;
+        }
+
+        entry
+            .unpack(&target_path)
+            .map_err(|e| format!("Failed to unpack archive entry: {e}"))?;
+    }
+
+    Ok(())
+}
+
+fn cleanup_outgoing_path(state: &Arc<Mutex<TransferState>>, transfer_id: &str) {
+    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+    s.outgoing_paths.remove(transfer_id);
+}
 
 fn get_hostname() -> String {
     std::env::var("COMPUTERNAME")
@@ -146,7 +243,12 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
             .join("neurodeck_transfers");
 
-        let dest_path = download_dir.join(relative_path);
+        tokio::fs::create_dir_all(&download_dir)
+            .await
+            .map_err(|e| format!("Failed to prepare download directory: {}", e))?;
+
+        let safe_relative = sanitize_relative_transfer_path(relative_path)?;
+        let dest_path = download_dir.join(safe_relative);
 
         if file_type == 1 {
             tokio::fs::create_dir_all(&dest_path)
@@ -625,7 +727,7 @@ async fn handle_incoming_connection(
             }
             s.accept_txs.remove(&transfer_id);
         }
-        let _ = app_handle.emit("transfer_failed", transfer_id);
+        let _ = app_handle.emit("transfer_failed", &transfer_id);
         return Ok(());
     }
 
@@ -660,7 +762,7 @@ async fn handle_incoming_connection(
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "unnamed_transfer".to_string());
 
-    let file_path = download_dir.join(&clean_filename);
+    let file_path = unique_destination_path(&download_dir, &clean_filename);
     let mut file = File::create(&file_path).await?;
 
     let mut buffer = [0u8; 16384];
@@ -745,31 +847,41 @@ async fn handle_incoming_connection(
     if clean_filename.ends_with(".tar") {
         let tar_path = file_path.clone();
         let folder_name = clean_filename.trim_end_matches(".tar").to_string();
-        let dest_dir = download_dir.join(&folder_name);
+        let dest_dir = unique_destination_path(&download_dir, &folder_name);
         let _ = tokio::fs::create_dir_all(&dest_dir).await;
 
         // Spawn blocking extraction
-        let extract_res = tokio::task::spawn_blocking(move || {
-            let file = std::fs::File::open(&tar_path)?;
-            let mut ar = tar::Archive::new(file);
-            ar.unpack(&dest_dir)?;
-            Ok::<(), std::io::Error>(())
-        })
-        .await;
+        let extract_res =
+            tokio::task::spawn_blocking(move || safe_extract_tar_archive(&tar_path, &dest_dir))
+                .await;
 
         // Always delete the temporary tar file
         let _ = tokio::fs::remove_file(&file_path).await;
 
-        if let Err(e) = extract_res {
-            println!("Failed to extract folder: {:?}", e);
-            {
-                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-                if let Some(t) = s.transfers.get_mut(&transfer_id) {
-                    t.status = "Failed".to_string();
+        match extract_res {
+            Ok(Ok(())) => {}
+            Ok(Err(e)) => {
+                println!("Failed to extract folder: {}", e);
+                {
+                    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                        t.status = "Failed".to_string();
+                    }
                 }
+                let _ = app_handle.emit("transfer_failed", transfer_id);
+                return Ok(());
             }
-            let _ = app_handle.emit("transfer_failed", transfer_id);
-            return Ok(());
+            Err(e) => {
+                println!("Failed to extract folder: {:?}", e);
+                {
+                    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(t) = s.transfers.get_mut(&transfer_id) {
+                        t.status = "Failed".to_string();
+                    }
+                }
+                let _ = app_handle.emit("transfer_failed", transfer_id);
+                return Ok(());
+            }
         }
     }
 
@@ -803,6 +915,7 @@ async fn run_outgoing_transfer(
             if is_temp {
                 let _ = tokio::fs::remove_file(&file_path).await;
             }
+            cleanup_outgoing_path(&state, &transfer_id);
             return Err(e.into());
         }
     };
@@ -831,10 +944,11 @@ async fn run_outgoing_transfer(
                 t.status = "Rejected".to_string();
             }
         }
-        let _ = app_handle.emit("transfer_failed", transfer_id);
+        let _ = app_handle.emit("transfer_failed", &transfer_id);
         if is_temp {
             let _ = tokio::fs::remove_file(&file_path).await;
         }
+        cleanup_outgoing_path(&state, &transfer_id);
         return Ok(());
     }
 
@@ -905,6 +1019,7 @@ async fn run_outgoing_transfer(
     if is_temp {
         let _ = tokio::fs::remove_file(&file_path).await;
     }
+    cleanup_outgoing_path(&state, &transfer_id);
 
     if !transfer_success || bytes_sent < size {
         {
@@ -1170,4 +1285,45 @@ pub fn set_group_code(code: String, state: State<'_, SharedTransferState>) -> Re
 pub fn get_group_code(state: State<'_, SharedTransferState>) -> Result<String, String> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     Ok(s.group_code.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{sanitize_relative_transfer_path, unique_destination_path};
+    use std::fs;
+
+    #[test]
+    fn sanitize_relative_transfer_path_rejects_escape_attempts() {
+        assert!(sanitize_relative_transfer_path("../outside.txt").is_err());
+        assert!(sanitize_relative_transfer_path("/absolute/path").is_err());
+        assert!(sanitize_relative_transfer_path("C:\\windows\\system32").is_err());
+    }
+
+    #[test]
+    fn sanitize_relative_transfer_path_keeps_normal_subpaths() {
+        let sanitized = sanitize_relative_transfer_path("./nested/file.txt").unwrap();
+        assert_eq!(
+            sanitized,
+            std::path::PathBuf::from("nested").join("file.txt")
+        );
+    }
+
+    #[test]
+    fn unique_destination_path_avoids_existing_file_names() {
+        let base_dir =
+            std::env::temp_dir().join(format!("neurodeck-transfer-test-{}", std::process::id()));
+        fs::create_dir_all(&base_dir).unwrap();
+        let original = base_dir.join("report.tar");
+        fs::write(&original, b"stub").unwrap();
+
+        let unique = unique_destination_path(&base_dir, "report.tar");
+        assert_ne!(unique, original);
+        assert_eq!(
+            unique.file_name().and_then(|s| s.to_str()),
+            Some("report (1).tar")
+        );
+
+        let _ = fs::remove_file(original);
+        let _ = fs::remove_dir_all(base_dir);
+    }
 }

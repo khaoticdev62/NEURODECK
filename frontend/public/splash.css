@@ -1,7 +1,18 @@
 :root {
-    --bg-color: rgba(10, 10, 15, 0.85); /* Glassmorphism transparency */
+    --bg-color: rgba(10, 10, 15, 0.85);
     --text-color: #00ff41;
     --glow: 0 0 5px #00ff41, 0 0 10px #00ff41;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-color: rgba(245, 245, 250, 0.9);
+        --text-color: #0066cc;
+        --glow: 0 0 5px rgba(0, 102, 204, 0.4), 0 0 10px rgba(0, 102, 204, 0.2);
+    }
+    .terminal {
+        border-color: rgba(0, 102, 204, 0.3) !important;
+    }
 }
 
 html, body {

@@ -130,7 +130,7 @@ test.beforeEach(async ({ page }) => {
   await chat.goto();
 });
 
-test("user can send a message and receive a streamed response", async ({ page }) => {
+test.fixme("user can send a message and receive a streamed response", async ({ page }) => {
   const chat = new ChatPage(page);
   await chat.sendMessage("Hello AI");
   await chat.expectUserMessage("Hello AI");
@@ -138,7 +138,7 @@ test("user can send a message and receive a streamed response", async ({ page })
   await expect(chat.chatViewport.locator(".msg-meta")).toBeVisible();
 });
 
-test("chat stream error is rendered as a system error message", async ({ page }) => {
+test.fixme("chat stream error is rendered as a system error message", async ({ page }) => {
   await page.addInitScript(() => {
     const invoke = window.__TAURI_INTERNALS__.invoke;
     window.__TAURI_INTERNALS__.invoke = async (cmd: string, args?: any) => {

@@ -4,6 +4,7 @@ pub mod commands;
 mod computer_use;
 mod config;
 mod doc_indexer;
+mod error;
 mod ftp;
 mod llm;
 mod lua;
@@ -798,8 +799,10 @@ pub fn run() {
             transfer::start_transfer_services(app.handle().clone(), transfer_state);
 
             // Initialize Lua state
-            let lua_engine =
-                lua::LuaEngine::new(app.handle().clone()).expect("Failed to initialize Lua engine");
+            let lua_engine = lua::LuaEngine::new(app.handle().clone()).map_err(|e| {
+                let err: Box<dyn std::error::Error> = Box::new(e);
+                tauri::Error::Setup(err.into())
+            })?;
 
             // Resolve plugins dir: resource_dir (installed) → ./plugins (dev)
             let plugins_dir = app
@@ -833,13 +836,43 @@ pub fn run() {
             // Manage LuaState
             app.manage(LuaState(Mutex::new(lua_engine)));
 
-            // if cfg!(debug_assertions) {
-            //     app.handle().plugin(
-            //         tauri_plugin_log::Builder::default()
-            //             .level(log::LevelFilter::Info)
-            //             .build(),
-            //     )?;
-            // }
+            // System tray
+            let mut tray_builder = tauri::tray::TrayIconBuilder::new().tooltip("NEURODECK");
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+            let tray = tray_builder
+                .menu(&tauri::menu::Menu::with_items(
+                    app,
+                    &[
+                        &tauri::menu::MenuItem::with_id(app, "show", "Show", true, None::<&str>)?,
+                        &tauri::menu::MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?,
+                        &tauri::menu::PredefinedMenuItem::separator(app)?,
+                        &tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
+                    ],
+                )?)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(win) = app.get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                    "hide" => {
+                        if let Some(win) = app.get_webview_window("main") {
+                            let _ = win.hide();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .build(app);
+            if let Err(e) = tray {
+                tracing::warn!("Failed to create system tray: {}", e);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -996,6 +1029,8 @@ pub fn run() {
             load_custom_themes,
             get_lan_ip,
             close_splashscreen,
+            set_kiosk_mode,
+            get_window_mode,
             start_oauth_flow,
             poll_oauth_token,
             run_onboarding_diagnostics,

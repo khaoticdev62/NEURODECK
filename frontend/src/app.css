@@ -186,6 +186,7 @@ body::before {
     font-weight: 500;
     font-size: 0.9rem;
     cursor: pointer;
+    transition: transform var(--dur-micro) var(--ease-snap), filter var(--dur-micro) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1726,6 +1727,7 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform var(--dur-micro) var(--ease-snap), filter var(--dur-micro) ease;
     transition: background var(--dur-fast) var(--ease-standard),
                 color      var(--dur-fast) var(--ease-standard),
                 transform  var(--dur-micro) var(--ease-snap);
@@ -3270,6 +3272,43 @@ code {
     filter: grayscale(100%);
 }
 
+/* =====================================================================
+   BREADCRUMB / LOCATION BAR
+   ===================================================================== */
+
+.breadcrumb-bar {
+    flex-shrink: 0;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    background: linear-gradient(180deg,
+        rgba(6, 10, 16, 0.95) 0%,
+        rgba(4, 7, 10, 0.92) 100%);
+    border-bottom: 1px solid rgba(var(--accent-rgb), 0.06);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    gap: 6px;
+    user-select: none;
+}
+
+.breadcrumb-root {
+    color: rgba(var(--accent-rgb), 0.6);
+    font-weight: 600;
+}
+
+.breadcrumb-sep {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.breadcrumb-view {
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+}
+
 /* ==========================================================================
    NEURODECK MULTI-VIEW & TABS SYSTEM
    ========================================================================== */
@@ -3286,7 +3325,7 @@ code {
 }
 
 .view-content {
-    display: none;
+    display: flex;
     width: 100%;
     height: 100%;
     position: absolute;
@@ -3297,10 +3336,38 @@ code {
     min-height: 0;
     overflow: hidden;
     touch-action: manipulation;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(0);
+    transition: opacity var(--dur-enter) var(--ease-standard),
+                transform var(--dur-enter) var(--ease-out-expo),
+                visibility 0ms var(--dur-enter);
+    will-change: opacity, transform;
 }
 
 .view-content.active {
-    display: flex;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition-delay: 0ms;
+}
+
+.view-content.view-enter-right {
+    transform: translateX(24px);
+}
+
+.view-content.view-enter-left {
+    transform: translateX(-24px);
+}
+
+.view-content.view-exit-right {
+    transform: translateX(24px);
+}
+
+.view-content.view-exit-left {
+    transform: translateX(-24px);
 }
 
 .view-layout-column {
@@ -3393,6 +3460,7 @@ code {
     font-weight: 500;
     cursor: pointer;
     display: flex;
+    transition: transform var(--dur-micro) var(--ease-snap), filter var(--dur-micro) ease;
     align-items: center;
     gap: 3px;
     white-space: nowrap;
@@ -7293,7 +7361,17 @@ body.crt-flicker-disabled .crt-flicker {
     gap: 4px;
     pointer-events: auto;
     animation: toast-slide-in 420ms var(--ease-out-spring) forwards;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color var(--dur-fast) var(--ease-standard);
+}
+
+.toast-notif[style*="pointer"] {
+    cursor: pointer;
+}
+
+.toast-notif[style*="pointer"]:hover {
+    border-color: rgba(var(--accent-rgb), 0.35);
+    transform: translateX(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(var(--accent-rgb), 0.08);
 }
 
 .toast-notif.success {
@@ -9219,7 +9297,7 @@ body.crt-flicker-disabled .crt-flicker {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: #030608;
+    background: var(--bg-color, #030608);
     display: flex;
     flex-direction: column;
     font-family: 'JetBrains Mono', monospace;
@@ -11696,5 +11774,38 @@ button.tab-btn:active,
         grid-template-columns: 1fr;
         gap: 16px;
         padding: 16px;
+    }
+}
+
+/* ─── Micro-interactions ─── */
+.new-chat-btn:active,
+.input-btn:active,
+.nav-tab:active {
+    transform: scale(0.96);
+    filter: brightness(0.85);
+}
+
+.shortcuts-row kbd:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Disable micro-interactions for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .new-chat-btn,
+    .input-btn,
+    .nav-tab,
+    .shortcuts-row kbd {
+        transition: none !important;
+    }
+    .new-chat-btn:active,
+    .input-btn:active,
+    .nav-tab:active {
+        transform: none;
+        filter: none;
+    }
+    .shortcuts-row kbd:active {
+        transform: none;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
     }
 }

@@ -4,7 +4,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::LuaState;
 
@@ -210,7 +210,9 @@ pub fn save_plugin(file_name: String, content: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn reload_plugins(app_handle: AppHandle) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || {
+    let _ = app_handle.emit("plugin_reload_start", ());
+    let app_handle2 = app_handle.clone();
+    let result = tokio::task::spawn_blocking(move || {
         let lua_state = app_handle.state::<LuaState>();
         let mut engine = lua_state
             .0
@@ -226,7 +228,17 @@ pub async fn reload_plugins(app_handle: AppHandle) -> Result<(), String> {
         Ok(())
     })
     .await
-    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Task join error: {}", e))?;
+
+    match &result {
+        Ok(()) => {
+            let _ = app_handle2.emit("plugin_reload_done", ());
+        }
+        Err(err) => {
+            let _ = app_handle2.emit("plugin_reload_error", err);
+        }
+    }
+    result
 }
 
 fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {

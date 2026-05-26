@@ -190,19 +190,41 @@ export class AppPage {
         }
       };
 
+      const invokeWithChat = async (cmd: string, args?: any) => {
+        if (cmd === "send_command") {
+          setTimeout(() => {
+            const chunkCb = listeners.get("stream_chunk");
+            const doneCb = listeners.get("stream_done");
+            if (chunkCb) {
+              chunkCb({ payload: "Hello" });
+              chunkCb({ payload: " from" });
+              chunkCb({ payload: " the" });
+              chunkCb({ payload: " mock" });
+              chunkCb({ payload: " stream!" });
+            }
+            if (doneCb) doneCb({ payload: null });
+          }, 100);
+          return null;
+        }
+        return invoke(cmd, args);
+      };
+
       window.__TAURI_INTERNALS__ = {
-        invoke,
+        invoke: invokeWithChat,
         transformCallback: (callback: any) => callback,
         convertFileSrc: (value: string) => value,
       };
       window.__TAURI__ = {
-        core: { invoke },
+        core: { invoke: invokeWithChat },
         event: {
           listen: async (event: string, callback: any) => {
             listeners.set(event, callback);
             return async () => listeners.delete(event);
           },
-          emit: noop,
+          emit: (event: string, payload: any) => {
+            const cb = listeners.get(event);
+            if (cb) cb({ payload });
+          },
         },
         path: {},
         webviewWindow: {
@@ -220,6 +242,11 @@ export class AppPage {
             emit: noop,
           }),
         },
+      };
+
+      (window as any).__mock_emit = (event: string, payload: any) => {
+        const cb = listeners.get(event);
+        if (cb) cb({ payload });
       };
     });
   }

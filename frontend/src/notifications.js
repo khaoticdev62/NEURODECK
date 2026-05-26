@@ -51,14 +51,15 @@ export function renderNotificationsList() {
     container.replaceChildren(fragment);
 }
 
-export function addNotification(title, text, type = 'info') {
+export function addNotification(title, text, type = 'info', navigateTo = null) {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const notif = {
         id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         title,
         text,
         type,
-        time: timestamp
+        time: timestamp,
+        navigateTo
     };
     state.notifications.unshift(notif);
     // Cap notification history to prevent unbounded growth
@@ -93,6 +94,18 @@ export function addNotification(title, text, type = 'info') {
 
         titleRow.append(titleText, timeText);
         toast.append(titleRow, body);
+
+        // Click-to-navigate support
+        if (navigateTo) {
+            toast.style.cursor = 'pointer';
+            toast.title = 'Click to navigate';
+            toast.addEventListener('click', () => {
+                if (typeof window.activateViewByName === 'function') {
+                    window.activateViewByName(navigateTo);
+                }
+            });
+        }
+
         toastContainer.appendChild(toast);
 
         const toastId = notif.id;

@@ -1,21 +1,21 @@
 ﻿import { state } from './state.js';
-import { 
-    updateMuteButtonUI, toggleMute, refreshSessionsList, 
-    loadSession, startNewSession, formatCodeBlocks, appendLineToTerminal, 
-    finishRunningProcess, runLuaScript, sendMessage, initChat 
+import {
+    updateMuteButtonUI, toggleMute, refreshSessionsList,
+    loadSession, startNewSession, formatCodeBlocks, appendLineToTerminal,
+    finishRunningProcess, runLuaScript, sendMessage, initChat
 } from './chat.js';
-import { 
-    initCanvasView, initCanvasCollab, loadCanvasCode, initCanvas 
+import {
+    initCanvasView, initCanvasCollab, loadCanvasCode, initCanvas
 } from './canvas.js';
-import { 
-    initSettings, applySettings, toggleSettingsLlmGroups, initSettingsSidebar 
+import {
+    initSettings, applySettings, toggleSettingsLlmGroups, initSettingsSidebar
 } from './settings.js';
-import { 
-    initPtyTerminal, initSshTerminal, connectSsh, 
-    initSshProfilesFromDisk, renderSshProfiles, renderSshProfilesSettings, 
-    initFtpProfilesFromDisk, renderFtpProfiles, renderFtpProfilesSettings, 
-    initSftpProfilesFromDisk, renderSftpProfiles, renderSftpProfilesSettings, 
-    initFtpSftpDragDrop, createTerminalSession, initTerminal 
+import {
+    initPtyTerminal, initSshTerminal, connectSsh,
+    initSshProfilesFromDisk, renderSshProfiles, renderSshProfilesSettings,
+    initFtpProfilesFromDisk, renderFtpProfiles, renderFtpProfilesSettings,
+    initSftpProfilesFromDisk, renderSftpProfiles, renderSftpProfilesSettings,
+    initFtpSftpDragDrop, createTerminalSession, initTerminal
 } from './terminal.js';
 
 import './style.css';
@@ -63,7 +63,7 @@ async function triggerOAuthLogin() {
             </div>
             <p id="oauth-url-text" style="display: none;">Or visit: <a href="#" id="oauth-url" target="_blank" style="color: #00ff41;"></a></p>
             <p id="oauth-code-text" style="display: none;">Enter the following code:</p>
-            <h1 id="oauth-code" style="letter-spacing: 4px; background: rgba(0,255,65,0.1); display: inline-block; padding: 10px; display: none;"></h1>
+            <div id="oauth-code" class="oauth-code-display" style="letter-spacing: 4px; background: rgba(0,255,65,0.1); display: inline-block; padding: 10px; display: none;"></div>
         </div>
     `;
     chatViewport.appendChild(msg);
@@ -145,16 +145,16 @@ window.sanitizeHtml = function(html) {
     try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        
+
         const allowedTags = new Set([
-            'a', 'span', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
-            'ul', 'ol', 'li', 'pre', 'code', 'em', 'strong', 'br', 'img', 
+            'a', 'span', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li', 'pre', 'code', 'em', 'strong', 'br', 'img',
             'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 'hr'
         ]);
-        
+
         const allowedAttrs = new Set(['class', 'href', 'src', 'alt', 'title', 'target']);
         const allowedUrlSchemes = /^(https?:|mailto:|#|\/)/i;
-        
+
         function cleanNode(node) {
             const children = Array.from(node.childNodes);
             for (const child of children) {
@@ -192,12 +192,25 @@ window.sanitizeHtml = function(html) {
                 }
             }
         }
-        
+
         cleanNode(doc.body);
         return doc.body.innerHTML;
     } catch (e) {
         console.error("HTML Sanitization failed:", e);
         return '';
+    }
+};
+
+window.parseStructuredError = function(err) {
+    if (!err) return null;
+    const text = String(err).trim();
+    if (!text.startsWith('{')) return null;
+    try {
+        const parsed = JSON.parse(text);
+        if (parsed.code && parsed.message) return parsed;
+        return null;
+    } catch {
+        return null;
     }
 };
 
@@ -295,6 +308,9 @@ document.querySelector('#app').innerHTML = `
         </div>
     </div>
 
+    <!-- Visually-hidden page title for screen-reader navigation -->
+    <h1 class="sr-only">NEURODECK OS — AI Terminal Interface</h1>
+
     <div class="app-layout">
         <!-- Collapsible Sidebar (Left) -->
         <aside class="sidebar collapsed" id="sidebar">
@@ -343,7 +359,7 @@ document.querySelector('#app').innerHTML = `
                     <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">${createIcon('menu', { size: 18 })}</button>
                     <span class="top-nav-title" id="session-title">Active Session</span>
                 </div>
-                
+
                 <div class="top-nav-right">
                     <button class="model-selector-indicator" id="model-name" title="Switch Agent (Ctrl+Shift+M)" onclick="toggleAgentSwitcher()">[ MODEL: GEMINI ]</button>
                     <span class="game-context-badge hidden" id="game-badge" title="Steam game detected">
@@ -360,6 +376,13 @@ document.querySelector('#app').innerHTML = `
                     <button class="input-btn" id="settings-btn" title="Settings">${createIcon('settings2', { size: 18 })}</button>
                 </div>
             </header>
+
+            <!-- Breadcrumb / Location Bar -->
+            <div class="breadcrumb-bar" id="breadcrumb-bar" aria-label="Breadcrumb">
+                <span class="breadcrumb-root">NEURODECK</span>
+                <span class="breadcrumb-sep">/</span>
+                <span class="breadcrumb-view" id="breadcrumb-view">Chat</span>
+            </div>
 
             <!-- ═══════════════════════════════════════════════════════════
                  NAVIGATION TAB ROW — full-width row below top-nav
@@ -1004,12 +1027,12 @@ document.querySelector('#app').innerHTML = `
                                     <span class="browser-home-kicker">Navigation Hub</span>
                                     <div class="browser-home-logo">NEURODECK<span>BROWSER</span></div>
                                     <p class="browser-home-subtitle">Built-in Sandbox Navigation Engine</p>
-                                    
+
                                     <div class="browser-search-box">
                                         <input type="text" id="browser-home-search-input" placeholder="Search the web (via DuckDuckGo frame)...">
                                         <button id="browser-home-search-btn">Search</button>
                                     </div>
-                                    
+
                                     <div class="speed-dial-title">Quick Bookmarks</div>
                                     <div class="speed-dial-grid">
                                         <div class="speed-dial-card" data-url="https://html.duckduckgo.com/html/">
@@ -1062,7 +1085,7 @@ document.querySelector('#app').innerHTML = `
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Active IFrame -->
                             <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"></iframe>
 
@@ -1071,7 +1094,7 @@ document.querySelector('#app').innerHTML = `
                                 <div class="blocked-content">
                                     <span class="blocked-kicker">Embed Guard</span>
                                     <div class="blocked-icon">${createIcon('shieldCheck', { size: 34 })}</div>
-                                    <h2 class="blocked-title">Connection Blocked</h2>
+                                    <div class="blocked-title" role="heading" aria-level="3">Connection Blocked</div>
                                     <p class="blocked-msg">This site uses <strong>X-Frame-Options</strong> or <strong>CSP</strong> headers that prevent embedding inside NEURODECK Browser.</p>
                                     <p class="blocked-url" id="blocked-url-display"></p>
                                     <button class="browser-btn go-btn blocked-ext-btn" id="blocked-open-ext-btn">${createIcon('arrowUpRight', { size: 14 })}<span>Open in System Browser</span></button>
@@ -1532,7 +1555,7 @@ document.querySelector('#app').innerHTML = `
                         <span class="inspect-stat-value" id="drawer-ram-val">--</span>
                     </div>
                 </div>
-                
+
                 <div class="inspect-card">
                     <h4>VECTOR MEMORY</h4>
                     <div class="inspect-stat-row">
@@ -1548,7 +1571,7 @@ document.querySelector('#app').innerHTML = `
                         <span class="inspect-stat-value" id="drawer-memory-pinned">0</span>
                     </div>
                 </div>
-                
+
                 <div class="inspect-card">
                     <h4>SESSION METRICS</h4>
                     <div class="inspect-stat-row">
@@ -1754,10 +1777,10 @@ document.querySelector('#app').innerHTML = `
                                     <button class="stv-btn-ghost bg-tab-btn" id="bg-tab-static" style="font-size:0.7rem; padding:0 8px; height:24px; border-radius:4px;">Static Presets</button>
                                 </div>
                             </div>
-                            
+
                             <!-- Live backgrounds grid -->
                             <div id="bg-gallery-live" class="bg-gallery-grid"></div>
-                            
+
                             <!-- Static backgrounds grid -->
                             <div id="bg-gallery-static" class="bg-gallery-grid" style="display:none;"></div>
 
@@ -1765,7 +1788,7 @@ document.querySelector('#app').innerHTML = `
                                 <label>Custom Wallpaper URL</label>
                                 <input type="text" id="bg-url-input" placeholder="https://…">
                             </div>
-                            
+
                             <div class="stv-slider-row">
                                 <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Opacity</span>
                                 <input type="range" id="bg-opacity-slider" min="0" max="100" value="10">
@@ -2506,7 +2529,7 @@ class LiveBackgroundManager {
         }
         this.currentType = null;
         this.particles = [];
-        
+
         const cssEl = document.getElementById("app-background-css");
         if (cssEl) {
             cssEl.style.opacity = "0";
@@ -2671,18 +2694,18 @@ class LiveBackgroundManager {
             ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
             ctx.fillRect(0, 0, w, h);
             ctx.font = "14px monospace";
-            
+
             for (let i = 0; i < this.particles.length; i++) {
                 const char = String.fromCharCode(33 + Math.floor(Math.random() * 93));
                 const x = i * 16;
                 const y = this.particles[i];
-                
+
                 ctx.fillStyle = "#ffffff";
                 ctx.fillText(char, x, y);
-                
+
                 ctx.fillStyle = accentColor;
                 ctx.fillText(char, x, y - 14);
-                
+
                 this.particles[i] += 14;
                 if (this.particles[i] > h && Math.random() > 0.98) {
                     this.particles[i] = 0;
@@ -2691,17 +2714,17 @@ class LiveBackgroundManager {
         } else if (type === "starfield") {
             ctx.fillStyle = "#050505";
             ctx.fillRect(0, 0, w, h);
-            
+
             const cx = w / 2;
             const cy = h / 2;
             const speed = 4;
-            
+
             for (let i = 0; i < this.particles.length; i++) {
                 let star = this.particles[i];
-                
+
                 const px = (star.x / star.z) * cx + cx;
                 const py = (star.y / star.z) * cy + cy;
-                
+
                 star.z -= speed;
                 if (star.z <= 0) {
                     star.x = Math.random() * w - cx;
@@ -2709,10 +2732,10 @@ class LiveBackgroundManager {
                     star.z = w;
                     continue;
                 }
-                
+
                 const nx = (star.x / star.z) * cx + cx;
                 const ny = (star.y / star.z) * cy + cy;
-                
+
                 if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
                     const alpha = 1 - star.z / w;
                     ctx.strokeStyle = star.color.startsWith("var") ? (star.color.includes("accent") ? accentColor : responseColor) : star.color;
@@ -2727,15 +2750,15 @@ class LiveBackgroundManager {
             ctx.globalAlpha = 1.0;
         } else if (type === "particles") {
             ctx.clearRect(0, 0, w, h);
-            
+
             for (let i = 0; i < this.particles.length; i++) {
                 let p = this.particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
-                
+
                 if (p.x < 0 || p.x > w) p.vx *= -1;
                 if (p.y < 0 || p.y > h) p.vy *= -1;
-                
+
                 if (this.mouseX > 0 && this.mouseY > 0) {
                     const dx = p.x - this.mouseX;
                     const dy = p.y - this.mouseY;
@@ -2746,14 +2769,14 @@ class LiveBackgroundManager {
                         p.y += (dy / dist) * force * 2;
                     }
                 }
-                
+
                 ctx.fillStyle = accentColor;
                 ctx.globalAlpha = 0.4;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
                 ctx.fill();
             }
-            
+
             ctx.strokeStyle = accentColor;
             for (let i = 0; i < this.particles.length; i++) {
                 let p1 = this.particles[i];
@@ -2775,19 +2798,19 @@ class LiveBackgroundManager {
             ctx.globalAlpha = 1.0;
         } else if (type === "grid") {
             ctx.clearRect(0, 0, w, h);
-            
+
             const horizon = h * 0.45;
             const gridHeight = h - horizon;
-            
+
             this.angle = (this.angle + 0.8) % 40;
-            
+
             const glowGrad = ctx.createLinearGradient(0, horizon - 50, 0, horizon + 50);
             glowGrad.addColorStop(0, "transparent");
             glowGrad.addColorStop(0.5, responseColor + "1a");
             glowGrad.addColorStop(1, "transparent");
             ctx.fillStyle = glowGrad;
             ctx.fillRect(0, horizon - 50, w, 100);
-            
+
             ctx.strokeStyle = responseColor;
             ctx.globalAlpha = 0.3;
             ctx.lineWidth = 1.5;
@@ -2795,7 +2818,7 @@ class LiveBackgroundManager {
             ctx.moveTo(0, horizon);
             ctx.lineTo(w, horizon);
             ctx.stroke();
-            
+
             const numVerts = 30;
             for (let i = 0; i <= numVerts; i++) {
                 const xTop = (w / numVerts) * i;
@@ -2807,7 +2830,7 @@ class LiveBackgroundManager {
                 ctx.lineTo(xBottom, h);
                 ctx.stroke();
             }
-            
+
             const speedRatio = this.angle / 40;
             const numHoriz = 12;
             for (let i = 0; i < numHoriz; i++) {
@@ -2825,13 +2848,13 @@ class LiveBackgroundManager {
             ctx.globalAlpha = 1.0;
         } else if (type === "radar") {
             ctx.clearRect(0, 0, w, h);
-            
+
             const cx = w * 0.75;
             const cy = h * 0.6;
             const maxRadius = Math.min(w, h) * 0.45;
-            
+
             this.angle = (this.angle + 0.005) % (Math.PI * 2);
-            
+
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(this.angle);
@@ -2845,7 +2868,7 @@ class LiveBackgroundManager {
             ctx.lineTo(0, 0);
             ctx.fill();
             ctx.restore();
-            
+
             ctx.strokeStyle = accentColor;
             ctx.lineWidth = 1;
             for (let r = 50; r <= maxRadius; r += 80) {
@@ -2853,13 +2876,13 @@ class LiveBackgroundManager {
                 ctx.beginPath();
                 ctx.arc(cx, cy, r, 0, Math.PI * 2);
                 ctx.stroke();
-                
+
                 ctx.globalAlpha = 0.2;
                 ctx.fillStyle = accentColor;
                 ctx.font = "8px monospace";
                 ctx.fillText(`R_${r}KM`, cx + r + 3, cy - 3);
             }
-            
+
             ctx.strokeStyle = accentColor;
             ctx.globalAlpha = 0.06;
             ctx.beginPath();
@@ -2868,7 +2891,7 @@ class LiveBackgroundManager {
             ctx.moveTo(cx, cy - maxRadius);
             ctx.lineTo(cx, cy + maxRadius);
             ctx.stroke();
-            
+
             ctx.font = "8px monospace";
             for (let i = 0; i < this.particles.length; i++) {
                 let node = this.particles[i];
@@ -2876,13 +2899,13 @@ class LiveBackgroundManager {
                 if (node.alpha > 1 || node.alpha < 0) {
                     node.speed *= -1;
                 }
-                
+
                 ctx.fillStyle = responseColor;
                 ctx.globalAlpha = node.alpha * 0.3;
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
                 ctx.fill();
-                
+
                 ctx.fillStyle = accentColor;
                 ctx.globalAlpha = node.alpha * 0.2;
                 ctx.fillText(node.label, node.x + 6, node.y + 3);
@@ -2891,17 +2914,17 @@ class LiveBackgroundManager {
         } else if (type === "circuit") {
             ctx.clearRect(0, 0, w, h);
             ctx.lineWidth = 1.2;
-            
+
             for (let i = 0; i < this.particles.length; i++) {
                 let line = this.particles[i];
-                
+
                 if (line.points.length > 0 && line.stepsRemaining > 0) {
                     let lastPt = line.points[line.points.length - 1];
                     line.stepsRemaining--;
                     const nextX = lastPt.x + line.dirX * line.growSpeed;
                     const nextY = lastPt.y + line.dirY * line.growSpeed;
                     line.points.push({ x: nextX, y: nextY });
-                    
+
                     if (line.stepsRemaining <= 0 && Math.random() > 0.3 && line.points.length < 80) {
                         line.stepsRemaining = Math.floor(Math.random() * 15) + 10;
                         const angle = (Math.floor(Math.random() * 8) * Math.PI / 4);
@@ -2909,7 +2932,7 @@ class LiveBackgroundManager {
                         line.dirY = Math.sin(angle);
                     }
                 }
-                
+
                 if (line.points.length > 1) {
                     ctx.strokeStyle = line.color.startsWith("var") ? (line.color.includes("accent") ? accentColor : responseColor) : line.color;
                     ctx.globalAlpha = line.alpha * 0.15;
@@ -2919,7 +2942,7 @@ class LiveBackgroundManager {
                         ctx.lineTo(line.points[j].x, line.points[j].y);
                     }
                     ctx.stroke();
-                    
+
                     const head = line.points[line.points.length - 1];
                     ctx.fillStyle = line.color.startsWith("var") ? (line.color.includes("accent") ? accentColor : responseColor) : line.color;
                     ctx.globalAlpha = line.alpha * 0.4;
@@ -2927,7 +2950,7 @@ class LiveBackgroundManager {
                     ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                
+
                 line.alpha -= 0.001;
                 if (line.alpha <= 0 || (line.points.length >= 80 && line.stepsRemaining <= 0)) {
                     this.particles[i] = this.createCircuitLine(w, h);
@@ -2937,23 +2960,23 @@ class LiveBackgroundManager {
         } else if (type === "wave") {
             ctx.clearRect(0, 0, w, h);
             this.angle += 0.02;
-            
+
             const waveConfigs = [
                 { amp: 40, freq: 0.003, phase: this.angle, color: accentColor, opacity: 0.1 },
                 { amp: 25, freq: 0.005, phase: this.angle * 1.5, color: responseColor, opacity: 0.08 },
                 { amp: 15, freq: 0.008, phase: this.angle * 0.8, color: '#A855F7', opacity: 0.06 }
             ];
-            
+
             for (let c = 0; c < waveConfigs.length; c++) {
                 const config = waveConfigs[c];
                 ctx.strokeStyle = config.color;
                 ctx.lineWidth = 1.5;
                 ctx.globalAlpha = config.opacity;
-                
+
                 ctx.beginPath();
                 const midY = h / 2 + Math.sin(config.phase * 0.2) * 50;
                 ctx.moveTo(0, midY);
-                
+
                 for (let x = 0; x < w; x += 10) {
                     const y = midY + Math.sin(x * config.freq + config.phase) * config.amp * Math.sin(x / w * Math.PI);
                     ctx.lineTo(x, y);
@@ -2964,16 +2987,16 @@ class LiveBackgroundManager {
         } else if (type === "ascii") {
             ctx.fillStyle = "#020305";
             ctx.fillRect(0, 0, w, h);
-            
+
             ctx.font = "12px monospace";
             ctx.fillStyle = accentColor;
-            
+
             for (let i = 0; i < this.particles.length; i++) {
                 const line = this.particles[i];
-                
+
                 ctx.globalAlpha = line.alpha;
                 ctx.fillText(line.text, 15, line.y);
-                
+
                 line.y -= line.speed;
                 if (line.y < -20) {
                     line.y = h + 20;
@@ -3032,7 +3055,7 @@ function renderBackgroundGallery() {
                 bgUrlInput.value = url;
             }
             localStorage.setItem("bgUrl", url);
-            
+
             // Update the miniature preview viewport background
             const tvpBgLayer = document.getElementById("tvp-bg-layer");
             if (tvpBgLayer) {
@@ -3073,7 +3096,7 @@ function renderBackgroundGallery() {
 
     const tabLive = document.getElementById("bg-tab-live");
     const tabStatic = document.getElementById("bg-tab-static");
-    
+
     if (tabLive && tabStatic) {
         tabLive.onclick = function() {
             tabLive.classList.add("active");
@@ -3303,31 +3326,31 @@ function getGamepadFocusableElements() {
         "#sidebar:not(.collapsed) #sidebar-close-btn",
         "#sidebar:not(.collapsed) #new-chat-btn",
         "#sidebar:not(.collapsed) .history-item",
-        
+
         // Top nav buttons
         "#sidebar-toggle-btn",
         ".nav-tab",
         "#mute-btn",
         "#notif-btn",
         "#settings-btn",
-        
+
         // Chat View
         "#view-chat.active #user-input",
         "#view-chat.active #mic-btn",
         "#view-chat.active #toggle-drawer-btn",
         "#view-chat.active #send-btn",
         "#view-chat.active .code-header-btn",
-        
+
         // Canvas View
         "#view-canvas.active #canvas-run-btn",
         "#view-canvas.active #canvas-clear-btn",
         "#view-canvas.active #canvas-copy-btn",
         "#view-canvas.active #canvas-lang-select",
         "#view-canvas.active #canvas-collab-btn",
-        
+
         // Terminal View
         "#view-terminal.active #pty-reconnect-btn",
-        
+
         // Tunnel View
         "#view-tunnel.active #tunnel-check-btn",
         "#view-tunnel.active #tunnel-toggle-btn",
@@ -3338,13 +3361,13 @@ function getGamepadFocusableElements() {
         "#view-tunnel.active #tunnel-file-send",
         "#view-tunnel.active #tunnel-dirpath-input",
         "#view-tunnel.active #tunnel-dir-send",
-        
+
         // Share View
         "#view-share.active .peer-item",
         "#view-share.active #share-dropzone",
         "#view-share.active #share-filepath-input",
         "#view-share.active #share-send-btn",
-        
+
         // Memory View
         "#view-memory.active #memory-search-input",
         "#view-memory.active #memory-refresh-btn",
@@ -3383,12 +3406,12 @@ function getGamepadFocusableElements() {
 function updateGamepadFocus(index) {
     const els = getGamepadFocusableElements();
     document.querySelectorAll(".gamepad-focused").forEach(el => el.classList.remove("gamepad-focused"));
-    
+
     if (els.length === 0) {
         state.gamepadFocusIndex = -1;
         return;
     }
-    
+
     if (index < 0) {
         state.gamepadFocusIndex = els.length - 1;
     } else if (index >= els.length) {
@@ -3396,7 +3419,7 @@ function updateGamepadFocus(index) {
     } else {
         state.gamepadFocusIndex = index;
     }
-    
+
     const target = els[state.gamepadFocusIndex];
     if (target) {
         target.classList.add("gamepad-focused");
@@ -3962,15 +3985,15 @@ function cycleTheme() {
         const currentIdx = themes.indexOf(savedTheme);
         const nextIdx = (currentIdx + 1) % themes.length;
         const nextTheme = themes[nextIdx];
-        
+
         invoke("set_theme", { name: nextTheme }).then((theme) => {
             if (theme) {
                 applyThemeColors(theme);
                 localStorage.setItem("selectedTheme", nextTheme);
-                
+
                 const themeSelect = document.getElementById("theme-select");
                 if (themeSelect) themeSelect.value = nextTheme;
-                
+
                 let chatViewport = document.getElementById("chat-viewport");
                 let viewport = document.getElementById("chat-workspace");
                 let div = document.createElement("div");
@@ -4115,10 +4138,10 @@ setInterval(() => {
 invoke("get_initial_state").then((initialState) => {
     const modelNameEl = document.getElementById("model-name");
     if (modelNameEl) modelNameEl.innerText = `[ MODEL: ${initialState.model.toUpperCase()} ]`;
-    
+
     const dbStatusEl = document.getElementById("vector-db-status");
     if (dbStatusEl) dbStatusEl.innerText = initialState.memory_status;
-    
+
     const memoryStatusEl = document.getElementById("memory-status");
     if (memoryStatusEl) memoryStatusEl.innerText = initialState.memory_status;
 
@@ -4151,7 +4174,7 @@ invoke("get_initial_state").then((initialState) => {
         if (modelNameEl) modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
         renderAgentSwitcher();
     });
-    
+
     // Initial Context Drawer metrics load
     updateContextDrawer();
 
@@ -4161,14 +4184,14 @@ invoke("get_initial_state").then((initialState) => {
         app_id: initialState.game_app_id || "",
         is_running: initialState.game_running || "false"
     });
-    
+
     // Fetch and cache available personas list
     invoke("get_personas").then((personas) => {
         state.availablePersonas = personas;
     }).catch((err) => {
         console.error("Error loading personas:", err);
     });
-    
+
     // Load persisted theme
     let savedTheme = localStorage.getItem("selectedTheme");
     if (savedTheme) {
@@ -4178,7 +4201,7 @@ invoke("get_initial_state").then((initialState) => {
             }
         });
     }
-    
+
     // Initialize our sub-systems
     initChat();
     initSettings();
@@ -4186,6 +4209,7 @@ invoke("get_initial_state").then((initialState) => {
     initCanvas();
     initNotificationCenter();
     initShortcutsOverlay();
+    initOsThemeSync();
     if (initialState.boot_health_status && initialState.boot_health_status !== "healthy" && typeof addNotification === "function") {
         const level = initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0
             ? "warning"
@@ -4201,7 +4225,7 @@ invoke("get_initial_state").then((initialState) => {
     initAgentView();
     initMemoryView();
     initRadialMenu();
-    
+
     // Check Onboarding
     checkOnboarding();
 }).catch((err) => {
@@ -4229,23 +4253,92 @@ function ensureTabVisible(tab) {
     });
 }
 
+// View state persistence store
+const viewStateStore = new Map();
+
+function saveViewState(viewId) {
+    const view = document.getElementById(viewId);
+    if (!view) return;
+    const scrollEls = view.querySelectorAll('[id]');
+    const scrollMap = {};
+    const inputMap = {};
+    scrollEls.forEach(el => {
+        if (el.scrollTop > 0) scrollMap[el.id] = el.scrollTop;
+        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value) {
+            inputMap[el.id] = el.value;
+        }
+    });
+    viewStateStore.set(viewId, { scroll: scrollMap, input: inputMap });
+}
+
+function restoreViewState(viewId) {
+    const state = viewStateStore.get(viewId);
+    if (!state) return;
+    const view = document.getElementById(viewId);
+    if (!view) return;
+    Object.entries(state.scroll || {}).forEach(([id, top]) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollTop = top;
+    });
+    Object.entries(state.input || {}).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    });
+}
+
+// Track current view for transition direction
+let currentViewId = 'view-chat';
+
 navTabs.forEach(tab => {
     tab.onclick = function() {
-        const targetView = tab.getAttribute("data-view");
-        
+        const targetViewName = tab.getAttribute("data-view");
+        const targetViewId = `view-${targetViewName}`;
+        if (targetViewId === currentViewId) return;
+
+        // Determine direction based on tab index order
+        const tabsArray = Array.from(navTabs);
+        const currentIdx = tabsArray.findIndex(t => t.getAttribute('data-view') === currentViewId.replace('view-', ''));
+        const targetIdx = tabsArray.indexOf(tab);
+        const direction = targetIdx > currentIdx ? 'right' : 'left';
+
         navTabs.forEach(t => t.classList.remove("active"));
         tab.classList.add("active");
         ensureTabVisible(tab);
-        
-        viewContents.forEach(view => {
-            if (view.id === `view-${targetView}`) {
-                view.classList.add("active");
-            } else {
-                view.classList.remove("active");
-            }
-        });
-        
-        if (targetView === "terminal" && window.ptyTerminalFitAddon) {
+
+        // Save state of outgoing view
+        saveViewState(currentViewId);
+
+        // Animate transition
+        const outgoing = document.getElementById(currentViewId);
+        const incoming = document.getElementById(targetViewId);
+
+        if (outgoing) {
+            outgoing.classList.remove('active');
+            outgoing.classList.add(`view-exit-${direction}`);
+            setTimeout(() => {
+                outgoing.classList.remove(`view-exit-${direction}`);
+            }, 300);
+        }
+
+        if (incoming) {
+            incoming.classList.remove(`view-enter-left`, `view-enter-right`);
+            incoming.classList.add(`view-enter-${direction === 'right' ? 'left' : 'right'}`);
+            // Force reflow
+            void incoming.offsetWidth;
+            incoming.classList.add('active');
+            incoming.classList.remove(`view-enter-${direction === 'right' ? 'left' : 'right'}`);
+        }
+
+        currentViewId = targetViewId;
+
+        // Restore state of incoming view
+        requestAnimationFrame(() => restoreViewState(targetViewId));
+
+        // Update breadcrumb and contextual sidebar
+        updateBreadcrumb(targetViewName);
+        updateContextualSidebar(targetViewName);
+
+        if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
             setTimeout(() => {
                 try {
                     window.ptyTerminalFitAddon.fit();
@@ -4254,7 +4347,7 @@ navTabs.forEach(tab => {
                 }
             }, 50);
         }
-        if (targetView === "ssh") {
+        if (targetViewName === "ssh") {
             if (!window.sshTerminal) {
                 initSshTerminal();
             }
@@ -4264,7 +4357,7 @@ navTabs.forEach(tab => {
                 } catch (e) {}
             }, 50);
         }
-        if (targetView === "share") {
+        if (targetViewName === "share") {
             Promise.all([
                 initSshProfilesFromDisk(),
                 initFtpProfilesFromDisk(),
@@ -4278,10 +4371,60 @@ navTabs.forEach(tab => {
     };
 });
 
+function updateBreadcrumb(viewName) {
+    const el = document.getElementById('breadcrumb-view');
+    if (!el) return;
+    const labels = {
+        chat: 'Chat',
+        canvas: 'Canvas',
+        terminal: 'Terminal',
+        ssh: 'SSH',
+        tunnel: 'Tunnel',
+        share: 'Share',
+        browser: 'Browser',
+        agent: 'Agent',
+        memory: 'Memory',
+        'prompt-lab': 'Prompt Lab',
+        remote: 'Remote',
+        docs: 'Docs',
+    };
+    el.textContent = labels[viewName] || viewName;
+    el.style.opacity = '0';
+    requestAnimationFrame(() => {
+        el.style.transition = 'opacity 150ms ease';
+        el.style.opacity = '1';
+    });
+}
+
+function updateContextualSidebar(viewName) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    // Show/hide contextual sections
+    const chatSections = ['new-chat-btn', 'sidebar-history'];
+    const diagSection = 'sidebar-diagnostics';
+
+    // All contextual sections
+    const allSections = {
+        'sidebar-history': ['chat', 'agent', 'memory'],
+        'sidebar-diagnostics': ['chat', 'terminal', 'ssh', 'tunnel', 'share'],
+    };
+
+    Object.entries(allSections).forEach(([id, views]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (views.includes(viewName)) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
 function activateViewByName(targetView) {
     const tab = document.querySelector(`.nav-tab[data-view="${targetView}"]`);
     if (tab) tab.click();
 }
+window.activateViewByName = activateViewByName;
 
 function openSettingsPanelById(panelId) {
     const settingsBtn = document.getElementById("settings-btn");
@@ -4533,7 +4676,7 @@ function initCommandPalette() {
 function logTunnel(direction, text) {
     const logContainer = document.getElementById("tunnel-log");
     if (!logContainer) return;
-    
+
     const entry = document.createElement("div");
     entry.className = `log-entry ${direction}`;
     entry.innerText = `${new Date().toLocaleTimeString()} [${direction.toUpperCase()}] ${text}`;
@@ -4544,7 +4687,7 @@ function logTunnel(direction, text) {
 function checkTunnelServerStatus(silent = false) {
     const indicator = document.getElementById("tunnel-status-indicator");
     const req = JSON.stringify({ type: "run_cmd", command: "whoami" });
-    
+
     invoke("send_tunnel_request", { request: req }).then((resStr) => {
         try {
             const resp = JSON.parse(resStr);
@@ -4599,14 +4742,14 @@ function initTunnelClient() {
     const cmdSend = document.getElementById("tunnel-cmd-send");
     const fileSend = document.getElementById("tunnel-file-send");
     const dirSend = document.getElementById("tunnel-dir-send");
-    
+
     if (checkBtn) {
         checkBtn.onclick = function() {
             logTunnel("system", "Checking tunnel server status...");
             checkTunnelServerStatus();
         };
     }
-    
+
     if (toggleBtn) {
         toggleBtn.onclick = function() {
             if (state.tunnelStatus === "offline") {
@@ -4633,16 +4776,16 @@ function initTunnelClient() {
             }
         };
     }
-    
+
     if (cmdSend) {
         cmdSend.onclick = function() {
             const input = document.getElementById("tunnel-cmd-input");
             const command = input.value.trim();
             if (!command) return;
-            
+
             logTunnel("sent", `Execute command: ${command}`);
             const req = JSON.stringify({ type: "run_cmd", command: command });
-            
+
             invoke("send_tunnel_request", { request: req }).then((resStr) => {
                 const resp = JSON.parse(resStr);
                 if (resp.type === "success") {
@@ -4656,19 +4799,19 @@ function initTunnelClient() {
             input.value = "";
         };
     }
-    
+
     if (fileSend) {
         fileSend.onclick = function() {
             const pathInput = document.getElementById("tunnel-filepath-input");
             const contentArea = document.getElementById("tunnel-filecontent-input");
-            
+
             const path = pathInput.value.trim();
             const content = contentArea.value;
             if (!path) return;
-            
+
             logTunnel("sent", `Write file: ${path} (${content.length} chars)`);
             const req = JSON.stringify({ type: "write_file", path: path, content: content });
-            
+
             invoke("send_tunnel_request", { request: req }).then((resStr) => {
                 const resp = JSON.parse(resStr);
                 if (resp.type === "success") {
@@ -4683,16 +4826,16 @@ function initTunnelClient() {
             contentArea.value = "";
         };
     }
-    
+
     if (dirSend) {
         dirSend.onclick = function() {
             const input = document.getElementById("tunnel-dirpath-input");
             const path = input.value.trim();
             if (!path) return;
-            
+
             logTunnel("sent", `Read dir: ${path}`);
             const req = JSON.stringify({ type: "read_dir", path: path });
-            
+
             invoke("send_tunnel_request", { request: req }).then((resStr) => {
                 const resp = JSON.parse(resStr);
                 if (resp.type === "success") {
@@ -4827,10 +4970,10 @@ function renderTransfers(transfers) {
         const item = document.createElement("div");
         item.className = "transfer-item";
         item.id = `transfer-${t.id}`;
-        
+
         const percent = t.size > 0 ? Math.round((t.progress / t.size) * 100) : 0;
         const progressClass = t.status === "Completed" ? "completed" : (t.status === "Failed" || t.status === "Rejected" ? "failed" : "");
-        
+
         let speedText = "";
         let etaText = "";
         if (t.status === "Transferring") {
@@ -4948,7 +5091,7 @@ function updateTransferCardProgress(transferId, progress) {
     }
 
     const percent = t.size > 0 ? Math.min(100, Math.round((progress / t.size) * 100)) : 0;
-    
+
     const barEl = item.querySelector(".transfer-progress-bar-fill");
     if (barEl) {
         barEl.style.width = `${percent}%`;
@@ -5014,15 +5157,15 @@ function initFileShare() {
     const dropzone = document.getElementById("share-dropzone");
     const pathInput = document.getElementById("share-filepath-input");
     const sendBtn = document.getElementById("share-send-btn");
-    
+
     const acceptBtn = document.getElementById("transfer-modal-accept");
     const rejectBtn = document.getElementById("transfer-modal-reject");
     const closeXBtn = document.getElementById("transfer-modal-close-x");
-    
+
     // Initial fetch of peers and transfers
     invoke("get_discovered_peers").then(renderPeers).catch(err => console.error("Error fetching peers:", err));
     invoke("get_active_transfers").then(renderTransfers).catch(err => console.error("Error fetching transfers:", err));
-    
+
     // Group Code Settings
     const groupCodeInput = document.getElementById("share-group-code-input");
     const saveGroupCodeBtn = document.getElementById("share-group-code-save-btn");
@@ -5053,36 +5196,36 @@ function initFileShare() {
                 });
         };
     }
-    
+
     // Listen for peer discovery updates
     listen("peers_updated", (event) => {
         renderPeers(event.payload);
     });
-    
+
     // Listen for incoming transfer requests
     listen("transfer_incoming", (event) => {
         const transfer = event.payload;
         state.pendingTransferId = transfer.id;
-        
+
         const modal = document.getElementById("transfer-modal");
         const modalPeer = document.getElementById("transfer-modal-peer");
         const modalFilename = document.getElementById("transfer-modal-filename");
         const modalSize = document.getElementById("transfer-modal-size");
-        
+
         if (modal && modalPeer && modalFilename && modalSize) {
             modalPeer.innerText = `${transfer.peer_name || 'Unknown'} (${transfer.peer_ip})`;
             modalFilename.innerText = transfer.filename;
             modalSize.innerText = formatBytes(transfer.size);
             modal.classList.add("active");
         }
-        
+
         if (typeof addNotification === "function") {
             addNotification("Incoming Transfer Request", `From ${transfer.peer_name || 'Unknown'} (${transfer.peer_ip}): ${transfer.filename}`, "info");
         }
-        
+
         invoke("get_active_transfers").then(renderTransfers);
     });
-    
+
     // Listen for transfer progress and completions
     listen("transfer_progress", (event) => {
         if (event && event.payload) {
@@ -5104,7 +5247,57 @@ function initFileShare() {
         }
         invoke("get_active_transfers").then(renderTransfers);
     });
-    
+
+    // Agent step progress events
+    listen("agent_thinking", () => {
+        document.getElementById("tool-status").innerText = "Agent thinking...";
+    });
+    listen("agent_step_complete", () => {
+        document.getElementById("tool-status").innerText = "Idle";
+    });
+    listen("agent_step_error", (event) => {
+        const err = event.payload?.error || "Agent step failed";
+        if (typeof addNotification === "function") {
+            addNotification("Agent Error", err, "error");
+        }
+    });
+
+    // Plugin reload progress events
+    listen("plugin_reload_start", () => {
+        if (typeof addNotification === "function") {
+            addNotification("Plugins", "Reloading plugin runtime...", "info");
+        }
+    });
+    listen("plugin_reload_done", () => {
+        if (typeof addNotification === "function") {
+            addNotification("Plugins", "Plugin runtime reloaded.", "success");
+        }
+    });
+    listen("plugin_reload_error", (event) => {
+        const err = event.payload || "Plugin reload failed";
+        if (typeof addNotification === "function") {
+            addNotification("Plugins", String(err), "error");
+        }
+    });
+
+    // BMAD install progress events
+    listen("bmad_install_progress", (event) => {
+        const payload = event.payload || {};
+        if (payload.stage === "start") {
+            if (typeof addNotification === "function") {
+                addNotification("BMAD", `Installing to ${payload.target}...`, "info");
+            }
+        } else if (payload.stage === "done") {
+            if (typeof addNotification === "function") {
+                addNotification("BMAD", "Installation complete.", "success");
+            }
+        } else if (payload.stage === "error") {
+            if (typeof addNotification === "function") {
+                addNotification("BMAD", `Install failed: ${payload.reason}`, "error");
+            }
+        }
+    });
+
     // Setup modal button handlers
     if (acceptBtn) {
         acceptBtn.onclick = function() {
@@ -5122,7 +5315,7 @@ function initFileShare() {
             }
         };
     }
-    
+
     if (rejectBtn) {
         rejectBtn.onclick = function() {
             if (state.pendingTransferId) {
@@ -5139,7 +5332,7 @@ function initFileShare() {
             }
         };
     }
-    
+
     if (closeXBtn) {
         closeXBtn.onclick = function() {
             if (state.pendingTransferId) {
@@ -5154,7 +5347,7 @@ function initFileShare() {
             }
         };
     }
-    
+
     // Drag & drop file path populate
     if (dropzone && pathInput) {
         dropzone.addEventListener("dragover", (e) => {
@@ -5162,18 +5355,18 @@ function initFileShare() {
             e.stopPropagation();
             dropzone.classList.add("dragover");
         });
-        
+
         dropzone.addEventListener("dragleave", (e) => {
             e.preventDefault();
             e.stopPropagation();
             dropzone.classList.remove("dragover");
         });
-        
+
         dropzone.addEventListener("drop", (e) => {
             e.preventDefault();
             e.stopPropagation();
             dropzone.classList.remove("dragover");
-            
+
             if (e.dataTransfer && e.dataTransfer.files.length > 0) {
                 const file = e.dataTransfer.files[0];
                 const path = file.path || file.name;
@@ -5181,12 +5374,12 @@ function initFileShare() {
                 updateSendButtonState();
             }
         });
-        
+
         pathInput.oninput = function() {
             updateSendButtonState();
         };
     }
-    
+
     // Send button event handler
     if (sendBtn) {
         sendBtn.onclick = function() {
@@ -5609,7 +5802,7 @@ listen("ollama_pull_progress", (event) => {
         if (statusEl) statusEl.innerText = "Pull complete!";
         if (percentEl) percentEl.innerText = "100%";
         if (barEl) barEl.style.width = "100%";
-        
+
         setTimeout(() => {
             if (pullBtn) pullBtn.disabled = false;
             if (progressContainer) progressContainer.style.display = "none";
@@ -5634,13 +5827,13 @@ listen("ollama_pull_progress", (event) => {
 function loadPluginsList() {
     const listEl = document.getElementById("settings-plugins-list");
     if (!listEl) return;
-    
+
     const loading = document.createElement("div");
     loading.style.opacity = "0.5";
     loading.style.fontStyle = "italic";
     loading.textContent = "Loading plugins...";
     listEl.replaceChildren(loading);
-    
+
     invoke("list_plugins").then((plugins) => {
         if (plugins.length === 0) {
             const empty = document.createElement("div");
@@ -5651,7 +5844,7 @@ function loadPluginsList() {
             listEl.replaceChildren(empty);
             return;
         }
-        
+
         listEl.replaceChildren();
         plugins.forEach((p) => {
             const row = document.createElement("div");
@@ -5682,7 +5875,7 @@ function loadPluginsList() {
                 const enabled = chk.checked;
                 const statusEl = document.getElementById("settings-plugin-status");
                 if (statusEl) statusEl.innerText = "Toggling plugin...";
-                
+
                 invoke("toggle_plugin", { fileName: p.file_name, enabled }).then(() => {
                     if (statusEl) statusEl.innerText = `Plugin ${enabled ? "enabled" : "disabled"} successfully.`;
                     loadPluginsList();
@@ -5713,20 +5906,20 @@ function loadPluginsList() {
             btn.onclick = () => {
                 const statusEl = document.getElementById("settings-plugin-status");
                 if (statusEl) statusEl.innerText = "Reading plugin content...";
-                
+
                 invoke("read_plugin", { fileName: p.file_name }).then((content) => {
                     // Close settings modal
                     document.getElementById("settings-overlay")?.classList.remove("active");
-                    
+
                     // Clear status
                     if (statusEl) statusEl.innerText = "";
-                    
+
                     // Set active file
                     window.neurodeckCanvas.activePluginFile = p.file_name;
-                    
+
                     // Load into canvas
                     loadCanvasCode("lua", content, p.file_name);
-                    
+
                     // Switch to canvas tab
                     const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
                     if (canvasTab) canvasTab.click();
@@ -6024,7 +6217,7 @@ print("[Plugin] New plugin loaded successfully!")
 function updateCanvasToolbarButtons() {
     const lang = window.neurodeckCanvas.currentLang;
     let saveBtn = document.getElementById("canvas-save-plugin-btn");
-    
+
     if (lang === "lua") {
         if (!saveBtn) {
             // Create "Save Plugin" button
@@ -6033,18 +6226,18 @@ function updateCanvasToolbarButtons() {
             saveBtn.id = "canvas-save-plugin-btn";
             saveBtn.innerHTML = `${createIcon('save', { size: 14 })}<span>Save Plugin</span>`;
             saveBtn.style.marginLeft = "8px";
-            
+
             // Insert it after canvas-run-btn
             const runBtn = document.getElementById("canvas-run-btn");
             if (runBtn) {
                 runBtn.parentNode.insertBefore(saveBtn, runBtn.nextSibling);
             }
-            
+
             // Wire up Save click
             saveBtn.onclick = () => {
                 const code = document.getElementById("canvas-editor").value;
                 let activeFile = window.neurodeckCanvas.activePluginFile;
-                
+
                 if (activeFile) {
                     invoke("save_plugin", { fileName: activeFile, content: code }).then(() => {
                         alert(`Plugin '${activeFile}' saved successfully.`);
@@ -6062,7 +6255,7 @@ function updateCanvasToolbarButtons() {
                         alert("Invalid file name. Do not include path slashes or dots.");
                         return;
                     }
-                    
+
                     invoke("save_plugin", { fileName: sanitized, content: code }).then(() => {
                         window.neurodeckCanvas.activePluginFile = sanitized;
                         const fileTitle = document.getElementById("canvas-file-title");
@@ -6617,7 +6810,7 @@ function initNotificationCenter() {
     const closeX = document.getElementById("close-notif-x");
     const closeBtn = document.getElementById("close-notif-btn");
     const clearAllBtn = document.getElementById("notif-clear-all-btn");
-    
+
     if (notifBtn && notifModal) {
         notifBtn.onclick = () => {
             notifModal.classList.add("active");
@@ -6626,14 +6819,14 @@ function initNotificationCenter() {
             renderNotificationsList();
         };
     }
-    
+
     const dismiss = () => {
         if (notifModal) notifModal.classList.remove("active");
     };
-    
+
     if (closeX) closeX.onclick = dismiss;
     if (closeBtn) closeBtn.onclick = dismiss;
-    
+
     if (clearAllBtn) {
         clearAllBtn.onclick = () => {
             state.notifications = [];
@@ -6653,6 +6846,27 @@ function initShortcutsOverlay() {
             if (e.target === overlay) closeShortcutsOverlay();
         });
     }
+}
+
+function initOsThemeSync() {
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    function applyOsTheme(e) {
+        // Map OS dark/light to nearest built-in theme
+        const themeName = e.matches ? "BLACKSITE" : "SOLARIZED";
+        invoke("set_theme", { name: themeName }).then((theme) => {
+            if (theme) window.applyThemeColors(theme);
+        }).catch(() => {});
+    }
+    // Only apply on first boot if user hasn't set a custom theme
+    const userTheme = localStorage.getItem("neurodeckTheme");
+    if (!userTheme && mql.matches !== undefined) {
+        applyOsTheme(mql);
+    }
+    mql.addEventListener("change", (e) => {
+        if (!localStorage.getItem("neurodeckTheme")) {
+            applyOsTheme(e);
+        }
+    });
 }
 
 // --- GAME CONTEXT PANEL SYSTEM ---
@@ -6762,7 +6976,7 @@ function initGameContextPanel() {
             });
         });
     }
-    
+
     if (closeX) closeX.onclick = dismiss;
     if (closeBtn) closeBtn.onclick = dismiss;
     if (gameModal) {
@@ -7537,7 +7751,7 @@ async function showOnboardingWizard() {
                             <input type="password" id="ob-gemini-key" class="onboarding-input" placeholder="AIzaSy..." autocomplete="off">
                         </div>
                     </div>
-                    
+
                     <!-- Gemini OAuth Container -->
                     <div id="container-gemini-oauth" class="provider-setup-container" style="display: none; text-align: center;">
                         <p style="font-size: 0.8rem; margin-bottom: 10px;">Scan the QR code or visit the link to log in:</p>
@@ -7547,7 +7761,7 @@ async function showOnboardingWizard() {
                         <p id="ob-oauth-link-text" style="font-size: 0.75rem; margin: 5px 0;">Visit: <a href="#" id="ob-oauth-url" target="_blank" style="color: var(--accent-color);">Requesting...</a></p>
                         <div style="font-size: 0.8rem; font-weight: bold; background: rgba(0,240,255,0.1); padding: 8px; display: inline-block; border-radius: 4px;" id="ob-oauth-code-box">CODE: ----</div>
                     </div>
-                    
+
                     <!-- Ollama Container -->
                     <div id="container-ollama" class="provider-setup-container" style="display: none;">
                         <div id="ob-ollama-install-banner" style="display:none;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.4);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:0.75rem;">
@@ -7571,7 +7785,7 @@ async function showOnboardingWizard() {
                             <span id="ob-pull-status" style="font-size:0.7rem;opacity:0.75;"></span>
                         </div>
                     </div>
-                    
+
                     <div class="onboarding-log-viewport" id="ob-validation-log">
                         <div class="onboarding-log-line">[SYS] Awaiting input credentials...</div>
                     </div>
@@ -7687,16 +7901,16 @@ async function showOnboardingWizard() {
                     </div>
                 </div>
             </div>
-            
+
             <footer class="onboarding-footer">
                 <button class="onboarding-btn secondary" id="ob-btn-prev" disabled>Back</button>
                 <button class="onboarding-btn" id="ob-btn-next">Next</button>
             </footer>
         </div>
     `;
-    
+
     document.getElementById("app").appendChild(overlay);
-    
+
     // 3. Wizard State & Logic
     let currentStep = 1;
     let selectedProvider = "gemini-key"; // Default
@@ -7741,21 +7955,21 @@ async function showOnboardingWizard() {
     const btnVerify = document.getElementById("ob-btn-verify");
     const btnSkipSetup = document.getElementById("ob-btn-skip-setup");
     const logViewport = document.getElementById("ob-validation-log");
-    
+
     // Step navigation handler
     function updateStepUI() {
         // Toggle slide active classes
         document.querySelectorAll(".onboarding-slide").forEach((slide, idx) => {
             slide.classList.toggle("active", idx + 1 === currentStep);
         });
-        
+
         // Toggle step dot active/completed classes
         document.querySelectorAll(".onboarding-step-dot").forEach((dot, idx) => {
             const stepNum = idx + 1;
             dot.classList.toggle("active", stepNum === currentStep);
             dot.classList.toggle("completed", stepNum < currentStep);
         });
-        
+
         // Update footer buttons
         btnPrev.disabled = currentStep === 1;
 
@@ -7802,7 +8016,7 @@ async function showOnboardingWizard() {
             updateStepUI();
         }
     };
-    
+
     // Skip-setup button — bypass step 3 (provider auth) entirely
     btnSkipSetup.onclick = () => {
         logViewport.innerHTML = `<div class="onboarding-log-line" style="color:var(--warning-color)">[SYS] Provider setup skipped. Configure via Settings → LLM Config later.</div>`;
@@ -7918,16 +8132,16 @@ async function showOnboardingWizard() {
     btnVerify.onclick = async () => {
         isProviderVerified = false;
         btnNext.disabled = true;
-        
+
         if (selectedProvider === "gemini-key") {
             const keyInput = document.getElementById("ob-gemini-key").value.trim();
             if (!keyInput) {
                 appendLog(logViewport, "Error: Please enter a Gemini API Key.", true);
                 return;
             }
-            
+
             appendLog(logViewport, "Initiating live validation request...");
-            
+
             try {
                 // Ping connection to LLM using standard test
                 const status = await invoke("test_llm_connection", {
@@ -7936,58 +8150,58 @@ async function showOnboardingWizard() {
                     url: "",
                     key: keyInput
                 });
-                
+
                 appendLog(logViewport, status);
                 appendLog(logViewport, "Saving Gemini API Key to secure OS Keychain...");
-                
+
                 // Save it to backend
                 await invoke("save_gemini_api_key", { key: keyInput });
-                
+
                 // Save default provider config to Gemini
                 await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
-                
+
                 appendLog(logViewport, "Success! Configuration finalized.");
                 isProviderVerified = true;
                 btnNext.disabled = false;
             } catch (err) {
                 appendLog(logViewport, `Failed to verify key: ${err}`, true);
             }
-        } 
+        }
         else if (selectedProvider === "gemini-oauth") {
             appendLog(logViewport, "Initializing OAuth 2.0 Device Authorization flow...");
-            
+
             try {
                 const data = await invoke('start_oauth_flow');
-                
+
                 // Show QR code elements and URLs
                 document.getElementById("ob-oauth-url").href = data.verification_uri;
                 document.getElementById("ob-oauth-url").innerText = data.verification_uri;
                 document.getElementById("ob-oauth-code-box").innerText = `CODE: ${data.user_code}`;
-                
+
                 // Generate QR Code
                 await QRCode.toCanvas(document.getElementById("ob-oauth-qr"), data.verification_uri_complete || data.verification_uri, {
                     width: 140,
                     margin: 1
                 });
-                
+
                 appendLog(logViewport, "OAuth device flow active. Awaiting user authorization...");
-                
+
                 // Setup abort controller for polling in case they click Back
                 oauthPollAbortController = new AbortController();
-                
+
                 // Run polling in background
-                invoke('poll_oauth_token', { 
-                    deviceCode: data.device_code, 
-                    interval: data.interval 
+                invoke('poll_oauth_token', {
+                    deviceCode: data.device_code,
+                    interval: data.interval
                 }).then(async () => {
                     appendLog(logViewport, "OAuth code approved! Retrieving access token...");
-                    
+
                     // Since it has saved the token in the backend via OS Keychain
                     appendLog(logViewport, "Retrieved token successfully validated and saved to OS Keychain!");
-                    
+
                     // Save default provider config to Gemini
                     await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
-                    
+
                     isProviderVerified = true;
                     btnNext.disabled = false;
                 }).catch(err => {
@@ -7998,16 +8212,16 @@ async function showOnboardingWizard() {
             } catch (err) {
                 appendLog(logViewport, `Failed to initialize OAuth: ${err}`, true);
             }
-        } 
+        }
         else if (selectedProvider === "ollama") {
             const urlInput = document.getElementById("ob-ollama-url").value.trim();
             const modelInput = document.getElementById("ob-ollama-model").value.trim();
-            
+
             if (!urlInput || !modelInput) {
                 appendLog(logViewport, "Error: Both url and model name are required.", true);
                 return;
             }
-            
+
             appendLog(logViewport, `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`);
 
             // Always save config — Ollama may not be running yet (that's OK)

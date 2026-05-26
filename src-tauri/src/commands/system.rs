@@ -585,6 +585,11 @@ pub async fn install_bmad_to_dir(
     app_handle: AppHandle,
     target_dir: String,
 ) -> Result<String, String> {
+    let _ = app_handle.emit(
+        "bmad_install_progress",
+        serde_json::json!({ "stage": "start", "target": &target_dir }),
+    );
+
     let resource_dir = app_handle
         .path()
         .resource_dir()
@@ -600,16 +605,29 @@ pub async fn install_bmad_to_dir(
         if dev_path.exists() {
             dev_path
         } else {
+            let _ = app_handle.emit(
+                "bmad_install_progress",
+                serde_json::json!({ "stage": "error", "reason": "bundle_not_found" }),
+            );
             return Err("BMAD bundle not found. Please reinstall NEURODECK.".to_string());
         }
     };
 
     let target = std::path::PathBuf::from(&target_dir);
     if !target.exists() {
+        let _ = app_handle.emit(
+            "bmad_install_progress",
+            serde_json::json!({ "stage": "error", "reason": "target_missing" }),
+        );
         return Err(format!("Target directory does not exist: {}", target_dir));
     }
 
     copy_dir_recursive(&bmad_source, &target).map_err(|e| format!("BMAD install failed: {}", e))?;
+
+    let _ = app_handle.emit(
+        "bmad_install_progress",
+        serde_json::json!({ "stage": "done", "target": &target_dir }),
+    );
 
     Ok(format!(
         "BMAD installed to {}  (_bmad/ + .claude/skills/ with 44 skill sets)",
@@ -1939,6 +1957,36 @@ pub async fn close_splashscreen(window: tauri::Window) {
     if let Some(main_window) = window.get_webview_window("main") {
         main_window.show().unwrap_or_default();
     }
+}
+
+#[tauri::command]
+pub async fn set_kiosk_mode(window: tauri::Window, enabled: bool) -> Result<(), String> {
+    let main = window
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+    main.set_fullscreen(enabled)
+        .map_err(|e| format!("Failed to set fullscreen: {}", e))?;
+    main.set_decorations(!enabled)
+        .map_err(|e| format!("Failed to set decorations: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_window_mode(window: tauri::Window) -> Result<serde_json::Value, String> {
+    let main = window
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+    let fullscreen = main
+        .is_fullscreen()
+        .map_err(|e| format!("Failed to query fullscreen: {}", e))?;
+    let decorations = main
+        .is_decorated()
+        .map_err(|e| format!("Failed to query decorations: {}", e))?;
+    Ok(serde_json::json!({
+        "fullscreen": fullscreen,
+        "decorations": decorations,
+        "kiosk": fullscreen && !decorations,
+    }))
 }
 
 #[tauri::command]
