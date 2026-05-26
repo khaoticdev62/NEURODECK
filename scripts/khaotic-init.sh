@@ -76,6 +76,7 @@ count_loose_root_files() {
     -not -name "package_release.ps1" \
     -not -name "epics.md" \
     -not -name "gemini.md" \
+    -not -name "AGENTS.md" \
     -not -name "SteamOS_LLM_Terminal_PRD_SDS.md" \
     -not -name "SteamOS_LLM_Terminal_PRD_SDS.pdf" \
     | wc -l | tr -d ' ')
@@ -133,6 +134,7 @@ PRESERVE=(
   "epics.md"
   "GEMINI.md"
   "gemini.md"
+  "AGENTS.md"
   "pyproject.toml"
   "uv.lock"
   "SteamOS_LLM_Terminal_PRD_SDS.md"

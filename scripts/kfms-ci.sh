@@ -62,6 +62,7 @@ register_gate "fmt_python"    "Python Format (Ruff)"            "lint"
 register_gate "cargo_check"   "Cargo Check"                     "build"
 register_gate "cargo_test"    "Cargo Test (workspace)"          "test"
 register_gate "frontend_build" "Frontend Build (Vite)"          "build"
+register_gate "cargo_compile"  "Cargo Compile Tests (no-run)"    "build"
 register_gate "e2e"           "Playwright E2E Tests"            "test"
 register_gate "security_rust" "Cargo Audit / Deny"              "security"
 register_gate "security_js"   "npm Audit"                       "security"
@@ -148,6 +149,11 @@ gate_fmt_python() {
     ruff format --check .
 }
 
+gate_cargo_compile() {
+    cd "$ROOT"
+    cargo test --workspace --all-targets --no-run
+}
+
 gate_cargo_check() {
     cd "$ROOT"
     cargo check --workspace --all-targets
@@ -165,14 +171,20 @@ gate_frontend_build() {
 
 gate_e2e() {
     cd "$ROOT/frontend"
-    if ! npm run build; then
-        echo "Frontend build failed — cannot run E2E tests against missing dist"
-        return 1
-    fi
     if [[ ! -f "$ROOT/frontend/dist/index.html" ]]; then
-        echo "frontend/dist/index.html missing after build"
-        return 1
+        echo "Frontend build missing in e2e gate, building now..."
+        if ! npm run build; then
+            echo "Frontend build failed — cannot run E2E tests against missing dist"
+            return 1
+        fi
+    else
+        echo "Reusing existing frontend production build."
     fi
+
+    # Kill any zombie process on port 4173 to prevent E2E collision
+    echo "Clearing port 4173..."
+    npx kill-port 4173 >/dev/null 2>&1 || true
+
     cd "$ROOT/e2e"
     # Ensure Playwright browsers are installed
     if ! npx playwright install chromium >/dev/null 2>&1; then
@@ -376,25 +388,66 @@ cmd_run() {
 
     rm -f "$REPORT_DIR/gates.tsv"
 
-    if $parallel; then
+    if [[ -z "$category_filter" ]]; then
+        # SMART PIPELINE (optimized concurrent phase execution)
+        info "Executing optimized 3-phase parallel pipeline..."
+
+        # --- Phase 1: Concurrently run parallelizable lints, formats, security audits, frontend build, and cargo compile ---
         local pids=()
-        for id in "${GATE_ORDER[@]}"; do
-            if [[ -n "$category_filter" && "${GATE_CATEGORIES[$id]}" != "$category_filter" ]]; then
-                continue
-            fi
+        local phase1_gates=(
+            "fmt_rust"
+            "fmt_frontend"
+            "typecheck"
+            "fmt_python"
+            "diff_hygiene"
+            "kfms_meta"
+            "loose_check"
+            "security_js"
+            "security_rust"
+            "security_hard"
+            "frontend_build"
+            "cargo_compile"
+        )
+
+        for id in "${phase1_gates[@]}"; do
             run_gate "$id" &
             pids+=("$!")
         done
+
+        # Wait for all Phase 1 tasks
         for pid in "${pids[@]}"; do
             wait "$pid" || true
         done
+
+        # --- Phase 2: Run cargo check, clippy, and cargo test sequentially (instant compilation reuse) ---
+        run_gate "cargo_check"
+        run_gate "clippy"
+        run_gate "cargo_test"
+
+        # --- Phase 3: Run Playwright E2E tests ---
+        run_gate "e2e"
     else
-        for id in "${GATE_ORDER[@]}"; do
-            if [[ -n "$category_filter" && "${GATE_CATEGORIES[$id]}" != "$category_filter" ]]; then
-                continue
-            fi
-            run_gate "$id"
-        done
+        # Running with a category filter (lint/test/build/security/quality)
+        if $parallel; then
+            local pids=()
+            for id in "${GATE_ORDER[@]}"; do
+                if [[ "${GATE_CATEGORIES[$id]}" != "$category_filter" ]]; then
+                    continue
+                fi
+                run_gate "$id" &
+                pids+=("$!")
+            done
+            for pid in "${pids[@]}"; do
+                wait "$pid" || true
+            done
+        else
+            for id in "${GATE_ORDER[@]}"; do
+                if [[ "${GATE_CATEGORIES[$id]}" != "$category_filter" ]]; then
+                    continue
+                fi
+                run_gate "$id"
+            done
+        fi
     fi
 
     build_json_report

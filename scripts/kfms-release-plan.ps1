@@ -29,6 +29,7 @@ $preserveFiles = @(
     "package_release.ps1",
     "epics.md",
     "gemini.md",
+    "AGENTS.md",
     "pyproject.toml",
     "uv.lock",
     "SteamOS_LLM_Terminal_PRD_SDS.md",

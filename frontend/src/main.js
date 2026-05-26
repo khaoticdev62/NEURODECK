@@ -1,4 +1,4 @@
-﻿import { state } from "./state.js";
+import { state } from "./state.js";
 import {
   updateMuteButtonUI,
   toggleMute,
@@ -606,7 +606,7 @@ document.querySelector("#app").innerHTML = `
                         </div>
                     </div>
                     <!-- Chat Workspace -->
-                    <div class="chat-workspace" id="chat-workspace">
+                    <div class="chat-workspace" id="chat-workspace" tabindex="0" aria-label="Chat history">
                         <div class="chat-viewport" id="chat-viewport">
                             <!-- Welcome state rendered by initChat() -->
                         </div>
@@ -942,6 +942,16 @@ document.querySelector("#app").innerHTML = `
                             <div class="share-panel torrent-list-panel">
                                 <h3>Active Torrents</h3>
                                 <p class="share-desc">Paused by default. Resume only the swarm you trust.</p>
+                                <div class="torrent-batch-toolbar" id="torrent-batch-toolbar">
+                                    <div class="torrent-batch-copy" id="torrent-batch-copy">No queue items selected.</div>
+                                    <div class="torrent-batch-actions">
+                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-select-visible-btn">${createIcon("plusCircle", { size: 14 })}<span class="nd-button-label">Select Visible</span></button>
+                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-clear-selection-btn">${createIcon("x", { size: 14 })}<span class="nd-button-label">Clear</span></button>
+                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-pause-selected-btn">${createIcon("pause", { size: 14 })}<span class="nd-button-label">Pause Selected</span></button>
+                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-resume-selected-btn">${createIcon("play", { size: 14 })}<span class="nd-button-label">Resume Selected</span></button>
+                                        <button class="canvas-btn nd-icon-button torrent-mini-btn torrent-batch-remove-btn" id="torrent-remove-selected-btn">${createIcon("trash2", { size: 14 })}<span class="nd-button-label">Remove Selected</span></button>
+                                    </div>
+                                </div>
                                 <div class="torrent-filter-grid">
                                     <input type="text" id="torrent-search-input" class="tunnel-text-input" placeholder="Search torrent name or source">
                                     <select id="torrent-filter-select" class="tunnel-text-input">

@@ -5545,6 +5545,40 @@ body.crt-flicker-disabled .crt-flicker {
   gap: 10px;
 }
 
+.torrent-batch-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.torrent-batch-copy {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.02em;
+}
+
+.torrent-batch-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.torrent-batch-remove-btn {
+  border-color: rgba(255, 90, 120, 0.24);
+  background: rgba(255, 90, 120, 0.12);
+  color: rgba(255, 226, 232, 0.94);
+}
+
+.torrent-batch-remove-btn:hover {
+  border-color: rgba(255, 90, 120, 0.42);
+  background: rgba(255, 90, 120, 0.18);
+}
+
 .torrent-toolbar,
 .torrent-filter-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5742,7 +5776,7 @@ body.crt-flicker-disabled .crt-flicker {
 .torrent-queue-header,
 .torrent-row {
   display: grid;
-  grid-template-columns: minmax(0, 2.4fr) minmax(116px, 0.9fr) minmax(150px, 1.1fr) 78px 84px 92px minmax(210px, 1.35fr);
+  grid-template-columns: 42px minmax(0, 2.3fr) minmax(116px, 0.9fr) minmax(150px, 1.1fr) 78px 84px 92px minmax(210px, 1.35fr);
   gap: 12px;
   align-items: center;
 }
@@ -5761,6 +5795,20 @@ body.crt-flicker-disabled .crt-flicker {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.38);
+}
+
+.torrent-select-all,
+.torrent-row-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.torrent-select-all input,
+.torrent-row-selector input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
 }
 
 .torrent-row {
@@ -5785,6 +5833,11 @@ body.crt-flicker-disabled .crt-flicker {
   transform: translateY(-1px);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
   outline: none;
+}
+
+.torrent-row.selected {
+  border-color: rgba(var(--accent-rgb), 0.24);
+  background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
 .torrent-row-cell {
@@ -5846,6 +5899,7 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 @media (max-width: 980px) {
+  .torrent-batch-actions,
   .torrent-toolbar,
   .torrent-filter-grid,
   .torrent-summary-grid,
@@ -5856,12 +5910,13 @@ body.crt-flicker-disabled .crt-flicker {
 
   .torrent-queue-header,
   .torrent-row {
-    grid-template-columns: minmax(0, 1.7fr) minmax(110px, 0.8fr) minmax(140px, 1fr) 64px 72px 84px minmax(170px, 1.2fr);
+    grid-template-columns: 36px minmax(0, 1.65fr) minmax(110px, 0.8fr) minmax(140px, 1fr) 64px 72px 84px minmax(170px, 1.2fr);
     gap: 10px;
   }
 }
 
 @media (max-width: 700px) {
+  .torrent-batch-actions,
   .torrent-toolbar,
   .torrent-filter-grid,
   .torrent-summary-grid,
@@ -5888,6 +5943,11 @@ body.crt-flicker-disabled .crt-flicker {
     gap: 10px;
   }
 
+  .torrent-row-selector {
+    justify-content: flex-start;
+  }
+
+  .torrent-row-selector,
   .torrent-row-queue,
   .torrent-row-actions {
     grid-column: 1 / -1;

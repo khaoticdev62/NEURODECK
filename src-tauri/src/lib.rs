@@ -931,6 +931,7 @@ pub fn run() {
             torrent::torrent_resume_all,
             torrent::torrent_get_download_root,
             torrent::torrent_open_download_root,
+            torrent::torrent_open_save_path,
             open_external,
             browser_open,
             browser_navigate,
