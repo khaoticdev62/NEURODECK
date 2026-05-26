@@ -38,7 +38,7 @@
                      {
                          "severity":  "warn",
                          "code":  "innerhtml-review",
-                         "message":  "147 innerHTML write sites require manual review for sanitization discipline.",
+                         "message":  "158 innerHTML write sites require manual review for sanitization discipline.",
                          "path":  "frontend/src/api_lab.js",
                          "line":  46,
                          "evidence":  "  row.innerHTML = `"
@@ -52,5 +52,5 @@
                          "evidence":  "                let mut c = std::process::Command::new(\"cmd.exe\");"
                      }
                  ],
-    "checked_at_utc":  "2026-05-26T20:30:50Z"
+    "checked_at_utc":  "2026-05-26T23:32:03Z"
 }

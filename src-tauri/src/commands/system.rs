@@ -1095,6 +1095,89 @@ pub fn memory_list_all(
         .collect())
 }
 
+#[derive(serde::Serialize, Clone)]
+pub struct GraphNode {
+    pub id: String,
+    pub node_type: String,
+    pub label: String,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct GraphEdge {
+    pub source: String,
+    pub target: String,
+    pub similarity: f64,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct GraphData {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+}
+
+#[tauri::command]
+pub fn get_memory_graph_data(state: State<'_, Mutex<AppState>>) -> Result<GraphData, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let records = db.list_all()?;
+
+    let mut nodes = Vec::new();
+    for r in &records {
+        let node_type = if r.id.starts_with("fact-") {
+            "fact"
+        } else if r.id.starts_with("session-") {
+            "session"
+        } else {
+            "memory"
+        };
+        nodes.push(GraphNode {
+            id: r.id.clone(),
+            node_type: node_type.to_string(),
+            label: r.content.clone(),
+        });
+    }
+
+    let mut edges = Vec::new();
+    for i in 0..records.len() {
+        for j in (i + 1)..records.len() {
+            let sim = _text_similarity(&records[i].content, &records[j].content);
+            if sim > 0.15 {
+                edges.push(GraphEdge {
+                    source: records[i].id.clone(),
+                    target: records[j].id.clone(),
+                    similarity: sim,
+                });
+            }
+        }
+    }
+
+    Ok(GraphData { nodes, edges })
+}
+
+fn _text_similarity(a: &str, b: &str) -> f64 {
+    let a_words: std::collections::HashSet<String> = a
+        .to_lowercase()
+        .split_whitespace()
+        .map(|w| w.chars().filter(|c| c.is_alphanumeric()).collect())
+        .filter(|w: &String| !w.is_empty())
+        .collect();
+    let b_words: std::collections::HashSet<String> = b
+        .to_lowercase()
+        .split_whitespace()
+        .map(|w| w.chars().filter(|c| c.is_alphanumeric()).collect())
+        .filter(|w: &String| !w.is_empty())
+        .collect();
+    if a_words.is_empty() || b_words.is_empty() {
+        return 0.0;
+    }
+    let intersection: std::collections::HashSet<_> = a_words.intersection(&b_words).collect();
+    let union_size = a_words.len() + b_words.len() - intersection.len();
+    intersection.len() as f64 / union_size as f64
+}
+
 #[tauri::command]
 pub fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mem_db = {
@@ -2454,4 +2537,18 @@ pub async fn dispatch_action(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn llm_oneshot(
+    prompt: String,
+    max_tokens: Option<u32>,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let provider = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        Arc::clone(&app.provider)
+    };
+    let max_tokens = max_tokens.unwrap_or(512);
+    provider.generate_oneshot(&prompt, max_tokens).await
 }

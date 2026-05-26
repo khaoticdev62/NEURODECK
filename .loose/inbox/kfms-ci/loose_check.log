@@ -1,7 +1,1 @@
-Found 6 untracked files outside .loose/. Run: git status
-?? frontend/src/api_lab.js
-?? frontend/src/cli_maker.js
-?? frontend/src/git.js
-?? src-tauri/src/commands/api_lab.rs
-?? src-tauri/src/commands/cli_maker.rs
-?? src-tauri/src/commands/git.rs
+No loose root files.

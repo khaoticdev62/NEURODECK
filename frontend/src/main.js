@@ -62,6 +62,9 @@ import { renderShortcutsOverlay } from "./shortcuts.js";
 import { initGitView } from "./git.js";
 import { initApiLabView } from "./api_lab.js";
 import { initCliMakerView } from "./cli_maker.js";
+import { initGraphView } from "./graph_view.js";
+import { initSchedulerView } from "./scheduler_view.js";
+import { initWorkflowView } from "./workflow_view.js";
 
 // ==========================================================================
 // SCREEN-READER ANNOUNCER (a11y)
@@ -503,6 +506,9 @@ document.querySelector("#app").innerHTML = `
                     <button class="nav-tab" data-view="git" data-testid="nav-tab-git">🌿 Git</button>
                     <button class="nav-tab" data-view="api-lab" data-testid="nav-tab-api-lab">🧪 API Lab</button>
                     <button class="nav-tab" data-view="cli-maker" data-testid="nav-tab-cli-maker">⚡ CLI</button>
+                    <button class="nav-tab" data-view="graph" data-testid="nav-tab-graph">🕸️ Graph</button>
+                    <button class="nav-tab" data-view="scheduler" data-testid="nav-tab-scheduler">⏰ Scheduler</button>
+                    <button class="nav-tab" data-view="workflow" data-testid="nav-tab-workflow">🔀 Flow</button>
                 </div>
             </nav>
 
@@ -1820,6 +1826,63 @@ document.querySelector("#app").innerHTML = `
                                 <select id="cli-icon-select" class="cli-select"></select>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     KNOWLEDGE GRAPH VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-graph" data-testid="view-graph">
+                    <div class="graph-loading" id="graph-loading">
+                        <div class="graph-loading-icon">⬡</div>
+                        <div class="graph-loading-text">Loading knowledge graph…</div>
+                    </div>
+                    <div class="graph-toolbar">
+                        <button class="graph-toolbar-btn" id="graph-refresh-btn" title="Refresh graph">⟳ Refresh</button>
+                        <button class="graph-toolbar-btn" id="graph-center-btn" title="Center view">⊕ Center</button>
+                        <span class="graph-toolbar-sep"></span>
+                        <span class="graph-node-legend">
+                            <span class="graph-legend-dot" style="background:#00f0ff"></span>Memory
+                            <span class="graph-legend-dot" style="background:#f59e0b"></span>Fact
+                            <span class="graph-legend-dot" style="background:#a78bfa"></span>Session
+                        </span>
+                    </div>
+                    <svg id="graph-svg" style="width:100%;height:calc(100% - 44px);display:block;"></svg>
+                    <div id="graph-tooltip" class="graph-tooltip" style="display:none;"></div>
+                    <div id="graph-empty" class="graph-empty" style="display:none;">
+                        <div class="graph-empty-icon">🧠</div>
+                        <div class="graph-empty-text">No memory records yet.<br>Start a conversation to build your knowledge graph.</div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TASK SCHEDULER VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-scheduler" data-testid="view-scheduler">
+                    <div class="scheduler-workspace">
+                        <div class="scheduler-header">
+                            <h3>⏰ Task Scheduler</h3>
+                            <p>Automate recurring agent tasks with cron expressions.</p>
+                        </div>
+                        <div class="scheduler-task-list" id="scheduler-task-list">
+                            <div class="agent-empty-state">Loading tasks…</div>
+                        </div>
+                        <div class="scheduler-form">
+                            <input type="text" id="scheduler-name-input" class="scheduler-input" placeholder="Task name">
+                            <input type="text" id="scheduler-cron-input" class="scheduler-input" placeholder="Cron (e.g. 0 9 * * 1)">
+                            <textarea id="scheduler-goal-input" class="scheduler-textarea" placeholder="Agent goal / prompt…"></textarea>
+                            <button class="scheduler-btn" id="scheduler-add-btn">+ Add Scheduled Task</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     WORKFLOW BUILDER VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-workflow" data-testid="view-workflow">
+                    <div class="wf-loading" id="wf-loading">
+                        <div class="wf-loading-icon">🔀</div>
+                        <div class="wf-loading-text">Loading workflow builder…</div>
                     </div>
                 </div>
 
@@ -3874,6 +3937,9 @@ const RADIAL_SEGMENTS = [
   { icon: "gitBranch", label: "Git", view: "git" },
   { icon: "send", label: "API Lab", view: "api-lab" },
   { icon: "zap", label: "CLI", view: "cli-maker" },
+  { icon: "share2", label: "Graph", view: "graph" },
+  { icon: "clock", label: "Scheduler", view: "scheduler" },
+  { icon: "workflow", label: "Flow", view: "workflow" },
 ];
 
 function getGamepadFocusableElements() {
@@ -5166,6 +5232,15 @@ navTabs.forEach((tab) => {
     if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") {
       initCliMakerView();
     }
+    if (targetViewName === "graph" && typeof initGraphView === "function") {
+      initGraphView();
+    }
+    if (targetViewName === "scheduler" && typeof initSchedulerView === "function") {
+      initSchedulerView();
+    }
+    if (targetViewName === "workflow" && typeof initWorkflowView === "function") {
+      initWorkflowView();
+    }
   };
 });
 
@@ -6036,6 +6111,9 @@ const VIEW_ICON_MAP = {
   "view-git": "gitBranch",
   "view-api-lab": "send",
   "view-cli-maker": "zap",
+  "view-graph": "share2",
+  "view-scheduler": "clock",
+  "view-workflow": "workflow",
 };
 
 const VIEW_NAME_MAP = {
@@ -6054,6 +6132,9 @@ const VIEW_NAME_MAP = {
   "view-git": "Git",
   "view-api-lab": "API Lab",
   "view-cli-maker": "CLI Maker",
+  "view-graph": "Knowledge Graph",
+  "view-scheduler": "Task Scheduler",
+  "view-workflow": "Workflow Builder",
 };
 
 const quickSwitcherState = {

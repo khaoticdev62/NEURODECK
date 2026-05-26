@@ -12,9 +12,11 @@ mod lua;
 mod mcp;
 pub mod memory;
 mod ollama_mgr;
+mod orchestrator;
 mod plugin_mgr;
 mod pty_manager;
 mod remote_control;
+mod scheduler;
 mod security;
 mod self_heal;
 mod sftp;
@@ -24,6 +26,7 @@ mod torrent;
 mod transfer;
 mod tunnel;
 mod whisper;
+mod workflow;
 use crate::commands::*;
 
 use chrono::Utc;
@@ -805,6 +808,8 @@ pub fn run() {
             transfer::TransferState::new(),
         ))))
         .manage(torrent::TorrentState::new(torrent_download_root))
+        .manage(Arc::new(scheduler::SchedulerManaged::new()))
+        .manage(orchestrator::OrchestratorManaged::new())
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
@@ -847,6 +852,13 @@ pub fn run() {
 
             // Manage LuaState
             app.manage(LuaState(Mutex::new(lua_engine)));
+
+            // Start task scheduler synchronously
+            let sched_managed = app.state::<Arc<scheduler::SchedulerManaged>>().clone();
+            let app_handle = app.handle().clone();
+            if let Err(e) = tauri::async_runtime::block_on(sched_managed.start(app_handle)) {
+                tracing::warn!("Failed to start task scheduler: {}", e);
+            }
 
             // System tray
             let mut tray_builder = tauri::tray::TrayIconBuilder::new().tooltip("NEURODECK");
@@ -1121,6 +1133,24 @@ pub fn run() {
             cli_toggle_hook,
             cli_export_lua,
             cli_import_lua,
+            // ── Knowledge Graph ────────────────────────────────────────────────
+            get_memory_graph_data,
+            // ── Task Scheduler ─────────────────────────────────────────────────
+            scheduler::list_scheduled_tasks,
+            scheduler::add_scheduled_task,
+            scheduler::delete_scheduled_task,
+            scheduler::toggle_scheduled_task,
+            scheduler::run_task_now,
+            // ── Workflow Builder ───────────────────────────────────────────────
+            workflow::list_workflows,
+            workflow::load_workflow,
+            workflow::save_workflow,
+            workflow::delete_workflow,
+            // ── Orchestrator ───────────────────────────────────────────────────
+            orchestrator::start_orchestrated_task,
+            orchestrator::get_orchestration_status,
+            orchestrator::stop_orchestration,
+            llm_oneshot,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,8 +3,8 @@ Clearing port 4173...
 
 Running 68 tests using 2 workers
 
-  ✓   1 [chromium-desktop] › tests\chat.spec.ts:141:5 › user can send a message and receive a streamed response (3.4s)
-  ✓   2 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Chat view (4.0s)
+  ✓   1 [chromium-desktop] › tests\chat.spec.ts:141:5 › user can send a message and receive a streamed response (3.1s)
+  ✓   2 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Chat view (3.7s)
   ✓   3 [chromium-desktop] › tests\chat.spec.ts:149:5 › chat stream error is rendered as a system error message (2.9s)
   ✓   4 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Canvas view (3.7s)
   ✓   5 [chromium-desktop] › tests\command-palette.spec.ts:11:7 › Command Palette v2 › opens and closes with keyboard shortcuts (2.9s)
@@ -22,40 +22,40 @@ Running 68 tests using 2 workers
   ✓  18 [chromium-desktop] › tests\command-palette.spec.ts:95:7 › Command Palette v2 › shows dynamic state-aware actions (2.9s)
   ✓  17 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Agent view (3.6s)
   ✓  19 [chromium-desktop] › tests\command-palette.spec.ts:104:7 › Command Palette v2 › empty state shown when no matches (2.9s)
-  ✓  20 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Memory view (3.7s)
+  ✓  20 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Memory view (3.6s)
   ✓  22 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Prompt Lab view (3.6s)
-  ✓  21 [chromium-desktop] › tests\command-palette.spec.ts:123:7 › Quick Switcher › opens with Ctrl+Tab when mocked Tauri exists (5.6s)
+  ✓  21 [chromium-desktop] › tests\command-palette.spec.ts:123:7 › Quick Switcher › opens with Ctrl+Tab when mocked Tauri exists (5.5s)
   ✓  23 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Remote view (3.6s)
   ✓  24 [chromium-desktop] › tests\command-palette.spec.ts:132:7 › Quick Switcher › shows recent views excluding current (5.7s)
   ✓  25 [chromium-desktop] › tests\a11y.spec.ts:27:7 › a11y audit on Docs view (3.6s)
   ✓  27 [chromium-desktop] › tests\a11y.spec.ts:54:5 › a11y audit on settings modal (3.6s)
   ✓  26 [chromium-desktop] › tests\command-palette.spec.ts:145:7 › Quick Switcher › cycles through recent views with repeated Ctrl+Tab (5.7s)
-  ✓  28 [chromium-desktop] › tests\a11y.spec.ts:70:5 › a11y audit on command palette (3.7s)
+  ✓  28 [chromium-desktop] › tests\a11y.spec.ts:70:5 › a11y audit on command palette (3.6s)
   ✓  30 [chromium-desktop] › tests\a11y.spec.ts:86:5 › a11y audit on shortcuts overlay (3.5s)
-  ✓  29 [chromium-desktop] › tests\command-palette.spec.ts:167:7 › Quick Switcher › switches to selected view on Enter (5.6s)
+  ✓  29 [chromium-desktop] › tests\command-palette.spec.ts:167:7 › Quick Switcher › switches to selected view on Enter (5.5s)
   ✓  31 [chromium-desktop] › tests\functional-views.spec.ts:11:5 › terminal view renders xterm container and toolbar (3.0s)
   ✓  32 [chromium-desktop] › tests\command-palette.spec.ts:177:7 › Quick Switcher › closes with Escape (5.4s)
   ✓  33 [chromium-desktop] › tests\functional-views.spec.ts:19:5 › canvas view renders editor, toolbar, and preview pane (3.0s)
+  ✓  35 [chromium-desktop] › tests\functional-views.spec.ts:28:5 › ssh view renders connection form (3.0s)
   ✓  34 [chromium-desktop] › tests\settings-shell.spec.ts:11:5 › settings shell opens, switches themed tabs, and closes (3.5s)
-  ✓  35 [chromium-desktop] › tests\functional-views.spec.ts:28:5 › ssh view renders connection form (2.9s)
-  ✓  37 [chromium-desktop] › tests\functional-views.spec.ts:36:5 › browser view renders address bar and home page (3.0s)
-  ✓  36 [chromium-desktop] › tests\settings-shell.spec.ts:30:5 › stale settings tab state falls back to General (4.5s)
+  ✓  36 [chromium-desktop] › tests\functional-views.spec.ts:36:5 › browser view renders address bar and home page (3.0s)
+  ✓  37 [chromium-desktop] › tests\settings-shell.spec.ts:30:5 › stale settings tab state falls back to General (4.5s)
   ✓  38 [chromium-desktop] › tests\functional-views.spec.ts:44:5 › agent view renders model indicator and action buttons (3.0s)
   ✓  39 [chromium-desktop] › tests\settings-shell.spec.ts:40:5 › command palette opens and drives view and settings shortcuts (3.0s)
-  ✓  40 [chromium-desktop] › tests\functional-views.spec.ts:52:5 › memory view renders search and upload controls (2.9s)
+  ✓  40 [chromium-desktop] › tests\functional-views.spec.ts:52:5 › memory view renders search and upload controls (3.0s)
   ✓  42 [chromium-desktop] › tests\functional-views.spec.ts:59:5 › chat sends message and shows user bubble (2.8s)
   ✓  41 [chromium-desktop] › tests\settings-shell.spec.ts:59:5 › all primary nav tabs remain clickable across the full strip (4.3s)
   ✓  43 [chromium-desktop] › tests\settings-tabs.spec.ts:11:5 › all 10 settings tabs are accessible and render their panels (4.0s)
   ✓  44 [chromium-desktop] › tests\settings-shell.spec.ts:81:5 › settings modal remains in viewport on compact window sizes (6.0s)
-  ✘  45 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: chat view at 1280x800 (4.0s)
-  ✓  46 [chromium-desktop] › tests\settings-shell.spec.ts:105:5 › docs and remote views stay usable without horizontal overflow on narrow windows (5.8s)
-  ✘  47 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: chat view at 1280x800 (retry #1) (4.6s)
+  ✘  45 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: chat view at 1280x800 (4.1s)
+  ✓  46 [chromium-desktop] › tests\settings-shell.spec.ts:105:5 › docs and remote views stay usable without horizontal overflow on narrow windows (5.9s)
+  ✘  47 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: chat view at 1280x800 (retry #1) (4.5s)
   ✘  49 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: canvas view at 1280x800 (4.0s)
   ✓  48 [chromium-desktop] › tests\settings-shell.spec.ts:132:5 › tool-heavy tabs stay horizontally centered on wide viewports (7.7s)
   ✓  51 [chromium-desktop] › tests\settings-shell.spec.ts:166:5 › chat, memory, and prompt lab expose the refined shell hierarchy (3.2s)
   ✘  50 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: canvas view at 1280x800 (retry #1) (4.5s)
   ✓  52 [chromium-desktop] › tests\settings-shell.spec.ts:181:5 › agent, browser, and tunnel expose the refined shell hierarchy (3.3s)
-  ✘  53 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: terminal view at 1280x800 (3.9s)
+  ✘  53 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: terminal view at 1280x800 (4.0s)
   ✓  54 [chromium-desktop] › tests\settings-shell.spec.ts:200:5 › ssh and share transfer surfaces expose the refined shell hierarchy (3.5s)
   ✓  56 [chromium-desktop] › tests\settings-shell.spec.ts:213:5 › notification center opens with the refined modal hierarchy (2.9s)
   ✘  55 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: terminal view at 1280x800 (retry #1) (4.4s)
@@ -64,12 +64,12 @@ Running 68 tests using 2 workers
   ✓  59 [chromium-desktop] › tests\settings-shell.spec.ts:237:5 › canvas toolbar exposes shared icon actions (3.0s)
   ✘  61 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: ssh view at 1280x800 (retry #1) (4.4s)
   ✘  60 [chromium-desktop] › tests\settings-shell.spec.ts:247:5 › canvas toolbar wraps cleanly on compact widths (5.7s)
-  ✘  62 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: tunnel view at 1280x800 (4.2s)
+  ✘  62 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: tunnel view at 1280x800 (4.1s)
   ✘  63 [chromium-desktop] › tests\settings-shell.spec.ts:247:5 › canvas toolbar wraps cleanly on compact widths (retry #1) (6.3s)
-  ✘  64 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: tunnel view at 1280x800 (retry #1) (4.5s)
-  ✘  65 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: share view at 1280x800 (4.1s)
-  ✘  66 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: share view at 1280x800 (retry #1) (4.5s)
-  ✘  67 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: browser view at 1280x800 (4.2s)
+  ✘  64 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: tunnel view at 1280x800 (retry #1) (4.4s)
+  ✘  65 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: share view at 1280x800 (4.0s)
+  ✘  66 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: share view at 1280x800 (retry #1) (4.4s)
+  ✘  67 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: browser view at 1280x800 (4.1s)
   ✘  68 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: browser view at 1280x800 (retry #1) (4.5s)
   ✘  69 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: agent view at 1280x800 (4.0s)
   ✘  70 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: agent view at 1280x800 (retry #1) (4.4s)
@@ -79,13 +79,13 @@ Running 68 tests using 2 workers
   ✘  74 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: prompt-lab view at 1280x800 (retry #1) (4.4s)
   ✘  75 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: remote view at 1280x800 (4.1s)
   ✘  76 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: remote view at 1280x800 (retry #1) (4.4s)
-  ✘  77 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: docs view at 1280x800 (4.0s)
-  ✘  78 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: docs view at 1280x800 (retry #1) (4.4s)
+  ✘  77 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: docs view at 1280x800 (3.9s)
+  ✘  78 [chromium-desktop] › tests\visual.spec.ts:26:7 › visual regression: docs view at 1280x800 (retry #1) (4.3s)
   -  79 [chromium-desktop] › tests\visual.spec.ts:38:6 › visual regression: settings modal at 1280x800
   ✘  80 [chromium-desktop] › tests\visual.spec.ts:50:5 › visual regression: command palette at 1280x800 (4.0s)
   ✘  81 [chromium-desktop] › tests\visual.spec.ts:50:5 › visual regression: command palette at 1280x800 (retry #1) (4.3s)
   ✘  82 [chromium-desktop] › tests\visual.spec.ts:60:5 › visual regression: shortcuts overlay at 1280x800 (4.1s)
-  ✘  83 [chromium-desktop] › tests\visual.spec.ts:60:5 › visual regression: shortcuts overlay at 1280x800 (retry #1) (4.5s)
+  ✘  83 [chromium-desktop] › tests\visual.spec.ts:60:5 › visual regression: shortcuts overlay at 1280x800 (retry #1) (4.4s)
 
 
   1) [chromium-desktop] › tests\settings-shell.spec.ts:247:5 › canvas toolbar wraps cleanly on compact widths 
@@ -134,7 +134,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      17149 pixels (ratio 0.02 of all image pixels) are different.
+      17721 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: chat-1280x800.png
 
@@ -145,14 +145,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 17149 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 17721 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 17149 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 17721 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -176,7 +176,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      17149 pixels (ratio 0.02 of all image pixels) are different.
+      17721 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: chat-1280x800.png
 
@@ -187,14 +187,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 17149 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 17721 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 17149 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 17721 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -226,7 +226,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      22694 pixels (ratio 0.03 of all image pixels) are different.
+      23282 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: canvas-1280x800.png
 
@@ -237,14 +237,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 22717 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 23305 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 22694 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 23282 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -268,7 +268,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      22655 pixels (ratio 0.03 of all image pixels) are different.
+      23245 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: canvas-1280x800.png
 
@@ -279,14 +279,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 22686 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 23276 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 22655 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 23245 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -318,7 +318,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      10212 pixels (ratio 0.02 of all image pixels) are different.
+      10766 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: terminal-1280x800.png
 
@@ -329,14 +329,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 10235 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 10789 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 10212 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 10766 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -360,7 +360,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      10212 pixels (ratio 0.02 of all image pixels) are different.
+      10777 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: terminal-1280x800.png
 
@@ -371,14 +371,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 10227 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 10800 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 10212 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 10777 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -410,7 +410,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      13927 pixels (ratio 0.02 of all image pixels) are different.
+      14501 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: ssh-1280x800.png
 
@@ -421,14 +421,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 13955 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14529 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 13927 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14501 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -452,7 +452,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      13914 pixels (ratio 0.02 of all image pixels) are different.
+      14494 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: ssh-1280x800.png
 
@@ -463,14 +463,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 13942 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14521 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 13914 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14494 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -502,7 +502,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      20507 pixels (ratio 0.03 of all image pixels) are different.
+      21105 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: tunnel-1280x800.png
 
@@ -513,14 +513,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 20547 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21136 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 20507 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21105 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -544,7 +544,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      20507 pixels (ratio 0.03 of all image pixels) are different.
+      21095 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: tunnel-1280x800.png
 
@@ -555,14 +555,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 20548 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21127 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 20507 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21095 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -594,7 +594,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      21777 pixels (ratio 0.03 of all image pixels) are different.
+      22329 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: share-1280x800.png
 
@@ -605,14 +605,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 21800 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 22352 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 21777 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 22329 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -636,7 +636,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      21765 pixels (ratio 0.03 of all image pixels) are different.
+      22323 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: share-1280x800.png
 
@@ -647,14 +647,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 21796 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 22354 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 21765 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 22323 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -686,7 +686,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      30491 pixels (ratio 0.04 of all image pixels) are different.
+      31086 pixels (ratio 0.04 of all image pixels) are different.
 
       Snapshot: browser-1280x800.png
 
@@ -697,14 +697,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 30540 pixels (ratio 0.04 of all image pixels) are different.[22m
+    [2m  - 31135 pixels (ratio 0.04 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 30491 pixels (ratio 0.04 of all image pixels) are different.[22m
+    [2m  - 31086 pixels (ratio 0.04 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -728,7 +728,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      30483 pixels (ratio 0.04 of all image pixels) are different.
+      31076 pixels (ratio 0.04 of all image pixels) are different.
 
       Snapshot: browser-1280x800.png
 
@@ -739,14 +739,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 30534 pixels (ratio 0.04 of all image pixels) are different.[22m
+    [2m  - 31125 pixels (ratio 0.04 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 30483 pixels (ratio 0.04 of all image pixels) are different.[22m
+    [2m  - 31076 pixels (ratio 0.04 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -778,7 +778,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      14848 pixels (ratio 0.02 of all image pixels) are different.
+      15431 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: agent-1280x800.png
 
@@ -789,14 +789,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 14870 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 15457 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 14848 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 15431 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -820,7 +820,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      14840 pixels (ratio 0.02 of all image pixels) are different.
+      15424 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: agent-1280x800.png
 
@@ -831,14 +831,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 14862 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 15458 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 14840 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 15424 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -870,7 +870,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      12176 pixels (ratio 0.02 of all image pixels) are different.
+      12756 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: memory-1280x800.png
 
@@ -881,14 +881,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 12190 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 12770 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 12176 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 12756 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -912,7 +912,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      12149 pixels (ratio 0.02 of all image pixels) are different.
+      12745 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: memory-1280x800.png
 
@@ -923,14 +923,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 12178 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 12777 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 12149 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 12745 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -962,7 +962,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      20571 pixels (ratio 0.03 of all image pixels) are different.
+      21141 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: prompt-lab-1280x800.png
 
@@ -973,14 +973,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 20579 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21151 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 20571 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21141 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1004,7 +1004,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      20565 pixels (ratio 0.03 of all image pixels) are different.
+      21143 pixels (ratio 0.03 of all image pixels) are different.
 
       Snapshot: prompt-lab-1280x800.png
 
@@ -1015,14 +1015,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 20575 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21153 pixels (ratio 0.03 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 20565 pixels (ratio 0.03 of all image pixels) are different.[22m
+    [2m  - 21143 pixels (ratio 0.03 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1054,7 +1054,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      14140 pixels (ratio 0.02 of all image pixels) are different.
+      14712 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: remote-1280x800.png
 
@@ -1065,14 +1065,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 14173 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14746 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 14140 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14712 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1096,7 +1096,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      14119 pixels (ratio 0.02 of all image pixels) are different.
+      14708 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: remote-1280x800.png
 
@@ -1107,14 +1107,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 14163 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14752 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 14119 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 14708 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1146,7 +1146,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      16279 pixels (ratio 0.02 of all image pixels) are different.
+      16866 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: docs-1280x800.png
 
@@ -1157,14 +1157,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 16301 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 16888 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 16279 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 16866 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1188,7 +1188,7 @@ Running 68 tests using 2 workers
 
     Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveScreenshot[2m([22m[32mexpected[39m[2m)[22m failed
 
-      16270 pixels (ratio 0.02 of all image pixels) are different.
+      16860 pixels (ratio 0.02 of all image pixels) are different.
 
       Snapshot: docs-1280x800.png
 
@@ -1199,14 +1199,14 @@ Running 68 tests using 2 workers
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
-    [2m  - 16301 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 16891 pixels (ratio 0.02 of all image pixels) are different.[22m
     [2m  - waiting 100ms before taking screenshot[22m
     [2m  - taking page screenshot[22m
     [2m    - disabled all CSS animations[22m
     [2m  - waiting for fonts to load...[22m
     [2m  - fonts loaded[22m
     [2m  - captured a stable screenshot[22m
-    [2m  - 16270 pixels (ratio 0.02 of all image pixels) are different.[22m
+    [2m  - 16860 pixels (ratio 0.02 of all image pixels) are different.[22m
 
 
       29 |     // Allow CSS transitions to settle
@@ -1435,4 +1435,4 @@ Running 68 tests using 2 workers
     [chromium-desktop] › tests\visual.spec.ts:50:5 › visual regression: command palette at 1280x800 
     [chromium-desktop] › tests\visual.spec.ts:60:5 › visual regression: shortcuts overlay at 1280x800 
   1 skipped
-  52 passed (3.7m)
+  52 passed (3.6m)
