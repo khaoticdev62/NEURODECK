@@ -29,10 +29,7 @@ pub async fn host(port: u16, app: AppHandle) -> Result<(u16, CollabSession), Str
         .await
         .map_err(|e| format!("Bind failed on {}: {}", addr, e))?;
 
-    let bound_port = listener
-        .local_addr()
-        .map(|a| a.port())
-        .unwrap_or(port);
+    let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(port);
 
     let (tx, mut rx) = mpsc::channel::<String>(128);
     let peers: Arc<AsyncMutex<Vec<mpsc::Sender<String>>>> = Arc::new(AsyncMutex::new(Vec::new()));
@@ -162,10 +159,11 @@ async fn run_peer_io(
 
     write_task.abort();
     if let Some(count) = peer_count {
-        count.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |value| {
-            Some(value.saturating_sub(1))
-        })
-        .ok();
+        count
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |value| {
+                Some(value.saturating_sub(1))
+            })
+            .ok();
     }
     let _ = app.emit("canvas_collab_event", "peer_disconnected".to_string());
 }

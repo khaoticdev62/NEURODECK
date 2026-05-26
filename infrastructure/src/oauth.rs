@@ -44,20 +44,23 @@ impl Default for OAuthConfig {
 }
 
 fn encode_form(pairs: &[(&str, &str)]) -> String {
-    pairs.iter()
+    pairs
+        .iter()
         .map(|(k, v)| format!("{}={}", urlencoding(k), urlencoding(v)))
         .collect::<Vec<_>>()
         .join("&")
 }
 
 fn urlencoding(s: &str) -> String {
-    s.chars().flat_map(|c| {
-        if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '~' {
-            vec![c]
-        } else {
-            format!("%{:02X}", c as u32).chars().collect()
-        }
-    }).collect()
+    s.chars()
+        .flat_map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '~' {
+                vec![c]
+            } else {
+                format!("%{:02X}", c as u32).chars().collect()
+            }
+        })
+        .collect()
 }
 
 pub async fn request_device_code(config: &OAuthConfig) -> Result<DeviceAuthResponse, String> {
@@ -80,7 +83,11 @@ pub async fn request_device_code(config: &OAuthConfig) -> Result<DeviceAuthRespo
     }
 }
 
-pub async fn poll_for_token(config: &OAuthConfig, device_code: &str, interval: u64) -> Result<String, String> {
+pub async fn poll_for_token(
+    config: &OAuthConfig,
+    device_code: &str,
+    interval: u64,
+) -> Result<String, String> {
     let client = Client::new();
     loop {
         let body = encode_form(&[
@@ -104,14 +111,19 @@ pub async fn poll_for_token(config: &OAuthConfig, device_code: &str, interval: u
                 .map_err(|e| format!("Failed to parse token response: {}", e))?;
             return Ok(token_res.access_token);
         } else {
-            let error_res = res.json::<TokenErrorResponse>().await
+            let error_res = res
+                .json::<TokenErrorResponse>()
+                .await
                 .map_err(|e| format!("Failed to parse error response: {}", e))?;
             if error_res.error == "authorization_pending" {
                 sleep(Duration::from_secs(interval)).await;
             } else if error_res.error == "slow_down" {
                 sleep(Duration::from_secs(interval + 5)).await;
             } else {
-                return Err(format!("OAuth Error: {} - {:?}", error_res.error, error_res.error_description));
+                return Err(format!(
+                    "OAuth Error: {} - {:?}",
+                    error_res.error, error_res.error_description
+                ));
             }
         }
     }

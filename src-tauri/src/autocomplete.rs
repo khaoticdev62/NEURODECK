@@ -1,6 +1,6 @@
+use crate::AppState;
 use std::sync::Mutex;
 use tauri::State;
-use crate::AppState;
 
 #[tauri::command]
 pub async fn get_terminal_autocomplete(

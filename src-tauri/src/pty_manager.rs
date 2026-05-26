@@ -1,4 +1,4 @@
-use portable_pty::{native_pty_system, PtySize, CommandBuilder, MasterPty};
+use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::Mutex;
@@ -31,11 +31,7 @@ fn to_string_err<E: std::fmt::Display>(e: E) -> String {
 fn build_shell_candidates(requested_shell: &str) -> Vec<String> {
     if cfg!(target_os = "windows") {
         match requested_shell {
-            "" => vec![
-                "pwsh.exe".into(),
-                "powershell.exe".into(),
-                "cmd.exe".into(),
-            ],
+            "" => vec!["pwsh.exe".into(), "powershell.exe".into(), "cmd.exe".into()],
             "/bin/bash" => vec![
                 "wsl.exe".into(),
                 r"C:\Program Files\Git\bin\bash.exe".into(),
@@ -69,7 +65,11 @@ fn build_shell_candidates(requested_shell: &str) -> Vec<String> {
     } else if requested_shell.is_empty() {
         vec!["/bin/bash".into(), "/bin/sh".into()]
     } else {
-        vec![requested_shell.to_string(), "/bin/bash".into(), "/bin/sh".into()]
+        vec![
+            requested_shell.to_string(),
+            "/bin/bash".into(),
+            "/bin/sh".into(),
+        ]
     }
 }
 
@@ -97,7 +97,12 @@ fn spawn_pty_with_timeout(
         let result = (|| -> Result<SpawnParts, String> {
             let pty_system = native_pty_system();
             let pair = pty_system
-                .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+                .openpty(PtySize {
+                    rows,
+                    cols,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                })
                 .map_err(to_string_err)?;
 
             let mut child_opt: Option<Box<dyn portable_pty::Child + Send + Sync>> = None;
@@ -155,7 +160,11 @@ pub fn pty_spawn(
     let candidates = build_shell_candidates(&requested_shell);
 
     let remote_tx_snap: Option<tokio::sync::broadcast::Sender<String>> = {
-        state.remote_tx.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        state
+            .remote_tx
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     };
 
     let (writer, mut reader, master, mut child) =
@@ -171,10 +180,13 @@ pub fn pty_spawn(
                 break;
             }
             let text = String::from_utf8_lossy(&buffer[..n]).to_string();
-            let _ = app_handle_clone.emit("pty_output", PtyOutputPayload {
-                id: id_clone.clone(),
-                data: text.clone(),
-            });
+            let _ = app_handle_clone.emit(
+                "pty_output",
+                PtyOutputPayload {
+                    id: id_clone.clone(),
+                    data: text.clone(),
+                },
+            );
             if let Some(ref tx) = remote_tx_snap {
                 let payload = serde_json::json!({"type":"pty_output","data": text}).to_string();
                 let _ = tx.send(payload);
@@ -195,14 +207,13 @@ pub fn pty_spawn(
 }
 
 #[tauri::command]
-pub fn pty_write(
-    id: String,
-    data: String,
-    state: State<'_, PtyState>,
-) -> Result<(), String> {
+pub fn pty_write(id: String, data: String, state: State<'_, PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get_mut(&id) {
-        session.writer.write_all(data.as_bytes()).map_err(to_string_err)?;
+        session
+            .writer
+            .write_all(data.as_bytes())
+            .map_err(to_string_err)?;
         session.writer.flush().map_err(to_string_err)?;
         Ok(())
     } else {
@@ -219,12 +230,15 @@ pub fn pty_resize(
 ) -> Result<(), String> {
     let sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get(&id) {
-        session.master.resize(PtySize {
-            rows,
-            cols,
-            pixel_width: 0,
-            pixel_height: 0,
-        }).map_err(to_string_err)?;
+        session
+            .master
+            .resize(PtySize {
+                rows,
+                cols,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .map_err(to_string_err)?;
         Ok(())
     } else {
         Err(format!("PTY Session {} not found", id))
@@ -232,10 +246,7 @@ pub fn pty_resize(
 }
 
 #[tauri::command]
-pub fn pty_kill(
-    id: String,
-    state: State<'_, PtyState>,
-) -> Result<(), String> {
+pub fn pty_kill(id: String, state: State<'_, PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if sessions.remove(&id).is_some() {
         Ok(())

@@ -7,7 +7,7 @@ use std::path::Path;
 pub struct AgentConfig {
     pub id: String,
     pub name: String,
-    pub provider: String,  // "gemini" | "ollama" | "huggingface"
+    pub provider: String, // "gemini" | "ollama" | "huggingface"
     pub model: String,
     #[serde(default = "default_ollama_base_url")]
     pub base_url: String,
@@ -29,11 +29,21 @@ pub struct ThemeConfig {
     pub response_color: String,
 }
 
-fn default_primary_color() -> String { "#00F0FF".to_string() }
-fn default_secondary_color() -> String { "#FF0055".to_string() }
-fn default_bg_color() -> String { "#050505".to_string() }
-fn default_foreground_color() -> String { "#D9F7FF".to_string() }
-fn default_response_color() -> String { "#00FF88".to_string() }
+fn default_primary_color() -> String {
+    "#00F0FF".to_string()
+}
+fn default_secondary_color() -> String {
+    "#FF0055".to_string()
+}
+fn default_bg_color() -> String {
+    "#050505".to_string()
+}
+fn default_foreground_color() -> String {
+    "#D9F7FF".to_string()
+}
+fn default_response_color() -> String {
+    "#00FF88".to_string()
+}
 
 impl Default for ThemeConfig {
     fn default() -> Self {
@@ -75,12 +85,24 @@ pub struct LlmConfig {
     pub agents: Vec<AgentConfig>,
 }
 
-fn default_provider() -> String { "ollama".to_string() }
-fn default_ollama_model() -> String { "llama2".to_string() }
-fn default_gemini_model() -> String { "gemini-1.5-flash".to_string() }
-fn default_ollama_base_url() -> String { "http://localhost:11434".to_string() }
-fn default_hf_model() -> String { "meta-llama/Llama-3.2-1B-Instruct".to_string() }
-fn default_hf_base_url() -> String { "https://api-inference.huggingface.co".to_string() }
+fn default_provider() -> String {
+    "ollama".to_string()
+}
+fn default_ollama_model() -> String {
+    "llama2".to_string()
+}
+fn default_gemini_model() -> String {
+    "gemini-1.5-flash".to_string()
+}
+fn default_ollama_base_url() -> String {
+    "http://localhost:11434".to_string()
+}
+fn default_hf_model() -> String {
+    "meta-llama/Llama-3.2-1B-Instruct".to_string()
+}
+fn default_hf_base_url() -> String {
+    "https://api-inference.huggingface.co".to_string()
+}
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -137,9 +159,15 @@ pub struct SyncConfig {
     pub device_id: String,
 }
 
-fn default_sync_memory() -> bool { true }
-fn default_sync_sessions() -> bool { true }
-fn default_sync_device_id() -> String { uuid::Uuid::new_v4().to_string() }
+fn default_sync_memory() -> bool {
+    true
+}
+fn default_sync_sessions() -> bool {
+    true
+}
+fn default_sync_device_id() -> String {
+    uuid::Uuid::new_v4().to_string()
+}
 
 impl Default for SyncConfig {
     fn default() -> Self {
@@ -164,13 +192,11 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
 }
 
 pub fn save_config<P: AsRef<Path>>(path: P, config: &Config) -> Result<(), String> {
-    let content = toml::to_string_pretty(config)
-        .map_err(|e| format!("Failed to serialize config: {}", e))?;
-    fs::write(path, content)
-        .map_err(|e| format!("Failed to write config file: {}", e))?;
+    let content =
+        toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
+    fs::write(path, content).map_err(|e| format!("Failed to write config file: {}", e))?;
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {

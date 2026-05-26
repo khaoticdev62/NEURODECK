@@ -5,7 +5,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use chrono::Utc;
-use fx_torrent::{FxTorrentSession, Magnet, Session, SessionConfig, Torrent, TorrentFlags, TorrentMetadata};
+use fx_torrent::{
+    FxTorrentSession, Magnet, Session, SessionConfig, Torrent, TorrentFlags, TorrentMetadata,
+};
 use serde::Serialize;
 use tauri::State;
 use tokio::sync::Mutex;
@@ -107,7 +109,10 @@ impl TorrentManager {
 
     async fn add_source(&mut self, source: &str) -> Result<TorrentSnapshot, String> {
         self.ensure_session().await?;
-        let session = self.session.as_ref().ok_or_else(|| "Torrent session is unavailable".to_string())?;
+        let session = self
+            .session
+            .as_ref()
+            .ok_or_else(|| "Torrent session is unavailable".to_string())?;
         let cleaned = source.trim();
         if cleaned.is_empty() {
             return Err("Torrent source cannot be empty.".to_string());
@@ -122,13 +127,17 @@ impl TorrentManager {
                 .map_err(|e| format!("Failed to add magnet torrent: {}", e))?
         } else {
             let file_path = sanitize_torrent_path(cleaned)?;
-            let bytes = std::fs::read(&file_path)
-                .map_err(|e| format!("Failed to read torrent file {}: {}", file_path.display(), e))?;
+            let bytes = std::fs::read(&file_path).map_err(|e| {
+                format!("Failed to read torrent file {}: {}", file_path.display(), e)
+            })?;
             if (bytes.len() as u64) > MAX_TORRENT_FILE_BYTES {
-                return Err("Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string());
+                return Err(
+                    "Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string(),
+                );
             }
-            let metadata = TorrentMetadata::try_from(bytes.as_slice())
-                .map_err(|e| format!("Invalid torrent metadata in {}: {}", file_path.display(), e))?;
+            let metadata = TorrentMetadata::try_from(bytes.as_slice()).map_err(|e| {
+                format!("Invalid torrent metadata in {}: {}", file_path.display(), e)
+            })?;
             session
                 .add_torrent_from_info(metadata, flags)
                 .await
@@ -231,7 +240,10 @@ impl TorrentManager {
     }
 }
 
-async fn snapshot_record(record: &TorrentRecord, download_root: &Path) -> Result<TorrentSnapshot, String> {
+async fn snapshot_record(
+    record: &TorrentRecord,
+    download_root: &Path,
+) -> Result<TorrentSnapshot, String> {
     let paused = record.torrent.is_paused().await;
     let completed = record.torrent.is_completed().await;
     let metadata_known = record.torrent.is_metadata_known().await;
@@ -292,7 +304,10 @@ async fn snapshot_record(record: &TorrentRecord, download_root: &Path) -> Result
 
 fn sanitize_torrent_path(input: &str) -> Result<PathBuf, String> {
     if input.contains("://") {
-        return Err("Remote torrent URLs are not accepted. Use a local .torrent file path or a magnet URI.".to_string());
+        return Err(
+            "Remote torrent URLs are not accepted. Use a local .torrent file path or a magnet URI."
+                .to_string(),
+        );
     }
 
     let raw = PathBuf::from(input);
@@ -304,15 +319,27 @@ fn sanitize_torrent_path(input: &str) -> Result<PathBuf, String> {
             .join(raw)
     };
 
-    let canonical = resolved
-        .canonicalize()
-        .map_err(|e| format!("Failed to resolve torrent file {}: {}", resolved.display(), e))?;
+    let canonical = resolved.canonicalize().map_err(|e| {
+        format!(
+            "Failed to resolve torrent file {}: {}",
+            resolved.display(),
+            e
+        )
+    })?;
 
     if !canonical.is_file() {
-        return Err(format!("Torrent file does not exist: {}", canonical.display()));
+        return Err(format!(
+            "Torrent file does not exist: {}",
+            canonical.display()
+        ));
     }
 
-    if canonical.extension().and_then(|ext| ext.to_str()).map(|ext| ext.eq_ignore_ascii_case("torrent")) != Some(true) {
+    if canonical
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("torrent"))
+        != Some(true)
+    {
         return Err("Only local .torrent files are accepted.".to_string());
     }
 
@@ -344,7 +371,9 @@ fn derive_label(source: &str) -> String {
 }
 
 #[tauri::command]
-pub async fn torrent_get_status(state: State<'_, TorrentState>) -> Result<TorrentClientStatus, String> {
+pub async fn torrent_get_status(
+    state: State<'_, TorrentState>,
+) -> Result<TorrentClientStatus, String> {
     let guard = state.inner.lock().await;
     let torrents = guard.list().await?;
     Ok(TorrentClientStatus {
@@ -361,31 +390,44 @@ pub async fn torrent_list(state: State<'_, TorrentState>) -> Result<Vec<TorrentS
 }
 
 #[tauri::command]
-pub async fn torrent_add(state: State<'_, TorrentState>, source: String) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_add(
+    state: State<'_, TorrentState>,
+    source: String,
+) -> Result<TorrentSnapshot, String> {
     let mut guard = state.inner.lock().await;
     guard.add_source(&source).await
 }
 
 #[tauri::command]
-pub async fn torrent_pause(state: State<'_, TorrentState>, id: String) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_pause(
+    state: State<'_, TorrentState>,
+    id: String,
+) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.pause(&id).await
 }
 
 #[tauri::command]
-pub async fn torrent_resume(state: State<'_, TorrentState>, id: String) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_resume(
+    state: State<'_, TorrentState>,
+    id: String,
+) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.resume(&id).await
 }
 
 #[tauri::command]
-pub async fn torrent_pause_all(state: State<'_, TorrentState>) -> Result<Vec<TorrentSnapshot>, String> {
+pub async fn torrent_pause_all(
+    state: State<'_, TorrentState>,
+) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.pause_all().await
 }
 
 #[tauri::command]
-pub async fn torrent_resume_all(state: State<'_, TorrentState>) -> Result<Vec<TorrentSnapshot>, String> {
+pub async fn torrent_resume_all(
+    state: State<'_, TorrentState>,
+) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.resume_all().await
 }
@@ -403,7 +445,10 @@ pub async fn torrent_open_download_root(state: State<'_, TorrentState>) -> Resul
     drop(guard);
 
     if !root.exists() || !root.is_dir() {
-        return Err(format!("Torrent download root is unavailable: {}", root.display()));
+        return Err(format!(
+            "Torrent download root is unavailable: {}",
+            root.display()
+        ));
     }
 
     #[cfg(target_os = "windows")]

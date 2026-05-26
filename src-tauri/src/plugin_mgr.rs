@@ -9,7 +9,8 @@ use tauri::{AppHandle, Manager};
 use crate::LuaState;
 
 const PLUGINS_DIR: &str = "./plugins";
-const REGISTRY_URL: &str = "https://raw.githubusercontent.com/khaoticdev62/neurodeck-plugins/main/registry.json";
+const REGISTRY_URL: &str =
+    "https://raw.githubusercontent.com/khaoticdev62/neurodeck-plugins/main/registry.json";
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PluginInfo {
@@ -83,8 +84,12 @@ pub async fn fetch_plugin_registry() -> Result<PluginRegistry, String> {
     for plugin in &mut registry.plugins {
         let enabled_name = plugin.lua_file.as_str();
         let disabled_name = format!("{}.disabled", plugin.lua_file);
-        plugin.installed = local.iter().any(|p| p.file_name == enabled_name || p.file_name == disabled_name);
-        plugin.enabled = local.iter().any(|p| p.file_name == enabled_name && p.enabled);
+        plugin.installed = local
+            .iter()
+            .any(|p| p.file_name == enabled_name || p.file_name == disabled_name);
+        plugin.enabled = local
+            .iter()
+            .any(|p| p.file_name == enabled_name && p.enabled);
     }
     Ok(registry)
 }
@@ -125,14 +130,22 @@ pub async fn install_plugin(url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn install_plugin_from_registry(plugin_id: String, app_handle: AppHandle) -> Result<(), String> {
+pub async fn install_plugin_from_registry(
+    plugin_id: String,
+    app_handle: AppHandle,
+) -> Result<(), String> {
     validate_plugin_id(&plugin_id)?;
     let registry = fetch_registry_raw().await?;
     let plugin = registry
         .plugins
         .into_iter()
         .find(|p| p.id == plugin_id)
-        .ok_or_else(|| format!("Plugin '{}' was not found in the marketplace registry", plugin_id))?;
+        .ok_or_else(|| {
+            format!(
+                "Plugin '{}' was not found in the marketplace registry",
+                plugin_id
+            )
+        })?;
 
     validate_safe_lua_file_name(&plugin.lua_file, false)?;
     let parsed_url = reqwest::Url::parse(&plugin.download_url)
@@ -199,7 +212,10 @@ pub fn save_plugin(file_name: String, content: String) -> Result<(), String> {
 pub async fn reload_plugins(app_handle: AppHandle) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let lua_state = app_handle.state::<LuaState>();
-        let mut engine = lua_state.0.lock().map_err(|e| format!("Mutex lock failed: {}", e))?;
+        let mut engine = lua_state
+            .0
+            .lock()
+            .map_err(|e| format!("Mutex lock failed: {}", e))?;
 
         let new_engine = crate::lua::LuaEngine::new(app_handle.clone())
             .map_err(|e| format!("Failed to create new Lua engine: {}", e))?;
@@ -208,17 +224,21 @@ pub async fn reload_plugins(app_handle: AppHandle) -> Result<(), String> {
 
         *engine = new_engine;
         Ok(())
-    }).await.map_err(|e| format!("Task join error: {}", e))?
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
 }
 
 fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
     let plugins_dir = Path::new(PLUGINS_DIR);
     if !plugins_dir.exists() {
-        fs::create_dir_all(plugins_dir).map_err(|e| format!("Failed to create plugins dir: {}", e))?;
+        fs::create_dir_all(plugins_dir)
+            .map_err(|e| format!("Failed to create plugins dir: {}", e))?;
     }
 
     let mut list = Vec::new();
-    let entries = fs::read_dir(plugins_dir).map_err(|e| format!("Failed to read plugins dir: {}", e))?;
+    let entries =
+        fs::read_dir(plugins_dir).map_err(|e| format!("Failed to read plugins dir: {}", e))?;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -293,7 +313,8 @@ async fn download_plugin_file(url: &reqwest::Url, file_name: &str) -> Result<(),
 
     let plugins_dir = Path::new(PLUGINS_DIR);
     if !plugins_dir.exists() {
-        fs::create_dir_all(plugins_dir).map_err(|e| format!("Failed to create plugins dir: {}", e))?;
+        fs::create_dir_all(plugins_dir)
+            .map_err(|e| format!("Failed to create plugins dir: {}", e))?;
     }
 
     let client = reqwest::Client::builder()
@@ -307,12 +328,20 @@ async fn download_plugin_file(url: &reqwest::Url, file_name: &str) -> Result<(),
         .map_err(|e| format!("Failed to fetch plugin: {}", e))?;
 
     if !response.status().is_success() {
-        return Err(format!("Plugin download returned HTTP {}", response.status()));
+        return Err(format!(
+            "Plugin download returned HTTP {}",
+            response.status()
+        ));
     }
 
-    let body = response.text().await.map_err(|e| format!("Failed to read plugin content: {}", e))?;
+    let body = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read plugin content: {}", e))?;
     if body.len() > 512 * 1024 {
-        return Err("Plugin file is too large; marketplace plugins must be under 512KB".to_string());
+        return Err(
+            "Plugin file is too large; marketplace plugins must be under 512KB".to_string(),
+        );
     }
 
     fs::write(plugins_dir.join(file_name), body)
@@ -348,7 +377,9 @@ fn file_name_from_url(url: &reqwest::Url) -> Result<String, String> {
 fn validate_plugin_id(plugin_id: &str) -> Result<(), String> {
     if plugin_id.is_empty()
         || plugin_id.len() > 80
-        || !plugin_id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        || !plugin_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
     {
         return Err("Invalid plugin ID".to_string());
     }
@@ -368,13 +399,16 @@ fn validate_marketplace_download_url(url: &reqwest::Url) -> Result<(), String> {
 }
 
 fn validate_safe_lua_file_name(file_name: &str, allow_disabled: bool) -> Result<(), String> {
-    let valid_suffix = file_name.ends_with(".lua") || (allow_disabled && file_name.ends_with(".lua.disabled"));
+    let valid_suffix =
+        file_name.ends_with(".lua") || (allow_disabled && file_name.ends_with(".lua.disabled"));
     if file_name.is_empty()
         || !valid_suffix
         || file_name.contains("..")
         || file_name.contains('/')
         || file_name.contains('\\')
-        || !file_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+        || !file_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
     {
         return Err("Invalid plugin file name".to_string());
     }
@@ -401,13 +435,17 @@ mod tests {
 
     #[test]
     fn extracts_safe_file_name_from_https_url() {
-        let url = reqwest::Url::parse("https://raw.githubusercontent.com/org/repo/main/weather.lua").unwrap();
+        let url =
+            reqwest::Url::parse("https://raw.githubusercontent.com/org/repo/main/weather.lua")
+                .unwrap();
         assert_eq!(file_name_from_url(&url).unwrap(), "weather.lua");
     }
 
     #[test]
     fn marketplace_downloads_are_github_only() {
-        let good = reqwest::Url::parse("https://raw.githubusercontent.com/org/repo/main/weather.lua").unwrap();
+        let good =
+            reqwest::Url::parse("https://raw.githubusercontent.com/org/repo/main/weather.lua")
+                .unwrap();
         let bad = reqwest::Url::parse("https://example.com/weather.lua").unwrap();
         assert!(validate_marketplace_download_url(&good).is_ok());
         assert!(validate_marketplace_download_url(&bad).is_err());

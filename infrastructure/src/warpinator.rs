@@ -2,11 +2,11 @@ pub mod warp {
     tonic::include_proto!("_");
 }
 
+use std::sync::Arc;
+use tokio::io::AsyncReadExt;
 use tonic::{transport::Server, Request, Response, Status};
 use warp::warp_server::{Warp, WarpServer};
 use warp::*;
-use std::sync::Arc;
-use tokio::io::AsyncReadExt;
 
 #[tonic::async_trait]
 pub trait WarpinatorCallbacks: Send + Sync {
@@ -50,15 +50,24 @@ impl WarpinatorService {
 
 #[tonic::async_trait]
 impl Warp for WarpinatorService {
-    async fn check_duplex_connection(&self, _req: Request<LookupName>) -> Result<Response<HaveDuplex>, Status> {
-        Ok(Response::new(HaveDuplex { response: true }))
-    }
-    
-    async fn waiting_for_duplex(&self, _req: Request<LookupName>) -> Result<Response<HaveDuplex>, Status> {
+    async fn check_duplex_connection(
+        &self,
+        _req: Request<LookupName>,
+    ) -> Result<Response<HaveDuplex>, Status> {
         Ok(Response::new(HaveDuplex { response: true }))
     }
 
-    async fn get_remote_machine_info(&self, _req: Request<LookupName>) -> Result<Response<RemoteMachineInfo>, Status> {
+    async fn waiting_for_duplex(
+        &self,
+        _req: Request<LookupName>,
+    ) -> Result<Response<HaveDuplex>, Status> {
+        Ok(Response::new(HaveDuplex { response: true }))
+    }
+
+    async fn get_remote_machine_info(
+        &self,
+        _req: Request<LookupName>,
+    ) -> Result<Response<RemoteMachineInfo>, Status> {
         let (display_name, user_name) = self.callbacks.get_local_machine_info();
         Ok(Response::new(RemoteMachineInfo {
             display_name,
@@ -67,20 +76,31 @@ impl Warp for WarpinatorService {
         }))
     }
 
-    type GetRemoteMachineAvatarStream = tokio_stream::wrappers::ReceiverStream<Result<RemoteMachineAvatar, Status>>;
+    type GetRemoteMachineAvatarStream =
+        tokio_stream::wrappers::ReceiverStream<Result<RemoteMachineAvatar, Status>>;
 
-    async fn get_remote_machine_avatar(&self, _req: Request<LookupName>) -> Result<Response<Self::GetRemoteMachineAvatarStream>, Status> {
+    async fn get_remote_machine_avatar(
+        &self,
+        _req: Request<LookupName>,
+    ) -> Result<Response<Self::GetRemoteMachineAvatarStream>, Status> {
         let (_, rx) = tokio::sync::mpsc::channel(1);
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
+            rx,
+        )))
     }
 
-    async fn process_transfer_op_request(&self, req: Request<TransferOpRequest>) -> Result<Response<VoidType>, Status> {
+    async fn process_transfer_op_request(
+        &self,
+        req: Request<TransferOpRequest>,
+    ) -> Result<Response<VoidType>, Status> {
         let sender_ip = match req.remote_addr() {
             Some(addr) => addr.ip().to_string(),
             None => "".to_string(),
         };
         let op_req = req.into_inner();
-        let info = op_req.info.ok_or_else(|| Status::invalid_argument("Missing info"))?;
+        let info = op_req
+            .info
+            .ok_or_else(|| Status::invalid_argument("Missing info"))?;
         let transfer_id = info.ident.clone();
 
         let filename = if !op_req.name_if_single.is_empty() {
@@ -99,14 +119,16 @@ impl Warp for WarpinatorService {
         let count = op_req.count as u32;
 
         tokio::spawn(async move {
-            let accepted = callbacks.on_incoming_transfer(
-                transfer_id_clone.clone(),
-                sender_name,
-                sender_ip.clone(),
-                filename_clone.clone(),
-                size,
-                count,
-            ).await;
+            let accepted = callbacks
+                .on_incoming_transfer(
+                    transfer_id_clone.clone(),
+                    sender_name,
+                    sender_ip.clone(),
+                    filename_clone.clone(),
+                    size,
+                    count,
+                )
+                .await;
 
             if accepted {
                 if let Err(e) = run_grpc_incoming_transfer(
@@ -116,7 +138,9 @@ impl Warp for WarpinatorService {
                     &filename_clone,
                     size,
                     callbacks.as_ref(),
-                ).await {
+                )
+                .await
+                {
                     println!("Error in gRPC incoming transfer: {:?}", e);
                     callbacks.on_transfer_failed(&transfer_id_clone);
                 } else {
@@ -134,13 +158,19 @@ impl Warp for WarpinatorService {
         Ok(Response::new(VoidType { dummy: 0 }))
     }
 
-    async fn send_text_message(&self, _req: Request<TextMessage>) -> Result<Response<VoidType>, Status> {
+    async fn send_text_message(
+        &self,
+        _req: Request<TextMessage>,
+    ) -> Result<Response<VoidType>, Status> {
         Ok(Response::new(VoidType { dummy: 0 }))
     }
 
     type StartTransferStream = tokio_stream::wrappers::ReceiverStream<Result<FileChunk, Status>>;
 
-    async fn start_transfer(&self, req: Request<OpInfo>) -> Result<Response<Self::StartTransferStream>, Status> {
+    async fn start_transfer(
+        &self,
+        req: Request<OpInfo>,
+    ) -> Result<Response<Self::StartTransferStream>, Status> {
         let op_info = req.into_inner();
         let transfer_id = op_info.ident.clone();
 
@@ -153,7 +183,9 @@ impl Warp for WarpinatorService {
         let callbacks = self.callbacks.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = stream_path_to_channel(&path, tx, &transfer_id, callbacks.as_ref()).await {
+            if let Err(e) =
+                stream_path_to_channel(&path, tx, &transfer_id, callbacks.as_ref()).await
+            {
                 println!("Error streaming file/dir: {:?}", e);
                 callbacks.on_transfer_failed(&transfer_id);
             } else {
@@ -161,10 +193,15 @@ impl Warp for WarpinatorService {
             }
         });
 
-        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(rx)))
+        Ok(Response::new(tokio_stream::wrappers::ReceiverStream::new(
+            rx,
+        )))
     }
 
-    async fn cancel_transfer_op_request(&self, req: Request<OpInfo>) -> Result<Response<VoidType>, Status> {
+    async fn cancel_transfer_op_request(
+        &self,
+        req: Request<OpInfo>,
+    ) -> Result<Response<VoidType>, Status> {
         let info = req.into_inner();
         self.callbacks.on_transfer_failed(&info.ident);
         Ok(Response::new(VoidType { dummy: 0 }))
@@ -233,7 +270,8 @@ async fn stream_path_to_channel(
             chunk: Vec::new(),
             file_mode: 0o755,
             time: None,
-        })).await?;
+        }))
+        .await?;
 
         while let Some(current_path) = entries.pop() {
             if callbacks.is_cancelled(transfer_id) {
@@ -256,7 +294,8 @@ async fn stream_path_to_channel(
                         chunk: Vec::new(),
                         file_mode: 0o755,
                         time: None,
-                    })).await?;
+                    }))
+                    .await?;
                     entries.push(entry_path);
                 } else {
                     let mut file = tokio::fs::File::open(&entry_path).await?;
@@ -299,14 +338,18 @@ async fn run_grpc_incoming_transfer(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use warp::warp_client::WarpClient;
 
-    let channel = tonic::transport::Channel::from_shared(format!("http://{}:{}", sender_ip, sender_port))?
-        .connect()
-        .await?;
+    let channel =
+        tonic::transport::Channel::from_shared(format!("http://{}:{}", sender_ip, sender_port))?
+            .connect()
+            .await?;
     let mut client = WarpClient::new(channel);
 
     let op_info = OpInfo {
         ident: transfer_id.to_string(),
-        timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
         readable_name: filename.to_string(),
         use_compression: false,
     };
@@ -317,15 +360,22 @@ async fn run_grpc_incoming_transfer(
 
     while let Some(chunk_res) = stream.message().await? {
         if callbacks.is_cancelled(transfer_id) {
-            return Err(std::io::Error::new(std::io::ErrorKind::Interrupted, "Transfer cancelled by user").into());
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "Transfer cancelled by user",
+            )
+            .into());
         }
         let chunk = chunk_res;
-        callbacks.on_chunk_received(
-            transfer_id,
-            &chunk.relative_path,
-            chunk.file_type,
-            &chunk.chunk,
-        ).await.map_err(std::io::Error::other)?;
+        callbacks
+            .on_chunk_received(
+                transfer_id,
+                &chunk.relative_path,
+                chunk.file_type,
+                &chunk.chunk,
+            )
+            .await
+            .map_err(std::io::Error::other)?;
 
         received_bytes += chunk.chunk.len() as u64;
         callbacks.on_transfer_progress(transfer_id, received_bytes);
@@ -359,9 +409,11 @@ pub async fn start_warpinator_service(
         "0.0.0.0",
         port,
         Some(properties),
-    ).unwrap();
+    )
+    .unwrap();
 
-    mdns.register(my_service).expect("Failed to register mDNS service");
+    mdns.register(my_service)
+        .expect("Failed to register mDNS service");
     println!("Registered mDNS Warpinator Service on port {}", port);
 
     let addr = format!("0.0.0.0:{}", port).parse()?;
@@ -386,14 +438,18 @@ pub async fn send_file_to_warpinator_peer(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use warp::warp_client::WarpClient;
 
-    let channel = tonic::transport::Channel::from_shared(format!("http://{}:{}", peer_ip, peer_port))?
-        .connect()
-        .await?;
+    let channel =
+        tonic::transport::Channel::from_shared(format!("http://{}:{}", peer_ip, peer_port))?
+            .connect()
+            .await?;
     let mut client = WarpClient::new(channel);
 
     let op_info = OpInfo {
         ident: transfer_id.to_string(),
-        timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
         readable_name: filename.to_string(),
         use_compression: false,
     };
@@ -412,6 +468,8 @@ pub async fn send_file_to_warpinator_peer(
         top_dir_basenames: Vec::new(),
     };
 
-    client.process_transfer_op_request(Request::new(req)).await?;
+    client
+        .process_transfer_op_request(Request::new(req))
+        .await?;
     Ok(())
 }

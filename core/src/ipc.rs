@@ -40,7 +40,7 @@ mod tests {
     fn export_bindings() {
         let dir = Path::new("../../frontend/src/bindings");
         fs::create_dir_all(dir).unwrap();
-        
+
         let cfg = ts_rs::Config::default();
         let intent_ts = Intent::decl(&cfg);
         fs::write(dir.join("Intent.ts"), intent_ts).unwrap();

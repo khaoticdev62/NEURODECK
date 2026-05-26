@@ -1,6 +1,6 @@
+use mlua::{Function, Lua, Table, Value, Variadic};
 use std::path::Path;
 use tauri::{AppHandle, Emitter, Manager};
-use mlua::{Lua, Table, Value, Function, Variadic};
 
 pub struct LuaEngine {
     lua: Lua,
@@ -64,28 +64,30 @@ impl LuaEngine {
         lua.globals().set("execute", execute_fn)?;
 
         // 3. registerCommand(name, callback) function
-        let register_cmd_fn = lua.create_function(move |lua, (name, func): (String, Function)| {
-            let commands: Table = lua.globals().get("_commands")?;
-            commands.set(name, func)?;
-            Ok(())
-        })?;
+        let register_cmd_fn =
+            lua.create_function(move |lua, (name, func): (String, Function)| {
+                let commands: Table = lua.globals().get("_commands")?;
+                commands.set(name, func)?;
+                Ok(())
+            })?;
         lua.globals().set("registerCommand", register_cmd_fn)?;
 
         // 4. registerHook(event, callback) function
-        let register_hook_fn = lua.create_function(move |lua, (event, func): (String, Function)| {
-            let hooks: Table = lua.globals().get("_hooks")?;
-            let event_hooks: Table = match hooks.get::<_, Option<Table>>(event.as_str())? {
-                Some(t) => t,
-                None => {
-                    let t = lua.create_table()?;
-                    hooks.set(event.as_str(), t.clone())?;
-                    t
-                }
-            };
-            let len = event_hooks.len()?;
-            event_hooks.set(len + 1, func)?;
-            Ok(())
-        })?;
+        let register_hook_fn =
+            lua.create_function(move |lua, (event, func): (String, Function)| {
+                let hooks: Table = lua.globals().get("_hooks")?;
+                let event_hooks: Table = match hooks.get::<_, Option<Table>>(event.as_str())? {
+                    Some(t) => t,
+                    None => {
+                        let t = lua.create_table()?;
+                        hooks.set(event.as_str(), t.clone())?;
+                        t
+                    }
+                };
+                let len = event_hooks.len()?;
+                event_hooks.set(len + 1, func)?;
+                Ok(())
+            })?;
         lua.globals().set("registerHook", register_hook_fn)?;
 
         // 5. setPersona(name) function to set the active persona of the S-Term application
@@ -93,7 +95,8 @@ impl LuaEngine {
         let set_persona_fn = lua.create_function(move |_, name: String| {
             let state = app_handle_persona.state::<std::sync::Mutex<crate::AppState>>();
             let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-            let is_valid = crate::PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
+            let is_valid = crate::PERSONAS.iter().any(|p| p.0 == name)
+                || app.custom_personas.iter().any(|p| p.name == name);
             if is_valid {
                 app.active_persona = name.clone();
                 let _ = app_handle_persona.emit("persona_changed", name.clone());
@@ -110,9 +113,13 @@ impl LuaEngine {
             let state = app_handle_prompt.state::<std::sync::Mutex<crate::AppState>>();
             let (provider, active_persona, custom_personas) = {
                 let app = state.lock().unwrap_or_else(|e| e.into_inner());
-                (app.provider.clone(), app.active_persona.clone(), app.custom_personas.clone())
+                (
+                    app.provider.clone(),
+                    app.active_persona.clone(),
+                    app.custom_personas.clone(),
+                )
             };
-            
+
             let system_prompt = crate::PERSONAS
                 .iter()
                 .find(|p| p.0 == active_persona)
@@ -124,11 +131,13 @@ impl LuaEngine {
                         .map(|p| p.prompt.clone())
                         .unwrap_or_else(|| "You are a helpful assistant.".to_string())
                 });
-            
+
             let response = tauri::async_runtime::block_on(async move {
-                provider.chat_with_image(&prompt, &system_prompt, None, None).await
+                provider
+                    .chat_with_image(&prompt, &system_prompt, None, None)
+                    .await
             });
-            
+
             match response {
                 Ok(res) => Ok(res),
                 Err(e) => Ok(format!("Error: {}", e)),
@@ -140,17 +149,24 @@ impl LuaEngine {
     }
 
     pub fn run_script(&self, code: &str) -> Result<(), String> {
-        self.lua.load(code).exec()
+        self.lua
+            .load(code)
+            .exec()
             .map_err(|e| format!("Lua execution error: {}", e))
     }
 
     pub fn call_command(&self, name: &str, args: &str) -> Result<Option<String>, String> {
-        let commands: Table = self.lua.globals().get("_commands")
+        let commands: Table = self
+            .lua
+            .globals()
+            .get("_commands")
             .map_err(|e| format!("Failed to get _commands: {}", e))?;
         if commands.contains_key(name).unwrap_or(false) {
-            let func: Function = commands.get(name)
+            let func: Function = commands
+                .get(name)
                 .map_err(|e| format!("Failed to get command function: {}", e))?;
-            let res: Value = func.call(args)
+            let res: Value = func
+                .call(args)
                 .map_err(|e| format!("Error executing command callback '{}': {}", name, e))?;
             match res {
                 Value::String(s) => Ok(Some(s.to_str().unwrap_or("").to_string())),
@@ -171,16 +187,22 @@ impl LuaEngine {
     }
 
     pub fn trigger_hook(&self, event: &str, mut data: String) -> Result<String, String> {
-        let hooks: Table = self.lua.globals().get("_hooks")
+        let hooks: Table = self
+            .lua
+            .globals()
+            .get("_hooks")
             .map_err(|e| format!("Failed to get _hooks: {}", e))?;
         if hooks.contains_key(event).unwrap_or(false) {
-            let event_hooks: Table = hooks.get(event)
+            let event_hooks: Table = hooks
+                .get(event)
                 .map_err(|e| format!("Failed to get hooks for event: {}", e))?;
             let len = event_hooks.len().unwrap_or(0);
             for i in 1..=len {
-                let func: Function = event_hooks.get(i)
+                let func: Function = event_hooks
+                    .get(i)
                     .map_err(|e| format!("Failed to get hook function at index {}: {}", i, e))?;
-                let res: Value = func.call(data.clone())
+                let res: Value = func
+                    .call(data.clone())
                     .map_err(|e| format!("Error calling hook '{}': {}", event, e))?;
                 if let Value::String(s) = res {
                     data = s.to_str().unwrap_or("").to_string();
@@ -214,20 +236,26 @@ impl LuaEngine {
         formula: &str,
     ) -> Result<String, String> {
         let globals = self.lua.globals();
-        let assemble_fn: Function = globals.get("assemble_prompt_via_lua")
-            .map_err(|e| format!("Failed to find assemble_prompt_via_lua function in Lua: {}", e))?;
-        
-        let res: String = assemble_fn.call((
-            persona.to_string(),
-            task.to_string(),
-            context.to_string(),
-            tone.to_string(),
-            constraints.to_string(),
-            format.to_string(),
-            examples.to_string(),
-            formula.to_string(),
-        )).map_err(|e| format!("Error executing assemble_prompt_via_lua: {}", e))?;
-        
+        let assemble_fn: Function = globals.get("assemble_prompt_via_lua").map_err(|e| {
+            format!(
+                "Failed to find assemble_prompt_via_lua function in Lua: {}",
+                e
+            )
+        })?;
+
+        let res: String = assemble_fn
+            .call((
+                persona.to_string(),
+                task.to_string(),
+                context.to_string(),
+                tone.to_string(),
+                constraints.to_string(),
+                format.to_string(),
+                examples.to_string(),
+                formula.to_string(),
+            ))
+            .map_err(|e| format!("Error executing assemble_prompt_via_lua: {}", e))?;
+
         Ok(res)
     }
 
@@ -251,4 +279,3 @@ impl LuaEngine {
         Ok(())
     }
 }
-

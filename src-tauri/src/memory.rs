@@ -21,11 +21,12 @@ pub struct MemoryDB {
 impl MemoryDB {
     pub fn init<P: AsRef<Path>>(dir: P) -> Result<Self, String> {
         let dir_ref = dir.as_ref();
-        fs::create_dir_all(dir_ref).map_err(|e| format!("Failed to create memory directory: {}", e))?;
-        
+        fs::create_dir_all(dir_ref)
+            .map_err(|e| format!("Failed to create memory directory: {}", e))?;
+
         let file_path = dir_ref.join("chat_history.json");
         let mut records = Vec::new();
-        
+
         if file_path.exists() {
             if let Ok(data) = fs::read_to_string(&file_path) {
                 if let Ok(loaded) = serde_json::from_str::<Vec<MemoryRecord>>(&data) {
@@ -47,8 +48,11 @@ impl MemoryDB {
         embedding: Vec<f32>,
         metadata: HashMap<String, String>,
     ) -> Result<(), String> {
-        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
-        
+        let mut records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+
         // Remove existing record if ID matches
         records.retain(|r| r.id != id);
 
@@ -62,7 +66,7 @@ impl MemoryDB {
         // Save to file
         let serialized = serde_json::to_string_pretty(&*records)
             .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
-        
+
         fs::write(&self.file_path, serialized)
             .map_err(|e| format!("Failed to write memory database file: {}", e))?;
 
@@ -70,12 +74,18 @@ impl MemoryDB {
     }
 
     pub fn list_all(&self) -> Result<Vec<MemoryRecord>, String> {
-        let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
         Ok(records.clone())
     }
 
     pub fn delete_record(&self, id: &str) -> Result<(), String> {
-        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let mut records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
         let before = records.len();
         records.retain(|r| r.id != id);
         if records.len() == before {
@@ -89,11 +99,18 @@ impl MemoryDB {
     }
 
     pub fn set_pinned(&self, id: &str, pinned: bool) -> Result<(), String> {
-        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
-        let record = records.iter_mut().find(|r| r.id == id)
+        let mut records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+        let record = records
+            .iter_mut()
+            .find(|r| r.id == id)
             .ok_or_else(|| format!("Record '{}' not found", id))?;
         if pinned {
-            record.metadata.insert("pinned".to_string(), "true".to_string());
+            record
+                .metadata
+                .insert("pinned".to_string(), "true".to_string());
         } else {
             record.metadata.remove("pinned");
         }
@@ -113,12 +130,21 @@ impl MemoryDB {
     }
 
     pub fn count_by_namespace(&self, namespace: &str) -> Result<usize, String> {
-        let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
-        Ok(records.iter().filter(|r| r.metadata.get("namespace").map(|v| v.as_str()) == Some(namespace)).count())
+        let records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+        Ok(records
+            .iter()
+            .filter(|r| r.metadata.get("namespace").map(|v| v.as_str()) == Some(namespace))
+            .count())
     }
 
     pub fn delete_by_namespace(&self, namespace: &str) -> Result<usize, String> {
-        let mut records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
+        let mut records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
         let before = records.len();
         records.retain(|r| r.metadata.get("namespace").map(|v| v.as_str()) != Some(namespace));
         let removed = before - records.len();
@@ -131,9 +157,16 @@ impl MemoryDB {
         Ok(removed)
     }
 
-    pub fn search(&self, query_embedding: &[f32], limit: usize) -> Result<Vec<MemoryRecord>, String> {
-        let records = self.records.lock().map_err(|_| "Failed to lock memory DB")?;
-        
+    pub fn search(
+        &self,
+        query_embedding: &[f32],
+        limit: usize,
+    ) -> Result<Vec<MemoryRecord>, String> {
+        let records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+
         if records.is_empty() || query_embedding.is_empty() {
             return Ok(Vec::new());
         }
@@ -167,21 +200,21 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 0.0;
     }
-    
+
     let mut dot_product = 0.0;
     let mut norm_a = 0.0;
     let mut norm_b = 0.0;
-    
+
     for i in 0..a.len() {
         dot_product += a[i] * b[i];
         norm_a += a[i] * a[i];
         norm_b += b[i] * b[i];
     }
-    
+
     if norm_a == 0.0 || norm_b == 0.0 {
         return 0.0;
     }
-    
+
     dot_product / (norm_a.sqrt() * norm_b.sqrt())
 }
 
@@ -218,14 +251,16 @@ mod tests {
             "hello world".to_string(),
             vec![1.0, 0.0, 0.0],
             metadata.clone(),
-        ).unwrap();
+        )
+        .unwrap();
 
         db.store_message(
             "id2".to_string(),
             "cyberpunk hacking".to_string(),
             vec![0.0, 1.0, 0.0],
             metadata.clone(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Search closest to [1.0, 0.1, 0.0] -> should be "hello world"
         let results = db.search(&[1.0, 0.1, 0.0], 1).unwrap();

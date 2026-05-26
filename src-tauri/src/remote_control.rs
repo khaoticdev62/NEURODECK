@@ -1,4 +1,4 @@
-use std::net::{UdpSocket, SocketAddr};
+use std::net::{SocketAddr, UdpSocket};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -7,8 +7,7 @@ use std::sync::{
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
-        ConnectInfo,
+        ConnectInfo, State,
     },
     response::{Html, IntoResponse},
     routing::get,
@@ -527,8 +526,13 @@ async fn ws_handler(
     addr_opt: Option<ConnectInfo<SocketAddr>>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
-    let ip = addr_opt.map(|ConnectInfo(addr)| addr.ip()).unwrap_or_else(|| "127.0.0.1".parse().unwrap());
-    println!("[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}", ip);
+    let ip = addr_opt
+        .map(|ConnectInfo(addr)| addr.ip())
+        .unwrap_or_else(|| "127.0.0.1".parse().unwrap());
+    println!(
+        "[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}",
+        ip
+    );
 
     // Lockout check
     {
@@ -539,7 +543,8 @@ async fn ws_handler(
                 return (
                     axum::http::StatusCode::FORBIDDEN,
                     "Lockout: Too many failed connection attempts.",
-                ).into_response();
+                )
+                    .into_response();
             }
         }
     }
@@ -548,7 +553,10 @@ async fn ws_handler(
 }
 
 async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state: WsAppState) {
-    println!("[DEBUG remote_control] handle_ws_connection: upgraded connection for {:?}", ip);
+    println!(
+        "[DEBUG remote_control] handle_ws_connection: upgraded connection for {:?}",
+        ip
+    );
     let (mut sender, mut receiver) = socket.split();
 
     // Send hello
@@ -563,7 +571,10 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
     let mut authed = false;
     println!("[DEBUG remote_control] handle_ws_connection: waiting for auth message...");
     while let Some(res) = receiver.next().await {
-        println!("[DEBUG remote_control] handle_ws_connection: received frame: {:?}", res);
+        println!(
+            "[DEBUG remote_control] handle_ws_connection: received frame: {:?}",
+            res
+        );
         match res {
             Ok(Message::Text(txt)) => {
                 if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
@@ -590,7 +601,10 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     if !authed {
         {
-            let mut attempts_map = ws_state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+            let mut attempts_map = ws_state
+                .ip_attempts
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let entry = attempts_map.entry(ip).or_insert(0);
             *entry += 1;
         }
@@ -606,15 +620,16 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     // Reset attempts on success
     {
-        let mut attempts_map = ws_state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        let mut attempts_map = ws_state
+            .ip_attempts
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         attempts_map.remove(&ip);
     }
 
     ws_state.connected.fetch_add(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state
-        .app_handle
-        .emit("remote_client_connected", count);
+    let _ = ws_state.app_handle.emit("remote_client_connected", count);
 
     let mut rx = ws_state.broadcast_tx.subscribe();
     let app_handle = ws_state.app_handle.clone();
@@ -625,7 +640,10 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
     let mut fwd_task = tokio::spawn(async move {
         println!("[DEBUG remote_control] fwd_task: started");
         while let Ok(msg) = rx.recv().await {
-            println!("[DEBUG remote_control] fwd_task: forwarding message to client: {}", msg);
+            println!(
+                "[DEBUG remote_control] fwd_task: forwarding message to client: {}",
+                msg
+            );
             if sender.send(Message::Text(msg)).await.is_err() {
                 println!("[DEBUG remote_control] fwd_task: send failed");
                 break;
@@ -684,10 +702,7 @@ async fn dispatch_remote_command(msg: &Value, app: &AppHandle) {
         Some("pty") => {
             let id = msg["id"].as_str().unwrap_or("main_pty_session").to_string();
             if let Some(data) = msg["data"].as_str() {
-                let _ = app.emit(
-                    "remote_pty",
-                    json!({"id": id, "data": data}).to_string(),
-                );
+                let _ = app.emit("remote_pty", json!({"id": id, "data": data}).to_string());
             }
         }
         Some("navigate") => {
@@ -783,7 +798,10 @@ pub async fn start_remote_server(
 
     // Wire PTY output forwarding
     {
-        let mut rtx = pty_state.remote_tx.lock().unwrap_or_else(|e| e.into_inner());
+        let mut rtx = pty_state
+            .remote_tx
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         *rtx = Some(broadcast_tx.clone());
     }
 
@@ -818,7 +836,10 @@ pub async fn stop_remote_server(
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
     }
-    let mut rtx = pty_state.remote_tx.lock().unwrap_or_else(|e| e.into_inner());
+    let mut rtx = pty_state
+        .remote_tx
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     *rtx = None;
     Ok(())
 }

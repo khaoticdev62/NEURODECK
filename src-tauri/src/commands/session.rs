@@ -1,10 +1,10 @@
+use crate::storage::{load_session, Session};
 use crate::*;
+use chrono::Utc;
+use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
-use chrono::Utc;
-use futures_util::StreamExt;
-use crate::storage::{Session, load_session};
 
 lazy_static::lazy_static! {
     static ref RE_FILE_REF: regex::Regex = regex::Regex::new(r"@file:([^\s]+)").unwrap();
@@ -30,23 +30,31 @@ pub fn export_session_markdown(id: String) -> Result<String, String> {
     if id.contains("..") || id.contains('/') || id.contains('\\') {
         return Err("Invalid session ID".into());
     }
-    let path = user_config_dir().join("sessions").join(format!("{}.json", id));
+    let path = user_config_dir()
+        .join("sessions")
+        .join(format!("{}.json", id));
     if !path.exists() {
         return Err(format!("Session {} does not exist on disk", id));
     }
     let session = storage::load_session(&path)?;
 
     let export_dir = user_config_dir().join("exports");
-    std::fs::create_dir_all(&export_dir).map_err(|e| format!("Failed to create exports directory: {}", e))?;
+    std::fs::create_dir_all(&export_dir)
+        .map_err(|e| format!("Failed to create exports directory: {}", e))?;
 
     let file_path = export_dir.join(format!("{}.md", id));
     storage::export_to_markdown(&file_path, &session)?;
-    
-    Ok(format!("Session exported to {}", file_path.to_string_lossy()))
+
+    Ok(format!(
+        "Session exported to {}",
+        file_path.to_string_lossy()
+    ))
 }
 
 #[tauri::command]
-pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<String, serde_json::Value>, String> {
+pub fn load_latest_session(
+    state: State<'_, Mutex<AppState>>,
+) -> Result<HashMap<String, serde_json::Value>, String> {
     let read_dir = std::fs::read_dir(user_config_dir().join("sessions"))
         .map_err(|e| format!("Error reading sessions dir: {}", e))?;
 
@@ -56,7 +64,10 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
     for entry in read_dir.flatten() {
         let path = entry.path();
         if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
-            let name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
+            let name = path
+                .file_name()
+                .map(|f| f.to_string_lossy().into_owned())
+                .unwrap_or_default();
             if latest_name.is_empty() || name > latest_name {
                 latest_name = name;
                 latest_file = path;
@@ -69,16 +80,20 @@ pub fn load_latest_session(state: State<'_, Mutex<AppState>>) -> Result<HashMap<
     }
 
     let session = load_session(latest_file)?;
-    
+
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.messages = session.messages.clone();
     app.session_id = session.id.clone();
 
     let mut result = HashMap::new();
-    result.insert("session_id".to_string(), serde_json::Value::String(session.id));
+    result.insert(
+        "session_id".to_string(),
+        serde_json::Value::String(session.id),
+    );
     result.insert(
         "messages".to_string(),
-        serde_json::to_value(&session.messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
+        serde_json::to_value(&session.messages)
+            .unwrap_or_else(|_| serde_json::Value::Array(vec![])),
     );
 
     Ok(result)
@@ -91,8 +106,8 @@ pub fn list_sessions() -> Result<Vec<String>, String> {
     if !dir.exists() {
         return Ok(sessions);
     }
-    let read_dir = std::fs::read_dir(dir)
-        .map_err(|e| format!("Error reading sessions dir: {}", e))?;
+    let read_dir =
+        std::fs::read_dir(dir).map_err(|e| format!("Error reading sessions dir: {}", e))?;
 
     for entry in read_dir.flatten() {
         let path = entry.path();
@@ -102,34 +117,43 @@ pub fn list_sessions() -> Result<Vec<String>, String> {
             }
         }
     }
-    
+
     // Sort reverse to have latest sessions first
     sessions.sort_by(|a, b| b.cmp(a));
     Ok(sessions)
 }
 
 #[tauri::command]
-pub fn load_session_by_id(id: String, state: State<'_, Mutex<AppState>>) -> Result<HashMap<String, serde_json::Value>, String> {
+pub fn load_session_by_id(
+    id: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<HashMap<String, serde_json::Value>, String> {
     if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
         return Err(format!("Invalid session ID: {}", id));
     }
 
-    let file_path = user_config_dir().join("sessions").join(format!("{}.json", id));
+    let file_path = user_config_dir()
+        .join("sessions")
+        .join(format!("{}.json", id));
     if !file_path.exists() {
         return Err(format!("Session {} does not exist", id));
     }
 
     let session = load_session(file_path)?;
-    
+
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.messages = session.messages.clone();
     app.session_id = session.id.clone();
 
     let mut result = HashMap::new();
-    result.insert("session_id".to_string(), serde_json::Value::String(session.id));
+    result.insert(
+        "session_id".to_string(),
+        serde_json::Value::String(session.id),
+    );
     result.insert(
         "messages".to_string(),
-        serde_json::to_value(&session.messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
+        serde_json::to_value(&session.messages)
+            .unwrap_or_else(|_| serde_json::Value::Array(vec![])),
     );
 
     Ok(result)
@@ -141,7 +165,9 @@ pub fn delete_session(id: String) -> Result<(), String> {
         return Err(format!("Invalid session ID: {}", id));
     }
 
-    let file_path = user_config_dir().join("sessions").join(format!("{}.json", id));
+    let file_path = user_config_dir()
+        .join("sessions")
+        .join(format!("{}.json", id));
     if file_path.exists() {
         std::fs::remove_file(file_path)
             .map_err(|e| format!("Failed to delete session file: {}", e))?;
@@ -160,9 +186,20 @@ pub fn new_session(state: State<'_, Mutex<AppState>>) -> String {
 
 #[tauri::command]
 pub async fn speak_text(text: String) -> Result<(), String> {
-    let sanitized: String = text.chars()
-        .filter(|c| (c.is_alphanumeric() || *c == ' ' || *c == '.' || *c == ',' || *c == '?' || *c == '!')
-            && *c != '\'' && *c != '"' && *c != '`' && *c != '$' && *c != ';' && *c != '|' && *c != '&' && *c != '<' && *c != '>')
+    let sanitized: String = text
+        .chars()
+        .filter(|c| {
+            (c.is_alphanumeric() || *c == ' ' || *c == '.' || *c == ',' || *c == '?' || *c == '!')
+                && *c != '\''
+                && *c != '"'
+                && *c != '`'
+                && *c != '$'
+                && *c != ';'
+                && *c != '|'
+                && *c != '&'
+                && *c != '<'
+                && *c != '>'
+        })
         .collect();
 
     if sanitized.is_empty() {
@@ -243,15 +280,18 @@ pub async fn send_command(
         };
         match result {
             Ok(Some(out)) => {
-                let response = format!("System: Command '{}' executed successfully.\nOutput:\n{}", cmd_name, out);
+                let response = format!(
+                    "System: Command '{}' executed successfully.\nOutput:\n{}",
+                    cmd_name, out
+                );
                 let _ = app_handle.emit("stream_chunk", response);
                 let _ = app_handle.emit("stream_done", ());
-                
+
                 // Trigger onAIResponse hook
                 let lua_state = app_handle.state::<LuaState>();
                 let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
                 let _ = engine.trigger_hook("onAIResponse", out);
-                
+
                 return Ok(());
             }
             Ok(None) => {
@@ -288,7 +328,7 @@ pub async fn send_command(
         let msg_id = format!("{}-{}", session_id, messages_len);
         let mut metadata = HashMap::new();
         metadata.insert("role".to_string(), "user".to_string());
-        
+
         let db_clone = db.clone();
         let prompt_clone = prompt.clone();
         let provider_clone = provider.clone();
@@ -315,8 +355,16 @@ pub async fn send_command(
     // Add game context if available
     let (game_name, game_id, game_running) = detect_game();
     if !game_name.is_empty() {
-        let state_label = if game_running { "currently playing" } else { "recently played" };
-        let id_note = if game_id.is_empty() { String::new() } else { format!(" (Steam AppID: {})", game_id) };
+        let state_label = if game_running {
+            "currently playing"
+        } else {
+            "recently played"
+        };
+        let id_note = if game_id.is_empty() {
+            String::new()
+        } else {
+            format!(" (Steam AppID: {})", game_id)
+        };
         let (_, notes) = get_game_details(&game_id, &game_name);
         system_prompt.push_str(&format!(
             "\n\n[Active SteamOS Game Context]\nThe user is {} the game: {}{}.\nSteam Deck Optimization Notes: {}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.",
@@ -349,13 +397,16 @@ pub async fn send_command(
     if let Some(caps) = RE_FILE_REF.captures(&prompt) {
         let file_path_str = caps.get(1).ok_or("Failed to extract file path")?.as_str();
         let target_path = std::path::Path::new(file_path_str);
-        
+
         let canonical_path = match target_path.canonicalize() {
             Ok(p) => p,
             Err(e) => {
                 let _ = app_handle.emit(
                     "stream_chunk",
-                    format!("System: Error reading file {}: Failed to canonicalize path: {}\n", file_path_str, e),
+                    format!(
+                        "System: Error reading file {}: Failed to canonicalize path: {}\n",
+                        file_path_str, e
+                    ),
                 );
                 let _ = app_handle.emit("stream_done", ());
                 return Ok(());
@@ -386,7 +437,10 @@ pub async fn send_command(
         if !is_safe {
             let _ = app_handle.emit(
                 "stream_chunk",
-                format!("System: Access denied: file '{}' is outside permitted directories.\n", file_path_str),
+                format!(
+                    "System: Access denied: file '{}' is outside permitted directories.\n",
+                    file_path_str
+                ),
             );
             let _ = app_handle.emit("stream_done", ());
             return Ok(());
@@ -395,7 +449,11 @@ pub async fn send_command(
         if let Ok(content) = std::fs::read_to_string(&canonical_path) {
             let _ = app_handle.emit(
                 "stream_chunk",
-                format!("System: Read file {} ({} bytes)\n", file_path_str, content.len()),
+                format!(
+                    "System: Read file {} ({} bytes)\n",
+                    file_path_str,
+                    content.len()
+                ),
             );
             full_prompt = format!(
                 "User mentioned file: {}\n```\n{}\n```\n\n{}",
@@ -404,7 +462,10 @@ pub async fn send_command(
         } else {
             let _ = app_handle.emit(
                 "stream_chunk",
-                format!("System: Error reading file {}: File not found or unreadable\n", file_path_str),
+                format!(
+                    "System: Error reading file {}: File not found or unreadable\n",
+                    file_path_str
+                ),
             );
             let _ = app_handle.emit("stream_done", ());
             return Ok(());
@@ -415,7 +476,8 @@ pub async fn send_command(
     if prompt.trim().starts_with("/persona") {
         let parts: Vec<&str> = prompt.split_whitespace().collect();
         if parts.len() == 1 {
-            let mut available_personas: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+            let mut available_personas: Vec<String> =
+                PERSONAS.iter().map(|p| p.0.clone()).collect();
             let (active, custom_list) = {
                 let app = state.lock().unwrap_or_else(|e| e.into_inner());
                 (app.active_persona.clone(), app.custom_personas.clone())
@@ -434,7 +496,8 @@ pub async fn send_command(
         } else {
             let name = parts[1..].join(" ");
             let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-            let is_valid = PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
+            let is_valid = PERSONAS.iter().any(|p| p.0 == name)
+                || app.custom_personas.iter().any(|p| p.name == name);
             if is_valid {
                 app.active_persona = name.clone();
                 let _ = app_handle.emit("persona_changed", name.clone());
@@ -454,65 +517,81 @@ pub async fn send_command(
     // Check for roundtable discussion command
     if prompt.trim().starts_with("/discuss") {
         if let Some(caps) = RE_DISCUSS.captures(prompt.trim()) {
-            let p1 = caps.get(1).ok_or("Participant 1 missing")?.as_str().to_string();
-            let p2 = caps.get(2).ok_or("Participant 2 missing")?.as_str().to_string();
+            let p1 = caps
+                .get(1)
+                .ok_or("Participant 1 missing")?
+                .as_str()
+                .to_string();
+            let p2 = caps
+                .get(2)
+                .ok_or("Participant 2 missing")?
+                .as_str()
+                .to_string();
             let topic = caps.get(3).ok_or("Topic missing")?.as_str().to_string();
 
             let (has_p1, has_p2, custom_list) = {
                 let app = state.lock().unwrap_or_else(|e| e.into_inner());
-                let has1 = PERSONAS.iter().any(|p| p.0 == p1) || app.custom_personas.iter().any(|p| p.name == p1);
-                let has2 = PERSONAS.iter().any(|p| p.0 == p2) || app.custom_personas.iter().any(|p| p.name == p2);
+                let has1 = PERSONAS.iter().any(|p| p.0 == p1)
+                    || app.custom_personas.iter().any(|p| p.name == p1);
+                let has2 = PERSONAS.iter().any(|p| p.0 == p2)
+                    || app.custom_personas.iter().any(|p| p.name == p2);
                 (has1, has2, app.custom_personas.clone())
             };
-    
-                if !has_p1 || !has_p2 {
-                    let mut available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
-                    for cp in custom_list {
-                        available.push(cp.name);
-                    }
-                    let error_msg = format!(
+
+            if !has_p1 || !has_p2 {
+                let mut available: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+                for cp in custom_list {
+                    available.push(cp.name);
+                }
+                let error_msg = format!(
                         "System: Invalid personas specified. Available personas: {}\nUsage: `/discuss <persona1> <persona2> <topic>`",
                         available.join(", ")
                     );
-                    let _ = app_handle.emit("stream_chunk", error_msg);
-                    let _ = app_handle.emit("stream_done", ());
-                    return Ok(());
-                }
-    
-                let mut discussion_history = format!(
+                let _ = app_handle.emit("stream_chunk", error_msg);
+                let _ = app_handle.emit("stream_done", ());
+                return Ok(());
+            }
+
+            let mut discussion_history = format!(
                     "We are holding a roundtable discussion/debate on the topic: \"{}\".\nParticipants: {} and {}.\n\n",
                     topic, p1, p2
                 );
-    
-                let mut current_speaker = p1.clone();
-                let mut next_speaker = p2.clone();
-    
-                let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
-                {
-                    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-                    app.cancel_stream_tx = Some(cancel_tx);
-                }
-    
-                for turn in 1..=4 {
-                    if cancel_rx.try_recv().is_ok() {
-                        let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
-                        let _ = app_handle.emit("stream_done", ());
-                        {
-                            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-                            app.cancel_stream_tx = None;
-                        }
-                        return Ok(());
+
+            let mut current_speaker = p1.clone();
+            let mut next_speaker = p2.clone();
+
+            let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+            {
+                let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+                app.cancel_stream_tx = Some(cancel_tx);
+            }
+
+            for turn in 1..=4 {
+                if cancel_rx.try_recv().is_ok() {
+                    let _ = app_handle.emit(
+                        "stream_chunk",
+                        "\n\n[Generation Cancelled by User]".to_string(),
+                    );
+                    let _ = app_handle.emit("stream_done", ());
+                    {
+                        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+                        app.cancel_stream_tx = None;
                     }
-    
-                    let speaker_system_prompt = PERSONAS
-                        .iter()
-                        .find(|p| p.0 == current_speaker)
-                        .map(|p| p.1.clone())
-                        .or_else(|| {
-                            let app = state.lock().unwrap_or_else(|e| e.into_inner());
-                            app.custom_personas.iter().find(|p| p.name == current_speaker).map(|p| p.prompt.clone())
-                        })
-                        .unwrap_or_default();
+                    return Ok(());
+                }
+
+                let speaker_system_prompt = PERSONAS
+                    .iter()
+                    .find(|p| p.0 == current_speaker)
+                    .map(|p| p.1.clone())
+                    .or_else(|| {
+                        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+                        app.custom_personas
+                            .iter()
+                            .find(|p| p.name == current_speaker)
+                            .map(|p| p.prompt.clone())
+                    })
+                    .unwrap_or_default();
 
                 let full_system_prompt = format!(
                     "{} You are participating in a roundtable debate. Keep your responses short (under 100 words), engaging, and directly address the previous points. You are speaking as {}.",
@@ -531,7 +610,10 @@ pub async fn send_command(
                 let mut stream = provider.stream_response(&prompt_for_turn, &full_system_prompt);
                 while let Some(chunk_res) = stream.next().await {
                     if cancel_rx.try_recv().is_ok() {
-                        let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
+                        let _ = app_handle.emit(
+                            "stream_chunk",
+                            "\n\n[Generation Cancelled by User]".to_string(),
+                        );
                         let _ = app_handle.emit("stream_done", ());
                         {
                             let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -545,7 +627,10 @@ pub async fn send_command(
                             let _ = app_handle.emit("stream_chunk", chunk);
                         }
                         Err(e) => {
-                            let _ = app_handle.emit("stream_error", format!("Error in debate turn {}: {}", turn, e));
+                            let _ = app_handle.emit(
+                                "stream_error",
+                                format!("Error in debate turn {}: {}", turn, e),
+                            );
                             {
                                 let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
                                 app.cancel_stream_tx = None;
@@ -559,7 +644,8 @@ pub async fn send_command(
 
                 {
                     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-                    app.messages.push(format!("{}: {}", current_speaker, turn_response));
+                    app.messages
+                        .push(format!("{}: {}", current_speaker, turn_response));
                 }
 
                 std::mem::swap(&mut current_speaker, &mut next_speaker);
@@ -599,7 +685,7 @@ pub async fn send_command(
         help_msg.push_str("- Plugins placed in the plugins/ folder are auto-loaded\n");
         help_msg.push_str("- Lua globals: print(), execute(cmd), registerCommand(name, fn), registerHook(event, fn)\n");
         help_msg.push_str("- Events: onMessage, onAIResponse\n");
-        
+
         let _ = app_handle.emit("stream_chunk", help_msg);
         let _ = app_handle.emit("stream_done", ());
         return Ok(());
@@ -623,7 +709,15 @@ pub async fn send_command(
             full_prompt.clone()
         };
 
-        match provider.chat_with_image(&vision_prompt, &system_prompt, Some(b64.as_str()), Some(mime_str)).await {
+        match provider
+            .chat_with_image(
+                &vision_prompt,
+                &system_prompt,
+                Some(b64.as_str()),
+                Some(mime_str),
+            )
+            .await
+        {
             Ok(response) => {
                 full_response = response.clone();
                 let _ = app_handle.emit("stream_chunk", response);
@@ -643,7 +737,10 @@ pub async fn send_command(
 
         while let Some(chunk_res) = stream.next().await {
             if cancel_rx.try_recv().is_ok() {
-                let _ = app_handle.emit("stream_chunk", "\n\n[Generation Cancelled by User]".to_string());
+                let _ = app_handle.emit(
+                    "stream_chunk",
+                    "\n\n[Generation Cancelled by User]".to_string(),
+                );
                 break;
             }
             match chunk_res {
@@ -680,7 +777,7 @@ pub async fn send_command(
         let msg_id = format!("{}-ai-{}", session_id, messages_len + 1);
         let mut metadata = HashMap::new();
         metadata.insert("role".to_string(), "ai".to_string());
-        
+
         let db_clone = db.clone();
         let resp_clone = full_response.clone();
         let provider_clone = provider.clone();

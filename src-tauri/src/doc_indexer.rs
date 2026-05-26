@@ -1,8 +1,8 @@
+use crate::memory::MemoryRecord;
+use crate::AppState;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::State;
-use crate::AppState;
-use crate::memory::MemoryRecord;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DocSearchResult {
@@ -72,7 +72,11 @@ pub async fn search_docs_semantic(
         let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
         let na: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
         let nb: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-        if na == 0.0 || nb == 0.0 { 0.0 } else { dot / (na * nb) }
+        if na == 0.0 || nb == 0.0 {
+            0.0
+        } else {
+            dot / (na * nb)
+        }
     }
 
     let mut scored: Vec<(f32, MemoryRecord)> = docs_records

@@ -6,7 +6,8 @@ with open(path, "r", encoding="utf-8") as f:
 # Let's search for innerHTML or appendChild on 'app' or document.getElementById('app')
 # or check if there is an index.html in a public directory or somewhere else.
 import re
-matches = [m.start() for m in re.finditer(r'app', content, re.IGNORECASE)]
+
+matches = [m.start() for m in re.finditer(r"app", content, re.IGNORECASE)]
 print(f"Total occurrences of 'app': {len(matches)}")
 
 # Let's find all document.getElementById or querySelector in the first 1000 lines

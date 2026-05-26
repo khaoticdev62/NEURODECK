@@ -1,17 +1,17 @@
+use chrono::Utc;
+use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
+use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
+use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::fs::File;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, AsyncBufReadExt};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
-use serde::{Deserialize, Serialize};
-use rand::Rng;
-use chrono::Utc;
-use mdns_sd::{ServiceDaemon, ServiceInfo, ServiceEvent};
-use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Peer {
@@ -128,7 +128,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
         }
 
         let _ = self.app_handle.emit("transfer_incoming", transfer);
-        
+
         (accept_rx.await).unwrap_or_default()
     }
 
@@ -139,18 +139,23 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
         file_type: i32,
         chunk: &[u8],
     ) -> Result<(), String> {
-        let download_dir = self.app_handle.path().download_dir()
+        let download_dir = self
+            .app_handle
+            .path()
+            .download_dir()
             .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
             .join("neurodeck_transfers");
 
         let dest_path = download_dir.join(relative_path);
 
         if file_type == 1 {
-            tokio::fs::create_dir_all(&dest_path).await
+            tokio::fs::create_dir_all(&dest_path)
+                .await
                 .map_err(|e| format!("Failed to create directory: {}", e))?;
         } else if file_type == 0 {
             if let Some(parent) = dest_path.parent() {
-                tokio::fs::create_dir_all(parent).await
+                tokio::fs::create_dir_all(parent)
+                    .await
                     .map_err(|e| format!("Failed to create parent directory: {}", e))?;
             }
             use tokio::fs::OpenOptions;
@@ -158,10 +163,12 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
                 .create(true)
                 .write(true)
                 .append(true)
-                .open(&dest_path).await
+                .open(&dest_path)
+                .await
                 .map_err(|e| format!("Failed to open file: {}", e))?;
 
-            file.write_all(chunk).await
+            file.write_all(chunk)
+                .await
                 .map_err(|e| format!("Failed to write chunk: {}", e))?;
         }
         Ok(())
@@ -177,7 +184,9 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
                 }
             }
         }
-        let _ = self.app_handle.emit("transfer_progress", (transfer_id.to_string(), progress));
+        let _ = self
+            .app_handle
+            .emit("transfer_progress", (transfer_id.to_string(), progress));
     }
 
     fn on_transfer_completed(&self, transfer_id: &str) {
@@ -187,7 +196,9 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
                 t.status = "Completed".to_string();
             }
         }
-        let _ = self.app_handle.emit("transfer_completed", transfer_id.to_string());
+        let _ = self
+            .app_handle
+            .emit("transfer_completed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
         let path_to_clean = {
@@ -208,7 +219,9 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
                 t.status = "Failed".to_string();
             }
         }
-        let _ = self.app_handle.emit("transfer_failed", transfer_id.to_string());
+        let _ = self
+            .app_handle
+            .emit("transfer_failed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
         let path_to_clean = {
@@ -301,7 +314,8 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
         while let Ok(event) = receiver.recv() {
             match event {
                 ServiceEvent::ServiceResolved(info) => {
-                    let peer_group = info.get_property_val_str("group_code")
+                    let peer_group = info
+                        .get_property_val_str("group_code")
                         .unwrap_or("DEFAULT")
                         .to_string();
 
@@ -311,11 +325,14 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     };
 
                     if peer_group == local_group {
-                        let ip = info.get_addresses().iter()
+                        let ip = info
+                            .get_addresses()
+                            .iter()
                             .find(|ip| ip.is_ipv4())
                             .map(|ip| ip.to_string())
                             .unwrap_or_else(|| {
-                                info.get_addresses().iter()
+                                info.get_addresses()
+                                    .iter()
                                     .next()
                                     .map(|ip| ip.to_string())
                                     .unwrap_or_default()
@@ -325,10 +342,12 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                             continue;
                         }
 
-                        let hostname = info.get_property_val_str("hostname")
+                        let hostname = info
+                            .get_property_val_str("hostname")
                             .unwrap_or_else(|| info.get_fullname())
                             .to_string();
-                        let os = info.get_property_val_str("os")
+                        let os = info
+                            .get_property_val_str("os")
                             .unwrap_or("unknown")
                             .to_string();
 
@@ -364,7 +383,9 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     let mut peer_list = Vec::new();
                     {
                         let mut s = state_browser.lock().unwrap_or_else(|e| e.into_inner());
-                        let to_remove: Vec<String> = s.peers.iter()
+                        let to_remove: Vec<String> = s
+                            .peers
+                            .iter()
                             .filter(|(_, (p, _))| name.contains(&p.hostname) && !p.is_warpinator)
                             .map(|(ip, _)| ip.clone())
                             .collect();
@@ -402,7 +423,8 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
         while let Ok(event) = receiver.recv() {
             match event {
                 ServiceEvent::ServiceResolved(info) => {
-                    let peer_group = info.get_property_val_str("group")
+                    let peer_group = info
+                        .get_property_val_str("group")
                         .unwrap_or("warpinator")
                         .to_string();
 
@@ -412,11 +434,14 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     };
 
                     if peer_group.to_lowercase() == local_group.to_lowercase() {
-                        let ip = info.get_addresses().iter()
+                        let ip = info
+                            .get_addresses()
+                            .iter()
                             .find(|ip| ip.is_ipv4())
                             .map(|ip| ip.to_string())
                             .unwrap_or_else(|| {
-                                info.get_addresses().iter()
+                                info.get_addresses()
+                                    .iter()
                                     .next()
                                     .map(|ip| ip.to_string())
                                     .unwrap_or_default()
@@ -426,7 +451,8 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                             continue;
                         }
 
-                        let hostname = info.get_property_val_str("machine")
+                        let hostname = info
+                            .get_property_val_str("machine")
                             .or_else(|| info.get_property_val_str("hostname"))
                             .unwrap_or_else(|| info.get_fullname())
                             .to_string();
@@ -437,7 +463,8 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                             let mut changed = false;
                             let mut peer_list = Vec::new();
                             {
-                                let mut s = state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
+                                let mut s =
+                                    state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
                                 let peer = Peer {
                                     ip: ip.clone(),
                                     hostname: hostname.clone(),
@@ -465,7 +492,9 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     let mut peer_list = Vec::new();
                     {
                         let mut s = state_browser_warp.lock().unwrap_or_else(|e| e.into_inner());
-                        let to_remove: Vec<String> = s.peers.iter()
+                        let to_remove: Vec<String> = s
+                            .peers
+                            .iter()
                             .filter(|(_, (p, _))| name.contains(&p.hostname) && p.is_warpinator)
                             .map(|(ip, _)| ip.clone())
                             .collect();
@@ -492,10 +521,13 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
         app_handle: app_handle.clone(),
         state: state.clone(),
     });
-    
+
     let callbacks_clone = callbacks.clone();
     tauri::async_runtime::spawn(async move {
-        if let Err(e) = neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, 42000).await {
+        if let Err(e) =
+            neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, 42000)
+                .await
+        {
             println!("Failed to start Warpinator service: {}", e);
         }
     });
@@ -518,7 +550,14 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                     let app_handle = app_handle_server.clone();
                     let state = state_server.clone();
                     tauri::async_runtime::spawn(async move {
-                        if let Err(e) = handle_incoming_connection(socket, addr.ip().to_string(), app_handle, state).await {
+                        if let Err(e) = handle_incoming_connection(
+                            socket,
+                            addr.ip().to_string(),
+                            app_handle,
+                            state,
+                        )
+                        .await
+                        {
                             println!("Error handling incoming connection from {}: {}", addr, e);
                         }
                     });
@@ -541,14 +580,14 @@ async fn handle_incoming_connection(
     let mut reader = BufReader::new(rx);
     let mut line = String::new();
     reader.read_line(&mut line).await?;
-    
+
     let header: MetadataHeader = serde_json::from_str(line.trim())?;
-    
+
     let transfer_id = header.id.clone();
     let filename = header.filename.clone();
     let size = header.size;
     let peer_name = header.sender.clone();
-    
+
     let transfer = FileTransfer {
         id: transfer_id.clone(),
         filename: filename.clone(),
@@ -559,24 +598,26 @@ async fn handle_incoming_connection(
         peer_ip: peer_ip.clone(),
         peer_name: peer_name.clone(),
     };
-    
+
     let (accept_tx, accept_rx) = oneshot::channel::<bool>();
-    
+
     {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.transfers.insert(transfer_id.clone(), transfer.clone());
         s.accept_txs.insert(transfer_id.clone(), accept_tx);
     }
-    
+
     let _ = app_handle.emit("transfer_incoming", transfer.clone());
-    
+
     let accepted: bool = (accept_rx.await).unwrap_or_default();
-    
+
     if !accepted {
-        let resp = ResponseHeader { status: "rejected".to_string() };
+        let resp = ResponseHeader {
+            status: "rejected".to_string(),
+        };
         let resp_bytes = format!("{}\n", serde_json::to_string(&resp)?);
         tx.write_all(resp_bytes.as_bytes()).await?;
-        
+
         {
             let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(t) = s.transfers.get_mut(&transfer_id) {
@@ -587,11 +628,13 @@ async fn handle_incoming_connection(
         let _ = app_handle.emit("transfer_failed", transfer_id);
         return Ok(());
     }
-    
-    let resp = ResponseHeader { status: "accepted".to_string() };
+
+    let resp = ResponseHeader {
+        status: "accepted".to_string(),
+    };
     let resp_bytes = format!("{}\n", serde_json::to_string(&resp)?);
     tx.write_all(resp_bytes.as_bytes()).await?;
-    
+
     // Register cancellation oneshot
     let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
@@ -603,29 +646,31 @@ async fn handle_incoming_connection(
         s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
     let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
-    
-    let download_dir = app_handle.path().download_dir()
+
+    let download_dir = app_handle
+        .path()
+        .download_dir()
         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
         .join("neurodeck_transfers");
-    
+
     tokio::fs::create_dir_all(&download_dir).await?;
-    
+
     let clean_filename = std::path::Path::new(&filename)
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "unnamed_transfer".to_string());
-        
+
     let file_path = download_dir.join(&clean_filename);
     let mut file = File::create(&file_path).await?;
-    
+
     let mut buffer = [0u8; 16384];
     let mut bytes_written = 0u64;
     let mut last_emit = Instant::now();
     let mut transfer_success = true;
-    
+
     while bytes_written < size {
         let to_read = std::cmp::min((size - bytes_written) as usize, buffer.len());
-        
+
         let n = tokio::select! {
             n_res = reader.read(&mut buffer[..to_read]) => {
                 match n_res {
@@ -641,19 +686,19 @@ async fn handle_incoming_connection(
                 break;
             }
         };
-        
+
         if n == 0 {
             transfer_success = false;
             break;
         }
-        
+
         if (file.write_all(&buffer[..n]).await).is_err() {
             transfer_success = false;
             break;
         }
-        
+
         bytes_written += n as u64;
-        
+
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_written == size {
             {
                 let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -665,13 +710,13 @@ async fn handle_incoming_connection(
             last_emit = Instant::now();
         }
     }
-    
+
     // Clean up cancellation handle
     {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.cancel_txs.remove(&transfer_id);
     }
-    
+
     if !transfer_success || bytes_written < size {
         // Cancelled or aborted transfer cleanup
         {
@@ -686,7 +731,7 @@ async fn handle_incoming_connection(
         let _ = tokio::fs::remove_file(&file_path).await;
         return Ok(());
     }
-    
+
     // Completed successfully
     {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -695,25 +740,26 @@ async fn handle_incoming_connection(
             t.progress = size;
         }
     }
-    
+
     // Auto-extract tar folders
     if clean_filename.ends_with(".tar") {
         let tar_path = file_path.clone();
         let folder_name = clean_filename.trim_end_matches(".tar").to_string();
         let dest_dir = download_dir.join(&folder_name);
         let _ = tokio::fs::create_dir_all(&dest_dir).await;
-        
+
         // Spawn blocking extraction
         let extract_res = tokio::task::spawn_blocking(move || {
             let file = std::fs::File::open(&tar_path)?;
             let mut ar = tar::Archive::new(file);
             ar.unpack(&dest_dir)?;
             Ok::<(), std::io::Error>(())
-        }).await;
-        
+        })
+        .await;
+
         // Always delete the temporary tar file
         let _ = tokio::fs::remove_file(&file_path).await;
-        
+
         if let Err(e) = extract_res {
             println!("Failed to extract folder: {:?}", e);
             {
@@ -726,7 +772,7 @@ async fn handle_incoming_connection(
             return Ok(());
         }
     }
-    
+
     let _ = app_handle.emit("transfer_completed", transfer_id);
     Ok(())
 }
@@ -743,7 +789,7 @@ async fn run_outgoing_transfer(
     is_temp: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let peer_addr = format!("{}:18338", peer_ip);
-    
+
     let socket = match TcpStream::connect(&peer_addr).await {
         Ok(s) => s,
         Err(e) => {
@@ -760,7 +806,7 @@ async fn run_outgoing_transfer(
             return Err(e.into());
         }
     };
-    
+
     let (rx, mut tx) = socket.into_split();
     let hostname = get_hostname();
     let header = MetadataHeader {
@@ -771,13 +817,13 @@ async fn run_outgoing_transfer(
     };
     let header_bytes = format!("{}\n", serde_json::to_string(&header)?);
     tx.write_all(header_bytes.as_bytes()).await?;
-    
+
     let mut reader = BufReader::new(rx);
     let mut line = String::new();
     reader.read_line(&mut line).await?;
-    
+
     let resp: ResponseHeader = serde_json::from_str(line.trim())?;
-    
+
     if resp.status != "accepted" {
         {
             let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -791,7 +837,7 @@ async fn run_outgoing_transfer(
         }
         return Ok(());
     }
-    
+
     // Register cancellation oneshot
     let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
     {
@@ -802,13 +848,13 @@ async fn run_outgoing_transfer(
         s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
     let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
-    
+
     let mut file = File::open(&file_path).await?;
     let mut buffer = [0u8; 16384];
     let mut bytes_sent = 0u64;
     let mut last_emit = Instant::now();
     let mut transfer_success = true;
-    
+
     loop {
         let n = tokio::select! {
             n_res = file.read(&mut buffer) => {
@@ -825,18 +871,18 @@ async fn run_outgoing_transfer(
                 break;
             }
         };
-        
+
         if n == 0 {
             break;
         }
-        
+
         if (tx.write_all(&buffer[..n]).await).is_err() {
             transfer_success = false;
             break;
         }
-        
+
         bytes_sent += n as u64;
-        
+
         if last_emit.elapsed() > std::time::Duration::from_millis(150) || bytes_sent == size {
             {
                 let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -848,18 +894,18 @@ async fn run_outgoing_transfer(
             last_emit = Instant::now();
         }
     }
-    
+
     // Clean up cancellation handle
     {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.cancel_txs.remove(&transfer_id);
     }
-    
+
     // Clean up temp file
     if is_temp {
         let _ = tokio::fs::remove_file(&file_path).await;
     }
-    
+
     if !transfer_success || bytes_sent < size {
         {
             let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -872,7 +918,7 @@ async fn run_outgoing_transfer(
         let _ = app_handle.emit("transfer_failed", transfer_id);
         return Ok(());
     }
-    
+
     {
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(t) = s.transfers.get_mut(&transfer_id) {
@@ -881,7 +927,7 @@ async fn run_outgoing_transfer(
         }
     }
     let _ = app_handle.emit("transfer_completed", transfer_id);
-    
+
     Ok(())
 }
 
@@ -896,24 +942,29 @@ pub async fn start_file_transfer(
     if !path.exists() {
         return Err("Provided path does not exist".to_string());
     }
-    
+
     let mut is_temp = false;
     let mut final_path = path.clone();
-    let mut filename = path.file_name()
+    let mut filename = path
+        .file_name()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown_file".to_string());
-        
+
     if path.is_dir() {
         is_temp = true;
         filename = format!("{}.tar", filename);
-        
+
         let tar_dir = std::env::temp_dir().join("neurodeck_tar");
         let _ = std::fs::create_dir_all(&tar_dir);
-        let tar_path = tar_dir.join(format!("dir-{}-{}.tar", Utc::now().timestamp(), rand::thread_rng().gen_range(1000..9999)));
-        
+        let tar_path = tar_dir.join(format!(
+            "dir-{}-{}.tar",
+            Utc::now().timestamp(),
+            rand::thread_rng().gen_range(1000..9999)
+        ));
+
         let dir_to_tar = path.clone();
         let tar_path_clone = tar_path.clone();
-        
+
         // Spawn blocking compression
         tokio::task::spawn_blocking(move || {
             let file = std::fs::File::create(&tar_path_clone)?;
@@ -921,12 +972,14 @@ pub async fn start_file_transfer(
             ar.append_dir_all(".", &dir_to_tar)?;
             ar.finish()?;
             Ok::<(), std::io::Error>(())
-        }).await.map_err(|e| format!("Archiver thread failed: {}", e))?
-          .map_err(|e| format!("Failed to create tar archive: {}", e))?;
-          
+        })
+        .await
+        .map_err(|e| format!("Archiver thread failed: {}", e))?
+        .map_err(|e| format!("Failed to create tar archive: {}", e))?;
+
         final_path = tar_path;
     }
-    
+
     let size = match tokio::fs::metadata(&final_path).await {
         Ok(meta) => meta.len(),
         Err(e) => {
@@ -936,9 +989,13 @@ pub async fn start_file_transfer(
             return Err(format!("Failed to read file size: {}", e));
         }
     };
-    
-    let transfer_id = format!("{}-{}", Utc::now().timestamp(), rand::thread_rng().gen_range(1000..9999));
-    
+
+    let transfer_id = format!(
+        "{}-{}",
+        Utc::now().timestamp(),
+        rand::thread_rng().gen_range(1000..9999)
+    );
+
     let transfer = FileTransfer {
         id: transfer_id.clone(),
         filename: filename.clone(),
@@ -949,21 +1006,29 @@ pub async fn start_file_transfer(
         peer_ip: peer_ip.clone(),
         peer_name: "".to_string(),
     };
-    
+
     let (is_warpinator, peer_port) = {
         let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-        s.peers.get(&peer_ip).map(|(p, _)| (p.is_warpinator, p.port)).unwrap_or((false, 18338))
+        s.peers
+            .get(&peer_ip)
+            .map(|(p, _)| (p.is_warpinator, p.port))
+            .unwrap_or((false, 18338))
     };
 
     {
         let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-        let peer_name = s.peers.get(&peer_ip).map(|(p, _)| p.hostname.clone()).unwrap_or_else(|| "Unknown Peer".to_string());
+        let peer_name = s
+            .peers
+            .get(&peer_ip)
+            .map(|(p, _)| p.hostname.clone())
+            .unwrap_or_else(|| "Unknown Peer".to_string());
         let mut t = transfer.clone();
         t.peer_name = peer_name;
         s.transfers.insert(transfer_id.clone(), t);
-        s.outgoing_paths.insert(transfer_id.clone(), final_path.clone());
+        s.outgoing_paths
+            .insert(transfer_id.clone(), final_path.clone());
     }
-    
+
     if is_warpinator {
         let callbacks = Arc::new(STermWarpinatorCallbacks {
             app_handle: app_handle.clone(),
@@ -972,7 +1037,7 @@ pub async fn start_file_transfer(
         let peer_ip_clone = peer_ip.clone();
         let transfer_id_clone = transfer_id.clone();
         let filename_clone = filename.clone();
-        
+
         tauri::async_runtime::spawn(async move {
             if let Err(e) = neurodeck_infrastructure::warpinator::send_file_to_warpinator_peer(
                 &peer_ip_clone,
@@ -981,7 +1046,9 @@ pub async fn start_file_transfer(
                 &filename_clone,
                 size,
                 callbacks.clone(),
-            ).await {
+            )
+            .await
+            {
                 println!("Failed to send file to Warpinator peer: {:?}", e);
                 callbacks.on_transfer_failed(&transfer_id_clone);
             }
@@ -990,14 +1057,25 @@ pub async fn start_file_transfer(
         let state_inner = state.0.clone();
         let app_handle_inner = app_handle.clone();
         let transfer_id_clone = transfer_id.clone();
-        
+
         tauri::async_runtime::spawn(async move {
-            if let Err(e) = run_outgoing_transfer(transfer_id_clone, peer_ip, final_path, filename, size, app_handle_inner, state_inner, is_temp).await {
+            if let Err(e) = run_outgoing_transfer(
+                transfer_id_clone,
+                peer_ip,
+                final_path,
+                filename,
+                size,
+                app_handle_inner,
+                state_inner,
+                is_temp,
+            )
+            .await
+            {
                 println!("Outgoing transfer error: {}", e);
             }
         });
     }
-    
+
     Ok(transfer_id)
 }
 
@@ -1017,17 +1095,13 @@ pub fn respond_to_transfer(
 }
 
 #[tauri::command]
-pub fn get_discovered_peers(
-    state: State<'_, SharedTransferState>,
-) -> Vec<Peer> {
+pub fn get_discovered_peers(state: State<'_, SharedTransferState>) -> Vec<Peer> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.peers.values().map(|(p, _)| p.clone()).collect()
 }
 
 #[tauri::command]
-pub fn get_active_transfers(
-    state: State<'_, SharedTransferState>,
-) -> Vec<FileTransfer> {
+pub fn get_active_transfers(state: State<'_, SharedTransferState>) -> Vec<FileTransfer> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.transfers.values().cloned().collect()
 }
@@ -1056,28 +1130,25 @@ pub fn cancel_transfer(
 }
 
 #[tauri::command]
-pub fn set_group_code(
-    code: String,
-    state: State<'_, SharedTransferState>,
-) -> Result<(), String> {
+pub fn set_group_code(code: String, state: State<'_, SharedTransferState>) -> Result<(), String> {
     let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.group_code = code.trim().to_string();
-    
+
     if let Some(ref mdns) = s.mdns_daemon {
         let local_hostname = get_hostname();
         let instance_name = format!("neurodeck-{}", local_hostname);
         let service_type = "_neurodeck._tcp.local.";
         let host_name = format!("{}.local.", local_hostname.replace(" ", "-"));
         let port = 18338;
-        
+
         let fullname = format!("{}.{}", instance_name, service_type);
         let _ = mdns.unregister(&fullname);
-        
+
         let mut properties = HashMap::new();
         properties.insert("hostname".to_string(), local_hostname.clone());
         properties.insert("os".to_string(), get_os_name());
         properties.insert("group_code".to_string(), s.group_code.clone());
-        
+
         if let Ok(service_info) = ServiceInfo::new(
             service_type,
             &instance_name,
@@ -1090,15 +1161,13 @@ pub fn set_group_code(
             println!("mDNS Peer re-registered with group code: {}", s.group_code);
         }
     }
-    
+
     s.peers.clear();
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_group_code(
-    state: State<'_, SharedTransferState>,
-) -> Result<String, String> {
+pub fn get_group_code(state: State<'_, SharedTransferState>) -> Result<String, String> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     Ok(s.group_code.clone())
 }

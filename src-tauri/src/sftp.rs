@@ -71,26 +71,33 @@ fn build_sftp_command(
     cmd
 }
 
-fn execute_sftp_commands(
-    mut cmd: std::process::Command,
-    commands: &str,
-) -> Result<String, String> {
+fn execute_sftp_commands(mut cmd: std::process::Command, commands: &str) -> Result<String, String> {
     cmd.stdin(Stdio::piped());
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
 
-    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn SFTP command: {}", e))?;
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn SFTP command: {}", e))?;
 
     {
         let stdin = child.stdin.as_mut().ok_or("Failed to open SFTP stdin")?;
-        stdin.write_all(commands.as_bytes()).map_err(|e| format!("Failed to write to SFTP stdin: {}", e))?;
+        stdin
+            .write_all(commands.as_bytes())
+            .map_err(|e| format!("Failed to write to SFTP stdin: {}", e))?;
     }
 
-    let output = child.wait_with_output().map_err(|e| format!("Failed to wait for SFTP: {}", e))?;
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("Failed to wait for SFTP: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-        return Err(format!("SFTP error (exit {}): {}", output.status.code().unwrap_or(-1), stderr));
+        return Err(format!(
+            "SFTP error (exit {}): {}",
+            output.status.code().unwrap_or(-1),
+            stderr
+        ));
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
@@ -170,12 +177,9 @@ pub async fn sftp_list_dir(
         );
         let sftp_cmds = format!("cd \"{}\"\nls -la\n", path);
         let output = execute_sftp_commands(cmd, &sftp_cmds)?;
-        
-        let entries = output
-            .lines()
-            .filter_map(parse_sftp_line)
-            .collect();
-            
+
+        let entries = output.lines().filter_map(parse_sftp_line).collect();
+
         Ok(entries)
     })
     .await

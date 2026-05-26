@@ -1,8 +1,8 @@
-use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncRead, AsyncWrite};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -42,11 +42,14 @@ where
     let mut len_bytes = [0u8; 4];
     socket.read_exact(&mut len_bytes).await?;
     let len = u32::from_be_bytes(len_bytes) as usize;
-    
+
     if len > 10 * 1024 * 1024 {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Payload too large"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Payload too large",
+        ));
     }
-    
+
     let mut buf = vec![0u8; len];
     socket.read_exact(&mut buf).await?;
     Ok(buf)
@@ -63,15 +66,16 @@ where
 }
 
 fn sanitize_tunnel_path(path_str: &str) -> Result<std::path::PathBuf, String> {
-    let base_dir = std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let base_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
     let target_path = std::path::Path::new(path_str);
-    
+
     let absolute_path = if target_path.is_absolute() {
         target_path.to_path_buf()
     } else {
         base_dir.join(target_path)
     };
-    
+
     let canonical_path = match absolute_path.canonicalize() {
         Ok(p) => p,
         Err(_) => {
@@ -88,10 +92,11 @@ fn sanitize_tunnel_path(path_str: &str) -> Result<std::path::PathBuf, String> {
             }
         }
     };
-    
-    let canonical_base = base_dir.canonicalize()
+
+    let canonical_base = base_dir
+        .canonicalize()
         .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
-        
+
     if canonical_path.starts_with(&canonical_base) {
         Ok(canonical_path)
     } else {
@@ -125,7 +130,9 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
                         output: String::from_utf8_lossy(&combined).into_owned(),
                     }
                 }
-                Err(e) => TunnelResponse::Error { message: format!("Execution failed: {}", e) },
+                Err(e) => TunnelResponse::Error {
+                    message: format!("Execution failed: {}", e),
+                },
             }
         }
         TunnelRequest::WriteFile { path, content } => {
@@ -135,12 +142,18 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
             };
             if let Some(parent) = safe_path.parent() {
                 if let Err(e) = std::fs::create_dir_all(parent) {
-                    return TunnelResponse::Error { message: format!("Failed to create directories: {}", e) };
+                    return TunnelResponse::Error {
+                        message: format!("Failed to create directories: {}", e),
+                    };
                 }
             }
             match std::fs::write(&safe_path, content) {
-                Ok(_) => TunnelResponse::Success { output: format!("File successfully written to {}", safe_path.display()) },
-                Err(e) => TunnelResponse::Error { message: format!("Failed to write file: {}", e) },
+                Ok(_) => TunnelResponse::Success {
+                    output: format!("File successfully written to {}", safe_path.display()),
+                },
+                Err(e) => TunnelResponse::Error {
+                    message: format!("Failed to write file: {}", e),
+                },
             }
         }
         TunnelRequest::ReadDir { path } => {
@@ -156,9 +169,13 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
                         let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
                         items.push(format!("{}{}", name, if is_dir { "/" } else { "" }));
                     }
-                    TunnelResponse::Success { output: items.join("\n") }
+                    TunnelResponse::Success {
+                        output: items.join("\n"),
+                    }
                 }
-                Err(e) => TunnelResponse::Error { message: format!("Failed to read directory: {}", e) },
+                Err(e) => TunnelResponse::Error {
+                    message: format!("Failed to read directory: {}", e),
+                },
             }
         }
     }
@@ -275,12 +292,12 @@ pub async fn send_tunnel_request(request: String) -> Result<String, String> {
     let token = {
         let guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
         guard.clone()
-    }.or_else(|| {
-        neurodeck_infrastructure::secrets::get_tunnel_token().ok()
-    }).ok_or_else(|| "Tunnel token not found. Is the tunnel server running?".to_string())?;
+    }
+    .or_else(|| neurodeck_infrastructure::secrets::get_tunnel_token().ok())
+    .ok_or_else(|| "Tunnel token not found. Is the tunnel server running?".to_string())?;
 
-    let req_obj: TunnelRequest = serde_json::from_str(&request)
-        .map_err(|e| format!("Invalid request payload: {}", e))?;
+    let req_obj: TunnelRequest =
+        serde_json::from_str(&request).map_err(|e| format!("Invalid request payload: {}", e))?;
 
     let envelope = TunnelEnvelope {
         token,
@@ -290,13 +307,16 @@ pub async fn send_tunnel_request(request: String) -> Result<String, String> {
     let envelope_str = serde_json::to_string(&envelope)
         .map_err(|e| format!("Failed to serialize envelope: {}", e))?;
 
-    let mut stream = TcpStream::connect("127.0.0.1:18337").await
+    let mut stream = TcpStream::connect("127.0.0.1:18337")
+        .await
         .map_err(|e| format!("Failed to connect to tunnel server: {}", e))?;
 
-    write_framed(&mut stream, envelope_str.as_bytes()).await
+    write_framed(&mut stream, envelope_str.as_bytes())
+        .await
         .map_err(|e| format!("Failed to send request: {}", e))?;
 
-    let buf = read_framed(&mut stream).await
+    let buf = read_framed(&mut stream)
+        .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
     Ok(String::from_utf8_lossy(&buf).to_string())
@@ -325,7 +345,8 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
         *token_guard = Some(token.clone());
     }
 
-    let listener = TcpListener::bind("127.0.0.1:18337").await
+    let listener = TcpListener::bind("127.0.0.1:18337")
+        .await
         .map_err(|e| format!("Failed to bind tunnel server to 18337: {}", e))?;
     println!("Tunnel server running on 127.0.0.1:18337");
 
@@ -338,22 +359,40 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
                         let (_, response) = match serde_json::from_str::<TunnelEnvelope>(&req_str) {
                             Ok(envelope) => {
                                 let expected = {
-                                    let guard = TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
+                                    let guard =
+                                        TUNNEL_TOKEN.lock().unwrap_or_else(|e| e.into_inner());
                                     guard.clone()
                                 };
                                 if let Some(expected_token) = expected {
                                     if envelope.token == expected_token {
                                         (true, handle_tunnel_request(envelope.request).await)
                                     } else {
-                                        (false, TunnelResponse::Error { message: "Authentication failed".to_string() })
+                                        (
+                                            false,
+                                            TunnelResponse::Error {
+                                                message: "Authentication failed".to_string(),
+                                            },
+                                        )
                                     }
                                 } else {
-                                    (false, TunnelResponse::Error { message: "Authentication token not initialized".to_string() })
+                                    (
+                                        false,
+                                        TunnelResponse::Error {
+                                            message: "Authentication token not initialized"
+                                                .to_string(),
+                                        },
+                                    )
                                 }
                             }
-                            Err(e) => {
-                                (false, TunnelResponse::Error { message: format!("Authentication or request format failed: {}", e) })
-                            }
+                            Err(e) => (
+                                false,
+                                TunnelResponse::Error {
+                                    message: format!(
+                                        "Authentication or request format failed: {}",
+                                        e
+                                    ),
+                                },
+                            ),
                         };
                         if let Ok(resp_bytes) = serde_json::to_vec(&response) {
                             let _ = write_framed(&mut socket, &resp_bytes).await;
@@ -367,4 +406,3 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
         }
     }
 }
-

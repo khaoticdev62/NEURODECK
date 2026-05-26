@@ -6,8 +6,8 @@
 //! Supported binary names tried in order: user-supplied path, then
 //! `whisper-cli`, `whisper`, `main` (the whisper.cpp default build output).
 
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 /// Attempt to transcribe `wav_path` using the whisper.cpp CLI.
 ///
@@ -143,7 +143,7 @@ fn strip_ansi(s: &str) -> String {
         if ch == '\x1b' {
             if chars.peek() == Some(&'[') {
                 chars.next(); // consume '['
-                // Skip until an ASCII letter (SGR terminator)
+                              // Skip until an ASCII letter (SGR terminator)
                 for c in chars.by_ref() {
                     if c.is_ascii_alphabetic() {
                         break;

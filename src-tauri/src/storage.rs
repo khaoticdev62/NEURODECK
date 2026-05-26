@@ -1,7 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use chrono::{DateTime, Utc};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Session {
@@ -12,31 +12,31 @@ pub struct Session {
 
 pub fn save_session<P: AsRef<Path>>(dir: P, session: &Session) -> Result<(), String> {
     let dir_ref = dir.as_ref();
-    fs::create_dir_all(dir_ref).map_err(|e| format!("Failed to create sessions directory: {}", e))?;
+    fs::create_dir_all(dir_ref)
+        .map_err(|e| format!("Failed to create sessions directory: {}", e))?;
 
     // Sanitize session ID to prevent directory traversal
-    if session.id.is_empty() 
-        || session.id.contains('/') 
-        || session.id.contains('\\') 
-        || session.id.contains("..") 
+    if session.id.is_empty()
+        || session.id.contains('/')
+        || session.id.contains('\\')
+        || session.id.contains("..")
     {
         return Err(format!("Invalid session ID: {}", session.id));
     }
 
     let file_path = dir_ref.join(format!("{}.json", session.id));
-    let serialized = serde_json::to_string_pretty(session)
-        .map_err(|e| format!("Serialization error: {}", e))?;
+    let serialized =
+        serde_json::to_string_pretty(session).map_err(|e| format!("Serialization error: {}", e))?;
 
-    fs::write(file_path, serialized)
-        .map_err(|e| format!("Failed to write session file: {}", e))?;
+    fs::write(file_path, serialized).map_err(|e| format!("Failed to write session file: {}", e))?;
 
     Ok(())
 }
 
 pub fn load_session<P: AsRef<Path>>(path: P) -> Result<Session, String> {
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read session file: {}", e))?;
-    
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read session file: {}", e))?;
+
     let session = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse session JSON: {}", e))?;
 
@@ -46,7 +46,8 @@ pub fn load_session<P: AsRef<Path>>(path: P) -> Result<Session, String> {
 #[allow(dead_code)]
 pub fn export_to_markdown<P: AsRef<Path>>(path: P, session: &Session) -> Result<(), String> {
     if let Some(parent) = path.as_ref().parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("Failed to create export directory: {}", e))?;
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create export directory: {}", e))?;
     }
 
     let mut markdown = format!("# Session: {}\n\n", session.id);
@@ -56,8 +57,7 @@ pub fn export_to_markdown<P: AsRef<Path>>(path: P, session: &Session) -> Result<
         markdown.push_str(&format!("{}\n\n", msg));
     }
 
-    fs::write(path, markdown)
-        .map_err(|e| format!("Failed to write markdown export: {}", e))?;
+    fs::write(path, markdown).map_err(|e| format!("Failed to write markdown export: {}", e))?;
 
     Ok(())
 }
@@ -136,4 +136,3 @@ mod tests {
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }
-

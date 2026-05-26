@@ -1,5 +1,5 @@
-use suppaftp::{FtpStream, FtpError};
 use std::io::Read;
+use suppaftp::{FtpError, FtpStream};
 use tauri::{AppHandle, Emitter};
 
 const UPLOAD_EMIT_INTERVAL: u64 = 65_536; // emit every 64 KB
@@ -41,11 +41,14 @@ impl<R: Read> Read for ProgressReader<R> {
             let elapsed = self.bytes_read - self.last_emitted;
             if elapsed >= UPLOAD_EMIT_INTERVAL || self.bytes_read >= self.total {
                 self.last_emitted = self.bytes_read;
-                let _ = self.app.emit("ftp_upload_progress", FtpUploadProgress {
-                    local_path: self.local_path.clone(),
-                    bytes_sent: self.bytes_read,
-                    total_bytes: self.total,
-                });
+                let _ = self.app.emit(
+                    "ftp_upload_progress",
+                    FtpUploadProgress {
+                        local_path: self.local_path.clone(),
+                        bytes_sent: self.bytes_read,
+                        total_bytes: self.total,
+                    },
+                );
             }
         }
         Ok(n)
@@ -84,7 +87,11 @@ fn parse_list_line(line: &str) -> Option<FtpFileEntry> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() < 9 {
         let name = parts.last()?.to_string();
-        return Some(FtpFileEntry { name, is_dir: false, size: 0 });
+        return Some(FtpFileEntry {
+            name,
+            is_dir: false,
+            size: 0,
+        });
     }
     let perms = parts[0];
     let is_dir = perms.starts_with('d');
@@ -111,13 +118,14 @@ pub async fn ftp_download_file(
         stream.login(&user, &password).map_err(to_string_err)?;
 
         // Stream directly to disk — avoids loading the entire file into RAM.
-        stream.retr(&remote_path, |reader| {
-            let mut file = std::fs::File::create(&local_path)
-                .map_err(FtpError::ConnectionError)?;
-            std::io::copy(reader, &mut file)
-                .map_err(FtpError::ConnectionError)?;
-            Ok(())
-        }).map_err(to_string_err)?;
+        stream
+            .retr(&remote_path, |reader| {
+                let mut file =
+                    std::fs::File::create(&local_path).map_err(FtpError::ConnectionError)?;
+                std::io::copy(reader, &mut file).map_err(FtpError::ConnectionError)?;
+                Ok(())
+            })
+            .map_err(to_string_err)?;
 
         stream.quit().ok();
         Ok(())
@@ -152,7 +160,9 @@ pub async fn ftp_upload_file(
             app,
         };
 
-        stream.put_file(&remote_path, &mut progress_reader).map_err(to_string_err)?;
+        stream
+            .put_file(&remote_path, &mut progress_reader)
+            .map_err(to_string_err)?;
         stream.quit().ok();
         Ok(())
     })

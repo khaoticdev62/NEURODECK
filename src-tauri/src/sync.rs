@@ -1,17 +1,23 @@
-use crate::{config, storage, AppState};
 use crate::memory::MemoryRecord;
+use crate::{config, storage, AppState};
 use base64::Engine;
 use chrono::{DateTime, Utc};
-use ring::{aead, digest, rand};
 use ring::rand::SecureRandom;
+use ring::{aead, digest, rand};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::sync::Mutex;
 use tauri::{Emitter, State};
 
-fn sync_dir() -> std::path::PathBuf { crate::user_config_dir().join("data/sync") }
-fn status_file() -> std::path::PathBuf { crate::user_config_dir().join("data/sync/status.json") }
-fn session_dir() -> std::path::PathBuf { crate::user_config_dir().join("sessions") }
+fn sync_dir() -> std::path::PathBuf {
+    crate::user_config_dir().join("data/sync")
+}
+fn status_file() -> std::path::PathBuf {
+    crate::user_config_dir().join("data/sync/status.json")
+}
+fn session_dir() -> std::path::PathBuf {
+    crate::user_config_dir().join("sessions")
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncRecord {
@@ -96,7 +102,11 @@ pub fn configure_sync(
     app.config.sync.enabled = request.enabled;
     app.config.sync.sync_memory = request.sync_memory;
     app.config.sync.sync_sessions = request.sync_sessions;
-    app.config.sync.api_base_url = request.api_base_url.trim().trim_end_matches('/').to_string();
+    app.config.sync.api_base_url = request
+        .api_base_url
+        .trim()
+        .trim_end_matches('/')
+        .to_string();
     if app.config.sync.device_id.is_empty() {
         app.config.sync.device_id = uuid::Uuid::new_v4().to_string();
     }
@@ -156,7 +166,10 @@ pub async fn sync_now(
         .map_err(|e| persist_error(format!("Sync push failed: {}", e)))?;
 
     if !push_resp.status().is_success() {
-        return Err(persist_error(format!("Sync push failed with HTTP {}", push_resp.status())));
+        return Err(persist_error(format!(
+            "Sync push failed with HTTP {}",
+            push_resp.status()
+        )));
     }
 
     let pushed_records = push_resp
@@ -176,7 +189,10 @@ pub async fn sync_now(
         .map_err(|e| persist_error(format!("Sync pull failed: {}", e)))?;
 
     if !pull_resp.status().is_success() {
-        return Err(persist_error(format!("Sync pull failed with HTTP {}", pull_resp.status())));
+        return Err(persist_error(format!(
+            "Sync pull failed with HTTP {}",
+            pull_resp.status()
+        )));
     }
 
     let remote = pull_resp
@@ -185,7 +201,12 @@ pub async fn sync_now(
         .map_err(|e| persist_error(format!("Invalid sync pull response: {}", e)))?;
 
     let _ = app_handle.emit("sync_progress", "merging");
-    let merge = merge_remote_records(remote.records, &config.sync.device_id, mem_db.as_ref(), &token)?;
+    let merge = merge_remote_records(
+        remote.records,
+        &config.sync.device_id,
+        mem_db.as_ref(),
+        &token,
+    )?;
     let synced_at = Utc::now().to_rfc3339();
 
     {
@@ -231,7 +252,11 @@ fn collect_local_records(
                     record_type: "memory".to_string(),
                     payload_encrypted: encrypt_payload(token, &payload)?,
                     device_id: config.device_id.clone(),
-                    timestamp: memory.metadata.get("sync_updated_at").cloned().unwrap_or_else(|| now.clone()),
+                    timestamp: memory
+                        .metadata
+                        .get("sync_updated_at")
+                        .cloned()
+                        .unwrap_or_else(|| now.clone()),
                 });
             }
         }
@@ -279,14 +304,24 @@ fn merge_remote_records(
                 if let Some(db) = mem_db {
                     let mut incoming: MemoryRecord = serde_json::from_slice(&decrypted)
                         .map_err(|e| format!("Failed to parse synced memory record: {}", e))?;
-                    if let Some(existing) = db.list_all()?.into_iter().find(|r| r.id == incoming.id) {
+                    if let Some(existing) = db.list_all()?.into_iter().find(|r| r.id == incoming.id)
+                    {
                         if existing.content != incoming.content {
-                            incoming.metadata.insert("sync_conflict".to_string(), "true".to_string());
+                            incoming
+                                .metadata
+                                .insert("sync_conflict".to_string(), "true".to_string());
                             conflicts += 1;
                         }
                     }
-                    incoming.metadata.insert("sync_updated_at".to_string(), record.timestamp.clone());
-                    db.store_message(incoming.id, incoming.content, incoming.embedding, incoming.metadata)?;
+                    incoming
+                        .metadata
+                        .insert("sync_updated_at".to_string(), record.timestamp.clone());
+                    db.store_message(
+                        incoming.id,
+                        incoming.content,
+                        incoming.embedding,
+                        incoming.metadata,
+                    )?;
                     applied += 1;
                 }
             }
@@ -381,7 +416,11 @@ fn list_session_payloads() -> Result<Vec<SessionPayload>, String> {
 }
 
 fn save_remote_session(session: SessionPayload, timestamp: &str) -> Result<(), String> {
-    if session.id.is_empty() || session.id.contains('/') || session.id.contains('\\') || session.id.contains("..") {
+    if session.id.is_empty()
+        || session.id.contains('/')
+        || session.id.contains('\\')
+        || session.id.contains("..")
+    {
         return Err(format!("Invalid synced session ID: {}", session.id));
     }
 

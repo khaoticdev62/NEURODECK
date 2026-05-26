@@ -1,50 +1,50 @@
+mod autocomplete;
+mod canvas_collab;
+pub mod commands;
+mod computer_use;
 mod config;
-mod llm;
-pub mod memory;
-mod storage;
-mod lua;
-mod pty_manager;
-mod tunnel;
-mod transfer;
+mod doc_indexer;
 mod ftp;
-mod sftp;
+mod llm;
+mod lua;
+mod mcp;
+pub mod memory;
 mod ollama_mgr;
 mod plugin_mgr;
-mod computer_use;
-mod mcp;
-mod whisper;
-mod canvas_collab;
+mod pty_manager;
 mod remote_control;
-mod autocomplete;
-mod doc_indexer;
-mod torrent;
-pub mod sync;
-pub mod commands;
 mod self_heal;
+mod sftp;
+mod storage;
+pub mod sync;
+mod torrent;
+mod transfer;
+mod tunnel;
+mod whisper;
 use crate::commands::*;
 
+use chrono::Utc;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Mutex};
-use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tauri::Manager;
-use chrono::Utc;
 
-use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider, HuggingFaceProvider};
+use crate::llm::{GeminiProvider, HuggingFaceProvider, LlmProvider, OllamaProvider};
 use crate::memory::MemoryDB;
 
 #[derive(Clone, serde::Serialize)]
 pub(crate) struct Theme {
-    name: String,
-    color: String,
-    pulse: Vec<String>,
-    background: String,
-    foreground: String,
-    accent: String,
-    response: String,
-    warning: String,
-    error: String,
+    pub name: String,
+    pub color: String,
+    pub pulse: Vec<String>,
+    pub background: String,
+    pub foreground: String,
+    pub accent: String,
+    pub response: String,
+    pub warning: String,
+    pub error: String,
 }
 
 lazy_static::lazy_static! {
@@ -301,8 +301,8 @@ pub(crate) fn parse_acf(path: &Path) -> Option<(String, String, u64)> {
             continue;
         }
         match parts[1] {
-            "name"       => name       = parts[3].to_string(),
-            "appid"      => app_id     = parts[3].to_string(),
+            "name" => name = parts[3].to_string(),
+            "appid" => app_id = parts[3].to_string(),
             "LastPlayed" => last_played = parts[3].parse().unwrap_or(0),
             _ => {}
         }
@@ -361,8 +361,8 @@ pub(crate) fn detect_game() -> (String, String, bool) {
     }
 
     // 2. Fall back: find the appmanifest with the highest LastPlayed timestamp
-    let mut best_name  = String::new();
-    let mut best_id    = String::new();
+    let mut best_name = String::new();
+    let mut best_id = String::new();
     let mut best_ts: u64 = 0;
 
     for lib in steam_library_paths() {
@@ -372,15 +372,19 @@ pub(crate) fn detect_game() -> (String, String, bool) {
         };
         for entry in entries.flatten() {
             let path = entry.path();
-            let fname = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let fname = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if !fname.starts_with("appmanifest_") || !fname.ends_with(".acf") {
                 continue;
             }
             if let Some((name, id, ts)) = parse_acf(&path) {
                 if ts > best_ts {
-                    best_ts   = ts;
+                    best_ts = ts;
                     best_name = name;
-                    best_id   = id;
+                    best_id = id;
                 }
             }
         }
@@ -411,68 +415,20 @@ pub(crate) fn get_game_details(app_id: &str, name: &str) -> (String, String) {
     }
 }
 
-
-
-
-
-
-
-
-
 // ──────────────────────────────────────────────
 // P17 — Whisper.cpp offline STT
 // ──────────────────────────────────────────────
 
-
-
 // Transcribe `record.wav` (the last recorded audio) using whisper.cpp.
 // Falls back gracefully with an error if not configured.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // =============================================================================
 // MEMORY UI COMMANDS
 // =============================================================================
 
-
-
-
-
-
-
 // =============================================================================
 // AUTONOMOUS CODING AGENT
 // =============================================================================
-
-
-
-
 
 // Call the LLM with the agent system prompt, collect the full response, and
 // return the raw text. The frontend parses the JSON step from the text.
@@ -541,7 +497,10 @@ pub(crate) fn user_config_dir() -> PathBuf {
             return PathBuf::from(appdata).join("neurodeck");
         }
         if let Ok(up) = std::env::var("USERPROFILE") {
-            return PathBuf::from(up).join("AppData").join("Roaming").join("neurodeck");
+            return PathBuf::from(up)
+                .join("AppData")
+                .join("Roaming")
+                .join("neurodeck");
         }
     }
     #[cfg(target_os = "macos")]
@@ -589,7 +548,10 @@ pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmPro
             None,
             agent.base_url.clone(),
         )),
-        _ => Arc::new(OllamaProvider::new(agent.model.clone(), agent.base_url.clone())),
+        _ => Arc::new(OllamaProvider::new(
+            agent.model.clone(),
+            agent.base_url.clone(),
+        )),
     }
 }
 
@@ -665,30 +627,11 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
     ]
 }
 
-
-
-
-
-
-
-
-
-
-
-
 // ============================================================
 // CATEGORY B COMMANDS
 // ============================================================
 
 // Explains a generated prompt in Just Plain English (JPE).
-
-
-
-
-
-
-
-
 
 // AI-powered terminal autocomplete.
 // Takes the current terminal input buffer and returns suggested completion suffix.
@@ -703,25 +646,13 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 // P18: Local Document RAG
 // ──────────────────────────────────────────────────────────────────────────
 
-
-
-
-
-
 // ──────────────────────────────────────────────────────────────────────────
 // P20: Game Session Notes
 // ──────────────────────────────────────────────────────────────────────────
 
-
-
-
-
 // ──────────────────────────────────────────────────────────────────────────
 // MCP Server commands
 // ──────────────────────────────────────────────────────────────────────────
-
-
-
 
 // ──────────────────────────────────────────────
 // §4 Production — Profile & Theme Persistence
@@ -749,11 +680,7 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 // Broadcast the current canvas state to the connected peer.
 
-
-
-
 // Stop the active collab session.
-
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -798,14 +725,21 @@ pub fn run() {
         } else {
             config.llm.ollama_model.clone()
         };
-        config.llm.active_agent_id = config.llm.agents.iter()
+        config.llm.active_agent_id = config
+            .llm
+            .agents
+            .iter()
             .find(|a| a.provider == target_provider && a.model == target_model)
             .map(|a| a.id.clone())
             .unwrap_or_else(|| config.llm.agents[0].id.clone());
         let _ = config::save_config(&config_path, &config);
     } else if config.llm.active_agent_id.is_empty() {
-        config.llm.active_agent_id = config.llm.agents
-            .first().map(|a| a.id.clone()).unwrap_or_default();
+        config.llm.active_agent_id = config
+            .llm
+            .agents
+            .first()
+            .map(|a| a.id.clone())
+            .unwrap_or_default();
         let _ = config::save_config(&config_path, &config);
     }
 
@@ -816,7 +750,7 @@ pub fn run() {
     let custom_personas = boot_self_heal.custom_personas;
 
     let whisper_binary = config.stt.whisper_binary.clone();
-    let whisper_model  = config.stt.whisper_model.clone();
+    let whisper_model = config.stt.whisper_model.clone();
     let torrent_download_root = data_dir.join("torrents/downloads");
     let _ = std::fs::create_dir_all(&torrent_download_root);
 
@@ -854,7 +788,9 @@ pub fn run() {
             remote_tx: Mutex::new(None),
         })
         .manage(remote_control::RemoteControlState::default())
-        .manage(transfer::SharedTransferState(Arc::new(Mutex::new(transfer::TransferState::new()))))
+        .manage(transfer::SharedTransferState(Arc::new(Mutex::new(
+            transfer::TransferState::new(),
+        ))))
         .manage(torrent::TorrentState::new(torrent_download_root))
         .setup(|app| {
             // Start file transfer services
@@ -862,11 +798,13 @@ pub fn run() {
             transfer::start_transfer_services(app.handle().clone(), transfer_state);
 
             // Initialize Lua state
-            let lua_engine = lua::LuaEngine::new(app.handle().clone())
-                .expect("Failed to initialize Lua engine");
+            let lua_engine =
+                lua::LuaEngine::new(app.handle().clone()).expect("Failed to initialize Lua engine");
 
             // Resolve plugins dir: resource_dir (installed) → ./plugins (dev)
-            let plugins_dir = app.path().resource_dir()
+            let plugins_dir = app
+                .path()
+                .resource_dir()
                 .map(|p| p.join("plugins"))
                 .unwrap_or_else(|_| std::path::PathBuf::from("./plugins"));
             let plugins_dir = if plugins_dir.exists() {
@@ -1076,6 +1014,5 @@ pub fn run() {
             sync::configure_sync,
         ])
         .run(tauri::generate_context!())
-
         .expect("error while running tauri application");
 }
