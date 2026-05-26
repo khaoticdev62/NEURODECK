@@ -48,4 +48,12 @@ export const state = {
     slashPaletteOpen: false,
     slashPaletteSelected: 0,
     slashPaletteFilter: "",
+    // ── Chat Search ─────────────────────────────────────────────────────────
+    chatSearch: {
+        query: "",
+        matches: [],
+        activeIndex: -1,
+        filter: "all",
+        open: false,
+    },
 };

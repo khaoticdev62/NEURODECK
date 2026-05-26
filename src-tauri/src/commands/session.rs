@@ -185,6 +185,29 @@ pub fn new_session(state: State<'_, Mutex<AppState>>) -> String {
 }
 
 #[tauri::command]
+pub fn fork_session(
+    base_messages: Vec<String>,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    let new_id = Utc::now().format("%Y%m%d-%H%M%S").to_string();
+    app.session_id = new_id.clone();
+    app.messages = base_messages;
+
+    // Auto-save the forked session immediately
+    let session = Session {
+        id: app.session_id.clone(),
+        created_at: Utc::now(),
+        messages: app.messages.clone(),
+    };
+    if let Err(e) = storage::save_session(user_config_dir().join("sessions"), &session) {
+        return Err(format!("Failed to save forked session: {}", e));
+    }
+
+    Ok(new_id)
+}
+
+#[tauri::command]
 pub async fn speak_text(text: String) -> Result<(), String> {
     let sanitized: String = text
         .chars()

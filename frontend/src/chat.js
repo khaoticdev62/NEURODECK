@@ -132,6 +132,384 @@ export function getMessageElements() {
     return Array.from(document.querySelectorAll('#chat-viewport > .message'));
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHAT HISTORY SEARCH
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function initChatSearch() {
+    const workspace = document.getElementById('chat-workspace');
+    if (!workspace) return;
+    if (document.getElementById('chat-search-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'chat-search-overlay';
+    overlay.className = 'chat-search-overlay hidden';
+    overlay.innerHTML = `
+        <div class="chat-search-bar">
+            <span class="chat-search-icon">${createIcon('search', { size: 14 })}</span>
+            <input type="text" id="chat-search-input" placeholder="Search messages..." autocomplete="off" />
+            <span class="chat-search-counter" id="chat-search-counter"></span>
+            <select id="chat-search-filter" class="chat-search-filter" title="Filter by kind">
+                <option value="all">All</option>
+                <option value="user">User</option>
+                <option value="ai">AI</option>
+                <option value="system">System</option>
+            </select>
+            <button id="chat-search-prev" class="chat-search-nav" title="Previous match">↑</button>
+            <button id="chat-search-next" class="chat-search-nav" title="Next match">↓</button>
+            <button id="chat-search-close" class="chat-search-close" title="Close search (Esc)">${createIcon('x', { size: 14 })}</button>
+        </div>
+    `;
+    workspace.insertBefore(overlay, workspace.firstChild);
+
+    const input = document.getElementById('chat-search-input');
+    const filter = document.getElementById('chat-search-filter');
+    const prevBtn = document.getElementById('chat-search-prev');
+    const nextBtn = document.getElementById('chat-search-next');
+    const closeBtn = document.getElementById('chat-search-close');
+
+    let debounceTimer = null;
+    input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => performSearch(input.value), 150);
+    });
+
+    filter.addEventListener('change', () => {
+        state.chatSearch.filter = filter.value;
+        performSearch(input.value);
+    });
+
+    prevBtn.addEventListener('click', () => navigateSearch(-1));
+    nextBtn.addEventListener('click', () => navigateSearch(1));
+    closeBtn.addEventListener('click', closeChatSearch);
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            navigateSearch(e.shiftKey ? -1 : 1);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeChatSearch();
+        }
+    });
+}
+
+function openChatSearch() {
+    initChatSearch();
+    const overlay = document.getElementById('chat-search-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+    const input = document.getElementById('chat-search-input');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+    state.chatSearch.open = true;
+}
+
+export function closeChatSearch() {
+    const overlay = document.getElementById('chat-search-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    clearSearchHighlights();
+    state.chatSearch.open = false;
+    state.chatSearch.query = '';
+    state.chatSearch.matches = [];
+    state.chatSearch.activeIndex = -1;
+}
+
+function clearSearchHighlights() {
+    document.querySelectorAll('.search-highlight').forEach(mark => {
+        const parent = mark.parentNode;
+        if (parent) {
+            parent.replaceChild(document.createTextNode(mark.textContent), mark);
+            parent.normalize();
+        }
+    });
+}
+
+function performSearch(query) {
+    clearSearchHighlights();
+    state.chatSearch.query = query;
+    state.chatSearch.matches = [];
+    state.chatSearch.activeIndex = -1;
+
+    const counter = document.getElementById('chat-search-counter');
+    if (counter) counter.textContent = '';
+
+    if (!query || query.length < 2) return;
+
+    const filter = state.chatSearch.filter;
+    const re = new RegExp('(' + escapeRegExp(query) + ')', 'gi');
+
+    state.chatMessageRegistry.forEach(entry => {
+        if (!entry.el) return;
+        if (filter !== 'all' && entry.kind !== filter) return;
+
+        const card = entry.el.querySelector('.message-card');
+        if (!card) return;
+
+        // Walk text nodes in card (excluding buttons, metadata, etc.)
+        const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT, null, false);
+        const textNodes = [];
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node.parentElement.closest('button, .msg-meta, .msg-copy-btn, .msg-actions-menu')) continue;
+            textNodes.push(node);
+        }
+
+        textNodes.forEach(textNode => {
+            const text = textNode.textContent;
+            let match;
+            while ((match = re.exec(text)) !== null) {
+                const before = text.substring(0, match.index);
+                const matched = text.substring(match.index, match.index + query.length);
+                const after = text.substring(match.index + query.length);
+
+                const mark = document.createElement('mark');
+                mark.className = 'search-highlight';
+                mark.textContent = matched;
+
+                const span = document.createElement('span');
+                if (before) span.appendChild(document.createTextNode(before));
+                span.appendChild(mark);
+                if (after) span.appendChild(document.createTextNode(after));
+
+                textNode.parentNode.replaceChild(span, textNode);
+                state.chatSearch.matches.push({ el: mark, msgId: entry.id });
+
+                // Update walker to continue from the new span
+                re.lastIndex = 0;
+                break; // Only first match per text node to keep it simple; re-walk if needed
+            }
+        });
+    });
+
+    if (state.chatSearch.matches.length > 0) {
+        state.chatSearch.activeIndex = 0;
+        scrollToMatch(0);
+    }
+    updateSearchCounter();
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function navigateSearch(delta) {
+    const matches = state.chatSearch.matches;
+    if (matches.length === 0) return;
+    matches.forEach((m, i) => {
+        m.el.classList.toggle('search-highlight-active', i === state.chatSearch.activeIndex);
+    });
+    state.chatSearch.activeIndex += delta;
+    if (state.chatSearch.activeIndex < 0) state.chatSearch.activeIndex = matches.length - 1;
+    if (state.chatSearch.activeIndex >= matches.length) state.chatSearch.activeIndex = 0;
+    scrollToMatch(state.chatSearch.activeIndex);
+    updateSearchCounter();
+}
+
+function scrollToMatch(index) {
+    const match = state.chatSearch.matches[index];
+    if (!match || !match.el) return;
+    match.el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    match.el.classList.add('search-highlight-active');
+}
+
+function updateSearchCounter() {
+    const counter = document.getElementById('chat-search-counter');
+    if (!counter) return;
+    const total = state.chatSearch.matches.length;
+    if (total === 0) {
+        counter.textContent = 'No matches';
+    } else {
+        counter.textContent = `${state.chatSearch.activeIndex + 1} / ${total}`;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESSAGE ACTION MENU (Fork / Edit)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function makeActionMenuBtn(msgEntry) {
+    const btn = document.createElement('button');
+    btn.className = 'msg-actions-btn';
+    btn.title = 'Message actions';
+    btn.setAttribute('aria-label', 'Message actions');
+    btn.innerHTML = createIcon('moreVertical', { size: 14 });
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMessageMenu(msgEntry, btn);
+    });
+    return btn;
+}
+
+function toggleMessageMenu(msgEntry, anchorBtn) {
+    // Close any existing menu
+    document.querySelectorAll('.msg-actions-dropdown').forEach(d => d.remove());
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'msg-actions-dropdown';
+    dropdown.setAttribute('role', 'menu');
+
+    const forkItem = document.createElement('button');
+    forkItem.className = 'msg-action-item';
+    forkItem.innerHTML = `${createIcon('gitBranch', { size: 12 })} Fork from here`;
+    forkItem.addEventListener('click', () => {
+        dropdown.remove();
+        forkFromMessage(msgEntry);
+    });
+
+    const editItem = document.createElement('button');
+    editItem.className = 'msg-action-item';
+    editItem.innerHTML = `${createIcon('pencil', { size: 12 })} Edit & regenerate`;
+    editItem.addEventListener('click', () => {
+        dropdown.remove();
+        editMessageInPlace(msgEntry);
+    });
+
+    dropdown.append(forkItem, editItem);
+
+    const card = anchorBtn.closest('.message-card');
+    if (card) card.appendChild(dropdown);
+
+    // Close on outside click
+    const closeMenu = (ev) => {
+        if (!dropdown.contains(ev.target)) {
+            dropdown.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeMenu), 10);
+}
+
+function registryToBackendMessages(registry) {
+    return registry.map(entry => {
+        if (entry.kind === 'user') return `User: ${entry.text}`;
+        if (entry.kind === 'ai') return `AI: ${entry.text}`;
+        return entry.text;
+    });
+}
+
+function forkFromMessage(msgEntry) {
+    const idx = state.chatMessageRegistry.findIndex(r => r.id === msgEntry.id);
+    if (idx === -1) return;
+
+    const baseRegistry = state.chatMessageRegistry.slice(0, idx + 1);
+    const baseMessages = registryToBackendMessages(baseRegistry);
+
+    invoke('fork_session', { baseMessages }).then((newId) => {
+        loadSession(newId);
+        if (typeof addNotification === 'function') {
+            addNotification('Session Forked', `Created new session: ${newId}`, 'success');
+        }
+    }).catch(err => {
+        if (typeof addNotification === 'function') {
+            addNotification('Fork Failed', String(err), 'error');
+        }
+    });
+}
+
+function editMessageInPlace(msgEntry) {
+    if (!msgEntry.el) return;
+    const card = msgEntry.el.querySelector('.message-card');
+    if (!card) return;
+
+    // Hide existing content buttons
+    const existingBtns = card.querySelectorAll('.msg-copy-btn, .msg-actions-btn, .msg-meta');
+    existingBtns.forEach(b => b.style.display = 'none');
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'msg-edit-textarea';
+    textarea.value = msgEntry.text;
+    textarea.rows = 2;
+    textarea.style.width = '100%';
+
+    const actions = document.createElement('div');
+    actions.className = 'msg-edit-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'msg-edit-save';
+    saveBtn.textContent = 'Save & Fork';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'msg-edit-cancel';
+    cancelBtn.textContent = 'Cancel';
+
+    actions.append(saveBtn, cancelBtn);
+
+    // Store original card content
+    const originalContent = Array.from(card.childNodes);
+    card.innerHTML = '';
+    card.appendChild(textarea);
+    card.appendChild(actions);
+    textarea.focus();
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+
+    const cleanup = () => {
+        card.innerHTML = '';
+        originalContent.forEach(n => card.appendChild(n));
+        existingBtns.forEach(b => b.style.display = '');
+    };
+
+    const doSave = () => {
+        const newText = textarea.value.trim();
+        if (!newText) { cleanup(); return; }
+
+        const idx = state.chatMessageRegistry.findIndex(r => r.id === msgEntry.id);
+        if (idx === -1) { cleanup(); return; }
+
+        // Update registry text
+        state.chatMessageRegistry[idx].text = newText;
+
+        // Build base messages up to and including edited message
+        const baseRegistry = state.chatMessageRegistry.slice(0, idx + 1);
+        const baseMessages = registryToBackendMessages(baseRegistry);
+
+        invoke('fork_session', { baseMessages }).then((newId) => {
+            cleanup();
+            loadSession(newId);
+            if (typeof addNotification === 'function') {
+                addNotification('Session Forked', `Created new session: ${newId}`, 'success');
+            }
+            // If editing a user message, auto-send it
+            if (msgEntry.kind === 'user') {
+                const input = document.getElementById('user-input');
+                if (input) {
+                    input.value = newText;
+                    input.style.height = 'auto';
+                    input.style.height = Math.min(input.scrollHeight, 300) + 'px';
+                }
+                setTimeout(() => {
+                    const sendBtn = document.getElementById('send-btn');
+                    if (sendBtn) sendBtn.click();
+                }, 400);
+            }
+        }).catch(err => {
+            cleanup();
+            if (typeof addNotification === 'function') {
+                addNotification('Fork Failed', String(err), 'error');
+            }
+        });
+    };
+
+    saveBtn.addEventListener('click', doSave);
+    cancelBtn.addEventListener('click', cleanup);
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            doSave();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cleanup();
+        }
+    });
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+}
+
 // ── Chat Welcome State HTML ────────────────────────────────────────────────────
 const CHAT_WELCOME_HTML = `
 <div class="chat-welcome" id="chat-welcome">
@@ -287,11 +665,12 @@ function appendUserMessage(text, attachment = null) {
     const textNode = document.createElement("div");
     textNode.textContent = String(text ?? "");
     card.appendChild(textNode);
+    const msgEntry = registerMessage(wrapper, "user", text, {}, attachment);
     card.appendChild(makeCopyBtn(() => String(text ?? "")));
+    card.appendChild(makeActionMenuBtn(msgEntry));
 
     chatViewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
-    registerMessage(wrapper, "user", text, {}, attachment);
     return wrapper;
 }
 
@@ -330,7 +709,9 @@ function buildHistoryMessage(msgStr) {
         card.textContent = text;
         wrapper = w; kind = "system"; content = text;
     }
-    registerMessage(wrapper, kind, content);
+    const entry = registerMessage(wrapper, kind, content);
+    card.appendChild(makeCopyBtn(() => content));
+    card.appendChild(makeActionMenuBtn(entry));
     return wrapper;
 }
 
@@ -976,6 +1357,14 @@ listen("stream_done", function () {
             const finalTokens = state.totalTokens;
             const provider = (state.activeProvider || "gemini").toUpperCase();
             const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            // Update registry with final AI text
+            if (state.currentAIMessage) {
+                const msgId = state.currentAIMessage.dataset.msgId;
+                if (msgId) {
+                    const reg = state.chatMessageRegistry.find(r => r.id === msgId);
+                    if (reg) reg.text = capturedText;
+                }
+            }
             // Message metadata footer (hover-revealed)
             const metaRow = document.createElement("div");
             metaRow.className = "msg-meta";
@@ -996,6 +1385,12 @@ listen("stream_done", function () {
             msgCard.appendChild(metaRow);
             // Copy button
             msgCard.appendChild(makeCopyBtn(() => capturedText));
+            // Action menu button
+            if (state.currentAIMessage) {
+                const msgId = state.currentAIMessage.dataset.msgId;
+                const reg = state.chatMessageRegistry.find(r => r.id === msgId);
+                if (reg) msgCard.appendChild(makeActionMenuBtn(reg));
+            }
         }
         if (typeof window.announceToScreenReader === 'function') {
             const preview = state.currentAIText.slice(0, 120).replace(/\s+/g, ' ').trim();
@@ -1266,6 +1661,18 @@ window.addEventListener("keydown", function(e) {
         cycleTheme();
     }
 
+    if (e.ctrlKey && e.key === "f") {
+        e.preventDefault();
+        const chatView = document.getElementById("view-chat");
+        if (chatView && chatView.classList.contains("active")) {
+            if (state.chatSearch.open) {
+                closeChatSearch();
+            } else {
+                openChatSearch();
+            }
+        }
+    }
+
     if (e.ctrlKey && e.key === "s") {
         e.preventDefault();
         invoke("save_session").then((msg) => {
@@ -1478,6 +1885,9 @@ export function initChat() {
 
     // Populate context bar + session header (defer so state is set by boot)
     setTimeout(updateSessionHeader, 300);
+
+    // Init chat search overlay
+    initChatSearch();
 
     // Wire gen-bar Stop button
     const genStopBtn = document.getElementById("chat-gen-stop");

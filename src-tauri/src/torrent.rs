@@ -44,6 +44,7 @@ struct TorrentRecord {
     source_display: String,
     source_value: String,
     added_at_utc: String,
+    info_hash: String,
 }
 
 #[derive(Serialize)]
@@ -72,6 +73,19 @@ pub struct TorrentClientStatus {
     pub download_root: String,
     pub torrent_count: usize,
     pub torrents: Vec<TorrentSnapshot>,
+}
+
+#[allow(clippy::large_enum_variant)]
+enum ParsedTorrentSource {
+    Magnet {
+        uri: String,
+        info_hash: Option<String>,
+    },
+    File {
+        canonical_path: PathBuf,
+        metadata: TorrentMetadata,
+        info_hash: Option<String>,
+    },
 }
 
 impl TorrentManager {
@@ -118,44 +132,44 @@ impl TorrentManager {
             return Err("Torrent source cannot be empty.".to_string());
         }
 
-        let flags = TorrentFlags::Paused | TorrentFlags::Metadata | TorrentFlags::AutoManaged;
-        let torrent = if cleaned.starts_with("magnet:?") || cleaned.starts_with("magnet:") {
-            Magnet::from_str(cleaned).map_err(|e| format!("Invalid magnet URI: {}", e))?;
-            session
-                .add_torrent_from_uri(cleaned, flags)
-                .await
-                .map_err(|e| format!("Failed to add magnet torrent: {}", e))?
-        } else {
-            let file_path = sanitize_torrent_path(cleaned)?;
-            let bytes = std::fs::read(&file_path).map_err(|e| {
-                format!("Failed to read torrent file {}: {}", file_path.display(), e)
-            })?;
-            if (bytes.len() as u64) > MAX_TORRENT_FILE_BYTES {
-                return Err(
-                    "Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string(),
-                );
+        let parsed = parse_torrent_source(cleaned)?;
+        let normalized_source = parsed.source_value();
+        if let Some(record) = self.find_duplicate_by_source(&normalized_source) {
+            return Err(format!(
+                "This torrent source is already queued as {}.",
+                record.label
+            ));
+        }
+        if let Some(info_hash) = parsed.info_hash() {
+            if let Some(record) = self.find_duplicate_by_info_hash(info_hash) {
+                return Err(format!(
+                    "A torrent with info hash {} is already queued as {}.",
+                    info_hash, record.label
+                ));
             }
-            let metadata = TorrentMetadata::try_from(bytes.as_slice()).map_err(|e| {
-                format!("Invalid torrent metadata in {}: {}", file_path.display(), e)
-            })?;
-            session
-                .add_torrent_from_info(metadata, flags)
+        }
+
+        let flags = TorrentFlags::Paused | TorrentFlags::Metadata | TorrentFlags::AutoManaged;
+        let torrent = match &parsed {
+            ParsedTorrentSource::Magnet { uri, .. } => session
+                .add_torrent_from_uri(uri, flags)
                 .await
-                .map_err(|e| format!("Failed to add torrent metadata: {}", e))?
+                .map_err(|e| format!("Failed to add magnet torrent: {}", e))?,
+            ParsedTorrentSource::File { metadata, .. } => session
+                .add_torrent_from_info(metadata.clone(), flags)
+                .await
+                .map_err(|e| format!("Failed to add torrent metadata: {}", e))?,
         };
 
         let id = Uuid::new_v4().to_string();
         let seq = self.sequence;
         self.sequence = self.sequence.saturating_add(1);
-        let label = derive_label(cleaned);
-        let source_kind = if cleaned.starts_with("magnet:?") || cleaned.starts_with("magnet:") {
-            "magnet".to_string()
-        } else {
-            "file".to_string()
-        };
-        let source_display = shorten_for_display(cleaned, 96);
-        let source_value = cleaned.to_string();
+        let label = parsed.label();
+        let source_kind = parsed.source_kind().to_string();
+        let source_display = shorten_for_display(&normalized_source, 96);
+        let source_value = normalized_source;
         let added_at_utc = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+        let info_hash = parsed.info_hash().unwrap_or_default().to_string();
 
         self.torrents.insert(
             id.clone(),
@@ -168,10 +182,41 @@ impl TorrentManager {
                 source_display,
                 source_value,
                 added_at_utc,
+                info_hash,
             },
         );
 
         self.snapshot_by_id(&id).await
+    }
+
+    async fn remove(&mut self, id: &str, delete_data: bool) -> Result<(), String> {
+        let session = self
+            .session
+            .as_ref()
+            .ok_or_else(|| "Torrent session is unavailable".to_string())?;
+
+        let (handle, payload_path) = {
+            let record = self
+                .torrents
+                .get(id)
+                .ok_or_else(|| format!("Unknown torrent id: {}", id))?;
+            record.torrent.pause().await;
+            let path = if delete_data {
+                record.torrent.path().await
+            } else {
+                None
+            };
+            (record.torrent.handle(), path)
+        };
+
+        session.remove_torrent(&handle).await;
+        self.torrents.remove(id);
+
+        if let Some(path) = payload_path {
+            safe_delete_torrent_payload(&self.download_root, &path)?;
+        }
+
+        Ok(())
     }
 
     async fn snapshot_by_id(&self, id: &str) -> Result<TorrentSnapshot, String> {
@@ -238,6 +283,19 @@ impl TorrentManager {
     fn download_root(&self) -> String {
         self.download_root.to_string_lossy().to_string()
     }
+
+    fn find_duplicate_by_source(&self, normalized_source: &str) -> Option<&TorrentRecord> {
+        self.torrents
+            .values()
+            .find(|record| record.source_value.eq_ignore_ascii_case(normalized_source))
+    }
+
+    fn find_duplicate_by_info_hash(&self, candidate: &str) -> Option<&TorrentRecord> {
+        let candidate_upper = candidate.to_ascii_uppercase();
+        self.torrents.values().find(|record| {
+            !record.info_hash.is_empty() && record.info_hash.eq_ignore_ascii_case(&candidate_upper)
+        })
+    }
 }
 
 async fn snapshot_record(
@@ -293,12 +351,7 @@ async fn snapshot_record(
         metadata_known,
         download_root: download_root.to_string_lossy().to_string(),
         added_at_utc: record.added_at_utc.clone(),
-        info_hash: record
-            .torrent
-            .info_hash()
-            .await
-            .map_err(|e| format!("Failed to read torrent info hash: {}", e))?
-            .to_string(),
+        info_hash: record.info_hash.clone(),
     })
 }
 
@@ -346,6 +399,136 @@ fn sanitize_torrent_path(input: &str) -> Result<PathBuf, String> {
     Ok(canonical)
 }
 
+fn parse_torrent_source(input: &str) -> Result<ParsedTorrentSource, String> {
+    if is_magnet_source(input) {
+        let magnet = Magnet::from_str(input).map_err(|e| format!("Invalid magnet URI: {}", e))?;
+        return Ok(ParsedTorrentSource::Magnet {
+            uri: input.to_string(),
+            info_hash: extract_magnet_info_hash(&magnet),
+        });
+    }
+
+    let file_path = sanitize_torrent_path(input)?;
+    let bytes = std::fs::read(&file_path)
+        .map_err(|e| format!("Failed to read torrent file {}: {}", file_path.display(), e))?;
+    if (bytes.len() as u64) > MAX_TORRENT_FILE_BYTES {
+        return Err(
+            "Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string(),
+        );
+    }
+    let metadata = TorrentMetadata::try_from(bytes.as_slice())
+        .map_err(|e| format!("Invalid torrent metadata in {}: {}", file_path.display(), e))?;
+    let info_hash = Some(metadata.info_hash.to_string());
+
+    Ok(ParsedTorrentSource::File {
+        canonical_path: file_path,
+        metadata,
+        info_hash,
+    })
+}
+
+fn is_magnet_source(input: &str) -> bool {
+    input.starts_with("magnet:?") || input.starts_with("magnet:")
+}
+
+fn extract_magnet_info_hash(magnet: &Magnet) -> Option<String> {
+    magnet.xt().into_iter().find_map(|topic| {
+        topic
+            .rsplit(':')
+            .next()
+            .map(|value| value.to_ascii_uppercase())
+    })
+}
+
+fn normalized_path_for_check(path: &Path) -> Result<PathBuf, String> {
+    if path.exists() {
+        return path
+            .canonicalize()
+            .map_err(|e| format!("Failed to resolve path {}: {}", path.display(), e));
+    }
+
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("Path {} has no parent directory.", path.display()))?;
+    let canonical_parent = parent
+        .canonicalize()
+        .map_err(|e| format!("Failed to resolve directory {}: {}", parent.display(), e))?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| format!("Path {} has no terminal name.", path.display()))?;
+    Ok(canonical_parent.join(file_name))
+}
+
+fn safe_delete_torrent_payload(download_root: &Path, candidate: &Path) -> Result<(), String> {
+    let root = download_root.canonicalize().map_err(|e| {
+        format!(
+            "Failed to resolve torrent root {}: {}",
+            download_root.display(),
+            e
+        )
+    })?;
+    let target = normalized_path_for_check(candidate)?;
+
+    if target == root {
+        return Err("Refusing to delete the torrent root itself.".to_string());
+    }
+    if !target.starts_with(&root) {
+        return Err(format!(
+            "Refusing to delete torrent payload outside the managed root: {}",
+            target.display()
+        ));
+    }
+    if !target.exists() {
+        return Ok(());
+    }
+
+    if target.is_dir() {
+        std::fs::remove_dir_all(&target).map_err(|e| {
+            format!(
+                "Failed to delete torrent directory {}: {}",
+                target.display(),
+                e
+            )
+        })?;
+    } else {
+        std::fs::remove_file(&target)
+            .map_err(|e| format!("Failed to delete torrent file {}: {}", target.display(), e))?;
+    }
+
+    cleanup_empty_torrent_dirs(target.parent(), &root)?;
+    Ok(())
+}
+
+fn cleanup_empty_torrent_dirs(mut current: Option<&Path>, root: &Path) -> Result<(), String> {
+    while let Some(dir) = current {
+        if dir == root || !dir.starts_with(root) {
+            break;
+        }
+        let is_empty = std::fs::read_dir(dir)
+            .map_err(|e| {
+                format!(
+                    "Failed to inspect torrent directory {}: {}",
+                    dir.display(),
+                    e
+                )
+            })?
+            .next()
+            .is_none();
+        if !is_empty {
+            break;
+        }
+        std::fs::remove_dir(dir).map_err(|e| {
+            format!(
+                "Failed to delete empty torrent directory {}: {}",
+                dir.display(),
+                e
+            )
+        })?;
+        current = dir.parent();
+    }
+    Ok(())
+}
+
 fn shorten_for_display(input: &str, limit: usize) -> String {
     let trimmed = input.trim();
     if trimmed.chars().count() <= limit {
@@ -368,6 +551,40 @@ fn derive_label(source: &str) -> String {
         .and_then(|name| name.to_str())
         .map(|name| name.to_string())
         .unwrap_or_else(|| shorten_for_display(source, 40))
+}
+
+impl ParsedTorrentSource {
+    fn source_kind(&self) -> &'static str {
+        match self {
+            ParsedTorrentSource::Magnet { .. } => "magnet",
+            ParsedTorrentSource::File { .. } => "file",
+        }
+    }
+
+    fn source_value(&self) -> String {
+        match self {
+            ParsedTorrentSource::Magnet { uri, .. } => uri.clone(),
+            ParsedTorrentSource::File { canonical_path, .. } => {
+                canonical_path.to_string_lossy().to_string()
+            }
+        }
+    }
+
+    fn info_hash(&self) -> Option<&str> {
+        match self {
+            ParsedTorrentSource::Magnet { info_hash, .. } => info_hash.as_deref(),
+            ParsedTorrentSource::File { info_hash, .. } => info_hash.as_deref(),
+        }
+    }
+
+    fn label(&self) -> String {
+        match self {
+            ParsedTorrentSource::Magnet { uri, .. } => derive_label(uri),
+            ParsedTorrentSource::File { canonical_path, .. } => {
+                derive_label(&canonical_path.to_string_lossy())
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -396,6 +613,16 @@ pub async fn torrent_add(
 ) -> Result<TorrentSnapshot, String> {
     let mut guard = state.inner.lock().await;
     guard.add_source(&source).await
+}
+
+#[tauri::command]
+pub async fn torrent_remove(
+    state: State<'_, TorrentState>,
+    id: String,
+    delete_data: Option<bool>,
+) -> Result<(), String> {
+    let mut guard = state.inner.lock().await;
+    guard.remove(&id, delete_data.unwrap_or(false)).await
 }
 
 #[tauri::command]

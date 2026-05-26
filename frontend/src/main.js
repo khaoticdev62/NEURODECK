@@ -910,6 +910,9 @@ document.querySelector("#app").innerHTML = `
                                 <div class="setting-field-group">
                                     <label>Magnet URI or .torrent Path</label>
                                     <input type="text" id="torrent-source-input" class="tunnel-text-input" placeholder="magnet:?xt=urn:btih:... or /absolute/path/file.torrent" style="width:100%;box-sizing:border-box;">
+                                    <div class="share-dropzone torrent-dropzone" id="torrent-dropzone">
+                                        <div class="dropzone-text">Drag a .torrent file here or drop a magnet link from another app</div>
+                                    </div>
                                 </div>
                                 <div class="torrent-action-row">
                                     <button class="send-prompt-btn nd-icon-button torrent-action-btn" id="torrent-add-btn">${createIcon("download", { size: 14 })}<span class="nd-button-label">Add Paused</span></button>
@@ -947,12 +950,14 @@ document.querySelector("#app").innerHTML = `
                                         <option value="paused">Paused</option>
                                         <option value="completed">Completed</option>
                                         <option value="metadata">Metadata</option>
+                                        <option value="stalled">Stalled</option>
                                     </select>
                                     <select id="torrent-sort-select" class="tunnel-text-input">
                                         <option value="recent">Newest first</option>
                                         <option value="progress">Highest progress</option>
                                         <option value="name">Name A-Z</option>
                                         <option value="peers">Most peers</option>
+                                        <option value="status">Status</option>
                                     </select>
                                 </div>
                                 <div class="torrent-list" id="torrent-list">

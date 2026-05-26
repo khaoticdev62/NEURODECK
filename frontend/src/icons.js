@@ -267,6 +267,22 @@ const ICONS = {
     <path d="M12 16V6"></path>
     <path d="m7 11 5-5 5 5"></path>
     <path d="M20 16.5v1.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5"></path>
+  `,
+  moreVertical: `
+    <circle cx="12" cy="5" r="1.5"></circle>
+    <circle cx="12" cy="12" r="1.5"></circle>
+    <circle cx="12" cy="19" r="1.5"></circle>
+  `,
+  gitBranch: `
+    <line x1="6" y1="3" x2="6" y2="15"></line>
+    <circle cx="6" cy="18" r="3"></circle>
+    <circle cx="6" cy="6" r="3"></circle>
+    <circle cx="18" cy="18" r="3"></circle>
+    <path d="M18 9a9 9 0 0 1-9 9"></path>
+  `,
+  pencil: `
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+    <path d="m15 5 4 4"></path>
   `
 };
 
