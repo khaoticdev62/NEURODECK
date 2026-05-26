@@ -385,7 +385,8 @@ function initCanvasView() {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100dvh;
+      width: 100%;
       margin: 0;
     }
     h1 { color: #7C3AED; }

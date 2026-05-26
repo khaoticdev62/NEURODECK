@@ -64,6 +64,12 @@
   --view-shell-max-width: 1480px;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #app {
@@ -107,6 +113,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -296,8 +303,8 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .history-action-btn:hover {
@@ -320,13 +327,13 @@ body::before {
 
 /* Sleek Top Navigation Bar */
 .top-nav {
-  height: 52px;
+  min-height: 52px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 20px;
+  padding: 8px 20px;
   background: linear-gradient(
     180deg,
     rgba(10, 14, 20, 0.98) 0%,
@@ -1585,6 +1592,17 @@ body::before {
   border-collapse: collapse;
   margin: 12px 0;
   font-size: 0.85rem;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.message-card thead,
+.message-card tbody,
+.message-card tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .message-card th,
@@ -1592,6 +1610,8 @@ body::before {
   padding: 8px 10px;
   border: 1px solid var(--border-color);
   text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .message-card th {
@@ -2093,10 +2113,10 @@ body::before {
 
 /* Modal shell */
 .settings-modal-card {
-  width: min(1160px, calc(100vw - 32px));
-  height: min(760px, calc(100dvh - 32px));
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  width: min(1160px, calc(100% - 32px));
+  height: min(760px, calc(100% - 32px));
+  max-width: calc(100% - 32px);
+  max-height: calc(100% - 32px);
   background:
     radial-gradient(
       circle at top right,
@@ -2136,7 +2156,7 @@ body::before {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: min(14vh, 120px) 16px 16px;
+  padding: min(14dvh, 120px) 16px 16px;
   background: rgba(2, 4, 10, 0.82);
   opacity: 0;
   pointer-events: none;
@@ -2147,8 +2167,8 @@ body::before {
   pointer-events: auto;
 }
 .command-palette-card {
-  width: min(760px, calc(100vw - 32px));
-  max-height: min(72vh, 760px);
+  width: min(760px, calc(100% - 32px));
+  max-height: min(72dvh, 760px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2318,11 +2338,11 @@ body::before {
 
 @media (max-width: 720px) {
   .command-palette-overlay {
-    padding: 10vh 8px 8px;
+    padding: 10dvh 8px 8px;
   }
   .command-palette-card {
-    width: calc(100vw - 16px);
-    max-height: 78vh;
+    width: calc(100% - 16px);
+    max-height: 78dvh;
   }
   .command-palette-header {
     padding: 12px 12px 8px;
@@ -2388,7 +2408,7 @@ body::before {
   box-shadow: var(--shadow-4), 0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
   transform: translateY(12px) scale(0.96);
   transition: transform var(--dur-spring) var(--ease-out-spring);
-  max-width: min(640px, calc(100vw - 32px));
+  max-width: min(640px, calc(100% - 32px));
 }
 
 .quick-switcher-overlay.active .quick-switcher-card {
@@ -3075,8 +3095,8 @@ body::before {
 
 @media (max-width: 1100px) {
   .settings-modal-card {
-    width: min(100vw - 20px, 960px);
-    height: min(100dvh - 20px, 860px);
+    width: min(calc(100% - 20px), 960px);
+    height: min(calc(100% - 20px), 860px);
   }
 
   .stv-sidebar {
@@ -3150,8 +3170,8 @@ body::before {
   }
 
   .settings-modal-card {
-    width: min(100vw - 20px, 960px);
-    height: min(100dvh - 20px, 860px);
+    width: min(calc(100% - 20px), 960px);
+    height: min(calc(100% - 20px), 860px);
     border-radius: 14px;
   }
 
@@ -3508,8 +3528,8 @@ body::before {
 .computer-use-modal-card {
   width: 720px;
   height: 560px;
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 48px);
+  max-width: calc(100% - 40px);
+  max-height: calc(100dvh - 48px);
 }
 
 .computer-use-modal-card .settings-modal-header {
@@ -3888,6 +3908,21 @@ code {
   min-height: 0;
 }
 
+.view-content,
+#view-chat,
+#view-canvas,
+#view-terminal,
+#view-tunnel,
+#view-share,
+#view-browser,
+#view-agent,
+#view-memory,
+#view-remote,
+#view-docs {
+  min-width: 0;
+  min-height: 0;
+}
+
 .view-content {
   display: flex;
   width: 100%;
@@ -4098,10 +4133,7 @@ code {
    ========================================================================== */
 .crt-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background:
     linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%),
     linear-gradient(
@@ -4961,7 +4993,7 @@ code {
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   height: 100%;
-  min-height: 500px;
+  min-height: min(500px, calc(100dvh - 220px));
 }
 
 .tunnel-panel {
@@ -5154,10 +5186,7 @@ code {
 
 .app-background-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
@@ -5403,7 +5432,7 @@ body.crt-flicker-disabled .crt-flicker {
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   height: 100%;
-  min-height: 500px;
+  min-height: min(500px, calc(100dvh - 220px));
 }
 
 .share-panel {
@@ -5959,10 +5988,10 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 .game-context-card {
-  width: min(620px, calc(100vw - 32px));
+  width: min(620px, calc(100% - 32px));
   height: auto;
   min-height: 0;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
 }
@@ -8318,7 +8347,7 @@ body.crt-flicker-disabled .crt-flicker {
   grid-template-columns: 280px 1fr;
   gap: 16px;
   height: 100%;
-  min-height: 500px;
+  min-height: min(500px, calc(100dvh - 220px));
 }
 
 .ftp-sidebar {
@@ -8743,7 +8772,7 @@ body.crt-flicker-disabled .crt-flicker {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: 70vh;
+  max-height: 70dvh;
 }
 
 .history-search-header {
@@ -9054,6 +9083,104 @@ body.crt-flicker-disabled .crt-flicker {
 .screenshot-btn.has-attachment {
   color: var(--accent-color) !important;
   opacity: 1;
+}
+
+.attach-btn {
+  opacity: 0.75;
+  transition:
+    opacity 0.2s ease,
+    transform 0.15s ease;
+}
+.attach-btn:hover {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.chat-attachment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: var(--text-color);
+  max-width: 200px;
+  animation: attachment-pop 250ms var(--ease-out-spring) both;
+}
+
+.chat-attachment-pill-icon {
+  flex-shrink: 0;
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+}
+
+.chat-attachment-pill-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-attachment-pill-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.chat-attachment-pill-size {
+  font-size: 0.65rem;
+  color: rgba(var(--text-rgb), 0.6);
+}
+
+.chat-attachment-pill-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(var(--text-rgb), 0.5);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.chat-attachment-pill-remove:hover {
+  color: rgba(255, 60, 90, 1);
+  background: rgba(255, 60, 90, 0.1);
+}
+
+.chat-drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 2px dashed var(--accent-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-drop-overlay.visible {
+  opacity: 1;
+}
+
+.chat-drop-overlay-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 12px 24px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
 }
 
 /* ============================================================
@@ -9926,10 +10053,7 @@ body.crt-flicker-disabled .crt-flicker {
 /* Onboarding Wizard Overlay Styles */
 .onboarding-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(5, 5, 5, 0.99);
   z-index: 9999;
   display: flex;
@@ -10686,7 +10810,7 @@ body.crt-flicker-disabled .crt-flicker {
 
   .boot-ascii-panel {
     width: 100%;
-    min-height: clamp(170px, 28vh, 250px);
+    min-height: clamp(170px, 28dvh, 250px);
     padding: 20px 16px 14px;
     border-right: none;
     border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
@@ -10826,9 +10950,9 @@ body.crt-flicker-disabled .crt-flicker {
 
 .ctrl-prompt-modal {
   width: 1100px;
-  max-width: calc(100vw - 40px);
+  max-width: calc(100% - 40px);
   height: 740px;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   background: rgba(8, 10, 18, 0.98);
   border: 1px solid var(--accent-color, #00f0ff);
   border-radius: 12px;
@@ -13243,7 +13367,7 @@ button.tab-btn:active,
 
 .shortcuts-card {
   width: min(720px, 92vw);
-  max-height: min(80vh, 640px);
+  max-height: min(80dvh, 640px);
   background: linear-gradient(
     145deg,
     rgba(14, 18, 26, 0.98) 0%,
