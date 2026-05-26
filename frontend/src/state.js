@@ -24,6 +24,7 @@ export const state = {
     totalTokens: 0,
     radialMenuVisible: false,
     gamepadActive: false,
+    hapticsEnabled: localStorage.getItem("hapticsEnabled") !== "false",
     gamepadFocusIndex: -1,
     previousGamepadState: { buttons: [] },
     tpCursorX: 640,

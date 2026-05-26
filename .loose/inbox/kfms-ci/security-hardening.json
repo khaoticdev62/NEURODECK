@@ -38,19 +38,19 @@
                      {
                          "severity":  "warn",
                          "code":  "innerhtml-review",
-                         "message":  "108 innerHTML write sites require manual review for sanitization discipline.",
-                         "path":  "frontend/src/agent.js",
-                         "line":  180,
-                         "evidence":  "        outputEl.innerHTML = \u0027\u003cspan class=\"agent-output-empty\"\u003eWaiting…\u003c/span\u003e\u0027;"
+                         "message":  "113 innerHTML write sites require manual review for sanitization discipline.",
+                         "path":  "frontend/src/icons.js",
+                         "line":  361,
+                         "evidence":  "    el.innerHTML = `${iconMarkup}${badgeMarkup}`;"
                      },
                      {
                          "severity":  "warn",
                          "code":  "process-spawn-review",
                          "message":  "30 process-spawn sites exist and should stay under explicit validation review.",
-                         "path":  "src-tauri/src/commands/agent.rs",
-                         "line":  506,
-                         "evidence":  "            let output = std::process::Command::new(\u0026program_owned)"
+                         "path":  "src-tauri/src/mcp.rs",
+                         "line":  243,
+                         "evidence":  "                    let mut c = std::process::Command::new(\"cmd.exe\");"
                      }
                  ],
-    "checked_at_utc":  "2026-05-26T15:56:37Z"
+    "checked_at_utc":  "2026-05-26T17:49:43Z"
 }

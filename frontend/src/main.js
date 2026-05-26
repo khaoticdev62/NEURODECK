@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { triggerHaptic } from "./haptics.js";
 import {
   updateMuteButtonUI,
   toggleMute,
@@ -57,6 +58,7 @@ import { initAgentView } from "./agent.js";
 import { initMemoryView } from "./memory.js";
 import { initTorrentClient } from "./torrent.js";
 import { FocusTrap } from "./focus-trap.js";
+import { renderShortcutsOverlay } from "./shortcuts.js";
 
 // ==========================================================================
 // SCREEN-READER ANNOUNCER (a11y)
@@ -2552,40 +2554,7 @@ document.querySelector("#app").innerHTML = `
     </div>
     <!-- Keyboard Shortcuts Cheat Sheet -->
     <div class="shortcuts-overlay hidden" id="shortcuts-overlay" aria-hidden="true">
-        <div class="shortcuts-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
-            <div class="shortcuts-header">
-                <h3 id="shortcuts-title">Keyboard Shortcuts</h3>
-                <button class="shortcuts-close" id="shortcuts-close" aria-label="Close shortcuts">${createIcon("x", { size: 16 })}</button>
-            </div>
-            <div class="shortcuts-grid">
-                <div class="shortcuts-group">
-                    <h4>Navigation</h4>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>K</kbd><span>Command Palette</span></div>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd><span>Prompt Library</span></div>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>M</kbd><span>Agent Switcher</span></div>
-                    <div class="shortcuts-row"><kbd>?</kbd><span>This Help</span></div>
-                </div>
-                <div class="shortcuts-group">
-                    <h4>Chat</h4>
-                    <div class="shortcuts-row"><kbd>Enter</kbd><span>Send Message</span></div>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>M</kbd><span>Mute / Unmute TTS</span></div>
-                </div>
-                <div class="shortcuts-group">
-                    <h4>System</h4>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>N</kbd><span>New Chat Session</span></div>
-                    <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>H</kbd><span>Toggle Sidebar</span></div>
-                    <div class="shortcuts-row"><kbd>Esc</kbd><span>Close Modal / Palette</span></div>
-                </div>
-                <div class="shortcuts-group">
-                    <h4>Gamepad</h4>
-                    <div class="shortcuts-row"><kbd>A</kbd><span>Select / Click</span></div>
-                    <div class="shortcuts-row"><kbd>B</kbd><span>Back / Close</span></div>
-                    <div class="shortcuts-row"><kbd>Start</kbd><span>Settings</span></div>
-                    <div class="shortcuts-row"><kbd>X</kbd><span>Chat View</span></div>
-                    <div class="shortcuts-row"><kbd>Y</kbd><span>Cycle Persona</span></div>
-                </div>
-            </div>
-        </div>
+        <div class="shortcuts-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title"></div>
     </div>
 
     <div class="crt-overlay crt-flicker"></div>
@@ -3868,6 +3837,7 @@ function updateGamepadFocus(index) {
   } else {
     state.gamepadFocusIndex = index;
   }
+  triggerHaptic("light");
 
   const target = els[state.gamepadFocusIndex];
   if (target) {
@@ -3958,6 +3928,7 @@ function showRadialMenu() {
   state.radialMenuVisible = true;
   state.radialSelectedSegment = null;
   updateRadialDisplay(null);
+  triggerHaptic("medium");
 }
 
 function hideRadialMenu() {
@@ -3965,6 +3936,7 @@ function hideRadialMenu() {
   if (el) el.classList.remove("active");
   state.radialMenuVisible = false;
   state.radialSelectedSegment = null;
+  triggerHaptic("light");
 }
 
 function getRadialSegmentFromStick(x, y) {
@@ -4009,7 +3981,10 @@ function activateRadialSegment(segIdx) {
   if (segIdx === null || !RADIAL_SEGMENTS[segIdx]) return;
   const view = RADIAL_SEGMENTS[segIdx].view;
   const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
-  if (tab) tab.click();
+  if (tab) {
+    tab.click();
+    triggerHaptic("heavy");
+  }
 }
 
 function pollGamepads() {
@@ -4044,6 +4019,7 @@ function pollGamepads() {
 
   // A Button (0) - Click active element / confirm prompt picker
   if (buttonPressed(0)) {
+    triggerHaptic("medium");
     if (getCtrlPromptVisible()) {
       if (getCtrlPromptTemplateMode()) {
         confirmTemplateAndSend();
@@ -4064,48 +4040,13 @@ function pollGamepads() {
     }
   }
 
-  // B Button (1) - Close overlays/menus (ctrl prompt picker takes priority)
+  // B Button (1) - Close overlays / back / cancel
   if (buttonPressed(1)) {
+    triggerHaptic("medium");
     if (getCtrlPromptVisible()) {
-      if (getCtrlPromptTemplateMode()) {
-        exitTemplateMode();
-      } else {
-        closeCtrlPromptOverlay();
-      }
-      // skip normal B handling
-    }
-  }
-  if (buttonPressed(1) && !getCtrlPromptVisible()) {
-    const settingsOverlay = document.getElementById("settings-overlay");
-    const transferModal = document.getElementById("transfer-modal");
-    const inspectDrawer = document.getElementById("inspect-drawer");
-    const sidebar = document.getElementById("sidebar");
-    const notifModal = document.getElementById("notif-modal");
-    const gameModal = document.getElementById("game-context-modal");
-    const computerUseModal = document.getElementById("computer-use-modal");
-    if (notifModal && notifModal.classList.contains("active")) {
-      document.getElementById("close-notif-btn").click();
-    } else if (gameModal && gameModal.classList.contains("active")) {
-      document.getElementById("close-game-context").click();
-    } else if (
-      computerUseModal &&
-      computerUseModal.classList.contains("active")
-    ) {
-      document.getElementById("computer-use-deny-btn").click();
-    } else if (
-      settingsOverlay &&
-      settingsOverlay.classList.contains("active")
-    ) {
-      document.getElementById("close-settings").click();
-    } else if (transferModal && transferModal.classList.contains("active")) {
-      document.getElementById("transfer-modal-reject").click();
-    } else if (
-      inspectDrawer &&
-      !inspectDrawer.classList.contains("collapsed")
-    ) {
-      document.getElementById("inspect-close-btn").click();
-    } else if (sidebar && !sidebar.classList.contains("collapsed")) {
-      document.getElementById("sidebar-close-btn").click();
+      getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
+    } else {
+      closeTopmostOverlay();
     }
   }
 
@@ -4122,6 +4063,7 @@ function pollGamepads() {
           ? (activeSubtabIdx - 1 + subtabs.length) % subtabs.length
           : (activeSubtabIdx + 1) % subtabs.length;
         subtabs[nextSubtabIdx].click();
+        triggerHaptic("light");
       }
     }
   }
@@ -4131,11 +4073,13 @@ function pollGamepads() {
     const shareView = document.getElementById("view-share");
     if (!(shareView && shareView.classList.contains("active"))) {
       if (getCtrlPromptVisible()) {
+        triggerHaptic("light");
         getCtrlPromptTemplateMode()
           ? exitTemplateMode()
           : closeCtrlPromptOverlay();
       } else {
         openCtrlPromptOverlay();
+        triggerHaptic("medium");
         // Auto-show VK in gamepad mode so search field is immediately typeable
         if (state.gamepadActive && window.showVirtualKeyboard) {
           setTimeout(() => {
@@ -4154,6 +4098,7 @@ function pollGamepads() {
   if (buttonPressed(2) && !getCtrlPromptVisible()) {
     const focused = document.querySelector(".gamepad-focused");
     if (focused && focused.classList.contains("message")) {
+      triggerHaptic("doubleTick");
       // Copy message text to clipboard
       import("./chat.js").then((m) => {
         const text = m.getMessageText(focused);
@@ -4167,6 +4112,7 @@ function pollGamepads() {
         }
       });
     } else {
+      triggerHaptic("light");
       const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
       if (chatTab) {
         chatTab.click();
@@ -4187,6 +4133,7 @@ function pollGamepads() {
 
   // Y Button (3) - Regenerate last AI response in chat, or cycle persona
   if (buttonPressed(3) && !getCtrlPromptVisible()) {
+    triggerHaptic("medium");
     const chatView = document.getElementById("view-chat");
     if (chatView && chatView.classList.contains("active")) {
       // Try to regenerate: find last user message and re-send it
@@ -4231,6 +4178,7 @@ function pollGamepads() {
 
   // L1 (4) / R1 (5) - When prompt overlay: switch categories; else cycle app tabs
   if ((buttonPressed(4) || buttonPressed(5)) && getCtrlPromptVisible()) {
+    triggerHaptic("light");
     navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
   }
 
@@ -4266,6 +4214,7 @@ function pollGamepads() {
       }
       if (nextIdx !== activeTabIdx) {
         tabs[nextIdx].click();
+        triggerHaptic("light");
         state.gamepadFocusIndex = -1;
         document
           .querySelectorAll(".gamepad-focused")
@@ -4276,6 +4225,7 @@ function pollGamepads() {
 
   // Select Button (8) - Run Canvas Code (blocked when prompt picker open)
   if (buttonPressed(8) && !getCtrlPromptVisible()) {
+    triggerHaptic("medium");
     const runBtn = document.getElementById("canvas-run-btn");
     if (runBtn) {
       runBtn.click();
@@ -4284,6 +4234,7 @@ function pollGamepads() {
 
   // Start Button (9) - Toggle settings modal (blocked when prompt picker open)
   if (buttonPressed(9) && !getCtrlPromptVisible()) {
+    triggerHaptic("medium");
     const settingsOverlay = document.getElementById("settings-overlay");
     if (settingsOverlay) {
       if (settingsOverlay.classList.contains("active")) {
@@ -4420,24 +4371,28 @@ function pollGamepads() {
   if (!getCtrlPromptVisible()) {
     // L4 (17) -> Toggle Left Sidebar
     if (buttonPressed(17)) {
+      triggerHaptic("light");
       const sidebar = document.getElementById("sidebar");
       if (sidebar) sidebar.classList.toggle("collapsed");
     }
 
     // R4 (18) -> Toggle Right Context Drawer
     if (buttonPressed(18)) {
+      triggerHaptic("light");
       const inspectDrawer = document.getElementById("inspect-drawer");
       if (inspectDrawer) inspectDrawer.classList.toggle("collapsed");
     }
 
     // L5 (19) -> Clear Visual Canvas
     if (buttonPressed(19)) {
+      triggerHaptic("heavy");
       const clearBtn = document.getElementById("canvas-clear-btn");
       if (clearBtn) clearBtn.click();
     }
 
     // R5 (20) -> Cycle Theme
     if (buttonPressed(20)) {
+      triggerHaptic("light");
       cycleTheme();
     }
   }
@@ -4457,6 +4412,7 @@ function pollGamepads() {
     const seg = getRadialSegmentFromStick(stickX, stickY);
     if (seg !== state.radialSelectedSegment) {
       updateRadialDisplay(seg);
+      triggerHaptic("tick");
     }
   } else if (!l2Held && l2WasHeld) {
     // L2 just released — activate selected and close
@@ -4478,6 +4434,7 @@ function pollGamepads() {
 
   // Right stick click (button[11] on Steam Deck) = click at cursor position
   if (buttonPressed(11) && state.tpCursorVisible) {
+    triggerHaptic("medium");
     tpClick(0);
   }
 
@@ -4519,6 +4476,51 @@ function pollGamepads() {
   state.previousGamepadState.l2Held = l2Held;
 
   requestAnimationFrame(pollGamepads);
+}
+
+/**
+ * Close the topmost open overlay/modal/drawer when B is pressed.
+ * Order matters: notification → game context → computer use → settings
+ * → transfer → inspect drawer → sidebar.
+ */
+function closeTopmostOverlay() {
+  let closed = false;
+  const notifModal = document.getElementById("notif-modal");
+  if (notifModal?.classList.contains("active")) {
+    document.getElementById("close-notif-btn")?.click();
+    closed = true;
+  }
+  const gameModal = document.getElementById("game-context-modal");
+  if (!closed && gameModal?.classList.contains("active")) {
+    document.getElementById("close-game-context")?.click();
+    closed = true;
+  }
+  const computerUseModal = document.getElementById("computer-use-modal");
+  if (!closed && computerUseModal?.classList.contains("active")) {
+    document.getElementById("computer-use-deny-btn")?.click();
+    closed = true;
+  }
+  const settingsOverlay = document.getElementById("settings-overlay");
+  if (!closed && settingsOverlay?.classList.contains("active")) {
+    document.getElementById("close-settings")?.click();
+    closed = true;
+  }
+  const transferModal = document.getElementById("transfer-modal");
+  if (!closed && transferModal?.classList.contains("active")) {
+    document.getElementById("transfer-modal-reject")?.click();
+    closed = true;
+  }
+  const inspectDrawer = document.getElementById("inspect-drawer");
+  if (!closed && inspectDrawer && !inspectDrawer.classList.contains("collapsed")) {
+    document.getElementById("inspect-close-btn")?.click();
+    closed = true;
+  }
+  const sidebar = document.getElementById("sidebar");
+  if (!closed && sidebar && !sidebar.classList.contains("collapsed")) {
+    document.getElementById("sidebar-close-btn")?.click();
+    closed = true;
+  }
+  if (closed) triggerHaptic("light");
 }
 
 function cycleTheme() {
@@ -4925,6 +4927,9 @@ navTabs.forEach((tab) => {
     updateBreadcrumb(targetViewName);
     updateContextualSidebar(targetViewName);
 
+    // Show first-visit contextual tip if available
+    showContextualTip(targetViewName);
+
     if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
       setTimeout(() => {
         try {
@@ -4956,6 +4961,101 @@ navTabs.forEach((tab) => {
       });
     }
   };
+});
+
+/* ------------------------------------------------------------------
+   Contextual Tips — shown once per view on first visit
+   ------------------------------------------------------------------ */
+const CONTEXTUAL_TIPS = {
+  canvas: "Press the <strong>Collab</strong> button to host a live LAN coding session.",
+  agent: "The <strong>Agent</strong> can read your canvas output and iterate on it automatically.",
+  memory: "Chat messages are auto-saved to <strong>RAG memory</strong> for future context.",
+  docs: "<strong>Index a folder</strong> to make your documents semantically searchable.",
+  terminal: "Press <strong>Ctrl+Space</strong> for AI ghost-text autocomplete in the terminal.",
+  browser: "Add <strong>speed-dial bookmarks</strong> for your most-used sites.",
+  ssh: "<strong>Save connection profiles</strong> for one-click reconnects.",
+  "prompt-lab": "Try <strong>JPE Explain mode</strong> to understand any prompt formula.",
+  share: "Enable the <strong>Warpinator gRPC server</strong> to receive files from Linux peers.",
+  tunnel: "Use the tunnel to <strong>bridge Desktop Mode and Game Mode</strong> on SteamOS.",
+  remote: "<strong>Scan the QR code</strong> with your iPhone to send commands remotely.",
+};
+
+let activeTipTimer = null;
+let activeTipInterval = null;
+
+function dismissContextualTip() {
+  const tip = document.getElementById("contextual-tip");
+  if (!tip) return;
+  tip.classList.remove("active");
+  clearTimeout(activeTipTimer);
+  clearInterval(activeTipInterval);
+  activeTipTimer = null;
+  activeTipInterval = null;
+  setTimeout(() => tip.remove(), 400);
+}
+
+function showContextualTip(viewName) {
+  const tipText = CONTEXTUAL_TIPS[viewName];
+  if (!tipText) return;
+
+  const storageKey = `neurodeck_tip_dismissed_${viewName}`;
+  if (localStorage.getItem(storageKey) === "true") return;
+
+  // Remove any existing tip first
+  dismissContextualTip();
+
+  const tip = document.createElement("div");
+  tip.id = "contextual-tip";
+  tip.className = "contextual-tip";
+  tip.innerHTML = `
+    <div class="contextual-tip-icon">${createIcon("info", { size: 16 })}</div>
+    <div class="contextual-tip-text">${tipText}</div>
+    <button class="contextual-tip-close" id="contextual-tip-close" aria-label="Dismiss tip">${createIcon("x", { size: 12 })}</button>
+    <div class="contextual-tip-progress" id="contextual-tip-progress" style="width: 100%;"></div>
+  `;
+  document.body.appendChild(tip);
+
+  // Trigger enter animation
+  requestAnimationFrame(() => tip.classList.add("active"));
+
+  // Progress bar countdown (8 seconds)
+  const progressEl = document.getElementById("contextual-tip-progress");
+  let remaining = 8000;
+  const step = 100;
+  activeTipInterval = setInterval(() => {
+    remaining -= step;
+    if (progressEl) progressEl.style.width = `${(remaining / 8000) * 100}%`;
+    if (remaining <= 0) clearInterval(activeTipInterval);
+  }, step);
+
+  // Auto-dismiss
+  activeTipTimer = setTimeout(() => {
+    dismissContextualTip();
+  }, 8000);
+
+  // Manual dismiss — click
+  document.getElementById("contextual-tip-close")?.addEventListener("click", () => {
+    localStorage.setItem(storageKey, "true");
+    dismissContextualTip();
+  });
+
+  // Manual dismiss — tip body click also dismisses
+  tip.addEventListener("click", (e) => {
+    if (e.target.closest(".contextual-tip-close")) return;
+    localStorage.setItem(storageKey, "true");
+    dismissContextualTip();
+  });
+}
+
+// Global dismiss handlers for Escape and gamepad B
+document.addEventListener("keydown", (e) => {
+  const tip = document.getElementById("contextual-tip");
+  if (!tip || !tip.classList.contains("active")) return;
+  if (e.key === "Escape" || e.key === "b" || e.key === "B") {
+    const viewName = currentViewId.replace("view-", "");
+    localStorage.setItem(`neurodeck_tip_dismissed_${viewName}`, "true");
+    dismissContextualTip();
+  }
 });
 
 function updateBreadcrumb(viewName) {
@@ -8196,6 +8296,7 @@ let shortcutsFocusTrap = null;
 function openShortcutsOverlay() {
   const overlay = document.getElementById("shortcuts-overlay");
   if (!overlay) return;
+  renderShortcutsOverlay();
   overlay.classList.remove("hidden");
   if (!shortcutsFocusTrap) shortcutsFocusTrap = new FocusTrap(overlay);
   shortcutsFocusTrap.activate();
@@ -8281,12 +8382,16 @@ function initNotificationCenter() {
 }
 
 function initShortcutsOverlay() {
-  const closeBtn = document.getElementById("shortcuts-close");
   const overlay = document.getElementById("shortcuts-overlay");
-  if (closeBtn) closeBtn.onclick = closeShortcutsOverlay;
   if (overlay) {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeShortcutsOverlay();
+    });
+  }
+  // Validate shortcut registry in development
+  if (import.meta.env?.DEV) {
+    import("./shortcuts.js").then((m) => {
+      if (m.validateShortcuts) m.validateShortcuts();
     });
   }
 }
@@ -9392,6 +9497,10 @@ async function showOnboardingWizard() {
                     <span class="onboarding-step-dot" data-step="4"></span>
                     <span class="onboarding-step-dot" data-step="5"></span>
                     <span class="onboarding-step-dot" data-step="6"></span>
+                    <span class="onboarding-step-dot" data-step="7"></span>
+                    <span class="onboarding-step-dot" data-step="8"></span>
+                    <span class="onboarding-step-dot" data-step="9"></span>
+                    <span class="onboarding-step-dot" data-step="10"></span>
                 </div>
             </header>
 
@@ -9426,7 +9535,7 @@ async function showOnboardingWizard() {
                         <span class="ob-tag">Gemini / Ollama</span>
                         <span class="ob-tag">Warpinator gRPC</span>
                         <span class="ob-tag">Lua Plugins</span>
-                        <span class="ob-tag">Plugin Marketplace</span>
+                        <span class="ob-tag">Knowledge Base</span>
                         <span class="ob-tag">Prompt Lab</span>
                         <span class="ob-tag">1280×800</span>
                     </div>
@@ -9493,9 +9602,9 @@ async function showOnboardingWizard() {
                             <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.</span>
                         </div>
                         <div class="ob-feature-card" style="animation-delay: 0.57s">
-                            <span class="ob-feature-icon">${createIcon("settings2", { size: 18 })}</span>
-                            <span class="ob-feature-name">Settings</span>
-                            <span class="ob-feature-desc">Themes, personas, LLM config, OS keychain, and Plugin Marketplace — all in one panel.</span>
+                            <span class="ob-feature-icon">${createIcon("fileText", { size: 18 })}</span>
+                            <span class="ob-feature-name">Docs</span>
+                            <span class="ob-feature-desc">Knowledge Base with semantic search. Index local folders and query documents via RAG embeddings.</span>
                         </div>
                     </div>
                 </div>
@@ -9626,8 +9735,213 @@ async function showOnboardingWizard() {
                     </div>
                 </div>
 
-                <!-- Slide 6: System Integration Diagnostics (6-check) -->
+                <!-- Slide 6: Touch & Gesture Controls -->
                 <div class="onboarding-slide" id="slide-6">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">TOUCH & GESTURE CONTROLS</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Built for Steam Deck's 1280×800 touchscreen. No configuration needed.</p>
+
+                    <div class="ob-touch-grid">
+                        <div class="ob-touch-card">
+                            <div class="ob-touch-demo">
+                                <div class="ob-touch-tap-ring"></div>
+                            </div>
+                            <span class="ob-touch-name">Tap</span>
+                            <span class="ob-touch-desc">Select buttons, tabs, and list items.</span>
+                        </div>
+                        <div class="ob-touch-card">
+                            <div class="ob-touch-demo">
+                                <div class="ob-touch-swipe-arrow"></div>
+                            </div>
+                            <span class="ob-touch-name">Swipe / Fling</span>
+                            <span class="ob-touch-desc">Momentum scroll in chat, terminal, and lists.</span>
+                        </div>
+                        <div class="ob-touch-card">
+                            <div class="ob-touch-demo">
+                                <div class="ob-touch-kb-keys">ABC</div>
+                            </div>
+                            <span class="ob-touch-name">Virtual Keyboard</span>
+                            <span class="ob-touch-desc">Tap any text field to open the QWERTY panel.</span>
+                        </div>
+                        <div class="ob-touch-card">
+                            <div class="ob-touch-demo">
+                                <div class="ob-touch-radial-seg"></div>
+                            </div>
+                            <span class="ob-touch-name">Radial Menu</span>
+                            <span class="ob-touch-desc">Tap a segment to jump directly to a view.</span>
+                        </div>
+                    </div>
+
+                    <div class="ob-touch-practice">
+                        <button class="onboarding-btn primary" id="ob-btn-try-radial">
+                            ${createIcon("gamepad2", { size: 16 })} Try the Radial Menu
+                        </button>
+                        <p style="font-size: 0.7rem; opacity: 0.6; margin: 8px 0 0;">
+                            Press <kbd style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:3px;font-family:inherit;">\`</kbd>
+                            or tap the button above
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Slide 7: Voice I/O Calibration -->
+                <div class="onboarding-slide" id="slide-7">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">VOICE I/O CALIBRATION</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Test your microphone and text-to-speech engine. Both are optional.</p>
+
+                    <div class="ob-voice-grid">
+                        <div class="ob-voice-card">
+                            <div class="ob-voice-demo">
+                                <div class="ob-voice-waveform" id="ob-mic-waveform">
+                                    <span></span><span></span><span></span><span></span><span></span>
+                                </div>
+                            </div>
+                            <span class="ob-voice-name">Microphone</span>
+                            <span class="ob-voice-desc" id="ob-mic-status">Tap record and speak for 3 seconds.</span>
+                            <button class="onboarding-btn secondary" id="ob-btn-test-mic" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">
+                                ${createIcon("mic", { size: 14 })} Test Mic
+                            </button>
+                            <div class="ob-voice-result" id="ob-mic-result"></div>
+                        </div>
+                        <div class="ob-voice-card">
+                            <div class="ob-voice-demo">
+                                <div class="ob-voice-speaker" id="ob-tts-speaker">
+                                    <div class="ob-voice-speaker-cone"></div>
+                                </div>
+                            </div>
+                            <span class="ob-voice-name">Text-to-Speech</span>
+                            <span class="ob-voice-desc" id="ob-tts-status">Tap to hear a sample phrase.</span>
+                            <button class="onboarding-btn secondary" id="ob-btn-test-tts" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">
+                                ${createIcon("volume2", { size: 14 })} Test TTS
+                            </button>
+                            <div class="ob-voice-result" id="ob-tts-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 8: Security & Privacy At-a-Glance -->
+                <div class="onboarding-slide" id="slide-8">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">TRUST & PRIVACY</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Your data stays local. No telemetry. No cloud lock-in.</p>
+
+                    <div class="ob-sec-grid">
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("shieldCheck", { size: 20 })}</div>
+                            <span class="ob-sec-name">OS Keychain</span>
+                            <span class="ob-sec-desc">API keys live in your OS secure store — never on disk as plain text.</span>
+                        </div>
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("globe", { size: 20 })}</div>
+                            <span class="ob-sec-name">Offline Ready</span>
+                            <span class="ob-sec-desc">Ollama runs entirely on-device with zero network access.</span>
+                        </div>
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("x", { size: 20 })}</div>
+                            <span class="ob-sec-name">No Telemetry</span>
+                            <span class="ob-sec-desc">No analytics, crash reporters, or remote logging. Ever.</span>
+                        </div>
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("server", { size: 20 })}</div>
+                            <span class="ob-sec-name">MCP Auth</span>
+                            <span class="ob-sec-desc">Tool-server connections require a Bearer token with constant-time validation.</span>
+                        </div>
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("brain", { size: 20 })}</div>
+                            <span class="ob-sec-name">Local RAG</span>
+                            <span class="ob-sec-desc">Embeddings and chat history persist only on your local disk.</span>
+                        </div>
+                        <div class="ob-sec-card">
+                            <div class="ob-sec-icon">${createIcon("zap", { size: 20 })}</div>
+                            <span class="ob-sec-name">CSP Hardened</span>
+                            <span class="ob-sec-desc">Content Security Policy blocks inline scripts and restricts network origins.</span>
+                        </div>
+                    </div>
+
+                    <div class="ob-sec-footer">
+                        <strong style="color: var(--accent-color);">NEURODECK is local-first by design.</strong><br>
+                        Your conversations, documents, and credentials never leave this device unless you explicitly choose a cloud LLM provider.
+                    </div>
+                </div>
+
+                <!-- Slide 9: Additional Features -->
+                <div class="onboarding-slide" id="slide-9">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">POWER USER TOOLKIT</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Capabilities that make NEURODECK more than a chat app.</p>
+
+                    <div class="ob-deep-grid">
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("plusCircle", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Plugin Marketplace</span>
+                                <span class="ob-deep-desc">One-click install Lua plugins from the community registry.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("users", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Canvas Collaboration</span>
+                                <span class="ob-deep-desc">Host or join a live coding session over your LAN.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("zap", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">AI Terminal Autocomplete</span>
+                                <span class="ob-deep-desc">Ctrl+Space ghost-text completion in any PTY session.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("clock3", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">AI History Search</span>
+                                <span class="ob-deep-desc">Ctrl+H semantic search across bash/zsh/fish history.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("gamepad2", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Game-Aware Mode</span>
+                                <span class="ob-deep-desc">Auto-detects your Steam game and injects optimization context.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("columns", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Model Switcher</span>
+                                <span class="ob-deep-desc">Compare Gemini vs Ollama outputs side-by-side in chat.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("search", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Command Palette</span>
+                                <span class="ob-deep-desc">Ctrl+K for instant navigation to any tab or settings panel.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("folderOpen", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Document Indexing</span>
+                                <span class="ob-deep-desc">Point at a folder — embeddings generate in one click.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("bot", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Cinematic Boot</span>
+                                <span class="ob-deep-desc">Animated startup sequence showing real system state.</span>
+                            </div>
+                        </div>
+                        <div class="ob-deep-row">
+                            <div class="ob-deep-icon">${createIcon("squareTerminal", { size: 14 })}</div>
+                            <div class="ob-deep-text">
+                                <span class="ob-deep-name">Virtual Keyboard</span>
+                                <span class="ob-deep-desc">Full QWERTY overlay with sticky modifiers for touch.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 10: System Integration Diagnostics (6-check) -->
+                <div class="onboarding-slide" id="slide-10">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 10px;">FINAL SYSTEM CHECK</h3>
 
                     <div class="onboarding-diagnostic-list">
@@ -9753,11 +10067,11 @@ async function showOnboardingWizard() {
     // Update footer buttons
     btnPrev.disabled = currentStep === 1;
 
-    if (currentStep === 6) {
+    if (currentStep === 10) {
       btnNext.innerText = "Launch NEURODECK";
       btnNext.classList.add("primary");
       btnNext.disabled = !isDiagnosticsPassed;
-      // Auto-trigger diagnostics on step 6
+      // Auto-trigger diagnostics on step 10
       runDiagnostics();
     } else {
       btnNext.innerText = "Next";
@@ -9784,7 +10098,7 @@ async function showOnboardingWizard() {
   };
 
   btnNext.onclick = () => {
-    if (currentStep === 6) {
+    if (currentStep === 10) {
       // Finish onboarding!
       localStorage.setItem("neurodeck_onboarding_complete", "true");
       overlay.classList.add("hidden");
@@ -9843,6 +10157,93 @@ async function showOnboardingWizard() {
       if (selectedProvider === "ollama") checkOllamaInstalled();
     };
   });
+
+  // Touch tutorial — Try Radial Menu button
+  const btnTryRadial = document.getElementById("ob-btn-try-radial");
+  if (btnTryRadial) {
+    btnTryRadial.onclick = () => {
+      if (window.showRadialMenu) {
+        window.showRadialMenu();
+        // Auto-hide after 3 seconds so they don't get stuck
+        setTimeout(() => {
+          if (window.hideRadialMenu) window.hideRadialMenu();
+        }, 3000);
+      }
+    };
+  }
+
+  // Voice I/O Calibration — Mic & TTS test buttons
+  const btnTestMic = document.getElementById("ob-btn-test-mic");
+  const micStatus = document.getElementById("ob-mic-status");
+  const micResult = document.getElementById("ob-mic-result");
+  const micWaveform = document.getElementById("ob-mic-waveform");
+
+  if (btnTestMic) {
+    btnTestMic.onclick = async () => {
+      btnTestMic.disabled = true;
+      if (micResult) micResult.textContent = "";
+      if (micWaveform) micWaveform.classList.add("active");
+
+      try {
+        const startMsg = await invoke("start_recording");
+        if (startMsg.includes("only supported on Linux")) {
+          if (micStatus) micStatus.textContent = "Voice recording requires Linux / SteamOS.";
+          if (micWaveform) micWaveform.classList.remove("active");
+          btnTestMic.disabled = false;
+          return;
+        }
+
+        if (micStatus) micStatus.textContent = "Recording... speak now!";
+        await new Promise((r) => setTimeout(r, 3000));
+
+        if (micStatus) micStatus.textContent = "Transcribing...";
+        const text = await invoke("stop_recording");
+
+        if (micWaveform) micWaveform.classList.remove("active");
+        if (micStatus) micStatus.textContent = "Microphone working!";
+        if (micResult)
+          micResult.innerHTML = `<span style="color:var(--response-color)">"${text}"</span>`;
+      } catch (err) {
+        if (micWaveform) micWaveform.classList.remove("active");
+        if (micStatus) micStatus.textContent = "Mic test failed.";
+        if (micResult)
+          micResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
+      }
+
+      btnTestMic.disabled = false;
+    };
+  }
+
+  const btnTestTts = document.getElementById("ob-btn-test-tts");
+  const ttsStatus = document.getElementById("ob-tts-status");
+  const ttsResult = document.getElementById("ob-tts-result");
+  const ttsSpeaker = document.getElementById("ob-tts-speaker");
+
+  if (btnTestTts) {
+    btnTestTts.onclick = async () => {
+      btnTestTts.disabled = true;
+      if (ttsResult) ttsResult.textContent = "";
+      if (ttsSpeaker) ttsSpeaker.classList.add("active");
+      if (ttsStatus) ttsStatus.textContent = "Speaking...";
+
+      try {
+        await invoke("speak_text", {
+          text: "NEURODECK voice output test. Your TTS engine is working.",
+        });
+        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+        if (ttsStatus) ttsStatus.textContent = "TTS engine ready!";
+        if (ttsResult)
+          ttsResult.innerHTML = `<span style="color:var(--response-color);font-size:0.7rem;">✓ Audio played successfully</span>`;
+      } catch (err) {
+        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+        if (ttsStatus) ttsStatus.textContent = "TTS test failed.";
+        if (ttsResult)
+          ttsResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
+      }
+
+      btnTestTts.disabled = false;
+    };
+  }
 
   async function checkOllamaInstalled() {
     const banner = document.getElementById("ob-ollama-install-banner");
@@ -10141,8 +10542,6 @@ async function showOnboardingWizard() {
     Amelia: "server",
     Paige: "fileText",
     Mary: "chartColumn",
-    "Sarcastic Hacker": "messageSquare",
-    "Elden Ring Scholar": "shieldCheck",
   };
   const personaDescMap = {
     Default: "Helpful, balanced assistant.",
@@ -10154,8 +10553,6 @@ async function showOnboardingWizard() {
     Amelia: "Senior Dev — Rust & JS expert.",
     Paige: "Technical Writer — docs & wikis.",
     Mary: "Business Analyst — epics & acceptance criteria.",
-    "Sarcastic Hacker": "Witty, irreverent hacker archetype.",
-    "Elden Ring Scholar": "Lore-keeper of the Lands Between.",
   };
 
   // Load personas from backend
@@ -10801,12 +11198,14 @@ async function showOnboardingWizard() {
   }
 
   function showVirtualKeyboard(targetEl) {
+    triggerHaptic("light");
     vkTarget = targetEl;
     const overlay = document.getElementById("vk-overlay");
     if (overlay) overlay.classList.add("vk-visible");
   }
 
   function hideVirtualKeyboard() {
+    triggerHaptic("light");
     vkTarget = null;
     const overlay = document.getElementById("vk-overlay");
     if (overlay) overlay.classList.remove("vk-visible");

@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
 import { initSlashCommands, setSlashClearHandler, hideSlashPalette } from './slash-commands.js';
+import { triggerHaptic } from './haptics.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGE REGISTRY & VIRTUALIZATION
@@ -297,6 +298,7 @@ function escapeRegExp(string) {
 function navigateSearch(delta) {
     const matches = state.chatSearch.matches;
     if (matches.length === 0) return;
+    triggerHaptic("light");
     matches.forEach((m, i) => {
         m.el.classList.toggle('search-highlight-active', i === state.chatSearch.activeIndex);
     });
@@ -1238,6 +1240,7 @@ function makeCopyBtn(getText) {
     btn.addEventListener("click", async () => {
         try {
             await navigator.clipboard.writeText(getText());
+            triggerHaptic("doubleTick");
             setButtonIconLabel(btn, "shieldCheck", "Copied");
             setTimeout(() => {
                 setButtonIconLabel(btn, "copy", "Copy");
@@ -1342,6 +1345,7 @@ function sendMessage() {
     // Clear and reset input size
     inputElement.value = "";
     inputElement.style.height = "36px";
+    triggerHaptic("medium");
 
     // Collect and clear pending attachments
     const { attachments: remainingAttachments, imageAttachment, inlinedText } = prepareAttachmentsForSend();
@@ -1776,6 +1780,7 @@ listen("stream_chunk", function (event) {
             viewport.scrollTop = viewport.scrollHeight;
         }
     }
+    triggerHaptic("tick");
     // Forward token to any connected remote clients
     invoke("remote_send_to_clients", {
         message: JSON.stringify({ type: "chat_token", text: chunk, done: false })
@@ -1787,6 +1792,7 @@ listen("stream_error", function (event) {
     if (typeof window.announceToScreenReader === 'function') {
         window.announceToScreenReader(`Chat error: ${String(err)}`);
     }
+    triggerHaptic("error");
     appendChatMessage("system", String(err), { error: true, strongPrefix: "Error:" });
     let viewport = document.getElementById("chat-workspace");
     if (viewport) viewport.scrollTop = viewport.scrollHeight;
@@ -1797,6 +1803,7 @@ listen("stream_error", function (event) {
 });
 
 listen("stream_done", function () {
+    triggerHaptic("success");
     document.getElementById("tool-status").innerText = "Idle";
     hideGenBar();
     if (state.currentAIMessage) {
@@ -1929,11 +1936,13 @@ listen("compare_stream_chunk", function (event) {
     }
 
     updateCompareMetrics(pane);
+    triggerHaptic("tick");
 });
 
 listen("compare_stream_done", function (event) {
     const { pane } = event.payload;
     finalizeComparePane(pane);
+    triggerHaptic("success");
 
     // Check if both panes are done
     const leftDone = !state.compareLeft.currentAIMessage || !state.compareLeft.currentAIMessage.classList.contains('thinking');
@@ -1945,6 +1954,7 @@ listen("compare_stream_done", function (event) {
 });
 
 listen("compare_stream_error", function (event) {
+    triggerHaptic("error");
     const { pane, error } = event.payload;
     const paneState = pane === 'left' ? state.compareLeft : state.compareRight;
 
@@ -2145,22 +2155,38 @@ window.addEventListener("keydown", function(e) {
     }
 });
 
-// Arrow keys to cycle radial segments when menu is open
+// Arrow keys and number keys to cycle/select radial segments when menu is open
 window.addEventListener("keydown", function(e) {
     if (!state.radialMenuVisible) return;
     const keyToSeg = { ArrowUp: 0, ArrowRight: 2, ArrowDown: 4, ArrowLeft: 6 };
     if (e.key in keyToSeg) {
         e.preventDefault();
         updateRadialDisplay(keyToSeg[e.key]);
+        return;
+    }
+    // Number keys 1-9,0 for direct segment selection (1=Chat, 2=Canvas, etc.)
+    if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        const num = e.key === "0" ? 9 : parseInt(e.key, 10) - 1;
+        if (num >= 0 && num < 12) {
+            updateRadialDisplay(num);
+            setTimeout(() => {
+                activateRadialSegment(num);
+                hideRadialMenu();
+            }, 120);
+        }
+        return;
     }
     if (e.key === "Enter") {
         e.preventDefault();
         activateRadialSegment(state.radialSelectedSegment);
         hideRadialMenu();
+        return;
     }
     if (e.key === "Escape") {
         e.preventDefault();
         hideRadialMenu();
+        return;
     }
 });
 
