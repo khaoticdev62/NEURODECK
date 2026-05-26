@@ -121,6 +121,96 @@ function appendChatMessage(kind, text, options = {}) {
     return wrapper;
 }
 
+function createMessageShell(kind, extraClass = "") {
+    const wrapper = document.createElement("div");
+    wrapper.className = `message ${kind}${extraClass ? ` ${extraClass}` : ""}`;
+    const card = document.createElement("div");
+    card.className = "message-card";
+    wrapper.appendChild(card);
+    return { wrapper, card };
+}
+
+function renderSanitizedHtml(target, html) {
+    target.innerHTML = window.sanitizeHtml(String(html ?? ""));
+}
+
+function appendUserMessage(text, attachment = null) {
+    const chatViewport = document.getElementById("chat-viewport");
+    const viewport = document.getElementById("chat-workspace");
+    if (!chatViewport || !viewport) return null;
+
+    const { wrapper, card } = createMessageShell("user");
+
+    if (attachment && attachment.data && attachment.mime) {
+        const imageWrap = document.createElement("div");
+        imageWrap.style.marginBottom = "8px";
+        const image = document.createElement("img");
+        image.src = `data:${attachment.mime};base64,${attachment.data}`;
+        image.style.maxWidth = "160px";
+        image.style.maxHeight = "100px";
+        image.style.borderRadius = "5px";
+        image.style.border = "1px solid rgba(0,240,255,0.3)";
+        image.style.display = "block";
+        image.alt = "Screenshot";
+        imageWrap.appendChild(image);
+        card.appendChild(imageWrap);
+    }
+
+    const textNode = document.createElement("div");
+    textNode.textContent = String(text ?? "");
+    card.appendChild(textNode);
+    card.appendChild(makeCopyBtn(() => String(text ?? "")));
+
+    chatViewport.appendChild(wrapper);
+    viewport.scrollTop = viewport.scrollHeight;
+    return wrapper;
+}
+
+function appendAiThinkingMessage() {
+    const chatViewport = document.getElementById("chat-viewport");
+    const viewport = document.getElementById("chat-workspace");
+    if (!chatViewport || !viewport) return null;
+
+    const { wrapper, card } = createMessageShell("ai", "thinking");
+    const thinking = document.createElement("span");
+    thinking.className = "thinking-dots";
+    thinking.textContent = "AI is thinking";
+    card.appendChild(thinking);
+    chatViewport.appendChild(wrapper);
+    viewport.scrollTop = viewport.scrollHeight;
+    return wrapper;
+}
+
+function buildHistoryMessage(msgStr) {
+    const text = String(msgStr ?? "");
+    if (text.startsWith("User: ")) {
+        const { wrapper, card } = createMessageShell("user");
+        card.textContent = text.substring(6);
+        return wrapper;
+    }
+    if (text.startsWith("AI: ")) {
+        const { wrapper, card } = createMessageShell("ai");
+        renderSanitizedHtml(card, marked.parse(text.substring(4)));
+        formatCodeBlocks(wrapper);
+        return wrapper;
+    }
+
+    const { wrapper, card } = createMessageShell("system");
+    card.textContent = text;
+    return wrapper;
+}
+
+function renderSessionMessages(messages) {
+    const chatViewport = document.getElementById("chat-viewport");
+    const viewport = document.getElementById("chat-workspace");
+    if (!chatViewport || !viewport) return;
+    chatViewport.replaceChildren();
+    messages.forEach((msgStr) => {
+        chatViewport.appendChild(buildHistoryMessage(msgStr));
+    });
+    viewport.scrollTop = viewport.scrollHeight;
+}
+
 function setButtonIconLabel(button, iconName, label) {
     if (!button) return;
     const iconWrap = document.createElement("span");
@@ -275,18 +365,10 @@ function toggleMute() {
     state.isMuted = !state.isMuted;
     localStorage.setItem("state.isMuted", state.isMuted);
     updateMuteButtonUI();
-    
-    let chatViewport = document.getElementById("chat-viewport");
-    let viewport = document.getElementById("chat-workspace");
-    let div = document.createElement("div");
-    div.className = "message system";
-    div.innerHTML = `
-        <div class="message-card">
-            System: Speech voice feedback is now ${state.isMuted ? "disabled (Muted)" : "enabled (Unmuted)"}.
-        </div>
-    `;
-    chatViewport.appendChild(div);
-    viewport.scrollTop = viewport.scrollHeight;
+    appendChatMessage(
+        "system",
+        `System: Speech voice feedback is now ${state.isMuted ? "disabled (Muted)" : "enabled (Unmuted)"}.`
+    );
 }
 
 function cleanTextForSpeech(text) {
@@ -318,34 +400,10 @@ function sendMessage() {
 
     // Add message to viewport
     let viewport = document.getElementById("chat-workspace");
-    let chatViewport = document.getElementById("chat-viewport");
-    let msg = document.createElement("div");
-    msg.className = "message user";
-
-    let attachmentHTML = '';
-    if (attachment) {
-        attachmentHTML = `<div style="margin-bottom:8px;"><img src="data:${attachment.mime};base64,${attachment.data}" style="max-width:160px;max-height:100px;border-radius:5px;border:1px solid rgba(0,240,255,0.3);display:block;" alt="Screenshot"></div>`;
-    }
-
-    msg.innerHTML = `
-        <div class="message-card">
-            ${attachmentHTML}${window.sanitizeHtml(text)}
-        </div>
-    `;
-    // Add copy button to user message
-    const userCard = msg.querySelector(".message-card");
-    if (userCard) userCard.appendChild(makeCopyBtn(() => text));
-    chatViewport.appendChild(msg);
+    appendUserMessage(text, attachment);
 
     // Create a placeholder for AI response
-    state.currentAIMessage = document.createElement("div");
-    state.currentAIMessage.className = "message ai thinking";
-    state.currentAIMessage.innerHTML = `
-        <div class="message-card">
-            <span class="thinking-dots">AI is thinking</span>
-        </div>
-    `;
-    chatViewport.appendChild(state.currentAIMessage);
+    state.currentAIMessage = appendAiThinkingMessage();
     
     state.currentAIText = "";
 
@@ -863,15 +921,8 @@ function handleMicAction() {
         applyButtonIcon("#mic-btn", { icon: "mic", iconOnly: true });
         micBtn.classList.remove("recording");
         
-        let div = document.createElement("div");
-        div.className = "message system";
-        div.innerHTML = `
-            <div class="message-card">
-                System: Processing audio...
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
+        const div = appendChatMessage("system", "System: Processing audio...");
+        const messageCard = div?.querySelector(".message-card");
 
         invoke("stop_recording").then((text) => {
             inputElement.value = text;
@@ -879,10 +930,12 @@ function handleMicAction() {
             inputElement.style.height = (inputElement.scrollHeight) + "px";
             inputElement.focus();
             
-            div.querySelector(".message-card").innerText = "System: Audio transcribed.";
+            if (messageCard) messageCard.textContent = "System: Audio transcribed.";
         }).catch((err) => {
-            div.className = "message system error";
-            div.querySelector(".message-card").innerText = "System error stop recording/transcribing: " + err;
+            if (div) div.className = "message system error";
+            if (messageCard) {
+                messageCard.textContent = "System error stop recording/transcribing: " + err;
+            }
         });
     }
 }
@@ -891,7 +944,11 @@ function handleMicAction() {
 function refreshSessionsList() {
     invoke("list_sessions").then((sessions) => {
         const historyContainer = document.getElementById("sidebar-history");
-        historyContainer.innerHTML = '<div class="history-group-label">Recent Sessions</div>';
+        historyContainer.replaceChildren();
+        const groupLabel = document.createElement("div");
+        groupLabel.className = "history-group-label";
+        groupLabel.textContent = "Recent Sessions";
+        historyContainer.appendChild(groupLabel);
         
         if (sessions.length === 0) {
             const noSessions = document.createElement("div");
@@ -971,39 +1028,7 @@ function loadSession(sid) {
         const stitleEl = document.getElementById("session-title");
         if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
         
-        let chatViewport = document.getElementById("chat-viewport");
-        let viewport = document.getElementById("chat-workspace");
-        chatViewport.innerHTML = "";
-        
-        data.messages.forEach((msgStr) => {
-            const div = document.createElement("div");
-            if (msgStr.startsWith("User: ")) {
-                div.className = "message user";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${window.sanitizeHtml(msgStr.substring(6))}
-                    </div>
-                `;
-            } else if (msgStr.startsWith("AI: ")) {
-                div.className = "message ai";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
-                    </div>
-                `;
-                formatCodeBlocks(div);
-            } else {
-                div.className = "message system";
-                div.innerHTML = `
-                    <div class="message-card">
-                        ${window.sanitizeHtml(msgStr)}
-                    </div>
-                `;
-            }
-            chatViewport.appendChild(div);
-        });
-        
-        viewport.scrollTop = viewport.scrollHeight;
+        renderSessionMessages(data.messages);
         
         let systemDiv = document.createElement("div");
         systemDiv.className = "message system";
@@ -1031,7 +1056,7 @@ function startNewSession() {
         if (stitleEl) stitleEl.innerText = "New Session";
 
         const chatViewport = document.getElementById("chat-viewport");
-        chatViewport.innerHTML = CHAT_WELCOME_HTML;
+        renderSanitizedHtml(chatViewport, CHAT_WELCOME_HTML);
         wireWelcomeStarters();
 
         // Reset session header
@@ -1134,31 +1159,7 @@ window.addEventListener("keydown", function(e) {
             if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
             
             let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            chatViewport.innerHTML = "";
-            
-            data.messages.forEach((msgStr) => {
-                const div = document.createElement("div");
-                if (msgStr.startsWith("User: ")) {
-                    div.className = "message user";
-                    div.innerHTML = `
-                        <div class="message-card">
-                            ${window.sanitizeHtml(msgStr.substring(6))}
-                        </div>
-                    `;
-                } else if (msgStr.startsWith("AI: ")) {
-                    div.className = "message ai";
-                    div.innerHTML = `
-                        <div class="message-card">
-                            ${window.sanitizeHtml(marked.parse(msgStr.substring(4)))}
-                        </div>
-                    `;
-                    formatCodeBlocks(div);
-                }
-                chatViewport.appendChild(div);
-            });
-            
-            viewport.scrollTop = viewport.scrollHeight;
+            renderSessionMessages(data.messages);
             
             appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
             
@@ -1175,17 +1176,7 @@ window.addEventListener("keydown", function(e) {
         if (state.pendingLuaScript) {
             runLuaScript(state.pendingLuaScript);
         } else {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: No pending Lua script found in chat to execute.
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", "System: No pending Lua script found in chat to execute.", { error: true });
         }
     }
 
@@ -1345,7 +1336,7 @@ export function initChat() {
     // Render welcome state on initial load
     const chatViewport = document.getElementById("chat-viewport");
     if (chatViewport && !chatViewport.querySelector(".message")) {
-        chatViewport.innerHTML = CHAT_WELCOME_HTML;
+        renderSanitizedHtml(chatViewport, CHAT_WELCOME_HTML);
         wireWelcomeStarters();
     }
 
