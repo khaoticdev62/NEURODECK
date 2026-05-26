@@ -579,6 +579,14 @@ document.querySelector("#app").innerHTML = `
                 </div>
             </div>
 
+            <!-- Quick Switcher -->
+            <div class="quick-switcher-overlay hidden" id="quick-switcher-overlay" aria-hidden="true">
+                <div class="quick-switcher-card" role="dialog" aria-modal="true" aria-label="Quick Switcher">
+                    <div class="quick-switcher-list" id="quick-switcher-list"></div>
+                    <div class="quick-switcher-hint">Ctrl+Tab to cycle · Shift+Ctrl+Tab reverse · Enter to switch · Esc to close</div>
+                </div>
+            </div>
+
             <div class="view-container">
                 <!-- Chat View -->
                 <div class="view-content active" id="view-chat" data-testid="view-chat">
@@ -3760,6 +3768,7 @@ function getGamepadFocusableElements() {
     "#view-chat.active #toggle-drawer-btn",
     "#view-chat.active #send-btn",
     "#view-chat.active .code-header-btn",
+    "#view-chat.active .message",
 
     // Canvas View
     "#view-canvas.active #canvas-run-btn",
@@ -4123,45 +4132,76 @@ function pollGamepads() {
     }
   }
 
-  // X Button (2) - Go to Chat tab and focus input (blocked when prompt picker open)
+  // X Button (2) - Copy focused message text, or go to Chat tab & focus input
   if (buttonPressed(2) && !getCtrlPromptVisible()) {
-    const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
-    if (chatTab) {
-      chatTab.click();
-    }
-    setTimeout(() => {
-      const userInput = document.getElementById("user-input");
-      if (userInput) {
-        userInput.focus();
-        const els = getGamepadFocusableElements();
-        const uidx = els.indexOf(userInput);
-        if (uidx !== -1) {
-          updateGamepadFocus(uidx);
+    const focused = document.querySelector(".gamepad-focused");
+    if (focused && focused.classList.contains("message")) {
+      // Copy message text to clipboard
+      import("./chat.js").then((m) => {
+        const text = m.getMessageText(focused);
+        if (text) {
+          navigator.clipboard.writeText(text).catch(() => {});
+          // Brief visual feedback
+          focused.style.transition = "background 0.2s";
+          const oldBg = focused.style.background;
+          focused.style.background = "rgba(94, 235, 255, 0.15)";
+          setTimeout(() => { focused.style.background = oldBg; }, 400);
         }
+      });
+    } else {
+      const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+      if (chatTab) {
+        chatTab.click();
       }
-    }, 50);
+      setTimeout(() => {
+        const userInput = document.getElementById("user-input");
+        if (userInput) {
+          userInput.focus();
+          const els = getGamepadFocusableElements();
+          const uidx = els.indexOf(userInput);
+          if (uidx !== -1) {
+            updateGamepadFocus(uidx);
+          }
+        }
+      }, 50);
+    }
   }
 
-  // Y Button (3) - Cycle active persona (blocked when prompt picker open)
+  // Y Button (3) - Regenerate last AI response in chat, or cycle persona
   if (buttonPressed(3) && !getCtrlPromptVisible()) {
-    if (state.availablePersonas && state.availablePersonas.length > 0) {
+    const chatView = document.getElementById("view-chat");
+    if (chatView && chatView.classList.contains("active")) {
+      // Try to regenerate: find last user message and re-send it
+      import("./chat.js").then((m) => {
+        const msgs = m.getMessageElements();
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].classList.contains("user")) {
+            const text = m.getMessageText(msgs[i]);
+            if (text) {
+              const input = document.getElementById("user-input");
+              if (input) {
+                input.value = text;
+                input.style.height = "auto";
+                input.style.height = Math.min(input.scrollHeight, 300) + "px";
+                input.focus();
+              }
+              // Auto-send after brief delay
+              setTimeout(() => {
+                const sendBtn = document.getElementById("send-btn");
+                if (sendBtn) sendBtn.click();
+              }, 300);
+            }
+            break;
+          }
+        }
+      });
+    } else if (state.availablePersonas && state.availablePersonas.length > 0) {
       const currentIdx = state.availablePersonas.indexOf(state.activePersona);
       const nextIdx = (currentIdx + 1) % state.availablePersonas.length;
       const nextPersona = state.availablePersonas[nextIdx];
       invoke("set_persona", { name: nextPersona })
         .then((msg) => {
           state.activePersona = nextPersona;
-          let chatViewport = document.getElementById("chat-viewport");
-          let viewport = document.getElementById("chat-workspace");
-          let div = document.createElement("div");
-          div.className = "message system";
-          div.innerHTML = `
-                    <div class="message-card">
-                        System: ${msg} (Gamepad Cycle)
-                    </div>
-                `;
-          chatViewport.appendChild(div);
-          viewport.scrollTop = viewport.scrollHeight;
           const select = document.getElementById("persona-select");
           if (select) select.value = nextPersona;
         })
@@ -4176,19 +4216,23 @@ function pollGamepads() {
     navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
   }
 
-  // L1 (4) / R1 (5) - Cycle tabs; when SSH tab active, also load focused SSH profile
+  // L1 (4) / R1 (5) - Cycle tabs; when Chat active, page scroll; when SSH active, load profile
   if ((buttonPressed(4) || buttonPressed(5)) && !getCtrlPromptVisible()) {
+    const chatView = document.getElementById("view-chat");
+    if (chatView && chatView.classList.contains("active")) {
+      const workspace = document.getElementById("chat-workspace");
+      if (workspace) {
+        const scrollAmount = workspace.clientHeight * 0.8;
+        workspace.scrollTop += buttonPressed(4) ? -scrollAmount : scrollAmount;
+      }
+    }
     const sshView = document.getElementById("view-ssh");
     if (sshView && sshView.classList.contains("active")) {
-      // L1 in SSH: load the currently D-pad-focused profile (A-button equivalent)
-      // R1 in SSH: same — pressing either loads the selected profile
       const focused = document.querySelector(
         "#ssh-profiles-list .ssh-profile-item.gamepad-focused",
       );
       if (focused) {
         focused.click();
-      } else {
-        // Fall through to tab cycling below
       }
     }
     const tabs = Array.from(document.querySelectorAll(".nav-tab"));
@@ -4730,6 +4774,7 @@ invoke("get_initial_state")
       );
     }
     initCommandPalette();
+    initQuickSwitcher();
     initGameContextPanel();
     initTunnelClient();
     initFileShare();
@@ -4854,6 +4899,7 @@ navTabs.forEach((tab) => {
     }
 
     currentViewId = targetViewId;
+    recordViewSwitch(targetViewId);
 
     // Restore state of incoming view
     requestAnimationFrame(() => restoreViewState(targetViewId));
@@ -5178,18 +5224,205 @@ const commandPaletteState = {
   filtered: [],
 };
 
-function commandPaletteMatches(action, query) {
-  if (!query) return true;
-  const haystack =
-    `${action.label} ${action.group} ${(action.keywords || []).join(" ")}`.toLowerCase();
-  return haystack.includes(query);
+const PALETTE_HISTORY_KEY = "nd_palette_history_v2";
+const PALETTE_HISTORY_MAX = 20;
+
+const GROUP_ORDER = [
+  "History",
+  "Views",
+  "State",
+  "Layout",
+  "Session",
+  "Settings",
+  "Context",
+  "System",
+  "Window",
+];
+
+function getPaletteHistory() {
+  try {
+    const raw = localStorage.getItem(PALETTE_HISTORY_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function addPaletteHistory(label) {
+  const history = getPaletteHistory();
+  const filtered = history.filter((h) => h !== label);
+  filtered.unshift(label);
+  if (filtered.length > PALETTE_HISTORY_MAX) filtered.pop();
+  try {
+    localStorage.setItem(PALETTE_HISTORY_KEY, JSON.stringify(filtered));
+  } catch {}
+}
+
+function fuzzyScore(text, query) {
+  const t = text.toLowerCase();
+  const q = query.toLowerCase();
+  if (!q) return { score: 0, matches: [] };
+  if (t === q) return { score: 1000, matches: Array.from({ length: t.length }, (_, i) => i) };
+  if (t.startsWith(q)) return { score: 500, matches: Array.from({ length: q.length }, (_, i) => i) };
+
+  let score = 0;
+  const matches = [];
+  let tIdx = 0;
+  let qIdx = 0;
+  let lastMatchIdx = -1;
+  let consecutiveBonus = 0;
+
+  while (tIdx < t.length && qIdx < q.length) {
+    if (t[tIdx] === q[qIdx]) {
+      matches.push(tIdx);
+      score += 10;
+      if (lastMatchIdx >= 0 && tIdx === lastMatchIdx + 1) {
+        consecutiveBonus += 5;
+        score += consecutiveBonus;
+      } else {
+        consecutiveBonus = 0;
+      }
+      if (tIdx === 0) {
+        score += 20;
+      } else if (t[tIdx - 1] === " " || t[tIdx - 1] === "-" || t[tIdx - 1] === ":") {
+        score += 10;
+      }
+      if (lastMatchIdx >= 0) {
+        score -= (tIdx - lastMatchIdx - 1) * 3;
+      }
+      lastMatchIdx = tIdx;
+      qIdx++;
+    }
+    tIdx++;
+  }
+
+  if (qIdx < q.length) return { score: -1, matches: [] };
+  score -= (t.length - q.length) * 0.5;
+  return { score: Math.max(0, Math.round(score)), matches };
+}
+
+function getDynamicActions() {
+  const actions = [];
+
+  if (state.isMuted) {
+    actions.push({
+      label: "Unmute Audio",
+      group: "State",
+      icon: "volume2",
+      keywords: ["mute", "audio", "sound", "unmute"],
+      run: () => toggleMute(),
+    });
+  } else {
+    actions.push({
+      label: "Mute Audio",
+      group: "State",
+      icon: "volumeX",
+      keywords: ["mute", "audio", "sound", "unmute"],
+      run: () => toggleMute(),
+    });
+  }
+
+  const sidebar = document.getElementById("sidebar");
+  const sidebarHidden = sidebar?.classList.contains("collapsed");
+  if (sidebarHidden) {
+    actions.push({
+      label: "Show Sidebar",
+      group: "Layout",
+      icon: "menu",
+      keywords: ["sidebar", "show", "layout"],
+      run: () => clickFirstAvailableButton("sidebar-toggle-btn"),
+    });
+  } else {
+    actions.push({
+      label: "Hide Sidebar",
+      group: "Layout",
+      icon: "panelLeftClose",
+      keywords: ["sidebar", "hide", "layout"],
+      run: () => clickFirstAvailableButton("sidebar-close-btn", "sidebar-toggle-btn"),
+    });
+  }
+
+  return actions;
 }
 
 function getCommandPaletteFilteredActions() {
   const query = commandPaletteState.query.trim().toLowerCase();
-  return COMMAND_PALETTE_ACTIONS.filter((action) =>
-    commandPaletteMatches(action, query),
-  );
+  const history = getPaletteHistory();
+  const dynamic = getDynamicActions();
+  const allActions = [...COMMAND_PALETTE_ACTIONS, ...dynamic];
+
+  if (!query) {
+    const seen = new Set();
+    const result = [];
+
+    for (const label of history) {
+      const action = allActions.find((a) => a.label === label);
+      if (action && !seen.has(action.label)) {
+        const cloned = { ...action, group: "History" };
+        cloned._labelMatches = [];
+        result.push(cloned);
+        seen.add(action.label);
+      }
+    }
+
+    const rest = allActions
+      .filter((a) => !seen.has(a.label))
+      .sort((a, b) => {
+        const groupA = GROUP_ORDER.indexOf(a.group);
+        const groupB = GROUP_ORDER.indexOf(b.group);
+        if (groupA !== groupB) return groupA - groupB;
+        return a.label.localeCompare(b.label);
+      });
+
+    for (const action of rest) {
+      const cloned = { ...action };
+      cloned._labelMatches = [];
+      result.push(cloned);
+    }
+
+    return result;
+  }
+
+  const scored = allActions.map((action) => {
+    const haystack = `${action.label} ${action.group} ${(action.keywords || []).join(" ")}`;
+    const labelScore = fuzzyScore(action.label, query);
+    const haystackScore = fuzzyScore(haystack, query);
+    let score = Math.max(labelScore.score * 2, haystackScore.score);
+
+    if (history.includes(action.label) && score > 0) {
+      score += 20;
+    }
+
+    const cloned = { ...action };
+    cloned._labelMatches = labelScore.score > 0 ? labelScore.matches : [];
+    return { action: cloned, score };
+  });
+
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.action);
+}
+
+function highlightLabel(label, matches) {
+  if (!matches || matches.length === 0) return document.createTextNode(label);
+  const fragment = document.createDocumentFragment();
+  let lastIdx = 0;
+  for (const idx of matches) {
+    if (idx > lastIdx) {
+      fragment.appendChild(document.createTextNode(label.slice(lastIdx, idx)));
+    }
+    const mark = document.createElement("mark");
+    mark.className = "command-palette-match";
+    mark.textContent = label[idx];
+    fragment.appendChild(mark);
+    lastIdx = idx + 1;
+  }
+  if (lastIdx < label.length) {
+    fragment.appendChild(document.createTextNode(label.slice(lastIdx)));
+  }
+  return fragment;
 }
 
 function renderCommandPalette() {
@@ -5214,7 +5447,18 @@ function renderCommandPalette() {
   }
 
   list.replaceChildren();
+  let lastGroup = null;
   commandPaletteState.filtered.forEach((action, index) => {
+    if (action.group !== lastGroup) {
+      const header = document.createElement("div");
+      header.className = "command-palette-group-header";
+      header.textContent = action.group;
+      header.setAttribute("role", "separator");
+      header.setAttribute("aria-label", `${action.group} commands`);
+      list.appendChild(header);
+      lastGroup = action.group;
+    }
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `command-palette-item${index === commandPaletteState.activeIndex ? " active" : ""}`;
@@ -5229,7 +5473,7 @@ function renderCommandPalette() {
     copy.className = "command-palette-item-copy";
     const title = document.createElement("span");
     title.className = "command-palette-item-title";
-    title.textContent = action.label;
+    title.appendChild(highlightLabel(action.label, action._labelMatches || []));
     const subtitle = document.createElement("span");
     subtitle.className = "command-palette-item-subtitle";
     subtitle.textContent = action.group;
@@ -5239,6 +5483,7 @@ function renderCommandPalette() {
     btn.addEventListener("click", () => {
       const selected = commandPaletteState.filtered[index];
       if (!selected) return;
+      addPaletteHistory(selected.label);
       closeCommandPalette();
       selected.run();
     });
@@ -5309,6 +5554,7 @@ function moveCommandPaletteSelection(delta) {
 function runCommandPaletteActiveAction() {
   const action = commandPaletteState.filtered[commandPaletteState.activeIndex];
   if (!action) return;
+  addPaletteHistory(action.label);
   closeCommandPalette();
   action.run();
 }
@@ -5365,6 +5611,7 @@ function initCommandPalette() {
         if (commandPaletteState.open) {
           closeCommandPalette();
         } else {
+          if (quickSwitcherState.open) closeQuickSwitcher();
           openCommandPalette();
         }
         return;
@@ -5374,6 +5621,186 @@ function initCommandPalette() {
       if (event.key === "Escape") {
         event.preventDefault();
         closeCommandPalette();
+      }
+    },
+    true,
+  );
+}
+
+
+/* ── Quick Switcher ─────────────────────────────────────────────────────── */
+
+const MAX_RECENT_VIEWS = 8;
+
+const VIEW_ICON_MAP = {
+  "view-chat": "messageSquare",
+  "view-canvas": "sparkles",
+  "view-terminal": "squareTerminal",
+  "view-ssh": "server",
+  "view-tunnel": "route",
+  "view-share": "share2",
+  "view-browser": "globe",
+  "view-agent": "bot",
+  "view-memory": "brain",
+  "view-prompt-lab": "sparkles",
+  "view-remote": "panelRightOpen",
+  "view-docs": "fileText",
+};
+
+const VIEW_NAME_MAP = {
+  "view-chat": "Chat",
+  "view-canvas": "Canvas",
+  "view-terminal": "Terminal",
+  "view-ssh": "SSH",
+  "view-tunnel": "Tunnel",
+  "view-share": "Share",
+  "view-browser": "Browser",
+  "view-agent": "Agent",
+  "view-memory": "Memory",
+  "view-prompt-lab": "Prompt Lab",
+  "view-remote": "Remote",
+  "view-docs": "Docs",
+};
+
+const quickSwitcherState = {
+  open: false,
+  activeIndex: 0,
+  recentViews: [],
+};
+
+function recordViewSwitch(viewId) {
+  quickSwitcherState.recentViews = quickSwitcherState.recentViews.filter((v) => v !== viewId);
+  quickSwitcherState.recentViews.unshift(viewId);
+  if (quickSwitcherState.recentViews.length > MAX_RECENT_VIEWS * 2) {
+    quickSwitcherState.recentViews = quickSwitcherState.recentViews.slice(0, MAX_RECENT_VIEWS * 2);
+  }
+}
+
+function getRecentViewActions() {
+  const current = currentViewId;
+  return quickSwitcherState.recentViews
+    .filter((v) => v !== current)
+    .slice(0, MAX_RECENT_VIEWS)
+    .map((viewId) => ({
+      viewId,
+      label: VIEW_NAME_MAP[viewId] || viewId.replace("view-", ""),
+      icon: VIEW_ICON_MAP[viewId] || "globe",
+    }));
+}
+
+function renderQuickSwitcher() {
+  const list = document.getElementById("quick-switcher-list");
+  if (!list) return;
+
+  const actions = getRecentViewActions();
+  if (!actions.length) {
+    list.innerHTML = `<div class="quick-switcher-empty">No recent views</div>`;
+    return;
+  }
+
+  list.replaceChildren();
+  actions.forEach((action, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `quick-switcher-item${index === quickSwitcherState.activeIndex ? " active" : ""}`;
+    btn.setAttribute("data-switcher-index", String(index));
+    btn.setAttribute("aria-label", `Switch to ${action.label}`);
+
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "quick-switcher-item-icon";
+    iconSpan.innerHTML = createIcon(action.icon, { size: 20 });
+
+    const label = document.createElement("span");
+    label.className = "quick-switcher-item-label";
+    label.textContent = action.label;
+
+    btn.appendChild(iconSpan.firstElementChild || iconSpan);
+    btn.appendChild(label);
+
+    btn.addEventListener("click", () => {
+      quickSwitcherState.activeIndex = index;
+      runQuickSwitcherActiveAction();
+    });
+
+    list.appendChild(btn);
+  });
+
+  // Focus the active item for keyboard accessibility
+  const activeBtn = list.querySelector(".quick-switcher-item.active");
+  if (activeBtn && quickSwitcherState.open) {
+    setTimeout(() => activeBtn.focus({ preventScroll: true }), 0);
+  }
+}
+
+function openQuickSwitcher() {
+  const overlay = document.getElementById("quick-switcher-overlay");
+  if (!overlay) return;
+  quickSwitcherState.open = true;
+  quickSwitcherState.activeIndex = 0;
+  overlay.classList.remove("hidden");
+  overlay.classList.add("active");
+  overlay.setAttribute("aria-hidden", "false");
+  renderQuickSwitcher();
+  // Click outside to close
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeQuickSwitcher();
+  };
+}
+
+function closeQuickSwitcher() {
+  const overlay = document.getElementById("quick-switcher-overlay");
+  if (!overlay) return;
+  quickSwitcherState.open = false;
+  overlay.classList.remove("active");
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.classList.add("hidden");
+}
+
+function cycleQuickSwitcher(delta) {
+  const actions = getRecentViewActions();
+  if (!actions.length) return;
+  quickSwitcherState.activeIndex = (quickSwitcherState.activeIndex + delta + actions.length) % actions.length;
+  renderQuickSwitcher();
+}
+
+function runQuickSwitcherActiveAction() {
+  const actions = getRecentViewActions();
+  const action = actions[quickSwitcherState.activeIndex];
+  if (!action) return;
+  closeQuickSwitcher();
+  activateViewByName(action.viewId.replace("view-", ""));
+}
+
+function initQuickSwitcher() {
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (!window.__TAURI__) return;
+
+      if (event.ctrlKey && event.key === "Tab") {
+        event.preventDefault();
+        if (quickSwitcherState.open) {
+          cycleQuickSwitcher(event.shiftKey ? -1 : 1);
+        } else if (!commandPaletteState.open) {
+          openQuickSwitcher();
+        }
+        return;
+      }
+
+      if (!quickSwitcherState.open) return;
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runQuickSwitcherActiveAction();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        closeQuickSwitcher();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        cycleQuickSwitcher(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        cycleQuickSwitcher(-1);
       }
     },
     true,
@@ -6296,7 +6723,7 @@ function initBrowser() {
 
     try {
       if (browserWindowOpen) {
-        await invoke("browser_navigate", { url });
+        await invoke("browser_navigate", { url, execToken: state.execToken });
       } else {
         await invoke("browser_open", {
           url,
@@ -6304,6 +6731,7 @@ function initBrowser() {
           viewportY: r.y,
           width: r.width,
           height: r.height,
+          execToken: state.execToken,
         });
         browserWindowOpen = true;
         hideHome();
@@ -10508,7 +10936,7 @@ async function showOnboardingWizard() {
         invoke("list_plugins").catch(() => []),
         invoke("get_personas").catch(() => []),
         invoke("get_themes").catch(() => []),
-        invoke("get_mcp_status").catch(() => null),
+        invoke("get_mcp_status", { execToken: state.execToken }).catch(() => null),
         invoke("get_doc_count").catch(() => 0),
       ]);
     totalSteps = 12 + Math.max(Array.isArray(plugins) ? plugins.length : 0, 1);

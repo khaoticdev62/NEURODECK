@@ -1011,7 +1011,7 @@ function initMcpSettings() {
       .getElementById("settings-btn")
       .addEventListener("click", async () => {
         try {
-          const status = await invoke("get_mcp_status");
+          const status = await invoke("get_mcp_status", { execToken: state.execToken });
           if (status.running === "true") {
             portInput.value = status.port || "13337";
             setRunningUI(status.port, status.token);
@@ -1028,7 +1028,7 @@ function initMcpSettings() {
     startBtn.disabled = true;
     statusLine.textContent = "Starting...";
     try {
-      const result = await invoke("start_mcp_server", { port });
+      const result = await invoke("start_mcp_server", { port, execToken: state.execToken });
       setRunningUI(result.url ? port : port, result.token);
       if (typeof addNotification === "function") {
         addNotification(
@@ -1050,7 +1050,7 @@ function initMcpSettings() {
   stopBtn.addEventListener("click", async () => {
     stopBtn.disabled = true;
     try {
-      await invoke("stop_mcp_server");
+      await invoke("stop_mcp_server", { execToken: state.execToken });
       setStoppedUI();
       if (typeof addNotification === "function") {
         addNotification(
@@ -1070,7 +1070,7 @@ function initMcpSettings() {
   });
 
   // Init state on load
-  invoke("get_mcp_status")
+  invoke("get_mcp_status", { execToken: state.execToken })
     .then((status) => {
       if (status && status.running === "true") {
         portInput.value = status.port || "13337";

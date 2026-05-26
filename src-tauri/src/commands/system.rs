@@ -1779,8 +1779,14 @@ pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn start_mcp_server(
     port: u16,
+    exec_token: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<serde_json::Value, String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "mcp-start")?;
+    }
+
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
@@ -1808,7 +1814,15 @@ pub async fn start_mcp_server(
 }
 
 #[tauri::command]
-pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn stop_mcp_server(
+    exec_token: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "mcp-stop")?;
+    }
+
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = app.mcp_abort.take() {
         handle.abort();
@@ -1821,7 +1835,15 @@ pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String
 }
 
 #[tauri::command]
-pub fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
+pub fn get_mcp_status(
+    exec_token: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<HashMap<String, String>, String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "mcp-status")?;
+    }
+
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut result = HashMap::new();
     if app.mcp_abort.is_some() {
@@ -1837,7 +1859,7 @@ pub fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, Stri
         result.insert("running".to_string(), "false".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());
     }
-    result
+    Ok(result)
 }
 
 #[tauri::command]

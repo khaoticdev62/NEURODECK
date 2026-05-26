@@ -39,6 +39,7 @@ export class AppPage {
   readonly notifBtn: Locator;
   readonly notifModal: Locator;
   readonly shortcutsOverlay: Locator;
+  readonly quickSwitcherOverlay: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -76,6 +77,7 @@ export class AppPage {
     this.notifBtn = page.locator("#notif-btn");
     this.notifModal = page.locator("#notif-modal");
     this.shortcutsOverlay = page.locator("#shortcuts-overlay");
+    this.quickSwitcherOverlay = page.locator("#quick-switcher-overlay");
   }
 
   async goto() {
@@ -121,9 +123,29 @@ export class AppPage {
     await expect(this.shortcutsOverlay).toHaveClass(/hidden/);
   }
 
+  async openQuickSwitcher() {
+    await this.page.keyboard.press("Control+Tab");
+    await expect(this.quickSwitcherOverlay).toHaveClass(/active/);
+  }
+
+  async closeQuickSwitcher() {
+    await this.page.keyboard.press("Escape");
+    await expect(this.quickSwitcherOverlay).not.toHaveClass(/active/);
+  }
+
   async mockTauriBackend() {
     await this.page.addInitScript(() => {
       localStorage.setItem("neurodeck_onboarding_complete", "true");
+      // Hide background container in tests to prevent pointer-event interception
+      const hideBg = () => {
+        const bg = document.getElementById("app-background-container");
+        if (bg) bg.style.display = "none";
+      };
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", hideBg);
+      } else {
+        hideBg();
+      }
       const noop = async () => {};
       const listeners = new Map();
       const defaultConfig = {

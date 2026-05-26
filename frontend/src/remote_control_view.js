@@ -3,6 +3,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import QRCode from 'qrcode';
+import { state } from './state.js';
 
 
 export function initRemoteControl() {
@@ -81,7 +82,7 @@ export function initRemoteControl() {
         var port = parseInt(portInput ? portInput.value : '9090', 10) || 9090;
         remoteLog('Starting server on port ' + port + '...');
         try {
-            var info = await invoke('start_remote_server', { port: port });
+            var info = await invoke('start_remote_server', { port: port, execToken: state.execToken });
             setServerUI(true, info);
             remoteLog('Server started: ' + info.url, 'success');
             remoteLog('PIN: ' + info.pin, 'success');
@@ -93,7 +94,7 @@ export function initRemoteControl() {
     async function stopServer() {
         remoteLog('Stopping server...');
         try {
-            await invoke('stop_remote_server');
+            await invoke('stop_remote_server', { execToken: state.execToken });
             setServerUI(false, null);
             remoteLog('Server stopped.', 'warn');
         } catch (err) {
@@ -209,7 +210,7 @@ export function initRemoteControl() {
         var tab = e.target.closest('.nav-tab[data-view="remote"]');
         if (!tab) return;
         try {
-            var info = await invoke('get_remote_server_info');
+            var info = await invoke('get_remote_server_info', { execToken: state.execToken });
             setServerUI(info.running, info.running ? info : null);
         } catch (_) {}
     });

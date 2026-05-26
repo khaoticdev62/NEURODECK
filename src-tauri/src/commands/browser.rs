@@ -71,6 +71,7 @@ fn get_session_tab(state: &BrowserAutomationState, session_id: &str) -> Result<A
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn browser_open(
     app: AppHandle,
     url: String,
@@ -78,9 +79,12 @@ pub async fn browser_open(
     viewport_y: f64,
     width: f64,
     height: f64,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
 
+    require_browser_exec(&state, &exec_token, "browser-open-window")?;
     parse_http_url(&url)?;
     let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
 
@@ -126,7 +130,13 @@ pub async fn browser_open(
 }
 
 #[tauri::command]
-pub fn browser_navigate(app: AppHandle, url: String) -> Result<(), String> {
+pub fn browser_navigate(
+    app: AppHandle,
+    url: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-navigate-window")?;
     if let Some(win) = app.get_webview_window("browser-view") {
         parse_http_url(&url)?;
         let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;

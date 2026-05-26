@@ -1,0 +1,4 @@
+# Ignore non-chromium visual regression snapshots (platform-specific, kept for CI only)
+# Chromium snapshots are tracked as the canonical baseline
+tests/visual.spec.ts-snapshots/*-firefox-desktop-win32.png
+tests/visual.spec.ts-snapshots/*-steam-deck-win32.png

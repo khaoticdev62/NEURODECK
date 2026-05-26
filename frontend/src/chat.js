@@ -4,6 +4,133 @@ import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
+import { initSlashCommands, setSlashClearHandler, hideSlashPalette } from './slash-commands.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESSAGE REGISTRY & VIRTUALIZATION
+// ═══════════════════════════════════════════════════════════════════════════════
+let _msgIdSeq = 0;
+function nextMsgId() { return 'msg-' + (++_msgIdSeq) + '-' + Date.now().toString(36); }
+
+function clearMessageRegistry() {
+    state.chatMessageRegistry = [];
+    if (state.chatMessageObserver) {
+        state.chatMessageObserver.disconnect();
+        state.chatMessageObserver = null;
+    }
+}
+
+function registerMessage(el, kind, text, options = {}, attachment = null) {
+    if (!el) return;
+    const id = nextMsgId();
+    el.dataset.msgId = id;
+    const entry = {
+        id,
+        kind,
+        text: String(text ?? ''),
+        options: { ...options },
+        attachment,
+        el,
+        isCulled: false,
+        height: 0,
+        storedChildren: null,
+        timestamp: Date.now(),
+    };
+    state.chatMessageRegistry.push(entry);
+    observeMessage(el);
+    return entry;
+}
+
+function observeMessage(el) {
+    if (!el || !state.chatMessageObserver) return;
+    state.chatMessageObserver.observe(el);
+}
+
+function initMessageObserver() {
+    if (state.chatMessageObserver) return;
+    const root = document.getElementById('chat-workspace');
+    if (!root) return;
+    const observer = new IntersectionObserver((entries) => {
+        // If browser supports content-visibility, skip JS culling
+        if (CSS.supports('content-visibility', 'auto')) return;
+        entries.forEach(entry => {
+            const msgId = entry.target.dataset.msgId;
+            if (!msgId) return;
+            const reg = state.chatMessageRegistry.find(r => r.id === msgId);
+            if (!reg) return;
+            // Never cull the active streaming message
+            if (entry.target === state.currentAIMessage) return;
+            const rect = entry.boundingClientRect;
+            const rootH = root.clientHeight;
+            const farAbove = rect.bottom < -2000;
+            const farBelow = rect.top > rootH + 2000;
+            if (!entry.isIntersecting && (farAbove || farBelow)) {
+                cullMessage(reg);
+            } else if (entry.isIntersecting && reg.isCulled) {
+                restoreMessage(reg);
+            }
+        });
+    }, { root, rootMargin: '2000px 0px', threshold: 0 });
+    state.chatMessageObserver = observer;
+}
+
+function cullMessage(reg) {
+    if (reg.isCulled || !reg.el) return;
+    const wrapper = reg.el;
+    const h = wrapper.offsetHeight;
+    if (h <= 0) return;
+    reg.height = h;
+    wrapper.style.height = h + 'px';
+    wrapper.dataset.culled = 'true';
+    // Store children in a document fragment
+    const frag = document.createDocumentFragment();
+    while (wrapper.firstChild) {
+        frag.appendChild(wrapper.firstChild);
+    }
+    reg.storedChildren = frag;
+    const ph = document.createElement('div');
+    ph.className = 'message-placeholder';
+    ph.innerHTML = `<span class="msg-placeholder-label">${reg.kind} message</span>`;
+    wrapper.appendChild(ph);
+    reg.isCulled = true;
+}
+
+function restoreMessage(reg) {
+    if (!reg.isCulled || !reg.el) return;
+    const wrapper = reg.el;
+    const ph = wrapper.querySelector('.message-placeholder');
+    if (ph) ph.remove();
+    if (reg.storedChildren) {
+        wrapper.appendChild(reg.storedChildren);
+        reg.storedChildren = null;
+    }
+    wrapper.style.height = '';
+    wrapper.dataset.culled = 'false';
+    reg.isCulled = false;
+    // Re-apply code formatting in case it was lost
+    if (reg.kind === 'ai') {
+        formatCodeBlocks(wrapper);
+    }
+}
+
+// Helper: get plain text of a message for copy / gamepad actions
+export function getMessageText(el) {
+    if (!el) return '';
+    const card = el.querySelector('.message-card');
+    if (!card) return '';
+    // Prefer data attribute if set
+    const msgId = el.dataset.msgId;
+    if (msgId) {
+        const reg = state.chatMessageRegistry.find(r => r.id === msgId);
+        if (reg && reg.text) return reg.text;
+    }
+    return card.textContent || '';
+}
+
+// Helper: get all message elements in order
+export function getMessageElements() {
+    return Array.from(document.querySelectorAll('#chat-viewport > .message'));
+}
 
 // ── Chat Welcome State HTML ────────────────────────────────────────────────────
 const CHAT_WELCOME_HTML = `
@@ -118,6 +245,7 @@ function appendChatMessage(kind, text, options = {}) {
     wrapper.appendChild(card);
     chatViewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
+    registerMessage(wrapper, kind, text, options);
     return wrapper;
 }
 
@@ -163,6 +291,7 @@ function appendUserMessage(text, attachment = null) {
 
     chatViewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
+    registerMessage(wrapper, "user", text, {}, attachment);
     return wrapper;
 }
 
@@ -178,27 +307,30 @@ function appendAiThinkingMessage() {
     card.appendChild(thinking);
     chatViewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
+    registerMessage(wrapper, "ai", "", { thinking: true });
     return wrapper;
 }
 
 function buildHistoryMessage(msgStr) {
     const text = String(msgStr ?? "");
+    let wrapper, kind, content;
     if (text.startsWith("User: ")) {
-        const { wrapper, card } = createMessageShell("user");
+        const { wrapper: w, card } = createMessageShell("user");
         card.textContent = text.substring(6);
-        return wrapper;
-    }
-    if (text.startsWith("AI: ")) {
-        const { wrapper, card } = createMessageShell("ai");
+        wrapper = w; kind = "user"; content = text.substring(6);
+    } else if (text.startsWith("AI: ")) {
+        const { wrapper: w, card } = createMessageShell("ai");
         const parsed = marked.parse(text.substring(4));
         const html = (parsed && typeof parsed.then === 'function') ? '' : parsed;
         renderSanitizedHtml(card, html);
-        formatCodeBlocks(wrapper);
-        return wrapper;
+        formatCodeBlocks(w);
+        wrapper = w; kind = "ai"; content = text.substring(4);
+    } else {
+        const { wrapper: w, card } = createMessageShell("system");
+        card.textContent = text;
+        wrapper = w; kind = "system"; content = text;
     }
-
-    const { wrapper, card } = createMessageShell("system");
-    card.textContent = text;
+    registerMessage(wrapper, kind, content);
     return wrapper;
 }
 
@@ -206,6 +338,7 @@ function renderSessionMessages(messages) {
     const chatViewport = document.getElementById("chat-viewport");
     const viewport = document.getElementById("chat-workspace");
     if (!chatViewport || !viewport) return;
+    clearMessageRegistry();
     chatViewport.replaceChildren();
     messages.forEach((msgStr) => {
         chatViewport.appendChild(buildHistoryMessage(msgStr));
@@ -817,18 +950,9 @@ listen("stream_error", function (event) {
     if (typeof window.announceToScreenReader === 'function') {
         window.announceToScreenReader(`Chat error: ${String(err)}`);
     }
-    let chatViewport = document.getElementById("chat-viewport");
+    appendChatMessage("system", String(err), { error: true, strongPrefix: "Error:" });
     let viewport = document.getElementById("chat-workspace");
-    let msg = document.createElement("div");
-    msg.className = "message system error";
-    const card = document.createElement("div");
-    card.className = "message-card";
-    const strong = document.createElement("strong");
-    strong.textContent = "Error:";
-    card.append(strong, ` ${String(err)}`);
-    msg.appendChild(card);
-    chatViewport.appendChild(msg);
-    viewport.scrollTop = viewport.scrollHeight;
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
     document.getElementById("tool-status").innerText = "Idle";
     // Reset AI message state so stale cards don't accumulate
     state.currentAIMessage = null;
@@ -1050,19 +1174,10 @@ function loadSession(sid) {
         
         renderSessionMessages(data.messages);
         
-        let systemDiv = document.createElement("div");
-        systemDiv.className = "message system";
-        const systemCard = document.createElement("div");
-        systemCard.className = "message-card";
-        systemCard.textContent = `System: Loaded session ${state.currentSessionId}`;
-        systemDiv.appendChild(systemCard);
-        chatViewport.appendChild(systemDiv);
-        viewport.scrollTop = viewport.scrollHeight;
+        appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
         
         refreshSessionsList();
     }).catch((err) => {
-        let chatViewport = document.getElementById("chat-viewport");
-        let viewport = document.getElementById("chat-workspace");
         appendChatMessage("system", `Error loading session: ${String(err)}`, { error: true });
     });
 }
@@ -1076,6 +1191,7 @@ function startNewSession() {
         if (stitleEl) stitleEl.innerText = "New Session";
 
         const chatViewport = document.getElementById("chat-viewport");
+        clearMessageRegistry();
         renderSanitizedHtml(chatViewport, CHAT_WELCOME_HTML);
         wireWelcomeStarters();
 
@@ -1301,7 +1417,7 @@ export {
     runLuaScript,
     refreshSessionsList,
     loadSession,
-    startNewSession
+    startNewSession,
 };
 
 export function initChat() {
@@ -1375,4 +1491,11 @@ export function initChat() {
             });
         };
     }
+
+    // Init message virtualization observer
+    initMessageObserver();
+
+    // Init slash command palette
+    setSlashClearHandler(startNewSession);
+    initSlashCommands();
 }

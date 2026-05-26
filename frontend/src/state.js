@@ -38,5 +38,14 @@ export const state = {
     agents: [],
     tunnelStatus: "offline",
     selectedPeerIp: null,
-    pendingTransferId: null
+    pendingTransferId: null,
+    // ── Chat Virtualization ─────────────────────────────────────────────────
+    chatMessageRegistry: [],
+    chatMessageObserver: null,
+    chatCullThreshold: 50,
+    chatKeepRendered: 30,
+    // ── Slash Command Palette ───────────────────────────────────────────────
+    slashPaletteOpen: false,
+    slashPaletteSelected: 0,
+    slashPaletteFilter: "",
 };
