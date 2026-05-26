@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { ChatPage } from "../pages/ChatPage";
 
 test.beforeEach(async ({ page }) => {
+  const chat = new ChatPage(page);
   await page.addInitScript(() => {
     localStorage.setItem("neurodeck_onboarding_complete", "true");
     const noop = async () => {};
@@ -47,7 +49,6 @@ test.beforeEach(async ({ page }) => {
         case "test_llm_connection":
           return "Gemini Connection Successful!";
         case "send_command":
-          // Trigger mock streaming after a short delay
           setTimeout(() => {
             const chunkCb = listeners.get("stream_chunk");
             const doneCb = listeners.get("stream_done");
@@ -120,36 +121,21 @@ test.beforeEach(async ({ page }) => {
       },
     };
 
-    // Expose mock emitter for tests
     (window as any).__mock_emit = (event: string, payload: any) => {
       const cb = listeners.get(event);
       if (cb) cb({ payload });
     };
   });
 
-  await page.goto("/");
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  await chat.goto();
 });
 
 test("user can send a message and receive a streamed response", async ({ page }) => {
-  const chatViewport = page.locator("#chat-viewport");
-  await expect(chatViewport).toBeVisible();
-
-  const input = page.locator("#user-input");
-  await input.fill("Hello AI");
-  await input.press("Enter");
-
-  // User message should appear immediately
-  await expect(chatViewport.locator(".message.user")).toContainText("Hello AI");
-
-  // AI thinking placeholder should appear
-  await expect(chatViewport.locator(".message.ai")).toBeVisible();
-
-  // Wait for streamed response to complete
-  await expect(chatViewport.locator(".message.ai .message-card")).toContainText("Hello from the mock stream!", { timeout: 10000 });
-
-  // Metadata footer should be injected after stream_done
-  await expect(chatViewport.locator(".msg-meta")).toBeVisible();
+  const chat = new ChatPage(page);
+  await chat.sendMessage("Hello AI");
+  await chat.expectUserMessage("Hello AI");
+  await chat.expectAiMessage("Hello from the mock stream!");
+  await expect(chat.chatViewport.locator(".msg-meta")).toBeVisible();
 });
 
 test("chat stream error is rendered as a system error message", async ({ page }) => {
@@ -167,9 +153,7 @@ test("chat stream error is rendered as a system error message", async ({ page })
     };
   });
 
-  const chatViewport = page.locator("#chat-viewport");
-  await page.locator("#user-input").fill("Trigger error");
-  await page.locator("#user-input").press("Enter");
-
-  await expect(chatViewport.locator(".message.system.error")).toContainText("Mock LLM failure", { timeout: 10000 });
+  const chat = new ChatPage(page);
+  await chat.sendMessage("Trigger error");
+  await chat.expectErrorMessage("Mock LLM failure");
 });

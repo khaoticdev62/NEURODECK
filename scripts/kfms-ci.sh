@@ -165,8 +165,20 @@ gate_frontend_build() {
 
 gate_e2e() {
     cd "$ROOT/frontend"
-    npm run build >/dev/null 2>&1
+    if ! npm run build; then
+        echo "Frontend build failed — cannot run E2E tests against missing dist"
+        return 1
+    fi
+    if [[ ! -f "$ROOT/frontend/dist/index.html" ]]; then
+        echo "frontend/dist/index.html missing after build"
+        return 1
+    fi
     cd "$ROOT/e2e"
+    # Ensure Playwright browsers are installed
+    if ! npx playwright install chromium >/dev/null 2>&1; then
+        echo "Playwright browser install failed"; return 1
+    fi
+    export CI=true
     npx playwright test
 }
 
@@ -334,6 +346,17 @@ cmd_run() {
     done
 
     if $background; then
+        # Clean up stale PID before starting
+        if [[ -f "$REPORT_DIR/daemon.pid" ]]; then
+            local old_pid
+            old_pid=$(cat "$REPORT_DIR/daemon.pid")
+            if kill -0 "$old_pid" 2>/dev/null; then
+                warn "Background CI already running (PID $old_pid). Stop it first."
+                return 1
+            else
+                rm -f "$REPORT_DIR/daemon.pid"
+            fi
+        fi
         info "Daemonizing CI run to background..."
         nohup bash "$0" run ${parallel:+--parallel} ${category_filter:+--category "$category_filter"} > "$REPORT_DIR/run-$RUN_ID.log" 2>&1 &
         local pid=$!
@@ -409,6 +432,22 @@ cmd_watch() {
     done
 }
 
+cmd_stop() {
+    if [[ -f "$REPORT_DIR/daemon.pid" ]]; then
+        local pid
+        pid=$(cat "$REPORT_DIR/daemon.pid")
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            ok "Background CI stopped (PID $pid)"
+        else
+            warn "Background CI not running (stale PID $pid)"
+        fi
+        rm -f "$REPORT_DIR/daemon.pid"
+    else
+        warn "No background CI PID file found"
+    fi
+}
+
 cmd_status() {
     if [[ -f "$REPORT_DIR/daemon.pid" ]]; then
         local pid
@@ -416,7 +455,8 @@ cmd_status() {
         if kill -0 "$pid" 2>/dev/null; then
             ok "Background CI is running (PID $pid)"
         else
-            warn "Background CI not running (stale PID $pid)"
+            warn "Background CI not running (stale PID $pid) — removing"
+            rm -f "$REPORT_DIR/daemon.pid"
         fi
     fi
     if [[ -f "$REPORT_JSON" ]]; then
@@ -444,6 +484,7 @@ case "$CMD" in
     security)   shift; cmd_security "$@" ;;
     watch)      shift; cmd_watch "$@" ;;
     status)     cmd_status ;;
+    stop)       cmd_stop ;;
     *)
         echo ""
         echo "  KFMS-CI — Professional All-in-One Pipeline"
@@ -458,10 +499,12 @@ case "$CMD" in
         echo "    security         Security gates only"
         echo "    watch            Continuous mode"
         echo "    status           Show last report / background status"
+        echo "    stop             Stop background CI daemon"
         echo ""
         echo "  Flags (for run/lint/test/build/security):"
         echo "    --parallel       Run independent gates in parallel"
         echo "    --background     Daemonize to background"
+        echo "    --category <cat> Filter by category (lint/test/build/security/quality)"
         echo ""
         ;;
 esac

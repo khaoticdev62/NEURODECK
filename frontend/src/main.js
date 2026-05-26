@@ -44,12 +44,16 @@ function announceToScreenReader(message) {
 }
 window.announceToScreenReader = announceToScreenReader;
 
+let oauthFocusTrap = null;
+
 async function triggerOAuthLogin() {
     let chatViewport = document.getElementById("chat-viewport");
-    
+
     // Add pending message to viewport
     let msg = document.createElement("div");
     msg.className = "message ai";
+    msg.id = "oauth-message-card";
+    msg.tabIndex = -1;
     msg.innerHTML = `
         <div class="message-card">
             <h3>Login with Provider (OAuth 2.0 Device Flow)</h3>
@@ -64,32 +68,36 @@ async function triggerOAuthLogin() {
     `;
     chatViewport.appendChild(msg);
     chatViewport.scrollTop = chatViewport.scrollHeight;
+    msg.focus({ preventScroll: true });
+    if (oauthFocusTrap) oauthFocusTrap.deactivate(false);
+    oauthFocusTrap = new FocusTrap(msg);
+    oauthFocusTrap.activate();
 
     try {
         const data = await invoke('start_oauth_flow');
-        
+
         document.getElementById("oauth-status").innerText = "Waiting for mobile approval...";
-        
+
         // Show QR Code and URLs
         document.getElementById("oauth-qr-container").style.display = "inline-block";
         document.getElementById("oauth-url-text").style.display = "block";
         document.getElementById("oauth-code-text").style.display = "block";
         document.getElementById("oauth-code").style.display = "inline-block";
-        
+
         document.getElementById("oauth-url").href = data.verification_uri;
         document.getElementById("oauth-url").innerText = data.verification_uri;
         document.getElementById("oauth-code").innerText = data.user_code;
-        
+
         await QRCode.toCanvas(document.getElementById("oauth-qr"), data.verification_uri_complete || data.verification_uri, {
             width: 200,
             margin: 1
         });
-        
+
         chatViewport.scrollTop = chatViewport.scrollHeight;
 
-        await invoke('poll_oauth_token', { 
-            deviceCode: data.device_code, 
-            interval: data.interval 
+        await invoke('poll_oauth_token', {
+            deviceCode: data.device_code,
+            interval: data.interval
         });
 
         document.getElementById("oauth-status").innerText = "Authentication successful! Token saved to OS Keychain.";
@@ -100,6 +108,11 @@ async function triggerOAuthLogin() {
         if (statusEl) {
             statusEl.innerText = "Authentication failed: " + String(err);
             statusEl.style.color = "red";
+        }
+    } finally {
+        if (oauthFocusTrap) {
+            oauthFocusTrap.deactivate(false);
+            oauthFocusTrap = null;
         }
     }
 }
@@ -353,18 +366,18 @@ document.querySelector('#app').innerHTML = `
                  ═══════════════════════════════════════════════════════════ -->
             <nav class="nav-tab-row">
                 <div class="nav-tab-bar">
-                    <button class="nav-tab active" data-view="chat">💬 Chat</button>
-                    <button class="nav-tab" data-view="canvas">🎨 Canvas</button>
-                    <button class="nav-tab" data-view="terminal">💻 Terminal</button>
-                    <button class="nav-tab" data-view="ssh">🔑 SSH</button>
-                    <button class="nav-tab" data-view="tunnel">🔗 Tunnel</button>
-                    <button class="nav-tab" data-view="share">📤 Share</button>
-                    <button class="nav-tab" data-view="browser">🌐 Browser</button>
-                    <button class="nav-tab" data-view="agent">🤖 Agent</button>
-                    <button class="nav-tab" data-view="memory">🧠 Memory</button>
-                    <button class="nav-tab" data-view="prompt-lab">📝 Prompt Lab</button>
-                    <button class="nav-tab" data-view="remote">🖥️ Remote</button>
-                    <button class="nav-tab" data-view="docs">📚 Docs</button>
+                    <button class="nav-tab active" data-view="chat" data-testid="nav-tab-chat">💬 Chat</button>
+                    <button class="nav-tab" data-view="canvas" data-testid="nav-tab-canvas">🎨 Canvas</button>
+                    <button class="nav-tab" data-view="terminal" data-testid="nav-tab-terminal">💻 Terminal</button>
+                    <button class="nav-tab" data-view="ssh" data-testid="nav-tab-ssh">🔑 SSH</button>
+                    <button class="nav-tab" data-view="tunnel" data-testid="nav-tab-tunnel">🔗 Tunnel</button>
+                    <button class="nav-tab" data-view="share" data-testid="nav-tab-share">📤 Share</button>
+                    <button class="nav-tab" data-view="browser" data-testid="nav-tab-browser">🌐 Browser</button>
+                    <button class="nav-tab" data-view="agent" data-testid="nav-tab-agent">🤖 Agent</button>
+                    <button class="nav-tab" data-view="memory" data-testid="nav-tab-memory">🧠 Memory</button>
+                    <button class="nav-tab" data-view="prompt-lab" data-testid="nav-tab-prompt-lab">📝 Prompt Lab</button>
+                    <button class="nav-tab" data-view="remote" data-testid="nav-tab-remote">🖥️ Remote</button>
+                    <button class="nav-tab" data-view="docs" data-testid="nav-tab-docs">📚 Docs</button>
                 </div>
             </nav>
 
@@ -451,7 +464,7 @@ document.querySelector('#app').innerHTML = `
 
             <div class="view-container">
                 <!-- Chat View -->
-                <div class="view-content active" id="view-chat">
+                <div class="view-content active" id="view-chat" data-testid="view-chat">
                     <!-- Session Context Header -->
                     <div class="chat-session-header" id="chat-session-header">
                         <div class="chat-session-header-left">
@@ -491,7 +504,7 @@ document.querySelector('#app').innerHTML = `
                             <div class="chat-input-context" id="chat-input-context"></div>
                             <div class="input-textarea-wrapper">
                                 <div class="chat-attachment-bar hidden" id="chat-attachment-bar"></div>
-                                <textarea id="user-input" placeholder="Enter command or type message..." rows="1" autocomplete="off"></textarea>
+                                <textarea id="user-input" data-testid="chat-input" placeholder="Enter command or type message..." rows="1" autocomplete="off"></textarea>
                             </div>
                             <div class="input-actions-bar">
                                 <div class="input-actions-left">
@@ -500,7 +513,7 @@ document.querySelector('#app').innerHTML = `
                                     <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)">📸</button>
                                 </div>
                                 <div class="input-actions-right">
-                                    <button class="send-prompt-btn" id="send-btn" title="Send Message">
+                                    <button class="send-prompt-btn" id="send-btn" data-testid="chat-send-btn" title="Send Message">
                                         <span>Send</span>
                                         <span>🚀</span>
                                     </button>
@@ -536,7 +549,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Live Code Canvas View -->
-                <div class="view-content view-layout-column" id="view-canvas">
+                <div class="view-content view-layout-column" id="view-canvas" data-testid="view-canvas">
                     <div class="canvas-toolbar">
                         <select id="canvas-lang-select" class="canvas-lang-select">
                             <option value="html">HTML</option>
@@ -580,7 +593,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Interactive PTY Terminal View -->
-                <div class="view-content view-layout-column" id="view-terminal">
+                <div class="view-content view-layout-column" id="view-terminal" data-testid="view-terminal">
                     <!-- Unified top bar: session tabs + shell selector + actions in one row -->
                     <div class="term-topbar">
                         <div class="term-session-tabs" id="terminal-tabs-list"></div>
@@ -606,7 +619,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- SSH Client View -->
-                <div class="view-content" id="view-ssh">
+                <div class="view-content" id="view-ssh" data-testid="view-ssh">
                     <div class="ssh-shell">
                     <div class="ssh-layout">
                         <div class="ssh-sidebar">
@@ -663,7 +676,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- SteamOS Tunnel View -->
-                <div class="view-content" id="view-tunnel">
+                <div class="view-content" id="view-tunnel" data-testid="view-tunnel">
                     <div class="tunnel-shell">
                     <div class="tunnel-grid">
                         <div class="tunnel-panel">
@@ -711,7 +724,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- LAN File Sharing / SFTP / FTP View -->
-                <div class="view-content view-layout-column" id="view-share">
+                <div class="view-content view-layout-column" id="view-share" data-testid="view-share">
                     <div class="share-view-header">
                         <span class="share-view-kicker">Transfer Mesh</span>
                         <span class="share-view-title">📤 Share &amp; Transfer</span>
@@ -960,7 +973,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Built-in Web Browser View -->
-                <div class="view-content" id="view-browser">
+                <div class="view-content" id="view-browser" data-testid="view-browser">
                     <div class="browser-container">
                         <div class="browser-toolbar">
                             <div class="browser-toolbar-title">
@@ -1069,7 +1082,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Autonomous Coding Agent View -->
-                <div class="view-content view-layout-column" id="view-agent">
+                <div class="view-content view-layout-column" id="view-agent" data-testid="view-agent">
                     <div class="agent-shell">
                         <div class="agent-shell-header">
                             <span class="agent-kicker">Execution Fabric</span>
@@ -1141,7 +1154,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Prompt Lab UI View -->
-                <div class="view-content" id="view-prompt-lab">
+                <div class="view-content" id="view-prompt-lab" data-testid="view-prompt-lab">
                     <!-- Template Gallery Drawer -->
                     <div class="pl-template-gallery hidden" id="pl-template-gallery">
                         <div class="pl-gallery-overlay" id="pl-gallery-overlay"></div>
@@ -1311,7 +1324,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Memory UI View -->
-                <div class="view-content view-layout-column" id="view-memory">
+                <div class="view-content view-layout-column" id="view-memory" data-testid="view-memory">
                     <div class="memory-shell">
                         <div class="memory-toolbar">
                             <div class="memory-toolbar-title">
@@ -1358,7 +1371,7 @@ document.querySelector('#app').innerHTML = `
                 </div>
 
                 <!-- Remote Control View -->
-                <div class="view-content" id="view-remote">
+                <div class="view-content" id="view-remote" data-testid="view-remote">
                     <div class="remote-container">
                         <!-- Header -->
                         <div class="remote-header">
@@ -1450,7 +1463,7 @@ document.querySelector('#app').innerHTML = `
                 <!-- ============================================================ -->
                 <!-- VIEW: DOCS — Knowledge Base Viewer                           -->
                 <!-- ============================================================ -->
-                <div class="view-content view-layout-column" id="view-docs">
+                <div class="view-content view-layout-column" id="view-docs" data-testid="view-docs">
                     <div class="docs-container">
                         <div class="docs-header">
                             <div class="docs-header-left">
@@ -4172,6 +4185,7 @@ invoke("get_initial_state").then((initialState) => {
     initTerminal();
     initCanvas();
     initNotificationCenter();
+    initShortcutsOverlay();
     if (initialState.boot_health_status && initialState.boot_health_status !== "healthy" && typeof addNotification === "function") {
         const level = initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0
             ? "warning"
@@ -6545,15 +6559,46 @@ document.addEventListener("click", (e) => {
     if (target === "recommended") renderRecommendedModels();
 });
 
+// Keyboard Shortcuts Cheat Sheet
+let shortcutsFocusTrap = null;
+function openShortcutsOverlay() {
+    const overlay = document.getElementById("shortcuts-overlay");
+    if (!overlay) return;
+    overlay.classList.remove("hidden");
+    if (!shortcutsFocusTrap) shortcutsFocusTrap = new FocusTrap(overlay);
+    shortcutsFocusTrap.activate();
+}
+function closeShortcutsOverlay() {
+    const overlay = document.getElementById("shortcuts-overlay");
+    if (!overlay) return;
+    overlay.classList.add("hidden");
+    if (shortcutsFocusTrap) shortcutsFocusTrap.deactivate();
+}
+
 // Close agent switcher on Escape or click outside
 document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
         const panel = document.getElementById("agent-switcher-panel");
         if (panel && !panel.classList.contains("hidden")) panel.classList.add("hidden");
+        const shortcuts = document.getElementById("shortcuts-overlay");
+        if (shortcuts && !shortcuts.classList.contains("hidden")) {
+            e.preventDefault();
+            closeShortcutsOverlay();
+            return;
+        }
     }
     if (e.ctrlKey && e.shiftKey && e.key === "M") {
         e.preventDefault();
         toggleAgentSwitcher();
+    }
+    // ? key opens shortcuts when not typing in an input
+    if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = document.activeElement?.tagName;
+        const isEditable = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
+        if (!isEditable) {
+            e.preventDefault();
+            openShortcutsOverlay();
+        }
     }
 });
 
@@ -6596,6 +6641,17 @@ function initNotificationCenter() {
             updateNotifBadge();
             renderNotificationsList();
         };
+    }
+}
+
+function initShortcutsOverlay() {
+    const closeBtn = document.getElementById("shortcuts-close");
+    const overlay = document.getElementById("shortcuts-overlay");
+    if (closeBtn) closeBtn.onclick = closeShortcutsOverlay;
+    if (overlay) {
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) closeShortcutsOverlay();
+        });
     }
 }
 

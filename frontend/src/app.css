@@ -18,6 +18,20 @@
     --font-display: "Segoe UI Semibold", "Trebuchet MS", Inter, system-ui, sans-serif;
     --sidebar-width: 280px;
 
+    /* Spacing scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+
     /* Motion duration scale */
     --dur-micro:  80ms;
     --dur-fast:   150ms;
@@ -11553,5 +11567,134 @@ button.tab-btn:active,
 
     .docs-results-panel {
         min-height: 180px;
+    }
+}
+
+/* =====================================================================
+   KEYBOARD SHORTCUTS CHEAT SHEET
+   ===================================================================== */
+
+.shortcuts-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-base) var(--ease-standard);
+}
+
+.shortcuts-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.shortcuts-card {
+    width: min(720px, 92vw);
+    max-height: min(80vh, 640px);
+    background: linear-gradient(145deg, rgba(14, 18, 26, 0.98) 0%, rgba(8, 10, 16, 0.98) 100%);
+    border: 1px solid rgba(var(--accent-rgb), 0.18);
+    border-top-color: rgba(var(--accent-rgb), 0.35);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(12px) scale(0.98);
+    transition: transform var(--dur-enter) var(--ease-out-spring);
+}
+
+.shortcuts-overlay:not(.hidden) .shortcuts-card {
+    transform: translateY(0) scale(1);
+}
+
+.shortcuts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.shortcuts-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--fg-color);
+    letter-spacing: 0.3px;
+}
+
+.shortcuts-close {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: var(--fg-color);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-standard),
+                border-color var(--dur-fast) var(--ease-standard);
+}
+
+.shortcuts-close:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.shortcuts-group h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent-color);
+    opacity: 0.8;
+}
+
+.shortcuts-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.shortcuts-row kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-color);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+    border-radius: 5px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+    .shortcuts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px;
     }
 }

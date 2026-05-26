@@ -1,379 +1,204 @@
-# NEURODECK — Agent Guide
+# AGENTS.md
 
-> AI coding agent context for the NEURODECK project. Read this first before making any changes.
-
----
-
-## Project Overview
-
-NEURODECK is an AI-powered terminal OS designed for Steam Deck (and general Linux/Windows). It wraps LLM chat, a live code canvas, multi-session PTY shell, SSH client, embedded browser, autonomous agent loop, LAN file transfer, voice STT/TTS, and a Lua plugin runtime into a single 1280×800 fullscreen window with gamepad-native navigation.
-
-- **Version**: 1.2.1 (Codename: Ra)
-- **Repository**: https://github.com/khaoticdev62/NEURODECK
-- **License**: MIT
-- **Primary Language**: English (all docs, comments, and commit messages)
-
-### Architecture at a Glance
-
-```
-┌─────────────────────────────────────────────┐
-│  Frontend (Vanilla JS + Vite + React islands)│  <- runs in WebView
-│  • Single-page app, 12 view tabs            │
-│  • Gamepad nav, command palette, settings   │
-├─────────────────────────────────────────────┤
-│  Tauri v2 (Rust)                            │  <- desktop bridge
-│  • 56+ commands across 28 modules           │
-│  • Plugin runtime (Lua 5.4 / mlua)          │
-│  • PTY, SSH, FTP/SFTP, HTTP/WebSocket srv   │
-├─────────────────────────────────────────────┤
-│  Core / Infrastructure (Rust workspaces)    │
-│  • Shared types, IPC bindings, gRPC, OAuth  │
-│  • Secrets via keyring, Warpinator protocol │
-└─────────────────────────────────────────────┘
-```
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ---
 
-## Technology Stack
+## What This Is
 
-| Layer | Tech |
-|-------|------|
-| Desktop Framework | Tauri v2 (Rust 1.77.2+) |
-| Frontend UI | Vanilla JavaScript (selective React 19 for chat virtualization) |
-| Frontend State | Mutable global plain object (`state.js`); Zustand used only for chat messages |
-| Terminal Emulation | xterm.js |
-| Markdown Rendering | marked (in web worker) |
-| AI Providers | Google Gemini (SSE streaming), Ollama (local) |
-| Plugin Runtime | Lua 5.4 via `mlua` (vendored, send feature) |
-| PTY / Shell | `portable-pty` |
-| Networking | `reqwest`, `axum` (WS), `tokio`, `tonic` (gRPC) |
-| mDNS Discovery | `mdns-sd` |
-| Secrets | `keyring` |
-| Headless Browser | `headless_chrome` |
-| BitTorrent | `fx-torrent` |
-| Crypto | `ring`, `base64` |
-
-### Python Tooling (Asset Pipeline)
-
-- **Manager**: `uv`
-- **Packages**: `pillow` (brand asset generation)
-- **Linter**: `ruff` (line-length 100, target py38)
-- **Entry**: `nd-assets` CLI for generating icons/boot splash
+NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 fullscreen window.
 
 ---
 
-## Project Structure
+## Non-Obvious Tooling & Quirks
 
-```
-C:\Users\thecr\Desktop\S-Term  (project root)
-├── Cargo.toml                  # Workspace manifest
-├── package.json                # Root npm scripts & Tauri CLI
-├── pyproject.toml              # Python tooling (uv/ruff)
-│
-├── src-tauri/                  # Main Tauri application
-│   ├── Cargo.toml              # App crate deps
-│   ├── tauri.conf.json         # Window, CSP, bundle, resources config
-│   ├── capabilities/           # Tauri v2 permission descriptors
-│   ├── src/
-│   │   ├── main.rs             # Entrypoint (calls app_lib::run)
-│   │   ├── lib.rs              # App bootstrap, themes, personas, handler reg
-│   │   ├── commands/           # Tauri command modules (agent, browser, config, session, system)
-│   │   ├── llm.rs              # LLM provider trait + Gemini/Ollama impls
-│   │   ├── memory.rs           # Vector memory DB for RAG
-│   │   ├── pty_manager.rs      # Multi-session PTY shell
-│   │   ├── plugin_mgr.rs       # Lua plugin loader + marketplace
-│   │   ├── computer_use.rs     # Autonomous agent loop (up to 5 steps)
-│   │   ├── canvas_collab.rs    # LAN multi-peer canvas collaboration
-│   │   ├── remote_control.rs   # iPhone remote via QR + WebSocket
-│   │   ├── transfer.rs         # LAN P2P file transfer (mDNS + custom protocol)
-│   │   ├── tunnel.rs           # SteamOS SSH tunnel helper
-│   │   ├── ftp.rs / sftp.rs    # FTP/SFTP file browsers
-│   │   ├── mcp.rs              # MCP HTTP server (localhost:13337)
-│   │   ├── whisper.rs          # Whisper.cpp STT integration
-│   │   ├── sync.rs             # Cross-device data sync
-│   │   ├── doc_indexer.rs      # Local document RAG indexing
-│   │   ├── autocomplete.rs     # Terminal LLM ghost-text autocomplete
-│   │   ├── self_heal.rs        # Self-healing diagnostics
-│   │   ├── torrent.rs          # BitTorrent support
-│   │   ├── config.rs           # Typed config structs
-│   │   ├── storage.rs          # Local JSON persistence
-│   │   └── lua.rs              # Lua runtime bindings
-│   └── icons/                  # App icons for bundling
-│
-├── core/                       # Shared Rust library
-│   └── src/
-│       ├── lib.rs              # Re-exports
-│       └── ipc.rs              # Core IPC types + ts-rs bindings
-│
-├── infrastructure/             # Infra Rust library
-│   ├── build.rs                # Protobuf code generation
-│   └── src/
-│       ├── lib.rs              # Re-exports
-│       ├── secrets.rs          # Keyring-backed secret storage
-│       ├── oauth.rs            # Google OAuth2 device flow
-│       └── warpinator.rs       # Warpinator gRPC protocol
-│
-├── bootstrapper/               # Minimal crate (reserved for future boot logic)
-│   └── src/
-│       └── main.rs / Cargo.toml
-│
-├── frontend/                   # Vite-bundled SPA (vanilla JS + selective React)
-│   ├── package.json            # Frontend-only deps
-│   ├── tsconfig.json           # ES2021, React JSX, strict
-│   ├── vite.config.ts          # Port 1420, esbuild minify in release
-│   └── src/
-│       ├── VirtualChat.tsx     # Main chat view (virtualized list)
-│       ├── store.ts            # Zustand global state
-│       ├── markdownWorker.ts   # Off-thread markdown parse
-│       ├── app.css / style.css # Global styles
-│       ├── components/         # React components (e.g., OAuthLogin)
-│       └── bindings/           # ts-rs generated TypeScript types
-│
-├── e2e/                        # Playwright end-to-end tests
-│   ├── playwright.config.ts    # Static server on 127.0.0.1:4173
-│   ├── support/static-server.cjs  # Simple Node HTTP server for dist/
-│   └── tests/
-│       └── settings-shell.spec.ts  # UI shell & nav tests
-│
-├── plugins/                    # Preinstalled Lua plugins
-│   ├── bmad.lua                # BMAD persona shortcuts (/john, /sally, …)
-│   ├── promptgen.lua           # Prompt engineering formulas
-│   ├── ip_lookup.lua           # IP geolocation command
-│   └── auto_responder.lua      # Auto-reply hook demo
-│
-├── docs/                       # Project documentation
-│   ├── USER_GUIDE.md
-│   ├── PLUGIN_DEV_GUIDE.md
-│   ├── NEURODECK_PRODUCT_SPEC.md
-│   ├── IMPLEMENTATION_PLAN.md
-│   ├── ANTIGRAVITY_HANDOFF.md  # Current sprint state & blocking fixes
-│   ├── RELEASE_NOTES.md
-│   └── screenshots/
-│
-├── infra/meta/                 # KFMS metadata
-│   └── meta.json               # Version, codename, build stamp, release policy
-│
-├── assets/                     # Brand assets & bundled resources
-├── themes/                     # User/custom theme storage
-├── data/memory/                # Vector DB & conversation storage
-├── flatpak/                    # Flatpak manifest for SteamOS
-├── build/                      # Build artifacts
-└── scripts/                    # Dev utilities (autokill, CSS tools, setup)
-```
+- **Two config files exist**: `llm-term.toml` at the project root AND `src-tauri/llm-term.toml`. The Rust binary reads `src-tauri/llm-term.toml` during `cargo run` / `tauri dev` (working dir is `src-tauri/`). The root copy is what the installer deploys. Always edit both or let `config.rs` path logic handle it.
+- **`GEMINI_API_KEY` must be set as an env var** before `npm run tauri dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
+- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the dev-mode mock IPC shim has been removed. To test real commands, use `npm run tauri dev`.
+- **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines.
+- **Rust version is pinned to 1.77.2** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
+- **suppaftp 6.x `retr_as_buffer`** returns `Cursor<Vec<u8>>` and loads the entire file into RAM. Don't use it for files > 100MB.
 
 ---
 
-## Build & Development Commands
+## Architecture Map
 
-### Prerequisites
-
-- **Node.js** >= 18, **npm** >= 9
-- **Rust** >= 1.77.2 (stable toolchain)
-- **uv** (for Python tooling)
-- **protoc** (for gRPC code generation in `infrastructure/`)
-
-### Install Dependencies
-
-```bash
-npm install          # Root + frontend workspace deps
-uv sync              # Python tooling (optional, for asset generation)
+### IPC Flow
 ```
-
-### Development Loop
-
-```bash
-npm run dev          # Autokill stale listeners + tauri dev
-npm run build        # Production Tauri build (frontend + Rust)
+frontend/src/main.js
+  └─ invoke("command_name", { args })  ──►  src-tauri/src/lib.rs  (Tauri command)
+  └─ listen("event_name", handler)     ◄──  app_handle.emit("event", payload)
 ```
+All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All request/response goes through `invoke()`.
 
-### Frontend-Only
+### The One Big File Problem
+`lib.rs` (~1600 lines) owns everything: command handlers, app state structs, persona definitions, theme palettes, game detection, voice I/O, and the agent loop. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
-```bash
-npm run frontend:dev       # Vite dev server on :1420
-npm run frontend:build     # Production frontend bundle -> frontend/dist
-npm run frontend:typecheck # tsc --noEmit (both projects)
-```
+`main.js` (~4300 lines) is similarly monolithic by design (no framework). Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file.
 
-### Rust-Only
+### Module Responsibilities
+| Module | What It Owns |
+|---|---|
+| `lib.rs` | All `#[tauri::command]` handlers, `AppState`, themes, personas, game detection, voice I/O, agent loop |
+| `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
+| `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
+| `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
+| `memory.rs` | Cosine-similarity vector DB; persists to `data/memory/chat_history.json` |
+| `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
+| `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
+| `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
+| `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
 
-```bash
-cargo check          # Fast type check
-cargo clippy         # Lint
-cargo build          # Debug build
-cargo test           # Run unit tests (see test coverage below)
-```
+### Infrastructure Crate (`infrastructure/`)
+A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
 
-### Asset Generation
+| Module | What It Owns |
+|---|---|
+| `secrets.rs` | OS keychain (keyring 2.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
+| `oauth.rs` | Google OAuth2 Device Flow — `request_device_code` → `poll_for_token`; reads `google_client_id` from config |
+| `warpinator.rs` | Warpinator-compatible gRPC server (tonic 0.11); `WarpinatorCallbacks` trait; `start_warpinator_service(callbacks, port)` |
 
-```bash
-npm run assets       # Python script: generates icons, splash, boot art
-# Or directly:
-uv run nd-assets
-```
+**Key infrastructure quirks:**
+- `keyring` is pinned to `2.3` — uses `delete_password()` NOT `delete_credential()` (that's 3.x API)
+- `tonic-build` 0.11 uses `.compile()` not `.compile_protos()` — `build.rs` uses `unsafe { set_var("PROTOC", ...) }`
+- `reqwest` 0.12 without `form` feature has no `.form()` method — use manual URL encoding with `Content-Type: application/x-www-form-urlencoded`
+- `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
-### End-to-End Tests
+### RAG Is Active
+Memory context injection is live in `send_command` (lib.rs ~line 1030): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
 
-```bash
-cd e2e && npm test   # Builds frontend + runs Playwright against static server
-```
+### PTY Session Routing
+`pty_output` and `pty_exit` events carry a session `id` field. Multiple PTY sessions can coexist in `PtyState.sessions`. The main terminal uses `ptySessionId = "main_pty_session"`. The SSH tab creates sessions named `ssh_session_<timestamp>`. Both are routed in the same `listen("pty_output", ...)` handler by ID.
 
-The e2e suite mocks Tauri's `__TAURI_INTERNALS__.invoke` so tests run in a pure browser environment without a running Rust backend. This tests UI shell navigation, settings tabs, command palette, viewport sizing, and CSS hierarchy.
-
-### Release / Deployment
-
-- **GitHub Actions** (`.github/workflows/ci.yml`): triggered on `v*` tags. Builds for:
-  - Windows → NSIS, MSI
-  - Ubuntu → AppImage, Deb
-  - macOS → DMG, App
-- **Flatpak**: run `build_flatpak.sh` on SteamOS/Linux for `.flatpak` bundle.
-- **Release notes**: auto-extracted from `docs/RELEASE_NOTES.md` first `## v…` block.
+### CSS Specificity Trap (was live bug)
+ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active` (specificity 20). **Never add `display: flex` or `display: block` to `#view-*` ID rules** — it will permanently override the `.view-content { display: none }` hide rule and break tab switching. Use `flex-direction`, `overflow`, `background` on ID rules only.
 
 ---
 
-## Code Style & Conventions
+## Rules
 
-### Rust
-
-- Edition 2021 (src-tauri/infrastructure), 2024 (core, bootstrapper).
-- Use `anyhow` for error propagation in commands; return `Result<T, String>` to frontend.
-- Tauri commands are `async fn` and registered in `lib.rs` inside `generate_handler![]`.
-- All new commands **must** be added to `generate_handler![]` in `lib.rs`.
-- Prefer `tracing` over `log` for structured diagnostics.
-- Unit tests live inline behind `#[cfg(test)]` in the same file.
-
-### TypeScript / Frontend
-
-- Strict mode enabled. `allowJs: true`, `checkJs: false`.
-- Vanilla JavaScript with imperative DOM manipulation for most views.
-- React used selectively: `VirtualChat.tsx` (chat virtualization) only.
-- State management: mutable global plain object (`state.js`); Zustand (`store.ts`) used only for chat message list.
-- DOM sanitization is mandatory for any HTML injected into chat (`sanitizeRenderedHtml` in `VirtualChat.tsx`).
-- CSS: **never** add `display: flex` or `display: block` to `#view-*` ID rules. Views are shown/hidden via class toggles (`active`) on parent containers.
-- Icons use `.nd-icon-svg` class hierarchy.
-
-### Lua Plugins
-
-- Single `.lua` file per plugin, placed in `plugins/`.
-- Globals injected by runtime: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona`.
-- Commands must start with `/`. Hooks: `before_send`, `after_response`.
-- Keep `execute()` calls under ~5 seconds (blocking subprocess).
-- See `docs/PLUGIN_DEV_GUIDE.md` for full API reference.
-
-### Commit Messages
-
-Follow conventional style:
-- `feat(ui): …`
-- `fix(security): …`
-- `chore(kfms): …`
-Recent examples: `feat(ui): refine canvas toolbar actions`, `fix(security): harden plugin renderers`.
+- **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`. The dev-mode mock IPC shim has been removed — commands are no longer duplicated there.
+- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
+- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
+- **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
+- **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
+- **Window size**: all new views must fit within 1280×800. The flex column layout in `.view-container` is `position: absolute; top: 0; left: 0; width: 100%; height: 100%`. Use `overflow: hidden` on view roots and scroll internally.
 
 ---
 
-## Testing Strategy
+## Hard Constraints / Anti-Patterns
 
-### Rust Unit Tests
-
-Located inline (`#[cfg(test)]`) in the following modules:
-- `computer_use.rs`
-- `config.rs`
-- `llm.rs`
-- `mcp.rs`
-- `memory.rs`
-- `plugin_mgr.rs`
-- `self_heal.rs`
-- `storage.rs`
-- `sync.rs`
-
-Run with `cargo test`.
-
-### Playwright E2E
-
-- **Target**: Static-built frontend (`frontend/dist`) served on `127.0.0.1:4173`.
-- **Mocking**: Full Tauri backend is mocked via `page.addInitScript` injecting `window.__TAURI_INTERNALS__` and `window.__TAURI__`.
-- **Coverage**: Settings shell, themed tab switching, command palette, all 12 primary nav tabs, viewport overflow on compact widths, centered layout on wide screens, canvas toolbar wrapping, notification center, prompt picker/history chrome.
-
-### Manual Smoke Test
-
-Before any release tag, run `npm run tauri dev` and verify:
-1. Boot sequence completes without JS errors.
-2. Chat sends/receives streaming responses.
-3. Terminal spawns a PTY and accepts input.
-4. Canvas runs code and shows preview.
-5. Settings modal opens and persists changes across reload.
+- **Do not add `display: flex` to `#view-*` ID rules in app.css** — kills tab switching (see CSS Specificity Trap above).
+- **Do not call `pty_spawn` without a preceding `pty_kill`** for the same session ID.
+- **Do not load the full FTP file into a `Vec<u8>` for files that could be large** — `retr_as_buffer` is for small files only. Stream to disk for anything user-selectable.
+- **Do not use `unwrap()` in Tauri command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
+- **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
+- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and Tauri's JS API (all CDN or vendored). Adding a bundled npm package will bloat the Tauri WebView bundle.
+- **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
 
 ---
 
-## Security Considerations
+## Deeper Docs
 
-- **CSP** is strictly defined in `tauri.conf.json`. `script-src` is `'self'` only. `style-src` allows `'unsafe-inline'` and Google Fonts.
-- **Capabilities**: Tauri v2 permission model via `src-tauri/capabilities/default.json` (currently `core:default`).
-- **Secrets**: API keys and OAuth tokens stored via OS keyring (`keyring` crate), never in plain text files.
-- **Plugin Sandbox**: Lua plugins run in a restricted `mlua` runtime. They can execute shell commands (via `execute`) but have no filesystem write access outside the sandbox.
-- **Sanitization**: All user-generated HTML (chat messages, plugin output, markdown) is sanitized before DOM insertion. Disallowed tags (`script`, `iframe`, `object`, etc.) and dangerous attributes are stripped.
-- **Recent Hardening**: A series of commits (latest on `main`) hardened CSP, added MCP bearer auth, fixed record path traversal, resolved OAuth race conditions, and sanitized dynamic renderer surfaces (plugin marketplace, chat replay, notification center, canvas editor).
-- **No Secrets in Build**: The KFMS governance policy (`infra/meta/meta.json`) explicitly forbids embedding secrets in release artifacts.
+| Resource | Location |
+|---|---|
+| Full feature backlog + priority matrix | `docs/ANTIGRAVITY_HANDOFF.md` |
+| Project identity, sprint history, command registry | `docs/project-context.md` |
+| Steam Deck Game Mode integration | `docs/gamescope_guide.md` |
+| Steam Input controller mapping | `docs/steam_input_guide.md` |
+| User-facing feature documentation | `docs/USER_GUIDE.md` |
+| BMAD agent personas + sprint config | `_bmad/custom/config.toml` |
+| Sprint artifacts | `_bmad-output/implementation-artifacts/` |
 
 ---
 
-## Configuration & Data Files
+## Gotchas / Tribal Knowledge
 
+- **The config path `../llm-term.toml` fallback** was added because the binary's working directory during `tauri dev` is `src-tauri/`, not the project root. Four copies of `llm-term.toml` exist across the project (`root`, `src-tauri/`, `assets/`, `dist/`). Only `src-tauri/llm-term.toml` is read at runtime. This is load-bearing — don't remove the path check.
+
+- **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
+
+- **Canvas Python/Bash "run" does nothing** — the Run button for non-HTML canvas languages shows a "run hint" message but does not execute code. The Agent tab is what actually runs Python/Bash. This is intentional-ish but confusing — it's flagged in `ANTIGRAVITY_HANDOFF.md` as a must-fix.
+
+- **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
+
+- **Voice STT returns raw audio via `arecord`** — the `stop_recording` command returns transcribed text, but the transcription quality depends on whether `espeak`/`arecord` are installed. On Windows, `start_recording` returns a mock string. The STT path does NOT currently use Whisper or any AI model — it's system-tool-limited.
+
+- **The 📊 context drawer** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar.
+
+- **BMAD personas are Lua-registered, not hardcoded** — `/john`, `/sally`, etc. call `setPersona()` via `plugins/bmad.lua`. If the Lua plugin fails to load, those commands silently disappear. The 9 built-in personas (including the BMAD ones) are also hardcoded in `lib.rs`'s `PERSONAS` map as a fallback.
+
+- **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The `RADIAL_SEGMENTS` array in `main.js` has **12 entries** covering all tabs — Chat, Canvas, Terminal, SSH, Tunnel, Browser, Agent, Memory, Share, Remote, PromptLab, Docs.
+
+- **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field.
+
+- **Prompt Lab tab** (`#view-prompt-lab`) was added by the Google Antigravity automated sprint. It exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
+
+- **Cinematic boot screen** (`#boot-overlay`) runs as an IIFE at the bottom of `main.js`. It calls `list_plugins`, `get_config`, `get_personas`, `get_themes`, `get_doc_count`, and `get_context_stats` during startup to show real system state. It fades out and is removed from the DOM after completion — it does NOT block app initialization.
+
+- **Onboarding wizard** (`#onboarding-modal`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("onboardingDone")`.
+
+- **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
+
+---
+
+## KFMS v1.0 — Khaotic Foundation Metadata Standard
+
+Version governance for this project. One Egyptian god codename per MINOR version line.
+
+### Codename Assignment
+```
+REGISTRY[MINOR] = codename
+tag format      = v{semver}-{codename_lower}
+
+current: v1.1.x → Thoth  (MINOR=1, index 1)
+next:    v1.2.x → Ra     (MINOR=2, index 2)
+```
+
+### Key Files
 | File | Purpose |
-|------|---------|
-| `src-tauri/llm-term.toml` | Bundled default config (TOML) |
-| `data/personas.json` | User-created custom personas |
-| `data/game_notes/<app_id>.md` | Per-game session notes |
-| `~/.config/neurodeck/env` | Persisted API key (platform-specific config dir) |
-| `frontend/dist/` | Vite build output (served by Tauri in release) |
-| `themes/` | Custom theme JSON files |
+|---|---|
+| `infra/meta/meta.json` | Primary KFMS metadata — version, codename, build SHA, governance flags |
+| `infra/meta/meta.schema.json` | JSON Schema draft-07 — CI enforces this on every `meta.json` change |
+| `infra/meta/CODENAME_REGISTRY.md` | Full 20-god codename table with status and assignment |
+| `infra/telemetry/health.json` | BMAD orchestration readiness — 5 boolean checks must all be `true` |
+| `scripts/khaotic-init.sh` | Bootstrap utility: `sweep` / `stamp` / `validate` / `status` |
+
+### KFMS CLI
+```bash
+./scripts/khaotic-init.sh sweep     # Move loose root files → .loose/inbox/ (non-destructive)
+./scripts/khaotic-init.sh stamp     # Re-stamp build block (git SHA, tag, timestamp, dirty flag)
+./scripts/khaotic-init.sh validate  # Validate meta.json structure + governance rules
+./scripts/khaotic-init.sh status    # Print KFMS health summary
+```
+
+### CI Workflows (`.github/workflows/`)
+- `validate-meta-schema.yml` — schema validation on `meta.json` change; runs `ajv` + `khaotic-init.sh validate`
+- `validate-codename.yml` — verifies codename maps to correct MINOR, tag format correct, no collision within MAJOR
+- `verify-telemetry.yml` — verifies `health.json` presence, all 5 checks true, no version/codename drift from `meta.json`
+
+### Rules When Bumping Versions
+- **PATCH bump** (1.1.x): run `./scripts/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
+- **MINOR bump** (1.2.0): update `meta.json` with new version, `codename.name = "Ra"`, `registry_index = 2`, `minor_line = 2`, `tag = "v1.2.0-ra"`. Update `health.json` version/codename to match.
+- **MAJOR bump** (2.0.0): all codenames reset to index 0 → Anubis.
+- Loose files at the root: run `sweep` before committing to keep the root clean.
 
 ---
 
-## Key Architectural Decisions
+## Dev Commands
 
-1. **Vanilla JS frontend with selective React**: The app bootstraps via vanilla JavaScript (`main.js`, ~8,800 lines). React is used selectively for the chat virtualization layer (`VirtualChat.tsx`) only. All other UI views, state, and DOM manipulation are imperative vanilla JS. `OAuthLogin.tsx` is dead code — OAuth UI is built via `innerHTML` in `main.js`. Treat the current code as source-of-truth.
-2. **Single-Window Tauri App**: One main window (1280×800) plus a splash screen. No multi-window support.
-3. **Streaming LLM via SSE**: Gemini uses Server-Sent Events; Ollama uses its streaming JSON API. Both implement the `LlmProvider` trait.
-4. **Plugin Runtime in Same Process**: Lua runs inside the Tauri process (not sandboxed to a separate OS process). Malicious plugins could execute arbitrary shell commands—this is by design for power-user extensibility, but the marketplace registry is trusted.
-5. **No Database Server**: Vector memory and chat history are persisted as local JSON / flat files. No SQLite or external DB.
+```bash
+npm run tauri dev                     # Hot-reload (Vite + Rust)
+npm run build                         # Production build
 
----
+npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without Tauri)
+npm run --prefix frontend build       # Vite build only
 
-## How to Add a New Tauri Command
+cd src-tauri && cargo check           # Fast type-check
+cd src-tauri && cargo clippy          # Lint
+cd src-tauri && cargo build           # Debug build (~2min first time due to mlua vendored)
 
-1. Create the command function in the appropriate `src-tauri/src/commands/*.rs` file (or a new module).
-2. Export it in `src-tauri/src/commands/mod.rs`.
-3. Register it in `src-tauri/src/lib.rs` inside `generate_handler![…]`.
-4. Add a TypeScript wrapper in `frontend/src/store.ts` or the relevant component.
-5. Run `cargo check` and `npm run frontend:build`.
-6. Write a Playwright test in `e2e/tests/` if the command drives UI state.
-7. Update `docs/USER_GUIDE.md` or `docs/PLUGIN_DEV_GUIDE.md` if user-facing.
-
----
-
-## Release Checklist (KFMS)
-
-The project follows **Khaotic Feature Management System (KFMS)** governance:
-
-- Version and codename tracked in `infra/meta/meta.json`.
-- Codenames are unique per major version line (validated by CI).
-- Tag format: `v{semver}-{codename_lower}` (e.g., `v1.2.1-ra`).
-- Before tagging, ensure:
-  1. `cargo check` passes.
-  2. `cargo test` passes (or skipped coverage is documented).
-  3. Frontend build succeeds.
-  4. `git diff --check` clean.
-  5. CSS does not violate `#view-*` display rule.
-  6. KFMS post-commit hook stamps `infra/meta/meta.json`.
-  7. Manual `npm run tauri dev` smoke test completed.
-
----
-
-## Useful References
-
-- `docs/ANTIGRAVITY_HANDOFF.md` — Current sprint state, shipped features, and blocking fixes.
-- `docs/IMPLEMENTATION_PLAN.md` — Sprint roadmap and integration ledger.
-- `docs/PLUGIN_DEV_GUIDE.md` — Full Lua plugin API.
-- `docs/USER_GUIDE.md` — End-user documentation.
-- `docs/RELEASE_NOTES.md` — Changelog consumed by CI.
-- `src-tauri/tauri.conf.json` — Window, CSP, and bundle configuration.
-- `infra/meta/meta.json` — KFMS version/codename/build metadata.
+./install.sh                          # SteamOS deploy → ~/Applications/neurodeck/
+./launch_gamescope.sh                 # Run in gamescope 1280×800 (Steam Deck Game Mode)
+.\package_release.ps1                 # Windows MSI packaging
+```

@@ -157,8 +157,17 @@ PRESERVE_DIRS=(
 # .loose/inbox/ — non-destructive. Files are git-ignored there.
 # ---------------------------------------------------------------------------
 cmd_sweep() {
-  info "Running KFMS sweep — scanning for loose root-level files..."
-  mkdir -p "$ROOT/.loose/inbox"
+  local dry_run=false
+  for arg in "$@"; do
+    [[ "$arg" == "--dry-run" ]] && dry_run=true
+  done
+
+  if $dry_run; then
+    info "KFMS sweep (dry-run) — scanning for loose root-level files..."
+  else
+    info "Running KFMS sweep — scanning for loose root-level files..."
+    mkdir -p "$ROOT/.loose/inbox"
+  fi
 
   local moved=0
   local skipped=0
@@ -186,15 +195,19 @@ cmd_sweep() {
     done
     $in_preserve_dir && { (( skipped++ )) || true; continue; }
 
-    # Move to .loose/inbox/
-    local dest="$ROOT/.loose/inbox/$name"
-    # Avoid overwrite collision — append timestamp suffix
-    if [[ -e "$dest" ]]; then
-      dest="$ROOT/.loose/inbox/${name%.}_$(date -u +%s).bak"
-    fi
+    if $dry_run; then
+      info "  would sweep → .loose/inbox/$name"
+    else
+      # Move to .loose/inbox/
+      local dest="$ROOT/.loose/inbox/$name"
+      # Avoid overwrite collision — append timestamp suffix
+      if [[ -e "$dest" ]]; then
+        dest="$ROOT/.loose/inbox/${name%.}_$(date -u +%s).bak"
+      fi
 
-    mv "$entry" "$dest"
-    warn "  swept → .loose/inbox/$name"
+      mv "$entry" "$dest"
+      warn "  swept → .loose/inbox/$name"
+    fi
     (( moved++ )) || true
 
   done < <(find "$ROOT" -maxdepth 1 -not -name ".*" -not -path "$ROOT" -print0 | sort -z)
@@ -207,15 +220,23 @@ cmd_sweep() {
     # Skip .git, .gitignore, .gitattributes
     [[ "$name" == ".gitignore" || "$name" == ".gitattributes" || "$name" == ".git" ]] && continue
 
-    mv "$entry" "$ROOT/.loose/inbox/$name" 2>/dev/null || true
-    warn "  swept (hidden) → .loose/inbox/$name"
+    if $dry_run; then
+      info "  would sweep (hidden) → .loose/inbox/$name"
+    else
+      mv "$entry" "$ROOT/.loose/inbox/$name" 2>/dev/null || true
+      warn "  swept (hidden) → .loose/inbox/$name"
+    fi
     (( moved++ )) || true
   done < <(find "$ROOT" -maxdepth 1 -name ".*" -not -name ".git" \
     -not -name ".github" -not -name ".loose" -not -name ".cursor" \
     -not -name ".playwright-mcp" -not -type d -print0 2>/dev/null | sort -z)
 
-  ok "Sweep complete. Moved: $moved  |  Preserved/skipped: $skipped"
-  ok "Loose files are in: .loose/inbox/ (git-ignored)"
+  if $dry_run; then
+    ok "Dry-run complete. Would move: $moved  |  Would preserve/skip: $skipped"
+  else
+    ok "Sweep complete. Moved: $moved  |  Preserved/skipped: $skipped"
+    ok "Loose files are in: .loose/inbox/ (git-ignored)"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -734,7 +755,7 @@ cmd_release_plan() {
 CMD="${1:-help}"
 
 case "$CMD" in
-  sweep)    cmd_sweep    ;;
+  sweep)    shift; cmd_sweep "$@"    ;;
   stamp)    cmd_stamp    ;;
   sync)     cmd_sync     ;;
   validate) cmd_validate ;;
@@ -742,15 +763,15 @@ case "$CMD" in
   release-plan) shift; cmd_release_plan "$@" ;;
   *)
     echo ""
-    echo "  Usage: ./scripts/khaotic-init.sh <command>"
+    echo "  Usage: ./scripts/khaotic-init.sh <command> [args]"
     echo ""
     echo "  Commands:"
-    echo "    sweep     Move loose root files to .loose/inbox/"
-    echo "    stamp     Re-stamp build block in infra/meta/meta.json"
-    echo "    sync      Regenerate derived KFMS artifacts from meta.json"
-    echo "    validate  Validate meta.json against schema"
-    echo "    status    Print KFMS health summary"
-    echo "    release-plan  Delegate to the native Windows release runner"
+    echo "    sweep [--dry-run]  Move loose root files to .loose/inbox/"
+    echo "    stamp              Re-stamp build block in infra/meta/meta.json"
+    echo "    sync               Regenerate derived KFMS artifacts from meta.json"
+    echo "    validate           Validate meta.json against schema"
+    echo "    status             Print KFMS health summary"
+    echo "    release-plan       Delegate to the native Windows release runner"
     echo ""
     ;;
 esac

@@ -1,197 +1,95 @@
 import { test, expect } from "@playwright/test";
+import { AppPage } from "../pages/AppPage";
+import { SettingsPage } from "../pages/SettingsPage";
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("neurodeck_onboarding_complete", "true");
-    const noop = async () => {};
-    const listeners = new Map();
-    const defaultConfig = {
-      llm: {
-        default_provider: "gemini",
-        gemini_model: "gemini-1.5-flash",
-        ollama_base_url: "http://localhost:11434",
-        ollama_model: "llama3.2:1b",
-        active_agent_id: "default",
-      },
-    };
-
-    const invoke = async (cmd, args) => {
-      switch (cmd) {
-        case "get_initial_state":
-          return {
-            model: "gemini-1.5-flash",
-            provider: "gemini",
-            active_agent_id: "default",
-            session_id: "test-session",
-            active_persona: "Default",
-            memory_status: "Stable",
-            tool_status: "Idle",
-            game_name: "",
-            game_app_id: "",
-            game_running: "false",
-          };
-        case "get_config":
-          return defaultConfig;
-        case "get_gemini_api_key":
-          return "";
-        case "get_personas":
-          return ["Default", "Developer"];
-        case "get_themes":
-          return ["Neurodeck", "Midnight"];
-        case "list_plugins":
-          return [];
-        case "get_doc_count":
-          return 0;
-        case "get_mcp_status":
-          return { running: "false", port: "13337" };
-        case "test_llm_connection":
-          return "Gemini Connection Successful!";
-        case "list_custom_personas":
-        case "get_themes_list":
-        case "get_plugins":
-        case "load_plugins":
-        case "get_themes_metadata":
-          return [];
-        case "get_sync_status":
-          return {
-            device_id: "test-device",
-            last_sync_at: null,
-            pending_count: 0,
-            conflict_count: 0,
-          };
-        case "torrent_get_status":
-          return {
-            download_root: "C:/tmp/torrents",
-            torrent_count: 0,
-            torrents: [],
-          };
-        default:
-          return args ?? null;
-      }
-    };
-
-    window.__TAURI_INTERNALS__ = {
-      invoke,
-      transformCallback: (callback) => callback,
-      convertFileSrc: (value) => value,
-    };
-    window.__TAURI__ = {
-      core: { invoke },
-      event: {
-        listen: async (event, callback) => {
-          listeners.set(event, callback);
-          return async () => listeners.delete(event);
-        },
-        emit: noop,
-      },
-      path: {},
-      webviewWindow: {
-        getCurrentWebviewWindow: () => ({
-          label: "main",
-          listen: async () => async () => {},
-          emit: noop,
-          onCloseRequested: noop,
-        }),
-      },
-      window: {
-        getCurrentWindow: () => ({
-          label: "main",
-          listen: async () => async () => {},
-          emit: noop,
-        }),
-      },
-    };
-  });
-
-  await page.goto("/");
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
 });
 
 test("settings shell opens, switches themed tabs, and closes", async ({ page }) => {
-  await page.locator("#settings-btn").click();
+  const settings = new SettingsPage(page);
+  await settings.openSettings();
 
-  const modal = page.locator("#settings-overlay .settings-modal-card");
-  const settingsOverlay = page.locator("#settings-overlay");
-  await expect(modal).toBeVisible();
-  await expect(modal).toHaveAttribute("data-settings-theme", "general");
+  await expect(settings.modalCard).toBeVisible();
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "general");
   await expect(page.locator(".stv-sidebar-brand-chip")).toBeVisible();
 
-  await settingsOverlay.getByRole("button", { name: "Appearance" }).click();
-  await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
+  await settings.sidebarAppearance.click();
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "appearance");
   await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
 
-  await settingsOverlay.getByRole("button", { name: "Terminal" }).click();
-  await expect(modal).toHaveAttribute("data-settings-theme", "terminal");
+  await settings.sidebarTerminal.click();
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "terminal");
   await expect(page.locator("#sp-terminal")).toHaveClass(/active/);
 
-  await page.keyboard.press("Escape");
-  await expect(page.locator("#settings-overlay")).not.toHaveClass(/active/);
+  await settings.closeSettings();
 });
 
 test("stale settings tab state falls back to General", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("settingsActivePanel", "sp-does-not-exist"));
   await page.reload();
-  await page.locator("#settings-btn").click();
+  const settings = new SettingsPage(page);
+  await settings.openSettings();
 
-  const modal = page.locator("#settings-overlay .settings-modal-card");
-  await expect(modal).toHaveAttribute("data-settings-theme", "general");
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "general");
   await expect(page.locator("#sp-general")).toHaveClass(/active/);
 });
 
 test("command palette opens and drives view and settings shortcuts", async ({ page }) => {
-  await page.keyboard.press("Control+K");
-  await expect(page.locator("#command-palette-overlay")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.openCommandPalette();
 
   await page.locator("#command-palette-input").fill("prompt lab");
   await page.locator("#command-palette-list .command-palette-item").first().click();
-  await expect(page.locator('.nav-tab[data-view="prompt-lab"]')).toHaveClass(/active/);
-  await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
+  await expect(page.getByTestId("nav-tab-prompt-lab")).toHaveClass(/active/);
+  await expect(page.getByTestId("view-prompt-lab")).toHaveClass(/active/);
 
-  await page.keyboard.press("Control+K");
+  await app.openCommandPalette();
   await page.locator("#command-palette-input").fill("appearance");
   await page.locator("#command-palette-list .command-palette-item").first().click();
 
-  const modal = page.locator("#settings-overlay .settings-modal-card");
-  await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
-  await expect(modal).toHaveAttribute("data-settings-theme", "appearance");
+  const settings = new SettingsPage(page);
+  await expect(settings.settingsOverlay).toHaveClass(/active/);
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "appearance");
   await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
 });
 
 test("all primary nav tabs remain clickable across the full strip", async ({ page }) => {
+  const app = new AppPage(page);
   const tabs = [
-    ["chat", "#view-chat"],
-    ["canvas", "#view-canvas"],
-    ["terminal", "#view-terminal"],
-    ["ssh", "#view-ssh"],
-    ["tunnel", "#view-tunnel"],
-    ["share", "#view-share"],
-    ["browser", "#view-browser"],
-    ["agent", "#view-agent"],
-    ["memory", "#view-memory"],
-    ["prompt-lab", "#view-prompt-lab"],
-    ["remote", "#view-remote"],
-    ["docs", "#view-docs"],
+    "chat",
+    "canvas",
+    "terminal",
+    "ssh",
+    "tunnel",
+    "share",
+    "browser",
+    "agent",
+    "memory",
+    "prompt-lab",
+    "remote",
+    "docs",
   ] as const;
 
-  for (const [view, panel] of tabs) {
-    const tab = page.locator(`.nav-tab[data-view="${view}"]`);
-    await tab.scrollIntoViewIfNeeded();
-    await tab.click();
-    await expect(tab).toHaveClass(/active/);
-    await expect(page.locator(panel)).toHaveClass(/active/);
+  for (const view of tabs) {
+    await app.navigateTo(view);
   }
 });
 
 test("settings modal remains in viewport on compact window sizes", async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 720 });
   await page.reload();
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
 
-  await page.locator("#settings-btn").click();
-  const modal = page.locator("#settings-overlay .settings-modal-card");
-  await expect(modal).toBeVisible();
+  const settings = new SettingsPage(page);
+  await settings.openSettings();
+  await expect(settings.modalCard).toBeVisible();
 
-  const box = await modal.boundingBox();
+  const box = await settings.modalCard.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.y).toBeGreaterThanOrEqual(0);
@@ -199,7 +97,7 @@ test("settings modal remains in viewport on compact window sizes", async ({ page
   expect(box!.y + box!.height).toBeLessThanOrEqual(720);
 
   const panel = page.locator("#sp-network");
-  await page.locator("#settings-overlay").getByRole("button", { name: "Network" }).click();
+  await settings.sidebarNetwork.click();
   await expect(panel).toHaveClass(/active/);
   await expect(panel).toBeVisible();
 });
@@ -207,10 +105,11 @@ test("settings modal remains in viewport on compact window sizes", async ({ page
 test("docs and remote views stay usable without horizontal overflow on narrow windows", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 700 });
   await page.reload();
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
 
-  await page.locator('.nav-tab[data-view="remote"]').click();
-  await expect(page.locator("#view-remote")).toHaveClass(/active/);
+  await app.navigateTo("remote");
   await expect(page.locator(".remote-kicker")).toBeVisible();
   const remoteMetrics = await page.locator(".remote-container").evaluate((el) => ({
     clientWidth: el.clientWidth,
@@ -219,8 +118,7 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
   expect(remoteMetrics.scrollWidth).toBeLessThanOrEqual(remoteMetrics.clientWidth + 2);
   await expect(page.locator("#view-remote .remote-status-badge")).toBeVisible();
 
-  await page.locator('.nav-tab[data-view="docs"]').click();
-  await expect(page.locator("#view-docs")).toHaveClass(/active/);
+  await app.navigateTo("docs");
   await expect(page.locator(".docs-kicker")).toBeVisible();
   const docsMetrics = await page.locator(".docs-container").evaluate((el) => ({
     clientWidth: el.clientWidth,
@@ -234,7 +132,9 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
 test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.reload();
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
 
   const centeredTabs = [
     ["browser", ".browser-container"],
@@ -245,8 +145,7 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
   ] as const;
 
   for (const [view, shellSelector] of centeredTabs) {
-    await page.locator(`.nav-tab[data-view="${view}"]`).click();
-    await expect(page.locator(`#view-${view}`)).toHaveClass(/active/);
+    await app.navigateTo(view);
     await page.waitForTimeout(350);
 
     const metrics = await page.locator(shellSelector).evaluate((el) => {
@@ -265,25 +164,23 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
 });
 
 test("chat, memory, and prompt lab expose the refined shell hierarchy", async ({ page }) => {
-  await page.locator('.nav-tab[data-view="chat"]').click();
-  await expect(page.locator("#view-chat")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.navigateTo("chat");
   await expect(page.locator(".chat-session-kicker")).toBeVisible();
 
-  await page.locator('.nav-tab[data-view="memory"]').click();
-  await expect(page.locator("#view-memory")).toHaveClass(/active/);
+  await app.navigateTo("memory");
   await expect(page.locator(".memory-kicker")).toBeVisible();
   await expect(page.locator(".memory-search-shell")).toBeVisible();
 
-  await page.locator('.nav-tab[data-view="prompt-lab"]').click();
-  await expect(page.locator("#view-prompt-lab")).toHaveClass(/active/);
+  await app.navigateTo("prompt-lab");
   await expect(page.locator(".pl-header-kicker")).toBeVisible();
   await expect(page.locator("#pl-open-gallery-btn .nd-icon-svg")).toBeVisible();
   await expect(page.locator("#pl-optimize-ai-btn .nd-icon-svg")).toBeVisible();
 });
 
 test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ page }) => {
-  await page.locator('.nav-tab[data-view="agent"]').click();
-  await expect(page.locator("#view-agent")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.navigateTo("agent");
   await expect(page.locator(".agent-kicker")).toBeVisible();
   await page.locator("#model-name").click();
   await expect(page.locator("#agent-switcher-panel")).not.toHaveClass(/hidden/);
@@ -292,23 +189,20 @@ test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ p
   await page.locator(".agent-switcher-close").click();
   await expect(page.locator("#agent-switcher-panel")).toHaveClass(/hidden/);
 
-  await page.locator('.nav-tab[data-view="browser"]').click();
-  await expect(page.locator("#view-browser")).toHaveClass(/active/);
+  await app.navigateTo("browser");
   await expect(page.locator(".browser-kicker")).toBeVisible();
   await expect(page.locator(".browser-home-kicker")).toBeVisible();
 
-  await page.locator('.nav-tab[data-view="tunnel"]').click();
-  await expect(page.locator("#view-tunnel")).toHaveClass(/active/);
+  await app.navigateTo("tunnel");
   await expect(page.locator(".tunnel-kicker").first()).toBeVisible();
 });
 
 test("ssh and share transfer surfaces expose the refined shell hierarchy", async ({ page }) => {
-  await page.locator('.nav-tab[data-view="ssh"]').click();
-  await expect(page.locator("#view-ssh")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.navigateTo("ssh");
   await expect(page.locator(".ssh-kicker")).toBeVisible();
 
-  await page.locator('.nav-tab[data-view="share"]').click();
-  await expect(page.locator("#view-share")).toHaveClass(/active/);
+  await app.navigateTo("share");
   await expect(page.locator(".share-view-kicker")).toBeVisible();
 
   await page.locator('.share-inner-tab[data-panel="torrent"]').click();
@@ -317,13 +211,15 @@ test("ssh and share transfer surfaces expose the refined shell hierarchy", async
 });
 
 test("notification center opens with the refined modal hierarchy", async ({ page }) => {
-  await page.locator("#notif-btn").click();
+  const app = new AppPage(page);
+  await app.notifBtn.click();
   const modal = page.locator("#notif-modal");
   await expect(modal).toHaveClass(/active/);
   await expect(modal.locator(".notif-modal-card").last()).toBeVisible();
 });
 
 test("controller prompt picker and history search expose refined utility chrome", async ({ page }) => {
+  const app = new AppPage(page);
   await page.keyboard.press("Control+Shift+P");
   await expect(page.locator("#ctrl-prompt-overlay")).toHaveClass(/active/);
   await expect(page.locator(".ctrl-prompt-title .nd-icon-svg")).toBeVisible();
@@ -339,8 +235,8 @@ test("controller prompt picker and history search expose refined utility chrome"
 });
 
 test("canvas toolbar exposes shared icon actions", async ({ page }) => {
-  await page.locator('.nav-tab[data-view="canvas"]').click();
-  await expect(page.locator("#view-canvas")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.navigateTo("canvas");
   await expect(page.locator("#canvas-run-btn .nd-icon-svg")).toBeVisible();
   await expect(page.locator("#canvas-copy-btn .nd-icon-svg")).toBeVisible();
   await expect(page.locator("#canvas-clear-btn .nd-icon-svg")).toBeVisible();
@@ -351,9 +247,10 @@ test("canvas toolbar exposes shared icon actions", async ({ page }) => {
 test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
   await page.setViewportSize({ width: 920, height: 720 });
   await page.reload();
-  await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-  await page.locator('.nav-tab[data-view="canvas"]').click();
-  await expect(page.locator("#view-canvas")).toHaveClass(/active/);
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
+  await app.navigateTo("canvas");
 
   const metrics = await page.locator(".canvas-toolbar").evaluate((el) => ({
     clientWidth: el.clientWidth,
