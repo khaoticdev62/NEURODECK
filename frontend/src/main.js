@@ -637,6 +637,8 @@ document.querySelector("#app").innerHTML = `
                                     <button class="input-btn mic-btn" id="mic-btn" title="Voice Input">🎙️</button>
                                     <button class="input-btn" id="toggle-drawer-btn" title="Toggle Context Drawer">📊</button>
                                     <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)">📸</button>
+                                    <button class="input-btn attach-btn" id="attach-btn" title="Attach Files (Ctrl+Shift+A)">📎</button>
+                                    <input type="file" id="file-input" class="hidden" multiple accept="*/*">
                                 </div>
                                 <div class="input-actions-right">
                                     <button class="send-prompt-btn" id="send-btn" data-testid="chat-send-btn" title="Send Message">

@@ -287,6 +287,25 @@ const ICONS = {
   columns: `
     <rect x="3" y="3" width="7" height="18" rx="1" ry="1"></rect>
     <rect x="14" y="3" width="7" height="18" rx="1" ry="1"></rect>
+  `,
+  paperclip: `
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+  `,
+  fileImage: `
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <circle cx="10" cy="13" r="2"></circle>
+    <path d="m20 17-3.5-3.5-4 4L7 13"></path>
+  `,
+  fileCode: `
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <polyline points="9 13 7 15 9 17"></polyline>
+    <polyline points="15 13 17 15 15 17"></polyline>
+  `,
+  fileBox: `
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
   `
 };
 

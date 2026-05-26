@@ -363,12 +363,15 @@ fn provider_by_name(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn compare_models(
     prompt: String,
     left_provider: String,
     right_provider: String,
     left_model: Option<String>,
     right_model: Option<String>,
+    image_base64: Option<String>,
+    image_mime: Option<String>,
     app_handle: AppHandle,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
@@ -399,6 +402,10 @@ pub async fn compare_models(
     let right_system = system_prompt.clone();
     let left_flag = cancel_flag.clone();
     let right_flag = cancel_flag.clone();
+    let left_image = image_base64.clone();
+    let right_image = image_base64.clone();
+    let left_mime = image_mime.clone();
+    let right_mime = image_mime;
 
     let left_task = tokio::spawn(async move {
         stream_compare_pane(
@@ -407,6 +414,8 @@ pub async fn compare_models(
             &left_system,
             left,
             left_flag,
+            left_image,
+            left_mime,
             left_handle,
         )
         .await;
@@ -419,6 +428,8 @@ pub async fn compare_models(
             &right_system,
             right,
             right_flag,
+            right_image,
+            right_mime,
             right_handle,
         )
         .await;
@@ -435,14 +446,64 @@ pub async fn compare_models(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn stream_compare_pane(
     pane: &str,
     prompt: &str,
     system_prompt: &str,
     provider: Arc<dyn LlmProvider>,
     cancel_flag: Arc<AtomicBool>,
+    image_base64: Option<String>,
+    image_mime: Option<String>,
     app_handle: AppHandle,
 ) {
+    if let Some(ref b64) = image_base64 {
+        let mime_str = image_mime.as_deref().unwrap_or("image/png");
+        let vision_prompt = prompt.to_string();
+
+        match provider
+            .chat_with_image(
+                &vision_prompt,
+                system_prompt,
+                Some(b64.as_str()),
+                Some(mime_str),
+            )
+            .await
+        {
+            Ok(response) => {
+                let _ = app_handle.emit(
+                    "compare_stream_chunk",
+                    CompareStreamChunk {
+                        pane: pane.to_string(),
+                        text: response.clone(),
+                    },
+                );
+                let _ = app_handle.emit(
+                    "compare_stream_done",
+                    CompareStreamDone {
+                        pane: pane.to_string(),
+                    },
+                );
+            }
+            Err(e) => {
+                let _ = app_handle.emit(
+                    "compare_stream_error",
+                    CompareStreamError {
+                        pane: pane.to_string(),
+                        error: e,
+                    },
+                );
+                let _ = app_handle.emit(
+                    "compare_stream_done",
+                    CompareStreamDone {
+                        pane: pane.to_string(),
+                    },
+                );
+            }
+        }
+        return;
+    }
+
     let mut stream = provider.stream_response(prompt, system_prompt);
     let mut full_response = String::new();
 

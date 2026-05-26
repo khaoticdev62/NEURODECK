@@ -388,10 +388,26 @@ export function toggleComparisonMode() {
     }
 }
 
-function appendCompareUserMessage(paneId, text) {
+function appendCompareUserMessage(paneId, text, attachment = null) {
     const viewport = document.getElementById(`compare-viewport-${paneId}`);
     if (!viewport) return;
     const { wrapper, card } = createMessageShell('user');
+
+    if (attachment && attachment.data && attachment.mime) {
+        const imageWrap = document.createElement('div');
+        imageWrap.style.marginBottom = '8px';
+        const image = document.createElement('img');
+        image.src = `data:${attachment.mime};base64,${attachment.data}`;
+        image.style.maxWidth = '160px';
+        image.style.maxHeight = '100px';
+        image.style.borderRadius = '5px';
+        image.style.border = '1px solid rgba(0,240,255,0.3)';
+        image.style.display = 'block';
+        image.alt = attachment.name || 'Attachment';
+        imageWrap.appendChild(image);
+        card.appendChild(imageWrap);
+    }
+
     const textNode = document.createElement('div');
     textNode.textContent = String(text ?? '');
     card.appendChild(textNode);
@@ -474,6 +490,238 @@ function finalizeComparePane(paneId) {
         msgCard.appendChild(makeCopyBtn(() => pane.currentAIText));
     }
     updateCompareMetrics(paneId);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FILE ATTACHMENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+window.pendingAttachments = [];
+
+const TEXT_EXTENSIONS = new Set([
+    'txt', 'md', 'rs', 'js', 'ts', 'py', 'json', 'yaml', 'yml', 'toml',
+    'css', 'html', 'htm', 'sh', 'bash', 'zsh', 'lua', 'c', 'cpp', 'h', 'hpp',
+    'go', 'java', 'kt', 'swift', 'rb', 'php', 'sql', 'log', 'ini', 'cfg',
+    'conf', 'xml', 'svg', 'dart', 'scala', 'r', 'm', 'mm', 'cs', 'fs', 'hs',
+    'ml', 'ex', 'exs', 'elm', 'clj', 'cljs', 'edn', 'vue', 'svelte',
+]);
+
+const IMAGE_EXTENSIONS = new Set([
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'tiff',
+]);
+
+function getFileExtension(name) {
+    const idx = name.lastIndexOf('.');
+    return idx === -1 ? '' : name.slice(idx + 1).toLowerCase();
+}
+
+function detectFileKind(name, mime) {
+    const ext = getFileExtension(name);
+    if (IMAGE_EXTENSIONS.has(ext) || mime.startsWith('image/')) return 'image';
+    if (TEXT_EXTENSIONS.has(ext) || mime.startsWith('text/')) return 'text';
+    if (mime === 'application/json') return 'text';
+    return 'binary';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+    });
+}
+
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = String(reader.result);
+            // Strip the data:...;base64, prefix
+            const idx = result.indexOf(',');
+            resolve(idx === -1 ? result : result.slice(idx + 1));
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function processFile(file) {
+    const id = 'att-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    const name = file.name;
+    const size = file.size;
+    const mime = file.type || 'application/octet-stream';
+    const kind = detectFileKind(name, mime);
+
+    let data = '';
+    if (kind === 'text') {
+        if (size > 100 * 1024) {
+            const text = await readFileAsText(file.slice(0, 100 * 1024));
+            data = text + '\n\n[...truncated: file exceeds 100KB limit...]';
+        } else {
+            data = await readFileAsText(file);
+        }
+    } else if (kind === 'image') {
+        if (size > 5 * 1024 * 1024) {
+            throw new Error(`${name} exceeds 5MB image limit`);
+        }
+        data = await readFileAsBase64(file);
+    } else {
+        // Binary: read first 4KB as base64 for context
+        data = await readFileAsBase64(file.slice(0, 4096));
+    }
+
+    return { id, name, size, mime, kind, data };
+}
+
+function getAttachmentIcon(kind) {
+    if (kind === 'image') return createIcon('fileImage', { size: 14 });
+    if (kind === 'text') return createIcon('fileCode', { size: 14 });
+    return createIcon('fileBox', { size: 14 });
+}
+
+function renderAttachmentBar() {
+    const bar = document.getElementById('chat-attachment-bar');
+    if (!bar) return;
+
+    if (window.pendingAttachments.length === 0) {
+        bar.innerHTML = '';
+        bar.classList.add('hidden');
+        const screenshotBtn = document.getElementById('screenshot-btn');
+        if (screenshotBtn) screenshotBtn.classList.remove('has-attachment');
+        return;
+    }
+
+    bar.classList.remove('hidden');
+    bar.innerHTML = '';
+
+    window.pendingAttachments.forEach(att => {
+        const pill = document.createElement('div');
+        pill.className = 'chat-attachment-pill';
+        pill.dataset.aid = att.id;
+
+        const iconWrap = document.createElement('span');
+        iconWrap.className = 'chat-attachment-pill-icon';
+        iconWrap.innerHTML = getAttachmentIcon(att.kind);
+
+        const info = document.createElement('div');
+        info.className = 'chat-attachment-pill-info';
+
+        const label = document.createElement('span');
+        label.className = 'chat-attachment-pill-name';
+        label.textContent = att.name;
+        label.title = att.name;
+
+        const size = document.createElement('span');
+        size.className = 'chat-attachment-pill-size';
+        size.textContent = formatFileSize(att.size);
+
+        info.append(label, size);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'chat-attachment-pill-remove';
+        removeBtn.innerHTML = createIcon('x', { size: 10 });
+        removeBtn.title = 'Remove';
+        removeBtn.setAttribute('aria-label', 'Remove attachment');
+        removeBtn.onclick = () => removeAttachment(att.id);
+
+        pill.append(iconWrap, info, removeBtn);
+        bar.appendChild(pill);
+    });
+
+    const screenshotBtn = document.getElementById('screenshot-btn');
+    if (screenshotBtn) screenshotBtn.classList.add('has-attachment');
+}
+
+function removeAttachment(id) {
+    window.pendingAttachments = window.pendingAttachments.filter(a => a.id !== id);
+    renderAttachmentBar();
+}
+
+export function clearAttachments() {
+    window.pendingAttachments = [];
+    renderAttachmentBar();
+}
+
+export async function addAttachments(files) {
+    const results = [];
+    for (const file of files) {
+        try {
+            const att = await processFile(file);
+            window.pendingAttachments.push(att);
+            results.push({ ok: true, name: file.name });
+        } catch (err) {
+            results.push({ ok: false, name: file.name, error: String(err) });
+            if (typeof addNotification === 'function') {
+                addNotification('Attachment Failed', `${file.name}: ${err}`, 'error');
+            }
+        }
+    }
+    renderAttachmentBar();
+    const okCount = results.filter(r => r.ok).length;
+    if (okCount > 0 && typeof addNotification === 'function') {
+        addNotification('Files Attached', `${okCount} file(s) ready to send`, 'success');
+    }
+    return results;
+}
+
+function buildPromptWithAttachments(userPrompt) {
+    const attachments = window.pendingAttachments;
+    if (attachments.length === 0) return userPrompt;
+
+    let prompt = userPrompt;
+    prompt += '\n\n[Attached Files]\n';
+
+    attachments.forEach(att => {
+        prompt += `\n--- ${att.name} ---\n`;
+        if (att.kind === 'text') {
+            const ext = getFileExtension(att.name);
+            prompt += '```' + ext + '\n' + att.data + '\n```\n';
+        } else if (att.kind === 'image') {
+            prompt += '[Image attached via vision]\n';
+        } else {
+            prompt += `[Binary file: ${att.name}, ${formatFileSize(att.size)}]\n`;
+        }
+    });
+
+    return prompt;
+}
+
+function getFirstImageAttachment() {
+    return window.pendingAttachments.find(a => a.kind === 'image') || null;
+}
+
+function ensureDropOverlay() {
+    let overlay = document.getElementById('chat-drop-overlay');
+    if (overlay) return overlay;
+    const workspace = document.getElementById('chat-workspace');
+    if (!workspace) return null;
+    overlay = document.createElement('div');
+    overlay.id = 'chat-drop-overlay';
+    overlay.className = 'chat-drop-overlay';
+    const text = document.createElement('span');
+    text.className = 'chat-drop-overlay-text';
+    text.textContent = 'Drop files to attach';
+    overlay.appendChild(text);
+    workspace.style.position = 'relative';
+    workspace.appendChild(overlay);
+    return overlay;
+}
+
+function showDropOverlay() {
+    const overlay = ensureDropOverlay();
+    if (overlay) overlay.classList.add('visible');
+}
+
+function hideDropOverlay() {
+    const overlay = document.getElementById('chat-drop-overlay');
+    if (overlay) overlay.classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -808,7 +1056,7 @@ function appendUserMessage(text, attachment = null) {
         image.style.borderRadius = "5px";
         image.style.border = "1px solid rgba(0,240,255,0.3)";
         image.style.display = "block";
-        image.alt = "Screenshot";
+        image.alt = attachment.name || "Attachment";
         imageWrap.appendChild(image);
         card.appendChild(imageWrap);
     }
@@ -1047,6 +1295,39 @@ function cleanTextForSpeech(text) {
 }
 
 // Send Message Handler
+function clearPendingAttachments() {
+    window.pendingAttachments = [];
+    const bar = document.getElementById("chat-attachment-bar");
+    if (bar) {
+        bar.replaceChildren();
+        bar.classList.add("hidden");
+    }
+    const btn = document.getElementById("screenshot-btn");
+    if (btn) btn.classList.remove("has-attachment");
+}
+
+function prepareAttachmentsForSend() {
+    const attachments = window.pendingAttachments || [];
+    if (!attachments.length) return { attachments: [], imageAttachment: null, inlinedText: "" };
+
+    let imageAttachment = null;
+    const textParts = [];
+    const nonImageAttachments = [];
+
+    for (const att of attachments) {
+        if (att.kind === 'image' && att.data && !imageAttachment) {
+            imageAttachment = att;
+        } else if (att.kind === 'text' && att.data) {
+            const ext = att.name.split('.').pop() || 'txt';
+            textParts.push(`\n--- ${att.name} ---\n\`\`\`${ext}\n${att.data}\n\`\`\``);
+        } else {
+            nonImageAttachments.push(att);
+        }
+    }
+
+    return { attachments: nonImageAttachments, imageAttachment, inlinedText: textParts.join('\n') };
+}
+
 function sendMessage() {
     let text = inputElement.value.trim();
     if (text === "") return;
@@ -1062,17 +1343,13 @@ function sendMessage() {
     inputElement.value = "";
     inputElement.style.height = "36px";
 
-    // Clear screenshot attachment
-    const attachment = window.pendingScreenshot || null;
-    if (attachment) {
-        window.pendingScreenshot = null;
-        const bar = document.getElementById("chat-attachment-bar");
-        if (bar) {
-            bar.replaceChildren();
-            bar.classList.add("hidden");
-        }
-        const btn = document.getElementById("screenshot-btn");
-        if (btn) btn.classList.remove("has-attachment");
+    // Collect and clear pending attachments
+    const { attachments: remainingAttachments, imageAttachment, inlinedText } = prepareAttachmentsForSend();
+    clearPendingAttachments();
+
+    // Inline text attachments into the prompt
+    if (inlinedText) {
+        text += inlinedText;
     }
 
     if (state.comparisonMode) {
@@ -1083,17 +1360,22 @@ function sendMessage() {
         resetComparePane('left', state.compareLeft.provider || state.activeProvider || 'gemini');
         resetComparePane('right', state.compareRight.provider || 'ollama');
 
-        appendCompareUserMessage('left', text);
-        appendCompareUserMessage('right', text);
+        appendCompareUserMessage('left', text, imageAttachment);
+        appendCompareUserMessage('right', text, imageAttachment);
 
         state.compareLeft.currentAIMessage = appendCompareAiThinking('left');
         state.compareRight.currentAIMessage = appendCompareAiThinking('right');
 
-        invoke('compare_models', {
+        const compareArgs = {
             prompt: text,
             leftProvider: state.compareLeft.provider || state.activeProvider || 'gemini',
             rightProvider: state.compareRight.provider || 'ollama',
-        }).catch((err) => {
+        };
+        if (imageAttachment) {
+            compareArgs.imageBase64 = imageAttachment.data;
+            compareArgs.imageMime = imageAttachment.mime;
+        }
+        invoke('compare_models', compareArgs).catch((err) => {
             appendChatMessage("system", `Comparison error: ${String(err)}`, { error: true });
             state.compareStreaming = false;
             document.getElementById("tool-status").innerText = "Idle";
@@ -1106,7 +1388,7 @@ function sendMessage() {
     showGenBar();
 
     let viewport = document.getElementById("chat-workspace");
-    appendUserMessage(text, attachment);
+    appendUserMessage(text, imageAttachment);
 
     state.currentAIMessage = appendAiThinkingMessage();
     state.currentAIText = "";
@@ -1120,21 +1402,21 @@ function sendMessage() {
     let viewportScroll = document.getElementById("chat-workspace");
     viewportScroll.scrollTop = viewportScroll.scrollHeight;
 
-    if (attachment) {
+    if (imageAttachment) {
         const provSel = document.getElementById("llm-provider-select");
         if (provSel && provSel.value === "ollama") {
             appendChatMessage(
                 "system",
-                "Vision not supported with Ollama. The screenshot attachment will be ignored. Switch to Gemini in Settings to use vision.",
+                "Vision not supported with Ollama. The image attachment will be ignored. Switch to Gemini in Settings to use vision.",
                 { borderColor: "var(--warning-color)" }
             );
         }
     }
 
     const invokeArgs = { prompt: text };
-    if (attachment) {
-        invokeArgs.imageBase64 = attachment.data;
-        invokeArgs.imageMime = attachment.mime;
+    if (imageAttachment) {
+        invokeArgs.imageBase64 = imageAttachment.data;
+        invokeArgs.imageMime = imageAttachment.mime;
     }
     invoke('send_command', invokeArgs).catch((err) => {
         appendChatMessage("system", String(err), { error: true, strongPrefix: "Error:" });
@@ -1229,6 +1511,11 @@ function handleInputKeydown(e) {
     if (state.isProcessRunning && e.ctrlKey && e.key === "c") {
         e.preventDefault();
         invoke("kill_process", {  }).catch(err => console.error("Error killing process:", err));
+    }
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        const fileInput = document.getElementById('file-input');
+        if (fileInput) fileInput.click();
     }
 }
 
@@ -2153,4 +2440,64 @@ export function initChat() {
     // Init slash command palette
     setSlashClearHandler(startNewSession);
     initSlashCommands();
+
+    // ── File Attachment Handlers ──────────────────────────────────────────
+    const attachBtn = document.getElementById('attach-btn');
+    const fileInput = document.getElementById('file-input');
+    if (attachBtn && fileInput) {
+        attachBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length) {
+                addAttachments(Array.from(e.target.files));
+                fileInput.value = '';
+            }
+        });
+    }
+
+    // Drag-and-drop on chat workspace
+    const chatWorkspace = document.getElementById('chat-workspace');
+    if (chatWorkspace) {
+        let dropCounter = 0;
+        chatWorkspace.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dropCounter++;
+            showDropOverlay();
+        });
+        chatWorkspace.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropCounter--;
+            if (dropCounter <= 0) hideDropOverlay();
+        });
+        chatWorkspace.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        chatWorkspace.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropCounter = 0;
+            hideDropOverlay();
+            const files = e.dataTransfer?.files;
+            if (files && files.length) {
+                addAttachments(Array.from(files));
+            }
+        });
+    }
+
+    // Paste handler on textarea
+    if (inputElement) {
+        inputElement.addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const files = [];
+            for (const item of items) {
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    if (file) files.push(file);
+                }
+            }
+            if (files.length) {
+                e.preventDefault();
+                addAttachments(files);
+            }
+        });
+    }
 }

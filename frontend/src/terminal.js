@@ -400,19 +400,16 @@ listen("pty_exit", (event) => {
 // CATEGORY B: SCREENSHOT VISION BRIDGE
 // ==========================================================================
 
-window.pendingScreenshot = null;
-
 function initScreenshotVision() {
     const screenshotBtn = document.getElementById("screenshot-btn");
     if (!screenshotBtn) return;
 
     screenshotBtn.addEventListener("click", async () => {
-        // If we already have an attachment, remove it
-        if (window.pendingScreenshot) {
-            window.pendingScreenshot = null;
-            const bar = document.getElementById("chat-attachment-bar");
-            if (bar) { bar.innerHTML = ""; bar.classList.add("hidden"); }
-            screenshotBtn.classList.remove("has-attachment");
+        // If we already have a screenshot attachment, remove it
+        const existingIdx = window.pendingAttachments?.findIndex(a => a.name === 'screenshot.png');
+        if (existingIdx !== undefined && existingIdx >= 0) {
+            window.pendingAttachments.splice(existingIdx, 1);
+            if (typeof renderAttachmentBar === 'function') renderAttachmentBar();
             return;
         }
 
@@ -421,39 +418,16 @@ function initScreenshotVision() {
 
         try {
             const result = await invoke("read_last_screenshot");
-            window.pendingScreenshot = result;
-
-            // Render thumbnail in attachment bar
-            const bar = document.getElementById("chat-attachment-bar");
-            if (bar) {
-                bar.classList.remove("hidden");
-                bar.innerHTML = "";
-
-                const preview = document.createElement("div");
-                preview.className = "chat-attachment-preview";
-                preview.title = result.path || "Screenshot";
-
-                const img = document.createElement("img");
-                img.src = `data:${result.mime};base64,${result.data}`;
-                img.alt = "Screenshot";
-
-                const removeBtn = document.createElement("button");
-                removeBtn.className = "chat-attachment-remove";
-                removeBtn.innerHTML = createIcon("x", { size: 12 });
-                removeBtn.title = "Remove attachment";
-                removeBtn.setAttribute("aria-label", "Remove attachment");
-                removeBtn.onclick = () => {
-                    window.pendingScreenshot = null;
-                    bar.innerHTML = "";
-                    bar.classList.add("hidden");
-                    screenshotBtn.classList.remove("has-attachment");
-                };
-
-                preview.appendChild(img);
-                preview.appendChild(removeBtn);
-                bar.appendChild(preview);
-            }
-
+            window.pendingAttachments = window.pendingAttachments || [];
+            window.pendingAttachments.push({
+                id: 'att-screenshot-' + Date.now(),
+                name: result.path ? result.path.split(/[\\/]/).pop() : 'screenshot.png',
+                size: result.data ? Math.round(result.data.length * 0.75) : 0,
+                mime: result.mime || 'image/png',
+                kind: 'image',
+                data: result.data,
+            });
+            if (typeof renderAttachmentBar === 'function') renderAttachmentBar();
             screenshotBtn.classList.add("has-attachment");
 
             if (typeof addNotification === "function") {
