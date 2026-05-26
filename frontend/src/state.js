@@ -56,4 +56,23 @@ export const state = {
         filter: "all",
         open: false,
     },
+    // ── Model Comparison ────────────────────────────────────────────────────
+    comparisonMode: false,
+    compareStreaming: false,
+    compareLeft: {
+        provider: "gemini",
+        currentAIMessage: null,
+        currentAIText: "",
+        totalTokens: 0,
+        firstChunkTime: 0,
+        streamStartTime: 0,
+    },
+    compareRight: {
+        provider: "ollama",
+        currentAIMessage: null,
+        currentAIText: "",
+        totalTokens: 0,
+        firstChunkTime: 0,
+        streamStartTime: 0,
+    },
 };

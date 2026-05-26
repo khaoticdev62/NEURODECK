@@ -2,6 +2,23 @@
 
 ---
 
+## v1.2.2-Ra — Security Hardening Update
+
+**Release Date:** 2026-05-26
+**Platform:** Windows (MSI + NSIS), Linux (AppImage + deb), macOS (DMG + app)
+**KFMS Codename:** Ra
+
+### Security Hardening (OWASP Compliance)
+
+- **MCP Authentication (CRIT-2)** — Added mandatory Bearer token validation on the HTTP server connection using constant-time comparison (`subtle::ConstantTimeEq`) to mitigate timing attacks.
+- **Localhost Canvas Collab (CRIT-4)** — Hardened the Canvas Collaboration server to bind to `127.0.0.1` (localhost) only, blocking external LAN access by default.
+- **Sync Key Derivation Hardening (CRIT-5)** — Upgraded the cross-device sync key derivation from raw single-iteration SHA-256 to PBKDF2-HMAC-SHA256 with 100,000 iterations and a random 16-byte salt, stored alongside the payload.
+- **Removed Execution Capability Token (HIGH-1)** — Fully retired the `exec_auth_token` parameter from Tauri commands and JS frontend, relying solely on Tauri's IPC origin-verification boundary.
+- **CSP Port Hardening (MED-3)** — Restricted localhost and loopback wildcards in the Content Security Policy (CSP) to specific ports (`11434` for Ollama, `1420` for development) in `tauri.conf.json`.
+- **MCP Info Disclosure Fix (MED-4)** — Refactored the `get_status` tool in `src-tauri/src/mcp.rs` to return a generic status string instead of exposing API key presence.
+
+---
+
 ## v1.2.1-Ra — Bug Fix & Docs Update
 
 **Release Date:** 2026-05-24

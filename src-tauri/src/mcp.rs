@@ -376,11 +376,7 @@ async fn call_tool(
         }
 
         "get_status" => {
-            let provider_name = if std::env::var("GEMINI_API_KEY").is_ok() {
-                "Gemini"
-            } else {
-                "Ollama (local)"
-            };
+            let provider_name = "NEURODECK"; // Do not leak which provider is active or key presence
             Ok(json!({
                 "content": [{
                     "type": "text",
@@ -447,7 +443,10 @@ async fn handle_connection(
     // Validate Bearer token — reject all non-preflight requests missing or with wrong auth
     let expected_auth = format!("Bearer {}", token);
     let provided_auth = extract_header_value(header_section, "authorization").unwrap_or("");
-    if provided_auth != expected_auth {
+    // Constant-time comparison to prevent timing attacks on the bearer token
+    let auth_ok = provided_auth.len() == expected_auth.len()
+        && subtle::ConstantTimeEq::ct_eq(provided_auth.as_bytes(), expected_auth.as_bytes()).into();
+    if !auth_ok {
         let _ = stream
             .write_all(b"HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Bearer realm=\"neurodeck-mcp\"\r\nContent-Length: 0\r\n\r\n")
             .await;

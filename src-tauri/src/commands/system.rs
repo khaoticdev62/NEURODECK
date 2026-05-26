@@ -42,7 +42,8 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
         app.config.llm.active_agent_id.clone(),
     );
     initial.insert("session_id".to_string(), app.session_id.clone());
-    initial.insert("exec_auth_token".to_string(), app.exec_auth_token.clone());
+    // SECURITY: exec_auth_token removed — Tauri's WebView boundary is the security model.
+    // Commands are invocable only from the app's own WebView context.
     initial.insert("active_persona".to_string(), app.active_persona.clone());
     initial.insert(
         "memory_status".to_string(),
@@ -82,13 +83,8 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
 #[tauri::command]
 pub async fn execute_command(
     cmd_str: String,
-    exec_token: String,
-    state: State<'_, Mutex<AppState>>,
+    _state: State<'_, Mutex<AppState>>,
 ) -> Result<String, String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "terminal-shell")?;
-    }
     crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
 
     Ok(tokio::task::spawn_blocking(move || {
@@ -116,16 +112,7 @@ pub async fn execute_command(
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub async fn execute_lua(
-    code: String,
-    exec_token: String,
-    app_handle: AppHandle,
-) -> Result<(), String> {
-    {
-        let state = app_handle.state::<Mutex<AppState>>();
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "lua-exec")?;
-    }
+pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
     crate::security::validate_script_payload(&code, "lua", "lua-exec")?;
 
     let app_handle_clone = app_handle.clone();
@@ -151,14 +138,9 @@ pub async fn execute_lua(
 #[tauri::command]
 pub async fn execute_command_stream(
     cmd_str: String,
-    exec_token: String,
     app_handle: AppHandle,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "terminal-shell")?;
-    }
     crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
 
     // 1. Kill any existing running process.
@@ -296,13 +278,8 @@ pub async fn execute_command_stream(
 #[tauri::command]
 pub async fn write_to_process(
     input: String,
-    exec_token: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "terminal-stdin")?;
-    }
     crate::security::validate_terminal_command(&input, "terminal-stdin")?;
 
     let tx = {
@@ -321,15 +298,7 @@ pub async fn write_to_process(
 }
 
 #[tauri::command]
-pub async fn kill_process(
-    exec_token: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "terminal-kill")?;
-    }
-
+pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.kill_tx.take()
@@ -1779,14 +1748,8 @@ pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn start_mcp_server(
     port: u16,
-    exec_token: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<serde_json::Value, String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "mcp-start")?;
-    }
-
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
@@ -1814,15 +1777,7 @@ pub async fn start_mcp_server(
 }
 
 #[tauri::command]
-pub async fn stop_mcp_server(
-    exec_token: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "mcp-stop")?;
-    }
-
+pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = app.mcp_abort.take() {
         handle.abort();
@@ -1836,14 +1791,8 @@ pub async fn stop_mcp_server(
 
 #[tauri::command]
 pub fn get_mcp_status(
-    exec_token: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<HashMap<String, String>, String> {
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "mcp-status")?;
-    }
-
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut result = HashMap::new();
     if app.mcp_abort.is_some() {

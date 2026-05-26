@@ -1,17 +1,17 @@
 # NEURODECK Implementation Plan
 ## Sprint Roadmap and Integration Ledger
-### Last Updated: 2026-05-24 | KFMS: v1.2.0-ra | Active Branch: `feature/sprint-5.1-real-time-collab`
+### Last Updated: 2026-05-26 | KFMS: v1.2.2-ra | Active Branch: `feature/sprint-5.1-real-time-collab`
 
 ---
 
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.2.1`
+- Version: `1.2.2`
 - Codename: `Ra`
-- Tag: `v1.2.1-ra`
+- Tag: `v1.2.2-ra`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-05-26T15:10:07Z`
+- Last stamped build: `2026-05-26T17:04:27Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

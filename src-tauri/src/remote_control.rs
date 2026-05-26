@@ -627,7 +627,9 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
         }
         let _ = sender
             .send(Message::Text(
-                json!({"type":"auth_fail","reason":"Invalid PIN or session token"}).to_string().into(),
+                json!({"type":"auth_fail","reason":"Invalid PIN or session token"})
+                    .to_string()
+                    .into(),
             ))
             .await;
         // Sleep 2s to rate limit
@@ -768,17 +770,11 @@ async fn dispatch_remote_command(msg: &Value, app: &AppHandle) {
 #[tauri::command]
 pub async fn start_remote_server(
     port: u16,
-    exec_token: String,
     app_handle: AppHandle,
-    app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
+    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
     state: TauriState<'_, RemoteControlState>,
     pty_state: TauriState<'_, crate::pty_manager::PtyState>,
 ) -> Result<serde_json::Value, String> {
-    {
-        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "remote-server-start")?;
-    }
-
     // Stop any existing server
     {
         let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
@@ -860,16 +856,10 @@ pub async fn start_remote_server(
 
 #[tauri::command]
 pub async fn stop_remote_server(
-    exec_token: String,
-    app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
+    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
     state: TauriState<'_, RemoteControlState>,
     pty_state: TauriState<'_, crate::pty_manager::PtyState>,
 ) -> Result<(), String> {
-    {
-        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "remote-server-stop")?;
-    }
-
     let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
@@ -884,14 +874,9 @@ pub async fn stop_remote_server(
 
 #[tauri::command]
 pub fn get_remote_server_info(
-    exec_token: String,
-    app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
+    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
     state: TauriState<'_, RemoteControlState>,
 ) -> Result<serde_json::Value, String> {
-    {
-        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "remote-server-status")?;
-    }
     let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     Ok(match guard.as_ref() {
         Some(h) => {
@@ -915,14 +900,9 @@ pub fn get_remote_server_info(
 #[tauri::command]
 pub fn remote_send_to_clients(
     message: String,
-    exec_token: String,
-    app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
+    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
     state: TauriState<'_, RemoteControlState>,
 ) -> Result<(), String> {
-    {
-        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        crate::security::require_exec_token(&app, &exec_token, "remote-server-broadcast")?;
-    }
     let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref h) = *guard {
         let _ = h.broadcast_tx.send(message);

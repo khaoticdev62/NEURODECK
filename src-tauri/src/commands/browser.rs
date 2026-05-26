@@ -54,12 +54,10 @@ fn ensure_browser(state: &mut BrowserAutomationState) -> Result<(), String> {
 }
 
 fn require_browser_exec(
-    state: &State<'_, Mutex<crate::AppState>>,
-    exec_token: &str,
-    surface: &str,
+    _state: &State<'_, Mutex<crate::AppState>>,
+    _surface: &str,
 ) -> Result<(), String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    crate::security::require_exec_token(&app, exec_token, surface)
+    Ok(())
 }
 
 fn get_session_tab(state: &BrowserAutomationState, session_id: &str) -> Result<Arc<Tab>, String> {
@@ -79,12 +77,11 @@ pub async fn browser_open(
     viewport_y: f64,
     width: f64,
     height: f64,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
 
-    require_browser_exec(&state, &exec_token, "browser-open-window")?;
+    require_browser_exec(&state, "browser-open-window")?;
     parse_http_url(&url)?;
     let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
 
@@ -133,10 +130,9 @@ pub async fn browser_open(
 pub fn browser_navigate(
     app: AppHandle,
     url: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-navigate-window")?;
+    require_browser_exec(&state, "browser-navigate-window")?;
     if let Some(win) = app.get_webview_window("browser-view") {
         parse_http_url(&url)?;
         let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
@@ -194,10 +190,9 @@ pub fn browser_get_url(app: AppHandle) -> String {
 pub fn browser_exec(
     app: AppHandle,
     js: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-exec")?;
+    require_browser_exec(&state, "browser-exec")?;
     crate::security::validate_script_payload(&js, "javascript", "browser-exec")?;
 
     if let Some(win) = app.get_webview_window("browser-view") {
@@ -209,10 +204,9 @@ pub fn browser_exec(
 #[tauri::command]
 pub fn browser_open_session(
     url: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<String, String> {
-    require_browser_exec(&state, &exec_token, "browser-open-session")?;
+    require_browser_exec(&state, "browser-open-session")?;
     parse_http_url(&url)?;
     with_state(|state| {
         ensure_browser(state)?;
@@ -234,10 +228,9 @@ pub fn browser_open_session(
 pub fn browser_navigate_session(
     session_id: String,
     url: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-navigate-session")?;
+    require_browser_exec(&state, "browser-navigate-session")?;
     parse_http_url(&url)?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
@@ -259,10 +252,9 @@ pub fn browser_get_content(session_id: String) -> Result<String, String> {
 pub fn browser_click(
     session_id: String,
     selector: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-click")?;
+    require_browser_exec(&state, "browser-click")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
         let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
@@ -276,10 +268,9 @@ pub fn browser_fill(
     session_id: String,
     selector: String,
     value: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-fill")?;
+    require_browser_exec(&state, "browser-fill")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
         let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
@@ -304,10 +295,9 @@ pub fn browser_screenshot(session_id: String) -> Result<String, String> {
 pub fn browser_evaluate_js(
     session_id: String,
     script: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<Value, String> {
-    require_browser_exec(&state, &exec_token, "browser-eval")?;
+    require_browser_exec(&state, "browser-eval")?;
     crate::security::validate_script_payload(&script, "javascript", "browser-eval")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
@@ -319,10 +309,9 @@ pub fn browser_evaluate_js(
 #[tauri::command]
 pub fn browser_close_session(
     session_id: String,
-    exec_token: String,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    require_browser_exec(&state, &exec_token, "browser-close-session")?;
+    require_browser_exec(&state, "browser-close-session")?;
     with_state(|state| {
         state.sessions.remove(&session_id);
         if state.sessions.is_empty() {

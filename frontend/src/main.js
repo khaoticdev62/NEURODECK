@@ -602,6 +602,7 @@ document.querySelector("#app").innerHTML = `
                         </div>
                         <div class="chat-session-header-right">
                             <span class="chat-session-tokens" id="chat-session-tokens">0 tokens</span>
+                            <button class="chat-session-compare-btn" id="compare-toggle-btn" title="Toggle Model Comparison">${createIcon("columns", { size: 14 })}</button>
                             <button class="chat-session-new-btn" id="new-chat-btn-header" title="New Session (Ctrl+N)">+ New</button>
                         </div>
                     </div>
@@ -4706,7 +4707,6 @@ invoke("get_initial_state")
     if (sessionIdEl) sessionIdEl.innerText = initialState.session_id;
 
     state.currentSessionId = initialState.session_id;
-    state.execToken = initialState.exec_auth_token || "";
     state.activePersona = initialState.active_persona || "Default";
     state.activeProvider = initialState.provider || "gemini";
     state.activeAgentId = initialState.active_agent_id || "";
@@ -6738,7 +6738,7 @@ function initBrowser() {
 
     try {
       if (browserWindowOpen) {
-        await invoke("browser_navigate", { url, execToken: state.execToken });
+        await invoke("browser_navigate", { url });
       } else {
         await invoke("browser_open", {
           url,
@@ -6746,7 +6746,6 @@ function initBrowser() {
           viewportY: r.y,
           width: r.width,
           height: r.height,
-          execToken: state.execToken,
         });
         browserWindowOpen = true;
         hideHome();
@@ -6846,7 +6845,6 @@ function initBrowser() {
       if (browserWindowOpen)
         invoke("browser_exec", {
           js: "window.history.back()",
-          execToken: state.execToken,
         }).catch(() => {});
     };
   }
@@ -6856,7 +6854,6 @@ function initBrowser() {
       if (browserWindowOpen)
         invoke("browser_exec", {
           js: "window.history.forward()",
-          execToken: state.execToken,
         }).catch(() => {});
     };
   }
@@ -6866,7 +6863,6 @@ function initBrowser() {
       if (browserWindowOpen)
         invoke("browser_exec", {
           js: "window.location.reload()",
-          execToken: state.execToken,
         }).catch(() => {});
     };
   }
@@ -10951,7 +10947,7 @@ async function showOnboardingWizard() {
         invoke("list_plugins").catch(() => []),
         invoke("get_personas").catch(() => []),
         invoke("get_themes").catch(() => []),
-        invoke("get_mcp_status", { execToken: state.execToken }).catch(() => null),
+        invoke("get_mcp_status", {  }).catch(() => null),
         invoke("get_doc_count").catch(() => 0),
       ]);
     totalSteps = 12 + Math.max(Array.isArray(plugins) ? plugins.length : 0, 1);

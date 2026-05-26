@@ -1,7 +1,13 @@
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use crate::AppState;
+pub fn generate_session_token() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(48)
+        .map(char::from)
+        .collect()
+}
 
 const MAX_EXEC_PAYLOAD_LEN: usize = 32 * 1024;
 
@@ -16,24 +22,6 @@ pub fn unsafe_exec_enabled() -> bool {
     std::env::var("NEURODECK_ALLOW_UNSAFE_EXEC")
         .map(|value| env_flag_enabled(&value))
         .unwrap_or(false)
-}
-
-pub fn generate_session_token() -> String {
-    thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(48)
-        .map(char::from)
-        .collect()
-}
-
-pub fn require_exec_token(app: &AppState, provided: &str, surface: &str) -> Result<(), String> {
-    if provided.is_empty() || provided != app.exec_auth_token {
-        return Err(format!(
-            "Execution denied for {}: invalid session capability token",
-            surface
-        ));
-    }
-    Ok(())
 }
 
 pub fn validate_terminal_command(command: &str, surface: &str) -> Result<(), String> {

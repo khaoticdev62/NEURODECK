@@ -1,0 +1,17 @@
+warning: in the working copy of 'Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/IMPLEMENTATION_PLAN.md', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/RELEASE_NOTES.md', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'frontend/src/agent.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'frontend/src/canvas.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'frontend/src/chat.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'frontend/src/main.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'infra/telemetry/health.json', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src-tauri/Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/canvas_collab.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/commands/agent.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/commands/browser.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/commands/system.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/mcp.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/remote_control.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/security.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src-tauri/src/sync.rs', LF will be replaced by CRLF the next time Git touches it

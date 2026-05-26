@@ -283,6 +283,10 @@ const ICONS = {
   pencil: `
     <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
     <path d="m15 5 4 4"></path>
+  `,
+  columns: `
+    <rect x="3" y="3" width="7" height="18" rx="1" ry="1"></rect>
+    <rect x="14" y="3" width="7" height="18" rx="1" ry="1"></rect>
   `
 };
 

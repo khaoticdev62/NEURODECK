@@ -2,12 +2,12 @@
     "status":  "healthy",
     "kfms_version":  "1.0",
     "project":  "neurodeck",
-    "version":  "1.2.1",
+    "version":  "1.2.2",
     "codename":  "Ra",
-    "tag":  "v1.2.1-ra",
+    "tag":  "v1.2.2-ra",
     "workspace_state":  "generated-only",
     "dirty_build":  false,
-    "stamped_at_utc":  "2026-05-26T15:10:07Z",
+    "stamped_at_utc":  "2026-05-26T17:04:27Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,42 +47,42 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  803,
-                                           "started_at_utc":  "2026-05-26T15:10:10Z",
-                                           "finished_at_utc":  "2026-05-26T15:10:10Z"
+                                           "duration_ms":  857,
+                                           "started_at_utc":  "2026-05-26T17:04:30Z",
+                                           "finished_at_utc":  "2026-05-26T17:04:30Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  3347,
-                                           "started_at_utc":  "2026-05-26T15:10:10Z",
-                                           "finished_at_utc":  "2026-05-26T15:10:14Z"
+                                           "duration_ms":  1602,
+                                           "started_at_utc":  "2026-05-26T17:04:30Z",
+                                           "finished_at_utc":  "2026-05-26T17:04:32Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  52738,
-                                           "started_at_utc":  "2026-05-26T15:10:14Z",
-                                           "finished_at_utc":  "2026-05-26T15:11:07Z"
+                                           "duration_ms":  4081,
+                                           "started_at_utc":  "2026-05-26T17:04:32Z",
+                                           "finished_at_utc":  "2026-05-26T17:04:36Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  1440,
-                                           "started_at_utc":  "2026-05-26T15:11:07Z",
-                                           "finished_at_utc":  "2026-05-26T15:11:08Z"
+                                           "duration_ms":  1047,
+                                           "started_at_utc":  "2026-05-26T17:04:36Z",
+                                           "finished_at_utc":  "2026-05-26T17:04:37Z"
                                        }
                                    ],
                          "blockers":  [
 
                                       ],
-                         "duration_ms":  58357,
-                         "checked_at_utc":  "2026-05-26T15:11:08Z"
+                         "duration_ms":  7614,
+                         "checked_at_utc":  "2026-05-26T17:04:37Z"
                      }
 }

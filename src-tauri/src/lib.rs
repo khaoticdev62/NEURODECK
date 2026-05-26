@@ -29,7 +29,7 @@ use crate::commands::*;
 use chrono::Utc;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Manager;
@@ -230,6 +230,7 @@ pub struct AppState {
     pub(crate) kill_tx: Option<tokio::sync::oneshot::Sender<()>>,
     pub(crate) active_process_id: u64,
     pub(crate) cancel_stream_tx: Option<tokio::sync::oneshot::Sender<()>>,
+    pub(crate) compare_cancel_flag: Option<Arc<AtomicBool>>,
     pub custom_personas: Vec<CustomPersona>,
     pub(crate) mcp_abort: Option<tokio::task::AbortHandle>,
     pub(crate) mcp_port: u16,
@@ -245,7 +246,6 @@ pub struct AppState {
     pub(crate) collab_peer_count: Option<Arc<AtomicUsize>>,
     // Canvas streaming execution cancellation.
     pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
-    pub(crate) exec_auth_token: String,
     pub(crate) boot_self_heal: self_heal::SelfHealReport,
 }
 
@@ -770,6 +770,7 @@ pub fn run() {
         kill_tx: None,
         active_process_id: 0,
         cancel_stream_tx: None,
+        compare_cancel_flag: None,
         custom_personas,
         mcp_abort: None,
         mcp_port: 13337,
@@ -782,7 +783,6 @@ pub fn run() {
         collab_addr: None,
         collab_peer_count: None,
         canvas_exec_cancel_tx: None,
-        exec_auth_token: security::generate_session_token(),
         boot_self_heal: boot_self_heal.report,
     };
 
@@ -897,6 +897,7 @@ pub fn run() {
             delete_session,
             new_session,
             fork_session,
+            compare_models,
             send_command,
             speak_text,
             cancel_generation,

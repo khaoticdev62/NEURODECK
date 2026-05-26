@@ -24,7 +24,7 @@ pub struct CollabSession {
 /// Start as HOST: bind `0.0.0.0:{port}`, then accept peers until stopped.
 /// Returns `(actual_port, session)`.
 pub async fn host(port: u16, app: AppHandle) -> Result<(u16, CollabSession), String> {
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = format!("127.0.0.1:{}", port);
     let listener = TcpListener::bind(&addr)
         .await
         .map_err(|e| format!("Bind failed on {}: {}", addr, e))?;

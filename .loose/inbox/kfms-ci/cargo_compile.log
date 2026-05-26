@@ -1,0 +1,7 @@
+   Compiling app v1.2.0 (C:\Users\thecr\Desktop\S-Term\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 03s
+  Executable unittests src\lib.rs (target\debug\deps\app_lib-40b32e6110a1e49b.exe)
+  Executable unittests src\main.rs (target\debug\deps\app-004d1e91cdd27ba2.exe)
+  Executable unittests src\main.rs (target\debug\deps\neurodeck_bootstrapper-39c16684082b8d35.exe)
+  Executable unittests src\lib.rs (target\debug\deps\neurodeck_core-870dc0ade08d1d80.exe)
+  Executable unittests src\lib.rs (target\debug\deps\neurodeck_infrastructure-28ad1d94fa836bea.exe)

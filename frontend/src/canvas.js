@@ -507,7 +507,7 @@ function initCanvasView() {
         execDoneUnlisten = doneListener;
 
         try {
-            await invoke("exec_code_stream", { code, lang, execToken: state.execToken });
+            await invoke("exec_code_stream", { code, lang });
         } catch (err) {
             stopExecListeners();
             setExecRunning(false);
@@ -525,7 +525,7 @@ function initCanvasView() {
         cancelBtn.onclick = async () => {
             cancelBtn.disabled = true;
             try {
-                await invoke("cancel_exec", { execToken: state.execToken });
+                await invoke("cancel_exec", {  });
             } finally {
                 cancelBtn.disabled = false;
             }
@@ -546,7 +546,7 @@ function initCanvasView() {
                 runBtn.disabled = true;
                 if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
 
-                invoke("execute_lua", { code, execToken: state.execToken })
+                invoke("execute_lua", { code })
                     .then(() => {
                         if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
                         applyButtonIcon("#canvas-run-btn", { icon: "shieldCheck", label: "Done" });

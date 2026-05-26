@@ -115,14 +115,14 @@ export function initAgentView() {
             case "browser_open_session": {
                 const url = String(args.url || "");
                 if (!url) throw new Error("browser_open_session requires args.url.");
-                const sessionId = await invoke("browser_open_session", { url, execToken: state.execToken });
+                const sessionId = await invoke("browser_open_session", { url });
                 return `Browser session opened: ${sessionId}`;
             }
             case "browser_navigate_session": {
                 const sessionId = String(args.session_id || args.sessionId || "");
                 const url = String(args.url || "");
                 if (!sessionId || !url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
-                await invoke("browser_navigate_session", { sessionId, url, execToken: state.execToken });
+                await invoke("browser_navigate_session", { sessionId, url });
                 return `Navigated session ${sessionId} to ${url}.`;
             }
             case "browser_get_content": {
@@ -135,7 +135,7 @@ export function initAgentView() {
                 const sessionId = String(args.session_id || args.sessionId || "");
                 const selector = String(args.selector || "");
                 if (!sessionId || !selector) throw new Error("browser_click requires args.session_id and args.selector.");
-                await invoke("browser_click", { sessionId, selector, execToken: state.execToken });
+                await invoke("browser_click", { sessionId, selector });
                 return `Clicked ${selector} in session ${sessionId}.`;
             }
             case "browser_fill": {
@@ -143,7 +143,7 @@ export function initAgentView() {
                 const selector = String(args.selector || "");
                 const value = String(args.value || "");
                 if (!sessionId || !selector) throw new Error("browser_fill requires args.session_id and args.selector.");
-                await invoke("browser_fill", { sessionId, selector, value, execToken: state.execToken });
+                await invoke("browser_fill", { sessionId, selector, value });
                 return `Filled ${selector} in session ${sessionId}.`;
             }
             case "browser_screenshot": {
@@ -156,13 +156,13 @@ export function initAgentView() {
                 const sessionId = String(args.session_id || args.sessionId || "");
                 const script = String(args.script || "");
                 if (!sessionId || !script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
-                const result = await invoke("browser_evaluate_js", { sessionId, script, execToken: state.execToken });
+                const result = await invoke("browser_evaluate_js", { sessionId, script });
                 return typeof result === "string" ? result : JSON.stringify(result);
             }
             case "browser_close_session": {
                 const sessionId = String(args.session_id || args.sessionId || "");
                 if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
-                await invoke("browser_close_session", { sessionId, execToken: state.execToken });
+                await invoke("browser_close_session", { sessionId });
                 return `Closed browser session ${sessionId}.`;
             }
             default:
@@ -261,7 +261,7 @@ export function initAgentView() {
 
             let execOut;
             try {
-                execOut = await invoke("agent_exec_code", { code: parsed.code, lang: parsed.lang, execToken: state.execToken });
+                execOut = await invoke("agent_exec_code", { code: parsed.code, lang: parsed.lang });
             } catch (e) {
                 execOut = `[Error] ${e}`;
             }

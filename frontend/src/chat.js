@@ -326,6 +326,157 @@ function updateSearchCounter() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MODEL COMPARISON (A/B)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ensureComparisonLayout() {
+    if (document.getElementById('chat-comparison-layout')) return;
+    const workspace = document.getElementById('chat-workspace');
+    if (!workspace) return;
+
+    const layout = document.createElement('div');
+    layout.id = 'chat-comparison-layout';
+    layout.className = 'chat-comparison-layout hidden';
+    layout.innerHTML = `
+        <div class="compare-pane compare-pane-left">
+            <div class="compare-pane-header">
+                <span class="compare-pane-label">Model A</span>
+                <span class="compare-pane-provider" id="compare-provider-left">GEMINI</span>
+                <span class="compare-pane-metrics" id="compare-metrics-left"></span>
+            </div>
+            <div class="compare-pane-viewport" id="compare-viewport-left"></div>
+        </div>
+        <div class="compare-pane-divider"></div>
+        <div class="compare-pane compare-pane-right">
+            <div class="compare-pane-header">
+                <span class="compare-pane-label">Model B</span>
+                <span class="compare-pane-provider" id="compare-provider-right">OLLAMA</span>
+                <span class="compare-pane-metrics" id="compare-metrics-right"></span>
+            </div>
+            <div class="compare-pane-viewport" id="compare-viewport-right"></div>
+        </div>
+    `;
+    workspace.appendChild(layout);
+}
+
+export function toggleComparisonMode() {
+    ensureComparisonLayout();
+    state.comparisonMode = !state.comparisonMode;
+
+    const layout = document.getElementById('chat-comparison-layout');
+    const chatViewport = document.getElementById('chat-viewport');
+    const toggleBtn = document.getElementById('compare-toggle-btn');
+
+    if (state.comparisonMode) {
+        if (layout) layout.classList.remove('hidden');
+        if (chatViewport) chatViewport.classList.add('hidden');
+        if (toggleBtn) toggleBtn.classList.add('active');
+        // Update provider labels from state
+        const leftProv = document.getElementById('compare-provider-left');
+        const rightProv = document.getElementById('compare-provider-right');
+        if (leftProv) leftProv.textContent = (state.compareLeft.provider || 'gemini').toUpperCase();
+        if (rightProv) rightProv.textContent = (state.compareRight.provider || 'ollama').toUpperCase();
+    } else {
+        if (layout) layout.classList.add('hidden');
+        if (chatViewport) chatViewport.classList.remove('hidden');
+        if (toggleBtn) toggleBtn.classList.remove('active');
+        // Cancel any active comparison streaming
+        if (state.compareStreaming) {
+            invoke('cancel_generation').catch(() => {});
+            state.compareStreaming = false;
+        }
+    }
+}
+
+function appendCompareUserMessage(paneId, text) {
+    const viewport = document.getElementById(`compare-viewport-${paneId}`);
+    if (!viewport) return;
+    const { wrapper, card } = createMessageShell('user');
+    const textNode = document.createElement('div');
+    textNode.textContent = String(text ?? '');
+    card.appendChild(textNode);
+    viewport.appendChild(wrapper);
+    viewport.scrollTop = viewport.scrollHeight;
+    return wrapper;
+}
+
+function appendCompareAiThinking(paneId) {
+    const viewport = document.getElementById(`compare-viewport-${paneId}`);
+    if (!viewport) return null;
+    const { wrapper, card } = createMessageShell('ai', 'thinking');
+    const thinking = document.createElement('span');
+    thinking.className = 'thinking-dots';
+    thinking.textContent = 'AI is thinking';
+    card.appendChild(thinking);
+    viewport.appendChild(wrapper);
+    viewport.scrollTop = viewport.scrollHeight;
+    return wrapper;
+}
+
+function resetComparePane(paneId, providerName) {
+    const pane = paneId === 'left' ? state.compareLeft : state.compareRight;
+    pane.provider = providerName;
+    pane.currentAIMessage = null;
+    pane.currentAIText = '';
+    pane.totalTokens = 0;
+    pane.firstChunkTime = 0;
+    pane.streamStartTime = performance.now();
+
+    const viewport = document.getElementById(`compare-viewport-${paneId}`);
+    if (viewport) viewport.replaceChildren();
+
+    const metrics = document.getElementById(`compare-metrics-${paneId}`);
+    if (metrics) metrics.textContent = '';
+}
+
+function updateCompareMetrics(paneId) {
+    const pane = paneId === 'left' ? state.compareLeft : state.compareRight;
+    const metricsEl = document.getElementById(`compare-metrics-${paneId}`);
+    if (!metricsEl) return;
+
+    let text = '';
+    if (pane.firstChunkTime > 0) {
+        const latency = Math.round(pane.firstChunkTime - pane.streamStartTime);
+        text += `${latency}ms`;
+    }
+    if (pane.totalTokens > 0) {
+        if (text) text += ' · ';
+        text += `${pane.totalTokens} tok`;
+    }
+    if (pane.firstChunkTime > 0) {
+        const elapsed = (performance.now() - pane.firstChunkTime) / 1000;
+        if (elapsed > 0.5) {
+            const speed = Math.round(pane.totalTokens / elapsed);
+            text += ` · ${speed} t/s`;
+        }
+    }
+    metricsEl.textContent = text;
+}
+
+function finalizeComparePane(paneId) {
+    const pane = paneId === 'left' ? state.compareLeft : state.compareRight;
+    if (!pane.currentAIMessage) return;
+
+    const msgCard = pane.currentAIMessage.querySelector('.message-card');
+    if (msgCard) {
+        const parsed = marked.parse(pane.currentAIText);
+        const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
+        if (html !== '') {
+            msgCard.innerHTML = html;
+            formatCodeBlocks(msgCard);
+        }
+        const provider = (pane.provider || 'gemini').toUpperCase();
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const metaRow = document.createElement('div');
+        metaRow.className = 'msg-meta';
+        metaRow.innerHTML = `<span class="msg-meta-model">${provider}</span><span class="msg-meta-sep">·</span><span>${timeStr}</span><span class="msg-meta-sep">·</span><span>${pane.totalTokens} tokens</span>`;
+        msgCard.appendChild(metaRow);
+        msgCard.appendChild(makeCopyBtn(() => pane.currentAIText));
+    }
+    updateCompareMetrics(paneId);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGE ACTION MENU (Fork / Edit)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -907,34 +1058,12 @@ function sendMessage() {
         return;
     }
 
-    // Dismiss welcome state on first real message
-    dismissWelcome();
-    showGenBar();
-
-    // Collect any pending screenshot attachment
-    const attachment = window.pendingScreenshot || null;
-
-    // Add message to viewport
-    let viewport = document.getElementById("chat-workspace");
-    appendUserMessage(text, attachment);
-
-    // Create a placeholder for AI response
-    state.currentAIMessage = appendAiThinkingMessage();
-    
-    state.currentAIText = "";
-
-    // Reset analytics
-    state.streamStartTime = performance.now();
-    state.firstChunkTime = 0;
-    state.totalTokens = 0;
-    document.getElementById("latency-val").innerText = "--ms";
-    document.getElementById("token-speed").innerText = "--/s";
-
     // Clear and reset input size
     inputElement.value = "";
     inputElement.style.height = "36px";
 
     // Clear screenshot attachment
+    const attachment = window.pendingScreenshot || null;
     if (attachment) {
         window.pendingScreenshot = null;
         const bar = document.getElementById("chat-attachment-bar");
@@ -945,11 +1074,52 @@ function sendMessage() {
         const btn = document.getElementById("screenshot-btn");
         if (btn) btn.classList.remove("has-attachment");
     }
-    
-    // Scroll workspace
-    viewport.scrollTop = viewport.scrollHeight;
-    
-    // Warn user if they attach a screenshot while Ollama is the active provider
+
+    if (state.comparisonMode) {
+        // ── Comparison Mode Send ──────────────────────────────────────────
+        state.compareStreaming = true;
+        document.getElementById("tool-status").innerText = "Comparing...";
+
+        resetComparePane('left', state.compareLeft.provider || state.activeProvider || 'gemini');
+        resetComparePane('right', state.compareRight.provider || 'ollama');
+
+        appendCompareUserMessage('left', text);
+        appendCompareUserMessage('right', text);
+
+        state.compareLeft.currentAIMessage = appendCompareAiThinking('left');
+        state.compareRight.currentAIMessage = appendCompareAiThinking('right');
+
+        invoke('compare_models', {
+            prompt: text,
+            leftProvider: state.compareLeft.provider || state.activeProvider || 'gemini',
+            rightProvider: state.compareRight.provider || 'ollama',
+        }).catch((err) => {
+            appendChatMessage("system", `Comparison error: ${String(err)}`, { error: true });
+            state.compareStreaming = false;
+            document.getElementById("tool-status").innerText = "Idle";
+        });
+        return;
+    }
+
+    // ── Normal Mode Send ──────────────────────────────────────────────
+    dismissWelcome();
+    showGenBar();
+
+    let viewport = document.getElementById("chat-workspace");
+    appendUserMessage(text, attachment);
+
+    state.currentAIMessage = appendAiThinkingMessage();
+    state.currentAIText = "";
+
+    state.streamStartTime = performance.now();
+    state.firstChunkTime = 0;
+    state.totalTokens = 0;
+    document.getElementById("latency-val").innerText = "--ms";
+    document.getElementById("token-speed").innerText = "--/s";
+
+    let viewportScroll = document.getElementById("chat-workspace");
+    viewportScroll.scrollTop = viewportScroll.scrollHeight;
+
     if (attachment) {
         const provSel = document.getElementById("llm-provider-select");
         if (provSel && provSel.value === "ollama") {
@@ -961,7 +1131,6 @@ function sendMessage() {
         }
     }
 
-    // Call Tauri backend — pass image data directly when a screenshot is attached
     const invokeArgs = { prompt: text };
     if (attachment) {
         invokeArgs.imageBase64 = attachment.data;
@@ -999,7 +1168,7 @@ function sendProcessInput() {
     let text = inputElement.value;
     if (text === "") return;
 
-    invoke("write_to_process", { input: text, execToken: state.execToken }).then(() => {
+    invoke("write_to_process", { input: text }).then(() => {
         appendLineToTerminal(`> ${text}`, false);
     }).catch(err => {
         appendLineToTerminal(`System error sending stdin: ${err}`, true);
@@ -1059,7 +1228,7 @@ function handleInputKeydown(e) {
     }
     if (state.isProcessRunning && e.ctrlKey && e.key === "c") {
         e.preventDefault();
-        invoke("kill_process", { execToken: state.execToken }).catch(err => console.error("Error killing process:", err));
+        invoke("kill_process", {  }).catch(err => console.error("Error killing process:", err));
     }
 }
 
@@ -1126,7 +1295,7 @@ function formatCodeBlocks(container) {
             execBtn.onclick = function() {
                 if (!window.confirm(`Execute this ${lang} snippet?\n\nReview the command before running.`)) return;
                 if (state.isProcessRunning) {
-                    invoke("kill_process", { execToken: state.execToken }).catch(e => console.error("Error killing process:", e));
+                    invoke("kill_process", {  }).catch(e => console.error("Error killing process:", e));
                 }
 
                 execBtn.innerText = "Running...";
@@ -1156,7 +1325,7 @@ function formatCodeBlocks(container) {
 
                 const terminateBtn = termConsole.querySelector(".terminal-terminate-btn");
                 terminateBtn.onclick = function() {
-                    invoke("kill_process", { execToken: state.execToken }).catch(err => {
+                    invoke("kill_process", {  }).catch(err => {
                         console.error("Error invoking kill_process:", err);
                     });
                 };
@@ -1168,7 +1337,7 @@ function formatCodeBlocks(container) {
                 let viewport = document.getElementById("chat-workspace");
                 viewport.scrollTop = viewport.scrollHeight;
 
-                invoke("execute_command_stream", { cmdStr: cmd, execToken: state.execToken }).catch((err) => {
+                invoke("execute_command_stream", { cmdStr: cmd }).catch((err) => {
                     appendLineToTerminal(`Error spawning process: ${err}`, true);
                     finishRunningProcess(1);
                 });
@@ -1203,7 +1372,7 @@ function runLuaScript(scriptCode, preElement, execBtn) {
     }
 
     if (state.isProcessRunning) {
-        invoke("kill_process", { execToken: state.execToken }).catch(e => console.error("Error killing process:", e));
+        invoke("kill_process", {  }).catch(e => console.error("Error killing process:", e));
     }
 
     if (execBtn) {
@@ -1271,7 +1440,7 @@ function runLuaScript(scriptCode, preElement, execBtn) {
     let viewport = document.getElementById("chat-workspace");
     viewport.scrollTop = viewport.scrollHeight;
 
-    invoke("execute_lua", { code: scriptCode, execToken: state.execToken }).catch((err) => {
+    invoke("execute_lua", { code: scriptCode }).catch((err) => {
         appendLineToTerminal(`Error executing Lua: ${err}`, true);
         finishRunningProcess(1);
     });
@@ -1434,6 +1603,77 @@ listen("command_stderr", function (event) {
 listen("command_exit", function (event) {
     const code = event.payload;
     finishRunningProcess(code);
+});
+
+// ── Comparison Mode Event Listeners ───────────────────────────────────────────
+
+listen("compare_stream_chunk", function (event) {
+    const { pane, text } = event.payload;
+    const paneState = pane === 'left' ? state.compareLeft : state.compareRight;
+    if (!paneState.currentAIMessage) return;
+
+    if (paneState.currentAIMessage.classList.contains('thinking')) {
+        paneState.currentAIMessage.classList.remove('thinking');
+        const msgCard = paneState.currentAIMessage.querySelector('.message-card');
+        if (msgCard) msgCard.innerHTML = '';
+    }
+
+    paneState.currentAIText += text;
+    paneState.totalTokens += text.split(/\s+/).filter(Boolean).length || 1;
+
+    if (paneState.firstChunkTime === 0) {
+        paneState.firstChunkTime = performance.now();
+    }
+
+    const msgCard = paneState.currentAIMessage.querySelector('.message-card');
+    if (msgCard) {
+        const parsed = marked.parse(paneState.currentAIText);
+        const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
+        if (html !== '') {
+            msgCard.innerHTML = html;
+            formatCodeBlocks(msgCard);
+        }
+    }
+
+    const viewport = document.getElementById(`compare-viewport-${pane}`);
+    if (viewport) {
+        const isAtBottom = (viewport.scrollHeight - viewport.clientHeight) - viewport.scrollTop < 100;
+        if (isAtBottom) viewport.scrollTop = viewport.scrollHeight;
+    }
+
+    updateCompareMetrics(pane);
+});
+
+listen("compare_stream_done", function (event) {
+    const { pane } = event.payload;
+    finalizeComparePane(pane);
+
+    // Check if both panes are done
+    const leftDone = !state.compareLeft.currentAIMessage || !state.compareLeft.currentAIMessage.classList.contains('thinking');
+    const rightDone = !state.compareRight.currentAIMessage || !state.compareRight.currentAIMessage.classList.contains('thinking');
+    if (leftDone && rightDone) {
+        state.compareStreaming = false;
+        document.getElementById("tool-status").innerText = "Idle";
+    }
+});
+
+listen("compare_stream_error", function (event) {
+    const { pane, error } = event.payload;
+    const paneState = pane === 'left' ? state.compareLeft : state.compareRight;
+
+    if (paneState.currentAIMessage) {
+        paneState.currentAIMessage.classList.remove('thinking');
+        const msgCard = paneState.currentAIMessage.querySelector('.message-card');
+        if (msgCard) {
+            msgCard.innerHTML = `<div style="color:var(--error-color)"><strong>Error:</strong> ${window.sanitizeHtml(String(error))}</div>`;
+        }
+    }
+
+    const viewport = document.getElementById(`compare-viewport-${pane}`);
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+
+    state.compareStreaming = false;
+    document.getElementById("tool-status").innerText = "Idle";
 });
 
 // Audio Recording Logic
@@ -1855,6 +2095,11 @@ export function initChat() {
     const newChatBtnHeader = document.getElementById("new-chat-btn-header");
     if (newChatBtnHeader) {
         newChatBtnHeader.onclick = startNewSession;
+    }
+
+    const compareToggleBtn = document.getElementById("compare-toggle-btn");
+    if (compareToggleBtn) {
+        compareToggleBtn.onclick = toggleComparisonMode;
     }
 
     const personaSelect = document.getElementById("persona-select");

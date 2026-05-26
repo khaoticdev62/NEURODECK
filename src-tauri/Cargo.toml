@@ -53,3 +53,6 @@ uuid = { version = "1", features = ["v4"] }
 ring = "0.17.14"
 headless_chrome = "1.0.18"
 fx-torrent = "0.9.1"
+pbkdf2 = "0.12.2"
+sha2 = "0.10.9"
+subtle = "2.6.1"

@@ -3,7 +3,8 @@ use crate::*;
 use chrono::Utc;
 use futures_util::StreamExt;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 lazy_static::lazy_static! {
@@ -258,7 +259,240 @@ pub async fn cancel_generation(state: State<'_, Mutex<AppState>>) -> Result<(), 
     if let Some(tx) = tx {
         let _ = tx.send(());
     }
+    // Also cancel any active comparison
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(flag) = &app.compare_cancel_flag {
+            flag.store(true, Ordering::Relaxed);
+        }
+    }
     Ok(())
+}
+
+// ── Model A/B Comparison ─────────────────────────────────────────────────────
+
+#[derive(Clone, serde::Serialize)]
+struct CompareStreamChunk {
+    pane: String,
+    text: String,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct CompareStreamDone {
+    pane: String,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct CompareStreamError {
+    pane: String,
+    error: String,
+}
+
+fn build_system_prompt(active_persona: &str, custom_personas: &[CustomPersona]) -> String {
+    let mut system_prompt = PERSONAS
+        .iter()
+        .find(|p| p.0 == active_persona)
+        .map(|p| p.1.clone())
+        .unwrap_or_else(|| {
+            custom_personas
+                .iter()
+                .find(|p| p.name == active_persona)
+                .map(|p| p.prompt.clone())
+                .unwrap_or_else(|| "You are a helpful assistant.".to_string())
+        });
+
+    // Add game context if available
+    let (game_name, game_id, game_running) = detect_game();
+    if !game_name.is_empty() {
+        let state_label = if game_running {
+            "currently playing"
+        } else {
+            "recently played"
+        };
+        let id_note = if game_id.is_empty() {
+            String::new()
+        } else {
+            format!(" (Steam AppID: {})", game_id)
+        };
+        let (_, notes) = get_game_details(&game_id, &game_name);
+        system_prompt.push_str(&format!(
+            "\n\n[Active SteamOS Game Context]\nThe user is {} the game: {}{}.\nSteam Deck Optimization Notes: {}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.",
+            state_label, game_name, id_note, notes
+        ));
+    }
+
+    // Add OS context
+    system_prompt.push_str(&format!(
+        " The user is on operating system: {}.",
+        std::env::consts::OS
+    ));
+
+    system_prompt
+}
+
+fn provider_by_name(
+    name: &str,
+    config: &config::Config,
+    model_override: Option<String>,
+) -> Arc<dyn LlmProvider> {
+    let model = model_override.unwrap_or_default();
+    match name {
+        "gemini" => Arc::new(GeminiProvider::new(if model.is_empty() {
+            config.llm.gemini_model.clone()
+        } else {
+            model
+        })),
+        "huggingface" => Arc::new(HuggingFaceProvider::new(
+            if model.is_empty() {
+                config.llm.hf_model.clone()
+            } else {
+                model
+            },
+            None,
+            config.llm.hf_base_url.clone(),
+        )),
+        _ => Arc::new(OllamaProvider::new(
+            if model.is_empty() {
+                config.llm.ollama_model.clone()
+            } else {
+                model
+            },
+            config.llm.ollama_base_url.clone(),
+        )),
+    }
+}
+
+#[tauri::command]
+pub async fn compare_models(
+    prompt: String,
+    left_provider: String,
+    right_provider: String,
+    left_model: Option<String>,
+    right_model: Option<String>,
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    let (active_persona, custom_personas, config) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        (
+            app.active_persona.clone(),
+            app.custom_personas.clone(),
+            app.config.clone(),
+        )
+    };
+
+    let system_prompt = build_system_prompt(&active_persona, &custom_personas);
+    let left = provider_by_name(&left_provider, &config, left_model);
+    let right = provider_by_name(&right_provider, &config, right_model);
+
+    let cancel_flag = Arc::new(AtomicBool::new(false));
+    {
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.compare_cancel_flag = Some(cancel_flag.clone());
+    }
+
+    let left_handle = app_handle.clone();
+    let right_handle = app_handle.clone();
+    let left_prompt = prompt.clone();
+    let right_prompt = prompt.clone();
+    let left_system = system_prompt.clone();
+    let right_system = system_prompt.clone();
+    let left_flag = cancel_flag.clone();
+    let right_flag = cancel_flag.clone();
+
+    let left_task = tokio::spawn(async move {
+        stream_compare_pane(
+            "left",
+            &left_prompt,
+            &left_system,
+            left,
+            left_flag,
+            left_handle,
+        )
+        .await;
+    });
+
+    let right_task = tokio::spawn(async move {
+        stream_compare_pane(
+            "right",
+            &right_prompt,
+            &right_system,
+            right,
+            right_flag,
+            right_handle,
+        )
+        .await;
+    });
+
+    let _ = tokio::join!(left_task, right_task);
+
+    // Clear cancel flag
+    {
+        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.compare_cancel_flag = None;
+    }
+
+    Ok(())
+}
+
+async fn stream_compare_pane(
+    pane: &str,
+    prompt: &str,
+    system_prompt: &str,
+    provider: Arc<dyn LlmProvider>,
+    cancel_flag: Arc<AtomicBool>,
+    app_handle: AppHandle,
+) {
+    let mut stream = provider.stream_response(prompt, system_prompt);
+    let mut full_response = String::new();
+
+    while let Some(chunk_res) = stream.next().await {
+        if cancel_flag.load(Ordering::Relaxed) {
+            let _ = app_handle.emit(
+                "compare_stream_chunk",
+                CompareStreamChunk {
+                    pane: pane.to_string(),
+                    text: "\n\n[Generation Cancelled by User]".to_string(),
+                },
+            );
+            break;
+        }
+        match chunk_res {
+            Ok(chunk) => {
+                full_response.push_str(&chunk);
+                let _ = app_handle.emit(
+                    "compare_stream_chunk",
+                    CompareStreamChunk {
+                        pane: pane.to_string(),
+                        text: chunk,
+                    },
+                );
+            }
+            Err(e) => {
+                let _ = app_handle.emit(
+                    "compare_stream_error",
+                    CompareStreamError {
+                        pane: pane.to_string(),
+                        error: e,
+                    },
+                );
+                let _ = app_handle.emit(
+                    "compare_stream_done",
+                    CompareStreamDone {
+                        pane: pane.to_string(),
+                    },
+                );
+                return;
+            }
+        }
+    }
+
+    let _ = app_handle.emit(
+        "compare_stream_done",
+        CompareStreamDone {
+            pane: pane.to_string(),
+        },
+    );
 }
 
 #[tauri::command]

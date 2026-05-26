@@ -1,0 +1,56 @@
+{
+    "status":  "pass",
+    "fail_count":  0,
+    "warn_count":  6,
+    "findings":  [
+                     {
+                         "severity":  "warn",
+                         "code":  "tauri-global-api",
+                         "message":  "withGlobalTauri is enabled. This should be retired when splashscreen wiring is migrated off window.__TAURI__.",
+                         "path":  "src-tauri/tauri.conf.json",
+                         "line":  0,
+                         "evidence":  ""
+                     },
+                     {
+                         "severity":  "warn",
+                         "code":  "dangerous-html-reviewed",
+                         "message":  "dangerouslySetInnerHTML is present but wrapped in a sanitizer. Keep this path under manual review.",
+                         "path":  "frontend/src/VirtualChat.tsx",
+                         "line":  119,
+                         "evidence":  "                \u003cdiv dangerouslySetInnerHTML={{ __html: sanitizeRenderedHtml(msg.content) }} /\u003e"
+                     },
+                     {
+                         "severity":  "warn",
+                         "code":  "plaintext-transport-review",
+                         "message":  "Remote control currently advertises plain HTTP on the LAN. Confirm the PIN gate and trust boundary remain acceptable.",
+                         "path":  "src-tauri/src/remote_control.rs",
+                         "line":  831,
+                         "evidence":  "        \"http://{}:{}/#pin={}\u0026session={}\","
+                     },
+                     {
+                         "severity":  "warn",
+                         "code":  "plaintext-transport-review",
+                         "message":  "Remote control currently advertises plain HTTP on the LAN. Confirm the PIN gate and trust boundary remain acceptable.",
+                         "path":  "src-tauri/src/remote_control.rs",
+                         "line":  890,
+                         "evidence":  "                    \"http://{}:{}/#pin={}\u0026session={}\","
+                     },
+                     {
+                         "severity":  "warn",
+                         "code":  "innerhtml-review",
+                         "message":  "108 innerHTML write sites require manual review for sanitization discipline.",
+                         "path":  "frontend/src/agent.js",
+                         "line":  180,
+                         "evidence":  "        outputEl.innerHTML = \u0027\u003cspan class=\"agent-output-empty\"\u003eWaiting…\u003c/span\u003e\u0027;"
+                     },
+                     {
+                         "severity":  "warn",
+                         "code":  "process-spawn-review",
+                         "message":  "30 process-spawn sites exist and should stay under explicit validation review.",
+                         "path":  "src-tauri/src/commands/agent.rs",
+                         "line":  506,
+                         "evidence":  "            let output = std::process::Command::new(\u0026program_owned)"
+                     }
+                 ],
+    "checked_at_utc":  "2026-05-26T15:56:37Z"
+}

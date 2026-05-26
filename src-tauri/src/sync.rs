@@ -2,9 +2,11 @@ use crate::memory::MemoryRecord;
 use crate::{config, storage, AppState};
 use base64::Engine;
 use chrono::{DateTime, Utc};
+use pbkdf2::pbkdf2_hmac;
 use ring::rand::SecureRandom;
-use ring::{aead, digest, rand};
+use ring::{aead, rand};
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 use std::fs;
 use std::sync::Mutex;
 use tauri::{Emitter, State};
@@ -339,11 +341,18 @@ fn merge_remote_records(
 }
 
 fn encrypt_payload(token: &str, plaintext: &[u8]) -> Result<String, String> {
-    let key = derive_key(token)?;
+    let rng = rand::SystemRandom::new();
+
+    // Generate a random 16-byte salt for PBKDF2
+    let mut salt = [0u8; 16];
+    rng.fill(&mut salt)
+        .map_err(|_| "Failed to generate sync salt".to_string())?;
+
+    let key = derive_key(token, &salt)?;
     let sealing_key = aead::UnboundKey::new(&aead::AES_256_GCM, &key)
         .map_err(|_| "Failed to create sync encryption key".to_string())?;
     let sealing_key = aead::LessSafeKey::new(sealing_key);
-    let rng = rand::SystemRandom::new();
+
     let mut nonce_bytes = [0u8; 12];
     rng.fill(&mut nonce_bytes)
         .map_err(|_| "Failed to generate sync nonce".to_string())?;
@@ -353,43 +362,45 @@ fn encrypt_payload(token: &str, plaintext: &[u8]) -> Result<String, String> {
         .seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut buffer)
         .map_err(|_| "Failed to encrypt sync payload".to_string())?;
 
-    let mut output = nonce_bytes.to_vec();
+    // Format: base64(salt || nonce || ciphertext)
+    let mut output = salt.to_vec();
+    output.extend_from_slice(&nonce_bytes);
     output.extend(buffer);
     Ok(base64::engine::general_purpose::STANDARD.encode(output))
 }
 
 fn decrypt_payload(token: &str, encoded: &str) -> Result<Vec<u8>, String> {
-    let key = derive_key(token)?;
-    let opening_key = aead::UnboundKey::new(&aead::AES_256_GCM, &key)
-        .map_err(|_| "Failed to create sync decryption key".to_string())?;
-    let opening_key = aead::LessSafeKey::new(opening_key);
     let mut data = base64::engine::general_purpose::STANDARD
         .decode(encoded)
         .map_err(|e| format!("Invalid sync payload encoding: {}", e))?;
-    if data.len() <= 12 {
+    // Minimum: 16 salt + 12 nonce + 16 tag
+    if data.len() <= 44 {
         return Err("Encrypted sync payload is too short".to_string());
     }
 
+    let salt = &data[..16];
     let mut nonce_bytes = [0u8; 12];
-    nonce_bytes.copy_from_slice(&data[..12]);
+    nonce_bytes.copy_from_slice(&data[16..28]);
     let nonce = aead::Nonce::assume_unique_for_key(nonce_bytes);
-    let mut ciphertext = data.split_off(12);
+
+    let key = derive_key(token, salt)?;
+    let opening_key = aead::UnboundKey::new(&aead::AES_256_GCM, &key)
+        .map_err(|_| "Failed to create sync decryption key".to_string())?;
+    let opening_key = aead::LessSafeKey::new(opening_key);
+
+    let mut ciphertext = data.split_off(28);
     let plaintext = opening_key
         .open_in_place(nonce, aead::Aad::empty(), &mut ciphertext)
         .map_err(|_| "Failed to decrypt sync payload".to_string())?;
     Ok(plaintext.to_vec())
 }
 
-fn derive_key(token: &str) -> Result<[u8; 32], String> {
+fn derive_key(token: &str, salt: &[u8]) -> Result<[u8; 32], String> {
     if token.trim().is_empty() {
         return Err("OAuth/API token is empty; cannot derive sync key".to_string());
     }
-    let mut material = Vec::with_capacity(token.len() + 20);
-    material.extend_from_slice(b"neurodeck-sync-v1:");
-    material.extend_from_slice(token.as_bytes());
-    let digest = digest::digest(&digest::SHA256, &material);
     let mut key = [0u8; 32];
-    key.copy_from_slice(digest.as_ref());
+    pbkdf2_hmac::<Sha256>(token.as_bytes(), salt, 100_000, &mut key);
     Ok(key)
 }
 

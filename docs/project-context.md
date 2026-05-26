@@ -12,7 +12,7 @@
 | **Name** | NEURODECK |
 | **Type** | Tauri v2 Desktop Application |
 | **Platform targets** | Steam Deck (primary, 1280×800), Windows, Linux |
-| **Version** | 1.2.1 |
+| **Version** | 1.2.2 |
 | **Repo** | https://github.com/khaoticdev62/NEURODECK |
 | **Dev** | khaoticdev |
 
@@ -132,6 +132,14 @@ Stylesheet: `frontend/src/app.css` (~9000+ lines), `frontend/src/style.css` (bas
 - Share view: glass-pill inner tab strip, view header, eliminated all inline styles, `.tunnel-section` separators
 - Tunnel view: `.tunnel-section` + `.input-row` CSS utility classes replace inline `style=""` attributes
 - `project-context.md` synced to v1.2.1, 56 commands, full frontend feature list
+
+### Security Hardening Update (v1.2.2-ra)
+- **MCP Authentication (CRIT-2)** — Added Bearer token validation with ConstantTimeEq on HTTP tool calls.
+- **Localhost Canvas Collab (CRIT-4)** — Bound Canvas Collab listener to localhost (127.0.0.1) only.
+- **Sync Key Derivation Hardening (CRIT-5)** — Upgraded cross-device sync KDF to PBKDF2-HMAC-SHA256 (100k iterations, random 16-byte salt).
+- **Execution Capability Token Removal (HIGH-1)** — Retired `exec_auth_token`, relying on Tauri IPC boundary.
+- **CSP Port Hardening (MED-3)** — Tightened localhost CSP rules to specific required ports (11434, 1420).
+- **MCP Info Disclosure Fix (MED-4)** — Refactored `get_status` MCP tool to avoid leaking key presence.
 
 ### Sprint 6.0 / 5.2 — UX Polish + Font System (v1.2.1-ra)
 - Global font: Space Grotesk (body) + Syne (display) + JetBrains Mono (mono)
