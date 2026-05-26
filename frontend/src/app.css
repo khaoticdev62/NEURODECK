@@ -2996,7 +2996,34 @@ body::before {
 #sp-computer > .stv-card,
 #sp-sync > .stv-card,
 #sp-voice > .stv-card {
-  grid-column: span 6;
+  grid-column: 1 / -1;
+}
+
+/* Network tab — center the sparse MCP card */
+#sp-network > .stv-card {
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Terminal profile cards — 3-column sub-grid */
+.terminal-profiles-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.terminal-profiles-row .stv-group-label {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+.terminal-profiles-row .stv-card {
+  margin-bottom: 0;
+}
+@media (max-width: 860px) {
+  .terminal-profiles-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 #sp-appearance > .stv-card {

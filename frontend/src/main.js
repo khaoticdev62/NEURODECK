@@ -2036,28 +2036,34 @@ document.querySelector("#app").innerHTML = `
                             </div>
                         </div>
 
-                        <div class="stv-group-label">SSH Profiles</div>
-                        <div class="stv-card">
-                            <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                        <div class="terminal-profiles-row">
+                            <div>
+                                <div class="stv-group-label">SSH Profiles</div>
+                                <div class="stv-card">
+                                    <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                                    </div>
+                                    <button class="stv-btn-ghost" id="settings-clear-ssh-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SSH Profiles</button>
+                                </div>
                             </div>
-                            <button class="stv-btn-ghost" id="settings-clear-ssh-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SSH Profiles</button>
-                        </div>
-
-                        <div class="stv-group-label">FTP Profiles</div>
-                        <div class="stv-card">
-                            <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                            <div>
+                                <div class="stv-group-label">FTP Profiles</div>
+                                <div class="stv-card">
+                                    <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                                    </div>
+                                    <button class="stv-btn-ghost" id="settings-clear-ftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All FTP Profiles</button>
+                                </div>
                             </div>
-                            <button class="stv-btn-ghost" id="settings-clear-ftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All FTP Profiles</button>
-                        </div>
-
-                        <div class="stv-group-label">SFTP Profiles</div>
-                        <div class="stv-card">
-                            <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                            <div>
+                                <div class="stv-group-label">SFTP Profiles</div>
+                                <div class="stv-card">
+                                    <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
+                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
+                                    </div>
+                                    <button class="stv-btn-ghost" id="settings-clear-sftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SFTP Profiles</button>
+                                </div>
                             </div>
-                            <button class="stv-btn-ghost" id="settings-clear-sftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SFTP Profiles</button>
                         </div>
                     </div>
 
