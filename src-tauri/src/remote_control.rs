@@ -7,7 +7,7 @@ use std::sync::{
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        ConnectInfo, State,
+        ConnectInfo, Query, State,
     },
     response::{Html, IntoResponse},
     routing::get,
@@ -306,11 +306,12 @@ function doConnect(){
   document.getElementById('rbtn').style.display='none';
   document.getElementById('spin').style.display='';
   var pin=gp('pin');
-  if(!pin){showErr('No PIN found. Scan the QR code in NEURODECK Remote settings.');return;}
+  var session=gp('session');
+  if(!pin || !session){showErr('Missing remote credentials. Re-scan the QR code from NEURODECK.');return;}
   var host=location.host;
   setS('Connecting to '+host+'…');
-  ws=new WebSocket('ws://'+host+'/ws');
-  ws.onopen=function(){setS('Authenticating…');ws.send(JSON.stringify({type:'auth',pin:pin}));};
+  ws=new WebSocket('ws://'+host+'/ws?session='+encodeURIComponent(session));
+  ws.onopen=function(){setS('Authenticating…');ws.send(JSON.stringify({type:'auth',pin:pin,session:session}));};
   ws.onmessage=function(ev){
     var m;try{m=JSON.parse(ev.data);}catch(ex){return;}
     if(m.type==='hello') return;
@@ -469,6 +470,7 @@ doConnect();
 #[derive(Clone)]
 pub struct WsAppState {
     pub pin: String,
+    pub access_token: String,
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub app_handle: AppHandle,
@@ -479,9 +481,15 @@ pub struct RemoteServerHandle {
     pub port: u16,
     pub local_ip: String,
     pub pin: String,
+    pub access_token: String,
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub shutdown_tx: tokio::sync::oneshot::Sender<()>,
+}
+
+#[derive(serde::Deserialize)]
+struct RemoteSessionQuery {
+    session: Option<String>,
 }
 
 pub struct RemoteControlState {
@@ -524,6 +532,7 @@ async fn root_handler() -> impl IntoResponse {
 async fn ws_handler(
     ws: WebSocketUpgrade,
     addr_opt: Option<ConnectInfo<SocketAddr>>,
+    Query(query): Query<RemoteSessionQuery>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr_opt
@@ -533,6 +542,14 @@ async fn ws_handler(
         "[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}",
         ip
     );
+
+    if query.session.as_deref() != Some(state.access_token.as_str()) {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            "Unauthorized remote session token.",
+        )
+            .into_response();
+    }
 
     // Lockout check
     {
@@ -579,7 +596,9 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
             Ok(Message::Text(txt)) => {
                 if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
                     if msg["type"] == "auth" {
-                        if msg["pin"].as_str() == Some(ws_state.pin.as_str()) {
+                        if msg["pin"].as_str() == Some(ws_state.pin.as_str())
+                            && msg["session"].as_str() == Some(ws_state.access_token.as_str())
+                        {
                             println!("[DEBUG remote_control] handle_ws_connection: authentication succeeded for {:?}", ip);
                             let _ = sender
                                 .send(Message::Text(json!({"type":"auth_ok"}).to_string()))
@@ -610,7 +629,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
         }
         let _ = sender
             .send(Message::Text(
-                json!({"type":"auth_fail","reason":"Invalid PIN"}).to_string(),
+                json!({"type":"auth_fail","reason":"Invalid PIN or session token"}).to_string(),
             ))
             .await;
         // Sleep 2s to rate limit
@@ -764,6 +783,7 @@ pub async fn start_remote_server(
     }
 
     let pin = generate_pin();
+    let access_token = crate::security::generate_session_token();
     let local_ip = get_local_ip();
     let (broadcast_tx, _) = tokio::sync::broadcast::channel::<String>(256);
     let connected = Arc::new(AtomicUsize::new(0));
@@ -771,6 +791,7 @@ pub async fn start_remote_server(
 
     let ws_state = WsAppState {
         pin: pin.clone(),
+        access_token: access_token.clone(),
         broadcast_tx: broadcast_tx.clone(),
         connected: connected.clone(),
         app_handle: app_handle.clone(),
@@ -805,7 +826,10 @@ pub async fn start_remote_server(
         *rtx = Some(broadcast_tx.clone());
     }
 
-    let url = format!("http://{}:{}/#pin={}", local_ip, port, pin);
+    let url = format!(
+        "http://{}:{}/#pin={}&session={}",
+        local_ip, port, pin, access_token
+    );
 
     {
         let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
@@ -813,6 +837,7 @@ pub async fn start_remote_server(
             port,
             local_ip: local_ip.clone(),
             pin: pin.clone(),
+            access_token: access_token.clone(),
             broadcast_tx,
             connected,
             shutdown_tx,
@@ -823,6 +848,7 @@ pub async fn start_remote_server(
         "port": port,
         "ip":   local_ip,
         "pin":  pin,
+        "session": access_token,
         "url":  url,
     }))
 }
@@ -855,7 +881,10 @@ pub fn get_remote_server_info(state: TauriState<'_, RemoteControlState>) -> serd
                 "port":      h.port,
                 "ip":        h.local_ip,
                 "pin":       h.pin,
-                "url":       format!("http://{}:{}/#pin={}", h.local_ip, h.port, h.pin),
+                "url":       format!(
+                    "http://{}:{}/#pin={}&session={}",
+                    h.local_ip, h.port, h.pin, h.access_token
+                ),
                 "connected": connected,
             })
         }

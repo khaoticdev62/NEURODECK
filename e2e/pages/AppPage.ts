@@ -111,6 +111,7 @@ export class AppPage {
   }
 
   async openShortcuts() {
+    await this.page.evaluate(() => (document.activeElement as HTMLElement)?.blur?.());
     await this.page.keyboard.press("?");
     await expect(this.shortcutsOverlay).not.toHaveClass(/hidden/);
   }
@@ -185,6 +186,14 @@ export class AppPage {
               torrent_count: 0,
               torrents: [],
             };
+          case "plugin:event|listen": {
+            const evtName = args?.event;
+            const handler = args?.handler;
+            if (evtName && handler) {
+              listeners.set(evtName, handler);
+            }
+            return `mock-event-id-${evtName}`;
+          }
           default:
             return args ?? null;
         }

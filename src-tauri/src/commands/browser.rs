@@ -5,7 +5,7 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use serde_json::Value;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 lazy_static::lazy_static! {
     static ref AUTOMATION_STATE: Mutex<BrowserAutomationState> = Mutex::new(BrowserAutomationState::default());
@@ -22,6 +22,12 @@ fn parse_http_url(url: &str) -> Result<(), String> {
     let scheme = parsed.scheme();
     if scheme != "http" && scheme != "https" {
         return Err("Only http/https URLs are permitted".to_string());
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("URLs with embedded credentials are not permitted".to_string());
+    }
+    if parsed.host_str().unwrap_or_default().is_empty() {
+        return Err("URL must include a host".to_string());
     }
     Ok(())
 }
@@ -47,6 +53,15 @@ fn ensure_browser(state: &mut BrowserAutomationState) -> Result<(), String> {
     Ok(())
 }
 
+fn require_browser_exec(
+    state: &State<'_, Mutex<crate::AppState>>,
+    exec_token: &str,
+    surface: &str,
+) -> Result<(), String> {
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
+    crate::security::require_exec_token(&app, exec_token, surface)
+}
+
 fn get_session_tab(state: &BrowserAutomationState, session_id: &str) -> Result<Arc<Tab>, String> {
     state
         .sessions
@@ -66,11 +81,8 @@ pub async fn browser_open(
 ) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
 
+    parse_http_url(&url)?;
     let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
-    let scheme = nav_url.scheme();
-    if scheme != "http" && scheme != "https" {
-        return Err("Only http/https URLs are permitted".into());
-    }
 
     let main_win = app
         .get_webview_window("main")
@@ -116,11 +128,8 @@ pub async fn browser_open(
 #[tauri::command]
 pub fn browser_navigate(app: AppHandle, url: String) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("browser-view") {
+        parse_http_url(&url)?;
         let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
-        let scheme = nav_url.scheme();
-        if scheme != "http" && scheme != "https" {
-            return Err("Only http/https URLs are permitted".into());
-        }
         win.navigate(nav_url).map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -172,7 +181,15 @@ pub fn browser_get_url(app: AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn browser_exec(app: AppHandle, js: String) -> Result<(), String> {
+pub fn browser_exec(
+    app: AppHandle,
+    js: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-exec")?;
+    crate::security::validate_script_payload(&js, "javascript", "browser-exec")?;
+
     if let Some(win) = app.get_webview_window("browser-view") {
         win.eval(&js).map_err(|e| e.to_string())?;
     }
@@ -180,7 +197,12 @@ pub fn browser_exec(app: AppHandle, js: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn browser_open_session(url: String) -> Result<String, String> {
+pub fn browser_open_session(
+    url: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<String, String> {
+    require_browser_exec(&state, &exec_token, "browser-open-session")?;
     parse_http_url(&url)?;
     with_state(|state| {
         ensure_browser(state)?;
@@ -199,7 +221,13 @@ pub fn browser_open_session(url: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn browser_navigate_session(session_id: String, url: String) -> Result<(), String> {
+pub fn browser_navigate_session(
+    session_id: String,
+    url: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-navigate-session")?;
     parse_http_url(&url)?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
@@ -218,7 +246,13 @@ pub fn browser_get_content(session_id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn browser_click(session_id: String, selector: String) -> Result<(), String> {
+pub fn browser_click(
+    session_id: String,
+    selector: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-click")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
         let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
@@ -228,7 +262,14 @@ pub fn browser_click(session_id: String, selector: String) -> Result<(), String>
 }
 
 #[tauri::command]
-pub fn browser_fill(session_id: String, selector: String, value: String) -> Result<(), String> {
+pub fn browser_fill(
+    session_id: String,
+    selector: String,
+    value: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-fill")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
         let element = tab.wait_for_element(&selector).map_err(|e| e.to_string())?;
@@ -250,7 +291,14 @@ pub fn browser_screenshot(session_id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn browser_evaluate_js(session_id: String, script: String) -> Result<Value, String> {
+pub fn browser_evaluate_js(
+    session_id: String,
+    script: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<Value, String> {
+    require_browser_exec(&state, &exec_token, "browser-eval")?;
+    crate::security::validate_script_payload(&script, "javascript", "browser-eval")?;
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
         let eval_result = tab.evaluate(&script, false).map_err(|e| e.to_string())?;
@@ -259,7 +307,12 @@ pub fn browser_evaluate_js(session_id: String, script: String) -> Result<Value, 
 }
 
 #[tauri::command]
-pub fn browser_close_session(session_id: String) -> Result<(), String> {
+pub fn browser_close_session(
+    session_id: String,
+    exec_token: String,
+    state: State<'_, Mutex<crate::AppState>>,
+) -> Result<(), String> {
+    require_browser_exec(&state, &exec_token, "browser-close-session")?;
     with_state(|state| {
         state.sessions.remove(&session_id);
         if state.sessions.is_empty() {
@@ -271,11 +324,7 @@ pub fn browser_close_session(session_id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn open_external(url: String) -> Result<(), String> {
-    // Basic sanity check: only allow http/https to prevent arbitrary command execution
-    let lower = url.to_lowercase();
-    if !lower.starts_with("http://") && !lower.starts_with("https://") {
-        return Err("Only http/https URLs are supported".into());
-    }
+    parse_http_url(&url)?;
     #[cfg(target_os = "windows")]
     {
         // Use explorer.exe instead of `cmd /c start` to avoid cmd shell metacharacter

@@ -44,6 +44,18 @@ impl LuaEngine {
 
         // 2. execute(cmd) function to execute terminal commands
         let execute_fn = lua.create_function(move |_, cmd_str: String| {
+            crate::security::validate_terminal_command(&cmd_str, "lua-execute")
+                .map_err(mlua::Error::external)?;
+            crate::security::validate_script_payload(
+                &cmd_str,
+                if cfg!(target_os = "windows") {
+                    "powershell"
+                } else {
+                    "bash"
+                },
+                "lua-execute",
+            )
+            .map_err(mlua::Error::external)?;
             let mut cmd = if cfg!(target_os = "windows") {
                 let mut c = std::process::Command::new("cmd.exe");
                 c.arg("/c").arg(&cmd_str);

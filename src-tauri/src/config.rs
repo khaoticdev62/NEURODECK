@@ -183,8 +183,14 @@ impl Default for SyncConfig {
 }
 
 pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(cfg) = toml::from_str(&content) {
+    let path_ref = path.as_ref();
+    if let Ok(content) = fs::read_to_string(path_ref) {
+        if let Ok(mut cfg) = toml::from_str::<Config>(&content) {
+            if !cfg.llm.hf_api_key.trim().is_empty() {
+                let _ = neurodeck_infrastructure::secrets::save_hf_api_key(&cfg.llm.hf_api_key);
+                cfg.llm.hf_api_key.clear();
+                let _ = save_config(path_ref, &cfg);
+            }
             return cfg;
         }
     }
@@ -192,8 +198,10 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
 }
 
 pub fn save_config<P: AsRef<Path>>(path: P, config: &Config) -> Result<(), String> {
-    let content =
-        toml::to_string_pretty(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
+    let mut sanitized = config.clone();
+    sanitized.llm.hf_api_key.clear();
+    let content = toml::to_string_pretty(&sanitized)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
     fs::write(path, content).map_err(|e| format!("Failed to write config file: {}", e))?;
     Ok(())
 }

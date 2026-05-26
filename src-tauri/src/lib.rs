@@ -6,6 +6,7 @@ mod config;
 mod doc_indexer;
 mod error;
 mod ftp;
+mod hf_model_mgr;
 mod llm;
 mod lua;
 mod mcp;
@@ -14,6 +15,7 @@ mod ollama_mgr;
 mod plugin_mgr;
 mod pty_manager;
 mod remote_control;
+mod security;
 mod self_heal;
 mod sftp;
 mod storage;
@@ -243,6 +245,7 @@ pub struct AppState {
     pub(crate) collab_peer_count: Option<Arc<AtomicUsize>>,
     // Canvas streaming execution cancellation.
     pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
+    pub(crate) exec_auth_token: String,
     pub(crate) boot_self_heal: self_heal::SelfHealReport,
 }
 
@@ -530,7 +533,7 @@ pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
         "gemini" => Arc::new(GeminiProvider::new(config.llm.gemini_model.clone())),
         "huggingface" => Arc::new(HuggingFaceProvider::new(
             config.llm.hf_model.clone(),
-            Some(config.llm.hf_api_key.clone()),
+            None,
             config.llm.hf_base_url.clone(),
         )),
         _ => Arc::new(OllamaProvider::new(
@@ -779,6 +782,7 @@ pub fn run() {
         collab_addr: None,
         collab_peer_count: None,
         canvas_exec_cancel_tx: None,
+        exec_auth_token: security::generate_session_token(),
         boot_self_heal: boot_self_heal.report,
     };
 
@@ -968,6 +972,14 @@ pub fn run() {
             ollama_mgr::ollama_list_models,
             ollama_mgr::ollama_pull_model,
             ollama_mgr::ollama_delete_model,
+            hf_model_mgr::hf_search_models,
+            hf_model_mgr::hf_get_steam_deck_models,
+            hf_model_mgr::hf_get_model_info,
+            hf_model_mgr::hf_download_model,
+            hf_model_mgr::hf_cancel_download,
+            hf_model_mgr::hf_list_downloads,
+            hf_model_mgr::hf_list_installed_models,
+            hf_model_mgr::hf_delete_model,
             set_config,
             get_config,
             save_gemini_api_key,

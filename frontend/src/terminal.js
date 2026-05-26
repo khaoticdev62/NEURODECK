@@ -244,7 +244,7 @@ function renderTerminalTabs() {
         return `
             <div class="terminal-tab ${activeClass}" data-session-id="${s.id}">
                 <span class="terminal-tab-label" data-session-id="${s.id}" title="Double-click to rename">${createIcon("squareTerminal", { size: 14 })}<span>${window.sanitizeHtml(label)}</span></span>
-                <span class="terminal-tab-close" data-session-id="${s.id}" aria-label="Close terminal tab">${createIcon("x", { size: 12 })}</span>
+                <button class="terminal-tab-close" data-session-id="${s.id}" aria-label="Close terminal tab">${createIcon("x", { size: 12 })}</button>
             </div>
         `;
     }).join("");

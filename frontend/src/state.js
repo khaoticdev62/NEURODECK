@@ -1,5 +1,6 @@
 export const state = {
     currentSessionId: "",
+    execToken: "",
     activePersona: "Default",
     availablePersonas: [],
     isMuted: localStorage.getItem("isMuted") === "true",

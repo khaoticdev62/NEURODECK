@@ -81,6 +81,14 @@ test.beforeEach(async ({ page }) => {
             torrent_count: 0,
             torrents: [],
           };
+        case "plugin:event|listen": {
+          const evtName = args?.event;
+          const handler = args?.handler;
+          if (evtName && handler) {
+            listeners.set(evtName, handler);
+          }
+          return `mock-event-id-${evtName}`;
+        }
         default:
           return args ?? null;
       }
@@ -130,7 +138,7 @@ test.beforeEach(async ({ page }) => {
   await chat.goto();
 });
 
-test.fixme("user can send a message and receive a streamed response", async ({ page }) => {
+test("user can send a message and receive a streamed response", async ({ page }) => {
   const chat = new ChatPage(page);
   await chat.sendMessage("Hello AI");
   await chat.expectUserMessage("Hello AI");
@@ -138,8 +146,8 @@ test.fixme("user can send a message and receive a streamed response", async ({ p
   await expect(chat.chatViewport.locator(".msg-meta")).toBeVisible();
 });
 
-test.fixme("chat stream error is rendered as a system error message", async ({ page }) => {
-  await page.addInitScript(() => {
+test("chat stream error is rendered as a system error message", async ({ page }) => {
+  await page.evaluate(() => {
     const invoke = window.__TAURI_INTERNALS__.invoke;
     window.__TAURI_INTERNALS__.invoke = async (cmd: string, args?: any) => {
       if (cmd === "send_command") {

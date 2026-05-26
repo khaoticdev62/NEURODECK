@@ -5,6 +5,25 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::State;
 
+fn validate_config_url(value: &str, field: &str) -> Result<(), String> {
+    let parsed =
+        reqwest::Url::parse(value).map_err(|e| format!("Invalid URL for {}: {}", field, e))?;
+    match parsed.scheme() {
+        "http" | "https" => {}
+        _ => return Err(format!("{} must use http or https", field)),
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err(format!(
+            "{} must not embed credentials in the URL; store secrets separately",
+            field
+        ));
+    }
+    if parsed.host_str().unwrap_or_default().is_empty() {
+        return Err(format!("{} must include a host", field));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn set_config(
     key: String,
@@ -18,12 +37,24 @@ pub fn set_config(
         "llm.default_provider" => config.llm.default_provider = value,
         "llm.ollama_model" => config.llm.ollama_model = value,
         "llm.gemini_model" => config.llm.gemini_model = value,
-        "llm.ollama_base_url" => config.llm.ollama_base_url = value,
+        "llm.ollama_base_url" => {
+            validate_config_url(&value, "llm.ollama_base_url")?;
+            config.llm.ollama_base_url = value;
+        }
         "llm.hf_model" => config.llm.hf_model = value,
-        "llm.hf_api_key" => config.llm.hf_api_key = value,
-        "llm.hf_base_url" => config.llm.hf_base_url = value,
+        "llm.hf_api_key" => return Err(
+            "llm.hf_api_key can no longer be set via generic config updates; use save_hf_api_key"
+                .to_string(),
+        ),
+        "llm.hf_base_url" => {
+            validate_config_url(&value, "llm.hf_base_url")?;
+            config.llm.hf_base_url = value;
+        }
         "llm.google_client_id" => config.llm.google_client_id = value,
-        "sync.api_base_url" => config.sync.api_base_url = value,
+        "sync.api_base_url" => {
+            validate_config_url(&value, "sync.api_base_url")?;
+            config.sync.api_base_url = value;
+        }
         "theme.primary_color" => config.theme.primary_color = value,
         "theme.secondary_color" => config.theme.secondary_color = value,
         "theme.bg_color" => config.theme.bg_color = value,
@@ -44,7 +75,9 @@ pub fn set_config(
 #[tauri::command]
 pub fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(app.config.clone())
+    let mut config = app.config.clone();
+    config.llm.hf_api_key.clear();
+    Ok(config)
 }
 
 #[tauri::command]
@@ -74,8 +107,10 @@ pub fn save_hf_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     neurodeck_infrastructure::secrets::save_hf_api_key(&key)?;
     std::env::set_var("HF_API_KEY", &key);
-    app.config.llm.hf_api_key = key;
+    app.config.llm.hf_api_key.clear();
     app.provider = create_provider(&app.config);
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
     Ok(())
 }
 
@@ -94,6 +129,9 @@ pub async fn test_llm_connection(
     url: String,
     key: Option<String>,
 ) -> Result<String, String> {
+    if !url.trim().is_empty() {
+        validate_config_url(&url, "connection test URL")?;
+    }
     match provider.as_str() {
         "gemini" => {
             let api_key = match key {

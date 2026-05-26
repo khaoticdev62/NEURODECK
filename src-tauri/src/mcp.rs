@@ -236,6 +236,7 @@ async fn call_tool(
             let cmd_str = args["command"]
                 .as_str()
                 .ok_or("Missing required arg: 'command'")?;
+            crate::security::validate_script_payload(cmd_str, "bash", "mcp-run-shell")?;
             let cmd_owned = cmd_str.to_string();
             let output = tokio::task::spawn_blocking(move || {
                 let mut c = if cfg!(target_os = "windows") {
@@ -274,6 +275,7 @@ async fn call_tool(
             let lang = args["lang"]
                 .as_str()
                 .ok_or("Missing required arg: 'lang'")?;
+            crate::security::validate_script_payload(code, lang, "mcp-run-code")?;
 
             let (program, prog_args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
                 "python" | "python3" => {

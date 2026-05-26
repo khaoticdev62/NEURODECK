@@ -8,20 +8,21 @@ test.beforeEach(async ({ page }) => {
   await app.goto();
 });
 
-test.fixme("all 9 settings tabs are accessible and render their panels", async ({ page }) => {
+test("all 10 settings tabs are accessible and render their panels", async ({ page }) => {
   const settings = new SettingsPage(page);
   await settings.openSettings();
 
-  const tabs: Array<"general" | "appearance" | "terminal" | "network" | "plugins" | "sync" | "torrent" | "shortcuts" | "account"> = [
+  const tabs: Array<"general" | "ai" | "appearance" | "terminal" | "extensions" | "memory" | "network" | "computer" | "sync" | "voice"> = [
     "general",
+    "ai",
     "appearance",
     "terminal",
+    "extensions",
+    "memory",
     "network",
-    "plugins",
+    "computer",
     "sync",
-    "torrent",
-    "shortcuts",
-    "account",
+    "voice",
   ];
 
   for (const tab of tabs) {

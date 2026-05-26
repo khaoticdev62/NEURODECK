@@ -24,7 +24,7 @@ const viewTabs = [
 ];
 
 for (const view of viewTabs) {
-  test.fixme(`a11y audit on ${view.name} view`, async ({ page }) => {
+  test(`a11y audit on ${view.name} view`, async ({ page }) => {
     const app = new AppPage(page);
     await app.navigateTo(view.id);
 
@@ -51,7 +51,7 @@ for (const view of viewTabs) {
   });
 }
 
-test.fixme("a11y audit on settings modal", async ({ page }) => {
+test("a11y audit on settings modal", async ({ page }) => {
   const app = new AppPage(page);
   await app.openSettings();
 
@@ -67,7 +67,7 @@ test.fixme("a11y audit on settings modal", async ({ page }) => {
   expect(hardFail).toEqual([]);
 });
 
-test.fixme("a11y audit on command palette", async ({ page }) => {
+test("a11y audit on command palette", async ({ page }) => {
   const app = new AppPage(page);
   await app.openCommandPalette();
 
@@ -83,7 +83,7 @@ test.fixme("a11y audit on command palette", async ({ page }) => {
   expect(hardFail).toEqual([]);
 });
 
-test.fixme("a11y audit on shortcuts overlay", async ({ page }) => {
+test("a11y audit on shortcuts overlay", async ({ page }) => {
   const app = new AppPage(page);
   await app.openShortcuts();
 

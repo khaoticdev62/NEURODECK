@@ -470,7 +470,18 @@ pub async fn ai_edit_code(
 /// Execute agent-generated code in a sandboxed subprocess with a 30-second
 /// timeout. Returns stdout + stderr combined.
 #[tauri::command]
-pub async fn agent_exec_code(code: String, lang: String) -> Result<String, String> {
+pub async fn agent_exec_code(
+    code: String,
+    lang: String,
+    exec_token: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "agent-exec")?;
+    }
+    crate::security::validate_script_payload(&code, &lang, "agent-exec")?;
+
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
             if cfg!(target_os = "windows") {
@@ -543,9 +554,16 @@ pub async fn agent_exec_code(code: String, lang: String) -> Result<String, Strin
 pub async fn exec_code_stream(
     code: String,
     lang: String,
+    exec_token: String,
     state: State<'_, Mutex<AppState>>,
     app_handle: AppHandle,
 ) -> Result<(), String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "canvas-exec")?;
+    }
+    crate::security::validate_script_payload(&code, &lang, "canvas-exec")?;
+
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
             if cfg!(target_os = "windows") {
@@ -641,8 +659,9 @@ pub async fn exec_code_stream(
 
 /// Cancel the active streaming Canvas execution, if one exists.
 #[tauri::command]
-pub fn cancel_exec(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+pub fn cancel_exec(exec_token: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    crate::security::require_exec_token(&app, &exec_token, "canvas-cancel")?;
     if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
         let _ = cancel_tx.send(());
     }

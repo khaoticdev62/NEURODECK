@@ -42,6 +42,7 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
         app.config.llm.active_agent_id.clone(),
     );
     initial.insert("session_id".to_string(), app.session_id.clone());
+    initial.insert("exec_auth_token".to_string(), app.exec_auth_token.clone());
     initial.insert("active_persona".to_string(), app.active_persona.clone());
     initial.insert(
         "memory_status".to_string(),
@@ -79,8 +80,18 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
 }
 
 #[tauri::command]
-pub async fn execute_command(cmd_str: String) -> String {
-    tokio::task::spawn_blocking(move || {
+pub async fn execute_command(
+    cmd_str: String,
+    exec_token: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "terminal-shell")?;
+    }
+    crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
+
+    Ok(tokio::task::spawn_blocking(move || {
         let mut cmd = if cfg!(target_os = "windows") {
             let mut c = std::process::Command::new("cmd.exe");
             c.arg("/c").arg(&cmd_str);
@@ -100,12 +111,23 @@ pub async fn execute_command(cmd_str: String) -> String {
         }
     })
     .await
-    .unwrap_or_else(|e| format!("Error: spawn_blocking panicked: {}", e))
+    .unwrap_or_else(|e| format!("Error: spawn_blocking panicked: {}", e)))
 }
 
 #[cfg(debug_assertions)]
 #[tauri::command]
-pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
+pub async fn execute_lua(
+    code: String,
+    exec_token: String,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    {
+        let state = app_handle.state::<Mutex<AppState>>();
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "lua-exec")?;
+    }
+    crate::security::validate_script_payload(&code, "lua", "lua-exec")?;
+
     let app_handle_clone = app_handle.clone();
     tokio::task::spawn_blocking(move || {
         let lua_state = app_handle_clone.state::<LuaState>();
@@ -129,9 +151,16 @@ pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), Stri
 #[tauri::command]
 pub async fn execute_command_stream(
     cmd_str: String,
+    exec_token: String,
     app_handle: AppHandle,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "terminal-shell")?;
+    }
+    crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
+
     // 1. Kill any existing running process.
     let proc_id = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -267,8 +296,15 @@ pub async fn execute_command_stream(
 #[tauri::command]
 pub async fn write_to_process(
     input: String,
+    exec_token: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "terminal-stdin")?;
+    }
+    crate::security::validate_terminal_command(&input, "terminal-stdin")?;
+
     let tx = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.process_stdin_tx.clone()
@@ -285,7 +321,15 @@ pub async fn write_to_process(
 }
 
 #[tauri::command]
-pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+pub async fn kill_process(
+    exec_token: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        crate::security::require_exec_token(&app, &exec_token, "terminal-kill")?;
+    }
+
     let tx = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
         app.kill_tx.take()

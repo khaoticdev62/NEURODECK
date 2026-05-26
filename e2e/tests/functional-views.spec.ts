@@ -16,12 +16,12 @@ test("terminal view renders xterm container and toolbar", async ({ page }) => {
   await expect(page.locator("#terminal-add-tab-btn")).toBeVisible();
 });
 
-test.fixme("canvas view renders editor, toolbar, and preview pane", async ({ page }) => {
+test("canvas view renders editor, toolbar, and preview pane", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("canvas");
   await expect(page.locator("#canvas-lang-select")).toBeVisible();
   await expect(page.locator("#canvas-run-btn")).toBeVisible();
-  await expect(page.locator("#canvas-code-editor")).toBeVisible();
+  await expect(page.locator("#canvas-monaco")).toBeVisible();
   await expect(page.locator("#canvas-preview-frame")).toBeVisible();
 });
 
@@ -41,19 +41,19 @@ test("browser view renders address bar and home page", async ({ page }) => {
   await expect(page.locator(".browser-home-kicker")).toBeVisible();
 });
 
-test.fixme("agent view renders model indicator and action buttons", async ({ page }) => {
+test("agent view renders model indicator and action buttons", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("agent");
   await expect(page.locator("#model-name")).toBeVisible();
   await expect(page.locator("#agent-run-btn")).toBeVisible();
-  await expect(page.locator("#agent-clear-btn")).toBeVisible();
+  await expect(page.locator("#agent-task-input")).toBeVisible();
 });
 
-test.fixme("memory view renders search and upload controls", async ({ page }) => {
+test("memory view renders search and upload controls", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("memory");
   await expect(page.locator(".memory-search-shell")).toBeVisible();
-  await expect(page.locator("#memory-upload-btn")).toBeVisible();
+  await expect(page.locator("#memory-fact-save-btn")).toBeVisible();
 });
 
 test("chat sends message and shows user bubble", async ({ page }) => {

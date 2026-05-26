@@ -229,6 +229,7 @@ function createFallbackEditor(container, initialCode) {
     container.replaceChildren();
     const textarea = document.createElement('textarea');
     textarea.id = 'canvas-editor-fallback';
+    textarea.setAttribute('aria-label', 'Code editor');
     textarea.style.width = '100%';
     textarea.style.height = '100%';
     textarea.style.background = '#060a0e';
@@ -506,7 +507,7 @@ function initCanvasView() {
         execDoneUnlisten = doneListener;
 
         try {
-            await invoke("exec_code_stream", { code, lang });
+            await invoke("exec_code_stream", { code, lang, execToken: state.execToken });
         } catch (err) {
             stopExecListeners();
             setExecRunning(false);
@@ -524,7 +525,7 @@ function initCanvasView() {
         cancelBtn.onclick = async () => {
             cancelBtn.disabled = true;
             try {
-                await invoke("cancel_exec");
+                await invoke("cancel_exec", { execToken: state.execToken });
             } finally {
                 cancelBtn.disabled = false;
             }
@@ -545,7 +546,7 @@ function initCanvasView() {
                 runBtn.disabled = true;
                 if (outputPre) outputPre.textContent = "Executing Lua script in engine...\n";
 
-                invoke("execute_lua", { code })
+                invoke("execute_lua", { code, execToken: state.execToken })
                     .then(() => {
                         if (outputPre) outputPre.textContent = "Lua script executed successfully!\nCheck chat/terminal stdout for any prints.";
                         applyButtonIcon("#canvas-run-btn", { icon: "shieldCheck", label: "Done" });

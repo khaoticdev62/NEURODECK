@@ -485,7 +485,7 @@ function sendProcessInput() {
     let text = inputElement.value;
     if (text === "") return;
 
-    invoke("write_to_process", { input: text }).then(() => {
+    invoke("write_to_process", { input: text, execToken: state.execToken }).then(() => {
         appendLineToTerminal(`> ${text}`, false);
     }).catch(err => {
         appendLineToTerminal(`System error sending stdin: ${err}`, true);
@@ -545,7 +545,7 @@ function handleInputKeydown(e) {
     }
     if (state.isProcessRunning && e.ctrlKey && e.key === "c") {
         e.preventDefault();
-        invoke("kill_process").catch(err => console.error("Error killing process:", err));
+        invoke("kill_process", { execToken: state.execToken }).catch(err => console.error("Error killing process:", err));
     }
 }
 
@@ -612,7 +612,7 @@ function formatCodeBlocks(container) {
             execBtn.onclick = function() {
                 if (!window.confirm(`Execute this ${lang} snippet?\n\nReview the command before running.`)) return;
                 if (state.isProcessRunning) {
-                    invoke("kill_process").catch(e => console.error("Error killing process:", e));
+                    invoke("kill_process", { execToken: state.execToken }).catch(e => console.error("Error killing process:", e));
                 }
 
                 execBtn.innerText = "Running...";
@@ -642,7 +642,7 @@ function formatCodeBlocks(container) {
 
                 const terminateBtn = termConsole.querySelector(".terminal-terminate-btn");
                 terminateBtn.onclick = function() {
-                    invoke("kill_process").catch(err => {
+                    invoke("kill_process", { execToken: state.execToken }).catch(err => {
                         console.error("Error invoking kill_process:", err);
                     });
                 };
@@ -654,7 +654,7 @@ function formatCodeBlocks(container) {
                 let viewport = document.getElementById("chat-workspace");
                 viewport.scrollTop = viewport.scrollHeight;
 
-                invoke("execute_command_stream", { cmdStr: cmd }).catch((err) => {
+                invoke("execute_command_stream", { cmdStr: cmd, execToken: state.execToken }).catch((err) => {
                     appendLineToTerminal(`Error spawning process: ${err}`, true);
                     finishRunningProcess(1);
                 });
@@ -689,7 +689,7 @@ function runLuaScript(scriptCode, preElement, execBtn) {
     }
 
     if (state.isProcessRunning) {
-        invoke("kill_process").catch(e => console.error("Error killing process:", e));
+        invoke("kill_process", { execToken: state.execToken }).catch(e => console.error("Error killing process:", e));
     }
 
     if (execBtn) {
@@ -757,7 +757,7 @@ function runLuaScript(scriptCode, preElement, execBtn) {
     let viewport = document.getElementById("chat-workspace");
     viewport.scrollTop = viewport.scrollHeight;
 
-    invoke("execute_lua", { code: scriptCode }).catch((err) => {
+    invoke("execute_lua", { code: scriptCode, execToken: state.execToken }).catch((err) => {
         appendLineToTerminal(`Error executing Lua: ${err}`, true);
         finishRunningProcess(1);
     });
