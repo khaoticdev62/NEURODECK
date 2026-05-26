@@ -272,7 +272,8 @@ pub fn browser_close_session(session_id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn open_external(url: String) -> Result<(), String> {
     // Basic sanity check: only allow http/https to prevent arbitrary command execution
-    if !url.starts_with("http://") && !url.starts_with("https://") {
+    let lower = url.to_lowercase();
+    if !lower.starts_with("http://") && !lower.starts_with("https://") {
         return Err("Only http/https URLs are supported".into());
     }
     #[cfg(target_os = "windows")]

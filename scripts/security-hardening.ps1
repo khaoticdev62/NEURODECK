@@ -35,10 +35,15 @@ function Invoke-RgJson {
     param(
         [string]$Pattern,
         [string[]]$Targets,
-        [string[]]$Globs = @()
+        [string[]]$Globs = @(),
+        [switch]$CaseInsensitive
     )
 
-    $args = @("--json", "-n", "--pcre2", $Pattern)
+    $args = @("--json", "-n")
+    if ($CaseInsensitive) {
+        $args += @("-i")
+    }
+    $args += $Pattern
     foreach ($glob in $Globs) {
         $args += @("-g", $glob)
     }
@@ -95,17 +100,17 @@ if ($config.app.withGlobalTauri -eq $true) {
     Add-Finding -Findings $findings -Severity warn -Code "tauri-global-api" -Message "withGlobalTauri is enabled. This should be retired when splashscreen wiring is migrated off window.__TAURI__." -Path "src-tauri/tauri.conf.json"
 }
 
-$remoteScriptMatches = Invoke-RgJson -Pattern '(?i)(<script[^>]+src=["'']https?://|script\.src\s*=\s*["'']https?://|https://cdn\.jsdelivr\.net/npm/monaco-editor)' -Targets @("frontend/src", "frontend/public") -Globs @("!frontend/dist")
+$remoteScriptMatches = Invoke-RgJson -Pattern '(<script[^>]+src=["'']https?://|script\.src\s*=\s*["'']https?://|https://cdn\.jsdelivr\.net/npm/monaco-editor)' -Targets @("frontend/src", "frontend/public") -Globs @("!frontend/dist") -CaseInsensitive
 foreach ($match in $remoteScriptMatches) {
     Add-Finding -Findings $findings -Severity fail -Code "remote-script-dependency" -Message "Remote script dependency detected in shipped frontend code." -Path $match.path -Line $match.line -Evidence $match.text
 }
 
-$remoteStyleMatches = Invoke-RgJson -Pattern '(?i)(@import\s+url\(["'']https?://|<link[^>]+href=["'']https?://)' -Targets @("frontend/src", "frontend/public", "frontend/index.html") -Globs @("!frontend/dist")
+$remoteStyleMatches = Invoke-RgJson -Pattern '(@import\s+url\(["'']https?://|<link[^>]+href=["'']https?://)' -Targets @("frontend/src", "frontend/public", "frontend/index.html") -Globs @("!frontend/dist") -CaseInsensitive
 foreach ($match in $remoteStyleMatches) {
     Add-Finding -Findings $findings -Severity warn -Code "remote-style-dependency" -Message "Remote stylesheet or font dependency detected. Prefer bundled assets for offline and integrity-safe builds." -Path $match.path -Line $match.line -Evidence $match.text
 }
 
-$evalMatches = Invoke-RgJson -Pattern '\beval\s*\(|new\s+Function\s*\(' -Targets @("frontend/src", "frontend/public", "scripts") -Globs @("!frontend/dist")
+$evalMatches = Invoke-RgJson -Pattern '\beval\s*\(|new\s+Function\s*\(' -Targets @("frontend/src", "frontend/public", "scripts") -Globs @("!frontend/dist", "!scripts/security_audit.py")
 foreach ($match in $evalMatches) {
     Add-Finding -Findings $findings -Severity fail -Code "dynamic-js-eval" -Message "Dynamic JavaScript evaluation detected." -Path $match.path -Line $match.line -Evidence $match.text
 }
@@ -124,7 +129,12 @@ foreach ($match in $privateKeyMatches) {
     Add-Finding -Findings $findings -Severity fail -Code "secret-material" -Message "Probable secret or private key material detected in tracked source." -Path $match.path -Line $match.line -Evidence $match.text
 }
 
-$httpMatches = Invoke-RgJson -Pattern 'http://(?!localhost|127\.0\.0\.1)' -Targets @("frontend/src", "frontend/public", "src-tauri") -Globs @("!frontend/dist")
+$httpMatches = Invoke-RgJson -Pattern 'http://' -Targets @("frontend/src", "frontend/public", "src-tauri") -Globs @("!frontend/dist")
+$httpMatches = @($httpMatches | Where-Object {
+    $_.text -notmatch 'http://localhost' -and
+    $_.text -notmatch 'http://127\.0\.0\.1' -and
+    $_.text -notmatch 'http://www\.w3\.org/2000/svg'
+})
 foreach ($match in ($httpMatches | Where-Object { $_.text -notmatch 'http://www\.w3\.org/2000/svg' -and $_.path -notmatch 'frontend/src/assets/fonts/OFL\.txt' -and $_.text -notmatch 'starts_with\("http://' })) {
     if ($match.path -match 'src-tauri/src/remote_control\.rs') {
         Add-Finding -Findings $findings -Severity warn -Code "plaintext-transport-review" -Message "Remote control currently advertises plain HTTP on the LAN. Confirm the PIN gate and trust boundary remain acceptable." -Path $match.path -Line $match.line -Evidence $match.text

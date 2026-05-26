@@ -10,6 +10,9 @@ default_provider = "ollama"
 ollama_model = "llama3.2:1b"
 gemini_model = "gemini-1.5-flash"
 ollama_base_url = "http://localhost:11434"
+hf_model = "meta-llama/Llama-3.2-1B-Instruct"
+hf_api_key = ""
+hf_base_url = "https://api-inference.huggingface.co"
 google_client_id = ""
 active_agent_id = "local-llama1b"
 
@@ -64,3 +67,10 @@ description = "Microsoft compact reasoning model. Strong for code. Offline."
 [stt]
 whisper_binary = ""
 whisper_model = ""
+
+[sync]
+enabled = false
+sync_memory = true
+sync_sessions = true
+api_base_url = ""
+device_id = "1f211626-536d-4333-0b1f-a8888cf14fd4"

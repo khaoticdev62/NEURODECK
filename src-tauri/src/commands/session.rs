@@ -26,6 +26,10 @@ pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String>
 
 #[tauri::command]
 pub fn export_session_markdown(id: String) -> Result<String, String> {
+    // Validate session ID to prevent path traversal
+    if id.contains("..") || id.contains('/') || id.contains('\\') {
+        return Err("Invalid session ID".into());
+    }
     let path = user_config_dir().join("sessions").join(format!("{}.json", id));
     if !path.exists() {
         return Err(format!("Session {} does not exist on disk", id));

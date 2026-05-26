@@ -99,6 +99,22 @@ pub fn delete_ssh_credential(profile_name: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to delete SSH credential: {}", e))
 }
 
+/// Retrieve the Hugging Face API key from the OS secure keychain
+pub fn get_hf_api_key() -> Result<String, String> {
+    let entry = Entry::new(SERVICE_NAME, "hf_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry.get_password()
+        .map_err(|e| format!("HF API Key not found or inaccessible: {}", e))
+}
+
+/// Save the Hugging Face API key to the OS secure keychain
+pub fn save_hf_api_key(key: &str) -> Result<(), String> {
+    let entry = Entry::new(SERVICE_NAME, "hf_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry.set_password(key)
+        .map_err(|e| format!("Failed to save HF API Key: {}", e))
+}
+
 /// Retrieve an SFTP profile credential from the OS secure keychain
 pub fn get_sftp_credential(profile_name: &str) -> Result<String, String> {
     let username = format!("sftp_{}", profile_name);

@@ -125,6 +125,7 @@ window.sanitizeHtml = function(html) {
         ]);
         
         const allowedAttrs = new Set(['class', 'href', 'src', 'alt', 'title', 'target']);
+        const allowedUrlSchemes = /^(https?:|mailto:|#|\/)/i;
         
         function cleanNode(node) {
             const children = Array.from(node.childNodes);
@@ -148,11 +149,15 @@ window.sanitizeHtml = function(html) {
                             if (!allowedAttrs.has(name) || name.startsWith('on')) {
                                 child.removeAttribute(attr.name);
                             } else if (name === 'href' || name === 'src') {
-                                const val = attr.value.trim().toLowerCase();
-                                if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) {
+                                const val = attr.value.trim();
+                                if (!allowedUrlSchemes.test(val)) {
                                     child.removeAttribute(attr.name);
                                 }
                             }
+                        }
+                        if (tagName === 'a') {
+                            child.setAttribute('rel', 'noopener noreferrer nofollow');
+                            child.setAttribute('target', '_blank');
                         }
                         cleanNode(child);
                     }
@@ -538,7 +543,7 @@ document.querySelector('#app').innerHTML = `
                                 <span>Live Preview</span>
                                 <button class="canvas-btn canvas-btn-sm" id="canvas-refresh-btn">↺</button>
                             </div>
-                            <iframe id="canvas-preview-frame" class="canvas-preview-frame" sandbox="allow-scripts allow-same-origin allow-modals" title="Live Preview"></iframe>
+                            <iframe id="canvas-preview-frame" class="canvas-preview-frame" sandbox="allow-scripts allow-modals" title="Live Preview"></iframe>
                             <pre id="canvas-preview-output" class="canvas-preview-output" style="display: none; flex: 1; margin: 0; padding: 15px; background: #050505; color: #00FF88; font-family: var(--font-mono); font-size: 0.9rem; overflow: auto; white-space: pre-wrap; word-break: break-all; border: none; height: calc(100% - 30px); box-sizing: border-box;"></pre>
                         </div>
                     </div>
@@ -1016,7 +1021,7 @@ document.querySelector('#app').innerHTML = `
                             </div>
                             
                             <!-- Active IFrame -->
-                            <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"></iframe>
+                            <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"></iframe>
 
                             <!-- Blocked / Error Screen -->
                             <div class="browser-blocked-screen hidden" id="browser-blocked-screen">
@@ -1622,6 +1627,7 @@ document.querySelector('#app').innerHTML = `
                                 <select id="llm-provider-select" style="flex:1;">
                                     <option value="gemini">Google Gemini</option>
                                     <option value="ollama">Ollama (Local / Remote)</option>
+                                    <option value="huggingface">Hugging Face</option>
                                 </select>
                             </div>
                         </div>
@@ -1647,6 +1653,22 @@ document.querySelector('#app').innerHTML = `
                             <div class="setting-field-group" style="margin-bottom:0;">
                                 <label>Model Name</label>
                                 <input type="text" id="settings-ollama-model" placeholder="llama3.2:1b">
+                            </div>
+                        </div>
+
+                        <div class="stv-group-label" style="display:none;" id="stv-hf-label">Hugging Face</div>
+                        <div class="stv-card" id="settings-hf-group" style="display:none;">
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>API Key</label>
+                                <input type="password" id="settings-hf-key" placeholder="hf_...">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>Model ID</label>
+                                <input type="text" id="settings-hf-model" placeholder="meta-llama/Llama-3.2-1B-Instruct">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:0;">
+                                <label>Base URL (optional)</label>
+                                <input type="text" id="settings-hf-url" placeholder="https://api-inference.huggingface.co">
                             </div>
                         </div>
 

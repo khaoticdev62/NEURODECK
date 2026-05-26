@@ -31,7 +31,7 @@ use std::time::Duration;
 use tauri::Manager;
 use chrono::Utc;
 
-use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider};
+use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider, HuggingFaceProvider};
 use crate::memory::MemoryDB;
 
 #[derive(Clone, serde::Serialize)]
@@ -566,28 +566,37 @@ pub(crate) fn user_config_dir() -> PathBuf {
 pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
     // User-configured default_provider takes precedence over env vars.
     // The GEMINI_API_KEY env var is only a key source, not a provider selector.
-    if config.llm.default_provider == "gemini" {
-        Arc::new(GeminiProvider::new(config.llm.gemini_model.clone()))
-    } else {
-        Arc::new(OllamaProvider::new(
+    match config.llm.default_provider.as_str() {
+        "gemini" => Arc::new(GeminiProvider::new(config.llm.gemini_model.clone())),
+        "huggingface" => Arc::new(HuggingFaceProvider::new(
+            config.llm.hf_model.clone(),
+            Some(config.llm.hf_api_key.clone()),
+            config.llm.hf_base_url.clone(),
+        )),
+        _ => Arc::new(OllamaProvider::new(
             config.llm.ollama_model.clone(),
             config.llm.ollama_base_url.clone(),
-        ))
+        )),
     }
 }
 
 /// Build a provider Arc directly from an AgentConfig.
 pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmProvider> {
-    if agent.provider == "gemini" {
-        Arc::new(GeminiProvider::new(agent.model.clone()))
-    } else {
-        Arc::new(OllamaProvider::new(agent.model.clone(), agent.base_url.clone()))
+    match agent.provider.as_str() {
+        "gemini" => Arc::new(GeminiProvider::new(agent.model.clone())),
+        "huggingface" => Arc::new(HuggingFaceProvider::new(
+            agent.model.clone(),
+            None,
+            agent.base_url.clone(),
+        )),
+        _ => Arc::new(OllamaProvider::new(agent.model.clone(), agent.base_url.clone())),
     }
 }
 
 /// Seed default agent profiles when none exist in config.
 pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
     let ollama_url = "http://localhost:11434".to_string();
+    let hf_url = "https://api-inference.huggingface.co".to_string();
     vec![
         config::AgentConfig {
             id: "gemini-flash-lite".into(),
@@ -612,6 +621,22 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
             model: "gemini-1.5-pro".into(),
             base_url: String::new(),
             description: "Highest intelligence — complex research, long context (1M tokens).".into(),
+        },
+        config::AgentConfig {
+            id: "hf-llama-1b".into(),
+            name: "HF Llama 1B".into(),
+            provider: "huggingface".into(),
+            model: "meta-llama/Llama-3.2-1B-Instruct".into(),
+            base_url: hf_url.clone(),
+            description: "Lightweight open model via Hugging Face Inference API. Fast and free-tier friendly.".into(),
+        },
+        config::AgentConfig {
+            id: "hf-zephyr-7b".into(),
+            name: "HF Zephyr 7B".into(),
+            provider: "huggingface".into(),
+            model: "HuggingFaceH4/zephyr-7b-beta".into(),
+            base_url: hf_url.clone(),
+            description: "High-quality chat model via Hugging Face. Strong reasoning and instruction following.".into(),
         },
         config::AgentConfig {
             id: "local-gemma2b".into(),
@@ -976,6 +1001,8 @@ pub fn run() {
             get_config,
             save_gemini_api_key,
             get_gemini_api_key,
+            save_hf_api_key,
+            get_hf_api_key,
             save_ssh_credential,
             get_ssh_credential,
             delete_ssh_credential,

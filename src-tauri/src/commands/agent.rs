@@ -51,6 +51,9 @@ pub fn switch_agent(
     app.config.llm.default_provider = agent.provider.clone();
     if agent.provider == "gemini" {
         app.config.llm.gemini_model = agent.model.clone();
+    } else if agent.provider == "huggingface" {
+        app.config.llm.hf_model = agent.model.clone();
+        app.config.llm.hf_base_url = agent.base_url.clone();
     } else {
         app.config.llm.ollama_model = agent.model.clone();
         app.config.llm.ollama_base_url = agent.base_url.clone();
@@ -75,8 +78,8 @@ pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Resul
     if agent.name.trim().is_empty() {
         return Err("Agent name cannot be empty".into());
     }
-    if agent.provider != "gemini" && agent.provider != "ollama" {
-        return Err("Provider must be 'gemini' or 'ollama'".into());
+    if agent.provider != "gemini" && agent.provider != "ollama" && agent.provider != "huggingface" {
+        return Err("Provider must be 'gemini', 'ollama', or 'huggingface'".into());
     }
 
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -115,6 +118,7 @@ pub fn delete_agent(id: String, state: State<'_, Mutex<AppState>>) -> Result<(),
 pub fn get_recommended_models() -> Vec<RecommendedModel> {
     let ollama = "ollama".to_string();
     let gemini = "gemini".to_string();
+    let huggingface = "huggingface".to_string();
     vec![
         // ── Cloud (Gemini) ────────────────────────────────────────────────────
         RecommendedModel {
@@ -144,6 +148,28 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
             steam_deck_ok: true,
             description: "Highest intelligence cloud option. Best for complex research.".into(),
             tags: vec!["cloud".into(), "smart".into(), "premium".into()],
+        },
+        // ── Cloud (Hugging Face) ──────────────────────────────────────────────
+        RecommendedModel {
+            provider: huggingface.clone(), model: "meta-llama/Llama-3.2-1B-Instruct".into(),
+            name: "HF Llama 1B".into(), tier: "fast".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Lightweight open model via Hugging Face. Free-tier friendly, fast responses.".into(),
+            tags: vec!["cloud".into(), "open-source".into(), "fast".into()],
+        },
+        RecommendedModel {
+            provider: huggingface.clone(), model: "HuggingFaceH4/zephyr-7b-beta".into(),
+            name: "HF Zephyr 7B".into(), tier: "balanced".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "High-quality chat model. Strong reasoning and instruction following.".into(),
+            tags: vec!["cloud".into(), "open-source".into(), "balanced".into(), "recommended".into()],
+        },
+        RecommendedModel {
+            provider: huggingface.clone(), model: "mistralai/Mistral-7B-Instruct-v0.3".into(),
+            name: "HF Mistral 7B".into(), tier: "smart".into(), vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Popular open-weight model with excellent code and reasoning performance.".into(),
+            tags: vec!["cloud".into(), "open-source".into(), "smart".into(), "code".into()],
         },
         // ── Local / Ollama (Steam Deck optimized) ────────────────────────────
         RecommendedModel {

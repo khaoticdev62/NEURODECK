@@ -10,8 +10,8 @@
 - Version: `1.2.1`
 - Codename: `Ra`
 - Tag: `v1.2.1-ra`
-- Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-26T00:48:32Z`
+- Workspace state: `generated-only`
+- Last stamped build: `2026-05-26T02:15:24Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

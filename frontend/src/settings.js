@@ -192,11 +192,22 @@ function toggleSettingsLlmGroups(provider) {
     const ollamaGroup = document.getElementById("settings-ollama-group");
     const ollamaLabel = document.getElementById("stv-ollama-label");
     const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
+    const hfGroup = document.getElementById("settings-hf-group");
+    const hfLabel = document.getElementById("stv-hf-label");
     if (provider === "gemini") {
         if (geminiGroup) geminiGroup.style.display = "block";
         if (ollamaGroup) ollamaGroup.style.display = "none";
         if (ollamaLabel) ollamaLabel.style.display = "none";
         if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+        if (hfGroup) hfGroup.style.display = "none";
+        if (hfLabel) hfLabel.style.display = "none";
+    } else if (provider === "huggingface") {
+        if (geminiGroup) geminiGroup.style.display = "none";
+        if (ollamaGroup) ollamaGroup.style.display = "none";
+        if (ollamaLabel) ollamaLabel.style.display = "none";
+        if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+        if (hfGroup) hfGroup.style.display = "block";
+        if (hfLabel) hfLabel.style.display = "block";
     } else {
         if (geminiGroup) geminiGroup.style.display = "none";
         if (ollamaGroup) ollamaGroup.style.display = "block";
@@ -205,6 +216,8 @@ function toggleSettingsLlmGroups(provider) {
             ollamaModelsSec.style.display = "block";
             refreshOllamaModels();
         }
+        if (hfGroup) hfGroup.style.display = "none";
+        if (hfLabel) hfLabel.style.display = "none";
     }
 }
 
@@ -218,6 +231,9 @@ function handleTestConnectionClick() {
     const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
     const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
     const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
+    const hfKey = document.getElementById("settings-hf-key")?.value.trim();
+    const hfModel = document.getElementById("settings-hf-model")?.value.trim();
+    const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
 
     const statusEl = document.getElementById("settings-llm-status");
     const testBtn = document.getElementById("settings-test-connection-btn");
@@ -228,10 +244,16 @@ function handleTestConnectionClick() {
     }
     if (testBtn) testBtn.disabled = true;
 
-    const model = provider === "gemini" ? geminiModel : ollamaModel;
-    const url = provider === "gemini" ? "" : ollamaUrl;
+    let model, url, key;
+    if (provider === "gemini") {
+        model = geminiModel; url = ""; key = geminiKey;
+    } else if (provider === "huggingface") {
+        model = hfModel; url = hfUrl; key = hfKey;
+    } else {
+        model = ollamaModel; url = ollamaUrl; key = "";
+    }
 
-    invoke("test_llm_connection", { provider, model, url, key: geminiKey })
+    invoke("test_llm_connection", { provider, model, url, key })
         .then(res => {
             if (statusEl) {
                 statusEl.style.color = "var(--response-color)";
@@ -255,6 +277,9 @@ function handleSaveLlmClick() {
     const geminiModel = document.getElementById("settings-gemini-model")?.value.trim();
     const ollamaUrl = document.getElementById("settings-ollama-url")?.value.trim();
     const ollamaModel = document.getElementById("settings-ollama-model")?.value.trim();
+    const hfKey = document.getElementById("settings-hf-key")?.value.trim();
+    const hfModel = document.getElementById("settings-hf-model")?.value.trim();
+    const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
 
     const statusEl = document.getElementById("settings-llm-status");
     if (statusEl) {
@@ -262,21 +287,29 @@ function handleSaveLlmClick() {
         statusEl.innerText = "Applying changes...";
     }
 
-    const saveKeyPromise = geminiKey 
-        ? invoke("save_gemini_api_key", { key: geminiKey })
-        : Promise.resolve();
+    let saveKeyPromise = Promise.resolve();
+    if (provider === "gemini" && geminiKey) {
+        saveKeyPromise = invoke("save_gemini_api_key", { key: geminiKey });
+    } else if (provider === "huggingface" && hfKey) {
+        saveKeyPromise = invoke("save_hf_api_key", { key: hfKey });
+    }
 
     saveKeyPromise
         .then(() => invoke("set_config", { key: "llm.default_provider", value: provider }))
         .then(() => invoke("set_config", { key: "llm.gemini_model", value: geminiModel }))
         .then(() => invoke("set_config", { key: "llm.ollama_base_url", value: ollamaUrl }))
         .then(() => invoke("set_config", { key: "llm.ollama_model", value: ollamaModel }))
+        .then(() => invoke("set_config", { key: "llm.hf_model", value: hfModel }))
+        .then(() => invoke("set_config", { key: "llm.hf_base_url", value: hfUrl || "https://api-inference.huggingface.co" }))
         .then(() => {
             if (statusEl) {
                 statusEl.style.color = "var(--response-color)";
                 statusEl.innerText = "Config updated and applied!";
             }
-            const activeModelName = provider === "gemini" ? geminiModel : ollamaModel;
+            let activeModelName;
+            if (provider === "gemini") activeModelName = geminiModel;
+            else if (provider === "huggingface") activeModelName = hfModel;
+            else activeModelName = ollamaModel;
             document.getElementById("model-name").innerText = `[ MODEL: ${activeModelName.toUpperCase()} ]`;
             
             if (typeof updateContextDrawer === "function") {
@@ -341,22 +374,29 @@ function openSettingsModal() {
     const statusEl = document.getElementById("settings-llm-status");
     if (statusEl) statusEl.innerText = "";
 
-    // Load active LLM config and API key
+    // Load active LLM config and API keys
     Promise.all([
         invoke("get_config"),
-        invoke("get_gemini_api_key")
-    ]).then(([config, apiKey]) => {
+        invoke("get_gemini_api_key"),
+        invoke("get_hf_api_key")
+    ]).then(([config, apiKey, hfApiKey]) => {
         const providerSelect = document.getElementById("llm-provider-select");
         const geminiKeyInput = document.getElementById("settings-gemini-key");
         const geminiModelInput = document.getElementById("settings-gemini-model");
         const ollamaUrlInput = document.getElementById("settings-ollama-url");
         const ollamaModelInput = document.getElementById("settings-ollama-model");
+        const hfKeyInput = document.getElementById("settings-hf-key");
+        const hfModelInput = document.getElementById("settings-hf-model");
+        const hfUrlInput = document.getElementById("settings-hf-url");
 
         if (providerSelect) providerSelect.value = config.llm.default_provider;
         if (geminiKeyInput) geminiKeyInput.value = apiKey;
         if (geminiModelInput) geminiModelInput.value = config.llm.gemini_model;
         if (ollamaUrlInput) ollamaUrlInput.value = config.llm.ollama_base_url;
         if (ollamaModelInput) ollamaModelInput.value = config.llm.ollama_model;
+        if (hfKeyInput) hfKeyInput.value = hfApiKey;
+        if (hfModelInput) hfModelInput.value = config.llm.hf_model;
+        if (hfUrlInput) hfUrlInput.value = config.llm.hf_base_url;
 
         toggleSettingsLlmGroups(config.llm.default_provider);
     }).catch(err => {

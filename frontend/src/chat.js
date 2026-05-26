@@ -190,7 +190,9 @@ function buildHistoryMessage(msgStr) {
     }
     if (text.startsWith("AI: ")) {
         const { wrapper, card } = createMessageShell("ai");
-        renderSanitizedHtml(card, marked.parse(text.substring(4)));
+        const parsed = marked.parse(text.substring(4));
+        const html = (parsed && typeof parsed.then === 'function') ? '' : parsed;
+        renderSanitizedHtml(card, html);
         formatCodeBlocks(wrapper);
         return wrapper;
     }
@@ -790,8 +792,12 @@ listen("stream_chunk", function (event) {
 
         const msgCard = state.currentAIMessage.querySelector(".message-card");
         if (msgCard) {
-            msgCard.innerHTML = window.sanitizeHtml(marked.parse(state.currentAIText));
-            formatCodeBlocks(msgCard);
+            const parsed = marked.parse(state.currentAIText);
+            const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
+            if (html !== '') {
+                msgCard.innerHTML = html;
+                formatCodeBlocks(msgCard);
+            }
         }
         
         let viewport = document.getElementById("chat-workspace");
@@ -821,6 +827,9 @@ listen("stream_error", function (event) {
     chatViewport.appendChild(msg);
     viewport.scrollTop = viewport.scrollHeight;
     document.getElementById("tool-status").innerText = "Idle";
+    // Reset AI message state so stale cards don't accumulate
+    state.currentAIMessage = null;
+    state.currentAIText = "";
 });
 
 listen("stream_done", function () {
@@ -829,8 +838,12 @@ listen("stream_done", function () {
     if (state.currentAIMessage) {
         const msgCard = state.currentAIMessage.querySelector(".message-card");
         if (msgCard) {
-            msgCard.innerHTML = window.sanitizeHtml(marked.parse(state.currentAIText));
-            formatCodeBlocks(msgCard);
+            const parsed = marked.parse(state.currentAIText);
+            const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
+            if (html !== '') {
+                msgCard.innerHTML = html;
+                formatCodeBlocks(msgCard);
+            }
             // Capture text before state is cleared
             const capturedText = state.currentAIText;
             const finalTokens = state.totalTokens;

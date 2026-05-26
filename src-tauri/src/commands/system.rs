@@ -313,6 +313,30 @@ pub fn set_whisper_config(
     binary: String,
     model: String,
 ) -> Result<(), String> {
+    // SECURITY: Validate binary path to prevent arbitrary command execution.
+    // Only allow known whisper binary names or absolute paths that exist and are files.
+    if !binary.is_empty() {
+        let file_name = std::path::Path::new(&binary)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        let allowed_names = ["whisper", "whisper-cli", "whisper.cpp", "main"];
+        if !allowed_names.contains(&file_name) {
+            // Allow absolute paths that point to an existing file
+            let path = std::path::Path::new(&binary);
+            if !path.is_absolute() || !path.is_file() {
+                return Err("Invalid whisper binary: must be 'whisper', 'whisper-cli', 'whisper.cpp', 'main', or an absolute path to an existing file.".into());
+            }
+        }
+    }
+    // SECURITY: Validate model path to prevent command injection via model arg.
+    if !model.is_empty() {
+        let model_path = std::path::Path::new(&model);
+        let model_name = model_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if model_name.is_empty() || model.contains(';') || model.contains('&') || model.contains('|') || model.contains('$') || model.contains('`') {
+            return Err("Invalid whisper model path: contains dangerous characters.".into());
+        }
+    }
     let mut app = state.lock().map_err(|_| "State lock error".to_string())?;
     app.whisper_binary = binary.clone();
     app.whisper_model = model.clone();
@@ -1556,9 +1580,8 @@ pub fn get_mcp_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, Stri
             "url".to_string(),
             format!("http://127.0.0.1:{}", app.mcp_port),
         );
-        if let Some(ref tok) = app.mcp_token {
-            result.insert("token".to_string(), tok.clone());
-        }
+        // SECURITY: Do not expose the bearer token to the frontend.
+        // The token is stored server-side only and validated on incoming requests.
     } else {
         result.insert("running".to_string(), "false".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());

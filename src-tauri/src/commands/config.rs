@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::State;
 use futures_util::StreamExt;
-use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider};
+use crate::llm::{LlmProvider, GeminiProvider, OllamaProvider, HuggingFaceProvider};
 
 #[tauri::command]
 pub fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
@@ -15,6 +15,9 @@ pub fn set_config(key: String, value: String, state: State<'_, Mutex<AppState>>)
         "llm.ollama_model" => config.llm.ollama_model = value,
         "llm.gemini_model" => config.llm.gemini_model = value,
         "llm.ollama_base_url" => config.llm.ollama_base_url = value,
+        "llm.hf_model" => config.llm.hf_model = value,
+        "llm.hf_api_key" => config.llm.hf_api_key = value,
+        "llm.hf_base_url" => config.llm.hf_base_url = value,
         "llm.google_client_id" => config.llm.google_client_id = value,
         "sync.api_base_url" => config.sync.api_base_url = value,
         _ => return Err(format!("Unknown config key: {}", key)),
@@ -58,38 +61,74 @@ pub fn get_gemini_api_key() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn save_hf_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    neurodeck_infrastructure::secrets::save_hf_api_key(&key)?;
+    std::env::set_var("HF_API_KEY", &key);
+    app.config.llm.hf_api_key = key;
+    app.provider = create_provider(&app.config);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_hf_api_key() -> Result<String, String> {
+    match neurodeck_infrastructure::secrets::get_hf_api_key() {
+        Ok(key) => Ok(key),
+        Err(_) => Ok(std::env::var("HF_API_KEY").unwrap_or_default())
+    }
+}
+
+#[tauri::command]
 pub async fn test_llm_connection(
     provider: String,
     model: String,
     url: String,
     key: Option<String>,
 ) -> Result<String, String> {
-    if provider == "gemini" {
-        let api_key = match key {
-            Some(ref k) if !k.is_empty() => k.clone(),
-            _ => std::env::var("GEMINI_API_KEY").map_err(|_| "Gemini API key is required but not set".to_string())?,
-        };
+    match provider.as_str() {
+        "gemini" => {
+            let api_key = match key {
+                Some(ref k) if !k.is_empty() => k.clone(),
+                _ => std::env::var("GEMINI_API_KEY").map_err(|_| "Gemini API key is required but not set".to_string())?,
+            };
 
-        // Use the key directly rather than mutating the global env var, which
-        // would race with concurrent send_command / embedding calls on other threads.
-        let test_provider = GeminiProvider::new_with_key(model, api_key);
-        let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
-        let first_chunk = stream.next().await;
+            // Use the key directly rather than mutating the global env var, which
+            // would race with concurrent send_command / embedding calls on other threads.
+            let test_provider = GeminiProvider::new_with_key(model, api_key);
+            let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+            let first_chunk = stream.next().await;
 
-        match first_chunk {
-            Some(Ok(_)) => Ok("Gemini Connection Successful!".to_string()),
-            Some(Err(e)) => Err(format!("Gemini Connection Failed: {}", e)),
-            None => Err("Gemini Connection Failed: Empty response".to_string()),
+            match first_chunk {
+                Some(Ok(_)) => Ok("Gemini Connection Successful!".to_string()),
+                Some(Err(e)) => Err(format!("Gemini Connection Failed: {}", e)),
+                None => Err("Gemini Connection Failed: Empty response".to_string()),
+            }
         }
-    } else {
-        let test_provider = OllamaProvider::new(model, url);
-        let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
-        let first_chunk = stream.next().await;
+        "huggingface" => {
+            let api_key = match key {
+                Some(ref k) if !k.is_empty() => Some(k.clone()),
+                _ => std::env::var("HF_API_KEY").ok().filter(|k| !k.is_empty()),
+            };
+            let test_provider = HuggingFaceProvider::new(model, api_key, url);
+            let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+            let first_chunk = stream.next().await;
 
-        match first_chunk {
-            Some(Ok(_)) => Ok("Ollama Connection Successful!".to_string()),
-            Some(Err(e)) => Err(format!("Ollama Connection Failed: {}", e)),
-            None => Err("Ollama Connection Failed: Empty response".to_string()),
+            match first_chunk {
+                Some(Ok(_)) => Ok("Hugging Face Connection Successful!".to_string()),
+                Some(Err(e)) => Err(format!("Hugging Face Connection Failed: {}", e)),
+                None => Err("Hugging Face Connection Failed: Empty response".to_string()),
+            }
+        }
+        _ => {
+            let test_provider = OllamaProvider::new(model, url);
+            let mut stream = test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+            let first_chunk = stream.next().await;
+
+            match first_chunk {
+                Some(Ok(_)) => Ok("Ollama Connection Successful!".to_string()),
+                Some(Err(e)) => Err(format!("Ollama Connection Failed: {}", e)),
+                None => Err("Ollama Connection Failed: Empty response".to_string()),
+            }
         }
     }
 }

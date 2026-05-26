@@ -7,7 +7,7 @@ use std::path::Path;
 pub struct AgentConfig {
     pub id: String,
     pub name: String,
-    pub provider: String,  // "gemini" | "ollama"
+    pub provider: String,  // "gemini" | "ollama" | "huggingface"
     pub model: String,
     #[serde(default = "default_ollama_base_url")]
     pub base_url: String,
@@ -57,6 +57,12 @@ pub struct LlmConfig {
     pub gemini_model: String,
     #[serde(default = "default_ollama_base_url")]
     pub ollama_base_url: String,
+    #[serde(default = "default_hf_model")]
+    pub hf_model: String,
+    #[serde(default)]
+    pub hf_api_key: String,
+    #[serde(default = "default_hf_base_url")]
+    pub hf_base_url: String,
     /// Google OAuth2 client ID for device flow (Gemini API key auth).
     /// Register at console.cloud.google.com → APIs & Services → Credentials.
     #[serde(default)]
@@ -73,6 +79,8 @@ fn default_provider() -> String { "ollama".to_string() }
 fn default_ollama_model() -> String { "llama2".to_string() }
 fn default_gemini_model() -> String { "gemini-1.5-flash".to_string() }
 fn default_ollama_base_url() -> String { "http://localhost:11434".to_string() }
+fn default_hf_model() -> String { "meta-llama/Llama-3.2-1B-Instruct".to_string() }
+fn default_hf_base_url() -> String { "https://api-inference.huggingface.co".to_string() }
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -81,6 +89,9 @@ impl Default for LlmConfig {
             ollama_model: default_ollama_model(),
             gemini_model: default_gemini_model(),
             ollama_base_url: default_ollama_base_url(),
+            hf_model: default_hf_model(),
+            hf_api_key: String::new(),
+            hf_base_url: default_hf_base_url(),
             google_client_id: String::new(),
             active_agent_id: String::new(),
             agents: Vec::new(),

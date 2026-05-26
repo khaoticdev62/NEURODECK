@@ -713,6 +713,236 @@ impl LlmProvider for OllamaProvider {
     }
 }
 
+pub struct HuggingFaceProvider {
+    pub model: String,
+    api_key: Option<String>,
+    base_url: String,
+}
+
+#[derive(Serialize)]
+struct HfRequest {
+    inputs: String,
+    parameters: HfParameters,
+}
+
+#[derive(Serialize)]
+struct HfParameters {
+    #[serde(rename = "max_new_tokens")]
+    max_new_tokens: u32,
+    #[serde(rename = "return_full_text")]
+    return_full_text: bool,
+    temperature: f32,
+}
+
+#[derive(Deserialize)]
+struct HfResponse {
+    generated_text: String,
+}
+
+impl HuggingFaceProvider {
+    pub fn new(model: String, api_key: Option<String>, base_url: String) -> Self {
+        let m = if model.is_empty() {
+            "meta-llama/Llama-3.2-1B-Instruct".to_string()
+        } else {
+            model
+        };
+        let url = if base_url.is_empty() {
+            "https://api-inference.huggingface.co".to_string()
+        } else {
+            base_url.trim_end_matches('/').to_string()
+        };
+        Self { model: m, api_key, base_url: url }
+    }
+
+    fn get_api_key(&self) -> Result<String, String> {
+        if let Some(ref k) = self.api_key {
+            if !k.is_empty() {
+                return Ok(k.clone());
+            }
+        }
+        if let Ok(key) = std::env::var("HF_API_KEY") {
+            if !key.is_empty() {
+                return Ok(key);
+            }
+        }
+        neurodeck_infrastructure::secrets::get_hf_api_key()
+            .map_err(|e| format!("HF_API_KEY not set and keychain retrieval failed: {}", e))
+    }
+
+    fn build_prompt(&self, prompt: &str, system_prompt: &str) -> String {
+        if system_prompt.is_empty() {
+            prompt.to_string()
+        } else {
+            format!("<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n", system_prompt, prompt)
+        }
+    }
+}
+
+impl LlmProvider for HuggingFaceProvider {
+    fn stream_response(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String, String>> + Send>> {
+        let url = format!("{}/models/{}", self.base_url, self.model);
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(futures_util::stream::once(async move { Err(e) })),
+        };
+        let request_body = HfRequest {
+            inputs: self.build_prompt(prompt, system_prompt),
+            parameters: HfParameters {
+                max_new_tokens: 2048,
+                return_full_text: false,
+                temperature: 0.7,
+            },
+        };
+
+        let stream = async_stream::try_stream! {
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("HF request failed: {}", e))?;
+
+            let status = res.status();
+            let body = res.text().await.map_err(|e| format!("HF read failed: {}", e))?;
+
+            if !status.is_success() {
+                Err(format!("HF error ({}): {}", status, &body[..body.len().min(500)]))?;
+            }
+            // HF inference API returns an array of objects or a single object
+            let text = if body.trim().starts_with('[') {
+                let parsed: Vec<HfResponse> = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {} — body: {}", e, &body[..body.len().min(200)]))?;
+                parsed.into_iter().next().map(|r| r.generated_text).unwrap_or_default()
+            } else {
+                let parsed: HfResponse = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {} — body: {}", e, &body[..body.len().min(200)]))?;
+                parsed.generated_text
+            };
+            yield text;
+        };
+
+        Box::pin(stream)
+    }
+
+    fn transcribe_audio(
+        &self,
+        _audio_data: &[u8],
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        Box::pin(async move {
+            Err("Audio transcription not supported by Hugging Face provider".to_string())
+        })
+    }
+
+    fn generate_embedding(
+        &self,
+        _text: &str,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
+        Box::pin(async move {
+            Err("Embeddings not supported by Hugging Face provider yet".to_string())
+        })
+    }
+
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+        _image_base64: Option<&str>,
+        _image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let prompt_str = prompt.to_string();
+        let sys_str = system_prompt.to_string();
+        let url = format!("{}/models/{}", self.base_url, self.model);
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        Box::pin(async move {
+            let request_body = HfRequest {
+                inputs: if sys_str.is_empty() { prompt_str } else { format!("<|system|>\n{}\n<|user|>\n{}\n<|assistant|>\n", sys_str, prompt_str) },
+                parameters: HfParameters {
+                    max_new_tokens: 2048,
+                    return_full_text: false,
+                    temperature: 0.7,
+                },
+            };
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("HF request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("HF error ({}): {}", status, err_text));
+            }
+            let body = res.text().await.map_err(|e| format!("HF read failed: {}", e))?;
+            let text = if body.trim().starts_with('[') {
+                let parsed: Vec<HfResponse> = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed.into_iter().next().map(|r| r.generated_text).unwrap_or_default()
+            } else {
+                let parsed: HfResponse = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed.generated_text
+            };
+            Ok(text)
+        })
+    }
+
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let prompt_str = prompt.to_string();
+        let url = format!("{}/models/{}", self.base_url, self.model);
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        Box::pin(async move {
+            let request_body = HfRequest {
+                inputs: prompt_str,
+                parameters: HfParameters {
+                    max_new_tokens: max_tokens,
+                    return_full_text: false,
+                    temperature: 0.3,
+                },
+            };
+            let client = reqwest::Client::new();
+            let res = client.post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("HF request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("HF oneshot error ({}): {}", status, err_text));
+            }
+            let body = res.text().await.map_err(|e| format!("HF read failed: {}", e))?;
+            let text = if body.trim().starts_with('[') {
+                let parsed: Vec<HfResponse> = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed.into_iter().next().map(|r| r.generated_text).unwrap_or_default()
+            } else {
+                let parsed: HfResponse = serde_json::from_str(&body)
+                    .map_err(|e| format!("HF parse failed: {}", e))?;
+                parsed.generated_text
+            };
+            Ok(text)
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -735,5 +965,16 @@ mod tests {
         let provider_default = OllamaProvider::new("".to_string(), "".to_string());
         assert_eq!(provider_default.model, "llama2");
         assert_eq!(provider_default.base_url, "http://localhost:11434");
+    }
+
+    #[test]
+    fn test_hf_provider_new() {
+        let provider = HuggingFaceProvider::new("custom-model".to_string(), Some("key".to_string()), "https://hf.co".to_string());
+        assert_eq!(provider.model, "custom-model");
+        assert_eq!(provider.base_url, "https://hf.co");
+
+        let provider_default = HuggingFaceProvider::new("".to_string(), None, "".to_string());
+        assert_eq!(provider_default.model, "meta-llama/Llama-3.2-1B-Instruct");
+        assert_eq!(provider_default.base_url, "https://api-inference.huggingface.co");
     }
 }
