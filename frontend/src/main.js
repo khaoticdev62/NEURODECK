@@ -4621,9 +4621,12 @@ function formatBytes(bytes) {
 function renderPeers(peers) {
     const listEl = document.getElementById("share-peers-list");
     if (!listEl) return;
-    listEl.innerHTML = "";
+    listEl.replaceChildren();
     if (!peers || peers.length === 0) {
-        listEl.innerHTML = `<div class="peer-item-empty">Scanning local network for active peers...</div>`;
+        const empty = document.createElement("div");
+        empty.className = "peer-item-empty";
+        empty.textContent = "Scanning local network for active peers...";
+        listEl.appendChild(empty);
         state.selectedPeerIp = null;
         updateSendButtonState();
         return;
@@ -4634,19 +4637,25 @@ function renderPeers(peers) {
         if (peer.ip === state.selectedPeerIp) {
             item.classList.add("selected");
         }
-        item.innerHTML = `
-            <div class="peer-info">
-                <span class="peer-name">${window.escapeHtml(peer.hostname)}</span>
-                <span class="peer-ip-os">${window.escapeHtml(peer.ip)} (${window.escapeHtml(peer.os)})</span>
-            </div>
-            <span class="peer-status">Online</span>
-        `;
-        item.onclick = function() {
+        const info = document.createElement("div");
+        info.className = "peer-info";
+        const name = document.createElement("span");
+        name.className = "peer-name";
+        name.textContent = String(peer.hostname ?? "");
+        const meta = document.createElement("span");
+        meta.className = "peer-ip-os";
+        meta.textContent = `${String(peer.ip ?? "")} (${String(peer.os ?? "")})`;
+        info.append(name, meta);
+        const status = document.createElement("span");
+        status.className = "peer-status";
+        status.textContent = "Online";
+        item.append(info, status);
+        item.addEventListener("click", function() {
             document.querySelectorAll(".peer-item").forEach(el => el.classList.remove("selected"));
             item.classList.add("selected");
             state.selectedPeerIp = peer.ip;
             updateSendButtonState();
-        };
+        });
         listEl.appendChild(item);
     });
 }
@@ -4677,9 +4686,12 @@ window.cancelTransfer = function(transferId) {
 function renderTransfers(transfers) {
     const listEl = document.getElementById("share-transfers-list");
     if (!listEl) return;
-    listEl.innerHTML = "";
+    listEl.replaceChildren();
     if (!transfers || transfers.length === 0) {
-        listEl.innerHTML = `<div class="transfer-item-empty">No active or past transfers in this session.</div>`;
+        const empty = document.createElement("div");
+        empty.className = "transfer-item-empty";
+        empty.textContent = "No active or past transfers in this session.";
+        listEl.appendChild(empty);
         return;
     }
 
@@ -4731,29 +4743,62 @@ function renderTransfers(transfers) {
         }
 
         const isCancelable = t.status === "Pending" || t.status === "Accepted" || t.status === "Transferring";
-        const cancelBtnHtml = isCancelable
-            ? `<button class="cancel-transfer-btn" onclick="cancelTransfer('${t.id}')" title="Cancel Transfer" aria-label="Cancel Transfer">${createIcon('x', { size: 12 })}</button>`
-            : '';
+        const header = document.createElement("div");
+        header.className = "transfer-header";
 
-        item.innerHTML = `
-            <div class="transfer-header">
-                <span class="transfer-filename" title="${window.escapeHtml(t.filename)}">${window.escapeHtml(t.filename)}</span>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="transfer-status ${t.status.toLowerCase()}">${t.status}</span>
-                    ${cancelBtnHtml}
-                </div>
-            </div>
-            <div class="transfer-progress-container">
-                <div class="transfer-progress-bar-bg">
-                    <div class="transfer-progress-bar-fill ${progressClass}" style="width: ${percent}%;"></div>
-                </div>
-                <span class="transfer-percent">${percent}%</span>
-            </div>
-            <div class="transfer-meta">
-                <span>${t.direction === "Incoming" ? "From" : "To"}: ${t.peer_name || t.peer_ip}</span>
-                <span class="transfer-stats-text">${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}</span>
-            </div>
-        `;
+        const filename = document.createElement("span");
+        filename.className = "transfer-filename";
+        filename.title = String(t.filename ?? "");
+        filename.textContent = String(t.filename ?? "");
+
+        const headerRight = document.createElement("div");
+        headerRight.style.display = "flex";
+        headerRight.style.alignItems = "center";
+        headerRight.style.gap = "8px";
+
+        const status = document.createElement("span");
+        status.className = `transfer-status ${String(t.status || "").toLowerCase()}`;
+        status.textContent = String(t.status ?? "");
+        headerRight.appendChild(status);
+
+        if (isCancelable) {
+            const cancelBtn = document.createElement("button");
+            cancelBtn.className = "cancel-transfer-btn";
+            cancelBtn.title = "Cancel Transfer";
+            cancelBtn.setAttribute("aria-label", "Cancel Transfer");
+            cancelBtn.innerHTML = createIcon('x', { size: 12 });
+            cancelBtn.addEventListener("click", (event) => {
+                event.stopPropagation();
+                window.cancelTransfer(t.id);
+            });
+            headerRight.appendChild(cancelBtn);
+        }
+
+        header.append(filename, headerRight);
+
+        const progressContainer = document.createElement("div");
+        progressContainer.className = "transfer-progress-container";
+        const progressBg = document.createElement("div");
+        progressBg.className = "transfer-progress-bar-bg";
+        const progressFill = document.createElement("div");
+        progressFill.className = `transfer-progress-bar-fill ${progressClass}`;
+        progressFill.style.width = `${percent}%`;
+        progressBg.appendChild(progressFill);
+        const percentEl = document.createElement("span");
+        percentEl.className = "transfer-percent";
+        percentEl.textContent = `${percent}%`;
+        progressContainer.append(progressBg, percentEl);
+
+        const meta = document.createElement("div");
+        meta.className = "transfer-meta";
+        const peer = document.createElement("span");
+        peer.textContent = `${t.direction === "Incoming" ? "From" : "To"}: ${String(t.peer_name || t.peer_ip || "")}`;
+        const stats = document.createElement("span");
+        stats.className = "transfer-stats-text";
+        stats.textContent = `${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}`;
+        meta.append(peer, stats);
+
+        item.append(header, progressContainer, meta);
         listEl.appendChild(item);
     });
 }
@@ -6073,21 +6118,52 @@ function renderAgentSwitcher() {
         grid.innerHTML = `<div class="agent-empty">No agents configured. Use the Custom tab to add one.</div>`;
         return;
     }
-    grid.innerHTML = agents.map(agent => {
+    grid.replaceChildren();
+    agents.forEach((agent) => {
         const active = agent.id === state.activeAgentId;
         const provLabel = PROVIDER_BADGE[agent.provider] || agent.provider;
-        return `
-        <div class="agent-card ${active ? "active" : ""}" onclick="activateAgent('${window.escapeHtml(agent.id)}')">
-            <div class="agent-card-top">
-                <span class="agent-card-name">${window.escapeHtml(agent.name)}</span>
-                <span class="agent-provider-badge agent-provider-${window.escapeHtml(agent.provider)}">${window.escapeHtml(provLabel)}</span>
-            </div>
-            <div class="agent-card-model">${window.escapeHtml(agent.model)}</div>
-            <div class="agent-card-desc">${window.escapeHtml(agent.description)}</div>
-            ${active ? '<div class="agent-card-active-chip">ACTIVE</div>' : ''}
-            ${!active ? `<button class="agent-card-delete" title="Delete agent" onclick="event.stopPropagation(); deleteAgentById('${window.escapeHtml(agent.id)}')">${createIcon('x', { size: 12 })}</button>` : ''}
-        </div>`;
-    }).join("");
+        const card = document.createElement("div");
+        card.className = `agent-card${active ? " active" : ""}`;
+        card.addEventListener("click", () => activateAgent(agent.id));
+
+        const top = document.createElement("div");
+        top.className = "agent-card-top";
+        const name = document.createElement("span");
+        name.className = "agent-card-name";
+        name.textContent = String(agent.name ?? "");
+        const badge = document.createElement("span");
+        badge.className = `agent-provider-badge agent-provider-${String(agent.provider ?? "")}`;
+        badge.textContent = String(provLabel);
+        top.append(name, badge);
+
+        const model = document.createElement("div");
+        model.className = "agent-card-model";
+        model.textContent = String(agent.model ?? "");
+        const desc = document.createElement("div");
+        desc.className = "agent-card-desc";
+        desc.textContent = String(agent.description ?? "");
+
+        card.append(top, model, desc);
+
+        if (active) {
+            const chip = document.createElement("div");
+            chip.className = "agent-card-active-chip";
+            chip.textContent = "ACTIVE";
+            card.appendChild(chip);
+        } else {
+            const del = document.createElement("button");
+            del.className = "agent-card-delete";
+            del.title = "Delete agent";
+            del.innerHTML = createIcon('x', { size: 12 });
+            del.addEventListener("click", (event) => {
+                event.stopPropagation();
+                deleteAgentById(agent.id);
+            });
+            card.appendChild(del);
+        }
+
+        grid.appendChild(card);
+    });
 }
 
 function renderRecommendedModels() {
@@ -6095,28 +6171,59 @@ function renderRecommendedModels() {
     if (!grid) return;
     grid.innerHTML = `<div class="agent-rec-loading">Loading recommendations…</div>`;
     invoke("get_recommended_models").then(models => {
-        grid.innerHTML = models.map(m => {
+        grid.replaceChildren();
+        models.forEach((m) => {
             const tierLabel = TIER_LABEL[m.tier] || m.tier;
             const vramStr = m.vram_mb > 0 ? `${m.vram_mb} MB RAM` : "Cloud";
-            const deckBadge = m.steam_deck_ok ? '<span class="agent-deck-badge">✅ Deck OK</span>' : '<span class="agent-deck-badge warn">⚠️ Heavy</span>';
-            const tags = (m.tags || []).filter(t => ["recommended", "long-context", "multilingual", "code"].includes(t))
-                .map(t => `<span class="agent-tag">${window.escapeHtml(t)}</span>`).join("");
-            return `
-            <div class="agent-rec-card" onclick="instantiateRecommended('${window.escapeHtml(m.provider)}', '${window.escapeHtml(m.model)}', '${window.escapeHtml(m.name)}')">
-                <div class="agent-rec-top">
-                    <span class="agent-rec-name">${window.escapeHtml(m.name)}</span>
-                    <span class="agent-tier-badge">${window.escapeHtml(tierLabel)}</span>
-                </div>
-                <div class="agent-rec-meta">
-                    <span class="agent-provider-badge agent-provider-${window.escapeHtml(m.provider)}">${window.escapeHtml(PROVIDER_BADGE[m.provider] || m.provider)}</span>
-                    <span class="agent-vram">${window.escapeHtml(vramStr)}</span>
-                    ${deckBadge}
-                </div>
-                <div class="agent-rec-desc">${window.escapeHtml(m.description)}</div>
-                <div class="agent-rec-tags">${tags}</div>
-                <div class="agent-rec-model-id">${window.escapeHtml(m.model)}</div>
-            </div>`;
-        }).join("");
+            const card = document.createElement("div");
+            card.className = "agent-rec-card";
+            card.addEventListener("click", () => instantiateRecommended(m.provider, m.model, m.name));
+
+            const top = document.createElement("div");
+            top.className = "agent-rec-top";
+            const name = document.createElement("span");
+            name.className = "agent-rec-name";
+            name.textContent = String(m.name ?? "");
+            const tier = document.createElement("span");
+            tier.className = "agent-tier-badge";
+            tier.textContent = String(tierLabel);
+            top.append(name, tier);
+
+            const meta = document.createElement("div");
+            meta.className = "agent-rec-meta";
+            const providerBadge = document.createElement("span");
+            providerBadge.className = `agent-provider-badge agent-provider-${String(m.provider ?? "")}`;
+            providerBadge.textContent = String(PROVIDER_BADGE[m.provider] || m.provider);
+            const vram = document.createElement("span");
+            vram.className = "agent-vram";
+            vram.textContent = vramStr;
+            const deck = document.createElement("span");
+            deck.className = `agent-deck-badge${m.steam_deck_ok ? "" : " warn"}`;
+            deck.textContent = m.steam_deck_ok ? "✅ Deck OK" : "⚠️ Heavy";
+            meta.append(providerBadge, vram, deck);
+
+            const desc = document.createElement("div");
+            desc.className = "agent-rec-desc";
+            desc.textContent = String(m.description ?? "");
+
+            const tags = document.createElement("div");
+            tags.className = "agent-rec-tags";
+            (m.tags || [])
+                .filter(t => ["recommended", "long-context", "multilingual", "code"].includes(t))
+                .forEach((tag) => {
+                    const span = document.createElement("span");
+                    span.className = "agent-tag";
+                    span.textContent = String(tag);
+                    tags.appendChild(span);
+                });
+
+            const modelId = document.createElement("div");
+            modelId.className = "agent-rec-model-id";
+            modelId.textContent = String(m.model ?? "");
+
+            card.append(top, meta, desc, tags, modelId);
+            grid.appendChild(card);
+        });
     }).catch(() => {
         grid.innerHTML = `<div class="agent-empty">Failed to load recommendations.</div>`;
     });
@@ -8500,16 +8607,28 @@ function initDocsView() {
                 fileList.innerHTML = '<div class="docs-empty-msg">No documents indexed yet.</div>';
                 return;
             }
-            fileList.innerHTML = files.map(f => {
+            fileList.replaceChildren();
+            files.forEach((f) => {
                 const name = f.replace(/\\/g, '/').split('/').pop();
-                return `<div class="docs-file-row" data-path="${f}" title="${f}">
-                    <span class="docs-file-icon">${createIcon('file', { size: 14 })}</span>
-                    <span class="docs-file-name">${name}</span>
-                    <button class="docs-remove-btn" data-path="${f}" title="Remove from index" aria-label="Remove ${name} from index">${createIcon('x', { size: 12 })}</button>
-                </div>`;
-            }).join('');
+                const row = document.createElement('div');
+                row.className = 'docs-file-row';
+                row.dataset.path = f;
+                row.title = f;
 
-            fileList.querySelectorAll('.docs-remove-btn').forEach(btn => {
+                const icon = document.createElement('span');
+                icon.className = 'docs-file-icon';
+                icon.innerHTML = createIcon('file', { size: 14 });
+
+                const fileName = document.createElement('span');
+                fileName.className = 'docs-file-name';
+                fileName.textContent = name;
+
+                const btn = document.createElement('button');
+                btn.className = 'docs-remove-btn';
+                btn.dataset.path = f;
+                btn.title = 'Remove from index';
+                btn.setAttribute('aria-label', `Remove ${name} from index`);
+                btn.innerHTML = createIcon('x', { size: 12 });
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const path = btn.dataset.path;
@@ -8518,6 +8637,9 @@ function initDocsView() {
                     await invoke('remove_indexed_doc', { filePath: path });
                     await refreshFileList();
                 });
+
+                row.append(icon, fileName, btn);
+                fileList.appendChild(row);
             });
         } catch (err) {
             countBadge.textContent = 'Error loading';
@@ -8537,20 +8659,41 @@ function initDocsView() {
                 return;
             }
             resultsLabel.textContent = `Results — ${results.length} found`;
-            resultsList.innerHTML = results.map((r, i) => {
+            resultsList.replaceChildren();
+            results.forEach((r) => {
                 const pct = Math.round(r.score * 100);
                 const name = r.file.replace(/\\/g, '/').split('/').pop();
-                const snippet = r.snippet.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return `<div class="docs-result-row">
-                    <div class="docs-result-header">
-                        <span class="docs-result-file" title="${r.file}">${createIcon('fileText', { size: 13 })}<span>${name}</span></span>
-                        <span class="docs-result-score">${pct}%</span>
-                    </div>
-                    <div class="docs-result-snippet">${snippet}</div>
-                </div>`;
-            }).join('');
+                const row = document.createElement('div');
+                row.className = 'docs-result-row';
+
+                const header = document.createElement('div');
+                header.className = 'docs-result-header';
+                const file = document.createElement('span');
+                file.className = 'docs-result-file';
+                file.title = r.file;
+                const icon = document.createElement('span');
+                icon.innerHTML = createIcon('fileText', { size: 13 });
+                const label = document.createElement('span');
+                label.textContent = name;
+                file.append(icon.firstElementChild || icon, label);
+                const score = document.createElement('span');
+                score.className = 'docs-result-score';
+                score.textContent = `${pct}%`;
+                header.append(file, score);
+
+                const snippet = document.createElement('div');
+                snippet.className = 'docs-result-snippet';
+                snippet.textContent = String(r.snippet ?? '');
+
+                row.append(header, snippet);
+                resultsList.appendChild(row);
+            });
         } catch (err) {
-            resultsList.innerHTML = `<div class="docs-empty-msg" style="color:var(--error-color)">Search failed: ${err}</div>`;
+            const error = document.createElement('div');
+            error.className = 'docs-empty-msg';
+            error.style.color = 'var(--error-color)';
+            error.textContent = `Search failed: ${String(err)}`;
+            resultsList.replaceChildren(error);
             resultsLabel.textContent = 'Results — error';
         }
     }
