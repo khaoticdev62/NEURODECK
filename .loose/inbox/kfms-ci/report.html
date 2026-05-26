@@ -10,15 +10,28 @@ td{padding:8px;border-bottom:1px solid #1e293b}tr:hover td{background:#0f172a}
 .status-pass{color:#86efac;font-weight:600}.status-fail{color:#fca5a5;font-weight:600}
 a{color:#60a5fa;text-decoration:none}a:hover{text-decoration:underline}
 </style></head><body>
-<h1>KFMS-CI Report</h1><p style="opacity:.6;font-size:.85rem">Run 20260526-182955 &middot; 2026-05-26 18:29 UTC</p>
+<h1>KFMS-CI Report</h1><p style="opacity:.6;font-size:.85rem">Run 20260526-203049 &middot; 2026-05-26 20:35 UTC</p>
 <div class="summary">
-<div class="pill" style="background:#22c55e;color:#22c55e;color:#22c55e">#22c55e#22c55e</div>
-<div class="pill pass">Passed: 3</div>
-<div class="pill fail">Failed: 0</div>
+<div class="pill" style="background:#ef4444;color:#ef4444;color:#ef4444">#ef4444#ef4444</div>
+<div class="pill pass">Passed: 14</div>
+<div class="pill fail">Failed: 2</div>
 </div>
 <h2>Gates</h2>
 <table><thead><tr><th>Gate</th><th>Category</th><th>Status</th><th>Duration</th><th>Log</th></tr></thead><tbody>
-<tr><td>Cargo Check</td><td>build</td><td class="status-pass">pass</td><td>1182ms</td><td><a href=".loose/inbox/kfms-ci/cargo_check.log">open</a></td></tr>
-<tr><td>Frontend Build (Vite)</td><td>build</td><td class="status-pass">pass</td><td>1203ms</td><td><a href=".loose/inbox/kfms-ci/frontend_build.log">open</a></td></tr>
-<tr><td>Cargo Compile Tests (no-run)</td><td>build</td><td class="status-pass">pass</td><td>1218ms</td><td><a href=".loose/inbox/kfms-ci/cargo_compile.log">open</a></td></tr>
+<tr><td>Git Diff Hygiene</td><td>quality</td><td class="status-pass">pass</td><td>191ms</td><td><a href=".loose/inbox/kfms-ci/diff_hygiene.log">open</a></td></tr>
+<tr><td>Python Format (Ruff)</td><td>lint</td><td class="status-pass">pass</td><td>341ms</td><td><a href=".loose/inbox/kfms-ci/fmt_python.log">open</a></td></tr>
+<tr><td>Loose Root File Check</td><td>quality</td><td class="status-fail">fail</td><td>389ms</td><td><a href=".loose/inbox/kfms-ci/loose_check.log">open</a></td></tr>
+<tr><td>KFMS Metadata Validation</td><td>quality</td><td class="status-pass">pass</td><td>577ms</td><td><a href=".loose/inbox/kfms-ci/kfms_meta.log">open</a></td></tr>
+<tr><td>Rust Format (fmt --check)</td><td>lint</td><td class="status-pass">pass</td><td>857ms</td><td><a href=".loose/inbox/kfms-ci/fmt_rust.log">open</a></td></tr>
+<tr><td>Security Hardening Scan</td><td>security</td><td class="status-pass">pass</td><td>1130ms</td><td><a href=".loose/inbox/kfms-ci/security_hard.log">open</a></td></tr>
+<tr><td>Frontend Build (Vite)</td><td>build</td><td class="status-pass">pass</td><td>2026ms</td><td><a href=".loose/inbox/kfms-ci/frontend_build.log">open</a></td></tr>
+<tr><td>Cargo Audit / Deny</td><td>security</td><td class="status-pass">pass</td><td>3101ms</td><td><a href=".loose/inbox/kfms-ci/security_rust.log">open</a></td></tr>
+<tr><td>npm Audit</td><td>security</td><td class="status-pass">pass</td><td>3756ms</td><td><a href=".loose/inbox/kfms-ci/security_js.log">open</a></td></tr>
+<tr><td>TypeScript Type Check</td><td>lint</td><td class="status-pass">pass</td><td>4341ms</td><td><a href=".loose/inbox/kfms-ci/typecheck.log">open</a></td></tr>
+<tr><td>Frontend Format (Prettier)</td><td>lint</td><td class="status-pass">pass</td><td>6175ms</td><td><a href=".loose/inbox/kfms-ci/fmt_frontend.log">open</a></td></tr>
+<tr><td>Cargo Compile Tests (no-run)</td><td>build</td><td class="status-pass">pass</td><td>50724ms</td><td><a href=".loose/inbox/kfms-ci/cargo_compile.log">open</a></td></tr>
+<tr><td>Cargo Check</td><td>build</td><td class="status-pass">pass</td><td>11429ms</td><td><a href=".loose/inbox/kfms-ci/cargo_check.log">open</a></td></tr>
+<tr><td>Rust Clippy (-D warnings)</td><td>lint</td><td class="status-pass">pass</td><td>1504ms</td><td><a href=".loose/inbox/kfms-ci/clippy.log">open</a></td></tr>
+<tr><td>Cargo Test (workspace)</td><td>test</td><td class="status-pass">pass</td><td>3404ms</td><td><a href=".loose/inbox/kfms-ci/cargo_test.log">open</a></td></tr>
+<tr><td>Playwright E2E Tests</td><td>test</td><td class="status-fail">fail</td><td>228805ms</td><td><a href=".loose/inbox/kfms-ci/e2e.log">open</a></td></tr>
 </tbody></table></body></html>

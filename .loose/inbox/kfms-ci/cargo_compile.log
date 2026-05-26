@@ -1,6 +1,8 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.06s
-  Executable unittests src\lib.rs (target\debug\deps\app_lib-40b32e6110a1e49b.exe)
-  Executable unittests src\main.rs (target\debug\deps\app-004d1e91cdd27ba2.exe)
+   Compiling neurodeck_infrastructure v0.1.0 (C:\Users\thecr\Desktop\S-Term\infrastructure)
+   Compiling app v1.2.0 (C:\Users\thecr\Desktop\S-Term\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 50.44s
+  Executable unittests src\lib.rs (target\debug\deps\app_lib-e8e86e6413021c90.exe)
+  Executable unittests src\main.rs (target\debug\deps\app-76a48c0f717ca6f5.exe)
   Executable unittests src\main.rs (target\debug\deps\neurodeck_bootstrapper-39c16684082b8d35.exe)
   Executable unittests src\lib.rs (target\debug\deps\neurodeck_core-870dc0ade08d1d80.exe)
   Executable unittests src\lib.rs (target\debug\deps\neurodeck_infrastructure-28ad1d94fa836bea.exe)

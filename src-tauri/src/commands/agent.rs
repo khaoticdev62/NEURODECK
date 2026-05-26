@@ -90,7 +90,11 @@ pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Resul
     if agent.name.trim().is_empty() {
         return Err("Agent name cannot be empty".into());
     }
-    if agent.provider != "gemini" && agent.provider != "ollama" && agent.provider != "huggingface" && agent.provider != "kimi" {
+    if agent.provider != "gemini"
+        && agent.provider != "ollama"
+        && agent.provider != "huggingface"
+        && agent.provider != "kimi"
+    {
         return Err("Provider must be 'gemini', 'ollama', 'huggingface', or 'kimi'".into());
     }
 
@@ -188,8 +192,14 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
             tier: "smart".into(),
             vram_mb: 0,
             steam_deck_ok: true,
-            description: "Moonshot AI flagship. Excellent reasoning, coding, and ultra-long context.".into(),
-            tags: vec!["cloud".into(), "smart".into(), "long-context".into(), "recommended".into()],
+            description:
+                "Moonshot AI flagship. Excellent reasoning, coding, and ultra-long context.".into(),
+            tags: vec![
+                "cloud".into(),
+                "smart".into(),
+                "long-context".into(),
+                "recommended".into(),
+            ],
         },
         RecommendedModel {
             provider: kimi.clone(),
@@ -198,7 +208,8 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
             tier: "fast".into(),
             vram_mb: 0,
             steam_deck_ok: true,
-            description: "Fast and efficient Kimi model. Great for daily chat and quick tasks.".into(),
+            description: "Fast and efficient Kimi model. Great for daily chat and quick tasks."
+                .into(),
             tags: vec!["cloud".into(), "fast".into(), "low-cost".into()],
         },
         // ── Cloud (Hugging Face) ──────────────────────────────────────────────

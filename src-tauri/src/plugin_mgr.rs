@@ -241,7 +241,7 @@ pub async fn reload_plugins(app_handle: AppHandle) -> Result<(), String> {
     result
 }
 
-fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
+pub fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
     let plugins_dir = Path::new(PLUGINS_DIR);
     if !plugins_dir.exists() {
         fs::create_dir_all(plugins_dir)

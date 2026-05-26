@@ -15030,3 +15030,117 @@ button.tab-btn:active,
   opacity: 0.6;
   transition: width 0.1s linear;
 }
+
+/* ── API Lab Component Styles ─────────────────────────────────────────────── */
+.api-lab-kv-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.api-lab-kv-key,
+.api-lab-kv-value {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(94, 235, 255, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  font-family: "JetBrains Mono", monospace;
+}
+.api-lab-kv-key {
+  width: 35%;
+}
+.api-lab-kv-value {
+  flex: 1;
+}
+.api-lab-btn-small {
+  background: rgba(94, 235, 255, 0.06);
+  border: 1px solid rgba(94, 235, 255, 0.12);
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.api-lab-btn-small:hover {
+  background: rgba(94, 235, 255, 0.14);
+  color: #e2e8f0;
+}
+.api-collection-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.1s;
+}
+.api-collection-item:hover {
+  background: rgba(94, 235, 255, 0.06);
+}
+.api-collection-name {
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── CLI Maker Component Styles ───────────────────────────────────────────── */
+.cli-cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.cli-cmd-row:hover {
+  background: rgba(94, 235, 255, 0.05);
+}
+.cli-cmd-icon {
+  flex-shrink: 0;
+  color: var(--accent-cyan, #5eebff);
+}
+.cli-cmd-name {
+  flex: 1;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cli-cmd-cat {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.cli-cat-prompt { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+.cli-cat-shell { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+.cli-cat-view { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+.cli-cat-chain { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
+.cli-cat-plugin { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+.cli-btn-small {
+  background: rgba(94, 235, 255, 0.06);
+  border: 1px solid rgba(94, 235, 255, 0.12);
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cli-btn-small:hover {
+  background: rgba(94, 235, 255, 0.14);
+  color: #e2e8f0;
+}
+.cli-chain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

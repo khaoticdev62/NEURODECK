@@ -24,7 +24,7 @@
                          "code":  "plaintext-transport-review",
                          "message":  "Remote control currently advertises plain HTTP on the LAN. Confirm the PIN gate and trust boundary remain acceptable.",
                          "path":  "src-tauri/src/remote_control.rs",
-                         "line":  831,
+                         "line":  834,
                          "evidence":  "        \"http://{}:{}/#pin={}\u0026session={}\","
                      },
                      {
@@ -32,25 +32,25 @@
                          "code":  "plaintext-transport-review",
                          "message":  "Remote control currently advertises plain HTTP on the LAN. Confirm the PIN gate and trust boundary remain acceptable.",
                          "path":  "src-tauri/src/remote_control.rs",
-                         "line":  890,
+                         "line":  893,
                          "evidence":  "                    \"http://{}:{}/#pin={}\u0026session={}\","
                      },
                      {
                          "severity":  "warn",
                          "code":  "innerhtml-review",
-                         "message":  "113 innerHTML write sites require manual review for sanitization discipline.",
-                         "path":  "frontend/src/icons.js",
-                         "line":  361,
-                         "evidence":  "    el.innerHTML = `${iconMarkup}${badgeMarkup}`;"
+                         "message":  "147 innerHTML write sites require manual review for sanitization discipline.",
+                         "path":  "frontend/src/api_lab.js",
+                         "line":  46,
+                         "evidence":  "  row.innerHTML = `"
                      },
                      {
                          "severity":  "warn",
                          "code":  "process-spawn-review",
-                         "message":  "30 process-spawn sites exist and should stay under explicit validation review.",
-                         "path":  "src-tauri/src/mcp.rs",
-                         "line":  243,
-                         "evidence":  "                    let mut c = std::process::Command::new(\"cmd.exe\");"
+                         "message":  "31 process-spawn sites exist and should stay under explicit validation review.",
+                         "path":  "src-tauri/src/lua.rs",
+                         "line":  60,
+                         "evidence":  "                let mut c = std::process::Command::new(\"cmd.exe\");"
                      }
                  ],
-    "checked_at_utc":  "2026-05-26T17:49:43Z"
+    "checked_at_utc":  "2026-05-26T20:30:50Z"
 }

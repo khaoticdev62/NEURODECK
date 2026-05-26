@@ -1217,9 +1217,9 @@ impl LlmProvider for KimiProvider {
         &self,
         _audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        Box::pin(async move {
-            Err("Audio transcription not supported by Kimi provider".to_string())
-        })
+        Box::pin(
+            async move { Err("Audio transcription not supported by Kimi provider".to_string()) },
+        )
     }
 
     fn generate_embedding(

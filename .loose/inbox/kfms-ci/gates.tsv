@@ -1,1 +1,16 @@
-20260526-183010	cargo_test	pass	2845	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_test.log
+20260526-203049	diff_hygiene	pass	191	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/diff_hygiene.log
+20260526-203049	fmt_python	pass	341	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/fmt_python.log
+20260526-203049	loose_check	fail	389	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/loose_check.log
+20260526-203049	kfms_meta	pass	577	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/kfms_meta.log
+20260526-203049	fmt_rust	pass	857	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/fmt_rust.log
+20260526-203049	security_hard	pass	1130	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_hard.log
+20260526-203049	frontend_build	pass	2026	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/frontend_build.log
+20260526-203049	security_rust	pass	3101	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_rust.log
+20260526-203049	security_js	pass	3756	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_js.log
+20260526-203049	typecheck	pass	4341	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/typecheck.log
+20260526-203049	fmt_frontend	pass	6175	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/fmt_frontend.log
+20260526-203049	cargo_compile	pass	50724	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_compile.log
+20260526-203049	cargo_check	pass	11429	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_check.log
+20260526-203049	clippy	pass	1504	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/clippy.log
+20260526-203049	cargo_test	pass	3404	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_test.log
+20260526-203049	e2e	fail	228805	/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/e2e.log

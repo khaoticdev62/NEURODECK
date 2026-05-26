@@ -122,11 +122,12 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     let bmad_framework_loaded = plugins.iter().any(|p| p.file_name == "bmad.lua");
     let canvas_collab_security = true; // peer-sync approval gate is always active since v1.2.2
 
-    let custom_theme_count = std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
-        .ok()
-        .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
-        .map(|v| v.len())
-        .unwrap_or(0);
+    let custom_theme_count =
+        std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
+            .ok()
+            .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
+            .map(|v| v.len())
+            .unwrap_or(0);
 
     let collab_peer_count = app
         .collab_peer_count
@@ -148,7 +149,7 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     pipeline.push(BootPipelineStep {
         id: "kernel".to_string(),
         category: "system".to_string(),
-        label: format!("Initializing kernel space… KFMS v1.2.x-ra · Codename Ra"),
+        label: "Initializing kernel space… KFMS v1.2.x-ra · Codename Ra".to_string(),
         status: "info".to_string(),
         detail: String::new(),
     });
@@ -204,8 +205,16 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
         pipeline.push(BootPipelineStep {
             id: format!("plugin:{}", p.file_name),
             category: "plugin".to_string(),
-            label: format!("Plugin {} — {}", p.file_name, if p.enabled { "LOADED" } else { "DISABLED" }),
-            status: if p.enabled { "ok".to_string() } else { "warn".to_string() },
+            label: format!(
+                "Plugin {} — {}",
+                p.file_name,
+                if p.enabled { "LOADED" } else { "DISABLED" }
+            ),
+            status: if p.enabled {
+                "ok".to_string()
+            } else {
+                "warn".to_string()
+            },
             detail: p.description.clone(),
         });
     }
@@ -231,7 +240,10 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     pipeline.push(BootPipelineStep {
         id: "themes".to_string(),
         category: "feature".to_string(),
-        label: format!("Theme palette {} variants indexed", theme_count + custom_theme_count),
+        label: format!(
+            "Theme palette {} variants indexed",
+            theme_count + custom_theme_count
+        ),
         status: "ok".to_string(),
         detail: format!("{} built-in, {} custom", theme_count, custom_theme_count),
     });
@@ -244,7 +256,11 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
             if memory_ready { "ATTACHED" } else { "OFFLINE" },
             memory_doc_count
         ),
-        status: if memory_ready { "ok".to_string() } else { "warn".to_string() },
+        status: if memory_ready {
+            "ok".to_string()
+        } else {
+            "warn".to_string()
+        },
         detail: String::new(),
     });
 
@@ -255,7 +271,11 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
             "MCP loopback {}",
             if mcp_running { "ONLINE" } else { "STANDBY" }
         ),
-        status: if mcp_running { "ok".to_string() } else { "warn".to_string() },
+        status: if mcp_running {
+            "ok".to_string()
+        } else {
+            "warn".to_string()
+        },
         detail: if mcp_running {
             format!("http://127.0.0.1:{}", mcp_port_str)
         } else {
@@ -279,7 +299,11 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
             if collab_active { "ACTIVE" } else { "INACTIVE" },
             collab_peer_count
         ),
-        status: if collab_active { "ok".to_string() } else { "neutral".to_string() },
+        status: if collab_active {
+            "ok".to_string()
+        } else {
+            "neutral".to_string()
+        },
         detail: if canvas_collab_security {
             "peer-sync approval gate enabled".to_string()
         } else {
@@ -294,8 +318,14 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
             "Cloud sync {}",
             if sync_enabled { "ENABLED" } else { "DISABLED" }
         ),
-        status: if sync_enabled { "ok".to_string() } else { "neutral".to_string() },
-        detail: sync_last_at.clone().unwrap_or_else(|| "never synced".to_string()),
+        status: if sync_enabled {
+            "ok".to_string()
+        } else {
+            "neutral".to_string()
+        },
+        detail: sync_last_at
+            .clone()
+            .unwrap_or_else(|| "never synced".to_string()),
     });
 
     pipeline.push(BootPipelineStep {
@@ -315,7 +345,11 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
                 if game_running { "RUNNING" } else { "DETECTED" },
                 game_name
             ),
-            status: if game_running { "ok".to_string() } else { "neutral".to_string() },
+            status: if game_running {
+                "ok".to_string()
+            } else {
+                "neutral".to_string()
+            },
             detail: String::new(),
         });
     }

@@ -216,6 +216,9 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
         <button class="abtn" onclick="nav('transfer')"><span class="abtn-icon">📂</span>Files</button>
         <button class="abtn" onclick="nav('prompt-lab')"><span class="abtn-icon">✨</span>PromptLab</button>
         <button class="abtn" onclick="nav('remote')"><span class="abtn-icon">📱</span>Remote</button>
+        <button class="abtn" onclick="nav('git')"><span class="abtn-icon">🌿</span>Git</button>
+        <button class="abtn" onclick="nav('api-lab')"><span class="abtn-icon">🧪</span>API</button>
+        <button class="abtn" onclick="nav('cli-maker')"><span class="abtn-icon">⚡</span>CLI</button>
       </div>
     </div>
     <div>

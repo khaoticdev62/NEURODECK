@@ -186,7 +186,11 @@ fn heal_config(config_path: &Path, report: &mut SelfHealReport) -> config::Confi
 fn sanitize_config(config: &mut config::Config, report: &mut SelfHealReport) {
     let mut changed = false;
 
-    if config.llm.default_provider != "gemini" && config.llm.default_provider != "ollama" && config.llm.default_provider != "huggingface" && config.llm.default_provider != "kimi" {
+    if config.llm.default_provider != "gemini"
+        && config.llm.default_provider != "ollama"
+        && config.llm.default_provider != "huggingface"
+        && config.llm.default_provider != "kimi"
+    {
         config.llm.default_provider = "ollama".to_string();
         changed = true;
         report.recovered("Reset invalid LLM provider to ollama.");
