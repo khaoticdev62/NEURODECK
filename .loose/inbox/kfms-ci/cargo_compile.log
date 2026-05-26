@@ -1,4 +1,4 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.03s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.06s
   Executable unittests src\lib.rs (target\debug\deps\app_lib-40b32e6110a1e49b.exe)
   Executable unittests src\main.rs (target\debug\deps\app-004d1e91cdd27ba2.exe)
   Executable unittests src\main.rs (target\debug\deps\neurodeck_bootstrapper-39c16684082b8d35.exe)

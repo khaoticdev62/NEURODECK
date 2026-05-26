@@ -312,8 +312,9 @@ const ICONS = {
 function createIcon(name, { size = 16, className = "" } = {}) {
   const markup = ICONS[name];
   if (!markup) return "";
+  const safeClass = String(className).replace(/[^a-zA-Z0-9_\- ]/g, "");
   return `
-    <span class="nd-icon-wrap ${className}">
+    <span class="nd-icon-wrap ${safeClass}">
       <svg class="nd-icon-svg" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" focusable="false">
         ${markup}
       </svg>

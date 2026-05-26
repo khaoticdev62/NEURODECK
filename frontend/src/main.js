@@ -4994,6 +4994,28 @@ function dismissContextualTip() {
   setTimeout(() => tip.remove(), 400);
 }
 
+function parseTipText(text) {
+  const frag = document.createDocumentFragment();
+  const parts = text.split(/(<\/?strong>)/g);
+  let inStrong = false;
+  for (const part of parts) {
+    if (part === "<strong>") {
+      inStrong = true;
+    } else if (part === "</strong>") {
+      inStrong = false;
+    } else if (part) {
+      if (inStrong) {
+        const strong = document.createElement("strong");
+        strong.textContent = part;
+        frag.appendChild(strong);
+      } else {
+        frag.appendChild(document.createTextNode(part));
+      }
+    }
+  }
+  return frag;
+}
+
 function showContextualTip(viewName) {
   const tipText = CONTEXTUAL_TIPS[viewName];
   if (!tipText) return;
@@ -5007,24 +5029,39 @@ function showContextualTip(viewName) {
   const tip = document.createElement("div");
   tip.id = "contextual-tip";
   tip.className = "contextual-tip";
-  tip.innerHTML = `
-    <div class="contextual-tip-icon">${createIcon("info", { size: 16 })}</div>
-    <div class="contextual-tip-text">${tipText}</div>
-    <button class="contextual-tip-close" id="contextual-tip-close" aria-label="Dismiss tip">${createIcon("x", { size: 12 })}</button>
-    <div class="contextual-tip-progress" id="contextual-tip-progress" style="width: 100%;"></div>
-  `;
+
+  const iconWrap = document.createElement("div");
+  iconWrap.className = "contextual-tip-icon";
+  iconWrap.innerHTML = createIcon("info", { size: 16 });
+  tip.appendChild(iconWrap);
+
+  const textWrap = document.createElement("div");
+  textWrap.className = "contextual-tip-text";
+  textWrap.appendChild(parseTipText(tipText));
+  tip.appendChild(textWrap);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "contextual-tip-close";
+  closeBtn.setAttribute("aria-label", "Dismiss tip");
+  closeBtn.innerHTML = createIcon("x", { size: 12 });
+  tip.appendChild(closeBtn);
+
+  const progress = document.createElement("div");
+  progress.className = "contextual-tip-progress";
+  progress.style.width = "100%";
+  tip.appendChild(progress);
+
   document.body.appendChild(tip);
 
   // Trigger enter animation
   requestAnimationFrame(() => tip.classList.add("active"));
 
   // Progress bar countdown (8 seconds)
-  const progressEl = document.getElementById("contextual-tip-progress");
   let remaining = 8000;
   const step = 100;
   activeTipInterval = setInterval(() => {
     remaining -= step;
-    if (progressEl) progressEl.style.width = `${(remaining / 8000) * 100}%`;
+    if (progress) progress.style.width = `${(remaining / 8000) * 100}%`;
     if (remaining <= 0) clearInterval(activeTipInterval);
   }, step);
 
@@ -5034,7 +5071,7 @@ function showContextualTip(viewName) {
   }, 8000);
 
   // Manual dismiss — click
-  document.getElementById("contextual-tip-close")?.addEventListener("click", () => {
+  closeBtn.addEventListener("click", () => {
     localStorage.setItem(storageKey, "true");
     dismissContextualTip();
   });
@@ -5360,7 +5397,8 @@ function getPaletteHistory() {
   try {
     const raw = localStorage.getItem(PALETTE_HISTORY_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }

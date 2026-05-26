@@ -212,18 +212,7 @@ pub fn fork_session(
 pub async fn speak_text(text: String) -> Result<(), String> {
     let sanitized: String = text
         .chars()
-        .filter(|c| {
-            (c.is_alphanumeric() || *c == ' ' || *c == '.' || *c == ',' || *c == '?' || *c == '!')
-                && *c != '\''
-                && *c != '"'
-                && *c != '`'
-                && *c != '$'
-                && *c != ';'
-                && *c != '|'
-                && *c != '&'
-                && *c != '<'
-                && *c != '>'
-        })
+        .filter(|c| c.is_ascii_alphanumeric() || *c == ' ' || *c == '.')
         .collect();
 
     if sanitized.is_empty() {

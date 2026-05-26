@@ -757,6 +757,7 @@ function toggleMessageMenu(msgEntry, anchorBtn) {
     forkItem.innerHTML = `${createIcon('gitBranch', { size: 12 })} Fork from here`;
     forkItem.addEventListener('click', () => {
         dropdown.remove();
+        triggerHaptic("medium");
         forkFromMessage(msgEntry);
     });
 
@@ -765,6 +766,7 @@ function toggleMessageMenu(msgEntry, anchorBtn) {
     editItem.innerHTML = `${createIcon('pencil', { size: 12 })} Edit & regenerate`;
     editItem.addEventListener('click', () => {
         dropdown.remove();
+        triggerHaptic("medium");
         editMessageInPlace(msgEntry);
     });
 
@@ -1557,6 +1559,7 @@ function formatCodeBlocks(container) {
         copyBtn.innerText = "Copy";
         copyBtn.onclick = function() {
             navigator.clipboard.writeText(code.innerText).then(() => {
+                triggerHaptic("doubleTick");
                 copyBtn.innerText = "Copied!";
                 setTimeout(() => { copyBtn.innerText = "Copy"; }, 2000);
             });

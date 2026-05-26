@@ -1,40 +1,39 @@
-    Blocking waiting for file lock on build directory
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.98s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.03s
      Running unittests src\lib.rs (target\debug\deps\app_lib-40b32e6110a1e49b.exe)
 
 running 30 tests
 test computer_use::tests::accepts_supported_buttons ... ok
-test computer_use::tests::parses_tesseract_tsv_words ... ok
 test computer_use::tests::rejects_invalid_buttons ... ok
 test computer_use::tests::validates_key_names ... ok
-test config::tests::test_load_nonexistent_config ... ok
-test llm::tests::test_hf_provider_new ... ok
-test llm::tests::test_gemini_provider_new ... ok
-test llm::tests::test_ollama_provider_new ... ok
-test mcp::tests::env_flag_enabled_accepts_common_truthy_values ... ok
-test mcp::tests::env_flag_enabled_rejects_other_values ... ok
-test plugin_mgr::tests::marketplace_downloads_are_github_only ... ok
-test memory::tests::test_cosine_similarity ... ok
 test config::tests::test_default_config ... ok
+test llm::tests::test_ollama_provider_new ... ok
+test mcp::tests::env_flag_enabled_rejects_other_values ... ok
+test llm::tests::test_gemini_provider_new ... ok
+test mcp::tests::env_flag_enabled_accepts_common_truthy_values ... ok
+test computer_use::tests::parses_tesseract_tsv_words ... ok
+test memory::tests::test_cosine_similarity ... ok
+test config::tests::test_load_nonexistent_config ... ok
 test plugin_mgr::tests::extracts_safe_file_name_from_https_url ... ok
-test plugin_mgr::tests::rejects_unsafe_lua_file_names ... ok
 test plugin_mgr::tests::accepts_safe_lua_file_names ... ok
+test plugin_mgr::tests::rejects_unsafe_lua_file_names ... ok
+test plugin_mgr::tests::marketplace_downloads_are_github_only ... ok
+test llm::tests::test_hf_provider_new ... ok
 test security::tests::script_policy_blocks_dangerous_shell_by_default ... ok
-test security::tests::session_tokens_are_nontrivial ... ok
 test security::tests::terminal_command_rejects_nul ... ok
+test security::tests::session_tokens_are_nontrivial ... ok
 test transfer::tests::sanitize_relative_transfer_path_keeps_normal_subpaths ... ok
 test transfer::tests::sanitize_relative_transfer_path_rejects_escape_attempts ... ok
 test storage::tests::test_invalid_session_ids ... ok
 test memory::tests::test_memory_db_flow ... ok
+test transfer::tests::unique_destination_path_avoids_existing_file_names ... ok
 test storage::tests::test_save_and_load_session ... ok
 test storage::tests::test_export_to_markdown ... ok
-test transfer::tests::unique_destination_path_avoids_existing_file_names ... ok
 test self_heal::tests::rebuilds_invalid_config_for_boot ... ok
 test self_heal::tests::resets_invalid_persona_registry ... ok
 test sync::tests::decrypt_rejects_wrong_token ... ok
 test sync::tests::encrypt_decrypt_round_trip ... ok
 
-test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.00s
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.56s
 
      Running unittests src\main.rs (target\debug\deps\app-004d1e91cdd27ba2.exe)
 

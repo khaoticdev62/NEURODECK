@@ -1,7 +1,7 @@
 {
-  "run_id": "20260526-174938",
-  "timestamp_utc": "2026-05-26T17:49:43Z",
+  "run_id": "20260526-182955",
+  "timestamp_utc": "2026-05-26T18:29:59Z",
   "overall": "PASS",
   "summary": { "total": 3, "passed": 3, "failed": 0 },
-  "gates": [{"id":"security_rust","label":"Cargo Audit / Deny","category":"security","status":"pass","duration_ms":2512,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_rust.log"},{"id":"security_js","label":"npm Audit","category":"security","status":"pass","duration_ms":2409,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_js.log"},{"id":"security_hard","label":"Security Hardening Scan","category":"security","status":"pass","duration_ms":647,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/security_hard.log"}]
+  "gates": [{"id":"cargo_check","label":"Cargo Check","category":"build","status":"pass","duration_ms":1182,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_check.log"},{"id":"frontend_build","label":"Frontend Build (Vite)","category":"build","status":"pass","duration_ms":1203,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/frontend_build.log"},{"id":"cargo_compile","label":"Cargo Compile Tests (no-run)","category":"build","status":"pass","duration_ms":1218,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_compile.log"}]
 }
