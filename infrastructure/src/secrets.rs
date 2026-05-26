@@ -1,9 +1,20 @@
-use keyring::Entry;
+use keyring_core::Entry;
+use std::sync::OnceLock;
 
 const SERVICE_NAME: &str = "neurodeck";
 
+fn ensure_store_initialized() -> Result<(), String> {
+    static INIT: OnceLock<Result<(), String>> = OnceLock::new();
+    INIT.get_or_init(|| {
+        keyring::use_native_store(false)
+            .map_err(|e| format!("Failed to initialize keyring store: {}", e))
+    })
+    .clone()
+}
+
 /// Retrieve the Gemini API key from the OS secure keychain
 pub fn get_gemini_api_key() -> Result<String, String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "gemini_api_key")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
 
@@ -14,6 +25,7 @@ pub fn get_gemini_api_key() -> Result<String, String> {
 
 /// Save the Gemini API key to the OS secure keychain
 pub fn save_gemini_api_key(key: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "gemini_api_key")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
 
@@ -24,16 +36,18 @@ pub fn save_gemini_api_key(key: &str) -> Result<(), String> {
 
 /// Delete the Gemini API key from the OS secure keychain
 pub fn delete_gemini_api_key() -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "gemini_api_key")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
 
     entry
-        .delete_password()
+        .delete_credential()
         .map_err(|e| format!("Failed to delete API Key: {}", e))
 }
 
 /// Test if the OS secure keychain is accessible and writable
 pub fn test_keychain_access() -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new("neurodeck_test_keyring", "diagnostic")
         .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
 
@@ -49,12 +63,13 @@ pub fn test_keychain_access() -> Result<(), String> {
         return Err("Keyring readback value mismatch".to_string());
     }
 
-    let _ = entry.delete_password();
+    let _ = entry.delete_credential();
     Ok(())
 }
 
 /// Retrieve the tunnel token from the OS secure keychain
 pub fn get_tunnel_token() -> Result<String, String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "tunnel_token")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
@@ -64,6 +79,7 @@ pub fn get_tunnel_token() -> Result<String, String> {
 
 /// Save the tunnel token to the OS secure keychain
 pub fn save_tunnel_token(token: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "tunnel_token")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
@@ -73,15 +89,17 @@ pub fn save_tunnel_token(token: &str) -> Result<(), String> {
 
 /// Delete the tunnel token from the OS secure keychain
 pub fn delete_tunnel_token() -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "tunnel_token")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
-        .delete_password()
+        .delete_credential()
         .map_err(|e| format!("Failed to delete Tunnel token: {}", e))
 }
 
 /// Retrieve an SSH profile credential from the OS secure keychain
 pub fn get_ssh_credential(profile_name: &str) -> Result<String, String> {
+    ensure_store_initialized()?;
     let username = format!("ssh_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
@@ -95,6 +113,7 @@ pub fn get_ssh_credential(profile_name: &str) -> Result<String, String> {
 
 /// Save an SSH profile credential to the OS secure keychain
 pub fn save_ssh_credential(profile_name: &str, password: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let username = format!("ssh_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
@@ -105,16 +124,18 @@ pub fn save_ssh_credential(profile_name: &str, password: &str) -> Result<(), Str
 
 /// Delete an SSH profile credential from the OS secure keychain
 pub fn delete_ssh_credential(profile_name: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let username = format!("ssh_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
-        .delete_password()
+        .delete_credential()
         .map_err(|e| format!("Failed to delete SSH credential: {}", e))
 }
 
 /// Retrieve the Hugging Face API key from the OS secure keychain
 pub fn get_hf_api_key() -> Result<String, String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "hf_api_key")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
@@ -124,6 +145,7 @@ pub fn get_hf_api_key() -> Result<String, String> {
 
 /// Save the Hugging Face API key to the OS secure keychain
 pub fn save_hf_api_key(key: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let entry = Entry::new(SERVICE_NAME, "hf_api_key")
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
@@ -133,6 +155,7 @@ pub fn save_hf_api_key(key: &str) -> Result<(), String> {
 
 /// Retrieve an SFTP profile credential from the OS secure keychain
 pub fn get_sftp_credential(profile_name: &str) -> Result<String, String> {
+    ensure_store_initialized()?;
     let username = format!("sftp_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
@@ -146,6 +169,7 @@ pub fn get_sftp_credential(profile_name: &str) -> Result<String, String> {
 
 /// Save an SFTP profile credential to the OS secure keychain
 pub fn save_sftp_credential(profile_name: &str, password: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let username = format!("sftp_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
@@ -156,10 +180,11 @@ pub fn save_sftp_credential(profile_name: &str, password: &str) -> Result<(), St
 
 /// Delete an SFTP profile credential from the OS secure keychain
 pub fn delete_sftp_credential(profile_name: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
     let username = format!("sftp_{}", profile_name);
     let entry = Entry::new(SERVICE_NAME, &username)
         .map_err(|e| format!("Failed to access keyring: {}", e))?;
     entry
-        .delete_password()
+        .delete_credential()
         .map_err(|e| format!("Failed to delete SFTP credential: {}", e))
 }

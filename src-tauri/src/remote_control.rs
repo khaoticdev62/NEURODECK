@@ -531,13 +531,11 @@ async fn root_handler() -> impl IntoResponse {
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    addr_opt: Option<ConnectInfo<SocketAddr>>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Query(query): Query<RemoteSessionQuery>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
-    let ip = addr_opt
-        .map(|ConnectInfo(addr)| addr.ip())
-        .unwrap_or_else(|| "127.0.0.1".parse().unwrap());
+    let ip = addr.ip();
     println!(
         "[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}",
         ip
@@ -580,7 +578,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
     println!("[DEBUG remote_control] handle_ws_connection: sending hello frame");
     let _ = sender
         .send(Message::Text(
-            json!({"type":"hello","version":"1.0"}).to_string(),
+            json!({"type":"hello","version":"1.0"}).to_string().into(),
         ))
         .await;
 
@@ -601,7 +599,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
                         {
                             println!("[DEBUG remote_control] handle_ws_connection: authentication succeeded for {:?}", ip);
                             let _ = sender
-                                .send(Message::Text(json!({"type":"auth_ok"}).to_string()))
+                                .send(Message::Text(json!({"type":"auth_ok"}).to_string().into()))
                                 .await;
                             authed = true;
                         } else {
@@ -629,7 +627,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
         }
         let _ = sender
             .send(Message::Text(
-                json!({"type":"auth_fail","reason":"Invalid PIN or session token"}).to_string(),
+                json!({"type":"auth_fail","reason":"Invalid PIN or session token"}).to_string().into(),
             ))
             .await;
         // Sleep 2s to rate limit
@@ -663,7 +661,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
                 "[DEBUG remote_control] fwd_task: forwarding message to client: {}",
                 msg
             );
-            if sender.send(Message::Text(msg)).await.is_err() {
+            if sender.send(Message::Text(msg.into())).await.is_err() {
                 println!("[DEBUG remote_control] fwd_task: send failed");
                 break;
             }
