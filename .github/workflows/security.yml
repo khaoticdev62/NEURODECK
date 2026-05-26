@@ -1,0 +1,94 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  schedule:
+    - cron: "0 6 * * 1" # Weekly Monday 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Rust CVE & License Audit ─────────────────────────────────────────────
+  cargo-audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-audit
+      - run: cargo audit
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          command: check bans licenses sources
+
+  # ── JavaScript CVE Audit ─────────────────────────────────────────────────
+  npm-audit:
+    name: npm Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm audit --audit-level=moderate
+      - run: |
+          cd frontend
+          npm audit --audit-level=moderate
+
+  # ── CodeQL SAST ──────────────────────────────────────────────────────────
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript, rust
+          queries: security-extended,security-and-quality
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm -w frontend ci
+      - uses: github/codeql-action/analyze@v3
+
+  # ── Secret Scanning ──────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for high-entropy strings and known patterns
+        run: |
+          ! git log --all --source --remotes --patch | grep -E '(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AIzaSy[A-Za-z0-9_-]{33})' || {
+            echo "Potential secret detected in git history"
+            exit 1
+          }
+      - name: Run trufflehog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: master
+          head: HEAD
+          extra_args: --debug --only-verified
