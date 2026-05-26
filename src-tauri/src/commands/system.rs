@@ -1011,6 +1011,10 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
         let active_provider = app.config.llm.default_provider.clone();
         let active_model = if active_provider == "gemini" {
             app.config.llm.gemini_model.clone()
+        } else if active_provider == "kimi" {
+            app.config.llm.kimi_model.clone()
+        } else if active_provider == "huggingface" {
+            app.config.llm.hf_model.clone()
         } else {
             app.config.llm.ollama_model.clone()
         };

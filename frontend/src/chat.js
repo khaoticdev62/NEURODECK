@@ -1410,10 +1410,10 @@ function sendMessage() {
 
     if (imageAttachment) {
         const provSel = document.getElementById("llm-provider-select");
-        if (provSel && provSel.value === "ollama") {
+        if (provSel && provSel.value !== "gemini") {
             appendChatMessage(
                 "system",
-                "Vision not supported with Ollama. The image attachment will be ignored. Switch to Gemini in Settings to use vision.",
+                "Vision is only supported with Gemini. The image attachment will be ignored. Switch to Gemini in Settings to use vision.",
                 { borderColor: "var(--warning-color)" }
             );
         }

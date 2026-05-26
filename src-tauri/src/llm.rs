@@ -994,6 +994,425 @@ impl LlmProvider for HuggingFaceProvider {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Kimi (Moonshot AI) Provider — OpenAI-compatible API
+// ═══════════════════════════════════════════════════════════════════════════
+
+pub struct KimiProvider {
+    pub model: String,
+    api_key_override: Option<String>,
+    base_url: String,
+}
+
+#[derive(Serialize)]
+struct KimiMessage {
+    role: String,
+    content: String,
+}
+
+#[derive(Serialize)]
+struct KimiChatRequest {
+    model: String,
+    messages: Vec<KimiMessage>,
+    stream: bool,
+}
+
+#[derive(Deserialize)]
+struct KimiChatResponseMessage {
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct KimiChatResponseChoice {
+    message: Option<KimiChatResponseMessage>,
+}
+
+#[derive(Deserialize)]
+struct KimiChatResponse {
+    choices: Option<Vec<KimiChatResponseChoice>>,
+}
+
+#[derive(Deserialize)]
+struct KimiStreamDelta {
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct KimiStreamChoice {
+    delta: Option<KimiStreamDelta>,
+}
+
+#[derive(Deserialize)]
+struct KimiStreamResponse {
+    choices: Option<Vec<KimiStreamChoice>>,
+}
+
+#[derive(Serialize)]
+struct KimiEmbedRequest {
+    model: String,
+    input: String,
+}
+
+#[derive(Deserialize)]
+struct KimiEmbedData {
+    embedding: Vec<f32>,
+}
+
+#[derive(Deserialize)]
+struct KimiEmbedResponse {
+    data: Option<Vec<KimiEmbedData>>,
+}
+
+#[derive(Serialize)]
+struct KimiVisionContentItem {
+    #[serde(rename = "type")]
+    item_type: String,
+    text: Option<String>,
+    #[serde(rename = "image_url")]
+    image_url: Option<KimiVisionImageUrl>,
+}
+
+#[derive(Serialize)]
+struct KimiVisionImageUrl {
+    url: String,
+}
+
+#[derive(Serialize)]
+struct KimiVisionMessage {
+    role: String,
+    content: Vec<KimiVisionContentItem>,
+}
+
+#[derive(Serialize)]
+struct KimiVisionRequest {
+    model: String,
+    messages: Vec<KimiVisionMessage>,
+    stream: bool,
+}
+
+impl KimiProvider {
+    pub fn new(model: String, base_url: String) -> Self {
+        let m = if model.is_empty() {
+            "kimi-k2.5".to_string()
+        } else {
+            model
+        };
+        let url = if base_url.is_empty() {
+            "https://api.moonshot.ai/v1".to_string()
+        } else {
+            base_url.trim_end_matches('/').to_string()
+        };
+        Self {
+            model: m,
+            api_key_override: None,
+            base_url: url,
+        }
+    }
+
+    pub fn new_with_key(model: String, base_url: String, key: String) -> Self {
+        let mut provider = Self::new(model, base_url);
+        provider.api_key_override = Some(key);
+        provider
+    }
+
+    fn get_api_key(&self) -> Result<String, String> {
+        if let Some(ref k) = self.api_key_override {
+            return Ok(k.clone());
+        }
+        if let Ok(key) = std::env::var("KIMI_API_KEY") {
+            if !key.is_empty() {
+                return Ok(key);
+            }
+        }
+        neurodeck_infrastructure::secrets::get_kimi_api_key()
+            .map_err(|e| format!("KIMI_API_KEY not set and keychain retrieval failed: {}", e))
+    }
+}
+
+impl LlmProvider for KimiProvider {
+    fn stream_response(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String, String>> + Send>> {
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(futures_util::stream::once(async move { Err(e) })),
+        };
+
+        let url = format!("{}/chat/completions", self.base_url);
+        let model = self.model.clone();
+
+        let mut messages = Vec::new();
+        if !system_prompt.is_empty() {
+            messages.push(KimiMessage {
+                role: "system".to_string(),
+                content: system_prompt.to_string(),
+            });
+        }
+        messages.push(KimiMessage {
+            role: "user".to_string(),
+            content: prompt.to_string(),
+        });
+
+        let request_body = KimiChatRequest {
+            model,
+            messages,
+            stream: true,
+        };
+
+        let client = reqwest::Client::new();
+
+        let stream = async_stream::try_stream! {
+            let res = client.post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Kimi request failed: {}", e))?;
+
+            let mut byte_stream = if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                Err(format!("Kimi API error ({}): {}", status, err_text))?
+            } else {
+                res.bytes_stream()
+            };
+            let mut buffer = String::new();
+
+            while let Some(chunk_res) = byte_stream.next().await {
+                let chunk_bytes = chunk_res.map_err(|e| format!("Stream error: {}", e))?;
+                let chunk_str = String::from_utf8_lossy(&chunk_bytes);
+                buffer.push_str(&chunk_str);
+
+                while let Some(line_idx) = buffer.find('\n') {
+                    let line = buffer[..line_idx].trim().to_string();
+                    buffer.drain(..=line_idx);
+
+                    if let Some(stripped) = line.strip_prefix("data:") {
+                        let json_str = stripped.trim();
+                        if json_str == "[DONE]" {
+                            continue;
+                        }
+                        if let Ok(kimi_res) = serde_json::from_str::<KimiStreamResponse>(json_str) {
+                            if let Some(choices) = kimi_res.choices {
+                                for choice in choices {
+                                    if let Some(delta) = choice.delta {
+                                        if let Some(text) = delta.content {
+                                            yield text;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        Box::pin(stream.map(|res| res.map_err(|e: String| e)))
+    }
+
+    fn transcribe_audio(
+        &self,
+        _audio_data: &[u8],
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        Box::pin(async move {
+            Err("Audio transcription not supported by Kimi provider".to_string())
+        })
+    }
+
+    fn generate_embedding(
+        &self,
+        text: &str,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let model = self.model.clone();
+        let base_url = self.base_url.clone();
+        let text = text.to_string();
+
+        Box::pin(async move {
+            let url = format!("{}/embeddings", base_url);
+            // Moonshot embedding model; fallback to text-embedding if kimi model passed
+            let embed_model = if model.starts_with("kimi") {
+                "moonshot-v1-8k-embedding".to_string()
+            } else {
+                model
+            };
+            let request_body = KimiEmbedRequest {
+                model: embed_model,
+                input: text,
+            };
+
+            let client = reqwest::Client::new();
+            let res = client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Kimi embedding request failed: {}", e))?;
+
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Kimi embedding error ({}): {}", status, err_text));
+            }
+
+            let body = res
+                .json::<KimiEmbedResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse embedding response: {}", e))?;
+
+            match body.data {
+                Some(data) => data
+                    .into_iter()
+                    .next()
+                    .map(|d| d.embedding)
+                    .ok_or_else(|| "Empty embedding data".to_string()),
+                None => Err("No embedding data in response".to_string()),
+            }
+        })
+    }
+
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        _system_prompt: &str,
+        image_base64: Option<&str>,
+        image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let model = self.model.clone();
+        let base_url = self.base_url.clone();
+        let prompt = prompt.to_string();
+        let image_base64 = image_base64.map(|s| s.to_string());
+        let image_mime = image_mime.map(|s| s.to_string());
+
+        Box::pin(async move {
+            let url = format!("{}/chat/completions", base_url);
+
+            let mut content = Vec::new();
+            content.push(KimiVisionContentItem {
+                item_type: "text".to_string(),
+                text: Some(prompt),
+                image_url: None,
+            });
+
+            if let (Some(b64), Some(mime)) = (image_base64, image_mime) {
+                content.push(KimiVisionContentItem {
+                    item_type: "image_url".to_string(),
+                    text: None,
+                    image_url: Some(KimiVisionImageUrl {
+                        url: format!("data:{};base64,{}", mime, b64),
+                    }),
+                });
+            }
+
+            let request_body = KimiVisionRequest {
+                model,
+                messages: vec![KimiVisionMessage {
+                    role: "user".to_string(),
+                    content,
+                }],
+                stream: false,
+            };
+
+            let client = reqwest::Client::new();
+            let res = client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Kimi vision request failed: {}", e))?;
+
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Kimi vision error ({}): {}", status, err_text));
+            }
+
+            let body = res
+                .json::<KimiChatResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse vision response: {}", e))?;
+
+            match body.choices {
+                Some(choices) => choices
+                    .into_iter()
+                    .next()
+                    .and_then(|c| c.message)
+                    .and_then(|m| m.content)
+                    .ok_or_else(|| "Empty vision response".to_string()),
+                None => Err("No choices in vision response".to_string()),
+            }
+        })
+    }
+
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        _max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let model = self.model.clone();
+        let base_url = self.base_url.clone();
+        let prompt = prompt.to_string();
+
+        Box::pin(async move {
+            let url = format!("{}/chat/completions", base_url);
+            let request_body = KimiChatRequest {
+                model,
+                messages: vec![KimiMessage {
+                    role: "user".to_string(),
+                    content: prompt,
+                }],
+                stream: false,
+            };
+
+            let client = reqwest::Client::new();
+            let res = client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Kimi oneshot request failed: {}", e))?;
+
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Kimi oneshot error ({}): {}", status, err_text));
+            }
+
+            let body = res
+                .json::<KimiChatResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse oneshot response: {}", e))?;
+
+            match body.choices {
+                Some(choices) => choices
+                    .into_iter()
+                    .next()
+                    .and_then(|c| c.message)
+                    .and_then(|m| m.content)
+                    .ok_or_else(|| "Empty oneshot response".to_string()),
+                None => Err("No choices in oneshot response".to_string()),
+            }
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1037,5 +1456,15 @@ mod tests {
             provider_default.base_url,
             "https://api-inference.huggingface.co"
         );
+    }
+
+    #[test]
+    fn test_kimi_provider_new() {
+        let provider = KimiProvider::new("kimi-k2.5".to_string(), "".to_string());
+        assert_eq!(provider.model, "kimi-k2.5");
+        assert_eq!(provider.base_url, "https://api.moonshot.ai/v1");
+
+        let provider_default = KimiProvider::new("".to_string(), "".to_string());
+        assert_eq!(provider_default.model, "kimi-k2.5");
     }
 }

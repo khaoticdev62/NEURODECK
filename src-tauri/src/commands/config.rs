@@ -50,6 +50,11 @@ pub fn set_config(
             validate_config_url(&value, "llm.hf_base_url")?;
             config.llm.hf_base_url = value;
         }
+        "llm.kimi_model" => config.llm.kimi_model = value,
+        "llm.kimi_base_url" => {
+            validate_config_url(&value, "llm.kimi_base_url")?;
+            config.llm.kimi_base_url = value;
+        }
         "llm.google_client_id" => config.llm.google_client_id = value,
         "sync.api_base_url" => {
             validate_config_url(&value, "sync.api_base_url")?;
@@ -77,6 +82,7 @@ pub fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, S
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut config = app.config.clone();
     config.llm.hf_api_key.clear();
+    config.llm.kimi_base_url.clear();
     Ok(config)
 }
 
@@ -119,6 +125,25 @@ pub fn get_hf_api_key() -> Result<String, String> {
     match neurodeck_infrastructure::secrets::get_hf_api_key() {
         Ok(key) => Ok(key),
         Err(_) => Ok(std::env::var("HF_API_KEY").unwrap_or_default()),
+    }
+}
+
+#[tauri::command]
+pub fn save_kimi_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    neurodeck_infrastructure::secrets::save_kimi_api_key(&key)?;
+    std::env::set_var("KIMI_API_KEY", &key);
+    app.provider = create_provider(&app.config);
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_kimi_api_key() -> Result<String, String> {
+    match neurodeck_infrastructure::secrets::get_kimi_api_key() {
+        Ok(key) => Ok(key),
+        Err(_) => Ok(std::env::var("KIMI_API_KEY").unwrap_or_default()),
     }
 }
 
@@ -167,6 +192,23 @@ pub async fn test_llm_connection(
                 Some(Ok(_)) => Ok("Hugging Face Connection Successful!".to_string()),
                 Some(Err(e)) => Err(format!("Hugging Face Connection Failed: {}", e)),
                 None => Err("Hugging Face Connection Failed: Empty response".to_string()),
+            }
+        }
+        "kimi" => {
+            let api_key = match key {
+                Some(ref k) if !k.is_empty() => k.clone(),
+                _ => std::env::var("KIMI_API_KEY")
+                    .map_err(|_| "Kimi API key is required but not set".to_string())?,
+            };
+            let test_provider = KimiProvider::new_with_key(model, url, api_key);
+            let mut stream =
+                test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
+            let first_chunk = stream.next().await;
+
+            match first_chunk {
+                Some(Ok(_)) => Ok("Kimi Connection Successful!".to_string()),
+                Some(Err(e)) => Err(format!("Kimi Connection Failed: {}", e)),
+                None => Err("Kimi Connection Failed: Empty response".to_string()),
             }
         }
         _ => {

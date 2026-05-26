@@ -208,10 +208,23 @@ function toggleSettingsLlmGroups(provider) {
   const ollamaModelsSec = document.getElementById(
     "settings-ollama-models-section",
   );
+  const kimiGroup = document.getElementById("settings-kimi-group");
+  const kimiLabel = document.getElementById("stv-kimi-label");
   const hfGroup = document.getElementById("settings-hf-group");
   const hfLabel = document.getElementById("stv-hf-label");
   if (provider === "gemini") {
     if (geminiGroup) geminiGroup.style.display = "block";
+    if (kimiGroup) kimiGroup.style.display = "none";
+    if (kimiLabel) kimiLabel.style.display = "none";
+    if (ollamaGroup) ollamaGroup.style.display = "none";
+    if (ollamaLabel) ollamaLabel.style.display = "none";
+    if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+    if (hfGroup) hfGroup.style.display = "none";
+    if (hfLabel) hfLabel.style.display = "none";
+  } else if (provider === "kimi") {
+    if (geminiGroup) geminiGroup.style.display = "none";
+    if (kimiGroup) kimiGroup.style.display = "block";
+    if (kimiLabel) kimiLabel.style.display = "block";
     if (ollamaGroup) ollamaGroup.style.display = "none";
     if (ollamaLabel) ollamaLabel.style.display = "none";
     if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
@@ -219,6 +232,8 @@ function toggleSettingsLlmGroups(provider) {
     if (hfLabel) hfLabel.style.display = "none";
   } else if (provider === "huggingface") {
     if (geminiGroup) geminiGroup.style.display = "none";
+    if (kimiGroup) kimiGroup.style.display = "none";
+    if (kimiLabel) kimiLabel.style.display = "none";
     if (ollamaGroup) ollamaGroup.style.display = "none";
     if (ollamaLabel) ollamaLabel.style.display = "none";
     if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
@@ -226,6 +241,8 @@ function toggleSettingsLlmGroups(provider) {
     if (hfLabel) hfLabel.style.display = "block";
   } else {
     if (geminiGroup) geminiGroup.style.display = "none";
+    if (kimiGroup) kimiGroup.style.display = "none";
+    if (kimiLabel) kimiLabel.style.display = "none";
     if (ollamaGroup) ollamaGroup.style.display = "block";
     if (ollamaLabel) ollamaLabel.style.display = "block";
     if (ollamaModelsSec) {
@@ -315,6 +332,9 @@ function handleSaveLlmClick() {
   const ollamaModel = document
     .getElementById("settings-ollama-model")
     ?.value.trim();
+  const kimiKey = document.getElementById("settings-kimi-key")?.value.trim();
+  const kimiModel = document.getElementById("settings-kimi-model")?.value.trim();
+  const kimiUrl = document.getElementById("settings-kimi-url")?.value.trim();
   const hfKey = document.getElementById("settings-hf-key")?.value.trim();
   const hfModel = document.getElementById("settings-hf-model")?.value.trim();
   const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
@@ -328,6 +348,8 @@ function handleSaveLlmClick() {
   let saveKeyPromise = Promise.resolve();
   if (provider === "gemini" && geminiKey) {
     saveKeyPromise = invoke("save_gemini_api_key", { key: geminiKey });
+  } else if (provider === "kimi" && kimiKey) {
+    saveKeyPromise = invoke("save_kimi_api_key", { key: kimiKey });
   } else if (provider === "huggingface" && hfKey) {
     saveKeyPromise = invoke("save_hf_api_key", { key: hfKey });
   }
@@ -345,6 +367,15 @@ function handleSaveLlmClick() {
     .then(() =>
       invoke("set_config", { key: "llm.ollama_model", value: ollamaModel }),
     )
+    .then(() =>
+      invoke("set_config", { key: "llm.kimi_model", value: kimiModel }),
+    )
+    .then(() =>
+      invoke("set_config", {
+        key: "llm.kimi_base_url",
+        value: kimiUrl || "https://api.moonshot.ai/v1",
+      }),
+    )
     .then(() => invoke("set_config", { key: "llm.hf_model", value: hfModel }))
     .then(() =>
       invoke("set_config", {
@@ -359,6 +390,7 @@ function handleSaveLlmClick() {
       }
       let activeModelName;
       if (provider === "gemini") activeModelName = geminiModel;
+      else if (provider === "kimi") activeModelName = kimiModel;
       else if (provider === "huggingface") activeModelName = hfModel;
       else activeModelName = ollamaModel;
       document.getElementById("model-name").innerText =
@@ -442,14 +474,18 @@ function openSettingsModal() {
   Promise.all([
     invoke("get_config"),
     invoke("get_gemini_api_key"),
+    invoke("get_kimi_api_key"),
     invoke("get_hf_api_key"),
   ])
-    .then(([config, apiKey, hfApiKey]) => {
+    .then(([config, apiKey, kimiApiKey, hfApiKey]) => {
       const providerSelect = document.getElementById("llm-provider-select");
       const geminiKeyInput = document.getElementById("settings-gemini-key");
       const geminiModelInput = document.getElementById("settings-gemini-model");
       const ollamaUrlInput = document.getElementById("settings-ollama-url");
       const ollamaModelInput = document.getElementById("settings-ollama-model");
+      const kimiKeyInput = document.getElementById("settings-kimi-key");
+      const kimiModelInput = document.getElementById("settings-kimi-model");
+      const kimiUrlInput = document.getElementById("settings-kimi-url");
       const hfKeyInput = document.getElementById("settings-hf-key");
       const hfModelInput = document.getElementById("settings-hf-model");
       const hfUrlInput = document.getElementById("settings-hf-url");
@@ -459,6 +495,9 @@ function openSettingsModal() {
       if (geminiModelInput) geminiModelInput.value = config.llm.gemini_model;
       if (ollamaUrlInput) ollamaUrlInput.value = config.llm.ollama_base_url;
       if (ollamaModelInput) ollamaModelInput.value = config.llm.ollama_model;
+      if (kimiKeyInput) kimiKeyInput.value = kimiApiKey;
+      if (kimiModelInput) kimiModelInput.value = config.llm.kimi_model;
+      if (kimiUrlInput) kimiUrlInput.value = config.llm.kimi_base_url;
       if (hfKeyInput) hfKeyInput.value = hfApiKey;
       if (hfModelInput) hfModelInput.value = config.llm.hf_model;
       if (hfUrlInput) hfUrlInput.value = config.llm.hf_base_url;

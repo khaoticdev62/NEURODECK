@@ -153,6 +153,36 @@ pub fn save_hf_api_key(key: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to save HF API Key: {}", e))
 }
 
+/// Retrieve the Kimi API key from the OS secure keychain
+pub fn get_kimi_api_key() -> Result<String, String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "kimi_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .get_password()
+        .map_err(|e| format!("Kimi API Key not found or inaccessible: {}", e))
+}
+
+/// Save the Kimi API key to the OS secure keychain
+pub fn save_kimi_api_key(key: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "kimi_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .set_password(key)
+        .map_err(|e| format!("Failed to save Kimi API Key: {}", e))
+}
+
+/// Delete the Kimi API key from the OS secure keychain
+pub fn delete_kimi_api_key() -> Result<(), String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "kimi_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .delete_credential()
+        .map_err(|e| format!("Failed to delete Kimi API Key: {}", e))
+}
+
 /// Retrieve an SFTP profile credential from the OS secure keychain
 pub fn get_sftp_credential(profile_name: &str) -> Result<String, String> {
     ensure_store_initialized()?;

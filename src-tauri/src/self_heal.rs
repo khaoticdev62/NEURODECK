@@ -186,7 +186,7 @@ fn heal_config(config_path: &Path, report: &mut SelfHealReport) -> config::Confi
 fn sanitize_config(config: &mut config::Config, report: &mut SelfHealReport) {
     let mut changed = false;
 
-    if config.llm.default_provider != "gemini" && config.llm.default_provider != "ollama" {
+    if config.llm.default_provider != "gemini" && config.llm.default_provider != "ollama" && config.llm.default_provider != "huggingface" && config.llm.default_provider != "kimi" {
         config.llm.default_provider = "ollama".to_string();
         changed = true;
         report.recovered("Reset invalid LLM provider to ollama.");
@@ -200,6 +200,16 @@ fn sanitize_config(config: &mut config::Config, report: &mut SelfHealReport) {
         config.llm.gemini_model = "gemini-1.5-flash".to_string();
         changed = true;
         report.recovered("Restored missing Gemini model to default.");
+    }
+    if config.llm.kimi_model.trim().is_empty() {
+        config.llm.kimi_model = "kimi-k2.5".to_string();
+        changed = true;
+        report.recovered("Restored missing Kimi model to default.");
+    }
+    if config.llm.kimi_base_url.trim().is_empty() {
+        config.llm.kimi_base_url = "https://api.moonshot.ai/v1".to_string();
+        changed = true;
+        report.recovered("Restored missing Kimi base URL.");
     }
     if config.llm.ollama_base_url.trim().is_empty() {
         config.llm.ollama_base_url = "http://localhost:11434".to_string();

@@ -537,6 +537,7 @@ document.querySelector("#app").innerHTML = `
                             <label>Provider</label>
                             <select id="new-agent-provider">
                                 <option value="gemini">Gemini (Cloud)</option>
+                                <option value="kimi">Kimi (Cloud)</option>
                                 <option value="ollama">Ollama (Local)</option>
                             </select>
                         </div>
@@ -1815,6 +1816,7 @@ document.querySelector("#app").innerHTML = `
                                 <span class="stv-row-label">LLM Provider</span>
                                 <select id="llm-provider-select" style="flex:1;">
                                     <option value="gemini">Google Gemini</option>
+                                    <option value="kimi">Kimi (Moonshot AI)</option>
                                     <option value="ollama">Ollama (Local / Remote)</option>
                                     <option value="huggingface">Hugging Face</option>
                                 </select>
@@ -1842,6 +1844,22 @@ document.querySelector("#app").innerHTML = `
                             <div class="setting-field-group" style="margin-bottom:0;">
                                 <label>Model Name</label>
                                 <input type="text" id="settings-ollama-model" placeholder="llama3.2:1b">
+                            </div>
+                        </div>
+
+                        <div class="stv-group-label" style="display:none;" id="stv-kimi-label">Kimi Credentials</div>
+                        <div class="stv-card" id="settings-kimi-group" style="display:none;">
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>API Key</label>
+                                <input type="password" id="settings-kimi-key" placeholder="sk-...">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>Model ID</label>
+                                <input type="text" id="settings-kimi-model" placeholder="kimi-k2.5">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:0;">
+                                <label>Base URL (optional)</label>
+                                <input type="text" id="settings-kimi-url" placeholder="https://api.moonshot.ai/v1">
                             </div>
                         </div>
 
@@ -8049,7 +8067,9 @@ const TIER_LABEL = {
 
 const PROVIDER_BADGE = {
   gemini: "☁️ Gemini",
+  kimi: "🌙 Kimi",
   ollama: "🏠 Ollama",
+  huggingface: "🤗 HF",
 };
 
 function toggleAgentSwitcher() {
@@ -9669,6 +9689,11 @@ async function showOnboardingWizard() {
                             <span class="onboarding-choice-title">Google Login (QR)</span>
                             <span class="onboarding-choice-desc">Authenticate via device code grant. Scan QR code with your phone.</span>
                         </div>
+                        <div class="onboarding-choice-card" data-provider="kimi">
+                            <span class="onboarding-choice-icon">${createIcon("moon", { size: 16 })}</span>
+                            <span class="onboarding-choice-title">Kimi (Moonshot)</span>
+                            <span class="onboarding-choice-desc">Moonshot AI cloud models. Strong reasoning and ultra-long context.</span>
+                        </div>
                         <div class="onboarding-choice-card" data-provider="ollama">
                             <span class="onboarding-choice-icon">${createIcon("server", { size: 16 })}</span>
                             <span class="onboarding-choice-title">Ollama (Offline)</span>
@@ -9692,6 +9717,18 @@ async function showOnboardingWizard() {
                         </div>
                         <p id="ob-oauth-link-text" style="font-size: 0.75rem; margin: 5px 0;">Visit: <a href="#" id="ob-oauth-url" target="_blank" style="color: var(--accent-color);">Requesting...</a></p>
                         <div style="font-size: 0.8rem; font-weight: bold; background: rgba(0,240,255,0.1); padding: 8px; display: inline-block; border-radius: 4px;" id="ob-oauth-code-box">CODE: ----</div>
+                    </div>
+
+                    <!-- Kimi Container -->
+                    <div id="container-kimi" class="provider-setup-container" style="display: none;">
+                        <div class="onboarding-input-wrapper">
+                            <label for="ob-kimi-key">KIMI API KEY</label>
+                            <input type="password" id="ob-kimi-key" class="onboarding-input" placeholder="sk-..." autocomplete="off">
+                        </div>
+                        <div class="onboarding-input-wrapper">
+                            <label for="ob-kimi-model">KIMI MODEL</label>
+                            <input type="text" id="ob-kimi-model" class="onboarding-input" value="kimi-k2.5" placeholder="e.g. kimi-k2.5, kimi-k2-turbo-preview">
+                        </div>
                     </div>
 
                     <!-- Ollama Container -->
@@ -10182,6 +10219,8 @@ async function showOnboardingWizard() {
         selectedProvider === "gemini-key" ? "block" : "none";
       document.getElementById("container-gemini-oauth").style.display =
         selectedProvider === "gemini-oauth" ? "block" : "none";
+      document.getElementById("container-kimi").style.display =
+        selectedProvider === "kimi" ? "block" : "none";
       document.getElementById("container-ollama").style.display =
         selectedProvider === "ollama" ? "block" : "none";
 
@@ -10430,6 +10469,46 @@ async function showOnboardingWizard() {
         await invoke("set_config", {
           key: "llm.default_provider",
           value: "gemini",
+        });
+
+        appendLog(logViewport, "Success! Configuration finalized.");
+        isProviderVerified = true;
+        btnNext.disabled = false;
+      } catch (err) {
+        appendLog(logViewport, `Failed to verify key: ${err}`, true);
+      }
+    } else if (selectedProvider === "kimi") {
+      const keyInput = document.getElementById("ob-kimi-key").value.trim();
+      const modelInput = document.getElementById("ob-kimi-model").value.trim();
+      if (!keyInput) {
+        appendLog(logViewport, "Error: Please enter a Kimi API Key.", true);
+        return;
+      }
+
+      appendLog(logViewport, "Initiating live validation request...");
+
+      try {
+        const status = await invoke("test_llm_connection", {
+          provider: "kimi",
+          model: modelInput || "kimi-k2.5",
+          url: "",
+          key: keyInput,
+        });
+
+        appendLog(logViewport, status);
+        appendLog(
+          logViewport,
+          "Saving Kimi API Key to secure OS Keychain...",
+        );
+
+        await invoke("save_kimi_api_key", { key: keyInput });
+        await invoke("set_config", {
+          key: "llm.default_provider",
+          value: "kimi",
+        });
+        await invoke("set_config", {
+          key: "llm.kimi_model",
+          value: modelInput || "kimi-k2.5",
         });
 
         appendLog(logViewport, "Success! Configuration finalized.");

@@ -340,6 +340,14 @@ fn provider_by_name(
             None,
             config.llm.hf_base_url.clone(),
         )),
+        "kimi" => Arc::new(KimiProvider::new(
+            if model.is_empty() {
+                config.llm.kimi_model.clone()
+            } else {
+                model
+            },
+            config.llm.kimi_base_url.clone(),
+        )),
         _ => Arc::new(OllamaProvider::new(
             if model.is_empty() {
                 config.llm.ollama_model.clone()

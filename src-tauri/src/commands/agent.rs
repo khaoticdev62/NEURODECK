@@ -58,6 +58,9 @@ pub fn switch_agent(
     } else if agent.provider == "huggingface" {
         app.config.llm.hf_model = agent.model.clone();
         app.config.llm.hf_base_url = agent.base_url.clone();
+    } else if agent.provider == "kimi" {
+        app.config.llm.kimi_model = agent.model.clone();
+        app.config.llm.kimi_base_url = agent.base_url.clone();
     } else {
         app.config.llm.ollama_model = agent.model.clone();
         app.config.llm.ollama_base_url = agent.base_url.clone();
@@ -87,8 +90,8 @@ pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Resul
     if agent.name.trim().is_empty() {
         return Err("Agent name cannot be empty".into());
     }
-    if agent.provider != "gemini" && agent.provider != "ollama" && agent.provider != "huggingface" {
-        return Err("Provider must be 'gemini', 'ollama', or 'huggingface'".into());
+    if agent.provider != "gemini" && agent.provider != "ollama" && agent.provider != "huggingface" && agent.provider != "kimi" {
+        return Err("Provider must be 'gemini', 'ollama', 'huggingface', or 'kimi'".into());
     }
 
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -133,6 +136,7 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
     let ollama = "ollama".to_string();
     let gemini = "gemini".to_string();
     let huggingface = "huggingface".to_string();
+    let kimi = "kimi".to_string();
     vec![
         // ── Cloud (Gemini) ────────────────────────────────────────────────────
         RecommendedModel {
@@ -175,6 +179,27 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
             steam_deck_ok: true,
             description: "Highest intelligence cloud option. Best for complex research.".into(),
             tags: vec!["cloud".into(), "smart".into(), "premium".into()],
+        },
+        // ── Cloud (Kimi / Moonshot) ───────────────────────────────────────────
+        RecommendedModel {
+            provider: kimi.clone(),
+            model: "kimi-k2.5".into(),
+            name: "Kimi K2.5".into(),
+            tier: "smart".into(),
+            vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Moonshot AI flagship. Excellent reasoning, coding, and ultra-long context.".into(),
+            tags: vec!["cloud".into(), "smart".into(), "long-context".into(), "recommended".into()],
+        },
+        RecommendedModel {
+            provider: kimi.clone(),
+            model: "kimi-k2-turbo-preview".into(),
+            name: "Kimi K2 Turbo".into(),
+            tier: "fast".into(),
+            vram_mb: 0,
+            steam_deck_ok: true,
+            description: "Fast and efficient Kimi model. Great for daily chat and quick tasks.".into(),
+            tags: vec!["cloud".into(), "fast".into(), "low-cost".into()],
         },
         // ── Cloud (Hugging Face) ──────────────────────────────────────────────
         RecommendedModel {

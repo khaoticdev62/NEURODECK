@@ -73,6 +73,10 @@ pub struct LlmConfig {
     pub hf_api_key: String,
     #[serde(default = "default_hf_base_url")]
     pub hf_base_url: String,
+    #[serde(default = "default_kimi_model")]
+    pub kimi_model: String,
+    #[serde(default = "default_kimi_base_url")]
+    pub kimi_base_url: String,
     /// Google OAuth2 client ID for device flow (Gemini API key auth).
     /// Register at console.cloud.google.com → APIs & Services → Credentials.
     #[serde(default)]
@@ -103,6 +107,12 @@ fn default_hf_model() -> String {
 fn default_hf_base_url() -> String {
     "https://api-inference.huggingface.co".to_string()
 }
+fn default_kimi_model() -> String {
+    "kimi-k2.5".to_string()
+}
+fn default_kimi_base_url() -> String {
+    "https://api.moonshot.ai/v1".to_string()
+}
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -114,6 +124,8 @@ impl Default for LlmConfig {
             hf_model: default_hf_model(),
             hf_api_key: String::new(),
             hf_base_url: default_hf_base_url(),
+            kimi_model: default_kimi_model(),
+            kimi_base_url: default_kimi_base_url(),
             google_client_id: String::new(),
             active_agent_id: String::new(),
             agents: Vec::new(),
