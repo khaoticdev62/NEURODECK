@@ -46,7 +46,7 @@ neurodeck_infrastructure = { version = "0.1.0", path = "../infrastructure" }
 mdns-sd = "0.19.2"
 tar = "0.4.40"
 tonic = "0.11"
-axum = { version = "0.7", features = ["ws"] }
+axum = { version = "0.8", features = ["ws"] }
 tower = "0.4"
 walkdir = "2.3"
 uuid = { version = "1", features = ["v4"] }
