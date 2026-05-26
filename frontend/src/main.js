@@ -4254,33 +4254,43 @@ function renderCommandPalette() {
     }
 
     if (!commandPaletteState.filtered.length) {
-        list.innerHTML = `<div class="command-palette-empty">No commands match “${window.escapeHtml(input.value)}”.</div>`;
+        const empty = document.createElement("div");
+        empty.className = "command-palette-empty";
+        empty.textContent = `No commands match “${input.value}”.`;
+        list.replaceChildren(empty);
         return;
     }
 
-    list.innerHTML = commandPaletteState.filtered.map((action, index) => {
-        const activeClass = index === commandPaletteState.activeIndex ? " active" : "";
-        return `
-            <button type="button" class="command-palette-item${activeClass}" data-command-index="${index}">
-                <span class="command-palette-item-main">
-                    <span class="command-palette-item-icon">${createIcon(action.icon, { size: 15 })}</span>
-                    <span class="command-palette-item-copy">
-                        <span class="command-palette-item-title">${action.label}</span>
-                        <span class="command-palette-item-subtitle">${action.group}</span>
-                    </span>
-                </span>
-            </button>
-        `;
-    }).join("");
+    list.replaceChildren();
+    commandPaletteState.filtered.forEach((action, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `command-palette-item${index === commandPaletteState.activeIndex ? " active" : ""}`;
+        btn.setAttribute("data-command-index", String(index));
 
-    list.querySelectorAll(".command-palette-item").forEach(btn => {
+        const main = document.createElement("span");
+        main.className = "command-palette-item-main";
+        const icon = document.createElement("span");
+        icon.className = "command-palette-item-icon";
+        icon.innerHTML = createIcon(action.icon, { size: 15 });
+        const copy = document.createElement("span");
+        copy.className = "command-palette-item-copy";
+        const title = document.createElement("span");
+        title.className = "command-palette-item-title";
+        title.textContent = action.label;
+        const subtitle = document.createElement("span");
+        subtitle.className = "command-palette-item-subtitle";
+        subtitle.textContent = action.group;
+        copy.append(title, subtitle);
+        main.append(icon.firstElementChild || icon, copy);
+        btn.appendChild(main);
         btn.addEventListener("click", () => {
-            const idx = Number(btn.getAttribute("data-command-index"));
-            const action = commandPaletteState.filtered[idx];
-            if (!action) return;
+            const selected = commandPaletteState.filtered[index];
+            if (!selected) return;
             closeCommandPalette();
-            action.run();
+            selected.run();
         });
+        list.appendChild(btn);
     });
 }
 
@@ -5351,47 +5361,75 @@ function refreshOllamaModels() {
     const listEl = document.getElementById("settings-ollama-models-list");
     if (!listEl) return;
 
-    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading models...</div>`;
+    const loading = document.createElement("div");
+    loading.style.opacity = "0.5";
+    loading.style.fontStyle = "italic";
+    loading.textContent = "Loading models...";
+    listEl.replaceChildren(loading);
 
     invoke("ollama_list_models", { baseUrl })
         .then(models => {
             if (models.length === 0) {
-                listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">No local models found.</div>`;
+                const empty = document.createElement("div");
+                empty.style.opacity = "0.5";
+                empty.style.fontStyle = "italic";
+                empty.textContent = "No local models found.";
+                listEl.replaceChildren(empty);
                 return;
             }
-            listEl.innerHTML = models.map(m => {
+            listEl.replaceChildren();
+            models.forEach((m) => {
                 const isCurrent = m.name.includes(localStorage.getItem("settings-ollama-model") || "llama2") || m.name === (document.getElementById("settings-ollama-model")?.value || "llama2");
-                const currentBadge = isCurrent ? `<span style="color: var(--accent-color); font-weight: bold; margin-right: 6px;">[Active]</span>` : "";
-                return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid rgba(255,255,255,0.03);">
-                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; cursor: pointer;" class="settings-ollama-model-item" data-model="${m.name}">
-                            ${currentBadge}${m.name} <span style="opacity: 0.5; font-size: 0.75rem;">(${formatBytes(m.size)})</span>
-                        </div>
-                        <button class="canvas-btn settings-ollama-delete-btn" style="padding: 2px 8px; font-size: 0.7rem; border-color: #ff3c5a; color: #ff3c5a;" data-model="${m.name}">Delete</button>
-                    </div>
-                `;
-            }).join("");
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.justifyContent = "space-between";
+                row.style.alignItems = "center";
+                row.style.padding = "4px";
+                row.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
 
-            // Switch active model
-            listEl.querySelectorAll(".settings-ollama-model-item").forEach(item => {
+                const item = document.createElement("div");
+                item.style.overflow = "hidden";
+                item.style.textOverflow = "ellipsis";
+                item.style.whiteSpace = "nowrap";
+                item.style.flex = "1";
+                item.style.cursor = "pointer";
+                item.className = "settings-ollama-model-item";
+                item.setAttribute("data-model", m.name);
+                if (isCurrent) {
+                    const active = document.createElement("span");
+                    active.style.color = "var(--accent-color)";
+                    active.style.fontWeight = "bold";
+                    active.style.marginRight = "6px";
+                    active.textContent = "[Active]";
+                    item.appendChild(active);
+                }
+                item.append(` ${m.name} `);
+                const size = document.createElement("span");
+                size.style.opacity = "0.5";
+                size.style.fontSize = "0.75rem";
+                size.textContent = `(${formatBytes(m.size)})`;
+                item.appendChild(size);
                 item.onclick = () => {
-                    const modelName = item.getAttribute("data-model");
                     const modelInput = document.getElementById("settings-ollama-model");
                     if (modelInput) {
-                        modelInput.value = modelName;
+                        modelInput.value = m.name;
                         document.getElementById("settings-save-llm-btn")?.click();
                     }
                 };
-            });
 
-            // Delete model
-            listEl.querySelectorAll(".settings-ollama-delete-btn").forEach(btn => {
+                const btn = document.createElement("button");
+                btn.className = "canvas-btn settings-ollama-delete-btn";
+                btn.style.padding = "2px 8px";
+                btn.style.fontSize = "0.7rem";
+                btn.style.borderColor = "#ff3c5a";
+                btn.style.color = "#ff3c5a";
+                btn.setAttribute("data-model", m.name);
+                btn.textContent = "Delete";
                 btn.onclick = () => {
-                    const modelName = btn.getAttribute("data-model");
-                    if (confirm(`Are you sure you want to delete local model ${modelName}?`)) {
+                    if (confirm(`Are you sure you want to delete local model ${m.name}?`)) {
                         btn.disabled = true;
                         btn.innerText = "Deleting...";
-                        invoke("ollama_delete_model", { baseUrl, model: modelName })
+                        invoke("ollama_delete_model", { baseUrl, model: m.name })
                             .then(() => {
                                 refreshOllamaModels();
                             })
@@ -5401,10 +5439,16 @@ function refreshOllamaModels() {
                             });
                     }
                 };
+                row.append(item, btn);
+                listEl.appendChild(row);
             });
         })
         .catch(err => {
-            listEl.innerHTML = `<div style="color: #ff6b6b; font-size: 0.75rem;">Failed to list models: ${err}</div>`;
+            const error = document.createElement("div");
+            error.style.color = "#ff6b6b";
+            error.style.fontSize = "0.75rem";
+            error.textContent = `Failed to list models: ${String(err)}`;
+            listEl.replaceChildren(error);
         });
 }
 
@@ -5479,37 +5523,55 @@ function loadPluginsList() {
     const listEl = document.getElementById("settings-plugins-list");
     if (!listEl) return;
     
-    listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading plugins...</div>`;
+    const loading = document.createElement("div");
+    loading.style.opacity = "0.5";
+    loading.style.fontStyle = "italic";
+    loading.textContent = "Loading plugins...";
+    listEl.replaceChildren(loading);
     
     invoke("list_plugins").then((plugins) => {
         if (plugins.length === 0) {
-            listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic; padding: 5px;">No plugins found.</div>`;
+            const empty = document.createElement("div");
+            empty.style.opacity = "0.5";
+            empty.style.fontStyle = "italic";
+            empty.style.padding = "5px";
+            empty.textContent = "No plugins found.";
+            listEl.replaceChildren(empty);
             return;
         }
         
-        listEl.innerHTML = plugins.map((p) => {
-            const checked = p.enabled ? "checked" : "";
-            return `
-                <div class="ssh-profile-item" style="padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" class="plugin-toggle-checkbox" data-file="${p.file_name}" ${checked} style="accent-color: var(--accent-color); cursor: pointer;">
-                        <span style="font-weight: 500; color: ${p.enabled ? "var(--foreground-color)" : "rgba(255,255,255,0.3)"};">${p.name}</span>
-                        <span style="font-size: 0.7rem; opacity: 0.5;">(${p.file_name})</span>
-                    </div>
-                    <button class="canvas-btn plugin-edit-btn" data-file="${p.file_name}" style="padding: 3px 8px; font-size: 0.75rem;">Edit</button>
-                </div>
-            `;
-        }).join("");
-        
-        // Wire checkbox toggle listeners
-        listEl.querySelectorAll(".plugin-toggle-checkbox").forEach(chk => {
+        listEl.replaceChildren();
+        plugins.forEach((p) => {
+            const row = document.createElement("div");
+            row.className = "ssh-profile-item";
+            row.style.padding = "6px 8px";
+            row.style.background = "rgba(255,255,255,0.02)";
+            row.style.borderRadius = "4px";
+            row.style.border = "1px solid rgba(255,255,255,0.04)";
+            row.style.display = "flex";
+            row.style.alignItems = "center";
+            row.style.justifyContent = "space-between";
+            row.style.gap = "10px";
+            row.style.marginBottom = "4px";
+
+            const left = document.createElement("div");
+            left.style.display = "flex";
+            left.style.alignItems = "center";
+            left.style.gap = "8px";
+
+            const chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.className = "plugin-toggle-checkbox";
+            chk.setAttribute("data-file", p.file_name);
+            chk.checked = !!p.enabled;
+            chk.style.accentColor = "var(--accent-color)";
+            chk.style.cursor = "pointer";
             chk.onchange = () => {
-                const fileName = chk.getAttribute("data-file");
                 const enabled = chk.checked;
                 const statusEl = document.getElementById("settings-plugin-status");
                 if (statusEl) statusEl.innerText = "Toggling plugin...";
                 
-                invoke("toggle_plugin", { fileName, enabled }).then(() => {
+                invoke("toggle_plugin", { fileName: p.file_name, enabled }).then(() => {
                     if (statusEl) statusEl.innerText = `Plugin ${enabled ? "enabled" : "disabled"} successfully.`;
                     loadPluginsList();
                 }).catch(err => {
@@ -5517,16 +5579,30 @@ function loadPluginsList() {
                     chk.checked = !enabled; // revert
                 });
             };
-        });
-        
-        // Wire edit button click listeners
-        listEl.querySelectorAll(".plugin-edit-btn").forEach(btn => {
+
+            const name = document.createElement("span");
+            name.style.fontWeight = "500";
+            name.style.color = p.enabled ? "var(--foreground-color)" : "rgba(255,255,255,0.3)";
+            name.textContent = p.name;
+
+            const file = document.createElement("span");
+            file.style.fontSize = "0.7rem";
+            file.style.opacity = "0.5";
+            file.textContent = `(${p.file_name})`;
+
+            left.append(chk, name, file);
+
+            const btn = document.createElement("button");
+            btn.className = "canvas-btn plugin-edit-btn";
+            btn.setAttribute("data-file", p.file_name);
+            btn.style.padding = "3px 8px";
+            btn.style.fontSize = "0.75rem";
+            btn.textContent = "Edit";
             btn.onclick = () => {
-                const fileName = btn.getAttribute("data-file");
                 const statusEl = document.getElementById("settings-plugin-status");
                 if (statusEl) statusEl.innerText = "Reading plugin content...";
                 
-                invoke("read_plugin", { fileName }).then((content) => {
+                invoke("read_plugin", { fileName: p.file_name }).then((content) => {
                     // Close settings modal
                     document.getElementById("settings-overlay")?.classList.remove("active");
                     
@@ -5534,10 +5610,10 @@ function loadPluginsList() {
                     if (statusEl) statusEl.innerText = "";
                     
                     // Set active file
-                    window.neurodeckCanvas.activePluginFile = fileName;
+                    window.neurodeckCanvas.activePluginFile = p.file_name;
                     
                     // Load into canvas
-                    loadCanvasCode("lua", content, fileName);
+                    loadCanvasCode("lua", content, p.file_name);
                     
                     // Switch to canvas tab
                     const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
@@ -5546,9 +5622,15 @@ function loadPluginsList() {
                     if (statusEl) statusEl.innerText = `Failed to read plugin: ${err}`;
                 });
             };
+            row.append(left, btn);
+            listEl.appendChild(row);
         });
     }).catch(err => {
-        listEl.innerHTML = `<div style="color: var(--error-color); padding: 5px;">Failed to load plugins: ${err}</div>`;
+        const error = document.createElement("div");
+        error.style.color = "var(--error-color)";
+        error.style.padding = "5px";
+        error.textContent = `Failed to load plugins: ${String(err)}`;
+        listEl.replaceChildren(error);
     });
 }
 
@@ -5575,9 +5657,17 @@ function renderPluginMarketplace() {
     const tags = [...new Set(pluginMarketplaceState.plugins.flatMap(p => p.tags || []))].sort();
     if (tagSelect) {
         const selected = tagSelect.value || pluginMarketplaceState.tag;
-        tagSelect.innerHTML = `<option value="">All Tags</option>` + tags.map(tag =>
-            `<option value="${escapeMarketplaceHtml(tag)}">${escapeMarketplaceHtml(tag)}</option>`
-        ).join("");
+        tagSelect.replaceChildren();
+        const allOption = document.createElement("option");
+        allOption.value = "";
+        allOption.textContent = "All Tags";
+        tagSelect.appendChild(allOption);
+        tags.forEach((tag) => {
+            const option = document.createElement("option");
+            option.value = String(tag);
+            option.textContent = String(tag);
+            tagSelect.appendChild(option);
+        });
         tagSelect.value = tags.includes(selected) ? selected : "";
         pluginMarketplaceState.tag = tagSelect.value;
     }
@@ -5592,74 +5682,94 @@ function renderPluginMarketplace() {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div style="opacity:0.45;font-style:italic;">No marketplace plugins match this filter.</div>`;
+        const empty = document.createElement("div");
+        empty.style.opacity = "0.45";
+        empty.style.fontStyle = "italic";
+        empty.textContent = "No marketplace plugins match this filter.";
+        grid.replaceChildren(empty);
         return;
     }
 
-    grid.innerHTML = filtered.map(plugin => {
-        const tagsHtml = (plugin.tags || []).map(tag =>
-            `<span class="plugin-marketplace-tag">${escapeMarketplaceHtml(tag)}</span>`
-        ).join("");
-        const action = plugin.installed
-            ? `<button class="stv-btn-ghost marketplace-uninstall-btn" data-plugin-id="${escapeMarketplaceHtml(plugin.id)}">Uninstall</button>`
-            : `<button class="stv-btn-primary marketplace-install-btn" data-plugin-id="${escapeMarketplaceHtml(plugin.id)}">Install</button>`;
-        const secondary = plugin.installed && !plugin.enabled
-            ? `<span class="plugin-marketplace-badge">Disabled</span>`
-            : plugin.installed
-                ? `<span class="plugin-marketplace-badge">Installed</span>`
-                : `<span class="plugin-marketplace-badge">v${escapeMarketplaceHtml(plugin.version)}</span>`;
+    grid.replaceChildren();
+    filtered.forEach((plugin) => {
+        const card = document.createElement("div");
+        card.className = `plugin-marketplace-card ${plugin.installed ? "installed" : ""}`.trim();
 
-        return `
-            <div class="plugin-marketplace-card ${plugin.installed ? "installed" : ""}">
-                <div class="plugin-marketplace-title">
-                    <strong>${escapeMarketplaceHtml(plugin.name)}</strong>
-                    ${secondary}
-                </div>
-                <div class="plugin-marketplace-meta">${escapeMarketplaceHtml(plugin.author)} · ${escapeMarketplaceHtml(plugin.lua_file)}</div>
-                <div class="plugin-marketplace-desc">${escapeMarketplaceHtml(plugin.description)}</div>
-                <div class="plugin-marketplace-tags">${tagsHtml || '<span class="plugin-marketplace-tag">utility</span>'}</div>
-                <div class="plugin-marketplace-actions">${action}</div>
-            </div>
-        `;
-    }).join("");
+        const title = document.createElement("div");
+        title.className = "plugin-marketplace-title";
+        const strong = document.createElement("strong");
+        strong.textContent = String(plugin.name ?? "");
+        const secondary = document.createElement("span");
+        secondary.className = "plugin-marketplace-badge";
+        if (plugin.installed && !plugin.enabled) {
+            secondary.textContent = "Disabled";
+        } else if (plugin.installed) {
+            secondary.textContent = "Installed";
+        } else {
+            secondary.textContent = `v${String(plugin.version ?? "")}`;
+        }
+        title.append(strong, secondary);
 
-    grid.querySelectorAll(".marketplace-install-btn").forEach(btn => {
+        const meta = document.createElement("div");
+        meta.className = "plugin-marketplace-meta";
+        meta.textContent = `${String(plugin.author ?? "")} · ${String(plugin.lua_file ?? "")}`;
+
+        const desc = document.createElement("div");
+        desc.className = "plugin-marketplace-desc";
+        desc.textContent = String(plugin.description ?? "");
+
+        const tagsWrap = document.createElement("div");
+        tagsWrap.className = "plugin-marketplace-tags";
+        const tagValues = (plugin.tags && plugin.tags.length) ? plugin.tags : ["utility"];
+        tagValues.forEach((tag) => {
+            const span = document.createElement("span");
+            span.className = "plugin-marketplace-tag";
+            span.textContent = String(tag);
+            tagsWrap.appendChild(span);
+        });
+
+        const actions = document.createElement("div");
+        actions.className = "plugin-marketplace-actions";
+        const btn = document.createElement("button");
+        btn.className = plugin.installed ? "stv-btn-ghost marketplace-uninstall-btn" : "stv-btn-primary marketplace-install-btn";
+        btn.setAttribute("data-plugin-id", String(plugin.id));
+        btn.textContent = plugin.installed ? "Uninstall" : "Install";
         btn.onclick = async () => {
-            const pluginId = btn.getAttribute("data-plugin-id");
             const statusEl = document.getElementById("plugin-marketplace-status");
             btn.disabled = true;
-            if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
-            try {
-                await invoke("install_plugin_from_registry", { pluginId });
-                if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded.";
-                await loadPluginMarketplace();
-                loadPluginsList();
-            } catch (err) {
-                if (statusEl) statusEl.innerText = `Install failed: ${err}`;
-            } finally {
-                btn.disabled = false;
+            if (plugin.installed) {
+                if (!confirm(`Uninstall marketplace plugin '${plugin.id}'?`)) {
+                    btn.disabled = false;
+                    return;
+                }
+                if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
+                try {
+                    await invoke("uninstall_plugin", { pluginId: plugin.id });
+                    if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded.";
+                    await loadPluginMarketplace();
+                    loadPluginsList();
+                } catch (err) {
+                    if (statusEl) statusEl.innerText = `Uninstall failed: ${err}`;
+                } finally {
+                    btn.disabled = false;
+                }
+            } else {
+                if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
+                try {
+                    await invoke("install_plugin_from_registry", { pluginId: plugin.id });
+                    if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded.";
+                    await loadPluginMarketplace();
+                    loadPluginsList();
+                } catch (err) {
+                    if (statusEl) statusEl.innerText = `Install failed: ${err}`;
+                } finally {
+                    btn.disabled = false;
+                }
             }
         };
-    });
-
-    grid.querySelectorAll(".marketplace-uninstall-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const pluginId = btn.getAttribute("data-plugin-id");
-            const statusEl = document.getElementById("plugin-marketplace-status");
-            if (!confirm(`Uninstall marketplace plugin '${pluginId}'?`)) return;
-            btn.disabled = true;
-            if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
-            try {
-                await invoke("uninstall_plugin", { pluginId });
-                if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded.";
-                await loadPluginMarketplace();
-                loadPluginsList();
-            } catch (err) {
-                if (statusEl) statusEl.innerText = `Uninstall failed: ${err}`;
-            } finally {
-                btn.disabled = false;
-            }
-        };
+        actions.appendChild(btn);
+        card.append(title, meta, desc, tagsWrap, actions);
+        grid.appendChild(card);
     });
 }
 
@@ -5681,7 +5791,16 @@ async function loadPluginMarketplace() {
         renderPluginMarketplace();
     } catch (err) {
         pluginMarketplaceState.plugins = [];
-        grid.innerHTML = `<div class="marketplace-error">Could not reach the plugin registry. Check your internet connection and try Refresh.<br><span style="opacity:0.5;font-size:0.8em;">${escapeMarketplaceHtml(String(err))}</span></div>`;
+        const error = document.createElement("div");
+        error.className = "marketplace-error";
+        error.textContent = "Could not reach the plugin registry. Check your internet connection and try Refresh.";
+        const detail = document.createElement("span");
+        detail.style.opacity = "0.5";
+        detail.style.fontSize = "0.8em";
+        detail.textContent = String(err);
+        error.appendChild(document.createElement("br"));
+        error.appendChild(detail);
+        grid.replaceChildren(error);
         if (statusEl) statusEl.innerText = "Registry unavailable.";
     }
 }
