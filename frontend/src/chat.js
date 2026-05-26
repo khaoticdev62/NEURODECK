@@ -71,11 +71,64 @@ function updateContextBar() {
     const bar = document.getElementById("chat-input-context");
     if (!bar) return;
     const provider = (state.activeProvider || "gemini").toUpperCase();
-    bar.innerHTML = `
-        <span class="chat-input-context-persona">${createIcon("brain", { size: 14 })}<span>${state.activePersona || "Default"}</span></span>
-        <span class="chat-input-context-sep">·</span>
-        <span class="chat-input-context-model">${provider}</span>
-    `;
+    const personaChip = document.createElement("span");
+    personaChip.className = "chat-input-context-persona";
+
+    const iconWrap = document.createElement("span");
+    iconWrap.innerHTML = createIcon("brain", { size: 14 });
+
+    const personaText = document.createElement("span");
+    personaText.textContent = state.activePersona || "Default";
+
+    const sep = document.createElement("span");
+    sep.className = "chat-input-context-sep";
+    sep.textContent = "·";
+
+    const model = document.createElement("span");
+    model.className = "chat-input-context-model";
+    model.textContent = provider;
+
+    personaChip.append(iconWrap.firstElementChild || iconWrap, personaText);
+    bar.replaceChildren(personaChip, sep, model);
+}
+
+function appendChatMessage(kind, text, options = {}) {
+    const chatViewport = document.getElementById("chat-viewport");
+    const viewport = document.getElementById("chat-workspace");
+    if (!chatViewport || !viewport) return null;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `message ${kind}${options.error ? " error" : ""}`;
+
+    const card = document.createElement("div");
+    card.className = "message-card";
+    if (options.borderColor) {
+        card.style.borderColor = options.borderColor;
+    }
+
+    if (options.strongPrefix) {
+        const strong = document.createElement("strong");
+        strong.textContent = options.strongPrefix;
+        card.appendChild(strong);
+        card.append(` ${text}`);
+    } else {
+        card.textContent = text;
+    }
+
+    wrapper.appendChild(card);
+    chatViewport.appendChild(wrapper);
+    viewport.scrollTop = viewport.scrollHeight;
+    return wrapper;
+}
+
+function setButtonIconLabel(button, iconName, label) {
+    if (!button) return;
+    const iconWrap = document.createElement("span");
+    iconWrap.innerHTML = createIcon(iconName, { size: 14 });
+    const labelEl = document.createElement("span");
+    labelEl.className = "nd-button-label";
+    labelEl.textContent = label;
+    button.replaceChildren(iconWrap.firstElementChild || iconWrap, labelEl);
 }
 
 function updateSessionHeader() {
@@ -125,17 +178,47 @@ export function appendToolPill(icon, cmd, status = "done", duration = null) {
     if (!state.currentAIMessage) return;
     const msgCard = state.currentAIMessage.querySelector(".message-card");
     if (!msgCard) return;
-    const iconMarkup = createIcon(icon, { size: 14 })
-        || `<span class="tool-pill-icon-fallback">${window.sanitizeHtml ? window.sanitizeHtml(String(icon || "")) : String(icon || "")}</span>`;
     const pill = document.createElement("div");
     pill.className = `tool-pill ${status}`;
-    pill.innerHTML = `
-        <span class="tool-pill-dot"></span>
-        <span class="tool-pill-icon">${iconMarkup}</span>
-        <span class="tool-pill-cmd">${cmd}</span>
-        ${status !== "running" ? `<span class="tool-pill-status">${createIcon(status === "error" ? "x" : "shieldCheck", { size: 12 })}</span>` : ""}
-        ${duration ? `<span class="tool-pill-duration">${duration}</span>` : ""}
-    `;
+    const dot = document.createElement("span");
+    dot.className = "tool-pill-dot";
+
+    const iconEl = document.createElement("span");
+    iconEl.className = "tool-pill-icon";
+    const iconWrap = document.createElement("span");
+    const iconMarkup = createIcon(icon, { size: 14 });
+    if (iconMarkup) {
+        iconWrap.innerHTML = iconMarkup;
+        iconEl.appendChild(iconWrap.firstElementChild || iconWrap);
+    } else {
+        const fallback = document.createElement("span");
+        fallback.className = "tool-pill-icon-fallback";
+        fallback.textContent = String(icon || "");
+        iconEl.appendChild(fallback);
+    }
+
+    const cmdEl = document.createElement("span");
+    cmdEl.className = "tool-pill-cmd";
+    cmdEl.textContent = String(cmd ?? "");
+
+    pill.append(dot, iconEl, cmdEl);
+
+    if (status !== "running") {
+        const statusEl = document.createElement("span");
+        statusEl.className = "tool-pill-status";
+        const statusWrap = document.createElement("span");
+        statusWrap.innerHTML = createIcon(status === "error" ? "x" : "shieldCheck", { size: 12 });
+        statusEl.appendChild(statusWrap.firstElementChild || statusWrap);
+        pill.appendChild(statusEl);
+    }
+
+    if (duration) {
+        const durationEl = document.createElement("span");
+        durationEl.className = "tool-pill-duration";
+        durationEl.textContent = String(duration);
+        pill.appendChild(durationEl);
+    }
+
     msgCard.appendChild(pill);
     const viewport = document.getElementById("chat-workspace");
     if (viewport) viewport.scrollTop = viewport.scrollHeight;
@@ -146,13 +229,23 @@ function makeCopyBtn(getText) {
     btn.className = "msg-copy-btn";
     btn.title = "Copy message";
     btn.setAttribute("aria-label", "Copy message");
-    btn.innerHTML = `${createIcon("copy", { size: 14 })}<span class="nd-button-label">Copy</span>`;
-    btn.addEventListener("click", () => {
-        navigator.clipboard.writeText(getText());
-        btn.innerHTML = `${createIcon("shieldCheck", { size: 14 })}<span class="nd-button-label">Copied</span>`;
-        setTimeout(() => {
-            btn.innerHTML = `${createIcon("copy", { size: 14 })}<span class="nd-button-label">Copy</span>`;
-        }, 1600);
+    setButtonIconLabel(btn, "copy", "Copy");
+    btn.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(getText());
+            setButtonIconLabel(btn, "shieldCheck", "Copied");
+            setTimeout(() => {
+                setButtonIconLabel(btn, "copy", "Copy");
+            }, 1600);
+        } catch (err) {
+            setButtonIconLabel(btn, "x", "Failed");
+            setTimeout(() => {
+                setButtonIconLabel(btn, "copy", "Copy");
+            }, 1600);
+            if (typeof addNotification === "function") {
+                addNotification("Copy Failed", String(err), "error");
+            }
+        }
     });
     return btn;
 }
@@ -272,7 +365,7 @@ function sendMessage() {
         window.pendingScreenshot = null;
         const bar = document.getElementById("chat-attachment-bar");
         if (bar) {
-            bar.innerHTML = "";
+            bar.replaceChildren();
             bar.classList.add("hidden");
         }
         const btn = document.getElementById("screenshot-btn");
@@ -286,14 +379,11 @@ function sendMessage() {
     if (attachment) {
         const provSel = document.getElementById("llm-provider-select");
         if (provSel && provSel.value === "ollama") {
-            const warn = document.createElement("div");
-            warn.className = "message system";
-            warn.innerHTML = `<div class="message-card" style="border-color:var(--warning-color)">
-                ⚠️ <strong>Vision not supported with Ollama.</strong>
-                The screenshot attachment will be ignored. Switch to Gemini in Settings to use vision.
-            </div>`;
-            chatViewport.appendChild(warn);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage(
+                "system",
+                "Vision not supported with Ollama. The screenshot attachment will be ignored. Switch to Gemini in Settings to use vision.",
+                { borderColor: "var(--warning-color)" }
+            );
         }
     }
 
@@ -304,15 +394,7 @@ function sendMessage() {
         invokeArgs.imageMime = attachment.mime;
     }
     invoke('send_command', invokeArgs).catch((err) => {
-        let errorMsg = document.createElement("div");
-        errorMsg.className = "message system error";
-        errorMsg.innerHTML = `
-            <div class="message-card">
-                <strong>Error:</strong> ${err}
-            </div>
-        `;
-        chatViewport.appendChild(errorMsg);
-        viewport.scrollTop = viewport.scrollHeight;
+        appendChatMessage("system", String(err), { error: true, strongPrefix: "Error:" });
         document.getElementById("tool-status").innerText = "Idle";
     });
     document.getElementById("tool-status").innerText = "Thinking...";
@@ -672,11 +754,12 @@ listen("stream_error", function (event) {
     let viewport = document.getElementById("chat-workspace");
     let msg = document.createElement("div");
     msg.className = "message system error";
-    msg.innerHTML = `
-        <div class="message-card">
-            <strong>Error:</strong> ${err}
-        </div>
-    `;
+    const card = document.createElement("div");
+    card.className = "message-card";
+    const strong = document.createElement("strong");
+    strong.textContent = "Error:";
+    card.append(strong, ` ${String(err)}`);
+    msg.appendChild(card);
     chatViewport.appendChild(msg);
     viewport.scrollTop = viewport.scrollHeight;
     document.getElementById("tool-status").innerText = "Idle";
@@ -698,13 +781,20 @@ listen("stream_done", function () {
             // Message metadata footer (hover-revealed)
             const metaRow = document.createElement("div");
             metaRow.className = "msg-meta";
-            metaRow.innerHTML = `
-                <span class="msg-meta-model">${provider}</span>
-                <span class="msg-meta-sep">·</span>
-                <span>${timeStr}</span>
-                <span class="msg-meta-sep">·</span>
-                <span>${finalTokens} tokens</span>
-            `;
+            const modelEl = document.createElement("span");
+            modelEl.className = "msg-meta-model";
+            modelEl.textContent = provider;
+            const sepA = document.createElement("span");
+            sepA.className = "msg-meta-sep";
+            sepA.textContent = "·";
+            const timeEl = document.createElement("span");
+            timeEl.textContent = timeStr;
+            const sepB = document.createElement("span");
+            sepB.className = "msg-meta-sep";
+            sepB.textContent = "·";
+            const tokenEl = document.createElement("span");
+            tokenEl.textContent = `${finalTokens} tokens`;
+            metaRow.append(modelEl, sepA, timeEl, sepB, tokenEl);
             msgCard.appendChild(metaRow);
             // Copy button
             msgCard.appendChild(makeCopyBtn(() => capturedText));
@@ -761,28 +851,12 @@ function handleMicAction() {
         applyButtonIcon("#mic-btn", { icon: "x", iconOnly: true });
         micBtn.classList.add("recording");
         invoke("start_recording").then((msg) => {
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: ${msg}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System: ${String(msg)}`);
         }).catch((err) => {
             state.isRecording = false;
             applyButtonIcon("#mic-btn", { icon: "mic", iconOnly: true });
             micBtn.classList.remove("recording");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System error starting recording: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System error starting recording: ${String(err)}`, { error: true });
         });
     } else {
         state.isRecording = false;
@@ -933,11 +1007,10 @@ function loadSession(sid) {
         
         let systemDiv = document.createElement("div");
         systemDiv.className = "message system";
-        systemDiv.innerHTML = `
-            <div class="message-card">
-                System: Loaded session ${state.currentSessionId}
-            </div>
-        `;
+        const systemCard = document.createElement("div");
+        systemCard.className = "message-card";
+        systemCard.textContent = `System: Loaded session ${state.currentSessionId}`;
+        systemDiv.appendChild(systemCard);
         chatViewport.appendChild(systemDiv);
         viewport.scrollTop = viewport.scrollHeight;
         
@@ -945,15 +1018,7 @@ function loadSession(sid) {
     }).catch((err) => {
         let chatViewport = document.getElementById("chat-viewport");
         let viewport = document.getElementById("chat-workspace");
-        let div = document.createElement("div");
-        div.className = "message system error";
-        div.innerHTML = `
-            <div class="message-card">
-                Error loading session: ${err}
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
+        appendChatMessage("system", `Error loading session: ${String(err)}`, { error: true });
     });
 }
 
@@ -1045,15 +1110,7 @@ window.addEventListener("keydown", function(e) {
         invoke("save_session").then((msg) => {
             let chatViewport = document.getElementById("chat-viewport");
             let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: ${msg}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System: ${String(msg)}`);
             
             // Update session title in top navigation bar
             const stitleEl = document.getElementById("session-title");
@@ -1063,15 +1120,7 @@ window.addEventListener("keydown", function(e) {
         }).catch((err) => {
             let chatViewport = document.getElementById("chat-viewport");
             let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    System error saving session: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System error saving session: ${String(err)}`, { error: true });
         });
     }
     
@@ -1111,29 +1160,13 @@ window.addEventListener("keydown", function(e) {
             
             viewport.scrollTop = viewport.scrollHeight;
             
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: Loaded session ${state.currentSessionId}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
             
             refreshSessionsList();
         }).catch((err) => {
             let chatViewport = document.getElementById("chat-viewport");
             let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system error";
-            div.innerHTML = `
-                <div class="message-card">
-                    Error loading session: ${err}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `Error loading session: ${String(err)}`, { error: true });
         });
     }
     
@@ -1190,15 +1223,7 @@ window.addEventListener("keydown", function(e) {
                 
                 let chatViewport = document.getElementById("chat-viewport");
                 let viewport = document.getElementById("chat-workspace");
-                let div = document.createElement("div");
-                div.className = "message system";
-                div.innerHTML = `
-                    <div class="message-card">
-                        System: Persona cycled to ${nextPersona}
-                    </div>
-                `;
-                chatViewport.appendChild(div);
-                viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System: Persona cycled to ${nextPersona}`);
             }).catch((err) => {
                 console.error("Error cycling persona:", err);
             });
@@ -1231,15 +1256,7 @@ function handlePersonaChange() {
         updateSessionHeader();
         let chatViewport = document.getElementById("chat-viewport");
         let viewport = document.getElementById("chat-workspace");
-        let div = document.createElement("div");
-        div.className = "message system";
-        div.innerHTML = `
-            <div class="message-card">
-                System: ${msg}
-            </div>
-        `;
-        chatViewport.appendChild(div);
-        viewport.scrollTop = viewport.scrollHeight;
+        appendChatMessage("system", `System: ${String(msg)}`);
     });
 }
 
@@ -1252,15 +1269,7 @@ function handleThemeChange() {
             
             let chatViewport = document.getElementById("chat-viewport");
             let viewport = document.getElementById("chat-workspace");
-            let div = document.createElement("div");
-            div.className = "message system";
-            div.innerHTML = `
-                <div class="message-card">
-                    System: Theme applied and saved: ${val}
-                </div>
-            `;
-            chatViewport.appendChild(div);
-            viewport.scrollTop = viewport.scrollHeight;
+            appendChatMessage("system", `System: Theme applied and saved: ${val}`);
         }
     });
 }
