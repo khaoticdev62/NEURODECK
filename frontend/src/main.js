@@ -59,6 +59,9 @@ import { initMemoryView } from "./memory.js";
 import { initTorrentClient } from "./torrent.js";
 import { FocusTrap } from "./focus-trap.js";
 import { renderShortcutsOverlay } from "./shortcuts.js";
+import { initGitView } from "./git.js";
+import { initApiLabView } from "./api_lab.js";
+import { initCliMakerView } from "./cli_maker.js";
 
 // ==========================================================================
 // SCREEN-READER ANNOUNCER (a11y)
@@ -497,6 +500,9 @@ document.querySelector("#app").innerHTML = `
                     <button class="nav-tab" data-view="prompt-lab" data-testid="nav-tab-prompt-lab">📝 Prompt Lab</button>
                     <button class="nav-tab" data-view="remote" data-testid="nav-tab-remote">🖥️ Remote</button>
                     <button class="nav-tab" data-view="docs" data-testid="nav-tab-docs">📚 Docs</button>
+                    <button class="nav-tab" data-view="git" data-testid="nav-tab-git">🌿 Git</button>
+                    <button class="nav-tab" data-view="api-lab" data-testid="nav-tab-api-lab">🧪 API Lab</button>
+                    <button class="nav-tab" data-view="cli-maker" data-testid="nav-tab-cli-maker">⚡ CLI</button>
                 </div>
             </nav>
 
@@ -1648,6 +1654,170 @@ document.querySelector("#app").innerHTML = `
                                 <div class="docs-results-list" id="docs-results-list">
                                     <div class="docs-empty-msg">Search to find relevant passages.</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     GIT VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-git" data-testid="view-git">
+                    <div class="git-workspace">
+                        <div class="git-pane git-pane-left">
+                            <div class="git-pane-header">🌿 Repositories</div>
+                            <div class="git-repo-actions">
+                                <button class="git-btn" id="git-clone-btn">Clone</button>
+                                <button class="git-btn" id="git-init-btn">Init</button>
+                                <button class="git-btn" id="git-open-btn">Open</button>
+                            </div>
+                            <div class="git-repo-list" id="git-repo-list">
+                                <div class="git-empty">No repositories yet.</div>
+                            </div>
+                            <div class="git-pane-header" style="margin-top:12px;">🔑 Accounts</div>
+                            <div class="git-account-list" id="git-account-list"></div>
+                        </div>
+                        <div class="git-pane git-pane-center">
+                            <div class="git-pane-header">
+                                <span id="git-repo-name">No repo selected</span>
+                                <span class="git-repo-branch" id="git-repo-branch"></span>
+                            </div>
+                            <div class="git-repo-actions" style="margin-bottom:6px;">
+                                <button class="git-btn" id="git-stage-btn">Stage</button>
+                                <button class="git-btn" id="git-unstage-btn">Unstage</button>
+                                <button class="git-btn" id="git-discard-btn" style="border-color:var(--error-color);color:var(--error-color);">Discard</button>
+                            </div>
+                            <div class="git-worktree" id="git-worktree">
+                                <div class="git-empty">Select a repository to view changes.</div>
+                            </div>
+                            <div class="git-diff-viewer" id="git-diff-viewer">
+                                <div class="git-diff-header">Diff</div>
+                                <pre class="git-diff-body" id="git-diff-body"></pre>
+                            </div>
+                            <div class="git-commit-bar">
+                                <textarea id="git-commit-msg" class="git-commit-input" placeholder="Commit message…"></textarea>
+                                <button class="git-btn git-btn-ai" id="git-ai-commit-btn" title="AI Suggest">✨</button>
+                                <button class="git-btn git-btn-primary" id="git-commit-btn">Commit</button>
+                            </div>
+                        </div>
+                        <div class="git-pane git-pane-right">
+                            <div class="git-pane-header">Branches</div>
+                            <div class="git-branch-list" id="git-branch-list"></div>
+                            <div class="git-pane-header" style="margin-top:12px;">History</div>
+                            <div class="git-history-list" id="git-history-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     API LAB VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-api-lab" data-testid="view-api-lab">
+                    <div class="api-lab-workspace">
+                        <div class="api-lab-pane api-lab-left">
+                            <div class="api-lab-header">Collections</div>
+                            <div class="api-lab-actions">
+                                <button class="api-lab-btn" id="api-new-collection-btn">+ Collection</button>
+                                <button class="api-lab-btn" id="api-new-request-btn">+ Request</button>
+                            </div>
+                            <div class="api-lab-collections" id="api-lab-collections">
+                                <div class="api-lab-empty">No collections yet.</div>
+                            </div>
+                        </div>
+                        <div class="api-lab-pane api-lab-right">
+                            <div class="api-lab-request-builder">
+                                <div class="api-lab-method-row">
+                                    <select id="api-method-select" class="api-lab-method-select">
+                                        <option>GET</option><option>POST</option><option>PUT</option>
+                                        <option>PATCH</option><option>DELETE</option><option>HEAD</option>
+                                    </select>
+                                    <input type="text" id="api-url-input" class="api-lab-url-input" placeholder="https://api.example.com/v1/resource">
+                                    <button class="api-lab-btn api-lab-btn-primary" id="api-send-btn">Send</button>
+                                </div>
+                                <div class="api-lab-tabs">
+                                    <button class="api-lab-tab active" data-api-tab="headers">Headers</button>
+                                    <button class="api-lab-tab" data-api-tab="body">Body</button>
+                                    <button class="api-lab-tab" data-api-tab="ai">✨ AI Generate</button>
+                                </div>
+                                <div class="api-lab-tab-panel active" id="api-tab-headers">
+                                    <div class="api-lab-kv-list" id="api-headers-list"></div>
+                                    <button class="api-lab-btn-small" id="api-add-header-btn">+ Header</button>
+                                </div>
+                                <div class="api-lab-tab-panel" id="api-tab-body">
+                                    <textarea id="api-body-input" class="api-lab-body-input" placeholder="Request body (JSON, XML, etc.)"></textarea>
+                                </div>
+                                <div class="api-lab-tab-panel" id="api-tab-ai">
+                                    <textarea id="api-ai-input" class="api-lab-body-input" placeholder="Describe the API request you want to make…"></textarea>
+                                    <button class="api-lab-btn" id="api-ai-generate-btn">Generate Request</button>
+                                </div>
+                            </div>
+                            <div class="api-lab-response-viewer" id="api-response-viewer">
+                                <div class="api-lab-response-status" id="api-response-status">Waiting…</div>
+                                <pre class="api-lab-response-body" id="api-response-body"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     CLI MAKER VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-cli-maker" data-testid="view-cli-maker">
+                    <div class="cli-maker-workspace">
+                        <div class="cli-maker-pane cli-maker-left">
+                            <div class="cli-maker-header">Commands</div>
+                            <div class="cli-maker-filters" id="cli-maker-filters">
+                                <button class="cli-filter active" data-filter="all">All</button>
+                                <button class="cli-filter" data-filter="prompt">Prompt</button>
+                                <button class="cli-filter" data-filter="shell">Shell</button>
+                                <button class="cli-filter" data-filter="view">View</button>
+                                <button class="cli-filter" data-filter="chain">Chain</button>
+                                <button class="cli-filter" data-filter="plugin">Plugin</button>
+                            </div>
+                            <div class="cli-maker-list" id="cli-maker-list">
+                                <div class="cli-maker-empty">Loading commands…</div>
+                            </div>
+                            <button class="cli-maker-btn-primary" id="cli-new-cmd-btn">+ New Command</button>
+                        </div>
+                        <div class="cli-maker-pane cli-maker-center">
+                            <div class="cli-maker-header" id="cli-editor-title">New Command</div>
+                            <div class="cli-editor-form" id="cli-editor-form">
+                                <input type="text" id="cli-cmd-name" class="cli-input" placeholder="Command name">
+                                <input type="text" id="cli-cmd-desc" class="cli-input" placeholder="Description">
+                                <select id="cli-cmd-category" class="cli-select">
+                                    <option value="prompt">Prompt</option>
+                                    <option value="shell">Shell</option>
+                                    <option value="view">View</option>
+                                    <option value="chain">Chain</option>
+                                    <option value="plugin">Plugin</option>
+                                </select>
+                                <div class="cli-dynamic-fields" id="cli-dynamic-fields"></div>
+                                <div class="cli-editor-actions">
+                                    <button class="cli-maker-btn" id="cli-save-btn">Save</button>
+                                    <button class="cli-maker-btn" id="cli-test-btn">Test</button>
+                                    <button class="cli-maker-btn" id="cli-export-btn">Export Lua</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cli-maker-pane cli-maker-right">
+                            <div class="cli-maker-header">Preview</div>
+                            <div class="cli-preview-output" id="cli-preview-output"></div>
+                            <div class="cli-maker-header" style="margin-top:12px;">Bindings</div>
+                            <div class="cli-bindings">
+                                <label>Shortcut</label>
+                                <input type="text" id="cli-shortcut-input" class="cli-input" placeholder="None" readonly>
+                                <label>Radial Slot</label>
+                                <select id="cli-radial-select" class="cli-select">
+                                    <option value="">None</option>
+                                    <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                                    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                    <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                                    <option value="9">9</option><option value="10">10</option><option value="11">11</option>
+                                    <option value="12">12</option><option value="13">13</option><option value="14">14</option>
+                                    <option value="15">15</option>
+                                </select>
+                                <label>Icon</label>
+                                <select id="cli-icon-select" class="cli-select"></select>
                             </div>
                         </div>
                     </div>
@@ -3701,6 +3871,9 @@ const RADIAL_SEGMENTS = [
   { icon: "panelRightOpen", label: "Remote", view: "remote" },
   { icon: "sparkles", label: "PromptLab", view: "prompt-lab" },
   { icon: "fileText", label: "Docs", view: "docs" },
+  { icon: "gitBranch", label: "Git", view: "git" },
+  { icon: "send", label: "API Lab", view: "api-lab" },
+  { icon: "zap", label: "CLI", view: "cli-maker" },
 ];
 
 function getGamepadFocusableElements() {
@@ -4984,6 +5157,15 @@ navTabs.forEach((tab) => {
         renderSftpProfiles();
       });
     }
+    if (targetViewName === "git" && typeof initGitView === "function") {
+      initGitView();
+    }
+    if (targetViewName === "api-lab" && typeof initApiLabView === "function") {
+      initApiLabView();
+    }
+    if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") {
+      initCliMakerView();
+    }
   };
 });
 
@@ -5002,6 +5184,9 @@ const CONTEXTUAL_TIPS = {
   share: "Enable the <strong>Warpinator gRPC server</strong> to receive files from Linux peers.",
   tunnel: "Use the tunnel to <strong>bridge Desktop Mode and Game Mode</strong> on SteamOS.",
   remote: "<strong>Scan the QR code</strong> with your iPhone to send commands remotely.",
+  git: "<strong>Stage files</strong> and press ✨ to generate a commit message with AI.",
+  "api-lab": "Describe an API in natural language and let <strong>AI generate the request</strong>.",
+  "cli-maker": "Create custom commands that appear in the <strong>palette and radial menu</strong>.",
 };
 
 let activeTipTimer = null;
@@ -5135,6 +5320,9 @@ function updateBreadcrumb(viewName) {
     "prompt-lab": "Prompt Lab",
     remote: "Remote",
     docs: "Docs",
+    git: "Git",
+    "api-lab": "API Lab",
+    "cli-maker": "CLI Maker",
   };
   el.textContent = labels[viewName] || viewName;
   el.style.opacity = "0";
@@ -5286,6 +5474,27 @@ const COMMAND_PALETTE_ACTIONS = [
     icon: "fileText",
     keywords: ["docs", "documents", "search"],
     run: () => activateViewByName("docs"),
+  },
+  {
+    label: "Open Git",
+    group: "Views",
+    icon: "gitBranch",
+    keywords: ["git", "repo", "version control", "commit"],
+    run: () => activateViewByName("git"),
+  },
+  {
+    label: "Open API Lab",
+    group: "Views",
+    icon: "send",
+    keywords: ["api", "http", "request", "rest"],
+    run: () => activateViewByName("api-lab"),
+  },
+  {
+    label: "Open CLI Maker",
+    group: "Views",
+    icon: "zap",
+    keywords: ["cli", "command", "macro", "custom"],
+    run: () => activateViewByName("cli-maker"),
   },
   {
     label: "Settings: General",
@@ -5824,6 +6033,9 @@ const VIEW_ICON_MAP = {
   "view-prompt-lab": "sparkles",
   "view-remote": "panelRightOpen",
   "view-docs": "fileText",
+  "view-git": "gitBranch",
+  "view-api-lab": "send",
+  "view-cli-maker": "zap",
 };
 
 const VIEW_NAME_MAP = {
@@ -5839,6 +6051,9 @@ const VIEW_NAME_MAP = {
   "view-prompt-lab": "Prompt Lab",
   "view-remote": "Remote",
   "view-docs": "Docs",
+  "view-git": "Git",
+  "view-api-lab": "API Lab",
+  "view-cli-maker": "CLI Maker",
 };
 
 const quickSwitcherState = {
@@ -11405,17 +11620,22 @@ async function showOnboardingWizard() {
 // ==========================================================================
 // CINEMATIC BOOT SEQUENCE
 // ==========================================================================
+// Uses a single `get_boot_diagnostics` invoke to obtain a dynamic pipeline.
+// New backend features auto-render by pushing a BootPipelineStep into the
+// `pipeline` vec — no frontend code changes required.
+// ==========================================================================
 (async function runBootSequence() {
   const overlay = document.getElementById("boot-overlay");
   const logScroll = document.getElementById("boot-log-scroll");
   const progressFill = document.getElementById("boot-progress-fill");
   const progressPct = document.getElementById("boot-progress-pct");
   const progressLabel = document.getElementById("boot-progress-label-text");
-  // Guarantee event fires even on early return or unexpected error
+
   if (!overlay || !logScroll) {
     document.dispatchEvent(new CustomEvent("neurodeck-boot-complete"));
     return;
   }
+
   try {
     const delay = (ms) => new Promise((r) => setTimeout(r, ms));
     const escapeBootHtml = (value) =>
@@ -11430,7 +11650,6 @@ async function showOnboardingWizard() {
     const statusToken = (label, tone = "boot-ok") =>
       `<span class="${tone}">${escapeBootHtml(label)}</span>`;
 
-    let totalSteps = 16;
     let step = 0;
     let addrIndex = 1;
 
@@ -11452,127 +11671,65 @@ async function showOnboardingWizard() {
       line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
       logScroll.appendChild(line);
       logScroll.scrollTop = logScroll.scrollHeight;
+    }
+
+    // ── Fetch boot diagnostics in one round-trip ───────────────────────────
+    const diag = await invoke("get_boot_diagnostics").catch((e) => {
+      console.error("[Boot] get_boot_diagnostics failed:", e);
+      return null;
+    });
+
+    const pipeline = Array.isArray(diag?.pipeline) ? diag.pipeline : [];
+    // +2 for the LLM handshake step and the final completion line
+    const totalSteps = Math.max(pipeline.length, 1) + 2;
+
+    function advanceProgress(labelText) {
       step += 1;
       const pct = Math.min((step / Math.max(totalSteps, 1)) * 100, 97);
-      setProgress(pct, line.innerText.replace(addr, "").trim());
+      setProgress(pct, labelText);
     }
 
-    addLine(
-      nextAddr(),
-      `Initializing kernel space... KFMS ${token("v1.2.x-ra")} · Codename ${token("Ra")}`,
-    );
-    await delay(240);
+    // ── Render dynamic pipeline ────────────────────────────────────────────
+    for (const entry of pipeline) {
+      const toneMap = {
+        ok: "boot-ok",
+        warn: "boot-warn",
+        err: "boot-err",
+        info: "boot-info",
+        neutral: "boot-neutral",
+      };
+      const tone = toneMap[entry.status] || "boot-ok";
 
-    addLine(nextAddr(), `Loading configuration ${token("llm-term.toml")}`);
-    const [cfg, initialState, plugins, personas, themes, mcpStatus, memCount] =
-      await Promise.all([
-        invoke("get_config").catch(() => null),
-        invoke("get_initial_state").catch(() => null),
-        invoke("list_plugins").catch(() => []),
-        invoke("get_personas").catch(() => []),
-        invoke("get_themes").catch(() => []),
-        invoke("get_mcp_status", {  }).catch(() => null),
-        invoke("get_doc_count").catch(() => 0),
-      ]);
-    totalSteps = 12 + Math.max(Array.isArray(plugins) ? plugins.length : 0, 1);
-    await delay(200);
-
-    const provider =
-      cfg?.llm?.default_provider ?? initialState?.provider ?? "ollama";
-    const model =
-      provider === "gemini"
-        ? (cfg?.llm?.gemini_model ?? initialState?.model ?? "gemini-1.5-flash")
-        : (cfg?.llm?.ollama_model ?? initialState?.model ?? "llama2");
-    addLine(
-      nextAddr(),
-      `Provider ${token(provider.toUpperCase())} · Model ${token(model)} ${statusToken("READY")}`,
-    );
-    await delay(180);
-
-    const bootHealthStatus = initialState?.boot_health_status ?? "unknown";
-    const bootHealthTone =
-      bootHealthStatus === "healthy"
-        ? "boot-ok"
-        : bootHealthStatus === "recovered"
-          ? "boot-warn"
-          : "boot-err";
-    const bootHealthLabel =
-      bootHealthStatus === "healthy"
-        ? "HEALTHY"
-        : bootHealthStatus.toUpperCase();
-    const bootHealthSummary =
-      initialState?.boot_health_summary ?? "Startup health unavailable";
-    addLine(
-      nextAddr(),
-      `Startup recovery ${statusToken(bootHealthLabel, bootHealthTone)} · ${escapeBootHtml(bootHealthSummary)}`,
-    );
-    await delay(180);
-
-    addLine(nextAddr(), `Scanning plugin directory ${token("plugins/")}`);
-    await delay(140);
-
-    const pluginDescMap = {
-      "bmad.lua": "BMad Framework",
-      "ip_lookup.lua": "IP Lookup Utility",
-      "auto_responder.lua": "Auto-Responder Hooks",
-      "promptgen.lua": "Prompt Lab",
-    };
-    if (Array.isArray(plugins) && plugins.length > 0) {
-      for (const plugin of plugins) {
-        const fileName = plugin?.file_name || plugin?.name || String(plugin);
-        const description =
-          pluginDescMap[fileName] || plugin?.description || "Custom Plugin";
-        const enabled = plugin?.enabled !== false;
-        addLine(
-          nextAddr(),
-          `Plugin ${token(fileName)} ${statusToken(enabled ? "LOADED" : "DISABLED", enabled ? "boot-ok" : "boot-warn")} <span style="opacity:0.42">// ${escapeBootHtml(description)}</span>`,
-        );
-        await delay(110);
+      let html;
+      if (entry.category === "plugin") {
+        // Plugins get the classic // description suffix styling
+        const detail = entry.detail ? ` <span style="opacity:0.42">// ${escapeBootHtml(entry.detail)}</span>` : "";
+        html = `${escapeBootHtml(entry.label)}${detail}`;
+      } else {
+        const detail = entry.detail ? ` · ${escapeBootHtml(entry.detail)}` : "";
+        html = `${escapeBootHtml(entry.label)}${detail}`;
       }
-    } else {
-      addLine(
-        nextAddr(),
-        `Plugin registry ${statusToken("EMPTY", "boot-warn")} <span style="opacity:0.42">// no runtime plugins discovered</span>`,
-      );
-      await delay(150);
+
+      addLine(nextAddr(), html);
+      advanceProgress(entry.label);
+      // Cinematic stagger: system steps are fast, plugins feel weighty
+      await delay(entry.category === "plugin" ? 110 : 140);
     }
 
+    // ── LLM handshake (frontend-side because it needs async test) ──────────
+    const provider = diag?.provider ?? "ollama";
+    const model = diag?.model ?? "llama2";
     addLine(
       nextAddr(),
-      `Persona registry ${token(Array.isArray(personas) ? personas.length : 0)} online`,
+      `Running provider handshake against ${token(provider.toUpperCase())}…`
     );
-    await delay(150);
-
-    addLine(
-      nextAddr(),
-      `Theme palette ${token(Array.isArray(themes) ? themes.length : 0)} variants indexed`,
-    );
-    await delay(150);
-
-    const memoryReady = initialState?.memory_status === "Stable";
-    addLine(
-      nextAddr(),
-      `Vector memory ${statusToken(memoryReady ? "ATTACHED" : "OFFLINE", memoryReady ? "boot-ok" : "boot-warn")} · ${token(memCount)} docs indexed`,
-    );
-    await delay(170);
-
-    const mcpRunning = mcpStatus?.running === "true";
-    addLine(
-      nextAddr(),
-      `MCP loopback ${statusToken(mcpRunning ? "ONLINE" : "STANDBY", mcpRunning ? "boot-ok" : "boot-warn")} · ${token(mcpRunning ? (mcpStatus?.url ?? "127.0.0.1") : `port ${mcpStatus?.port ?? "13337"}`)}`,
-    );
-    await delay(170);
-
-    addLine(
-      nextAddr(),
-      `Running provider handshake against ${token(provider.toUpperCase())}...`,
-    );
+    advanceProgress("Provider handshake");
     await delay(120);
 
     const llmResult = await invoke("test_llm_connection", {
       provider,
       model,
-      url: cfg?.llm?.ollama_base_url ?? "http://localhost:11434",
+      url: diag?.ollama_base_url ?? "http://localhost:11434",
       key: null,
     })
       .then((message) => ({ ok: true, message }))
@@ -11582,15 +11739,18 @@ async function showOnboardingWizard() {
     const llmLabel = llmResult.ok ? "CONNECTED" : "DEGRADED";
     addLine(
       nextAddr(),
-      `LLM session ${statusToken(llmLabel, llmTone)} · ${token(model)} <span style="opacity:0.52">${escapeBootHtml(llmResult.message)}</span>`,
+      `LLM session ${statusToken(llmLabel, llmTone)} · ${token(model)} <span style="opacity:0.52">${escapeBootHtml(llmResult.message)}</span>`
     );
+    advanceProgress("LLM session");
     await delay(200);
 
+    // ── Final completion line ──────────────────────────────────────────────
+    const memoryReady = diag?.memory_ready ?? false;
     const finalTone = llmResult.ok && memoryReady ? "boot-ok" : "boot-warn";
     addLine(
       nextAddr(),
       `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`,
-      "boot-final",
+      "boot-final"
     );
     setProgress(100, "NEURODECK ONLINE");
     await delay(1100);

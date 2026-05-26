@@ -11297,6 +11297,13 @@ body.crt-flicker-disabled .crt-flicker {
 .boot-log-line .boot-err {
   color: var(--error-color);
 }
+.boot-log-line .boot-info {
+  color: var(--accent-color);
+}
+.boot-log-line .boot-neutral {
+  color: var(--fg-color);
+  opacity: 0.5;
+}
 .boot-log-line .boot-val {
   color: #c0ffc8;
   font-weight: 600;

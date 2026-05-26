@@ -56,7 +56,9 @@
       "../plugins/ip_lookup.lua": "plugins/ip_lookup.lua",
       "../plugins/auto_responder.lua": "plugins/auto_responder.lua",
       "llm-term.toml": "llm-term.toml",
-      "../assets/bmad-bundle/**/*": "bmad-bundle"
+      "../assets/bmad-bundle/**/*": "bmad-bundle",
+      "../assets/boot-pipeline.json": "boot-pipeline.json",
+      "../assets/boot-pipeline.schema.json": "boot-pipeline.schema.json"
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"

@@ -9,6 +9,67 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
+/// ── Boot Diagnostics ─────────────────────────────────────────────────────
+/// Structured data for the cinematic boot animation. Returned in a single
+/// invoke so the frontend can render the pipeline without N+1 round-trips.
+
+#[derive(serde::Serialize)]
+pub struct PluginBootInfo {
+    pub file_name: String,
+    pub description: String,
+    pub enabled: bool,
+}
+
+/// A single step in the cinematic boot pipeline.  Adding a new major feature
+/// to the backend only requires pushing another `BootPipelineStep` into the
+/// `pipeline` vec inside `get_boot_diagnostics` — the frontend renders it
+/// automatically without hard-coded log lines.
+#[derive(serde::Serialize)]
+pub struct BootPipelineStep {
+    pub id: String,
+    pub category: String,
+    pub label: String,
+    pub status: String,
+    pub detail: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct BootDiagnostics {
+    pub kfms_version: String,
+    pub codename: String,
+    pub build_date: String,
+    pub config_path: String,
+    pub provider: String,
+    pub model: String,
+    pub ollama_base_url: String,
+    pub active_agent_id: String,
+    pub boot_health_status: String,
+    pub boot_health_summary: String,
+    pub boot_health_recovered_count: usize,
+    pub boot_health_warning_count: usize,
+    pub plugins: Vec<PluginBootInfo>,
+    pub persona_count: usize,
+    pub theme_count: usize,
+    pub memory_ready: bool,
+    pub memory_doc_count: usize,
+    pub mcp_running: bool,
+    pub mcp_url: String,
+    pub mcp_port: String,
+    pub agent_count: usize,
+    pub custom_theme_count: usize,
+    pub onboarding_complete: bool,
+    pub security_hardening_applied: bool,
+    pub canvas_collab_security: bool,
+    pub bmad_framework_loaded: bool,
+    pub game_name: String,
+    pub game_running: bool,
+    pub collab_peer_count: usize,
+    pub collab_active: bool,
+    pub sync_enabled: bool,
+    pub sync_last_at: Option<String>,
+    pub pipeline: Vec<BootPipelineStep>,
+}
+
 #[tauri::command]
 pub fn get_game_context() -> HashMap<String, String> {
     let (name, app_id, is_running) = detect_game();
@@ -22,17 +83,342 @@ pub fn get_game_context() -> HashMap<String, String> {
 }
 
 #[tauri::command]
+pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostics {
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
+
+    let provider = app.config.llm.default_provider.clone();
+    let model = match provider.as_str() {
+        "gemini" => app.config.llm.gemini_model.clone(),
+        "kimi" => app.config.llm.kimi_model.clone(),
+        "huggingface" => app.config.llm.hf_model.clone(),
+        _ => app.config.llm.ollama_model.clone(),
+    };
+
+    let plugins: Vec<PluginBootInfo> = plugin_mgr::list_local_plugins()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|p| PluginBootInfo {
+            file_name: p.file_name.clone(),
+            description: p.description.clone().unwrap_or_default(),
+            enabled: p.enabled,
+        })
+        .collect();
+
+    let persona_count = app.custom_personas.len() + PERSONAS.len();
+    let theme_count = THEMES.len();
+    let memory_ready = app.mem_db.is_some();
+    let memory_doc_count = app
+        .mem_db
+        .as_ref()
+        .and_then(|db| db.list_all().ok())
+        .map(|r| r.len())
+        .unwrap_or(0);
+
+    let mcp_port_str = app.mcp_port.to_string();
+    let mcp_running = app.mcp_abort.is_some();
+
+    let agent_count = app.config.llm.agents.len();
+
+    let bmad_framework_loaded = plugins.iter().any(|p| p.file_name == "bmad.lua");
+    let canvas_collab_security = true; // peer-sync approval gate is always active since v1.2.2
+
+    let custom_theme_count = std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
+        .map(|v| v.len())
+        .unwrap_or(0);
+
+    let collab_peer_count = app
+        .collab_peer_count
+        .as_ref()
+        .map(|c| c.load(Ordering::Relaxed))
+        .unwrap_or(0);
+    let collab_active = app.collab_abort.is_some();
+
+    let sync_enabled = app.config.sync.enabled;
+    let sync_last_at = app.config.sync.last_sync_at.clone();
+
+    let (game_name, _game_id, game_running) = detect_game();
+
+    // ── Dynamic boot pipeline ──────────────────────────────────────────────
+    // New major features only need to push a step here — the frontend
+    // auto-renders every entry without hard-coded log lines.
+    let mut pipeline = Vec::new();
+
+    pipeline.push(BootPipelineStep {
+        id: "kernel".to_string(),
+        category: "system".to_string(),
+        label: format!("Initializing kernel space… KFMS v1.2.x-ra · Codename Ra"),
+        status: "info".to_string(),
+        detail: String::new(),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "config".to_string(),
+        category: "system".to_string(),
+        label: "Loading configuration llm-term.toml".to_string(),
+        status: "ok".to_string(),
+        detail: get_config_path().to_string_lossy().to_string(),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "provider".to_string(),
+        category: "network".to_string(),
+        label: format!("Provider {} · Model {}", provider.to_uppercase(), model),
+        status: "ok".to_string(),
+        detail: String::new(),
+    });
+
+    let health_status = app.boot_self_heal.status.clone();
+    let health_tone = if health_status == "healthy" {
+        "ok"
+    } else if health_status == "recovered" {
+        "warn"
+    } else {
+        "err"
+    };
+    pipeline.push(BootPipelineStep {
+        id: "health".to_string(),
+        category: "system".to_string(),
+        label: format!(
+            "Startup recovery {} · {}",
+            health_status.to_uppercase(),
+            app.boot_self_heal.summary()
+        ),
+        status: health_tone.to_string(),
+        detail: format!(
+            "{} recovered, {} warnings",
+            app.boot_self_heal.recovered_count, app.boot_self_heal.warning_count
+        ),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "plugin_scan".to_string(),
+        category: "system".to_string(),
+        label: "Scanning plugin directory plugins/".to_string(),
+        status: "info".to_string(),
+        detail: format!("{} plugin(s) discovered", plugins.len()),
+    });
+
+    for p in &plugins {
+        pipeline.push(BootPipelineStep {
+            id: format!("plugin:{}", p.file_name),
+            category: "plugin".to_string(),
+            label: format!("Plugin {} — {}", p.file_name, if p.enabled { "LOADED" } else { "DISABLED" }),
+            status: if p.enabled { "ok".to_string() } else { "warn".to_string() },
+            detail: p.description.clone(),
+        });
+    }
+
+    if plugins.is_empty() {
+        pipeline.push(BootPipelineStep {
+            id: "plugin_empty".to_string(),
+            category: "plugin".to_string(),
+            label: "Plugin registry EMPTY".to_string(),
+            status: "warn".to_string(),
+            detail: "no runtime plugins discovered".to_string(),
+        });
+    }
+
+    pipeline.push(BootPipelineStep {
+        id: "personas".to_string(),
+        category: "feature".to_string(),
+        label: format!("Persona registry {} online", persona_count),
+        status: "ok".to_string(),
+        detail: String::new(),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "themes".to_string(),
+        category: "feature".to_string(),
+        label: format!("Theme palette {} variants indexed", theme_count + custom_theme_count),
+        status: "ok".to_string(),
+        detail: format!("{} built-in, {} custom", theme_count, custom_theme_count),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "memory".to_string(),
+        category: "feature".to_string(),
+        label: format!(
+            "Vector memory {} · {} docs indexed",
+            if memory_ready { "ATTACHED" } else { "OFFLINE" },
+            memory_doc_count
+        ),
+        status: if memory_ready { "ok".to_string() } else { "warn".to_string() },
+        detail: String::new(),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "mcp".to_string(),
+        category: "network".to_string(),
+        label: format!(
+            "MCP loopback {}",
+            if mcp_running { "ONLINE" } else { "STANDBY" }
+        ),
+        status: if mcp_running { "ok".to_string() } else { "warn".to_string() },
+        detail: if mcp_running {
+            format!("http://127.0.0.1:{}", mcp_port_str)
+        } else {
+            format!("port {}", mcp_port_str)
+        },
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "agents".to_string(),
+        category: "feature".to_string(),
+        label: format!("Agent roster {} configured", agent_count),
+        status: "ok".to_string(),
+        detail: format!("active: {}", app.config.llm.active_agent_id),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "collab".to_string(),
+        category: "network".to_string(),
+        label: format!(
+            "Canvas collab {} · {} peer(s)",
+            if collab_active { "ACTIVE" } else { "INACTIVE" },
+            collab_peer_count
+        ),
+        status: if collab_active { "ok".to_string() } else { "neutral".to_string() },
+        detail: if canvas_collab_security {
+            "peer-sync approval gate enabled".to_string()
+        } else {
+            String::new()
+        },
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "sync".to_string(),
+        category: "network".to_string(),
+        label: format!(
+            "Cloud sync {}",
+            if sync_enabled { "ENABLED" } else { "DISABLED" }
+        ),
+        status: if sync_enabled { "ok".to_string() } else { "neutral".to_string() },
+        detail: sync_last_at.clone().unwrap_or_else(|| "never synced".to_string()),
+    });
+
+    pipeline.push(BootPipelineStep {
+        id: "security".to_string(),
+        category: "security".to_string(),
+        label: "Security hardening APPLIED".to_string(),
+        status: "ok".to_string(),
+        detail: "v1.2.2 audit gate active".to_string(),
+    });
+
+    if !game_name.is_empty() {
+        pipeline.push(BootPipelineStep {
+            id: "game".to_string(),
+            category: "feature".to_string(),
+            label: format!(
+                "Game context {} · {}",
+                if game_running { "RUNNING" } else { "DETECTED" },
+                game_name
+            ),
+            status: if game_running { "ok".to_string() } else { "neutral".to_string() },
+            detail: String::new(),
+        });
+    }
+
+    // ── Merge custom steps from boot-pipeline.json manifest ────────────────
+    // Allows custom boot log entries without touching Rust or JS source.
+    let mut manifest_candidates: Vec<PathBuf> = vec![
+        PathBuf::from("../assets/boot-pipeline.json"), // dev (cwd = src-tauri/)
+        PathBuf::from("./assets/boot-pipeline.json"),  // production bundle (sidecar)
+    ];
+    // Also check next to the running binary
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            manifest_candidates.push(dir.join("assets").join("boot-pipeline.json"));
+        }
+    }
+    for path in &manifest_candidates {
+        if let Ok(text) = std::fs::read_to_string(path) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+                if let Some(steps) = json.get("steps").and_then(|s| s.as_array()) {
+                    for step in steps {
+                        if let Some(id) = step.get("id").and_then(|v| v.as_str()) {
+                            pipeline.push(BootPipelineStep {
+                                id: id.to_string(),
+                                category: step
+                                    .get("category")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("system")
+                                    .to_string(),
+                                label: step
+                                    .get("label")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string(),
+                                status: step
+                                    .get("status")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("info")
+                                    .to_string(),
+                                detail: step
+                                    .get("detail")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+            break; // use first found manifest
+        }
+    }
+
+    BootDiagnostics {
+        kfms_version: "v1.2.x-ra".to_string(),
+        codename: "Ra".to_string(),
+        build_date: "20260526".to_string(),
+        config_path: get_config_path().to_string_lossy().to_string(),
+        provider,
+        model: model.clone(),
+        ollama_base_url: app.config.llm.ollama_base_url.clone(),
+        active_agent_id: app.config.llm.active_agent_id.clone(),
+        boot_health_status: health_status,
+        boot_health_summary: app.boot_self_heal.summary(),
+        boot_health_recovered_count: app.boot_self_heal.recovered_count,
+        boot_health_warning_count: app.boot_self_heal.warning_count,
+        plugins,
+        persona_count,
+        theme_count,
+        memory_ready,
+        memory_doc_count,
+        mcp_running,
+        mcp_url: format!("http://127.0.0.1:{}", mcp_port_str),
+        mcp_port: mcp_port_str,
+        agent_count,
+        custom_theme_count,
+        onboarding_complete: false, // frontend will override from localStorage
+        security_hardening_applied: true, // applied in v1.2.2 security audit
+        canvas_collab_security,
+        bmad_framework_loaded,
+        game_name: game_name.clone(),
+        game_running,
+        collab_peer_count,
+        collab_active,
+        sync_enabled,
+        sync_last_at,
+        pipeline,
+    }
+}
+
+#[tauri::command]
 pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut initial = HashMap::new();
 
-    let model_name = if app.config.llm.default_provider == "gemini" {
-        &app.config.llm.gemini_model
-    } else {
-        &app.config.llm.ollama_model
+    let model_name = match app.config.llm.default_provider.as_str() {
+        "gemini" => app.config.llm.gemini_model.clone(),
+        "kimi" => app.config.llm.kimi_model.clone(),
+        "huggingface" => app.config.llm.hf_model.clone(),
+        _ => app.config.llm.ollama_model.clone(),
     };
 
-    initial.insert("model".to_string(), model_name.clone());
+    initial.insert("model".to_string(), model_name);
     initial.insert(
         "provider".to_string(),
         app.config.llm.default_provider.clone(),

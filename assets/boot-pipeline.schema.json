@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NEURODECK Boot Pipeline Manifest",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Manifest version. Must match the app minor version line."
+    },
+    "description": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "description": "Custom boot steps appended after the dynamically-generated pipeline.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique step identifier. Prefix with 'custom:' to avoid collisions."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["system", "plugin", "feature", "network", "security"],
+            "default": "system"
+          },
+          "label": {
+            "type": "string",
+            "description": "Primary text displayed in the boot log."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "warn", "err", "info", "neutral"],
+            "default": "info"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Secondary text shown after the label."
+          }
+        }
+      }
+    }
+  }
+}
