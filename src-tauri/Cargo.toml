@@ -47,7 +47,7 @@ mdns-sd = "0.19.2"
 tar = "0.4.40"
 tonic = "0.11"
 axum = { version = "0.7", features = ["ws"] }
-tower = "0.4"
+tower = "0.5"
 walkdir = "2.3"
 uuid = { version = "1", features = ["v4"] }
 ring = "0.17.14"
