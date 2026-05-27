@@ -1847,6 +1847,9 @@ function initModelsPanel() {
     });
   }
 
+  // ── HuggingFace Model Browser ────────────────────────────────────────
+  initHfBrowser();
+
   // Listen for download progress events
   if (typeof listen === "function") {
     listen("hf_download_progress", (event) => {
@@ -1854,6 +1857,114 @@ function initModelsPanel() {
       updateDownloadProgress(payload);
     }).catch(() => {});
   }
+}
+
+function initHfBrowser() {
+  const iframe = document.getElementById("hf-browser-iframe");
+  const urlInput = document.getElementById("hf-browser-url");
+  const backBtn = document.getElementById("hf-browser-back");
+  const fwdBtn = document.getElementById("hf-browser-forward");
+  const refreshBtn = document.getElementById("hf-browser-refresh");
+  const homeBtn = document.getElementById("hf-browser-home");
+  const goBtn = document.getElementById("hf-browser-go");
+  const downloadBtn = document.getElementById("hf-browser-download");
+  const statusEl = document.getElementById("hf-browser-status");
+
+  if (!iframe) return;
+
+  const HOME_URL = "https://huggingface.co/models";
+
+  function navigateTo(url) {
+    if (!url.startsWith("http")) url = "https://" + url;
+    iframe.src = url;
+    if (urlInput) urlInput.value = url;
+  }
+
+  backBtn?.addEventListener("click", () => {
+    try { iframe.contentWindow.history.back(); } catch (e) { /* cross-origin */ }
+  });
+
+  fwdBtn?.addEventListener("click", () => {
+    try { iframe.contentWindow.history.forward(); } catch (e) { /* cross-origin */ }
+  });
+
+  refreshBtn?.addEventListener("click", () => {
+    iframe.src = iframe.src;
+  });
+
+  homeBtn?.addEventListener("click", () => {
+    navigateTo(HOME_URL);
+  });
+
+  goBtn?.addEventListener("click", () => {
+    const url = urlInput?.value?.trim() || HOME_URL;
+    navigateTo(url);
+  });
+
+  if (urlInput) {
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        goBtn?.click();
+      }
+    });
+  }
+
+  // Detect model pages and enable download
+  iframe.addEventListener("load", () => {
+    try {
+      const url = iframe.contentWindow?.location?.href || iframe.src;
+      if (urlInput) urlInput.value = url;
+
+      // Parse HuggingFace model URL: https://huggingface.co/<org>/<model>
+      const match = url.match(/huggingface\.co\/([^\/]+)\/([^\/\?#]+)/);
+      if (match && downloadBtn) {
+        const org = match[1];
+        const model = match[2];
+        // Exclude non-model pages (datasets, spaces, etc.)
+        if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
+          downloadBtn.disabled = false;
+          downloadBtn.dataset.repo = `${org}/${model}`;
+          if (statusEl) {
+            statusEl.innerHTML = `<span>Model detected: <strong>${org}/${model}</strong> — click Download to fetch GGUF files.</span>`;
+          }
+          return;
+        }
+      }
+      if (downloadBtn) {
+        downloadBtn.disabled = true;
+        delete downloadBtn.dataset.repo;
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `<span>Navigate to a model page and click Download to fetch GGUF files.</span>`;
+      }
+    } catch (e) {
+      // Cross-origin restrictions may block access
+      if (statusEl) {
+        statusEl.innerHTML = `<span>Browsing ${escapeHtml(String(iframe.src)).slice(0, 80)}…</span>`;
+      }
+    }
+  });
+
+  downloadBtn?.addEventListener("click", () => {
+    const repo = downloadBtn.dataset.repo;
+    if (!repo) return;
+
+    // Switch to Browse tab and search for this model
+    const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
+    if (browseTab) browseTab.click();
+
+    // Trigger search
+    const searchInput = document.getElementById("models-search-input");
+    if (searchInput) {
+      searchInput.value = repo;
+      performModelSearch(repo);
+    }
+
+    if (statusEl) {
+      statusEl.innerHTML = `<span>Switched to Browse tab — search results for <strong>${repo}</strong> loading…</span>`;
+    }
+  });
 }
 
 let _cachedModels = [];

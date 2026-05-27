@@ -221,7 +221,7 @@ gate_security_js() {
 
 gate_security_hard() {
     cd "$ROOT"
-    if [[ -f "$ROOT/scripts/powershell/security-hardening.ps1" ]];
+    if [[ -f "$ROOT/scripts/powershell/security-hardening.ps1" ]]; then
         # Try PowerShell if available
         if command -v powershell.exe &>/dev/null; then
             powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ROOT/scripts/powershell/security-hardening.ps1" -Json > "$REPORT_DIR/security-hardening.json" 2>&1 || {

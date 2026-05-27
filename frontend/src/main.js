@@ -2191,6 +2191,7 @@ document.querySelector("#app").innerHTML = `
 
                         <div class="stv-sub-tabs">
                             <button class="stv-sub-tab active" data-models-tab="browse">Browse</button>
+                            <button class="stv-sub-tab" data-models-tab="browser">Browser</button>
                             <button class="stv-sub-tab" data-models-tab="installed">Installed</button>
                             <button class="stv-sub-tab" data-models-tab="downloads">Downloads</button>
                         </div>
@@ -2210,6 +2211,31 @@ document.querySelector("#app").innerHTML = `
                             <div class="models-grid" id="models-browse-grid">
                                 <div class="models-empty-state">
                                     <p>Loading Steam Deck compatible models…</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HuggingFace Model Browser -->
+                        <div class="models-tab-panel" id="models-tab-browser">
+                            <div class="hf-browser-container">
+                                <div class="hf-browser-toolbar">
+                                    <div class="hf-browser-nav">
+                                        <button class="hf-browser-btn" id="hf-browser-back" title="Back">${createIcon("arrowLeft", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-forward" title="Forward">${createIcon("arrowRight", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-refresh" title="Refresh">${createIcon("refreshCw", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-home" title="Home">${createIcon("house", { size: 14 })}</button>
+                                    </div>
+                                    <div class="hf-browser-address">
+                                        <input type="text" id="hf-browser-url" class="hf-browser-url-input" value="https://huggingface.co/models" placeholder="Enter HuggingFace URL…">
+                                    </div>
+                                    <button class="hf-browser-btn hf-browser-go" id="hf-browser-go">${createIcon("sendHorizontal", { size: 14 })}</button>
+                                    <button class="hf-browser-btn hf-browser-download" id="hf-browser-download" title="Download this model">${createIcon("download", { size: 14 })}<span>Download</span></button>
+                                </div>
+                                <div class="hf-browser-viewport">
+                                    <iframe id="hf-browser-iframe" class="hf-browser-iframe" src="https://huggingface.co/models" sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads" referrerpolicy="no-referrer"></iframe>
+                                </div>
+                                <div class="hf-browser-status" id="hf-browser-status">
+                                    <span>Navigate to a model page and click Download to fetch GGUF files.</span>
                                 </div>
                             </div>
                         </div>
