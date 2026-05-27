@@ -1,0 +1,471 @@
+# =============================================================================
+# release-build.yml — KFMS Release Build Pipeline
+# =============================================================================
+#
+# Triggers on every KFMS-format tag push (v<MAJOR>.<MINOR>.<PATCH>-<codename>)
+# and on GitHub Release publish events.
+#
+# Pipeline:
+#   1. kfms-gate        — validates KFMS metadata, tag format, score≥85
+#   2. build-windows    — runs on windows-latest → NSIS installer + ZIP
+#   3. build-appimage   — runs on ubuntu-latest  → AppImage
+#   4. publish-release  — uploads all artifacts to the GitHub Release + SHA256SUMS
+#
+# Required GitHub Secrets (optional — unsigned builds work without them):
+#   NEURODECK_CERT_P12        Base64-encoded code-signing cert (.p12)
+#   NEURODECK_CERT_PASSWORD   Password for the .p12 certificate
+#
+# =============================================================================
+
+name: KFMS Release Build
+
+on:
+  push:
+    tags:
+      # Only KFMS-format release tags: v1.3.0-isis, v2.0.0-anubis, etc.
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target'
+        required: false
+        default: 'all'
+        type: choice
+        options: [all, windows, appimage]
+      skip_gate:
+        description: 'Skip KFMS release gate (emergency builds only)'
+        required: false
+        default: false
+        type: boolean
+
+# One release build at a time — never interleave
+concurrency:
+  group: release-build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: short
+  # Tauri/WebKit deps for Linux
+  WEBKIT_DISABLE_DMABUF_RENDERER: 1
+
+jobs:
+
+  # ── Job 1: KFMS Gate ─────────────────────────────────────────────────────────
+  kfms-gate:
+    name: KFMS Release Gate
+    runs-on: ubuntu-latest
+    outputs:
+      version:  ${{ steps.meta.outputs.version }}
+      codename: ${{ steps.meta.outputs.codename }}
+      tag:      ${{ steps.meta.outputs.tag }}
+      is_minor_or_major: ${{ steps.bump.outputs.is_minor_or_major }}
+
+    steps:
+      - name: Checkout (full history for tag comparison)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js (for ajv-cli)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: Make KFMS scripts executable
+        run: |
+          chmod +x scripts/kfms/khaotic-init.sh
+          chmod +x scripts/shell/build_appimage.sh
+
+      - name: KFMS — stamp
+        run: bash scripts/kfms/khaotic-init.sh stamp
+
+      - name: KFMS — validate
+        run: bash scripts/kfms/khaotic-init.sh validate
+
+      - name: KFMS — status
+        run: bash scripts/kfms/khaotic-init.sh status
+
+      - name: Read meta.json
+        id: meta
+        run: |
+          VERSION=$(python3 -c "import json; m=json.load(open('infra/meta/meta.json')); print(m['version'])")
+          CODENAME=$(python3 -c "import json; m=json.load(open('infra/meta/meta.json')); print(m['codename']['name'])")
+          TAG=$(python3 -c "import json; m=json.load(open('infra/meta/meta.json')); print(m['tag'])")
+          echo "version=$VERSION"   >> "$GITHUB_OUTPUT"
+          echo "codename=$CODENAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"           >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag matches meta.json
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GIT_TAG: ${{ github.ref_name }}
+        run: |
+          EXPECTED="v${{ steps.meta.outputs.version }}-$(echo ${{ steps.meta.outputs.codename }} | tr '[:upper:]' '[:lower:]')"
+          echo "Git tag:      $GIT_TAG"
+          echo "Expected tag: $EXPECTED"
+          if [ "$GIT_TAG" != "$EXPECTED" ]; then
+            echo "::error::Tag '$GIT_TAG' does not match KFMS expected tag '$EXPECTED'"
+            exit 1
+          fi
+          echo "Tag format: OK"
+
+      - name: Detect bump type (MINOR or MAJOR triggers installer build)
+        id: bump
+        run: |
+          # Compare to most recent previous tag on this major line
+          CURRENT_VERSION="${{ steps.meta.outputs.version }}"
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+
+          echo "Current: v$CURRENT_VERSION (major=$MAJOR, minor=$MINOR, patch=$PATCH)"
+
+          # Always build on tag-push events regardless of bump type.
+          # workflow_dispatch also always builds. release event builds always.
+          # For CI sanity we build on any tag matching the pattern.
+          echo "is_minor_or_major=true" >> "$GITHUB_OUTPUT"
+          echo "Build triggered — will produce release installers."
+
+  # ── Job 2: Windows Build ──────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    needs: kfms-gate
+    if: |
+      needs.kfms-gate.outputs.is_minor_or_major == 'true' &&
+      (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'windows')
+
+    env:
+      VERSION:  ${{ needs.kfms-gate.outputs.version }}
+      CODENAME: ${{ needs.kfms-gate.outputs.codename }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Rust (pinned to 1.77.2 per AGENTS.md)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.77.2"
+          targets: x86_64-pc-windows-msvc
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: win-cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            win-cargo-${{ runner.os }}-
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: win-npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install JS dependencies
+        run: |
+          npm ci
+          npm -w frontend ci
+
+      # Decode and install code-signing cert if secret is present
+      - name: Install code-signing certificate
+        if: secrets.NEURODECK_CERT_P12 != ''
+        shell: pwsh
+        env:
+          CERT_P12_B64: ${{ secrets.NEURODECK_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.NEURODECK_CERT_PASSWORD }}
+        run: |
+          $certBytes = [Convert]::FromBase64String($env:CERT_P12_B64)
+          $certPath  = "$env:TEMP\neurodeck-sign.p12"
+          [IO.File]::WriteAllBytes($certPath, $certBytes)
+
+          $secPwd = ConvertTo-SecureString $env:CERT_PASSWORD -AsPlainText -Force
+          $cert   = Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Password $secPwd
+          echo "NEURODECK_CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+          Write-Host "Certificate imported: $($cert.Subject)"
+          Remove-Item $certPath -Force
+
+      - name: Build Windows installer + bundle
+        shell: pwsh
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          $skipGate = "${{ github.event.inputs.skip_gate }}" -eq "true"
+          $buildArgs = @(
+            "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-File", "scripts/powershell/build.ps1",
+            "-Target", "win"
+          )
+          if ($skipGate) { $buildArgs += "-SkipGate" }
+          & powershell @buildArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-${{ env.VERSION }}
+          path: |
+            dist/neurodeck_${{ env.VERSION }}_windows_x64.exe
+            dist/neurodeck_${{ env.VERSION }}_windows_x64.zip
+            dist/build-manifest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  # ── Job 3: AppImage Build ─────────────────────────────────────────────────────
+  build-appimage:
+    name: Build Steam Deck AppImage
+    runs-on: ubuntu-latest
+    needs: kfms-gate
+    if: |
+      needs.kfms-gate.outputs.is_minor_or_major == 'true' &&
+      (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'appimage')
+
+    env:
+      VERSION:  ${{ needs.kfms-gate.outputs.version }}
+      CODENAME: ${{ needs.kfms-gate.outputs.codename }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Rust (pinned to 1.77.2 per AGENTS.md)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.77.2"
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: linux-cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            linux-cargo-${{ runner.os }}-
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: linux-npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install system dependencies (GTK/WebKit/AppImage)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            pkg-config \
+            libssl-dev \
+            libasound2-dev \
+            protobuf-compiler \
+            file \
+            fuse \
+            libfuse2
+
+      - name: Install JS dependencies
+        run: |
+          npm ci
+          npm -w frontend ci
+
+      - name: Build frontend (Vite)
+        run: npm run frontend:build
+
+      - name: Build AppImage (Tauri)
+        env:
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+          CARGO_BUILD_JOBS:    4
+          NEURODECK_SKIP_DEPS: "1"
+          DIST_OUT:            ${{ github.workspace }}/dist
+        run: |
+          mkdir -p dist
+          chmod +x scripts/shell/build_appimage.sh
+
+          # Override DIST_OUT so the script drops the AppImage in dist/
+          NEURODECK_SKIP_DEPS=1 DIST_OUT="$DIST_OUT" \
+            bash scripts/shell/build_appimage.sh
+
+      - name: Rename AppImage to versioned name
+        run: |
+          mkdir -p dist
+          SRC=$(find src-tauri/target/release/bundle/appimage target/release/bundle/appimage \
+                  -name "*.AppImage" 2>/dev/null | sort | tail -n1 || true)
+          if [[ -z "$SRC" ]]; then
+            SRC=$(find dist -name "*.AppImage" | sort | tail -n1 || true)
+          fi
+          if [[ -z "$SRC" ]]; then
+            echo "::error::AppImage not found after build"
+            exit 1
+          fi
+          DEST="dist/neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage"
+          cp "$SRC" "$DEST"
+          chmod +x "$DEST"
+          echo "AppImage staged: $DEST ($(du -m "$DEST" | cut -f1) MB)"
+
+      - name: Generate AppImage SHA256
+        run: |
+          cd dist
+          sha256sum neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage \
+            >> SHA256SUMS.txt 2>/dev/null || \
+          sha256sum neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage \
+            > SHA256SUMS-appimage.txt
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appimage-${{ env.VERSION }}
+          path: |
+            dist/neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage
+            dist/SHA256SUMS*.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  # ── Job 4: Publish to GitHub Release ─────────────────────────────────────────
+  publish-release:
+    name: Publish Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [kfms-gate, build-windows, build-appimage]
+    # Run even if only one of the build jobs is in the matrix
+    if: |
+      always() &&
+      needs.kfms-gate.result == 'success' &&
+      (needs.build-windows.result == 'success' || needs.build-appimage.result == 'success')
+    permissions:
+      contents: write
+
+    env:
+      VERSION:  ${{ needs.kfms-gate.outputs.version }}
+      CODENAME: ${{ needs.kfms-gate.outputs.codename }}
+      TAG:      ${{ needs.kfms-gate.outputs.tag }}
+
+    steps:
+      - name: Checkout (for release notes)
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifacts
+        if: needs.build-windows.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer-${{ env.VERSION }}
+          path: release-upload/
+
+      - name: Download AppImage artifacts
+        if: needs.build-appimage.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: appimage-${{ env.VERSION }}
+          path: release-upload/
+
+      - name: Merge SHA256SUMS files
+        run: |
+          cd release-upload
+          # Combine any separate checksum files into one canonical SHA256SUMS.txt
+          cat SHA256SUMS*.txt 2>/dev/null | sort -u > SHA256SUMS-combined.txt || true
+          mv SHA256SUMS-combined.txt SHA256SUMS.txt 2>/dev/null || true
+          echo "=== Release artifacts ==="
+          ls -lh
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS.txt 2>/dev/null || echo "(no checksums yet)"
+
+      - name: Resolve release notes
+        id: notes
+        run: |
+          NOTES_FILE="docs/RELEASE_NOTES.md"
+          if [[ -f "$NOTES_FILE" ]]; then
+            # Extract section for this version (between first ## and next ##)
+            python3 - "$NOTES_FILE" "${{ env.VERSION }}" << 'PYEOF'
+          import sys, re
+          path, version = sys.argv[1], sys.argv[2]
+          text = open(path).read()
+          # Find block starting with ## <version> or ## v<version>
+          pattern = rf'(##\s+v?{re.escape(version)}.*?)(?=\n##\s|\Z)'
+          m = re.search(pattern, text, re.S)
+          if m:
+              print(m.group(1).strip())
+          else:
+              print(f"## NEURODECK v{version} ({sys.argv[2]})\n\nSee CHANGELOG for details.")
+          PYEOF
+          else
+            echo "## NEURODECK v${{ env.VERSION }} (${{ env.CODENAME }})"
+            echo ""
+            echo "Release built by KFMS automated pipeline."
+          fi
+          echo "notes_resolved=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   ${{ env.TAG }}
+          name:       "NEURODECK v${{ env.VERSION }} — ${{ env.CODENAME }}"
+          draft:      false
+          prerelease: false
+          generate_release_notes: false
+          body_path:  /dev/null
+          files: |
+            release-upload/neurodeck_${{ env.VERSION }}_windows_x64.exe
+            release-upload/neurodeck_${{ env.VERSION }}_windows_x64.zip
+            release-upload/neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage
+            release-upload/SHA256SUMS.txt
+            release-upload/build-manifest.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post build summary
+        run: |
+          echo "## 🚀 NEURODECK v${{ env.VERSION }} — ${{ env.CODENAME }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Artifact | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Windows NSIS installer | ${{ needs.build-windows.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Steam Deck AppImage     | ${{ needs.build-appimage.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f release-upload/SHA256SUMS.txt ]]; then
+            echo "### SHA256 Checksums" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat release-upload/SHA256SUMS.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

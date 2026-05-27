@@ -3,12 +3,14 @@
 # khaotic-init.sh — KFMS v1.0 Repository Bootstrap & Hygiene Utility
 #
 # Usage:
-#   ./scripts/kfms/khaotic-init.sh sweep     — move loose root files to .loose/inbox/
-#   ./scripts/kfms/khaotic-init.sh stamp     — regenerate infra/meta/meta.json build block
-#   ./scripts/kfms/khaotic-init.sh sync      — regenerate derived KFMS artifacts from meta.json
-#   ./scripts/kfms/khaotic-init.sh validate  — validate meta.json and derived artifact consistency
-#   ./scripts/kfms/khaotic-init.sh status    — print current KFMS health summary
+#   ./scripts/kfms/khaotic-init.sh sweep        — move loose root files to .loose/inbox/
+#   ./scripts/kfms/khaotic-init.sh stamp        — regenerate infra/meta/meta.json build block
+#   ./scripts/kfms/khaotic-init.sh sync         — regenerate derived KFMS artifacts from meta.json
+#   ./scripts/kfms/khaotic-init.sh validate     — validate meta.json and derived artifact consistency
+#   ./scripts/kfms/khaotic-init.sh status       — print current KFMS health summary
 #   ./scripts/kfms/khaotic-init.sh release-plan — delegate to native Windows release runner when available
+#   ./scripts/kfms/khaotic-init.sh build [args] — build release installers via scripts/powershell/build.ps1
+#                                                  args: -Target win|appimage|all  -SkipGate  -CleanBuild
 # =============================================================================
 
 set -euo pipefail
@@ -766,28 +768,74 @@ cmd_release_plan() {
 }
 
 # ---------------------------------------------------------------------------
+# cmd: build
+# Delegates to scripts/powershell/build.ps1 — the unified release builder.
+# Produces Windows NSIS installer + ZIP and/or Steam Deck AppImage.
+#
+# Usage:
+#   ./scripts/kfms/khaotic-init.sh build
+#   ./scripts/kfms/khaotic-init.sh build -Target win
+#   ./scripts/kfms/khaotic-init.sh build -Target appimage
+#   ./scripts/kfms/khaotic-init.sh build -SkipGate -CleanBuild -Verbose
+#
+# Requires PowerShell (Windows or WSL with powershell.exe bridged).
+# The build.ps1 script auto-detects WSL for the AppImage target.
+# ---------------------------------------------------------------------------
+cmd_build() {
+  local ps_bin=""
+  local ps_script="$ROOT/scripts/powershell/build.ps1"
+  local ps_script_arg="$ps_script"
+
+  ps_bin=$(resolve_powershell 2>/dev/null || true)
+  [[ -n "$ps_bin" ]] || die "PowerShell is required for build. Run scripts/powershell/build.ps1 from Windows PowerShell."
+  [[ -f "$ps_script" ]] || die "scripts/powershell/build.ps1 not found. Verify the unified build orchestrator exists."
+
+  # In WSL: convert to Windows path so PowerShell can resolve it
+  if is_wsl_shell && command -v wslpath &>/dev/null; then
+    ps_script_arg="$(wslpath -w "$ps_script")"
+  fi
+
+  info "Delegating to unified build orchestrator..."
+  info "  Script: $ps_script"
+  info "  Args:   $*"
+  echo ""
+
+  "$ps_bin" -NoProfile -ExecutionPolicy Bypass -File "$ps_script_arg" "$@"
+  local exit_code=$?
+
+  if [[ $exit_code -eq 0 ]]; then
+    ok "Build complete. Artifacts in dist/"
+  else
+    die "Build failed with exit code $exit_code. Check .loose/inbox/build-logs/ for details."
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
 CMD="${1:-help}"
 
 case "$CMD" in
-  sweep)    shift; cmd_sweep "$@"    ;;
-  stamp)    cmd_stamp    ;;
-  sync)     cmd_sync     ;;
-  validate) cmd_validate ;;
-  status)   shift; cmd_status "$@"   ;;
+  sweep)        shift; cmd_sweep "$@"        ;;
+  stamp)        cmd_stamp                   ;;
+  sync)         cmd_sync                    ;;
+  validate)     cmd_validate                ;;
+  status)       shift; cmd_status "$@"      ;;
   release-plan) shift; cmd_release_plan "$@" ;;
+  build)        shift; cmd_build "$@"       ;;
   *)
     echo ""
     echo "  Usage: ./scripts/kfms/khaotic-init.sh <command> [args]"
     echo ""
     echo "  Commands:"
-    echo "    sweep [--dry-run]  Move loose root files to .loose/inbox/"
-    echo "    stamp              Re-stamp build block in infra/meta/meta.json"
-    echo "    sync               Regenerate derived KFMS artifacts from meta.json"
-    echo "    validate           Validate meta.json against schema"
-    echo "    status             Print KFMS health summary"
-    echo "    release-plan       Delegate to the native Windows release runner"
+    echo "    sweep [--dry-run]   Move loose root files to .loose/inbox/"
+    echo "    stamp               Re-stamp build block in infra/meta/meta.json"
+    echo "    sync                Regenerate derived KFMS artifacts from meta.json"
+    echo "    validate            Validate meta.json against schema"
+    echo "    status              Print KFMS health summary"
+    echo "    release-plan        Run KFMS release gate (delegates to kfms-release-plan.ps1)"
+    echo "    build [-Target win|appimage|all] [-SkipGate] [-CleanBuild] [-Verbose]"
+    echo "                        Build release installers (delegates to build.ps1)"
     echo ""
     ;;
 esac

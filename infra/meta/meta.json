@@ -14,9 +14,9 @@
   },
   "tag": "v1.3.0-isis",
   "build": {
-    "git_sha": "74a114a395db62bd54da477b75908b7bdb768019",
+    "git_sha": "62c7cf7acd7b3c667108ac8e8e348973b5daf0b2",
     "git_tag": null,
-    "built_at_utc": "2026-05-27T21:49:40Z",
+    "built_at_utc": "2026-05-27T21:57:14Z",
     "dirty": false
   },
   "studio": {
@@ -25,6 +25,13 @@
       "codename_unique_per_major": true,
       "no_secrets_in_build": true,
       "loose_zone": ".loose/",
+      "build_on_release": true,
+      "build_trigger_pattern": "v[0-9]+.[0-9]+.[0-9]+-*",
+      "build_targets": [
+        "windows",
+        "appimage"
+      ],
+      "build_script": "scripts/powershell/build.ps1",
       "release_policy": {
         "go_threshold": 85,
         "hold_threshold": 60,
