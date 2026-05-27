@@ -48,14 +48,18 @@ Write-Output "Building Tauri app in release mode..."
 npx tauri build
 
 # ── 3. Locate outputs ───────────────────────────────────────────────────────
-$binaryPath = "src-tauri/target/release/neurodeck.exe"
+$binaryPath = "target/release/app.exe"
+if (-not (Test-Path $binaryPath)) { $binaryPath = "src-tauri/target/release/app.exe" }
+if (-not (Test-Path $binaryPath)) { $binaryPath = "target/release/neurodeck.exe" }
+if (-not (Test-Path $binaryPath)) { $binaryPath = "src-tauri/target/release/neurodeck.exe" }
 
 # Installer path includes the version — discover it dynamically
-$nsisDir   = "src-tauri/target/release/bundle/nsis"
+$nsisDir   = "target/release/bundle/nsis"
+if (-not (Test-Path $nsisDir)) { $nsisDir = "src-tauri/target/release/bundle/nsis" }
 $setupPath = Get-ChildItem -Path $nsisDir -Filter "*x64-setup.exe" -ErrorAction SilentlyContinue |
              Select-Object -First 1 -ExpandProperty FullName
 
-if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found: $binaryPath" }
+if (-not (Test-Path $binaryPath)) { Write-Error "Binary not found" }
 if (-not $setupPath -or -not (Test-Path $setupPath)) { Write-Error "NSIS installer not found in $nsisDir" }
 
 # ── 4. Sign the installer (before copying) ──────────────────────────────────
