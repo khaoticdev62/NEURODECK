@@ -1199,7 +1199,7 @@ document.querySelector("#app").innerHTML = `
                                             <div class="sd-label">Hacker News</div>
                                             <div class="sd-desc">Tech & Dev community board</div>
                                         </div>
-                                        <div class="speed-dial-card" data-url="https://reddit.com/r/SteamDeck">
+                                        <div class="speed-dial-card" data-url="https://www.reddit.com/r/SteamDeck">
                                             <div class="sd-icon">${createIcon("gamepad2", { size: 24 })}</div>
                                             <div class="sd-label">r/SteamDeck</div>
                                             <div class="sd-desc">Steam Deck community</div>

@@ -111,7 +111,7 @@ pub async fn browser_open(
             .position(screen_x, screen_y)
             .inner_size(width, height)
             .skip_taskbar(true)
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0")
     };
 
     // Attempt child-window parenting (preferred — keeps browser clipped to main window).
