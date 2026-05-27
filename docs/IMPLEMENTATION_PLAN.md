@@ -11,7 +11,7 @@
 - Codename: `Ra`
 - Tag: `v1.2.2-ra`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-05-27T16:26:12Z`
+- Last stamped build: `2026-05-27T17:19:32Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
@@ -86,7 +86,7 @@ Core shipped capabilities:
 
 ---
 
-## Phase 3 - Anubis: IDE Layer and Intelligence Upgrade
+## Phase 3 - Isis: IDE Layer and Intelligence Upgrade
 
 ### Sprint 3.1 - Monaco Editor Integration
 Status: COMPLETE
@@ -358,11 +358,11 @@ Planned:
 
 | Sprint | Version Line | Codename | Status |
 |---|---:|---|---|
-| 3.1 Monaco | v1.3.0 | Anubis | COMPLETE |
-| 3.2 Whisper | v1.3.1 | Anubis | COMPLETE |
-| 3.3 Knowledge Graph | v1.3.2 | Anubis | BRANCH-COMPLETE |
-| 3.4 Scheduler | v1.3.3 | Anubis | BRANCH-COMPLETE |
-| 3.5 Git | v1.3.4 | Anubis | BRANCH-COMPLETE |
+| 3.1 Monaco | v1.3.0 | Isis | COMPLETE |
+| 3.2 Whisper | v1.3.1 | Isis | COMPLETE |
+| 3.3 Knowledge Graph | v1.3.2 | Isis | BRANCH-COMPLETE |
+| 3.4 Scheduler | v1.3.3 | Isis | BRANCH-COMPLETE |
+| 3.5 Git | v1.3.4 | Isis | BRANCH-COMPLETE |
 | 4.1 Workflow | v2.0.0 | Osiris | BRANCH-COMPLETE |
 | 4.2 Multi-Agent | v2.0.1 | Osiris | BRANCH-COMPLETE |
 | 4.3 Browser Automation | v2.0.2 | Osiris | COMPLETE |
