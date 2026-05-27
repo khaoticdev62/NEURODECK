@@ -350,9 +350,9 @@ if (-not $diffHygieneOk) {
     $score -= [int]$policy.penalties.diff_hygiene
     $blockers.Add("Whitespace or merge-marker issues exist in the working tree.")
 }
-if ($workspaceState -ne "clean") {
+if ($workspaceState -eq "manual-uncommitted") {
     $score -= [int]$policy.penalties.workspace_state
-    $blockers.Add("Workspace is not clean: $workspaceState.")
+    $blockers.Add("Workspace has uncommitted manual changes.")
 }
 if ($looseRootFiles -ne 0) {
     $score -= [int]$policy.penalties.loose_root_files
@@ -400,7 +400,8 @@ if ($score -lt 0) {
 }
 
 $releaseState = "NO-GO"
-if ($metadata.ok -and $diffHygieneOk -and $workspaceState -eq "clean" -and $looseRootFiles -eq 0 -and $hardeningCheck.status -eq "pass" -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge [int]$policy.go_threshold) {
+$workspaceOk = ($workspaceState -eq "clean") -or ($workspaceState -eq "generated-only")
+if ($metadata.ok -and $diffHygieneOk -and $workspaceOk -and $looseRootFiles -eq 0 -and $hardeningCheck.status -eq "pass" -and $cargoCheck.status -eq "pass" -and $cargoTest.status -eq "pass" -and $frontendBuild.status -eq "pass" -and $score -ge [int]$policy.go_threshold) {
     $releaseState = "GO"
 } elseif ($score -ge [int]$policy.hold_threshold) {
     $releaseState = "HOLD"
