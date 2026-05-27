@@ -25,67 +25,38 @@ v1.2.x (Ra) proved the core stack: AI chat, terminal, canvas, plugins, memory, a
 
 These ship in v1.3.0 or the release does not cut.
 
-### 1. Command Palette (`feature/sprint-4.3-command-palette`)
-**Why:** 12 tabs + radial menu + gamepad nav is complete, but keyboard power users need sub-200ms access to any view, command, or plugin action.  
+### 1. Command Palette Gap Fix
+**Why:** The palette is fully implemented but missing the four newest views added after it was built.  
 **Acceptance:**
-- `Ctrl+K` (keyboard) and `L3 + R3` (gamepad) invoke palette from any view.
-- Fuzzy search across views, Tauri commands, personas, themes, and registered plugin commands.
-- No new state structs in `lib.rs` — reuse existing `get_personas`, `get_themes`, `list_plugins` data.
-- 1280×800 overlay; does not break tab-switching CSS specificity rules.
+- Add "Open Knowledge Graph", "Open Scheduler", "Open Workflow Builder", and "Open IDE" to `COMMAND_PALETTE_ACTIONS`.
+- Verify `Ctrl+K` opens palette from any of the 19 views.
+- Confirm gamepad `Select` button triggers run on canvas from any view.
 
-### 2. Git Integration Panel (`feature/sprint-3.5-git`)
-**Why:** The Canvas/IDE tab already has Monaco and file explorer. Without git status, diff, and commit, it is not an IDE.  
-**Acceptance:**
-- `git status`, `git diff`, `git add`, `git reset`, `git commit`, `git log` wired as Tauri commands.
-- LLM-generated commit messages via existing `send_command` path (reuses RAG + persona context).
-- Unsafe path handling audited — no shell injection via repository path.
-- UI fits 1280×800 with two-pane layout (file list + diff view).
+### 2. Git Integration Panel
+**Status:** ✅ Already complete on master — `src-tauri/src/commands/git.rs` (700 lines), Git tab, 20+ commands.
 
-### 3. Knowledge Graph View (`feature/sprint-3.3-knowledge-graph`)
-**Why:** The vector DB works but is invisible. A force-directed D3.js graph turns memory into a navigable map, which is the single most differentiated feature against generic chat clients.  
-**Acceptance:**
-- Nodes = memory records; edges = cosine similarity > threshold + shared session context.
-- Click to jump to chat context; drag to pin/unpin.
-- Lazy-rendered so 1000+ records do not block the main thread.
-- Merge conflicts with current Canvas frontend resolved.
+### 3. Knowledge Graph View
+**Status:** ✅ Already complete on master — `frontend/src/graph_view.js`, `get_memory_graph_data`, Graph tab.
 
-### 4. Monaco Editor Hardening (`feature/sprint-3.1` baseline)
-**Why:** Monaco is already integrated but needs fallback and language coverage validation.  
-**Acceptance:**
-- CDN load failure falls back to textarea with syntax-highlighting class.
-- Language mode switches correctly for HTML, CSS, JS, Python, Bash, Lua, Markdown.
-- `Ctrl+Enter` run shortcut works in all languages.
-- Collaboration sync reads from Monaco model, not DOM scraping.
+### 4. Monaco Editor Hardening
+**Status:** ✅ Already complete on master — CDN fallback, language switching, `Ctrl+Enter`, collaboration sync.
 
 ---
 
 ## P1 — Efficiency & Reliability Wins
 
-### 5. FTP Streaming + Progress Events
-**Why:** `suppaftp::retr_as_buffer` loads the entire file into RAM. On a Steam Deck with 16 GB RAM, a 2 GB file transfer OOMs the backend and the UI appears frozen.  
-**Fix:**
-- Stream downloads to disk via `retr` with a write callback.
-- Emit `ftp_download_progress { bytes_received, total_bytes }` every 256 KB.
-- Same for upload: chunk reads from disk + `put_with_stream` if available, or chunked `put`.
+### P1 Audit
 
-### 6. `pty_spawn` Timeout
-**Why:** Hung SSH handshakes leave a zombie reader thread and leak a PTY session slot.  
-**Fix:**
-- Wrap `pty_spawn` in `tokio::time::timeout(Duration::from_secs(30), ...)`.
-- On timeout, auto-call `pty_kill` for the session ID and return a clean error string.
+**All four items were already implemented on master.** The docs describing them as open issues were stale.
 
-### 7. Config Path Resolution
-**Why:** The `../llm-term.toml` fallback is load-bearing but fragile. It breaks if the binary is launched from an unexpected working directory.  
-**Fix:**
-- Primary: `tauri::api::path::app_config_dir()` + `/neurodeck/config.toml`.
-- Migration: on first launch, copy existing `llm-term.toml` to the new canonical path.
-- Deprecate the `../` fallback with a one-release warning log.
+| # | Item | Master Status |
+|---|---|---|
+| 5 | **FTP Streaming + Progress** | ✅ `ftp_download_file` uses `retr` with disk stream; `ftp_upload_file` uses `ProgressReader` emitting every 64 KB. |
+| 6 | **`pty_spawn` Timeout** | ✅ `SPAWN_TIMEOUT_SECS = 15` with `recv_timeout` in `spawn_pty_with_timeout`. |
+| 7 | **Config Path Resolution** | ✅ Three-tier resolution (`../`, `./`, `~/.config/neurodeck/`) already in `get_config_path()`. |
+| 8 | **Canvas "Run" UX** | ✅ `canvas.js` binds `runBtn.onclick` to `runStreamingExec` for Python/Bash/JS and `execute_lua` for Lua. |
 
-### 8. Canvas "Run" UX Fix
-**Why:** The Run button for Python/Bash in Canvas shows a hint but does not execute code. Users file this as a bug every sprint.  
-**Fix:**
-- If language is Python/Bash/Lua and the Run button is clicked, route to the existing agent subprocess execution path (or `pty_execute`) and stream output to the Canvas output panel.
-- Do not add a new execution runtime — reuse what exists.
+**No P1 code changes required for v1.3.0.**
 
 ---
 
