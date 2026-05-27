@@ -245,7 +245,7 @@ test("canvas toolbar exposes shared icon actions", async ({ page }) => {
 });
 
 test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
-  await page.setViewportSize({ width: 920, height: 720 });
+  await page.setViewportSize({ width: 800, height: 720 });
   await page.reload();
   const app = new AppPage(page);
   await app.mockTauriBackend();
@@ -259,4 +259,35 @@ test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
   }));
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2);
   expect(metrics.clientHeight).toBeGreaterThan(46);
+});
+
+test("theme selection persists across reload", async ({ page }) => {
+  const settings = new SettingsPage(page);
+  await settings.openSettings();
+  // Theme selector lives in the General panel, not Appearance
+  await settings.openTab("general");
+
+  // Select a specific theme
+  const themeSelect = page.locator("#theme-select");
+  await themeSelect.waitFor({ state: "visible" });
+  await themeSelect.selectOption("Midnight");
+
+  // Verify localStorage was updated
+  const savedTheme = await page.evaluate(() => localStorage.getItem("selectedTheme"));
+  expect(savedTheme).toBe("Midnight");
+
+  // Close settings, reload, and re-open
+  await settings.closeSettings();
+  await page.reload();
+
+  const app = new AppPage(page);
+  await app.mockTauriBackend();
+  await app.goto();
+
+  await settings.openSettings();
+  await settings.openTab("general");
+
+  // The select should still have the saved theme selected
+  const selectedValue = await themeSelect.inputValue();
+  expect(selectedValue).toBe("Midnight");
 });

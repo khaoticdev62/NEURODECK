@@ -2560,3 +2560,56 @@ pub async fn llm_oneshot(
     let max_tokens = max_tokens.unwrap_or(512);
     provider.generate_oneshot(&prompt, max_tokens).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{_text_similarity, get_lan_ip};
+
+    #[test]
+    fn text_similarity_identical_strings() {
+        let sim = _text_similarity("hello world", "hello world");
+        assert!(sim > 0.99, "identical strings should have similarity ~1.0, got {}", sim);
+    }
+
+    #[test]
+    fn text_similarity_completely_different() {
+        let sim = _text_similarity("abc xyz", "123 456");
+        assert_eq!(sim, 0.0);
+    }
+
+    #[test]
+    fn text_similarity_partial_overlap() {
+        let sim = _text_similarity("hello world foo", "hello world bar");
+        assert!(sim > 0.0 && sim < 1.0, "partial overlap should be between 0 and 1, got {}", sim);
+    }
+
+    #[test]
+    fn text_similarity_empty_strings() {
+        assert_eq!(_text_similarity("", ""), 0.0);
+        assert_eq!(_text_similarity("hello", ""), 0.0);
+    }
+
+    #[test]
+    fn text_similarity_punctuation_stripped() {
+        let sim = _text_similarity("hello, world!", "hello world");
+        assert!(sim > 0.99, "punctuation should be stripped, got {}", sim);
+    }
+
+    #[test]
+    fn text_similarity_case_insensitive() {
+        let sim = _text_similarity("HELLO WORLD", "hello world");
+        assert!(sim > 0.99, "comparison should be case insensitive, got {}", sim);
+    }
+
+    #[test]
+    fn lan_ip_returns_non_empty() {
+        let ip = get_lan_ip();
+        assert!(!ip.is_empty());
+        // Should be either a valid-looking IP or "unknown"
+        assert!(
+            ip == "unknown" || ip.contains('.'),
+            "get_lan_ip should return an IP or 'unknown', got: {}",
+            ip
+        );
+    }
+}

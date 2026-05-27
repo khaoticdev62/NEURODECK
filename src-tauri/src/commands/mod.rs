@@ -4,6 +4,7 @@ pub mod browser;
 pub mod cli_maker;
 pub mod config;
 pub mod git;
+pub mod ide;
 pub mod session;
 pub mod system;
 
@@ -13,5 +14,6 @@ pub use browser::*;
 pub use cli_maker::*;
 pub use config::*;
 pub use git::*;
+pub use ide::*;
 pub use session::*;
 pub use system::*;

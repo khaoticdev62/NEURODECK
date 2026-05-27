@@ -328,7 +328,7 @@ $diffHygieneOk = Test-DiffHygiene
 $policy = Get-ReleasePolicy
 
 $overallWatch = [System.Diagnostics.Stopwatch]::StartNew()
-$hardeningCheck = Invoke-Gate -Name "security hardening" -WorkingDirectory $script:Root -Executable "powershell.exe" -Arguments @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $script:Root "scripts/security-hardening.ps1"), "-Json") -LogPath (Join-Path $script:LogsDir "security-hardening.log")
+$hardeningCheck = Invoke-Gate -Name "security hardening" -WorkingDirectory $script:Root -Executable "powershell.exe" -Arguments @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $script:Root "scripts/powershell/security-hardening.ps1"), "-Json") -LogPath (Join-Path $script:LogsDir "security-hardening.log")
 $cargoCheck = Invoke-Gate -Name "cargo check" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("check") -LogPath (Join-Path $script:LogsDir "cargo-check.log")
 $cargoTest = Invoke-Gate -Name "cargo test" -WorkingDirectory (Join-Path $script:Root "src-tauri") -Executable "cargo" -Arguments @("test") -LogPath (Join-Path $script:LogsDir "cargo-test.log")
 $frontendBuild = Invoke-Gate -Name "frontend build" -WorkingDirectory $script:Root -Executable "npm.cmd" -Arguments @("run", "--prefix", "frontend", "build") -LogPath (Join-Path $script:LogsDir "frontend-build.log")

@@ -440,3 +440,47 @@ pub fn get_sftp_credential(profile_name: String) -> Result<String, String> {
 pub fn delete_sftp_credential(profile_name: String) -> Result<(), String> {
     neurodeck_infrastructure::secrets::delete_sftp_credential(&profile_name)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{PERSONAS, THEMES};
+
+    #[test]
+    fn get_themes_returns_all_theme_names() {
+        let themes = get_themes();
+        assert_eq!(themes.len(), THEMES.len());
+        assert!(themes.contains(&"BLACKSITE".to_string()));
+        assert!(themes.contains(&"MATRIX".to_string()));
+    }
+
+    #[test]
+    fn get_themes_contains_known_themes() {
+        let themes = get_themes();
+        let expected = vec![
+            "BLACKSITE", "TERMINAL_GHOST", "SYNTH_GRID", "DECK_BLUE",
+            "AMBER_CRT", "CYBER_PUNK", "MATRIX", "SOLARIZED", "GLITCH_RED",
+        ];
+        for name in expected {
+            assert!(
+                themes.contains(&name.to_string()),
+                "Expected theme {} to be present",
+                name
+            );
+        }
+    }
+
+    #[test]
+    fn personas_list_contains_default() {
+        let names: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
+        assert!(names.contains(&"Default".to_string()));
+        assert!(names.contains(&"Developer".to_string()));
+    }
+
+    #[test]
+    fn persona_prompt_not_empty() {
+        for (_, prompt) in PERSONAS.iter() {
+            assert!(!prompt.is_empty(), "Persona prompt should not be empty");
+        }
+    }
+}

@@ -55,3 +55,62 @@ impl fmt::Display for NeurodeckError {
 }
 
 impl std::error::Error for NeurodeckError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_new_sets_code_and_message() {
+        let err = NeurodeckError::new("TEST_CODE", "something went wrong");
+        assert_eq!(err.code, "TEST_CODE");
+        assert_eq!(err.message, "something went wrong");
+        assert!(!err.recoverable);
+        assert_eq!(err.suggestion, None);
+    }
+
+    #[test]
+    fn error_recoverable_flag() {
+        let err = NeurodeckError::new("TEST", "msg").recoverable();
+        assert!(err.recoverable);
+    }
+
+    #[test]
+    fn error_with_suggestion() {
+        let err = NeurodeckError::new("TEST", "msg")
+            .recoverable()
+            .with_suggestion("Try again later");
+        assert_eq!(err.suggestion, Some("Try again later".to_string()));
+    }
+
+    #[test]
+    fn error_llm_error_prebuilt() {
+        let err = NeurodeckError::llm_error("model timeout");
+        assert_eq!(err.code, "LLM_ERROR");
+        assert_eq!(err.message, "model timeout");
+        assert!(err.recoverable);
+        assert!(err.suggestion.is_some());
+    }
+
+    #[test]
+    fn error_display_is_json() {
+        let err = NeurodeckError::new("CODE", "message").recoverable();
+        let display = format!("{}", err);
+        assert!(display.contains("\"code\":\"CODE\""));
+        assert!(display.contains("\"message\":\"message\""));
+        assert!(display.contains("\"recoverable\":true"));
+    }
+
+    #[test]
+    fn error_round_trip_serialization() {
+        let original = NeurodeckError::new("FOO", "bar")
+            .recoverable()
+            .with_suggestion("baz");
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: NeurodeckError = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.code, original.code);
+        assert_eq!(deserialized.message, original.message);
+        assert_eq!(deserialized.recoverable, original.recoverable);
+        assert_eq!(deserialized.suggestion, original.suggestion);
+    }
+}

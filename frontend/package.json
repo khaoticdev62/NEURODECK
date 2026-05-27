@@ -6,7 +6,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --project tsconfig.node.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/react": "^19.2.15",
@@ -14,7 +17,8 @@
     "@vitejs/plugin-react": "^6.0.2",
     "prettier": "^3.8.3",
     "typescript": "^5.8.3",
-    "vite": "^8.0.14"
+    "vite": "^8.0.14",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.26",

@@ -1151,6 +1151,13 @@ pub fn run() {
             orchestrator::get_orchestration_status,
             orchestrator::stop_orchestration,
             llm_oneshot,
+            // ── Mini IDE ───────────────────────────────────────────────────────
+            ide::list_workspace_files,
+            ide::read_workspace_file,
+            ide::write_workspace_file,
+            ide::create_workspace_file,
+            ide::delete_workspace_file,
+            ide::rename_workspace_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

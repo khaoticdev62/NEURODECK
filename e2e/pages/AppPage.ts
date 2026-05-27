@@ -135,150 +135,175 @@ export class AppPage {
 
   async mockTauriBackend() {
     await this.page.addInitScript(() => {
-      localStorage.setItem("neurodeck_onboarding_complete", "true");
-      // Hide background container in tests to prevent pointer-event interception
-      const hideBg = () => {
-        const bg = document.getElementById("app-background-container");
-        if (bg) bg.style.display = "none";
-      };
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", hideBg);
-      } else {
-        hideBg();
-      }
-      const noop = async () => {};
-      const listeners = new Map();
-      const defaultConfig = {
-        llm: {
-          default_provider: "gemini",
-          gemini_model: "gemini-1.5-flash",
-          ollama_base_url: "http://localhost:11434",
-          ollama_model: "llama3.2:1b",
-          active_agent_id: "default",
-        },
-      };
-
-      const invoke = async (cmd: string, args?: any) => {
-        switch (cmd) {
-          case "get_initial_state":
-            return {
-              model: "gemini-1.5-flash",
-              provider: "gemini",
-              active_agent_id: "default",
-              session_id: "test-session",
-              active_persona: "Default",
-              memory_status: "Stable",
-              tool_status: "Idle",
-              game_name: "",
-              game_app_id: "",
-              game_running: "false",
-            };
-          case "get_config":
-            return defaultConfig;
-          case "get_gemini_api_key":
-            return "";
-          case "get_personas":
-            return ["Default", "Developer"];
-          case "get_themes":
-            return ["Neurodeck", "Midnight"];
-          case "list_plugins":
-            return [];
-          case "get_doc_count":
-            return 0;
-          case "get_mcp_status":
-            return { running: "false", port: "13337" };
-          case "test_llm_connection":
-            return "Gemini Connection Successful!";
-          case "list_custom_personas":
-          case "get_themes_list":
-          case "get_plugins":
-          case "load_plugins":
-          case "get_themes_metadata":
-            return [];
-          case "get_sync_status":
-            return {
-              device_id: "test-device",
-              last_sync_at: null,
-              pending_count: 0,
-              conflict_count: 0,
-            };
-          case "torrent_get_status":
-            return {
-              download_root: "C:/tmp/torrents",
-              torrent_count: 0,
-              torrents: [],
-            };
-          case "plugin:event|listen": {
-            const evtName = args?.event;
-            const handler = args?.handler;
-            if (evtName && handler) {
-              listeners.set(evtName, handler);
+      // Inline the shared mock so Playwright can inject it without bundling
+      const buildTauriMock = (options: any = {}) => {
+        const { overrides = {}, geminiApiKey = "" } = options;
+        localStorage.setItem("neurodeck_onboarding_complete", "true");
+        const hideBg = () => {
+          const bg = document.getElementById("app-background-container");
+          if (bg) bg.style.display = "none";
+        };
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", hideBg);
+        } else {
+          hideBg();
+        }
+        const noop = async () => {};
+        const listeners = new Map<string, any[]>();
+        const defaultConfig = {
+          llm: {
+            default_provider: "gemini",
+            gemini_model: "gemini-1.5-flash",
+            ollama_base_url: "http://localhost:11434",
+            ollama_model: "llama3.2:1b",
+            active_agent_id: "default",
+          },
+        };
+        const defaultInvoke = async (cmd: string, args?: any) => {
+          if (overrides[cmd]) return await overrides[cmd](args);
+          switch (cmd) {
+            case "get_initial_state":
+              return {
+                model: "gemini-1.5-flash",
+                provider: "gemini",
+                active_agent_id: "default",
+                session_id: "test-session",
+                active_persona: "Default",
+                memory_status: "Stable",
+                tool_status: "Idle",
+                game_name: "",
+                game_app_id: "",
+                game_running: "false",
+              };
+            case "get_config":
+              return defaultConfig;
+            case "get_gemini_api_key":
+              return geminiApiKey;
+            case "get_personas":
+              return ["Default", "Developer"];
+            case "get_themes":
+              return ["Neurodeck", "Midnight"];
+            case "list_plugins":
+              return [];
+            case "get_doc_count":
+              return 0;
+            case "get_mcp_status":
+              return { running: "false", port: "13337" };
+            case "test_llm_connection":
+              return "Gemini Connection Successful!";
+            case "list_custom_personas":
+            case "get_themes_list":
+            case "get_plugins":
+            case "load_plugins":
+            case "get_themes_metadata":
+              return [];
+            case "get_sync_status":
+              return {
+                device_id: "test-device",
+                last_sync_at: null,
+                pending_count: 0,
+                conflict_count: 0,
+              };
+            case "torrent_get_status":
+              return {
+                download_root: "C:/tmp/torrents",
+                torrent_count: 0,
+                torrents: [],
+              };
+            case "set_theme":
+              return {
+                Name: args?.name ?? "BLACKSITE",
+                Color: "#00F0FF",
+                Pulse: JSON.stringify(["#00F0FF"]),
+                Background: "#050505",
+                Foreground: "#D9F7FF",
+                Accent: "#00F0FF",
+                Response: "#00FF88",
+                Warning: "#FFB000",
+                Error: "#FF3C5A",
+              };
+            case "plugin:event|listen": {
+              const evtName = args?.event;
+              const handler = args?.handler;
+              if (evtName && handler) {
+                const list = listeners.get(evtName) ?? [];
+                list.push(handler);
+                listeners.set(evtName, list);
+              }
+              return `mock-event-id-${evtName}`;
             }
-            return `mock-event-id-${evtName}`;
+            default:
+              return args ?? null;
           }
-          default:
-            return args ?? null;
-        }
-      };
-
-      const invokeWithChat = async (cmd: string, args?: any) => {
-        if (cmd === "send_command") {
-          setTimeout(() => {
-            const chunkCb = listeners.get("stream_chunk");
-            const doneCb = listeners.get("stream_done");
-            if (chunkCb) {
-              chunkCb({ payload: "Hello" });
-              chunkCb({ payload: " from" });
-              chunkCb({ payload: " the" });
-              chunkCb({ payload: " mock" });
-              chunkCb({ payload: " stream!" });
-            }
-            if (doneCb) doneCb({ payload: null });
-          }, 100);
-          return null;
-        }
-        return invoke(cmd, args);
-      };
-
-      window.__TAURI_INTERNALS__ = {
-        invoke: invokeWithChat,
-        transformCallback: (callback: any) => callback,
-        convertFileSrc: (value: string) => value,
-      };
-      window.__TAURI__ = {
-        core: { invoke: invokeWithChat },
-        event: {
-          listen: async (event: string, callback: any) => {
-            listeners.set(event, callback);
-            return async () => listeners.delete(event);
+        };
+        const invoke = async (cmd: string, args?: any) => {
+          if (cmd === "send_command" && overrides["send_command"]) {
+            return await overrides["send_command"](args);
+          }
+          if (cmd === "send_command") {
+            setTimeout(() => {
+              const chunkCbs = listeners.get("stream_chunk") ?? [];
+              const doneCbs = listeners.get("stream_done") ?? [];
+              for (const cb of chunkCbs) {
+                cb({ payload: "Hello" });
+                cb({ payload: " from" });
+                cb({ payload: " the" });
+                cb({ payload: " mock" });
+                cb({ payload: " stream!" });
+              }
+              for (const cb of doneCbs) cb({ payload: null });
+            }, 100);
+            return null;
+          }
+          return defaultInvoke(cmd, args);
+        };
+        (window as any).__TAURI_INTERNALS__ = {
+          invoke,
+          transformCallback: (callback: any) => callback,
+          convertFileSrc: (value: string) => value,
+        };
+        (window as any).__TAURI__ = {
+          core: { invoke },
+          event: {
+            listen: async (event: string, callback: any) => {
+              const list = listeners.get(event) ?? [];
+              list.push(callback);
+              listeners.set(event, list);
+              return async () => {
+                const updated = (listeners.get(event) ?? []).filter((c: any) => c !== callback);
+                listeners.set(event, updated);
+              };
+            },
+            emit: (event: string, payload: any) => {
+              for (const cb of listeners.get(event) ?? []) {
+                cb({ payload });
+              }
+            },
           },
-          emit: (event: string, payload: any) => {
-            const cb = listeners.get(event);
-            if (cb) cb({ payload });
+          path: {},
+          webviewWindow: {
+            getCurrentWebviewWindow: () => ({
+              label: "main",
+              listen: async () => async () => {},
+              emit: noop,
+              onCloseRequested: noop,
+            }),
           },
-        },
-        path: {},
-        webviewWindow: {
-          getCurrentWebviewWindow: () => ({
-            label: "main",
-            listen: async () => async () => {},
-            emit: noop,
-            onCloseRequested: noop,
-          }),
-        },
-        window: {
-          getCurrentWindow: () => ({
-            label: "main",
-            listen: async () => async () => {},
-            emit: noop,
-          }),
-        },
+          window: {
+            getCurrentWindow: () => ({
+              label: "main",
+              listen: async () => async () => {},
+              emit: noop,
+            }),
+          },
+        };
+        (window as any).__mock_emit = (event: string, payload: any) => {
+          for (const cb of listeners.get(event) ?? []) {
+            cb({ payload });
+          }
+        };
       };
-
-      (window as any).__mock_emit = (event: string, payload: any) => {
-        const cb = listeners.get(event);
-        if (cb) cb({ payload });
-      };
+      buildTauriMock();
     });
   }
 }

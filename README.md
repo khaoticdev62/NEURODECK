@@ -495,7 +495,7 @@ CI builds (`.github/workflows/ci.yml`) run automatically on every push and produ
 | [`docs/gamescope_guide.md`](docs/gamescope_guide.md) | SteamOS Game Mode integration, gamescope flags |
 | [`docs/steam_input_guide.md`](docs/steam_input_guide.md) | Steam Input controller mapping and `.vdf` profile |
 | [`assets/steam-grid/README.md`](assets/steam-grid/README.md) | Steam library artwork install instructions |
-| [`GEMINI.md`](GEMINI.md) | Gemini API integration reference — auth, RAG, SSE, OAuth |
+| [`docs/gemini.md`](docs/gemini.md) | Gemini API integration reference — auth, RAG, SSE, OAuth |
 | [`CLAUDE.md`](CLAUDE.md) | AI coding context — architecture rules, gotchas, tribal knowledge |
 
 ---

@@ -254,3 +254,59 @@ pub fn pty_kill(id: String, state: State<'_, PtyState>) -> Result<(), String> {
         Err(format!("PTY Session {} not found", id))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::build_shell_candidates;
+
+    #[test]
+    fn empty_shell_defaults_to_platform_defaults() {
+        let candidates = build_shell_candidates("");
+        assert!(!candidates.is_empty());
+        if cfg!(target_os = "windows") {
+            assert_eq!(candidates[0], "pwsh.exe");
+        } else {
+            assert_eq!(candidates[0], "/bin/bash");
+        }
+    }
+
+    #[test]
+    fn bash_shell_includes_bash_candidates() {
+        let candidates = build_shell_candidates("/bin/bash");
+        assert!(candidates.iter().any(|c| c.contains("bash")));
+        assert!(!candidates.is_empty());
+    }
+
+    #[test]
+    fn zsh_shell_includes_zsh_candidates() {
+        let candidates = build_shell_candidates("/bin/zsh");
+        assert!(candidates.iter().any(|c| c.contains("zsh")));
+    }
+
+    #[test]
+    fn fish_shell_includes_fish_candidates() {
+        let candidates = build_shell_candidates("/bin/fish");
+        assert!(candidates.iter().any(|c| c.contains("fish")));
+    }
+
+    #[test]
+    fn sh_shell_includes_sh_candidates() {
+        let candidates = build_shell_candidates("/bin/sh");
+        assert!(candidates.iter().any(|c| c.contains("sh")));
+    }
+
+    #[test]
+    fn unknown_shell_returns_itself_as_first_candidate() {
+        let candidates = build_shell_candidates("/usr/bin/custom_shell");
+        assert_eq!(candidates[0], "/usr/bin/custom_shell");
+    }
+
+    #[test]
+    fn windows_fallbacks_present_on_windows() {
+        if cfg!(target_os = "windows") {
+            let candidates = build_shell_candidates("");
+            assert!(candidates.contains(&"powershell.exe".to_string()));
+            assert!(candidates.contains(&"cmd.exe".to_string()));
+        }
+    }
+}

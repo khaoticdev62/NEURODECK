@@ -49,12 +49,12 @@ jobs:
         run: npm run frontend:typecheck
 
       - name: Frontend Format Check
-        run: npx prettier --check "frontend/src/**/*.{js,ts,tsx,json,css}" "frontend/index.html" || true
+        run: npx prettier --check "frontend/src/**/*.{js,ts,tsx,json,css}" "frontend/index.html"
 
       - name: Python Ruff Check
         run: |
-          uv run ruff check . || true
-          uv run ruff format --check . || true
+          uv run ruff check .
+          uv run ruff format --check .
 
   # ── Gate 2: Build ────────────────────────────────────────────────────────
   build:
@@ -113,6 +113,9 @@ jobs:
 
       - name: Cargo Test (workspace)
         run: cargo test --workspace --all-targets
+
+      - name: Frontend Unit Tests (Vitest)
+        run: npm run frontend:test
 
       - name: Upload test results
         if: always()

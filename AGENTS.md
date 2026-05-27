@@ -54,12 +54,12 @@ A workspace crate (`neurodeck_infrastructure`) providing platform services. Used
 
 | Module | What It Owns |
 |---|---|
-| `secrets.rs` | OS keychain (keyring 2.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
+| `secrets.rs` | OS keychain (keyring 4.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
 | `oauth.rs` | Google OAuth2 Device Flow — `request_device_code` → `poll_for_token`; reads `google_client_id` from config |
 | `warpinator.rs` | Warpinator-compatible gRPC server (tonic 0.11); `WarpinatorCallbacks` trait; `start_warpinator_service(callbacks, port)` |
 
 **Key infrastructure quirks:**
-- `keyring` is pinned to `2.3` — uses `delete_password()` NOT `delete_credential()` (that's 3.x API)
+- `keyring` is at `4.x` — uses `delete_credential()` (the 2.x API was `delete_password()`)
 - `tonic-build` 0.11 uses `.compile()` not `.compile_protos()` — `build.rs` uses `unsafe { set_var("PROTOC", ...) }`
 - `reqwest` 0.12 without `form` feature has no `.form()` method — use manual URL encoding with `Content-Type: application/x-www-form-urlencoded`
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
@@ -151,8 +151,8 @@ Version governance for this project. One Egyptian god codename per MINOR version
 REGISTRY[MINOR] = codename
 tag format      = v{semver}-{codename_lower}
 
-current: v1.1.x → Thoth  (MINOR=1, index 1)
-next:    v1.2.x → Ra     (MINOR=2, index 2)
+current: v1.2.x → Ra      (MINOR=2, index 2)
+next:    v1.3.x → Set      (MINOR=3, index 3)
 ```
 
 ### Key Files
@@ -178,8 +178,8 @@ next:    v1.2.x → Ra     (MINOR=2, index 2)
 - `verify-telemetry.yml` — verifies `health.json` presence, all 5 checks true, no version/codename drift from `meta.json`
 
 ### Rules When Bumping Versions
-- **PATCH bump** (1.1.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
-- **MINOR bump** (1.2.0): update `meta.json` with new version, `codename.name = "Ra"`, `registry_index = 2`, `minor_line = 2`, `tag = "v1.2.0-ra"`. Update `health.json` version/codename to match.
+- **PATCH bump** (1.2.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
+- **MINOR bump** (1.3.0): update `meta.json` with new version, `codename.name = "Set"`, `registry_index = 3`, `minor_line = 3`, `tag = "v1.3.0-set"`. Update `health.json` version/codename to match.
 - **MAJOR bump** (2.0.0): all codenames reset to index 0 → Anubis.
 - Loose files at the root: run `sweep` before committing to keep the root clean.
 

@@ -67,6 +67,7 @@ import { initCliMakerView } from "./cli_maker.js";
 import { initGraphView } from "./graph_view.js";
 import { initSchedulerView } from "./scheduler_view.js";
 import { initWorkflowView } from "./workflow_view.js";
+import { initIdeView } from "./ide_view.js";
 
 import { listen } from "@tauri-apps/api/event";
 import { marked } from "marked";
@@ -511,6 +512,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="nav-tab" data-view="graph" data-testid="nav-tab-graph">🕸️ Graph</button>
                     <button class="nav-tab" data-view="scheduler" data-testid="nav-tab-scheduler">⏰ Scheduler</button>
                     <button class="nav-tab" data-view="workflow" data-testid="nav-tab-workflow">🔀 Flow</button>
+                    <button class="nav-tab" data-view="ide" data-testid="nav-tab-ide">💻 IDE</button>
                 </div>
             </nav>
 
@@ -1885,6 +1887,49 @@ document.querySelector("#app").innerHTML = `
                     <div class="wf-loading" id="wf-loading">
                         <div class="wf-loading-icon">🔀</div>
                         <div class="wf-loading-text">Loading workflow builder…</div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     MINI IDE VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content" id="view-ide" data-testid="view-ide">
+                    <div class="ide-workspace">
+                        <!-- Toolbar -->
+                        <div class="ide-toolbar">
+                            <button class="ide-toolbar-btn" id="ide-btn-new-file" title="New File">📄 New</button>
+                            <button class="ide-toolbar-btn" id="ide-btn-new-folder" title="New Folder">📁 Folder</button>
+                            <button class="ide-toolbar-btn" id="ide-btn-save" title="Save (Ctrl+S)">💾 Save</button>
+                            <button class="ide-toolbar-btn" id="ide-btn-delete" title="Delete">🗑️ Delete</button>
+                            <button class="ide-toolbar-btn" id="ide-btn-run" title="Run">▶ Run</button>
+                            <button class="ide-toolbar-btn" id="ide-btn-refresh" title="Refresh">🔄 Refresh</button>
+                            <span class="ide-toolbar-spacer"></span>
+                            <span class="ide-toolbar-title">Mini IDE</span>
+                        </div>
+                        <!-- Main area -->
+                        <div class="ide-main">
+                            <!-- File tree sidebar -->
+                            <div class="ide-sidebar">
+                                <div class="ide-sidebar-header">📂 Explorer</div>
+                                <div class="ide-file-tree" id="ide-file-tree"></div>
+                            </div>
+                            <!-- Editor area -->
+                            <div class="ide-editor-area">
+                                <div class="ide-tab-bar" id="ide-tab-bar"></div>
+                                <div class="ide-editor-wrap">
+                                    <div class="ide-line-numbers" id="ide-line-numbers"><div class="ide-line-num">1</div></div>
+                                    <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Output panel -->
+                        <div class="ide-output-panel">
+                            <div class="ide-output-header">
+                                <span>📋 Output</span>
+                                <button class="ide-output-clear" id="ide-btn-clear-output">Clear</button>
+                            </div>
+                            <div class="ide-output" id="ide-output"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -3942,6 +3987,7 @@ const RADIAL_SEGMENTS = [
   { icon: "share2", label: "Graph", view: "graph" },
   { icon: "clock", label: "Scheduler", view: "scheduler" },
   { icon: "workflow", label: "Flow", view: "workflow" },
+  { icon: "code2", label: "IDE", view: "ide" },
 ];
 
 function getGamepadFocusableElements() {
@@ -5238,6 +5284,9 @@ navTabs.forEach((tab) => {
     if (targetViewName === "workflow" && typeof initWorkflowView === "function") {
       initWorkflowView();
     }
+    if (targetViewName === "ide" && typeof initIdeView === "function") {
+      initIdeView();
+    }
   };
 });
 
@@ -6111,6 +6160,7 @@ const VIEW_ICON_MAP = {
   "view-graph": "share2",
   "view-scheduler": "clock",
   "view-workflow": "workflow",
+  "view-ide": "code2",
 };
 
 const VIEW_NAME_MAP = {
@@ -6132,6 +6182,7 @@ const VIEW_NAME_MAP = {
   "view-graph": "Knowledge Graph",
   "view-scheduler": "Task Scheduler",
   "view-workflow": "Workflow Builder",
+  "view-ide": "Mini IDE",
 };
 
 const quickSwitcherState = {
