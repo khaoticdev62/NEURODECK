@@ -133,7 +133,8 @@ $httpMatches = Invoke-RgJson -Pattern 'http://' -Targets @("frontend/src", "fron
 $httpMatches = @($httpMatches | Where-Object {
     $_.text -notmatch 'http://localhost' -and
     $_.text -notmatch 'http://127\.0\.0\.1' -and
-    $_.text -notmatch 'http://www\.w3\.org/2000/svg'
+    $_.text -notmatch 'http://www\.w3\.org/2000/svg' -and
+    $_.text -notmatch 'schemas\.microsoft\.com/wix/2006/wi'
 })
 foreach ($match in ($httpMatches | Where-Object { $_.text -notmatch 'http://www\.w3\.org/2000/svg' -and $_.path -notmatch 'frontend/src/assets/fonts/OFL\.txt' -and $_.text -notmatch 'starts_with\("http://' })) {
     if ($match.path -match 'src-tauri/src/remote_control\.rs') {
