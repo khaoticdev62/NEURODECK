@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build:frontend": "npm --prefix ../frontend run build",
-    "test": "npm run build:frontend && playwright test"
+    "test": "npm run build:frontend && playwright test",
+    "generate:pdf": "node support/generate-pdf.cjs"
   },
   "keywords": [],
   "author": "",
