@@ -7,7 +7,7 @@
     "tag":  "v1.2.2-ra",
     "workspace_state":  "generated-only",
     "dirty_build":  false,
-    "stamped_at_utc":  "2026-05-27T17:19:32Z",
+    "stamped_at_utc":  "2026-05-27T17:28:01Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,42 +47,42 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  1395,
-                                           "started_at_utc":  "2026-05-27T17:19:35Z",
-                                           "finished_at_utc":  "2026-05-27T17:19:36Z"
+                                           "duration_ms":  1379,
+                                           "started_at_utc":  "2026-05-27T17:28:03Z",
+                                           "finished_at_utc":  "2026-05-27T17:28:04Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1323,
-                                           "started_at_utc":  "2026-05-27T17:19:36Z",
-                                           "finished_at_utc":  "2026-05-27T17:19:37Z"
+                                           "duration_ms":  4607,
+                                           "started_at_utc":  "2026-05-27T17:28:04Z",
+                                           "finished_at_utc":  "2026-05-27T17:28:09Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  4244,
-                                           "started_at_utc":  "2026-05-27T17:19:37Z",
-                                           "finished_at_utc":  "2026-05-27T17:19:42Z"
+                                           "duration_ms":  62084,
+                                           "started_at_utc":  "2026-05-27T17:28:09Z",
+                                           "finished_at_utc":  "2026-05-27T17:29:11Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  954,
-                                           "started_at_utc":  "2026-05-27T17:19:42Z",
-                                           "finished_at_utc":  "2026-05-27T17:19:43Z"
+                                           "duration_ms":  982,
+                                           "started_at_utc":  "2026-05-27T17:29:11Z",
+                                           "finished_at_utc":  "2026-05-27T17:29:12Z"
                                        }
                                    ],
                          "blockers":  [
 
                                       ],
-                         "duration_ms":  7941,
-                         "checked_at_utc":  "2026-05-27T17:19:43Z"
+                         "duration_ms":  69078,
+                         "checked_at_utc":  "2026-05-27T17:29:12Z"
                      }
 }

@@ -109,30 +109,25 @@ These ship in v1.3.0 or the release does not cut.
 
 ---
 
-## Branch Integration Strategy
+## Branch Reality Check
 
-The sprint branches are linearly stacked:
+The sprint branches (`feature/sprint-3.3-knowledge-graph` through `feature/sprint-4.3-command-palette`) represent **older implementations** that were superseded by refactored code on `master`. An audit of `master` reveals:
 
-```
-master
-  └── 3.1 Monaco
-        └── 3.2 Whisper
-              └── 3.3 Knowledge Graph
-                    └── 3.4 Scheduler
-                          └── 3.5 Git
-                                └── 4.1 Workflow
-                                      └── 4.2 Orchestrator
-                                            └── 4.3 Command Palette
-```
+| Feature | Branch Status | Master Reality |
+|---|---|---|
+| Knowledge Graph | BRANCH-COMPLETE | ✅ Complete — `graph_view.js`, `get_memory_graph_data`, Graph tab |
+| Task Scheduler | BRANCH-COMPLETE | ✅ Complete — `scheduler.rs`, `scheduler::*` commands, Scheduler tab |
+| Git Integration | BRANCH-COMPLETE | ✅ Complete — `commands/git.rs` (700 lines), 20+ commands, Git tab |
+| Workflow Builder | BRANCH-COMPLETE | ✅ Complete — `workflow.rs`, `workflow::*` commands, Workflow tab |
+| Command Palette | BRANCH-COMPLETE | ✅ Complete — palette overlay, `Ctrl+K`, fuzzy search |
+| Multi-Agent Orchestrator | BRANCH-COMPLETE | ⚠️ **Partial** — backend commands wired, **frontend view missing** |
 
-**Decision:** Merge the full stack (`feature/sprint-4.3-command-palette` → `master`) because:
-- Only 12 commits ahead.
-- All automated checks pass on each branch.
-- Linear history = trivial fast-forward merge, no conflict resolution.
+**Decision:** No branch merge required. The v1.3.0 release is built from `master` with hardening and gap-filling.
 
 **Gating:**
-- Workflow Builder and Multi-Agent Orchestrator UI are **hidden behind `localStorage` flags** (`neurodeck_experimental_workflow`, `neurodeck_experimental_orchestrator`) for v1.3.0. The Rust commands ship, but the frontend tabs are not registered in the radial menu until v1.4+.
-- This keeps the release clean while avoiding a second merge dance later.
+- Workflow Builder ships fully exposed (it is already a registered tab).
+- Multi-Agent Orchestrator backend commands are live but **no frontend tab exists yet**. Add the Orchestrator view as a v1.3.0 blocker or hide the commands until v1.4+.
+- Legacy feature branches can be archived after release tagging.
 
 ---
 
@@ -166,10 +161,10 @@ master
 
 v1.3.0-Isis is a **control and consolidation release**.
 
-- **One merge** brings 8 sprints of completed work into the baseline.
-- **Four features** get full polish and exposure (Palette, Git, Graph, Monaco).
+- **No merge required** — 8 sprints of work are already on `master` in refactored form.
+- **One gap to close** — Orchestrator needs a frontend view (or commands hidden until v1.4+).
 - **Four fixes** remove operational pain (FTP streaming, PTY timeout, config paths, Canvas run).
 - **Two refactors** pay down debt before it blocks velocity.
-- **Two features** ship dark (Workflow, Orchestrator) to keep the UI tight.
+- **One feature ships dark** — Orchestrator UI deferred if it risks release schedule.
 
 The result: a faster, safer, more maintainable NEURODECK that still fits in a 96 MB AppImage and boots in under 2 seconds.

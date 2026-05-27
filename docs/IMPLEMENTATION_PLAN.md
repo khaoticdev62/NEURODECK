@@ -1,6 +1,6 @@
 # NEURODECK Implementation Plan
 ## Sprint Roadmap and Integration Ledger
-### Last Updated: 2026-05-26 | KFMS: v1.2.2-ra | Active Branch: `feature/sprint-5.1-real-time-collab`
+### Last Updated: 2026-05-27 | KFMS: v1.2.2-ra | Active Branch: `master`
 
 ---
 
@@ -11,7 +11,7 @@
 - Codename: `Ra`
 - Tag: `v1.2.2-ra`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-05-27T17:19:32Z`
+- Last stamped build: `2026-05-27T17:28:01Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
@@ -51,6 +51,14 @@ Core shipped capabilities:
 - Computer-use command layer with user approval flow.
 - Encrypted cloud sync for memory records and saved sessions.
 - Real-time LAN collaborative workspaces for Canvas code, presence, chat, invite payloads, and shared agent approvals.
+- Git integration panel (status, diff, stage, commit, log, branch, remote, SSH key management).
+- Knowledge Graph visualization (D3.js force-directed memory graph).
+- Task Scheduler (cron-style agent runs with tokio-cron-scheduler).
+- Workflow Visual Builder (drag-drop automation with node-based editor).
+- API Lab (HTTP request builder with collections, curl import/export).
+- CLI Maker (custom command builder with hooks and Lua export).
+- IDE tab (workspace file explorer, tabbed Monaco editor, output panel).
+- Command Palette (`Ctrl+K` fuzzy search across views, commands, and plugins).
 
 ---
 
@@ -70,18 +78,19 @@ Core shipped capabilities:
 
 | Sprint | Feature | Status | Current Evidence / Branch |
 |---|---|---|---|
-| 3.1 | Monaco Editor Integration | COMPLETE | `frontend/src/canvas.js`, `frontend/src/app.css`, commit `56c547e` |
-| 3.2 | Whisper STT Upgrade | COMPLETE | `src-tauri/src/whisper.rs`, Settings Whisper panel, branch `origin/feature/sprint-3.2-whisper` |
-| 3.3 | Knowledge Graph View | BRANCH-COMPLETE | Branch `origin/feature/sprint-3.3-knowledge-graph`; not present on current branch |
-| 3.4 | Task Scheduler | BRANCH-COMPLETE | Branch `origin/feature/sprint-3.4-scheduler`; not present on current branch |
-| 3.5 | Git Integration | BRANCH-COMPLETE | Local branch `feature/sprint-3.5-git`; integration audit still required |
-| 4.1 | Workflow Visual Builder | BRANCH-COMPLETE | Local branch `feature/sprint-4.1-workflow`; integration audit still required |
-| 4.2 | Multi-Agent Orchestrator | BRANCH-COMPLETE | Local branch `feature/sprint-4.2-orchestrator`; integration audit still required |
-| 4.3 | Browser Automation | COMPLETE | Headless session command set implemented in `src-tauri/src/commands/browser.rs` and wired into the agent loop |
+| 3.1 | Monaco Editor Integration | COMPLETE | `frontend/src/canvas.js`, `frontend/src/app.css`, IDE tab |
+| 3.2 | Whisper STT Upgrade | COMPLETE | `src-tauri/src/whisper.rs`, Settings Whisper panel |
+| 3.3 | Knowledge Graph View | COMPLETE | `frontend/src/graph_view.js`, `get_memory_graph_data` command, Graph tab |
+| 3.4 | Task Scheduler | COMPLETE | `src-tauri/src/scheduler.rs`, `scheduler::*` commands, Scheduler tab |
+| 3.5 | Git Integration | COMPLETE | `src-tauri/src/commands/git.rs`, 20+ git commands, Git tab |
+| 4.1 | Workflow Visual Builder | COMPLETE | `src-tauri/src/workflow.rs`, `workflow::*` commands, Workflow tab |
+| 4.2 | Multi-Agent Orchestrator | PARTIAL | `src-tauri/src/orchestrator.rs`, `orchestrator::*` commands wired; **frontend view missing** |
+| 4.3 | Browser Automation | COMPLETE | `src-tauri/src/commands/browser.rs`, headless + embedded browser commands |
+| 4.3 | Command Palette | COMPLETE | `frontend/src/main.js` palette overlay, `Ctrl+K`, fuzzy search |
 | 4.4 | Plugin Marketplace | COMPLETE | `src-tauri/src/plugin_mgr.rs`, Settings Marketplace UI |
-| 4.5 | Desktop Computer Use | COMPLETE | `src-tauri/src/computer_use.rs`, approval UI, agent tool wiring, commit `7a25eca` |
-| 4.6 | Cloud Sync | COMPLETE | `src-tauri/src/sync.rs`, Settings Sync UI, commit `0c29d8c` |
-| 5.1 | Real-Time Collaborative Workspaces | COMPLETE | Multi-peer `canvas_collab.rs`, workspace UI, commit `24b1348` |
+| 4.5 | Desktop Computer Use | COMPLETE | `src-tauri/src/computer_use.rs`, approval UI, agent tool wiring |
+| 4.6 | Cloud Sync | COMPLETE | `src-tauri/src/sync.rs`, Settings Sync UI |
+| 5.1 | Real-Time Collaborative Workspaces | COMPLETE | `src-tauri/src/canvas_collab.rs`, multi-peer LAN workspace UI |
 | 5.2 | Mobile Companion App | PLANNED | Native iOS/Android app not started |
 
 ---
@@ -117,67 +126,68 @@ Remaining release smoke:
 - Confirm Windows/Linux behavior separately because audio capture differs by OS.
 
 ### Sprint 3.3 - Knowledge Graph View
-Status: BRANCH-COMPLETE
+Status: COMPLETE
 
 Current state:
-- Work exists on `origin/feature/sprint-3.3-knowledge-graph`.
-- The current branch does not contain the graph module/view.
+- Frontend: `frontend/src/graph_view.js` with D3.js force-directed graph.
+- Backend: `get_memory_graph_data` command returns node/edge data from the vector DB.
+- UI: Graph tab (`#view-graph`) with navigation and gamepad support.
 
-Integration tasks:
-- Cherry-pick or merge the branch into the current sprint line.
-- Resolve conflicts with the current modular frontend and Canvas changes.
-- Re-run `cargo check`, `cargo test`, frontend build, and gamepad/navigation smoke.
+Remaining release smoke:
+- Validate graph render performance with 500+ memory records.
+- Confirm click-to-jump-to-chat-context works.
 
 ### Sprint 3.4 - Task Scheduler
-Status: BRANCH-COMPLETE
+Status: COMPLETE
 
 Current state:
-- Work exists on `origin/feature/sprint-3.4-scheduler`.
-- The current branch does not contain the scheduler module/view.
+- Backend: `src-tauri/src/scheduler.rs` with tokio-cron-scheduler.
+- Commands: `list_scheduled_tasks`, `add_scheduled_task`, `delete_scheduled_task`, `toggle_scheduled_task`, `run_task_now`.
+- UI: Scheduler tab (`#view-scheduler`) with add/toggle/run/delete controls.
 
-Integration tasks:
-- Audit persistence path and scheduler startup behavior.
-- Ensure scheduled agent runs use the current agent command path.
-- Add UI smoke for add, toggle, run now, delete, and persistence.
+Remaining release smoke:
+- Validate persistence across app restarts.
+- Confirm scheduled agent runs use the current `send_command` path with RAG injection.
 
 ### Sprint 3.5 - Git Integration
-Status: BRANCH-COMPLETE
+Status: COMPLETE
 
 Current state:
-- Local branch `feature/sprint-3.5-git` exists.
-- The current branch does not expose Git commands or UI.
+- Backend: `src-tauri/src/commands/git.rs` (700 lines) with full git2 bindings.
+- Commands: status, diff, stage, unstage, discard, commit, log, branch, checkout, push, pull, fetch, remote, SSH key generation, credential store, LLM commit message generation.
+- UI: Git tab (`#view-git`) with two-pane layout.
 
-Integration tasks:
-- Inspect branch diff before merge.
-- Confirm no unsafe repository path handling.
-- Verify status, diff, stage, commit, log, and generated commit message flow.
+Remaining release smoke:
+- Validate on real repositories (stage → commit → push flow).
+- Confirm SSH key generation and credential storage work across OS keychains.
 
 ---
 
 ## Phase 4 - Osiris: Orchestration and Autonomy
 
 ### Sprint 4.1 - Workflow Visual Builder
-Status: BRANCH-COMPLETE
+Status: COMPLETE
 
 Current state:
-- Local branch `feature/sprint-4.1-workflow` exists.
-- The current branch does not contain workflow runtime or view files.
+- Backend: `src-tauri/src/workflow.rs` with node-based execution engine.
+- Commands: `list_workflows`, `load_workflow`, `save_workflow`, `delete_workflow`.
+- UI: Workflow tab (`#view-workflow`) with drag-drop node editor.
 
-Integration tasks:
+Remaining release smoke:
 - Audit workflow execution for shell/file/HTTP safety.
-- Make workflow persistence compatible with current data directory conventions.
-- Verify view layout inside 1280x800.
+- Validate 1280×800 layout with 8+ nodes.
 
 ### Sprint 4.2 - Multi-Agent Orchestrator
-Status: BRANCH-COMPLETE
+Status: PARTIAL
 
 Current state:
-- Local branch `feature/sprint-4.2-orchestrator` exists.
-- The current branch still uses the existing agent loop and profile system.
+- Backend: `src-tauri/src/orchestrator.rs` with task decomposition and parallel agent execution.
+- Commands: `start_orchestrated_task`, `get_orchestration_status`, `stop_orchestration`.
+- **Frontend: No dedicated view or tab exists.** The orchestrator is callable via backend only.
 
 Integration tasks:
+- Build frontend view (`#view-orchestrator`) or integrate into Agent tab as "Orchestrate" mode.
 - Audit agent task planning, cancellation, and result aggregation.
-- Confirm no duplicate app state structs or stale frontend selectors.
 - Verify stop behavior under concurrent agent tasks.
 
 ### Sprint 4.3 - Browser Automation
@@ -308,23 +318,23 @@ Recommended MVP scope:
 
 ## Backlog Priority
 
-Immediate integration backlog:
-1. Integrate Sprint 3.3 Knowledge Graph from `origin/feature/sprint-3.3-knowledge-graph`.
-2. Integrate Sprint 3.4 Task Scheduler from `origin/feature/sprint-3.4-scheduler`.
-3. Audit and integrate Sprint 3.5 Git from `feature/sprint-3.5-git`.
-4. Audit and integrate Sprint 4.1 Workflow from `feature/sprint-4.1-workflow`.
-5. Audit and integrate Sprint 4.2 Orchestrator from `feature/sprint-4.2-orchestrator`.
-6. Validate Sprint 4.3 browser automation on target machines with installed Chromium/Chrome.
+### Immediate Hardening (v1.3.0-Isis Blockers)
+1. **Orchestrator Frontend** — Build `#view-orchestrator` tab or integrate into Agent tab as "Orchestrate" mode.
+2. **Command Palette Hardening** — Verify fuzzy search covers all 19 views and plugin commands; test gamepad invocation.
+3. **FTP Streaming + Progress** — Replace `retr_as_buffer` with disk stream; emit progress events.
+4. **`pty_spawn` Timeout** — Add 30s timeout with auto-cleanup for hung SSH handshakes.
+5. **Config Path Migration** — Move from `../llm-term.toml` fallback to `app_config_dir()` with auto-migration.
+6. **Canvas Run UX** — Wire Python/Bash Run button to existing `pty_execute` path.
 
-Next net-new sprint:
-1. Sprint 5.2 Mobile Companion App.
+### Release Validation
+1. Run `npm run tauri dev` and smoke test every view (19 tabs + palette + radial menu).
+2. Validate Steam Deck 1280×800 layout for all views, especially new Git, Graph, Scheduler, Workflow, and IDE tabs.
+3. Run `cargo clippy` and fix or document warnings.
+4. Build production AppImage (`scripts/shell/build_appimage.sh`) and verify on SteamOS.
+5. Cut KFMS release tag `v1.3.0-isis` after all blockers pass.
 
-Release hardening backlog:
-1. Run `npm run tauri dev` and smoke test every completed current-branch feature.
-2. Validate Steam Deck 1280x800 layout for Canvas, Settings, Collab, Sync, and Computer Use.
-3. Run `cargo clippy -- -D warnings` and either fix or document warnings.
-4. Build production package with `npm run build` and platform package scripts.
-5. Cut KFMS release tag only after the current integration branches are reconciled.
+### Next Net-New Sprint (v1.4+ / Osiris)
+1. Mobile Companion App (Sprint 5.2) — deferred until cloud sync auth is production-stable.
 
 ---
 
@@ -359,15 +369,16 @@ Planned:
 | Sprint | Version Line | Codename | Status |
 |---|---:|---|---|
 | 3.1 Monaco | v1.3.0 | Isis | COMPLETE |
-| 3.2 Whisper | v1.3.1 | Isis | COMPLETE |
-| 3.3 Knowledge Graph | v1.3.2 | Isis | BRANCH-COMPLETE |
-| 3.4 Scheduler | v1.3.3 | Isis | BRANCH-COMPLETE |
-| 3.5 Git | v1.3.4 | Isis | BRANCH-COMPLETE |
-| 4.1 Workflow | v2.0.0 | Osiris | BRANCH-COMPLETE |
-| 4.2 Multi-Agent | v2.0.1 | Osiris | BRANCH-COMPLETE |
-| 4.3 Browser Automation | v2.0.2 | Osiris | COMPLETE |
-| 4.4 Marketplace | v2.0.3 | Osiris | COMPLETE |
-| 4.5 Computer Use | v2.0.4 | Osiris | COMPLETE |
-| 4.6 Cloud Sync | v2.0.5 | Osiris | COMPLETE |
-| 5.1 Collaborative Workspaces | v2.5.0 | Horus | COMPLETE |
-| 5.2 Mobile Companion | v2.5.1 | Horus | PLANNED |
+| 3.2 Whisper | v1.3.0 | Isis | COMPLETE |
+| 3.3 Knowledge Graph | v1.3.0 | Isis | COMPLETE |
+| 3.4 Scheduler | v1.3.0 | Isis | COMPLETE |
+| 3.5 Git | v1.3.0 | Isis | COMPLETE |
+| 4.1 Workflow | v1.3.0 | Isis | COMPLETE |
+| 4.2 Multi-Agent | v1.3.0 | Isis | PARTIAL (backend done, frontend missing) |
+| 4.3 Browser Automation | v1.3.0 | Isis | COMPLETE |
+| 4.3 Command Palette | v1.3.0 | Isis | COMPLETE |
+| 4.4 Marketplace | v1.3.0 | Isis | COMPLETE |
+| 4.5 Computer Use | v1.3.0 | Isis | COMPLETE |
+| 4.6 Cloud Sync | v1.3.0 | Isis | COMPLETE |
+| 5.1 Collaborative Workspaces | v1.3.0 | Isis | COMPLETE |
+| 5.2 Mobile Companion | v1.4.0+ | Osiris | PLANNED |
