@@ -1329,6 +1329,12 @@ document.querySelector("#app").innerHTML = `
                                 <div class="agent-output" id="agent-output">
                                     <span class="agent-output-empty">No output yet.</span>
                                 </div>
+                                <div class="agent-orchestrator-panel hidden" id="agent-orchestrator-panel">
+                                    <div class="agent-orchestrator-panel-title">Task Status</div>
+                                    <div class="agent-orchestrator-task-list" id="orchestrator-task-list">
+                                        <div class="agent-orchestrator-empty">No orchestration plan yet.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

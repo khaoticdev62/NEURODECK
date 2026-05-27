@@ -20,13 +20,14 @@ export function initAgentView() {
     const orchestratorToolbar = document.getElementById("agent-toolbar-orchestrate");
     const codePaneTitle = document.getElementById("agent-code-pane-title");
     const outputTitle = document.getElementById("agent-output-title");
+    const orchestratorPanel = document.getElementById("agent-orchestrator-panel");
+    const orchestratorTaskList = document.getElementById("orchestrator-task-list");
 
     if (!taskInput || !runBtn || !sendCanvasBtn) return;
 
     let agentRunning = false;
     let agentShouldStop = false;
     let orchestratorRunning = false;
-    let orchestratorShouldStop = false;
     let orchestratorPollTimer = null;
     let currentMode = "task";
     let lastCode = "";
@@ -56,6 +57,7 @@ export function initAgentView() {
         document.getElementById("agent-toolbar-task")?.classList.toggle("hidden", mode !== "task");
         document.getElementById("agent-toolbar-roundtable")?.classList.toggle("hidden", mode !== "roundtable");
         orchestratorToolbar?.classList.toggle("hidden", mode !== "orchestrate");
+        orchestratorPanel?.classList.toggle("hidden", mode !== "orchestrate");
         sendCanvasBtn.classList.toggle("hidden", mode !== "task");
         if (codePaneTitle) {
             codePaneTitle.textContent = mode === "orchestrate" ? "Orchestration Plan" : "Current Code";
@@ -81,21 +83,44 @@ export function initAgentView() {
 
         if (codePre) {
             if (tasks.length || goal || running) {
-                const snapshot = {
-                    running,
-                    goal: goal || "(no goal)",
-                    tasks: tasks.map((task) => ({
-                        id: task.id,
-                        role: task.role,
-                        status: task.status,
-                        depends_on: task.depends_on,
-                        result: task.result ? String(task.result).slice(0, 220) : null,
-                        error: task.error || null,
-                    })),
-                };
-                codePre.textContent = JSON.stringify(snapshot, null, 2);
+                codePre.textContent = [
+                    `Goal: ${goal || "(no goal)"}`,
+                    `State: ${running ? "running" : tasks.length ? "idle" : "empty"}`,
+                    `Tasks: ${tasks.length}`,
+                ].join("\n");
             } else {
                 codePre.textContent = "No orchestration plan yet.";
+            }
+        }
+
+        if (orchestratorTaskList) {
+            if (!tasks.length) {
+                orchestratorTaskList.innerHTML = '<div class="agent-orchestrator-empty">No orchestration plan yet.</div>';
+            } else {
+                orchestratorTaskList.innerHTML = tasks
+                    .map((task) => {
+                        const dependsOn = Array.isArray(task.depends_on) && task.depends_on.length
+                            ? task.depends_on.join(", ")
+                            : "none";
+                        const goalText = escapeHtml(String(task.goal || ""));
+                        const result = task.result ? escapeHtml(String(task.result).slice(0, 260)) : "";
+                        const error = task.error ? escapeHtml(String(task.error).slice(0, 260)) : "";
+                        return `
+                            <div class="agent-orchestrator-task" data-status="${escapeHtml(String(task.status || "pending"))}">
+                                <span class="agent-orchestrator-task-dot" aria-hidden="true"></span>
+                                <div class="agent-orchestrator-task-body">
+                                    <div class="agent-orchestrator-task-head">
+                                        <span class="agent-orchestrator-task-role">${escapeHtml(String(task.role || task.id || "Task"))}</span>
+                                        <span class="agent-orchestrator-task-status">${escapeHtml(String(task.status || "pending"))}</span>
+                                    </div>
+                                    <div class="agent-orchestrator-task-goal">${goalText}</div>
+                                    <div class="agent-orchestrator-task-meta">ID: ${escapeHtml(String(task.id || ""))} · Depends on: ${escapeHtml(dependsOn)}</div>
+                                    ${result ? `<div class="agent-orchestrator-task-result">${result}</div>` : ""}
+                                    ${error ? `<div class="agent-orchestrator-task-error">${error}</div>` : ""}
+                                </div>
+                            </div>`;
+                    })
+                    .join("");
             }
         }
 
@@ -579,7 +604,6 @@ export function initAgentView() {
         lastOrchestratorGoal = goal;
         setMode("orchestrate");
         setOrchestratorRunning(true);
-        orchestratorShouldStop = false;
         logEl.innerHTML = "";
         appendLog("info", `Starting orchestration: ${goal}`);
         setOrchestratorLogText("Starting orchestration...");
@@ -704,7 +728,6 @@ export function initAgentView() {
     }
 
     async function stopOrchestration() {
-        orchestratorShouldStop = true;
         try {
             await invoke("stop_orchestration");
         } catch (_) {}
