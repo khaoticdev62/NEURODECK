@@ -7,11 +7,11 @@
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.2.2`
-- Codename: `Ra`
-- Tag: `v1.2.2-ra`
+- Version: `1.3.0`
+- Codename: `Isis`
+- Tag: `v1.3.0-isis`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-05-27T17:37:07Z`
+- Last stamped build: `2026-05-27T17:41:35Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

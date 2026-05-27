@@ -2,12 +2,12 @@
     "status":  "healthy",
     "kfms_version":  "1.0",
     "project":  "neurodeck",
-    "version":  "1.2.2",
-    "codename":  "Ra",
-    "tag":  "v1.2.2-ra",
+    "version":  "1.3.0",
+    "codename":  "Isis",
+    "tag":  "v1.3.0-isis",
     "workspace_state":  "generated-only",
     "dirty_build":  false,
-    "stamped_at_utc":  "2026-05-27T17:37:07Z",
+    "stamped_at_utc":  "2026-05-27T17:41:35Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,42 +47,42 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  1715,
-                                           "started_at_utc":  "2026-05-27T17:37:10Z",
-                                           "finished_at_utc":  "2026-05-27T17:37:11Z"
+                                           "duration_ms":  1611,
+                                           "started_at_utc":  "2026-05-27T17:41:38Z",
+                                           "finished_at_utc":  "2026-05-27T17:41:39Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1738,
-                                           "started_at_utc":  "2026-05-27T17:37:11Z",
-                                           "finished_at_utc":  "2026-05-27T17:37:13Z"
+                                           "duration_ms":  17895,
+                                           "started_at_utc":  "2026-05-27T17:41:39Z",
+                                           "finished_at_utc":  "2026-05-27T17:41:57Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  4779,
-                                           "started_at_utc":  "2026-05-27T17:37:13Z",
-                                           "finished_at_utc":  "2026-05-27T17:37:18Z"
+                                           "duration_ms":  38776,
+                                           "started_at_utc":  "2026-05-27T17:41:57Z",
+                                           "finished_at_utc":  "2026-05-27T17:42:36Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  960,
-                                           "started_at_utc":  "2026-05-27T17:37:18Z",
-                                           "finished_at_utc":  "2026-05-27T17:37:19Z"
+                                           "duration_ms":  942,
+                                           "started_at_utc":  "2026-05-27T17:42:36Z",
+                                           "finished_at_utc":  "2026-05-27T17:42:37Z"
                                        }
                                    ],
                          "blockers":  [
 
                                       ],
-                         "duration_ms":  9219,
-                         "checked_at_utc":  "2026-05-27T17:37:19Z"
+                         "duration_ms":  59250,
+                         "checked_at_utc":  "2026-05-27T17:42:37Z"
                      }
 }

@@ -1,6 +1,6 @@
 [project]
 name = "neurodeck"
-version = "1.2.2"
+version = "1.3.0"
 description = "NEURODECK Python tooling — brand asset generator and dev utilities"
 readme = "README.md"
 requires-python = ">=3.8"
