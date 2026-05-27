@@ -26,6 +26,9 @@ import {
   applySettings,
   toggleSettingsLlmGroups,
   initSettingsSidebar,
+  openSettingsModal,
+  activateSettingsPanel,
+  performModelSearch,
 } from "./settings.js";
 import {
   initPtyTerminal,
@@ -1146,6 +1149,7 @@ document.querySelector("#app").innerHTML = `
                                 <button class="browser-btn" id="browser-forward-btn" title="Go Forward" aria-label="Go Forward">${createIcon("arrowRight", { size: 16 })}</button>
                                 <button class="browser-btn" id="browser-refresh-btn" title="Refresh" aria-label="Refresh">${createIcon("refreshCw", { size: 16 })}</button>
                                 <button class="browser-btn" id="browser-home-btn" title="New Tab / Home" aria-label="New Tab">${createIcon("house", { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-hf-btn" title="Hugging Face Models" aria-label="Hugging Face Models">${createIcon("cpu", { size: 16 })}</button>
                             </div>
                             <div class="browser-address-bar-wrapper">
                                 <input type="text" id="browser-url-input" class="browser-url-input" placeholder="Enter URL or search term...">
@@ -1153,6 +1157,7 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <button class="browser-btn go-btn" id="browser-go-btn">${createIcon("sendHorizontal", { size: 14 })}<span>Go</span></button>
                             <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">${createIcon("arrowUpRight", { size: 14 })}<span>Open Ext</span></button>
+                            <button class="browser-btn download-model-btn" id="browser-download-model-btn" title="Download Model from HuggingFace" disabled>${createIcon("download", { size: 14 })}<span>Download Model</span></button>
                         </div>
 
                         <!-- Loading progress bar (sits between toolbar and viewport) -->
@@ -1174,6 +1179,11 @@ document.querySelector("#app").innerHTML = `
 
                                     <div class="speed-dial-title">Quick Bookmarks</div>
                                     <div class="speed-dial-grid">
+                                        <div class="speed-dial-card" data-url="https://huggingface.co/models">
+                                            <div class="sd-icon">${createIcon("cpu", { size: 24 })}</div>
+                                            <div class="sd-label">Hugging Face</div>
+                                            <div class="sd-desc">AI models repository</div>
+                                        </div>
                                         <div class="speed-dial-card" data-url="https://html.duckduckgo.com/html/">
                                             <div class="sd-icon">${createIcon("search", { size: 24 })}</div>
                                             <div class="sd-label">DuckDuckGo</div>
@@ -7182,6 +7192,7 @@ function initBrowser() {
   const forwardBtn = document.getElementById("browser-forward-btn");
   const refreshBtn = document.getElementById("browser-refresh-btn");
   const homeBtn = document.getElementById("browser-home-btn");
+  const hfBtn = document.getElementById("browser-hf-btn");
   const homeSearchInput = document.getElementById("browser-home-search-input");
   const homeSearchBtn = document.getElementById("browser-home-search-btn");
   const speedDialCards = document.querySelectorAll(".speed-dial-card");
@@ -7290,6 +7301,8 @@ function initBrowser() {
     }
   }
 
+  window.browserNavigateTo = navigateTo;
+
   // --- Sync interval: URL readback + reposition on move/resize ---
   function startSync() {
     if (syncInterval) return;
@@ -7317,6 +7330,26 @@ function initBrowser() {
           ) {
             currentUrl = liveUrl;
             if (urlInput) urlInput.value = liveUrl;
+          }
+
+          // Check if it's a Hugging Face model repo page
+          const downloadModelBtn = document.getElementById("browser-download-model-btn");
+          if (downloadModelBtn) {
+            const match = liveUrl ? liveUrl.match(/huggingface\.co\/([^\/]+)\/([^\/\?#]+)/) : null;
+            if (match) {
+              const org = match[1];
+              const model = match[2];
+              if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
+                downloadModelBtn.disabled = false;
+                downloadModelBtn.dataset.repo = `${org}/${model}`;
+              } else {
+                downloadModelBtn.disabled = true;
+                delete downloadModelBtn.dataset.repo;
+              }
+            } else {
+              downloadModelBtn.disabled = true;
+              delete downloadModelBtn.dataset.repo;
+            }
           }
         } catch (_) {}
       }
@@ -7402,6 +7435,7 @@ function initBrowser() {
   }
 
   if (homeBtn) homeBtn.onclick = () => navigateTo("neurodeck://home");
+  if (hfBtn) hfBtn.onclick = () => navigateTo("https://huggingface.co/models");
 
   if (openExtBtn) {
     openExtBtn.onclick = () => {
@@ -7410,6 +7444,92 @@ function initBrowser() {
       if (parsed && parsed !== "neurodeck://home") {
         invoke("open_external", { url: parsed }).catch(() => {});
       }
+    };
+  }
+
+  const downloadModelBtn = document.getElementById("browser-download-model-btn");
+  if (downloadModelBtn) {
+    downloadModelBtn.onclick = () => {
+      const repo = downloadModelBtn.dataset.repo;
+      if (!repo) return;
+
+      // Disable button and show loading state
+      downloadModelBtn.disabled = true;
+      const btnSpan = downloadModelBtn.querySelector("span");
+      const originalText = btnSpan ? btnSpan.textContent : "Download Model";
+      if (btnSpan) btnSpan.textContent = "Checking...";
+
+      invoke("hf_get_model_info", { repoId: repo })
+        .then((modelInfo) => {
+          if (!modelInfo.steam_deck_compat) {
+            const userConfirmed = window.confirm(
+              `⚠️ Compatibility Warning\n\n` +
+              `The model "${repo}" might not run flawlessly on the Steam Deck.\n` +
+              `• Steam Deck has 16GB of unified RAM.\n` +
+              `• Flawlessly compatible models are usually < 6GB in size and <= 7B parameters.\n\n` +
+              `Do you still want to proceed with downloading it?`
+            );
+            if (!userConfirmed) {
+              if (btnSpan) btnSpan.textContent = originalText;
+              downloadModelBtn.disabled = false;
+              return;
+            }
+          }
+
+          // Proceed with opening settings and searching
+          if (browserWindowOpen) {
+            invoke("browser_hide").catch(() => {});
+          }
+          stopSync();
+
+          openSettingsModal();
+          activateSettingsPanel("sp-models", "models");
+
+          const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
+          if (browseTab) browseTab.click();
+
+          const searchInput = document.getElementById("models-search-input");
+          if (searchInput) {
+            searchInput.value = repo;
+            performModelSearch(repo);
+          }
+
+          if (btnSpan) btnSpan.textContent = originalText;
+          downloadModelBtn.disabled = false;
+        })
+        .catch((err) => {
+          const userConfirmed = window.confirm(
+            `⚠️ Compatibility Check Failed\n\n` +
+            `Could not verify Steam Deck compatibility for "${repo}" (Error: ${err}).\n\n` +
+            `Do you still want to proceed to the Model Library?`
+          );
+          if (!userConfirmed) {
+            if (btnSpan) btnSpan.textContent = originalText;
+            downloadModelBtn.disabled = false;
+            return;
+          }
+
+          // Proceed anyway
+          if (browserWindowOpen) {
+            invoke("browser_hide").catch(() => {});
+          }
+          stopSync();
+
+          openSettingsModal();
+          activateSettingsPanel("sp-models", "models");
+
+          const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
+          if (browseTab) browseTab.click();
+
+          const searchInput = document.getElementById("models-search-input");
+          if (searchInput) {
+            searchInput.value = repo;
+            performModelSearch(repo);
+          }
+
+          if (btnSpan) btnSpan.textContent = originalText;
+          downloadModelBtn.disabled = false;
+        });
     };
   }
 

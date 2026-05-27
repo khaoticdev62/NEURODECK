@@ -415,7 +415,7 @@ function handleSaveLlmClick() {
 // Settings Modal Event Listeners registered in initSettings()
 
 // ── Apple TV sidebar nav ──────────────────────────────────────────────
-function activateSettingsPanel(panelId, themeName) {
+export function activateSettingsPanel(panelId, themeName) {
   const modalCard = document.querySelector(
     "#settings-overlay .settings-modal-card",
   );
@@ -459,7 +459,7 @@ function initSettingsSidebar() {
   });
 }
 
-function openSettingsModal() {
+export function openSettingsModal() {
   if (settingsOverlay) settingsOverlay.classList.add("active");
   const lastPanel = localStorage.getItem("settingsActivePanel") || "sp-general";
   activateSettingsPanel(lastPanel);
@@ -1768,6 +1768,17 @@ function initModelsPanel() {
   document.querySelectorAll(".stv-sub-tab[data-models-tab]").forEach((tab) => {
     tab.addEventListener("click", () => {
       const tabName = tab.dataset.modelsTab;
+      if (tabName === "browser") {
+        if (settingsOverlay) settingsOverlay.classList.remove("active");
+        if (settingsFocusTrap) settingsFocusTrap.deactivate();
+        const mainBrowserTab = document.querySelector('.nav-tab[data-view="browser"]');
+        if (mainBrowserTab) mainBrowserTab.click();
+        if (window.browserNavigateTo) {
+          window.browserNavigateTo("https://huggingface.co/models");
+        }
+        return;
+      }
+
       document
         .querySelectorAll(".stv-sub-tab[data-models-tab]")
         .forEach((t) => t.classList.remove("active"));
@@ -1997,7 +2008,7 @@ function loadSteamDeckModels() {
     });
 }
 
-function performModelSearch(query) {
+export function performModelSearch(query) {
   const grid = document.getElementById("models-browse-grid");
   if (!grid) return;
   grid.innerHTML = '<div class="models-empty-state"><p>Searching…</p></div>';

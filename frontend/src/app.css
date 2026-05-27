@@ -2667,6 +2667,11 @@ body::before {
     var(--shadow-4),
     0 0 0 1px rgba(var(--accent-rgb), 0.08) inset;
 }
+.settings-modal-card[data-settings-theme="models"] {
+  box-shadow:
+    var(--shadow-4),
+    0 0 0 1px rgba(255, 149, 0, 0.08) inset;
+}
 .settings-modal-card[data-settings-theme="appearance"] {
   box-shadow:
     var(--shadow-4),
