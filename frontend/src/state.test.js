@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { state } from "./state.js";
+import { describe, it, expect, vi } from "vitest";
+import { readStoredBoolean, state } from "./state.js";
 
 describe("default state shape", () => {
   it("has all expected top-level keys", () => {
@@ -132,5 +132,24 @@ describe("default state shape", () => {
 
   it("has correct nested compareRight shape", () => {
     expect(state.compareRight.provider).toBe("ollama");
+  });
+
+  it("reads stored booleans safely when storage is unavailable", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage unavailable");
+      },
+    });
+    try {
+      expect(readStoredBoolean("isMuted", false)).toBe(false);
+      expect(readStoredBoolean("hapticsEnabled", true)).toBe(true);
+    } finally {
+      if (originalLocalStorage === undefined) {
+        vi.unstubAllGlobals();
+      } else {
+        vi.stubGlobal("localStorage", originalLocalStorage);
+      }
+    }
   });
 });

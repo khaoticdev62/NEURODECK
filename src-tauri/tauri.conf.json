@@ -62,6 +62,11 @@
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    },
+    "windows": {
+      "wix": {
+        "template": "wix.template.wxs"
+      }
     }
   }
 }

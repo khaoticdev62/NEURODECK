@@ -149,7 +149,7 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     pipeline.push(BootPipelineStep {
         id: "kernel".to_string(),
         category: "system".to_string(),
-        label: "Initializing kernel space… KFMS v1.2.x-ra · Codename Ra".to_string(),
+        label: "Initializing kernel space… KFMS v1.3.0-isis · Codename Isis".to_string(),
         status: "info".to_string(),
         detail: String::new(),
     });
@@ -404,9 +404,9 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     }
 
     BootDiagnostics {
-        kfms_version: "v1.2.x-ra".to_string(),
-        codename: "Ra".to_string(),
-        build_date: "20260526".to_string(),
+        kfms_version: "v1.3.0-isis".to_string(),
+        codename: "Isis".to_string(),
+        build_date: chrono::Utc::now().format("%Y%m%d").to_string(),
         config_path: get_config_path().to_string_lossy().to_string(),
         provider,
         model: model.clone(),
@@ -2568,7 +2568,11 @@ mod tests {
     #[test]
     fn text_similarity_identical_strings() {
         let sim = _text_similarity("hello world", "hello world");
-        assert!(sim > 0.99, "identical strings should have similarity ~1.0, got {}", sim);
+        assert!(
+            sim > 0.99,
+            "identical strings should have similarity ~1.0, got {}",
+            sim
+        );
     }
 
     #[test]
@@ -2580,7 +2584,11 @@ mod tests {
     #[test]
     fn text_similarity_partial_overlap() {
         let sim = _text_similarity("hello world foo", "hello world bar");
-        assert!(sim > 0.0 && sim < 1.0, "partial overlap should be between 0 and 1, got {}", sim);
+        assert!(
+            sim > 0.0 && sim < 1.0,
+            "partial overlap should be between 0 and 1, got {}",
+            sim
+        );
     }
 
     #[test]
@@ -2598,7 +2606,11 @@ mod tests {
     #[test]
     fn text_similarity_case_insensitive() {
         let sim = _text_similarity("HELLO WORLD", "hello world");
-        assert!(sim > 0.99, "comparison should be case insensitive, got {}", sim);
+        assert!(
+            sim > 0.99,
+            "comparison should be case insensitive, got {}",
+            sim
+        );
     }
 
     #[test]

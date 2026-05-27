@@ -16,7 +16,7 @@
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
 [![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Version](https://img.shields.io/badge/Version-1.2.2--Ra-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
+[![Version](https://img.shields.io/badge/Version-1.3.0--Isis-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
 
 **[Download](https://github.com/khaoticdev62/NEURODECK/releases)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Plugin Registry](https://github.com/khaoticdev62/neurodeck-plugins)** &nbsp;·&nbsp; **[Roadmap](docs/ANTIGRAVITY_HANDOFF.md)**
 
@@ -536,7 +536,7 @@ MIT — see [`LICENSE`](LICENSE) for full terms.
 
 **Built for the Steam Deck. Runs anywhere.**
 
-`com.neurodeck.app` &nbsp;·&nbsp; v1.2.2-Ra &nbsp;·&nbsp; KFMS Codename: Ra
+`com.neurodeck.app` &nbsp;·&nbsp; v1.3.0-Isis &nbsp;·&nbsp; KFMS Codename: Isis
 
 [github.com/khaoticdev62/NEURODECK](https://github.com/khaoticdev62/NEURODECK)
 

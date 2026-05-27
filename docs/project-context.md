@@ -12,7 +12,8 @@
 | **Name** | NEURODECK |
 | **Type** | Tauri v2 Desktop Application |
 | **Platform targets** | Steam Deck (primary, 1280×800), Windows, Linux |
-| **Version** | 1.2.2 |
+| **Version** | 1.3.0 |
+| **KFMS codename** | Isis |
 | **Repo** | https://github.com/khaoticdev62/NEURODECK |
 | **Dev** | khaoticdev |
 

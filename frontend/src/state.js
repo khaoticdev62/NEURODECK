@@ -1,9 +1,24 @@
+function readStoredBoolean(key, fallback) {
+    const storage = globalThis?.localStorage;
+    if (!storage) return fallback;
+
+    try {
+        const value = storage.getItem(key);
+        if (value === null) return fallback;
+        return value === "true";
+    } catch {
+        return fallback;
+    }
+}
+
+export { readStoredBoolean };
+
 export const state = {
     currentSessionId: "",
     execToken: "",
     activePersona: "Default",
     availablePersonas: [],
-    isMuted: localStorage.getItem("isMuted") === "true",
+    isMuted: readStoredBoolean("isMuted", false),
     isProcessRunning: false,
     terminalSessions: [],
     activeTerminalSessionId: null,
@@ -24,7 +39,7 @@ export const state = {
     totalTokens: 0,
     radialMenuVisible: false,
     gamepadActive: false,
-    hapticsEnabled: localStorage.getItem("hapticsEnabled") !== "false",
+    hapticsEnabled: readStoredBoolean("hapticsEnabled", true),
     gamepadFocusIndex: -1,
     previousGamepadState: { buttons: [] },
     tpCursorX: 640,
