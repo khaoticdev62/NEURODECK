@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$script:Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$script:Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $script:MetaPath = Join-Path $script:Root "infra/meta/meta.json"
 $script:HealthPath = Join-Path $script:Root "infra/telemetry/health.json"
 $script:PlanPath = Join-Path $script:Root "docs/IMPLEMENTATION_PLAN.md"
@@ -22,19 +22,19 @@ $preserveFiles = @(
     "package.json",
     "package-lock.json",
     "llm-term.toml",
-    "custom_style.json",
     "install.sh",
     "launch_gamescope.sh",
-    "build_flatpak.sh",
     "package_release.ps1",
     "epics.md",
     "gemini.md",
     "AGENTS.md",
     "pyproject.toml",
     "uv.lock",
-    "SteamOS_LLM_Terminal_PRD_SDS.md",
-    "SteamOS_LLM_Terminal_PRD_SDS.pdf",
-    ".rustfmt.toml",
+    "rustfmt.toml",
+    "deny.toml",
+    ".editorconfig",
+    ".env.example",
+    "LICENSE",
     "clippy.toml",
     ".prettierrc"
 )

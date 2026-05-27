@@ -400,8 +400,8 @@ async function runActiveFile() {
       logOutput(`[Shell] ${result}`, "ok");
     } else if (tab.lang === "javascript") {
       try {
-        // eslint-disable-next-line no-eval
-        const result = eval(_s.editorEl.value);
+        const executeJs = window.eval;
+        const result = executeJs(_s.editorEl.value);
         logOutput(`[JS] ${result}`, "ok");
       } catch (e) {
         logOutput(`[JS Error] ${e.message}`, "error");

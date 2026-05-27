@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$script:Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$script:Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $script:ConfigPath = Join-Path $script:Root "src-tauri/tauri.conf.json"
 $script:LogDir = Join-Path $script:Root ".loose/inbox/security-hardening"
 

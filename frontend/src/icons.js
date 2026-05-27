@@ -457,6 +457,7 @@ export function applyNeurodeckIconography() {
     ["tunnel", "route", "Tunnel"],
     ["share", "share2", "Share"],
     ["browser", "globe", "Browser"],
+    ["hf-browser", "cpu", "HF Browser"],
     ["agent", "bot", "Agent"],
     ["memory", "brain", "Memory"],
     ["prompt-lab", "sparkles", "Prompt Lab"],
@@ -487,6 +488,7 @@ export function applyNeurodeckIconography() {
   [
     [".stv-nav-item[data-panel='sp-general']", "zap", "General"],
     [".stv-nav-item[data-panel='sp-ai']", "bot", "AI Model"],
+    [".stv-nav-item[data-panel='sp-models']", "cpu", "Models"],
     [".stv-nav-item[data-panel='sp-appearance']", "sparkles", "Appearance"],
     [".stv-nav-item[data-panel='sp-terminal']", "squareTerminal", "Terminal"],
     [".stv-nav-item[data-panel='sp-extensions']", "plusCircle", "Extensions"],
