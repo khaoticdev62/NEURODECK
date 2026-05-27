@@ -1263,6 +1263,7 @@ document.querySelector("#app").innerHTML = `
                         <div class="agent-mode-bar">
                             <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
                             <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
+                            <button class="agent-mode-btn" id="agent-mode-orchestrate" data-mode="orchestrate">🧩 Orchestrate</button>
                         </div>
 
                         <!-- Task mode toolbar -->
@@ -1271,6 +1272,14 @@ document.querySelector("#app").innerHTML = `
                             <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
                             <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
                             <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
+                        </div>
+
+                        <!-- Orchestrate mode toolbar -->
+                        <div class="agent-toolbar hidden" id="agent-toolbar-orchestrate">
+                            <input type="text" id="orchestrator-goal-input" class="agent-task-input" placeholder="Describe the multi-agent goal… e.g. Research and summarize the fastest way to add a settings import flow">
+                            <button class="agent-btn agent-btn-run" id="orchestrator-start-btn">▶ Start</button>
+                            <button class="agent-btn" id="orchestrator-status-btn">Status</button>
+                            <button class="agent-btn agent-btn-stop hidden" id="orchestrator-stop-btn">■ Stop</button>
                         </div>
 
                         <!-- Roundtable mode toolbar -->
@@ -1310,13 +1319,13 @@ document.querySelector("#app").innerHTML = `
                             <!-- Right: code + live output -->
                             <div class="agent-code-pane" id="agent-code-pane">
                                 <div class="agent-pane-header">
-                                    <span>Current Code</span>
+                                    <span id="agent-code-pane-title">Current Code</span>
                                     <button class="agent-btn agent-btn-sm" id="agent-send-canvas-btn" title="Open in Canvas">→ Canvas</button>
                                 </div>
                                 <div class="agent-code-display" id="agent-code-display">
                                     <pre id="agent-code-pre"><code id="agent-code-content" class="agent-code"></code></pre>
                                 </div>
-                                <div class="agent-output-header">Output</div>
+                                <div class="agent-output-header" id="agent-output-title">Output</div>
                                 <div class="agent-output" id="agent-output">
                                     <span class="agent-output-empty">No output yet.</span>
                                 </div>

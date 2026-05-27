@@ -13,13 +13,25 @@ export function initAgentView() {
     const codePre = document.getElementById("agent-code-content");
     const outputEl = document.getElementById("agent-output");
     const sendCanvasBtn = document.getElementById("agent-send-canvas-btn");
+    const orchestratorGoalInput = document.getElementById("orchestrator-goal-input");
+    const orchestratorStartBtn = document.getElementById("orchestrator-start-btn");
+    const orchestratorStatusBtn = document.getElementById("orchestrator-status-btn");
+    const orchestratorStopBtn = document.getElementById("orchestrator-stop-btn");
+    const orchestratorToolbar = document.getElementById("agent-toolbar-orchestrate");
+    const codePaneTitle = document.getElementById("agent-code-pane-title");
+    const outputTitle = document.getElementById("agent-output-title");
 
     if (!taskInput || !runBtn || !sendCanvasBtn) return;
 
     let agentRunning = false;
     let agentShouldStop = false;
+    let orchestratorRunning = false;
+    let orchestratorShouldStop = false;
+    let orchestratorPollTimer = null;
+    let currentMode = "task";
     let lastCode = "";
     let lastLang = "python";
+    let lastOrchestratorGoal = "";
 
     function setRunning(on) {
         agentRunning = on;
@@ -27,6 +39,94 @@ export function initAgentView() {
         stopBtn.classList.toggle("hidden", !on);
         iterLabel.classList.toggle("hidden", !on);
         taskInput.disabled = on;
+    }
+
+    function setOrchestratorRunning(on) {
+        orchestratorRunning = on;
+        orchestratorStartBtn.classList.toggle("hidden", on);
+        orchestratorStopBtn.classList.toggle("hidden", !on);
+        orchestratorGoalInput.disabled = on;
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll(".agent-mode-btn").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.mode === mode);
+        });
+        document.getElementById("agent-toolbar-task")?.classList.toggle("hidden", mode !== "task");
+        document.getElementById("agent-toolbar-roundtable")?.classList.toggle("hidden", mode !== "roundtable");
+        orchestratorToolbar?.classList.toggle("hidden", mode !== "orchestrate");
+        sendCanvasBtn.classList.toggle("hidden", mode !== "task");
+        if (codePaneTitle) {
+            codePaneTitle.textContent = mode === "orchestrate" ? "Orchestration Plan" : "Current Code";
+        }
+        if (outputTitle) {
+            outputTitle.textContent = mode === "orchestrate" ? "Orchestration Status" : "Output";
+        }
+        if (mode === "orchestrate") {
+            refreshOrchestratorStatus().catch(() => {});
+        } else if (codePre) {
+            codePre.textContent = lastCode || "";
+        }
+    }
+
+    function renderOrchestratorStatus(status = {}) {
+        const running = Boolean(status.running);
+        const goal = String(status.goal || lastOrchestratorGoal || "");
+        const tasks = Array.isArray(status.tasks) ? status.tasks : [];
+
+        if (orchestratorGoalInput && !orchestratorGoalInput.value.trim() && goal) {
+            orchestratorGoalInput.value = goal;
+        }
+
+        if (codePre) {
+            if (tasks.length || goal || running) {
+                const snapshot = {
+                    running,
+                    goal: goal || "(no goal)",
+                    tasks: tasks.map((task) => ({
+                        id: task.id,
+                        role: task.role,
+                        status: task.status,
+                        depends_on: task.depends_on,
+                        result: task.result ? String(task.result).slice(0, 220) : null,
+                        error: task.error || null,
+                    })),
+                };
+                codePre.textContent = JSON.stringify(snapshot, null, 2);
+            } else {
+                codePre.textContent = "No orchestration plan yet.";
+            }
+        }
+
+        if (outputEl) {
+            if (running) {
+                outputEl.textContent = `Orchestrator running: ${goal || "awaiting goal"}`;
+            } else if (tasks.length) {
+                outputEl.textContent = `Orchestrator idle. ${tasks.length} task(s) in the current plan.`;
+            } else {
+                outputEl.textContent = "No orchestration status yet.";
+            }
+        }
+    }
+
+    async function refreshOrchestratorStatus() {
+        if (!orchestratorGoalInput) return;
+        try {
+            const status = await invoke("get_orchestration_status");
+            if (status && typeof status === "object") {
+                renderOrchestratorStatus(status);
+                setOrchestratorRunning(Boolean(status.running));
+                if (status.goal) {
+                    lastOrchestratorGoal = status.goal;
+                }
+            }
+        } catch (error) {
+            if (currentMode === "orchestrate") {
+                renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
+                appendLog("error", `Failed to load orchestrator status: ${error}`);
+            }
+        }
     }
 
     function appendLog(type, content, step) {
@@ -299,53 +399,91 @@ export function initAgentView() {
         if (canvasTab) canvasTab.click();
     };
 
-    // === ROUNDTABLE MODE ===
-    const modeBtns = document.querySelectorAll('.agent-mode-btn');
-    const toolbarTask = document.getElementById('agent-toolbar-task');
-    const toolbarRt = document.getElementById('agent-toolbar-roundtable');
-    const rtPersonaA = document.getElementById('rt-persona-a');
-    const rtPersonaB = document.getElementById('rt-persona-b');
-    const rtTopicInput = document.getElementById('rt-topic-input');
-    const rtRounds = document.getElementById('rt-rounds');
-    const rtStartBtn = document.getElementById('rt-start-btn');
-    const rtStopBtn = document.getElementById('rt-stop-btn');
+    // === ROUNDTABLE / ORCHESTRATION MODE ===
+    const modeBtns = document.querySelectorAll(".agent-mode-btn");
+    const toolbarTask = document.getElementById("agent-toolbar-task");
+    const toolbarRt = document.getElementById("agent-toolbar-roundtable");
+    const rtPersonaA = document.getElementById("rt-persona-a");
+    const rtPersonaB = document.getElementById("rt-persona-b");
+    const rtTopicInput = document.getElementById("rt-topic-input");
+    const rtRounds = document.getElementById("rt-rounds");
+    const rtStartBtn = document.getElementById("rt-start-btn");
+    const rtStopBtn = document.getElementById("rt-stop-btn");
 
-    if (!rtStartBtn || !toolbarTask || !toolbarRt || !rtPersonaA || !rtPersonaB) return;
+    if (
+        !rtStartBtn ||
+        !toolbarTask ||
+        !toolbarRt ||
+        !rtPersonaA ||
+        !rtPersonaB ||
+        !orchestratorGoalInput ||
+        !orchestratorStartBtn ||
+        !orchestratorStatusBtn ||
+        !orchestratorStopBtn
+    ) {
+        return;
+    }
 
     let rtRunning = false;
     let rtUnlistenChunk = null;
     let rtUnlistenDone = null;
+    let orchUnlistenPlan = null;
+    let orchUnlistenTaskStart = null;
+    let orchUnlistenTaskDone = null;
+    let orchUnlistenComplete = null;
 
     function populateRtPersonas() {
         const personas = state.availablePersonas || [];
-        [rtPersonaA, rtPersonaB].forEach(sel => {
+        [rtPersonaA, rtPersonaB].forEach((sel) => {
             const saved = sel.value;
-            sel.innerHTML = '<option value="">Choose persona…</option>' +
-                personas.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+            sel.innerHTML =
+                '<option value="">Choose persona…</option>' +
+                personas.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
             if (saved && personas.includes(saved)) sel.value = saved;
         });
     }
 
-    modeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            modeBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const mode = btn.dataset.mode;
-            toolbarTask.classList.toggle('hidden', mode !== 'task');
-            toolbarRt.classList.toggle('hidden', mode !== 'roundtable');
-            if (mode === 'roundtable') {
-                invoke('get_personas').then(p => {
+    function cleanupRtListeners() {
+        if (rtUnlistenChunk) { rtUnlistenChunk(); rtUnlistenChunk = null; }
+        if (rtUnlistenDone) { rtUnlistenDone(); rtUnlistenDone = null; }
+    }
+
+    function cleanupOrchestratorListeners() {
+        if (orchUnlistenPlan) { orchUnlistenPlan(); orchUnlistenPlan = null; }
+        if (orchUnlistenTaskStart) { orchUnlistenTaskStart(); orchUnlistenTaskStart = null; }
+        if (orchUnlistenTaskDone) { orchUnlistenTaskDone(); orchUnlistenTaskDone = null; }
+        if (orchUnlistenComplete) { orchUnlistenComplete(); orchUnlistenComplete = null; }
+        if (orchestratorPollTimer) {
+            clearInterval(orchestratorPollTimer);
+            orchestratorPollTimer = null;
+        }
+    }
+
+    function syncModeUI(mode) {
+        setMode(mode);
+        if (mode === "roundtable") {
+            invoke("get_personas")
+                .then((p) => {
                     state.availablePersonas = p;
                     populateRtPersonas();
-                }).catch(() => populateRtPersonas());
-            }
-        });
+                })
+                .catch(() => populateRtPersonas());
+        }
+        if (mode === "orchestrate") {
+            refreshOrchestratorStatus().catch(() => {});
+        }
+    }
+
+    modeBtns.forEach((btn) => {
+        btn.addEventListener("click", () => syncModeUI(btn.dataset.mode));
     });
+
+    syncModeUI("task");
 
     function setRtRunning(on) {
         rtRunning = on;
-        rtStartBtn.classList.toggle('hidden', on);
-        rtStopBtn.classList.toggle('hidden', !on);
+        rtStartBtn.classList.toggle("hidden", on);
+        rtStopBtn.classList.toggle("hidden", !on);
         rtPersonaA.disabled = on;
         rtPersonaB.disabled = on;
         rtTopicInput.disabled = on;
@@ -353,23 +491,147 @@ export function initAgentView() {
     }
 
     function appendRtEntry(speaker) {
-        const empty = logEl.querySelector('.agent-empty-state');
+        const empty = logEl.querySelector(".agent-empty-state");
         if (empty) empty.remove();
-        const entry = document.createElement('div');
-        entry.className = 'agent-log-entry agent-log-info agent-log-rt-msg';
-        entry.innerHTML = `<span class="agent-log-icon">${createIcon('messageSquare', { size: 16 })}</span>
+        const entry = document.createElement("div");
+        entry.className = "agent-log-entry agent-log-info agent-log-rt-msg";
+        entry.innerHTML = `<span class="agent-log-icon">${createIcon("messageSquare", { size: 16 })}</span>
             <div class="agent-log-body">
                 <div class="agent-log-label">${escapeHtml(speaker)}</div>
                 <div class="agent-log-text rt-msg-text"></div>
             </div>`;
         logEl.appendChild(entry);
         logEl.scrollTop = logEl.scrollHeight;
-        return entry.querySelector('.rt-msg-text');
+        return entry.querySelector(".rt-msg-text");
     }
 
-    function cleanupRtListeners() {
-        if (rtUnlistenChunk) { rtUnlistenChunk(); rtUnlistenChunk = null; }
-        if (rtUnlistenDone) { rtUnlistenDone(); rtUnlistenDone = null; }
+    function setOrchestratorLogText(text) {
+        outputEl.textContent = text;
+    }
+
+    function renderOrchestratorStatus(status = {}) {
+        const running = Boolean(status.running);
+        const goal = String(status.goal || lastOrchestratorGoal || "");
+        const tasks = Array.isArray(status.tasks) ? status.tasks : [];
+
+        if (orchestratorGoalInput && !orchestratorGoalInput.value.trim() && goal) {
+            orchestratorGoalInput.value = goal;
+        }
+
+        if (codePre) {
+            if (tasks.length || goal || running) {
+                codePre.textContent = JSON.stringify(
+                    {
+                        running,
+                        goal: goal || "(no goal)",
+                        tasks: tasks.map((task) => ({
+                            id: task.id,
+                            role: task.role,
+                            status: task.status,
+                            depends_on: task.depends_on,
+                            result: task.result ? String(task.result).slice(0, 220) : null,
+                            error: task.error || null,
+                        })),
+                    },
+                    null,
+                    2,
+                );
+            } else {
+                codePre.textContent = "No orchestration plan yet.";
+            }
+        }
+
+        if (running) {
+            setOrchestratorLogText(`Orchestrator running: ${goal || "awaiting goal"}`);
+        } else if (tasks.length) {
+            setOrchestratorLogText(`Orchestrator idle. ${tasks.length} task(s) in the current plan.`);
+        } else {
+            setOrchestratorLogText("No orchestration status yet.");
+        }
+    }
+
+    async function refreshOrchestratorStatus() {
+        try {
+            const status = await invoke("get_orchestration_status");
+            if (status && typeof status === "object") {
+                renderOrchestratorStatus(status);
+                setOrchestratorRunning(Boolean(status.running));
+                if (status.goal) {
+                    lastOrchestratorGoal = status.goal;
+                }
+            }
+        } catch (error) {
+            if (currentMode === "orchestrate") {
+                renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
+                appendLog("error", `Failed to load orchestrator status: ${error}`);
+            }
+        }
+    }
+
+    async function startOrchestration() {
+        const goal = orchestratorGoalInput.value.trim();
+        if (!goal) {
+            orchestratorGoalInput.focus();
+            return;
+        }
+
+        cleanupOrchestratorListeners();
+        lastOrchestratorGoal = goal;
+        setMode("orchestrate");
+        setOrchestratorRunning(true);
+        orchestratorShouldStop = false;
+        logEl.innerHTML = "";
+        appendLog("info", `Starting orchestration: ${goal}`);
+        setOrchestratorLogText("Starting orchestration...");
+
+        orchUnlistenPlan = await listen("orchestrator_plan_ready", (event) => {
+            const plan = event.payload || {};
+            renderOrchestratorStatus({ running: true, goal: plan.goal || goal, tasks: plan.tasks || [] });
+            appendLog("info", `Plan ready with ${(plan.tasks || []).length} task(s).`);
+        });
+
+        orchUnlistenTaskStart = await listen("agent_task_started", (event) => {
+            const payload = event.payload || {};
+            appendLog("info", `${payload.role || "Agent"} started: ${payload.id || "task"}`);
+            if (orchestratorGoalInput.value.trim()) {
+                refreshOrchestratorStatus().catch(() => {});
+            }
+        });
+
+        orchUnlistenTaskDone = await listen("agent_task_done", (event) => {
+            const payload = event.payload || {};
+            if (payload.error) {
+                appendLog("error", `${payload.role || "Agent"} failed: ${payload.error}`);
+            } else {
+                const snippet = payload.result ? String(payload.result).slice(0, 180) : "done";
+                appendLog("done", `${payload.role || "Agent"} completed: ${snippet}`);
+            }
+            refreshOrchestratorStatus().catch(() => {});
+        });
+
+        orchUnlistenComplete = await listen("orchestration_complete", (event) => {
+            const payload = event.payload || {};
+            cleanupOrchestratorListeners();
+            setOrchestratorRunning(false);
+            renderOrchestratorStatus({ running: false, goal: payload.goal || goal, tasks: [] });
+            appendLog("done", payload.summary || "Orchestration complete.");
+            addNotification("Orchestration Complete", payload.summary || "Multi-agent task finished.", "success");
+        });
+
+        try {
+            await invoke("start_orchestrated_task", { goal });
+            orchestratorPollTimer = window.setInterval(() => {
+                if (currentMode === "orchestrate") {
+                    refreshOrchestratorStatus().catch(() => {});
+                }
+            }, 1500);
+            refreshOrchestratorStatus().catch(() => {});
+        } catch (error) {
+            cleanupOrchestratorListeners();
+            setOrchestratorRunning(false);
+            appendLog("error", `Orchestration failed to start: ${error}`);
+            addNotification("Orchestration Error", String(error), "error");
+        }
     }
 
     async function startRoundtable() {
@@ -379,21 +641,25 @@ export function initAgentView() {
         const rounds = parseInt(rtRounds.value, 10) || 4;
 
         if (!pA || !pB) {
-            addNotification('Roundtable', 'Select both personas before starting.', 'error');
+            addNotification("Roundtable", "Select both personas before starting.", "error");
             return;
         }
-        if (!topic) { rtTopicInput.focus(); return; }
+        if (!topic) {
+            rtTopicInput.focus();
+            return;
+        }
 
+        cleanupRtListeners();
         setRtRunning(true);
-        logEl.innerHTML = '';
+        logEl.innerHTML = "";
 
         const cmd = `/discuss ${pA} ${pB} ${topic} rounds:${rounds}`;
 
         let currentTextEl = null;
-        let currentSpeaker = 'Roundtable';
-        let pendingChunks = '';
+        let currentSpeaker = "Roundtable";
+        let pendingChunks = "";
 
-        rtUnlistenChunk = await listen('stream_chunk', (event) => {
+        rtUnlistenChunk = await listen("stream_chunk", (event) => {
             const chunk = String(event.payload);
             pendingChunks += chunk;
 
@@ -416,33 +682,58 @@ export function initAgentView() {
                     currentTextEl = appendRtEntry(currentSpeaker);
                 }
                 currentTextEl.textContent += remaining;
-                pendingChunks = '';
+                pendingChunks = "";
             } else {
-                pendingChunks = '';
+                pendingChunks = "";
             }
 
             logEl.scrollTop = logEl.scrollHeight;
         });
 
-        rtUnlistenDone = await listen('stream_done', () => {
+        rtUnlistenDone = await listen("stream_done", () => {
             cleanupRtListeners();
             setRtRunning(false);
-            addNotification('Roundtable', 'Discussion complete.', 'success');
+            addNotification("Roundtable", "Discussion complete.", "success");
         });
 
-        invoke('send_command', { prompt: cmd }).catch(e => {
-            appendLog('error', `Roundtable failed: ${e}`);
+        invoke("send_command", { prompt: cmd }).catch((error) => {
+            appendLog("error", `Roundtable failed: ${error}`);
             cleanupRtListeners();
             setRtRunning(false);
         });
     }
 
-    rtStartBtn.addEventListener('click', () => { if (!rtRunning) startRoundtable(); });
+    async function stopOrchestration() {
+        orchestratorShouldStop = true;
+        try {
+            await invoke("stop_orchestration");
+        } catch (_) {}
+        cleanupOrchestratorListeners();
+        setOrchestratorRunning(false);
+        renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
+        appendLog("info", "Orchestration stopped by user.");
+    }
 
-    rtStopBtn.addEventListener('click', () => {
-        invoke('cancel_generation').catch(() => {});
+    rtStartBtn.addEventListener("click", () => {
+        if (!rtRunning) startRoundtable();
+    });
+
+    rtStopBtn.addEventListener("click", () => {
+        invoke("cancel_generation").catch(() => {});
         cleanupRtListeners();
         setRtRunning(false);
-        appendLog('info', 'Roundtable stopped by user.');
+        appendLog("info", "Roundtable stopped by user.");
+    });
+
+    orchestratorStartBtn.addEventListener("click", () => {
+        if (!orchestratorRunning) startOrchestration();
+    });
+
+    orchestratorStatusBtn.addEventListener("click", () => {
+        refreshOrchestratorStatus().catch(() => {});
+    });
+
+    orchestratorStopBtn.addEventListener("click", () => {
+        stopOrchestration().catch(() => {});
     });
 }
