@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use serde::Serialize;
+use std::path::PathBuf;
 use tauri::command;
 
 fn workspace_dir() -> PathBuf {
