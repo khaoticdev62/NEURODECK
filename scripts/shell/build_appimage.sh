@@ -45,22 +45,22 @@ fi
 
 # --- Ensure base tools ---
 print_step "Ensuring base tools (curl, ca-certificates, build-essential)..."
-sudo apt-get update -qq
-sudo apt-get install -y -qq curl ca-certificates gnupg build-essential git >/dev/null 2>&1 || true
+sudo -n apt-get update -qq || true
+sudo -n apt-get install -y -qq curl ca-certificates gnupg build-essential git >/dev/null 2>&1 || true
 print_ok "Base tools ready"
 
 # --- Check / install Node ---
 print_step "Checking Node.js..."
 if ! command -v node &>/dev/null; then
     print_warn "Node.js not found. Installing Node 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - >/dev/null 2>&1
-    sudo apt-get install -y -qq nodejs >/dev/null 2>&1
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -n bash - >/dev/null 2>&1
+    sudo -n apt-get install -y -qq nodejs >/dev/null 2>&1
 fi
 NODE_VER=$(node --version | sed 's/v//;s/\..*//')
 if [ "$NODE_VER" -lt 20 ]; then
     print_warn "Node.js too old. Upgrading to Node 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - >/dev/null 2>&1
-    sudo apt-get install -y -qq nodejs >/dev/null 2>&1
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -n bash - >/dev/null 2>&1
+    sudo -n apt-get install -y -qq nodejs >/dev/null 2>&1
 fi
 print_ok "Node $(node --version)"
 
@@ -85,7 +85,7 @@ done
 if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
     print_warn "Missing packages: ${MISSING_PKGS[*]}"
     print_step "Installing via apt..."
-    sudo apt-get install -y "${MISSING_PKGS[@]}" || print_err "Failed to install packages."
+    sudo -n apt-get install -y "${MISSING_PKGS[@]}" || print_err "Failed to install packages."
 fi
 print_ok "System dependencies ready"
 

@@ -82,6 +82,7 @@ count_loose_root_files() {
     -not -name ".env.example" \
     -not -name "neurodeck_win_release.zip" \
     -not -name "neurodeck_installer.exe" \
+    -not -name "neurodeck_1.3.0_amd64.AppImage" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
@@ -147,6 +148,7 @@ PRESERVE=(
   ".prettierrc"
   "neurodeck_win_release.zip"
   "neurodeck_installer.exe"
+  "neurodeck_1.3.0_amd64.AppImage"
 )
 
 # ---------------------------------------------------------------------------
