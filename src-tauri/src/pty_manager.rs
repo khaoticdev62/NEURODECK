@@ -108,6 +108,19 @@ fn spawn_pty_with_timeout(
             let mut child_opt: Option<Box<dyn portable_pty::Child + Send + Sync>> = None;
             for (i, candidate) in candidates.iter().enumerate() {
                 let mut cmd = CommandBuilder::new(candidate);
+                let bin_dir = crate::user_bin_dir();
+                let bin_str = bin_dir.to_string_lossy().to_string();
+                if let Some(existing_path) = std::env::var_os("PATH") {
+                    let new_path = if cfg!(target_os = "windows") {
+                        format!("{};{}", bin_str, existing_path.to_string_lossy())
+                    } else {
+                        format!("{}:{}", bin_str, existing_path.to_string_lossy())
+                    };
+                    cmd.env("PATH", new_path);
+                } else {
+                    cmd.env("PATH", bin_str);
+                }
+
                 if i == 0 {
                     if let Some(ref arg_list) = args {
                         for arg in arg_list {

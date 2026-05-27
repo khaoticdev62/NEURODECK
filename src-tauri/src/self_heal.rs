@@ -9,6 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const RUNTIME_DIRS: &[&str] = &[
+    "bin",
     "data",
     "data/memory",
     "data/profiles",

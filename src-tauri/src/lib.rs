@@ -529,6 +529,12 @@ pub(crate) fn user_config_dir() -> PathBuf {
     PathBuf::from(".")
 }
 
+pub(crate) fn user_bin_dir() -> PathBuf {
+    // Keep shell tooling consistent across command execution and PTY sessions.
+    // The runtime bin directory lives alongside the user config directory.
+    user_config_dir().join("bin")
+}
+
 pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
     // User-configured default_provider takes precedence over env vars.
     // The GEMINI_API_KEY env var is only a key source, not a provider selector.

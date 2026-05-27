@@ -518,6 +518,19 @@ pub async fn execute_command(
             c
         };
 
+        let bin_dir = crate::user_bin_dir();
+        let bin_str = bin_dir.to_string_lossy().to_string();
+        if let Some(existing_path) = std::env::var_os("PATH") {
+            let new_path = if cfg!(target_os = "windows") {
+                format!("{};{}", bin_str, existing_path.to_string_lossy())
+            } else {
+                format!("{}:{}", bin_str, existing_path.to_string_lossy())
+            };
+            cmd.env("PATH", new_path);
+        } else {
+            cmd.env("PATH", bin_str);
+        }
+
         match cmd.output() {
             Ok(output) => {
                 let combined = [output.stdout, output.stderr].concat();
@@ -595,6 +608,19 @@ pub async fn execute_command_stream(
         c.arg("-c").arg(&cmd_str);
         c
     };
+
+    let bin_dir = crate::user_bin_dir();
+    let bin_str = bin_dir.to_string_lossy().to_string();
+    if let Some(existing_path) = std::env::var_os("PATH") {
+        let new_path = if cfg!(target_os = "windows") {
+            format!("{};{}", bin_str, existing_path.to_string_lossy())
+        } else {
+            format!("{}:{}", bin_str, existing_path.to_string_lossy())
+        };
+        cmd.env("PATH", new_path);
+    } else {
+        cmd.env("PATH", bin_str);
+    }
 
     cmd.stdin(Stdio::piped());
     cmd.stdout(Stdio::piped());
