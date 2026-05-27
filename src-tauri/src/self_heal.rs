@@ -135,6 +135,24 @@ fn ensure_runtime_layout(config_root: &Path, report: &mut SelfHealReport) {
             )),
         }
     }
+
+    let bin_readme = config_root.join("bin").join("README.txt");
+    if !bin_readme.exists() {
+        let readme_content = "NEURODECK PORTABLE BINARY DIRECTORY\n\
+                              ===================================\n\n\
+                              This directory is added to your terminal environment PATH on startup.\n\
+                              Any executable binary, script loader, or custom command wrapper placed\n\
+                              here will be immediately callable inside:\n\
+                              - The PTY terminal tabs\n\
+                              - The Canvas Python/Bash run executors\n\
+                              - Autonomous Agent scripting loops\n\n\
+                              Suggested tools to place here:\n\
+                              - static-linked micro text editor (micro)\n\
+                              - ripgrep (rg)\n\
+                              - fuzzy finder (fzf)\n\
+                              - bat (syntax cat)\n";
+        let _ = fs::write(&bin_readme, readme_content);
+    }
 }
 
 fn heal_config(config_path: &Path, report: &mut SelfHealReport) -> config::Config {
