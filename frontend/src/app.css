@@ -16978,6 +16978,7 @@ button.tab-btn:active,
   }
 }
 
+
 @media (max-width: 640px) {
   .ide-sidebar {
     display: none;
@@ -16987,3 +16988,1231 @@ button.tab-btn:active,
     font-size: 0.7rem;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NEURODECK AAAA — HIGH-FIDELITY SCREEN OVERRIDES
+   Premium visual language across all 5 core views.
+   Safe: no display:flex on #view-* IDs (CSS specificity trap avoided).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shared Design Tokens ─────────────────────────────────────────────────── */
+:root {
+  --nd-surface-0:  #040608;
+  --nd-surface-1:  #0a0d13;
+  --nd-surface-2:  #111620;
+  --nd-surface-3:  #181e2c;
+  --nd-surface-4:  #1e2535;
+  --nd-glow-cyan:  #00e5ff;
+  --nd-glow-green: #00ff88;
+  --nd-glow-purple:#a855f7;
+  --nd-glow-amber: #f59e0b;
+  --nd-accent-rgb: 0, 229, 255;
+  --nd-green-rgb:  0, 255, 136;
+  --nd-border-subtle: rgba(255,255,255,0.055);
+  --nd-border-glow:   rgba(0,229,255,0.18);
+  --nd-glass: rgba(255,255,255,0.025);
+  --nd-glass-hover: rgba(255,255,255,0.05);
+  --nd-radius-sm: 6px;
+  --nd-radius-md: 10px;
+  --nd-radius-lg: 14px;
+  --nd-radius-xl: 18px;
+  --nd-shadow-card: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --nd-shadow-card-hover: 0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.15), 0 0 24px rgba(0,229,255,0.06);
+  --nd-shadow-glow-green: 0 0 20px rgba(0,255,136,0.15), 0 0 40px rgba(0,255,136,0.06);
+  --nd-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+}
+
+@keyframes nd-fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes nd-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes nd-pulse-border {
+  0%, 100% { border-color: rgba(0,229,255,0.15); box-shadow: 0 0 0 0 rgba(0,229,255,0); }
+  50%       { border-color: rgba(0,229,255,0.35); box-shadow: 0 0 12px rgba(0,229,255,0.08); }
+}
+@keyframes nd-scan-line {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100%; }
+}
+@keyframes nd-blink-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+@keyframes nd-orbit {
+  from { transform: rotate(0deg) translateX(5px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(5px) rotate(-360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCREEN 1: TASK SCHEDULER — Mission Control Command Centre
+   ════════════════════════════════════════════════════════════════════════════ */
+
+#view-scheduler {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,229,255,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168,85,247,0.03) 0%, transparent 60%),
+    var(--nd-surface-0);
+  overflow: auto;
+}
+
+.scheduler-workspace {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 24px 40px;
+}
+
+/* Header */
+.scheduler-header {
+  margin-bottom: 32px;
+  text-align: center;
+  position: relative;
+  animation: nd-fade-in-up 0.4s ease both;
+}
+
+.scheduler-header::after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nd-glow-cyan), transparent);
+  margin: 16px auto 0;
+  opacity: 0.5;
+}
+
+.scheduler-header h3 {
+  margin: 0 0 8px;
+  font-size: 1.65rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #e2e8f0 30%, var(--nd-glow-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.3px;
+}
+
+.scheduler-header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 0.02em;
+}
+
+/* Stats ribbon above the task list */
+.scheduler-task-list {
+  margin-bottom: 28px;
+  animation: nd-fade-in-up 0.4s ease 0.08s both;
+}
+
+/* Empty state */
+.scheduler-task-list .agent-empty-state {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(0,229,255,0.02) 100%);
+  border: 1px dashed rgba(0,229,255,0.12);
+  border-radius: var(--nd-radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  color: rgba(255,255,255,0.28);
+  font-size: 0.875rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.scheduler-task-list .agent-empty-state::before {
+  content: '⏰';
+  display: block;
+  font-size: 2.5rem;
+  margin-bottom: 14px;
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+/* Individual task cards */
+.task-card {
+  background:
+    linear-gradient(135deg, rgba(30,37,53,0.9) 0%, rgba(20,26,40,0.95) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.1) !important;
+  border-radius: var(--nd-radius-md) !important;
+  padding: 16px 18px !important;
+  margin-bottom: 10px !important;
+  box-shadow: var(--nd-shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: nd-fade-in-up 0.35s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--nd-shadow-card-hover) !important;
+  border-color: rgba(0,229,255,0.12) !important;
+}
+
+.task-card:hover::before {
+  opacity: 1;
+}
+
+/* Form panel */
+.scheduler-form {
+  background:
+    linear-gradient(135deg, rgba(20,26,40,0.92) 0%, rgba(14,18,30,0.95) 100%);
+  border: 1px solid rgba(255,255,255,0.065);
+  border-top-color: rgba(255,255,255,0.1);
+  border-radius: var(--nd-radius-lg);
+  padding: 24px 22px;
+  box-shadow: var(--nd-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  animation: nd-fade-in-up 0.4s ease 0.15s both;
+}
+
+.scheduler-form::before {
+  content: 'NEW TASK';
+  position: absolute;
+  top: 16px; right: 18px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(0,229,255,0.25);
+}
+
+.scheduler-form::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.25), transparent);
+}
+
+.scheduler-input,
+.scheduler-textarea {
+  background: rgba(4,6,8,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--nd-radius-sm);
+  padding: 11px 14px;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-family: var(--font-mono, var(--nd-font-mono));
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.scheduler-input:focus,
+.scheduler-textarea:focus {
+  outline: none;
+  border-color: rgba(0,229,255,0.35);
+  background: rgba(0,229,255,0.025);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.06), inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.scheduler-input::placeholder,
+.scheduler-textarea::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+.scheduler-textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.scheduler-btn {
+  background: linear-gradient(135deg, rgba(0,229,255,0.12) 0%, rgba(0,180,220,0.08) 100%);
+  border: 1px solid rgba(0,229,255,0.28);
+  color: var(--nd-glow-cyan);
+  border-radius: var(--nd-radius-sm);
+  padding: 11px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+.scheduler-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,229,255,0.08), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.scheduler-btn:hover {
+  background: linear-gradient(135deg, rgba(0,229,255,0.22) 0%, rgba(0,180,220,0.15) 100%);
+  border-color: rgba(0,229,255,0.5);
+  box-shadow: 0 0 20px rgba(0,229,255,0.12), 0 4px 14px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
+}
+
+.scheduler-btn:hover::before { opacity: 1; }
+.scheduler-btn:active { transform: translateY(0); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCREEN 2: NEURODECK BROWSER — Glassmorphic Navigation Hub
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Browser toolbar chrome */
+.browser-toolbar {
+  background:
+    linear-gradient(180deg, rgba(14,18,30,0.98) 0%, rgba(10,13,20,0.95) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding: 8px 12px !important;
+  gap: 8px !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) !important;
+}
+
+.browser-btn {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 7px !important;
+  color: rgba(255,255,255,0.55) !important;
+  transition: all 0.15s ease !important;
+}
+
+.browser-btn:hover {
+  background: rgba(255,255,255,0.09) !important;
+  border-color: rgba(255,255,255,0.13) !important;
+  color: rgba(255,255,255,0.85) !important;
+}
+
+.browser-btn.go-btn {
+  background: linear-gradient(135deg, rgba(0,229,255,0.18) 0%, rgba(0,180,220,0.12) 100%) !important;
+  border-color: rgba(0,229,255,0.35) !important;
+  color: var(--nd-glow-cyan) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 0 12px rgba(0,229,255,0.06) !important;
+}
+
+.browser-btn.go-btn:hover {
+  background: linear-gradient(135deg, rgba(0,229,255,0.28) 0%, rgba(0,180,220,0.2) 100%) !important;
+  border-color: rgba(0,229,255,0.55) !important;
+  box-shadow: 0 0 20px rgba(0,229,255,0.14) !important;
+}
+
+.browser-url-input {
+  background: rgba(4,6,8,0.55) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,0.85) !important;
+  font-size: 0.825rem !important;
+  padding: 7px 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.browser-url-input:focus {
+  outline: none !important;
+  border-color: rgba(0,229,255,0.3) !important;
+  background: rgba(0,229,255,0.02) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.05) !important;
+}
+
+/* Home screen */
+.browser-home-screen {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% -10%, rgba(0,229,255,0.05) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 50% at 80% 100%, rgba(168,85,247,0.04) 0%, transparent 60%),
+    var(--nd-surface-0) !important;
+}
+
+.browser-home-content {
+  padding: 40px 24px 32px !important;
+  max-width: 680px !important;
+}
+
+.browser-home-logo {
+  font-size: clamp(2rem, 5vw, 2.8rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+  background: linear-gradient(135deg, #ffffff 20%, var(--nd-glow-cyan) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  margin-bottom: 6px !important;
+  line-height: 1 !important;
+}
+
+.browser-home-logo span {
+  background: linear-gradient(135deg, var(--nd-glow-cyan) 0%, rgba(0,180,220,0.8) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  margin-left: 10px !important;
+}
+
+.browser-home-subtitle {
+  color: rgba(255,255,255,0.32) !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 28px !important;
+}
+
+/* Search box */
+.browser-search-box {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+  margin-bottom: 36px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important;
+}
+
+.browser-search-box:focus-within {
+  border-color: rgba(0,229,255,0.28) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.05), 0 4px 16px rgba(0,0,0,0.35) !important;
+}
+
+.browser-search-box input {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255,255,255,0.85) !important;
+  padding: 13px 18px !important;
+  font-size: 0.9rem !important;
+}
+
+.browser-search-box input::placeholder {
+  color: rgba(255,255,255,0.22) !important;
+}
+
+.browser-search-box input:focus { outline: none !important; box-shadow: none !important; }
+
+#browser-home-search-btn {
+  background: linear-gradient(135deg, rgba(0,229,255,0.18) 0%, rgba(0,180,220,0.12) 100%) !important;
+  border: none !important;
+  border-left: 1px solid rgba(0,229,255,0.2) !important;
+  color: var(--nd-glow-cyan) !important;
+  padding: 13px 22px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease !important;
+}
+
+#browser-home-search-btn:hover {
+  background: linear-gradient(135deg, rgba(0,229,255,0.28) 0%, rgba(0,180,220,0.2) 100%) !important;
+}
+
+/* Speed dial section title */
+.speed-dial-title {
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 2.5px !important;
+  text-transform: uppercase !important;
+  color: rgba(0,229,255,0.4) !important;
+  margin-bottom: 16px !important;
+}
+
+/* Speed dial grid */
+.speed-dial-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 32px !important;
+}
+
+/* Speed dial cards — AAAA glassmorphism */
+.speed-dial-card {
+  background:
+    linear-gradient(160deg, rgba(24,30,44,0.85) 0%, rgba(14,18,30,0.9) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.1) !important;
+  border-radius: 12px !important;
+  padding: 20px 14px 16px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 4px 16px rgba(0,0,0,0.4) !important;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.speed-dial-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.speed-dial-card:hover {
+  transform: translateY(-6px) scale(1.02) !important;
+  border-color: rgba(0,229,255,0.2) !important;
+  border-top-color: rgba(0,229,255,0.35) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(0,229,255,0.1),
+    0 12px 32px rgba(0,0,0,0.5),
+    0 0 24px rgba(0,229,255,0.06) !important;
+}
+
+.speed-dial-card:hover::before { opacity: 1; }
+
+.sd-icon {
+  margin-bottom: 12px !important;
+  color: rgba(255,255,255,0.55) !important;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), color 0.2s ease !important;
+}
+
+.sd-icon .nd-icon-svg {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.speed-dial-card:hover .sd-icon {
+  transform: scale(1.2) translateY(-2px) !important;
+  color: var(--nd-glow-cyan) !important;
+}
+
+.sd-label {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,0.82) !important;
+  letter-spacing: -0.1px !important;
+  margin-bottom: 4px !important;
+}
+
+.sd-desc {
+  font-size: 0.68rem !important;
+  color: rgba(255,255,255,0.32) !important;
+  line-height: 1.4 !important;
+  text-align: center !important;
+}
+
+/* Browser info panel */
+.browser-info-panel {
+  background: rgba(0,229,255,0.03) !important;
+  border: 1px solid rgba(0,229,255,0.1) !important;
+  border-radius: 10px !important;
+  padding: 14px 16px !important;
+  font-size: 0.8rem !important;
+  color: rgba(255,255,255,0.42) !important;
+  line-height: 1.5 !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCREEN 3: SHARE & TRANSFER (TORRENT) — Premium Data Command Panel
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Torrent summary cards — stat boxes at bottom */
+.torrent-summary-card {
+  background:
+    linear-gradient(160deg, rgba(20,26,40,0.95) 0%, rgba(14,18,30,0.98) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.1) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--nd-shadow-card) !important;
+  padding: 14px 16px !important;
+  transition: border-color 0.2s ease, transform 0.2s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.torrent-summary-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.torrent-summary-card:hover { border-color: rgba(0,229,255,0.14) !important; transform: translateY(-1px); }
+.torrent-summary-card:hover::after { opacity: 1; }
+
+.torrent-summary-card span {
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.32) !important;
+}
+
+.torrent-summary-card strong {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #e2e8f0 30%, var(--nd-glow-cyan) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  line-height: 1.1 !important;
+}
+
+/* Torrent control panel + list panel (the two-column layout) */
+.torrent-control-panel,
+.torrent-list-panel {
+  background:
+    linear-gradient(160deg, rgba(16,20,32,0.97) 0%, rgba(10,13,20,0.98) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.09) !important;
+  border-radius: var(--nd-radius-lg) !important;
+  box-shadow: var(--nd-shadow-card) !important;
+  overflow: hidden !important;
+}
+
+/* Torrent action buttons */
+.torrent-action-btn {
+  border-radius: 7px !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+  padding: 7px 11px !important;
+}
+
+.torrent-action-btn-secondary {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  color: rgba(255,255,255,0.62) !important;
+}
+
+.torrent-action-btn-secondary:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.16) !important;
+  color: rgba(255,255,255,0.88) !important;
+}
+
+.torrent-action-btn-danger {
+  background: rgba(239,68,68,0.08) !important;
+  border: 1px solid rgba(239,68,68,0.2) !important;
+  color: #f87171 !important;
+}
+
+.torrent-action-btn-danger:hover {
+  background: rgba(239,68,68,0.16) !important;
+  border-color: rgba(239,68,68,0.4) !important;
+  box-shadow: 0 0 12px rgba(239,68,68,0.08) !important;
+}
+
+/* Source input & dropzone */
+.torrent-source-input,
+#torrent-source-input {
+  background: rgba(4,6,8,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+  font-family: var(--nd-font-mono) !important;
+  font-size: 0.82rem !important;
+  padding: 11px 14px !important;
+  transition: all 0.2s ease !important;
+}
+
+.torrent-source-input:focus,
+#torrent-source-input:focus {
+  border-color: rgba(0,229,255,0.3) !important;
+  background: rgba(0,229,255,0.02) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.05) !important;
+  outline: none !important;
+}
+
+/* Dropzone */
+.torrent-dropzone,
+.torrent-drop-target {
+  border: 1.5px dashed rgba(0,229,255,0.15) !important;
+  border-radius: 10px !important;
+  background: rgba(0,229,255,0.015) !important;
+  transition: all 0.2s ease !important;
+  color: rgba(255,255,255,0.28) !important;
+  font-size: 0.82rem !important;
+}
+
+.torrent-dropzone:hover,
+.torrent-dropzone.dragover,
+.torrent-drop-target.dragover {
+  border-color: rgba(0,229,255,0.35) !important;
+  background: rgba(0,229,255,0.05) !important;
+  box-shadow: inset 0 0 24px rgba(0,229,255,0.04) !important;
+}
+
+/* Torrent inspector panel */
+.torrent-inspector {
+  background:
+    linear-gradient(180deg, rgba(12,15,24,0.98) 0%, rgba(8,10,18,0.99) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.055) !important;
+  border-radius: var(--nd-radius-lg) !important;
+  box-shadow: var(--nd-shadow-card) !important;
+  overflow: hidden !important;
+}
+
+.torrent-inspector-title {
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 2.5px !important;
+  text-transform: uppercase !important;
+  color: rgba(0,229,255,0.35) !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  background: rgba(0,229,255,0.02) !important;
+}
+
+.torrent-inspector-section-title {
+  font-size: 0.6rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.28) !important;
+  padding: 10px 14px 6px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+.torrent-inspector-row {
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+  padding: 7px 14px !important;
+  transition: background 0.15s ease !important;
+}
+
+.torrent-inspector-row:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+.torrent-inspector-insight {
+  background: rgba(0,229,255,0.03) !important;
+  border-left: 2px solid rgba(0,229,255,0.25) !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin: 10px 12px !important;
+  padding: 10px 14px !important;
+  font-size: 0.78rem !important;
+  color: rgba(255,255,255,0.55) !important;
+  line-height: 1.55 !important;
+}
+
+/* Progress bar in torrent rows */
+.transfer-progress-bar-bg {
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 999px !important;
+  height: 4px !important;
+  overflow: hidden !important;
+}
+
+.transfer-progress-bar-fill {
+  background: linear-gradient(90deg, var(--nd-glow-cyan), rgba(0,229,255,0.6)) !important;
+  border-radius: 999px !important;
+  height: 100% !important;
+  transition: width 0.4s ease !important;
+  box-shadow: 0 0 6px rgba(0,229,255,0.3) !important;
+}
+
+.transfer-progress-bar-fill.completed {
+  background: linear-gradient(90deg, var(--nd-glow-green), rgba(0,255,136,0.6)) !important;
+  box-shadow: 0 0 6px rgba(0,255,136,0.3) !important;
+}
+
+/* Status badges */
+.transfer-status.completed,
+.torrent-status.completed {
+  background: rgba(0,255,136,0.1) !important;
+  border: 1px solid rgba(0,255,136,0.25) !important;
+  color: var(--nd-glow-green) !important;
+  border-radius: 999px !important;
+  padding: 2px 9px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+.transfer-status.transferring,
+.torrent-status.transferring {
+  background: rgba(0,229,255,0.08) !important;
+  border: 1px solid rgba(0,229,255,0.22) !important;
+  color: var(--nd-glow-cyan) !important;
+  border-radius: 999px !important;
+  padding: 2px 9px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  animation: nd-blink-dot 2.5s ease infinite !important;
+}
+
+.transfer-status.pending,
+.torrent-status.pending {
+  background: rgba(245,158,11,0.08) !important;
+  border: 1px solid rgba(245,158,11,0.22) !important;
+  color: var(--nd-glow-amber) !important;
+  border-radius: 999px !important;
+  padding: 2px 9px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+.transfer-status.failed,
+.torrent-status.failed {
+  background: rgba(239,68,68,0.08) !important;
+  border: 1px solid rgba(239,68,68,0.22) !important;
+  color: #f87171 !important;
+  border-radius: 999px !important;
+  padding: 2px 9px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+/* Torrent rows */
+.torrent-row {
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+  transition: background 0.15s ease !important;
+  padding: 10px 12px !important;
+}
+
+.torrent-row:hover {
+  background: rgba(255,255,255,0.025) !important;
+}
+
+.torrent-row.active {
+  background: rgba(0,229,255,0.04) !important;
+  border-left: 2px solid rgba(0,229,255,0.3) !important;
+}
+
+.torrent-row.selected {
+  background: rgba(0,229,255,0.035) !important;
+}
+
+/* Batch toolbar */
+.torrent-batch-toolbar {
+  background: rgba(10,13,20,0.98) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  padding: 10px 14px !important;
+}
+
+.torrent-batch-remove-btn {
+  background: rgba(239,68,68,0.1) !important;
+  border: 1px solid rgba(239,68,68,0.25) !important;
+  color: #f87171 !important;
+  border-radius: 7px !important;
+  padding: 7px 14px !important;
+  font-size: 0.8rem !important;
+  transition: all 0.15s ease !important;
+}
+
+.torrent-batch-remove-btn:hover {
+  background: rgba(239,68,68,0.18) !important;
+  border-color: rgba(239,68,68,0.4) !important;
+  box-shadow: 0 0 12px rgba(239,68,68,0.1) !important;
+}
+
+/* Root line */
+.torrent-root-line {
+  font-family: var(--nd-font-mono) !important;
+  font-size: 0.75rem !important;
+  color: rgba(255,255,255,0.3) !important;
+  padding: 8px 0 !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCREEN 4: CANVAS / CODE EDITOR — Obsidian-level IDE Experience
+   ════════════════════════════════════════════════════════════════════════════ */
+
+#view-canvas {
+  background: var(--nd-surface-0);
+}
+
+/* Toolbar */
+.canvas-toolbar {
+  background:
+    linear-gradient(180deg, rgba(14,18,30,0.99) 0%, rgba(10,13,20,0.98) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 8px 14px !important;
+  gap: 6px !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Language select */
+.canvas-lang-select {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  border-radius: 7px !important;
+  color: rgba(255,255,255,0.75) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  padding: 6px 10px 6px 10px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  min-width: 90px !important;
+}
+
+.canvas-lang-select:focus {
+  outline: none !important;
+  border-color: rgba(0,229,255,0.3) !important;
+}
+
+/* Canvas buttons */
+.canvas-btn {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 7px !important;
+  color: rgba(255,255,255,0.6) !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 6px 11px !important;
+  gap: 5px !important;
+  transition: all 0.15s ease !important;
+}
+
+.canvas-btn:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+  color: rgba(255,255,255,0.88) !important;
+}
+
+/* Run button — accent */
+#canvas-run-btn {
+  background: linear-gradient(135deg, rgba(0,229,255,0.18) 0%, rgba(0,180,220,0.12) 100%) !important;
+  border-color: rgba(0,229,255,0.35) !important;
+  color: var(--nd-glow-cyan) !important;
+  font-weight: 600 !important;
+}
+
+#canvas-run-btn:hover {
+  background: linear-gradient(135deg, rgba(0,229,255,0.28) 0%, rgba(0,180,220,0.2) 100%) !important;
+  border-color: rgba(0,229,255,0.55) !important;
+  box-shadow: 0 0 16px rgba(0,229,255,0.1) !important;
+}
+
+/* AI Edit button — purple accent */
+.canvas-btn-ai {
+  background: linear-gradient(135deg, rgba(168,85,247,0.14) 0%, rgba(139,92,246,0.08) 100%) !important;
+  border-color: rgba(168,85,247,0.28) !important;
+  color: #c084fc !important;
+  font-weight: 600 !important;
+}
+
+.canvas-btn-ai:hover {
+  background: linear-gradient(135deg, rgba(168,85,247,0.22) 0%, rgba(139,92,246,0.16) 100%) !important;
+  border-color: rgba(168,85,247,0.5) !important;
+  box-shadow: 0 0 16px rgba(168,85,247,0.1) !important;
+  color: #d8b4fe !important;
+}
+
+/* Instructions text */
+.canvas-instructions {
+  color: rgba(255,255,255,0.22) !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Pane headers */
+.canvas-pane-header {
+  background:
+    linear-gradient(180deg, rgba(12,15,24,0.98) 0%, rgba(8,10,18,0.95) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.055) !important;
+  padding: 8px 14px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,0.4) !important;
+  letter-spacing: 0.03em !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+#canvas-file-title {
+  font-family: var(--nd-font-mono) !important;
+  color: rgba(255,255,255,0.55) !important;
+  font-size: 0.78rem !important;
+}
+
+/* Editor pane */
+.canvas-editor-pane {
+  background: #0d1117 !important;
+  border-right: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* Preview pane */
+.canvas-preview-pane {
+  background: #060809 !important;
+}
+
+.canvas-preview-pane .canvas-pane-header {
+  background: rgba(6,8,9,0.98) !important;
+}
+
+/* Monaco container */
+.canvas-monaco-container {
+  background: #0d1117 !important;
+}
+
+/* Preview iframe */
+.canvas-preview-frame {
+  background: #fff !important;
+  border: none !important;
+}
+
+/* Canvas divider */
+.canvas-divider {
+  width: 4px !important;
+  background: rgba(255,255,255,0.04) !important;
+  transition: background 0.15s ease !important;
+  cursor: col-resize !important;
+}
+
+.canvas-divider:hover,
+.canvas-divider.dragging {
+  background: rgba(0,229,255,0.2) !important;
+  box-shadow: 0 0 12px rgba(0,229,255,0.08) !important;
+}
+
+/* Small refresh btn */
+.canvas-btn.canvas-btn-sm {
+  padding: 4px 8px !important;
+  font-size: 0.72rem !important;
+  border-radius: 5px !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SCREEN 5: CHAT — Neural Command Interface
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Chat suggestion cards (the 6 starter prompts) */
+.chat-suggestion-card,
+.suggestion-card,
+[class*="suggestion-card"],
+.chat-starter-card {
+  background:
+    linear-gradient(160deg, rgba(22,28,44,0.9) 0%, rgba(14,18,30,0.95) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.1) !important;
+  border-radius: 12px !important;
+  padding: 18px 16px !important;
+  cursor: pointer !important;
+  transition:
+    transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 4px 16px rgba(0,0,0,0.35) !important;
+  animation: nd-fade-in-up 0.35s ease both !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-suggestion-card::before,
+.suggestion-card::before,
+.chat-starter-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-suggestion-card:hover,
+.suggestion-card:hover,
+.chat-starter-card:hover {
+  transform: translateY(-5px) scale(1.01) !important;
+  border-color: rgba(0,229,255,0.2) !important;
+  border-top-color: rgba(0,229,255,0.35) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(0,229,255,0.08),
+    0 12px 32px rgba(0,0,0,0.5),
+    0 0 20px rgba(0,229,255,0.05) !important;
+}
+
+.chat-suggestion-card:hover::before,
+.suggestion-card:hover::before,
+.chat-starter-card:hover::before { opacity: 1; }
+
+/* Chat input area */
+.chat-input-area,
+.chat-input-bar,
+.input-bar {
+  background:
+    linear-gradient(180deg, rgba(12,15,24,0.98) 0%, rgba(8,10,18,0.99) 100%) !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Chat textarea / input */
+.chat-textarea,
+#chat-input,
+.chat-input {
+  background: rgba(4,6,8,0.55) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 10px !important;
+  color: rgba(255,255,255,0.88) !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  caret-color: var(--nd-glow-cyan) !important;
+}
+
+.chat-textarea:focus,
+#chat-input:focus {
+  outline: none !important;
+  border-color: rgba(0,229,255,0.28) !important;
+  background: rgba(0,229,255,0.02) !important;
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.05) !important;
+}
+
+/* Send button */
+.send-btn,
+#send-btn,
+[id*="send-btn"],
+button[class*="send-prompt"] {
+  background: linear-gradient(135deg, rgba(0,229,255,0.2) 0%, rgba(0,180,220,0.14) 100%) !important;
+  border: 1px solid rgba(0,229,255,0.35) !important;
+  color: var(--nd-glow-cyan) !important;
+  border-radius: 9px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.send-btn:hover,
+#send-btn:hover,
+button[class*="send-prompt"]:hover {
+  background: linear-gradient(135deg, rgba(0,229,255,0.3) 0%, rgba(0,180,220,0.22) 100%) !important;
+  border-color: rgba(0,229,255,0.55) !important;
+  box-shadow: 0 0 20px rgba(0,229,255,0.12), 0 4px 14px rgba(0,0,0,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Provider badge (OLLAMA / GEMINI pill) */
+.provider-badge,
+.model-badge,
+[class*="provider-pill"],
+[class*="model-pill"] {
+  background: rgba(0,229,255,0.08) !important;
+  border: 1px solid rgba(0,229,255,0.2) !important;
+  color: var(--nd-glow-cyan) !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  padding: 3px 9px !important;
+}
+
+/* Chat hero logo area */
+.chat-hero-logo,
+.chat-logo,
+.hero-logo {
+  font-size: clamp(2rem, 5vw, 3rem) !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg, #ffffff 10%, var(--nd-glow-cyan) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  letter-spacing: 0.12em !important;
+  text-shadow: none !important;
+}
+
+/* Chat message bubbles */
+.chat-message,
+.message-bubble,
+[class*="chat-msg"] {
+  border-radius: 10px !important;
+  transition: background 0.15s ease !important;
+}
+
+/* User messages */
+.chat-message.user,
+.message-bubble.user,
+[class*="chat-msg"].user {
+  background: linear-gradient(135deg, rgba(0,229,255,0.07) 0%, rgba(0,180,220,0.04) 100%) !important;
+  border: 1px solid rgba(0,229,255,0.1) !important;
+}
+
+/* AI messages */
+.chat-message.assistant,
+.chat-message.response,
+.message-bubble.assistant {
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.045) !important;
+}
+
+/* Top status bar */
+.top-bar,
+.topbar,
+.nav-top-bar {
+  background:
+    linear-gradient(180deg, rgba(8,10,18,0.99) 0%, rgba(6,8,14,0.98) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.055) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Token counter */
+.token-counter,
+[id*="token-count"],
+[class*="token-count"] {
+  font-family: var(--nd-font-mono) !important;
+  font-size: 0.72rem !important;
+  color: rgba(255,255,255,0.3) !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Nav tabs row */
+.nav-tab-bar {
+  background: rgba(6,8,14,0.98) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+.nav-tab {
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,0.38) !important;
+  padding: 7px 13px !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+}
+
+.nav-tab:hover {
+  color: rgba(255,255,255,0.75) !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.nav-tab.active {
+  color: var(--nd-glow-cyan) !important;
+  background: rgba(0,229,255,0.07) !important;
+}
+
+/* Share inner tabs (LAN / SFTP / FTP / TORRENT) */
+.share-inner-tab {
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 7px !important;
+  color: rgba(255,255,255,0.45) !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+  padding: 6px 13px !important;
+}
+
+.share-inner-tab:hover {
+  background: rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.75) !important;
+}
+
+.share-inner-tab.active {
+  background: linear-gradient(135deg, rgba(0,229,255,0.12) 0%, rgba(0,180,220,0.08) 100%) !important;
+  border-color: rgba(0,229,255,0.28) !important;
+  color: var(--nd-glow-cyan) !important;
+  font-weight: 600 !important;
+}
+
+/* ── End of AAAA overrides ─────────────────────────────────────────────────── */
