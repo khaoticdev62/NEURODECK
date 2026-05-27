@@ -46,9 +46,11 @@ fn build_sftp_command(
     if auth_type == "key" || password.is_none() || password.unwrap().is_empty() {
         cmd = std::process::Command::new("sftp");
     } else {
+        // SECURITY: Use sshpass -e with SSHPASS env var instead of -p
+        // to prevent password exposure in process listings (ps aux).
         cmd = std::process::Command::new("sshpass");
-        cmd.arg("-p").arg(password.unwrap_or(""));
-        cmd.arg("sftp");
+        cmd.arg("-e").arg("sftp");
+        cmd.env("SSHPASS", password.unwrap_or(""));
     }
 
     // Port argument (capital -P for sftp)

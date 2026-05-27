@@ -49,14 +49,11 @@ dist/
 .DS_Store
 Thumbs.db
 
-# --- KFMS loose zone — reference materials tracked; compiled binaries excluded ---
+# --- KFMS loose zone — only .gitkeep tracked; all other artifacts excluded ---
 .loose/*
 !.loose/
 !.loose/inbox/
-!.loose/inbox/**
-.loose/inbox/*.exe
-.loose/inbox/*.msi
-.loose/inbox/*.zip
-.loose/inbox/neurodeck
-.loose/inbox/kfms-release-logs/
-.loose/inbox/security-hardening/
+.loose/inbox/*
+!.loose/inbox/.gitkeep
+scripts/.loose/
+.ruff_cache/

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { createIcon } from "./icons.js";
+
 
 let currentRepoPath = null;
 let selectedFiles = new Set();

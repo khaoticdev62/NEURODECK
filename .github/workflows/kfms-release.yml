@@ -20,19 +20,19 @@ jobs:
           fetch-depth: 0
 
       - name: Make KFMS script executable
-        run: chmod +x scripts/khaotic-init.sh
+        run: chmod +x scripts/kfms/khaotic-init.sh
 
       - name: Install ajv-cli for schema validation
         run: npm install -g ajv-cli ajv-formats
 
       - name: KFMS — stamp
-        run: bash scripts/khaotic-init.sh stamp
+        run: bash scripts/kfms/khaotic-init.sh stamp
 
       - name: KFMS — validate
-        run: bash scripts/khaotic-init.sh validate
+        run: bash scripts/kfms/khaotic-init.sh validate
 
       - name: KFMS — status
-        run: bash scripts/khaotic-init.sh status
+        run: bash scripts/kfms/khaotic-init.sh status
 
       - name: Verify tag matches meta.json version
         env:

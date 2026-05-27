@@ -9,7 +9,7 @@ on:
     paths:
       - "infra/meta/meta.json"
       - "infra/meta/meta.schema.json"
-      - "scripts/khaotic-init.sh"
+      - "scripts/kfms/khaotic-init.sh"
   pull_request:
     paths:
       - "infra/meta/meta.json"
@@ -45,5 +45,5 @@ jobs:
 
       - name: Run khaotic-init validate (structural checks)
         run: |
-          chmod +x scripts/khaotic-init.sh
-          ./scripts/khaotic-init.sh validate
+          chmod +x scripts/kfms/khaotic-init.sh
+          ./scripts/kfms/khaotic-init.sh validate

@@ -7,7 +7,7 @@
 export KFMS_HOOK_RUNNING=1
 
 ROOT="$(git rev-parse --show-toplevel)"
-SCRIPT="$ROOT/scripts/khaotic-init.sh"
+SCRIPT="$ROOT/scripts/kfms/khaotic-init.sh"
 
 [ -x "$SCRIPT" ] || chmod +x "$SCRIPT"
 

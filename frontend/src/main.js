@@ -12,6 +12,8 @@ import {
   runLuaScript,
   sendMessage,
   initChat,
+  getMessageText,
+  getMessageElements,
 } from "./chat.js";
 import {
   initCanvasView,
@@ -65,6 +67,26 @@ import { initCliMakerView } from "./cli_maker.js";
 import { initGraphView } from "./graph_view.js";
 import { initSchedulerView } from "./scheduler_view.js";
 import { initWorkflowView } from "./workflow_view.js";
+
+import { listen } from "@tauri-apps/api/event";
+import { marked } from "marked";
+import { Terminal } from "xterm";
+import "xterm/css/xterm.css";
+import {
+  getCtrlPromptVisible,
+  getCtrlPromptTemplateMode,
+  openCtrlPromptOverlay,
+  closeCtrlPromptOverlay,
+  confirmCtrlPrompt,
+  exitTemplateMode,
+  cycleTemplatePlaceholder,
+  navigateTemplatePlaceholder,
+  confirmTemplateAndSend,
+  navigateCtrlPromptList,
+  navigateCtrlPromptCat,
+  initCtrlPromptPicker,
+} from "./ctrl_prompt.js";
+import { initRemoteControl } from "./remote_control_view.js";
 
 // ==========================================================================
 // SCREEN-READER ANNOUNCER (a11y)
@@ -159,26 +181,6 @@ async function triggerOAuthLogin() {
     }
   }
 }
-import { listen } from "@tauri-apps/api/event";
-import { marked } from "marked";
-import { Terminal } from "xterm";
-import { FitAddon } from "xterm-addon-fit";
-import "xterm/css/xterm.css";
-import {
-  getCtrlPromptVisible,
-  getCtrlPromptTemplateMode,
-  openCtrlPromptOverlay,
-  closeCtrlPromptOverlay,
-  confirmCtrlPrompt,
-  exitTemplateMode,
-  cycleTemplatePlaceholder,
-  navigateTemplatePlaceholder,
-  confirmTemplateAndSend,
-  navigateCtrlPromptList,
-  navigateCtrlPromptCat,
-  initCtrlPromptPicker,
-} from "./ctrl_prompt.js";
-import { initRemoteControl } from "./remote_control_view.js";
 
 window.neurodeckCanvas = {
   currentLang: "html",
@@ -420,7 +422,7 @@ document.querySelector("#app").innerHTML = `
                     <span>NEURODECK</span>
                     <span class="sidebar-brand-version">v0.1.0</span>
                 </div>
-                <button class="sidebar-toggle-btn" id="sidebar-close-btn" title="Collapse Sidebar">◀</button>
+                <button class="sidebar-toggle-btn" id="sidebar-close-btn" title="Collapse Sidebar" aria-label="Collapse Sidebar">◀</button>
             </div>
             <button class="new-chat-btn" id="new-chat-btn">
                 <span>+ New Chat</span>
@@ -457,7 +459,7 @@ document.querySelector("#app").innerHTML = `
             <!-- Top Nav -->
             <header class="top-nav">
                 <div class="top-nav-left">
-                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">${createIcon("menu", { size: 18 })}</button>
+                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">${createIcon("menu", { size: 18 })}</button>
                     <span class="top-nav-title" id="session-title">Active Session</span>
                 </div>
 
@@ -471,10 +473,10 @@ document.querySelector("#app").innerHTML = `
                         <span class="status-dot"></span>
                         <span id="tool-status">Idle</span>
                     </span>
-                    <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)">${createIcon("volume2", { size: 18 })}</button>
-                    <button class="input-btn" id="notif-btn" title="Notifications" style="position: relative;">${createIcon("bell", { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
+                    <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)" aria-label="Mute Speech">${createIcon("volume2", { size: 18 })}</button>
+                    <button class="input-btn" id="notif-btn" title="Notifications" aria-label="Notifications" style="position: relative;">${createIcon("bell", { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon("search", { size: 18 })}</button>
-                    <button class="input-btn" id="settings-btn" title="Settings">${createIcon("settings2", { size: 18 })}</button>
+                    <button class="input-btn" id="settings-btn" title="Settings" aria-label="Open Settings">${createIcon("settings2", { size: 18 })}</button>
                 </div>
             </header>
 
@@ -617,7 +619,7 @@ document.querySelector("#app").innerHTML = `
                         </div>
                         <div class="chat-session-header-right">
                             <span class="chat-session-tokens" id="chat-session-tokens">0 tokens</span>
-                            <button class="chat-session-compare-btn" id="compare-toggle-btn" title="Toggle Model Comparison">${createIcon("columns", { size: 14 })}</button>
+                            <button class="chat-session-compare-btn" id="compare-toggle-btn" title="Toggle Model Comparison" aria-label="Toggle Model Comparison">${createIcon("columns", { size: 14 })}</button>
                             <button class="chat-session-new-btn" id="new-chat-btn-header" title="New Session (Ctrl+N)">+ New</button>
                         </div>
                     </div>
@@ -649,14 +651,14 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <div class="input-actions-bar">
                                 <div class="input-actions-left">
-                                    <button class="input-btn mic-btn" id="mic-btn" title="Voice Input">🎙️</button>
-                                    <button class="input-btn" id="toggle-drawer-btn" title="Toggle Context Drawer">📊</button>
-                                    <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)">📸</button>
-                                    <button class="input-btn attach-btn" id="attach-btn" title="Attach Files (Ctrl+Shift+A)">📎</button>
+                                    <button class="input-btn mic-btn" id="mic-btn" title="Voice Input" aria-label="Voice Input">🎙️</button>
+                                    <button class="input-btn" id="toggle-drawer-btn" title="Toggle Context Drawer" aria-label="Toggle Context Drawer">📊</button>
+                                    <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)" aria-label="Attach Screenshot">📸</button>
+                                    <button class="input-btn attach-btn" id="attach-btn" title="Attach Files (Ctrl+Shift+A)" aria-label="Attach Files">📎</button>
                                     <input type="file" id="file-input" class="hidden" multiple accept="*/*">
                                 </div>
                                 <div class="input-actions-right">
-                                    <button class="send-prompt-btn" id="send-btn" data-testid="chat-send-btn" title="Send Message">
+                                    <button class="send-prompt-btn" id="send-btn" data-testid="chat-send-btn" title="Send Message" aria-label="Send Message">
                                         <span>Send</span>
                                         <span>🚀</span>
                                     </button>
@@ -740,22 +742,22 @@ document.querySelector("#app").innerHTML = `
                     <!-- Unified top bar: session tabs + shell selector + actions in one row -->
                     <div class="term-topbar">
                         <div class="term-session-tabs" id="terminal-tabs-list"></div>
-                        <button class="term-new-tab-btn" id="terminal-add-tab-btn" title="New Tab">+</button>
+                        <button class="term-new-tab-btn" id="terminal-add-tab-btn" title="New Tab" aria-label="New Terminal Tab">+</button>
                         <div class="term-topbar-sep"></div>
                         <div class="term-shell-group" id="shell-pill-group">
-                            <button class="term-shell-btn active" data-shell="default" title="Default Shell">&gt;_</button>
-                            <button class="term-shell-btn" data-shell="/bin/bash" title="Bash">bash</button>
-                            <button class="term-shell-btn" data-shell="/bin/zsh" title="Zsh">zsh</button>
-                            <button class="term-shell-btn" data-shell="/bin/fish" title="Fish">fish</button>
-                            <button class="term-shell-btn" data-shell="powershell.exe" title="PowerShell">PS</button>
-                            <button class="term-shell-btn" data-shell="cmd.exe" title="CMD">cmd</button>
+                            <button class="term-shell-btn active" data-shell="default" title="Default Shell" aria-label="Default Shell">&gt;_</button>
+                            <button class="term-shell-btn" data-shell="/bin/bash" title="Bash" aria-label="Bash Shell">bash</button>
+                            <button class="term-shell-btn" data-shell="/bin/zsh" title="Zsh" aria-label="Zsh Shell">zsh</button>
+                            <button class="term-shell-btn" data-shell="/bin/fish" title="Fish" aria-label="Fish Shell">fish</button>
+                            <button class="term-shell-btn" data-shell="powershell.exe" title="PowerShell" aria-label="PowerShell">PS</button>
+                            <button class="term-shell-btn" data-shell="cmd.exe" title="CMD" aria-label="CMD">cmd</button>
                         </div>
                         <div class="term-topbar-sep"></div>
                         <div class="term-actions">
-                            <button class="term-action-btn" id="term-font-dec-btn" title="Decrease Font Size">A-</button>
-                            <button class="term-action-btn" id="term-font-inc-btn" title="Increase Font Size">A+</button>
-                            <button class="term-action-btn" id="term-clear-btn" title="Clear Screen">⌫</button>
-                            <button class="term-action-btn" id="pty-reconnect-btn" title="Restart Shell">↺</button>
+                            <button class="term-action-btn" id="term-font-dec-btn" title="Decrease Font Size" aria-label="Decrease Font Size">A-</button>
+                            <button class="term-action-btn" id="term-font-inc-btn" title="Increase Font Size" aria-label="Increase Font Size">A+</button>
+                            <button class="term-action-btn" id="term-clear-btn" title="Clear Screen" aria-label="Clear Screen">⌫</button>
+                            <button class="term-action-btn" id="pty-reconnect-btn" title="Restart Shell" aria-label="Restart Shell">↺</button>
                         </div>
                     </div>
                     <div id="pty-terminal-container"></div>
@@ -1138,14 +1140,14 @@ document.querySelector("#app").innerHTML = `
                                 <span class="browser-kicker">Sandboxed Web</span>
                             </div>
                             <div class="browser-nav-buttons">
-                                <button class="browser-btn" id="browser-back-btn" title="Go Back">${createIcon("arrowLeft", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-forward-btn" title="Go Forward">${createIcon("arrowRight", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-refresh-btn" title="Refresh">${createIcon("refreshCw", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-home-btn" title="New Tab / Home">${createIcon("house", { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-back-btn" title="Go Back" aria-label="Go Back">${createIcon("arrowLeft", { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-forward-btn" title="Go Forward" aria-label="Go Forward">${createIcon("arrowRight", { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-refresh-btn" title="Refresh" aria-label="Refresh">${createIcon("refreshCw", { size: 16 })}</button>
+                                <button class="browser-btn" id="browser-home-btn" title="New Tab / Home" aria-label="New Tab">${createIcon("house", { size: 16 })}</button>
                             </div>
                             <div class="browser-address-bar-wrapper">
                                 <input type="text" id="browser-url-input" class="browser-url-input" placeholder="Enter URL or search term...">
-                                <button class="browser-url-clear" id="browser-url-clear-btn" title="Clear">${createIcon("x", { size: 14 })}</button>
+                                <button class="browser-url-clear" id="browser-url-clear-btn" title="Clear" aria-label="Clear URL">${createIcon("x", { size: 14 })}</button>
                             </div>
                             <button class="browser-btn go-btn" id="browser-go-btn">${createIcon("sendHorizontal", { size: 14 })}<span>Go</span></button>
                             <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">${createIcon("arrowUpRight", { size: 14 })}<span>Open Ext</span></button>
@@ -1569,7 +1571,7 @@ document.querySelector("#app").innerHTML = `
                                     </div>
                                     <div class="remote-url-row">
                                         <span class="remote-url-text" id="remote-url-text"></span>
-                                        <button class="remote-copy-btn" id="remote-copy-url-btn" title="Copy URL">📋</button>
+                                        <button class="remote-copy-btn" id="remote-copy-url-btn" title="Copy URL" aria-label="Copy Remote URL">📋</button>
                                     </div>
                                     <div class="remote-pin-row">
                                         <span class="remote-field-label">PIN</span>
@@ -4363,17 +4365,15 @@ function pollGamepads() {
     if (focused && focused.classList.contains("message")) {
       triggerHaptic("doubleTick");
       // Copy message text to clipboard
-      import("./chat.js").then((m) => {
-        const text = m.getMessageText(focused);
-        if (text) {
-          navigator.clipboard.writeText(text).catch(() => {});
-          // Brief visual feedback
-          focused.style.transition = "background 0.2s";
-          const oldBg = focused.style.background;
-          focused.style.background = "rgba(94, 235, 255, 0.15)";
-          setTimeout(() => { focused.style.background = oldBg; }, 400);
-        }
-      });
+      const text = getMessageText(focused);
+      if (text) {
+        navigator.clipboard.writeText(text).catch(() => {});
+        // Brief visual feedback
+        focused.style.transition = "background 0.2s";
+        const oldBg = focused.style.background;
+        focused.style.background = "rgba(94, 235, 255, 0.15)";
+        setTimeout(() => { focused.style.background = oldBg; }, 400);
+      }
     } else {
       triggerHaptic("light");
       const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
@@ -4400,29 +4400,27 @@ function pollGamepads() {
     const chatView = document.getElementById("view-chat");
     if (chatView && chatView.classList.contains("active")) {
       // Try to regenerate: find last user message and re-send it
-      import("./chat.js").then((m) => {
-        const msgs = m.getMessageElements();
-        for (let i = msgs.length - 1; i >= 0; i--) {
-          if (msgs[i].classList.contains("user")) {
-            const text = m.getMessageText(msgs[i]);
-            if (text) {
-              const input = document.getElementById("user-input");
-              if (input) {
-                input.value = text;
-                input.style.height = "auto";
-                input.style.height = Math.min(input.scrollHeight, 300) + "px";
-                input.focus();
-              }
-              // Auto-send after brief delay
-              setTimeout(() => {
-                const sendBtn = document.getElementById("send-btn");
-                if (sendBtn) sendBtn.click();
-              }, 300);
+      const msgs = getMessageElements();
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].classList.contains("user")) {
+          const text = getMessageText(msgs[i]);
+          if (text) {
+            const input = document.getElementById("user-input");
+            if (input) {
+              input.value = text;
+              input.style.height = "auto";
+              input.style.height = Math.min(input.scrollHeight, 300) + "px";
+              input.focus();
             }
-            break;
+            // Auto-send after brief delay
+            setTimeout(() => {
+              const sendBtn = document.getElementById("send-btn");
+              if (sendBtn) sendBtn.click();
+            }, 300);
           }
+          break;
         }
-      });
+      }
     } else if (state.availablePersonas && state.availablePersonas.length > 0) {
       const currentIdx = state.availablePersonas.indexOf(state.activePersona);
       const nextIdx = (currentIdx + 1) % state.availablePersonas.length;
@@ -4821,7 +4819,6 @@ function cycleTheme() {
 }
 
 window.addEventListener("gamepadconnected", (e) => {
-  console.log("Gamepad connected:", e.gamepad.id);
   state.previousGamepadState.buttons = Array(e.gamepad.buttons.length).fill(
     false,
   );
@@ -11182,6 +11179,13 @@ async function showOnboardingWizard() {
   }
 }
 
+
+
+
+// ==========================================================================
+
+// ==========================================================================
+
 // ==========================================================================
 // SPRINT A — TOUCH SCROLL & TAP POLISH
 // ==========================================================================
@@ -11912,8 +11916,6 @@ async function showOnboardingWizard() {
     setInterval(pollDiagnostics, 5000);
   });
 })();
-
-// ==========================================================================
 
 // ── Module init calls ────────────────────────────────────────────────────
 initCtrlPromptPicker();

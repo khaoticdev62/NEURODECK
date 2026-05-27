@@ -132,7 +132,7 @@ Rebuilt from 4 steps to 5 with richer content and expanded diagnostics.
 - `flatpak/com.neurodeck.app.yml` — Flatpak manifest using `org.freedesktop.Platform` 23.08 with `rust-stable` + `node20` SDK extensions
 - `flatpak/com.neurodeck.app.metainfo.xml` — AppStream metadata
 - `flatpak/com.neurodeck.app.desktop` — XDG desktop entry
-- `build_flatpak.sh` — end-to-end build script that auto-installs missing runtimes, builds via `flatpak-builder`, and exports `neurodeck.flatpak`
+- `scripts/shell/build_flatpak.sh` — end-to-end build script that auto-installs missing runtimes, builds via `flatpak-builder`, and exports `neurodeck.flatpak`
 - Bundle install: `flatpak install --user neurodeck.flatpak` → run: `flatpak run com.neurodeck.app`
 
 #### README Overhaul
@@ -238,7 +238,7 @@ Run `neurodeck_installer.exe` (unsigned — Windows SmartScreen will prompt on f
 
 **Flatpak (Linux, v1.1.0+):**
 ```bash
-chmod +x build_flatpak.sh && ./build_flatpak.sh
+chmod +x scripts/shell/build_flatpak.sh && ./scripts/shell/build_flatpak.sh
 flatpak install --user neurodeck.flatpak
 flatpak run com.neurodeck.app
 ```

@@ -460,14 +460,14 @@ fn parse_torrent_source(input: &str) -> Result<ParsedTorrentSource, String> {
 
     let file_path = sanitize_torrent_path(input)?;
     let bytes = std::fs::read(&file_path)
-        .map_err(|e| format!("Failed to read torrent file {}: {}", file_path.display(), e))?;
+        .map_err(|e| format!("Failed to read torrent file: {}", crate::security::sanitize_error_for_frontend(&e.to_string())))?;
     if (bytes.len() as u64) > MAX_TORRENT_FILE_BYTES {
         return Err(
             "Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string(),
         );
     }
     let metadata = TorrentMetadata::try_from(bytes.as_slice())
-        .map_err(|e| format!("Invalid torrent metadata in {}: {}", file_path.display(), e))?;
+        .map_err(|e| format!("Invalid torrent metadata: {}", e))?;
     let info_hash = Some(metadata.info_hash.to_string());
 
     Ok(ParsedTorrentSource::File {
@@ -494,12 +494,12 @@ fn normalized_path_for_check(path: &Path) -> Result<PathBuf, String> {
     if path.exists() {
         return path
             .canonicalize()
-            .map_err(|e| format!("Failed to resolve path {}: {}", path.display(), e));
+            .map_err(|e| format!("Failed to resolve path: {}", crate::security::sanitize_error_for_frontend(&e.to_string())));
     }
 
     let parent = path
         .parent()
-        .ok_or_else(|| format!("Path {} has no parent directory.", path.display()))?;
+        .ok_or_else(|| "Path has no parent directory.".to_string())?;
     let canonical_parent = parent
         .canonicalize()
         .map_err(|e| format!("Failed to resolve directory {}: {}", parent.display(), e))?;

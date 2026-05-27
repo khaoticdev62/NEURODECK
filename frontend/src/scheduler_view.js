@@ -10,19 +10,13 @@ export async function initSchedulerView() {
 
     listen('scheduled_task_started', (event) => {
         const payload = event.payload;
-        // Optionally display notification
-        console.log("Scheduled task started:", payload);
         const notifBadge = document.getElementById('notif-badge');
         if (notifBadge) {
             notifBadge.innerText = parseInt(notifBadge.innerText || 0) + 1;
             notifBadge.classList.remove('hidden');
         }
-
-        // Trigger agent loop silently
         if (window.invokeAgentLoopSilent) {
             window.invokeAgentLoopSilent(payload.goal);
-        } else {
-            console.warn("invokeAgentLoopSilent not implemented. Task started but agent did not trigger.");
         }
     });
 }

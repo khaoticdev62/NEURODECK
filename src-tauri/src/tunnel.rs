@@ -149,7 +149,7 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
             }
             match std::fs::write(&safe_path, content) {
                 Ok(_) => TunnelResponse::Success {
-                    output: format!("File successfully written to {}", safe_path.display()),
+                    output: "File successfully written".to_string(),
                 },
                 Err(e) => TunnelResponse::Error {
                     message: format!("Failed to write file: {}", e),

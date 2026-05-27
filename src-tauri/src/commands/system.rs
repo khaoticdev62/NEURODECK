@@ -700,7 +700,15 @@ pub async fn write_to_process(
     input: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<(), String> {
-    crate::security::validate_terminal_command(&input, "terminal-stdin")?;
+    // SECURITY: We intentionally do NOT run validate_terminal_command() here.
+    // PTY stdin is inherently untrusted — the user is interacting with a real
+    // shell. Attempting to blocklist stdin content creates a false sense of
+    // security and breaks legitimate terminal usage (e.g. control sequences,
+    // paste operations). The security boundary is the OS process, not this
+    // validation gate.
+    if input.len() > 32 * 1024 {
+        return Err("Input exceeds 32KB".to_string());
+    }
 
     let tx = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());

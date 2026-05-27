@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { createIcon } from './icons.js';
-import { addNotification } from './notifications.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLASH COMMAND PALETTE

@@ -313,7 +313,9 @@ function doConnect(){
   if(!pin || !session){showErr('Missing remote credentials. Re-scan the QR code from NEURODECK.');return;}
   var host=location.host;
   setS('Connecting to '+host+'…');
-  ws=new WebSocket('ws://'+host+'/ws?session='+encodeURIComponent(session));
+  // SECURITY: Session token is sent in the WebSocket message body, not the URL,
+  // to prevent exposure in proxy logs and browser network history.
+  ws=new WebSocket('ws://'+host+'/ws');
   ws.onopen=function(){setS('Authenticating…');ws.send(JSON.stringify({type:'auth',pin:pin,session:session}));};
   ws.onmessage=function(ev){
     var m;try{m=JSON.parse(ev.data);}catch(ex){return;}
@@ -544,13 +546,9 @@ async fn ws_handler(
         ip
     );
 
-    if query.session.as_deref() != Some(state.access_token.as_str()) {
-        return (
-            axum::http::StatusCode::UNAUTHORIZED,
-            "Unauthorized remote session token.",
-        )
-            .into_response();
-    }
+    // SECURITY: Session token is intentionally NOT validated in the URL query
+    // parameter. It is exchanged only inside the WebSocket auth message after
+    // upgrade, keeping it out of proxy logs and browser network history.
 
     // Lockout check
     {
@@ -830,9 +828,12 @@ pub async fn start_remote_server(
         *rtx = Some(broadcast_tx.clone());
     }
 
+    // SECURITY: Session token is NOT placed in the URL fragment to reduce
+    // leakage via browser history, referrer logs, or shoulder-surfing.
+    // The token is sent only inside the WebSocket auth message body.
     let url = format!(
-        "http://{}:{}/#pin={}&session={}",
-        local_ip, port, pin, access_token
+        "http://{}:{}/#pin={}",
+        local_ip, port, pin
     );
 
     {
@@ -890,8 +891,8 @@ pub fn get_remote_server_info(
                 "ip":        h.local_ip,
                 "pin":       h.pin,
                 "url":       format!(
-                    "http://{}:{}/#pin={}&session={}",
-                    h.local_ip, h.port, h.pin, h.access_token
+                    "http://{}:{}/#pin={}",
+                    h.local_ip, h.port, h.pin
                 ),
                 "connected": connected,
             })

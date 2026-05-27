@@ -116,11 +116,31 @@ print_ok "Binary installed to $INSTALL_DIR/neurodeck"
 # --- Copy configuration files ---
 print_step "Copying configuration files..."
 
-for f in llm-term.toml custom_style.json launch_gamescope.sh; do
+for f in llm-term.toml launch_gamescope.sh; do
     if [ -f "$SCRIPT_DIR/$f" ]; then
         cp "$SCRIPT_DIR/$f" "$INSTALL_DIR/$f"
     fi
 done
+
+# Copy custom_style.json
+if [ -f "$SCRIPT_DIR/custom_style.json" ]; then
+    cp "$SCRIPT_DIR/custom_style.json" "$INSTALL_DIR/custom_style.json"
+elif [ -f "$SCRIPT_DIR/assets/custom_style.json" ]; then
+    cp "$SCRIPT_DIR/assets/custom_style.json" "$INSTALL_DIR/custom_style.json"
+fi
+
+# Copy Steam Input gamepad profiles
+if [ -f "$SCRIPT_DIR/neurodeck_gamepad.vdf" ]; then
+    cp "$SCRIPT_DIR/neurodeck_gamepad.vdf" "$INSTALL_DIR/neurodeck_gamepad.vdf"
+elif [ -f "$SCRIPT_DIR/assets/steam_input/neurodeck_gamepad.vdf" ]; then
+    cp "$SCRIPT_DIR/assets/steam_input/neurodeck_gamepad.vdf" "$INSTALL_DIR/neurodeck_gamepad.vdf"
+fi
+
+if [ -f "$SCRIPT_DIR/steam_input.vdf" ]; then
+    cp "$SCRIPT_DIR/steam_input.vdf" "$INSTALL_DIR/steam_input.vdf"
+elif [ -f "$SCRIPT_DIR/assets/steam_input/steam_input.vdf" ]; then
+    cp "$SCRIPT_DIR/assets/steam_input/steam_input.vdf" "$INSTALL_DIR/steam_input.vdf"
+fi
 
 # Copy scripts, plugins, and BMad directories
 for dir in scripts plugins _bmad .agents; do

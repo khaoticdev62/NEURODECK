@@ -113,7 +113,7 @@ Stylesheet: `frontend/src/app.css` (~9000+ lines), `frontend/src/style.css` (bas
 - 8 segments (clockwise from top): Chat, Canvas, Terminal, Tunnel, Browser, Agent, Memory, Share
 - Keyboard shortcut: backtick `` ` `` toggles radial; arrow keys select; Enter navigates
 - D-pad left/right cycles tabs when no slider/select is focused
-- `steam_input.vdf` controller mapping file for Steam Deck Game Mode import
+- `assets/steam_input/steam_input.vdf` controller mapping file for Steam Deck Game Mode import
 
 ### Sprint 4.6 — Cloud Sync
 - Encrypted sync module for memory records and saved chat sessions
@@ -324,8 +324,9 @@ NEURODECK/
 ├── _bmad-output/        # BMAD generated artifacts
 │   ├── planning-artifacts/
 │   └── implementation-artifacts/
-├── .agent/skills/       # 43 BMAD skills
-├── steam_input.vdf      # Steam Deck controller mapping
+├── .agents/skills/      # 43 BMAD skills
+├── assets/steam_input/  # Steam Deck controller mapping profiles (.vdf)
+├── scripts/             # Build and utility scripts
 └── llm-term.toml        # Runtime LLM config
 ```
 

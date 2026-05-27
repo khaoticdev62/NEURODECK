@@ -4,7 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { marked } from 'marked';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
-import { initSlashCommands, setSlashClearHandler, hideSlashPalette } from './slash-commands.js';
+import { initSlashCommands, setSlashClearHandler } from './slash-commands.js';
 import { triggerHaptic } from './haptics.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════

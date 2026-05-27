@@ -1,5 +1,12 @@
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use regex::Regex;
+
+lazy_static::lazy_static! {
+    static ref PATH_SANITIZE_WIN: Regex = Regex::new(r#"[A-Za-z]:[/\\][^\s'"<>|{}]*"#).unwrap();
+    static ref PATH_SANITIZE_UNIX: Regex = Regex::new(r#"/[\w./_-]+(?:/[^\s'"<>|{}]*)*"#).unwrap();
+    static ref PATH_SANITIZE_HOME: Regex = Regex::new(r#"~[/\\][^\s'"<>|{}]*"#).unwrap();
+}
 
 pub fn generate_session_token() -> String {
     thread_rng()
@@ -41,6 +48,7 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
     let lower = code.to_ascii_lowercase();
     let lang = lang.to_ascii_lowercase();
 
+    // Blocked markers for shell languages
     let blocked_markers: &[&str] = match lang.as_str() {
         "bash" | "sh" | "shell" | "powershell" | "cmd" | "zsh" => &[
             "rm -rf",
@@ -64,6 +72,20 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
             "| sh",
             "| bash",
             "iex ",
+            // Additional dangerous patterns
+            ":(){ :|:& };:", // fork bomb
+            "$(", // command substitution
+            "`",   // backtick substitution
+            "eval(",
+            "eval ",
+            "python3 -c",
+            "python -c",
+            "perl -e",
+            "ruby -e",
+            "base64 -d",
+            "base64 --decode",
+            "/dev/tcp/",
+            "/dev/udp/",
         ],
         "python" | "python3" => &[
             "import subprocess",
@@ -75,6 +97,20 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
             "import requests",
             "urllib.request",
             "shutil.rmtree",
+            // Additional patterns
+            "__import__('os')",
+            "__import__(\"os\")",
+            "import os",
+            "from os import",
+            "os.popen",
+            "os.spawn",
+            "pty.spawn",
+            "import pty",
+            "eval(",
+            "exec(",
+            "compile(",
+            "import urllib",
+            "from urllib",
         ],
         "javascript" | "js" | "node" => &[
             "require('child_process')",
@@ -86,6 +122,14 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
             "http.request",
             "https.request",
             "net.createconnection",
+            // Additional patterns
+            "eval(",
+            "new function(",
+            "new function(",
+            "require('fs')",
+            "require(\"fs\")",
+            "fs.write",
+            "fs.read",
         ],
         "lua" => &[
             "execute(",
@@ -94,6 +138,11 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
             "loadfile(",
             "dofile(",
             "require(",
+            // Additional patterns
+            "load(",
+            "loadstring(",
+            "os.remove",
+            "os.rename",
         ],
         _ => &[],
     };
@@ -101,6 +150,25 @@ pub fn validate_script_payload(code: &str, lang: &str, surface: &str) -> Result<
     if blocked_markers.iter().any(|marker| lower.contains(marker)) {
         return Err(format!(
             "{} blocked by command policy for {}. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+            surface, lang
+        ));
+    }
+
+    // Additional heuristic: detect simple obfuscation (space-separated dangerous words)
+    let normalized: String = lower.chars().filter(|c| !c.is_whitespace()).collect();
+    let obfuscated_markers: &[&str] = match lang.as_str() {
+        "bash" | "sh" | "shell" | "powershell" | "cmd" | "zsh" => &[
+            "rm-rf",
+            "curl|sh",
+            "wget|sh",
+            "curl|bash",
+            "wget|bash",
+        ],
+        _ => &[],
+    };
+    if obfuscated_markers.iter().any(|m| normalized.contains(m)) {
+        return Err(format!(
+            "{} blocked by command policy (obfuscation detected) for {}. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
             surface, lang
         ));
     }
@@ -122,6 +190,16 @@ fn validate_common_payload(payload: &str, surface: &str) -> Result<(), String> {
         return Err(format!("{} payload contains invalid NUL bytes", surface));
     }
     Ok(())
+}
+
+/// Sanitize an error message before returning it to the frontend.
+/// Removes filesystem paths, home directories, and canonicalized paths
+/// to prevent information disclosure via error strings.
+pub fn sanitize_error_for_frontend(err: &str) -> String {
+    let mut sanitized = PATH_SANITIZE_WIN.replace_all(err, "[REDACTED_PATH]").to_string();
+    sanitized = PATH_SANITIZE_UNIX.replace_all(&sanitized, "[REDACTED_PATH]").to_string();
+    sanitized = PATH_SANITIZE_HOME.replace_all(&sanitized, "[REDACTED_PATH]").to_string();
+    sanitized
 }
 
 #[cfg(test)]

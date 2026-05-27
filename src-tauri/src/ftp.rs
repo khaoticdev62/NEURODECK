@@ -183,7 +183,11 @@ pub async fn ftp_test_connection(
         stream.login(&user, &password).map_err(to_string_err)?;
         let cwd = stream.pwd().map_err(to_string_err)?;
         stream.quit().ok();
-        Ok(format!("Connected. Current directory: {}", cwd))
+        // SECURITY: Plain FTP transmits credentials and data in cleartext.
+        Ok(format!(
+            "⚠️ Connected (UNENCRYPTED). Current directory: {}\n\nWarning: Plain FTP sends credentials and file contents in cleartext. Consider using SFTP for sensitive data.",
+            cwd
+        ))
     })
     .await
     .map_err(to_string_err)?

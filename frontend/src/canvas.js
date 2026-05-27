@@ -53,13 +53,21 @@ function stripCanvasScripts(html) {
 }
 
 function buildPreviewDoc(lang, code) {
+    // SECURITY: Inject a restrictive CSP into all preview documents to limit
+    // network egress and sandbox execution in case of malicious or collab-injected code.
+    const previewCsp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';">`;
     switch (lang) {
         case 'html':
-            return stripCanvasScripts(code);
+            // Strip scripts and prepend CSP meta to the head (or at the top if no head)
+            const stripped = stripCanvasScripts(code);
+            if (stripped.toLowerCase().includes('<head>')) {
+                return stripped.replace(/<head>/i, `<head>${previewCsp}`);
+            }
+            return previewCsp + stripped;
         case 'css':
-            return `<!DOCTYPE html><html><head><style>${code}</style></head><body><p style="color:#888;font-family:sans-serif;padding:1rem">CSS Preview — add HTML in the editor to see styled content.</p></body></html>`;
+            return `<!DOCTYPE html><html><head>${previewCsp}<style>${code}</style></head><body><p style="color:#888;font-family:sans-serif;padding:1rem">CSS Preview — add HTML in the editor to see styled content.</p></body></html>`;
         case 'javascript':
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem}pre{white-space:pre-wrap;word-break:break-all}</style></head><body><pre id="out"></pre><script>
+            return `<!DOCTYPE html><html><head>${previewCsp}<style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem}pre{white-space:pre-wrap;word-break:break-all}</style></head><body><pre id="out"></pre><script>
 const _log=console.log.bind(console);
 const out=document.getElementById('out');
 console.log=(...a)=>{out.textContent+=a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ')+'\\n';_log(...a)};
@@ -68,9 +76,9 @@ try{${code}}catch(e){out.textContent+='\\n[Error] '+e.message}
         case 'markdown':
             const parsed = marked.parse(code);
             const html = (parsed && typeof parsed.then === 'function') ? '' : (window.sanitizeHtml ? window.sanitizeHtml(parsed) : '');
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body>${html}</body></html>`;
+            return `<!DOCTYPE html><html><head>${previewCsp}<style>body{background:#0d0d0d;color:#e0e0e0;font-family:sans-serif;padding:1.5rem;line-height:1.6;max-width:720px}h1,h2,h3{color:var(--accent-color,#7C3AED)}code{background:#1a1a2e;padding:2px 6px;border-radius:3px;font-family:monospace}pre{background:#1a1a2e;padding:1rem;border-radius:6px;overflow-x:auto}blockquote{border-left:3px solid #7C3AED;margin-left:0;padding-left:1rem;color:#aaa}a{color:#7C3AED}</style></head><body>${html}</body></html>`;
         default:
-            return `<!DOCTYPE html><html><head><style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem;white-space:pre-wrap}</style></head><body>Run this code in the Terminal tab (▶ Run is for HTML/CSS/JS/Markdown).\n\n${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
+            return `<!DOCTYPE html><html><head>${previewCsp}<style>body{background:#0d0d0d;color:#e0e0e0;font-family:monospace;padding:1rem;white-space:pre-wrap}</style></head><body>Run this code in the Terminal tab (▶ Run is for HTML/CSS/JS/Markdown).\n\n${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
     }
 }
 

@@ -1,4 +1,0 @@
-
-> frontend@1.2.2 typecheck
-> tsc --noEmit && tsc --project tsconfig.node.json --noEmit
-

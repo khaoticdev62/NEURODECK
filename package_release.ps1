@@ -81,7 +81,19 @@ foreach ($dir in @("scripts", "plugins", "_bmad", ".agents")) {
 }
 
 Copy-Item "llm-term.toml"    "$stagingDir/llm-term.toml.template"
-Copy-Item "custom_style.json" "$stagingDir/custom_style.json"
+if (Test-Path "assets/custom_style.json") {
+    Copy-Item "assets/custom_style.json" "$stagingDir/custom_style.json"
+} elseif (Test-Path "custom_style.json") {
+    Copy-Item "custom_style.json" "$stagingDir/custom_style.json"
+}
+
+if (Test-Path "assets/steam_input/neurodeck_gamepad.vdf") {
+    Copy-Item "assets/steam_input/neurodeck_gamepad.vdf" "$stagingDir/neurodeck_gamepad.vdf"
+}
+if (Test-Path "assets/steam_input/steam_input.vdf") {
+    Copy-Item "assets/steam_input/steam_input.vdf" "$stagingDir/steam_input.vdf"
+}
+
 Copy-Item "install.sh"        "$stagingDir/install.sh"
 Copy-Item "launch_gamescope.sh" "$stagingDir/launch_gamescope.sh"
 Copy-Item "README.md"         "$stagingDir/README.md"

@@ -1,7 +1,0 @@
-{
-  "run_id": "20260526-233742",
-  "timestamp_utc": "2026-05-26T23:41:30Z",
-  "overall": "FAIL",
-  "summary": { "total": 2, "passed": 1, "failed": 1 },
-  "gates": [{"id":"cargo_test","label":"Cargo Test (workspace)","category":"test","status":"pass","duration_ms":2731,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/cargo_test.log"},{"id":"e2e","label":"Playwright E2E Tests","category":"test","status":"fail","duration_ms":225317,"log":"/c/Users/thecr/Desktop/S-Term/.loose/inbox/kfms-ci/e2e.log"}]
-}

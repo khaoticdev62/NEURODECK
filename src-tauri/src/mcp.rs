@@ -347,7 +347,7 @@ async fn call_tool(
                 .ok_or("Missing required arg: 'path'")?;
             let safe_path = sanitize_mcp_path(path_str)?;
             let content = std::fs::read_to_string(safe_path)
-                .map_err(|e| format!("Cannot read '{}': {}", path_str, e))?;
+                .map_err(|e| format!("Cannot read '{}': {}", path_str, crate::security::sanitize_error_for_frontend(&e.to_string())))?;
             Ok(json!({
                 "content": [{ "type": "text", "text": content }]
             }))
@@ -366,7 +366,7 @@ async fn call_tool(
                 let _ = std::fs::create_dir_all(parent);
             }
             std::fs::write(safe_path, content)
-                .map_err(|e| format!("Cannot write '{}': {}", path_str, e))?;
+                .map_err(|e| format!("Cannot write '{}': {}", path_str, crate::security::sanitize_error_for_frontend(&e.to_string())))?;
             Ok(json!({
                 "content": [{
                     "type": "text",

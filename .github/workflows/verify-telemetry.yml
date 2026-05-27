@@ -91,7 +91,7 @@ jobs:
               print(f"FAIL: Version drift detected.", file=sys.stderr)
               print(f"  health.json.version = '{health.get('version')}'", file=sys.stderr)
               print(f"  meta.json.version   = '{meta.get('version')}'",   file=sys.stderr)
-              print(f"  Run: ./scripts/khaotic-init.sh stamp", file=sys.stderr)
+              print(f"  Run: ./scripts/kfms/khaotic-init.sh stamp", file=sys.stderr)
               sys.exit(1)
 
           if health.get("codename") != meta.get("codename", {}).get("name"):

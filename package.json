@@ -7,7 +7,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-autokill.ps1",
+    "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",
     "dev": "npm run dev:autokill && tauri dev",
     "build": "tauri build",
     "tauri": "tauri",
@@ -23,13 +23,13 @@
     "rust:test": "cargo test",
     "rust:fmt": "cargo fmt --all",
 
-    "ci": "bash scripts/kfms-ci.sh run",
-    "ci:lint": "bash scripts/kfms-ci.sh lint",
-    "ci:test": "bash scripts/kfms-ci.sh test",
-    "ci:build": "bash scripts/kfms-ci.sh build",
-    "ci:security": "bash scripts/kfms-ci.sh security",
-    "ci:watch": "bash scripts/kfms-ci.sh watch",
-    "ci:status": "bash scripts/kfms-ci.sh status",
+    "ci": "bash scripts/kfms/kfms-ci.sh run",
+    "ci:lint": "bash scripts/kfms/kfms-ci.sh lint",
+    "ci:test": "bash scripts/kfms/kfms-ci.sh test",
+    "ci:build": "bash scripts/kfms/kfms-ci.sh build",
+    "ci:security": "bash scripts/kfms/kfms-ci.sh security",
+    "ci:watch": "bash scripts/kfms/kfms-ci.sh watch",
+    "ci:status": "bash scripts/kfms/kfms-ci.sh status",
 
     "assets": "python assets/brand/generate_assets.py",
 

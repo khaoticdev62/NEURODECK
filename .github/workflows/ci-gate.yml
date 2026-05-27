@@ -174,18 +174,18 @@ jobs:
         run: npm install -g ajv-cli ajv-formats
 
       - name: KFMS Stamp
-        run: bash scripts/khaotic-init.sh stamp
+        run: bash scripts/kfms/khaotic-init.sh stamp
 
       - name: KFMS Validate
-        run: bash scripts/khaotic-init.sh validate
+        run: bash scripts/kfms/khaotic-init.sh validate
 
       - name: KFMS Status
-        run: bash scripts/khaotic-init.sh status
+        run: bash scripts/kfms/khaotic-init.sh status
 
       - name: Verify KFMS artifacts are clean
         run: |
           git diff --quiet -- infra/meta/meta.json infra/telemetry/health.json infra/meta/CODENAME_REGISTRY.md docs/IMPLEMENTATION_PLAN.md || {
-            echo "KFMS artifacts are out of sync. Run: bash scripts/khaotic-init.sh sync"
+            echo "KFMS artifacts are out of sync. Run: bash scripts/kfms/khaotic-init.sh sync"
             exit 1
           }
 
@@ -201,7 +201,7 @@ jobs:
           sudo dpkg -i ripgrep_14.1.0-1_amd64.deb
       - name: Run Security Hardening Scan
         run: |
-          bash scripts/security_audit.py || true
+          bash scripts/kfms/security_audit.py || true
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
         with:
