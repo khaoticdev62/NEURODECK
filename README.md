@@ -74,6 +74,8 @@ Built to be used from a couch, in Game Mode, with a controller in your hands.
 | 🎮 **Gamepad-Native UI** | Hold L2, use the left stick to pick a tab, release. Entire app navigable with zero keyboard. |
 | 🔌 **Lua Plugin API** | Drop a `.lua` file in `plugins/` — it auto-loads at startup. Register commands, hooks, and custom personas. |
 | 🏪 **Plugin Marketplace** | Browse, search, and install community plugins from the built-in registry at `github.com/khaoticdev62/neurodeck-plugins`. |
+| 🎨 **Universal UI System** | Modular, responsive app shell template under `design-system/` for prototyping any web/desktop app. Excludes ES module imports for CORS-free local execution over `file://`. |
+| 🛡️ **Secure Binary Path** | Automatic user-space executable containment pathway at `~/.config/neurodeck/bin` injected into PTY and commands. |
 
 ---
 

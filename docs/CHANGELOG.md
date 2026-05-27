@@ -9,6 +9,21 @@ For detailed release notes, see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md)
 
 ## [Unreleased]
 
+---
+
+## [1.3.0-Isis] — 2026-05-27
+
+### Added
+- **Universal Design/UI System Starter Kit**: Extracted and exported a standalone design/UI system starter template directly to `C:\Users\thecr\Desktop\design-system\`. Includes `index.html`, `style.css`, `app.js`, `README.md`, and PDF spec sheet. Designed to be completely universal and CORS-friendly (removes ES module import requirements for `file://` protocol).
+- **Secure User-Space CLI Path**: Automated directory verification and creation of `~/.config/neurodeck/bin` on startup (`self_heal.rs`). Integrated the custom path into interactive shell environments, one-off execution, and streaming runtimes (`pty_manager.rs`, `system.rs`).
+- **Command Palette Expansion**: Registered "Open Knowledge Graph", "Open Scheduler", "Open Workflow Builder", and "Open IDE" to `COMMAND_PALETTE_ACTIONS` (`main.js`) to close navigation gaps.
+- **Diagnostics & Self-Healing**: Enhanced boot diagnostics check and output path resolution options.
+
+### Fixed
+- **FTP/SFTP Streaming & Progress**: Replaced memory buffers (`retr_as_buffer`) with disk streaming and implemented `ProgressReader` in Tauri uploads emitting updates every 64KB.
+- **Canvas Run UX**: Fully wired Canvas run buttons to subprocess execution runtimes for Python, Bash, Node, and Lua.
+- **PTY Session Guard**: Implemented robust timeout hooks for PTY thread spawns.
+
 ### Repository Hygiene
 - Added missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `.env.example`, `.editorconfig`
 - Synchronized version strings across all manifests (`package.json`, `Cargo.toml`, `pyproject.toml`, `tauri.conf.json`)

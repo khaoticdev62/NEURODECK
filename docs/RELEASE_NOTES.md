@@ -2,6 +2,22 @@
 
 ---
 
+## v1.3.0-Isis — Developer Control Layer
+
+**Release Date:** 2026-05-27
+**Platform:** Windows (MSI + NSIS), Linux (AppImage + deb), macOS (DMG + app)
+**KFMS Codename:** Isis
+
+### Developer Prototyping & Control Features
+
+- **Universal Design/UI System Starter Kit** — Extracted a highly polished, responsive, and completely universal CSS/HTML/JS design system template to `C:\Users\thecr\Desktop\design-system\`. Includes collapsible navigation menus, cinematic loading screens, multiple preview cards, and overlays. Excludes ES6 module imports to ensure local browser execution over `file://` works out-of-the-box (no CORS restrictions).
+- **Secure Local Binary Execution pathway** — Configured automatic directory creation for a secure user-space binary folder at `~/.config/neurodeck/bin` on startup (`self_heal.rs`). Handled secure environment variable configuration to inject this custom path safely into the shell sessions and execution pathways (`pty_manager.rs`, `system.rs`).
+- **Fuzzy Command Palette Navigation** — Registered all newly added views (Knowledge Graph, Task Scheduler, Workflow Visual Builder, and Monaco IDE) inside `COMMAND_PALETTE_ACTIONS` in `main.js` so they are fully reachable from the `Ctrl+K` overlay and gamepad select controls.
+- **FTP/SFTP Streaming & Progress Monitoring** — Hardened download sequences to stream directly to disk rather than consuming memory buffers, and added a `ProgressReader` in Tauri file uploads emitting real-time percentage updates every 64KB.
+- **Diagnostics & Self-Healing Utilities** — Upgraded startup checks to detect optional system binaries (Whisper, espeak, SSH utilities) and automatically self-heal minor filesystem directory state issues.
+
+---
+
 ## v1.2.2-Ra — Security Hardening Update
 
 **Release Date:** 2026-05-26

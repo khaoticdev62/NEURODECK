@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * NEURODECK v1.2.2-Ra — Input Command Registry
+ * NEURODECK v1.3.0-Isis — Input Command Registry
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Single source of truth for ALL keyboard shortcuts and gamepad/controller

@@ -104,13 +104,13 @@ The sprint branches (`feature/sprint-3.3-knowledge-graph` through `feature/sprin
 
 ## Definition of Done
 
-- [ ] `cargo check` clean.
-- [ ] `cargo clippy` warnings documented or fixed.
-- [ ] `npm run --prefix frontend build` succeeds with `target: ["es2022", "chrome110", "safari15"]`.
-- [ ] AppImage bundles on Linux/WSL (`npm run tauri build --bundles appimage`).
-- [ ] Steam Deck 1280×800 layout validated for all new views.
-- [ ] Gamepad navigation smoke test passes (L1/R1 tab cycle, radial menu, D-pad focus).
-- [ ] KFMS stamp updated: version `1.3.0`, codename `Isis`, tag `v1.3.0-isis`.
+- [x] `cargo check` clean.
+- [x] `cargo clippy` warnings documented or fixed.
+- [x] `npm run --prefix frontend build` succeeds with `target: ["es2022", "chrome110", "safari15"]`.
+- [x] AppImage bundles on Linux/WSL (`npm run tauri build --bundles appimage`).
+- [x] Steam Deck 1280×800 layout validated for all new views.
+- [x] Gamepad navigation smoke test passes (L1/R1 tab cycle, radial menu, D-pad focus).
+- [x] KFMS stamp updated: version `1.3.0`, codename `Isis`, tag `v1.3.0-isis`.
 
 ---
 
