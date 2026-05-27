@@ -36,7 +36,9 @@ $preserveFiles = @(
     ".env.example",
     "LICENSE",
     "clippy.toml",
-    ".prettierrc"
+    ".prettierrc",
+    "neurodeck_win_release.zip",
+    "neurodeck_installer.exe"
 )
 
 function Write-KfmsLine {

@@ -80,6 +80,8 @@ count_loose_root_files() {
     -not -name "rustfmt.toml" \
     -not -name ".editorconfig" \
     -not -name ".env.example" \
+    -not -name "neurodeck_win_release.zip" \
+    -not -name "neurodeck_installer.exe" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
@@ -143,6 +145,8 @@ PRESERVE=(
   "LICENSE"
   "clippy.toml"
   ".prettierrc"
+  "neurodeck_win_release.zip"
+  "neurodeck_installer.exe"
 )
 
 # ---------------------------------------------------------------------------
