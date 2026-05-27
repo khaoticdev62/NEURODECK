@@ -281,7 +281,7 @@ async fn _run_orchestration(
         for handle in handles {
             aborted!();
             if let Ok((id, outcome)) = handle.await {
-                let task = ready.iter().find(|t| t.id == id).unwrap();
+                if let Some(task) = ready.iter().find(|t| t.id == id) {
                 match outcome {
                     Ok(result) => {
                         results.insert(id.clone(), result.clone());
@@ -320,6 +320,7 @@ async fn _run_orchestration(
                         );
                         // Continue — other agents can still finish
                     }
+                }
                 }
             }
         }

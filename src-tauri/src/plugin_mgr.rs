@@ -42,6 +42,9 @@ pub struct MarketplacePlugin {
     pub tags: Vec<String>,
     pub download_url: String,
     pub lua_file: String,
+    /// Optional SHA-256 hex digest for integrity verification.
+    #[serde(default)]
+    pub sha256: Option<String>,
     #[serde(default)]
     pub installed: bool,
     #[serde(default)]
@@ -126,7 +129,7 @@ pub fn toggle_plugin(file_name: String, enabled: bool) -> Result<(), String> {
 pub async fn install_plugin(url: String) -> Result<(), String> {
     let parsed_url = reqwest::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
     let file_name = file_name_from_url(&parsed_url)?;
-    download_plugin_file(&parsed_url, &file_name).await
+    download_plugin_file(&parsed_url, &file_name, None).await
 }
 
 #[tauri::command]
@@ -151,7 +154,7 @@ pub async fn install_plugin_from_registry(
     let parsed_url = reqwest::Url::parse(&plugin.download_url)
         .map_err(|e| format!("Invalid plugin download URL: {}", e))?;
     validate_marketplace_download_url(&parsed_url)?;
-    download_plugin_file(&parsed_url, &plugin.lua_file).await?;
+    download_plugin_file(&parsed_url, &plugin.lua_file, plugin.sha256.as_deref()).await?;
     reload_plugins(app_handle).await
 }
 
@@ -317,7 +320,11 @@ async fn fetch_registry_raw() -> Result<PluginRegistry, String> {
         .map_err(|e| format!("Failed to parse plugin registry: {}", e))
 }
 
-async fn download_plugin_file(url: &reqwest::Url, file_name: &str) -> Result<(), String> {
+async fn download_plugin_file(
+    url: &reqwest::Url,
+    file_name: &str,
+    expected_sha256: Option<&str>,
+) -> Result<(), String> {
     if url.scheme() != "https" {
         return Err("Plugin downloads must use HTTPS".to_string());
     }
@@ -354,6 +361,22 @@ async fn download_plugin_file(url: &reqwest::Url, file_name: &str) -> Result<(),
         return Err(
             "Plugin file is too large; marketplace plugins must be under 512KB".to_string(),
         );
+    }
+
+    // SECURITY: Verify SHA-256 integrity if the registry publishes a hash.
+    if let Some(expected) = expected_sha256 {
+        let expected = expected.trim().to_ascii_lowercase();
+        if !expected.is_empty() {
+            use sha2::{Digest, Sha256};
+            let hash = Sha256::digest(&body);
+            let actual: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
+            if actual != expected {
+                return Err(format!(
+                    "Plugin integrity check failed. Expected SHA-256 {} but got {}. The plugin may have been tampered with.",
+                    expected, actual
+                ));
+            }
+        }
     }
 
     fs::write(plugins_dir.join(file_name), body)

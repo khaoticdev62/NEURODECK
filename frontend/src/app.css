@@ -371,6 +371,11 @@ body::before {
   color: var(--accent-color);
 }
 
+.sidebar-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .nd-icon-button {
   display: inline-flex;
   align-items: center;
@@ -1981,6 +1986,11 @@ body::before {
 .input-btn:hover {
   color: var(--fg-color);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.input-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .input-btn.accent:hover {
@@ -4177,6 +4187,11 @@ code {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.nav-tab:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .nav-tab.active {
   color: var(--accent-color);
   background: linear-gradient(
@@ -4344,6 +4359,11 @@ code {
     0 2px 8px rgba(0, 0, 0, 0.25);
   transform: translateY(-1px);
   color: var(--fg-color);
+}
+
+.canvas-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .canvas-btn-sm {

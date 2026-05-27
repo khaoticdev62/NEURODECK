@@ -525,7 +525,7 @@ document.querySelector("#app").innerHTML = `
                         <button class="agent-tab" data-atab="recommended">Steam Deck Best</button>
                         <button class="agent-tab" data-atab="custom">+ Custom</button>
                     </div>
-                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()">${createIcon("x", { size: 14 })}</button>
+                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()" aria-label="Close agent switcher">${createIcon("x", { size: 14 })}</button>
                 </div>
                 <div class="agent-tab-body" id="agent-tab-agents">
                     <div class="agent-card-grid" id="agent-card-grid">
@@ -1323,7 +1323,7 @@ document.querySelector("#app").innerHTML = `
                                 <span>Template Gallery</span>
                                 <div style="display:flex;gap:8px;align-items:center;">
                                     <input type="text" id="pl-gallery-search" class="pl-gallery-search" placeholder="Search templates...">
-                                    <button class="pl-gallery-close" id="pl-gallery-close">${createIcon("x", { size: 16 })}</button>
+                                    <button class="pl-gallery-close" id="pl-gallery-close" aria-label="Close gallery">${createIcon("x", { size: 16 })}</button>
                                 </div>
                             </div>
                             <div class="pl-gallery-body" id="pl-gallery-body"></div>
@@ -1343,7 +1343,7 @@ document.querySelector("#app").innerHTML = `
                                     <button class="pl-gallery-btn" id="pl-open-gallery-btn" title="Browse Template Gallery">${createIcon("fileText", { size: 14 })}<span>Templates</span></button>
                                     <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display:none;width:96px;padding:4px 8px;font-size:0.8rem;background:rgba(0,0,0,0.3);">
                                     <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display:none;font-size:0.75rem;">${createIcon("save", { size: 13 })}<span>Save</span></button>
-                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset">${createIcon("save", { size: 13 })}</button>
+                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset" aria-label="Save Custom Preset">${createIcon("save", { size: 13 })}</button>
                                 </div>
                             </div>
 
@@ -1442,7 +1442,7 @@ document.querySelector("#app").innerHTML = `
                                         <span class="pl-token-counter" id="pl-token-counter">~0 tokens</span>
                                     </div>
                                     <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History">${createIcon("refreshCw", { size: 13 })}</button>
+                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History" aria-label="Prompt History">${createIcon("refreshCw", { size: 13 })}</button>
                                         <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">${createIcon("copy", { size: 13 })}<span>Copy</span></button>
                                         <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">${createIcon("messageSquare", { size: 13 })}<span>Chat</span></button>
                                         <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">${createIcon("fileText", { size: 13 })}<span>JSON</span></button>
@@ -2588,7 +2588,7 @@ document.querySelector("#app").innerHTML = `
                         <span class="collab-modal-kicker">Live Mesh</span>
                         <h3>Live Workspace</h3>
                     </div>
-                    <button class="sidebar-toggle-btn" id="close-collab-x">${createIcon("x", { size: 16 })}</button>
+                    <button class="sidebar-toggle-btn" id="close-collab-x" aria-label="Close collaboration panel">${createIcon("x", { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <div class="setting-field-group collab-field">
@@ -2658,7 +2658,7 @@ document.querySelector("#app").innerHTML = `
                         <span class="transfer-modal-kicker">Trust Gate</span>
                         <h3>Incoming File Transfer</h3>
                     </div>
-                    <button class="sidebar-toggle-btn" id="transfer-modal-close-x">${createIcon("x", { size: 16 })}</button>
+                    <button class="sidebar-toggle-btn" id="transfer-modal-close-x" aria-label="Close transfer dialog">${createIcon("x", { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <p>Another S-Term peer is requesting to send you a file.</p>
@@ -2690,7 +2690,7 @@ document.querySelector("#app").innerHTML = `
             <div class="settings-modal-card game-context-card">
                 <div class="settings-modal-header">
                     <h3>Active Game Context</h3>
-                    <button class="sidebar-toggle-btn" id="close-game-context-x">${createIcon("x", { size: 16 })}</button>
+                    <button class="sidebar-toggle-btn" id="close-game-context-x" aria-label="Close game context">${createIcon("x", { size: 16 })}</button>
                 </div>
                 <div class="settings-modal-content">
                     <div class="game-context-hero">

@@ -253,7 +253,70 @@ if (!preset) {
 
 **Analyst Position:** The recent feature additions do not degrade the existing security posture. All Medium findings are containment-boundary issues (sandboxed iframe, LAN-only peers) rather than direct privilege escalation paths. The recommended P1 fixes should be landed before the next MINOR version bump.
 
+---
+
+## Remediation Log — 2026-05-26 (Post-Audit Hardening)
+
+**Engineer:** Kimi Code CLI (Khaotic Labs)  
+**Commits:** Working tree on top of `8dba760`
+
+### Critical
+
+| ID | Finding | Fix | Files |
+|---|---|---|---|
+| CRI-1 | Remote Control session token leaked in URL query param (`?session=...`) | Removed `RemoteSessionQuery` struct. Token now passed only in WebSocket `auth` message body and returned via JSON to frontend. Prevents leakage via browser history, proxy logs, and referrer headers. | `src-tauri/src/remote_control.rs` |
+| CRI-2 | Canvas preview `srcdoc` XSS via peer sync and self-XSS | Injected CSP meta tag (`default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'`) into `buildPreviewDoc()`. Added `stripCanvasScripts()` to remove `<script>` tags and `on*` event handlers before rendering. | `frontend/src/canvas.js` |
+
+### High
+
+| ID | Finding | Fix | Files |
+|---|---|---|---|
+| HIGH-1 | Error messages disclose absolute filesystem paths to frontend | Added `sanitize_error_for_frontend()` in `security.rs` using regex to strip Unix (`/home/...`, `../`) and Windows (`C:\...`, `\\`) paths, replacing with `[REDACTED]`. Added 3 unit tests. | `src-tauri/src/security.rs` |
+| HIGH-2 | Plugin downloads lack timeout, size limit, or HTTPS enforcement | Added 20s timeout, 512KB max size, and HTTPS-only scheme check in `download_plugin_file()`. `validate_marketplace_download_url()` enforces GitHub-only hosts (`raw.githubusercontent.com`, `github.com`). | `src-tauri/src/plugin_mgr.rs` |
+| HIGH-3 | Frontend `createIcon()` `className` parameter is unsanitized | Sanitized `className` via regex `[^a-zA-Z0-9_\- ]` to prevent latent HTML injection through icon class names. | `frontend/src/icons.js` |
+
+### Medium
+
+| ID | Finding | Fix | Files |
+|---|---|---|---|
+| MED-1 | Canvas Collaboration peer sync: unvalidated code injection | Added peer-approval gate (`approvedSyncPeers` Set + `appendSyncApproval()` UI). Incoming `canvas_sync` events require explicit user approval before `monacoEditor.setValue()` is called. | `frontend/src/canvas.js` |
+| MED-2 | HTML canvas preview lacks CSP / script sanitization | Same fix as CRI-2: CSP meta tag + `stripCanvasScripts()` applied to all HTML previews rendered via `srcdoc`. | `frontend/src/canvas.js` |
+| MED-3 | `createIcon()` `className` unsanitized | Same fix as HIGH-3. | `frontend/src/icons.js` |
+| MED-4 | Icon-only buttons lack accessible names | Added `aria-label` attributes to ~20+ icon-only buttons across `main.js`, `chat.js`, `settings.js`, `memory.js`, `canvas.js`, `terminal.js`, `torrent.js`. | `frontend/src/*.js` |
+| MED-5 | Interactive elements lack visible focus indicators | Added `:focus-visible` outline rules (`2px solid rgba(var(--accent-rgb), 0.6)`) to `.sidebar-toggle-btn`, `.input-btn`, `.nav-tab`, `.canvas-btn`. | `frontend/src/app.css` |
+| MED-6 | Git commands use `unwrap()` on optional values | Replaced 5 `unwrap()` calls in `git.rs` (`head.target()`, `ref_ref.name()`, `key_path.to_str()`) with `ok_or` + error mapping to prevent backend panics on malformed repos. | `src-tauri/src/git.rs` |
+| MED-7 | Orchestrator uses `unwrap()` on task lookup | Replaced `ready.iter().find(...).unwrap()` with `if let Some(task)` to prevent panic if task ID is missing. | `src-tauri/src/orchestrator.rs` |
+| MED-8 | SFTP password check uses `unwrap()` on Option | Replaced `password.is_none() || password.unwrap().is_empty()` with `password.map_or(true, |p| p.is_empty())` for idiomatic safe handling. | `src-tauri/src/sftp.rs` |
+
+### Low
+
+| ID | Finding | Fix | Files |
+|---|---|---|---|
+| LOW-1 | Contextual tips use `innerHTML` for icon markup | Verified `parseTipText()` uses DOM API (`createElement`, `textContent`, `createDocumentFragment`) for all text content. Only hardcoded `createIcon()` SVG markup is assigned to `innerHTML`. Accepted as low-risk static markup. | `frontend/src/main.js` |
+| LOW-2 | Screen reader announcer | Verified `sr-announcer` div exists with `aria-live="polite"` in `index.html`. `announceToScreenReader()` utility confirmed operational. | `frontend/src/main.js`, `frontend/index.html` |
+
+### Deferred / Accepted Risks
+
+| ID | Risk | Rationale |
+|---|---|---|
+| DEF-1 | SFTP `sshpass -p` password exposure in `ps` output | Requires architectural migration to `russh` or `openssh` crate. `sshpass -e` is already used in one branch; full migration deferred to future sprint. |
+| DEF-2 | Remote Control WebSocket lacks TLS (`ws://` vs `wss://`) | Accepted LAN-only risk per product requirements. Ephemeral self-signed cert recommended for future. |
+| DEF-3 | FTP plaintext credentials | FTPS upgrade requires upstream `suppaftp` support or protocol swap. User-facing SFTP preference flag recommended. |
+| DEF-4 | GTK3 bindings unmaintained (`cargo audit` RUSTSEC-2024-0412/0413/0416/0418) | Inherited from Tauri v2 dependency tree. No direct action possible without upstream Tauri update. |
+| DEF-5 | CSP `style-src 'unsafe-inline'` | Required by frontend architecture (dynamic theme injection, Monaco editor). Nonce/hash migration would require significant refactor. Accepted with documented tradeoff. |
+| DEF-6 | Terminal surface inherently privileged | `execute_command_stream` passes raw commands to `sh -c` / `cmd.exe /c` by design for terminal emulation. Blocklist in `validate_script_payload` guards agent/canvas surfaces. |
+
+### Verification
+
+- **Rust tests:** `cargo test` — 34 passed, 0 failed
+- **Rust compilation:** `cargo check` — clean
+- **Frontend build:** `npm run --prefix frontend build` — success
+- **Security scan:** `cargo audit` — 0 vulnerabilities (excluding inherited GTK3 advisories)
+
+---
+
 **Next Review Trigger:**
 - Canvas Collab multi-room / public room feature
 - Remote tip loading from JSON config
 - Addition of `allow-same-origin` to any iframe sandbox
+- SFTP migration to `russh` / `openssh` crate

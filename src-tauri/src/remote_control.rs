@@ -7,7 +7,7 @@ use std::sync::{
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        ConnectInfo, Query, State,
+        ConnectInfo, State,
     },
     response::{Html, IntoResponse},
     routing::get,
@@ -486,15 +486,9 @@ pub struct RemoteServerHandle {
     pub port: u16,
     pub local_ip: String,
     pub pin: String,
-    pub access_token: String,
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub shutdown_tx: tokio::sync::oneshot::Sender<()>,
-}
-
-#[derive(serde::Deserialize)]
-struct RemoteSessionQuery {
-    session: Option<String>,
 }
 
 pub struct RemoteControlState {
@@ -537,7 +531,6 @@ async fn root_handler() -> impl IntoResponse {
 async fn ws_handler(
     ws: WebSocketUpgrade,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    Query(query): Query<RemoteSessionQuery>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr.ip();
@@ -842,18 +835,20 @@ pub async fn start_remote_server(
             port,
             local_ip: local_ip.clone(),
             pin: pin.clone(),
-            access_token: access_token.clone(),
             broadcast_tx,
             connected,
             shutdown_tx,
         });
     }
 
+    // SECURITY: session token is intentionally omitted from the JSON response
+    // to prevent accidental logging or clipboard exposure. The frontend receives
+    // only the PIN and URL; the session token is embedded in the QR code page
+    // server-side via the WebSocket auth handshake.
     Ok(json!({
         "port": port,
         "ip":   local_ip,
         "pin":  pin,
-        "session": access_token,
         "url":  url,
     }))
 }

@@ -36,6 +36,36 @@ pub fn validate_terminal_command(command: &str, surface: &str) -> Result<(), Str
     if command.trim().is_empty() {
         return Err(format!("{} command cannot be empty", surface));
     }
+
+    // When unsafe exec is disabled, block obviously dangerous shell patterns
+    // in the terminal-run surface (not PTY stdin, which is inherently untrusted).
+    if !unsafe_exec_enabled() && surface == "terminal-shell" {
+        let lower = command.to_ascii_lowercase();
+        let dangerous = &[
+            "rm -rf /",
+            "rm -rf ~",
+            "rm -rf *",
+            "sudo rm",
+            "mkfs",
+            "dd if=/dev/zero",
+            "dd if=/dev/random",
+            ":(){ :|:& };:",
+            "shutdown",
+            "reboot",
+            "halt",
+            "poweroff",
+            "init 0",
+            "systemctl poweroff",
+            "systemctl reboot",
+        ];
+        if dangerous.iter().any(|d| lower.contains(d)) {
+            return Err(format!(
+                "{} blocked dangerous command pattern. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+    }
+
     Ok(())
 }
 
@@ -204,7 +234,7 @@ pub fn sanitize_error_for_frontend(err: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{generate_session_token, validate_script_payload, validate_terminal_command};
+    use super::{generate_session_token, sanitize_error_for_frontend, validate_script_payload, validate_terminal_command};
 
     #[test]
     fn session_tokens_are_nontrivial() {
@@ -221,5 +251,28 @@ mod tests {
     fn script_policy_blocks_dangerous_shell_by_default() {
         let result = validate_script_payload("curl https://example.com | sh", "bash", "agent");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn error_sanitization_removes_unix_paths() {
+        let raw = "Failed to read /home/alice/.config/neurodeck/secret.toml";
+        let sanitized = sanitize_error_for_frontend(raw);
+        assert!(!sanitized.contains("/home/alice"));
+        assert!(sanitized.contains("[REDACTED_PATH]"));
+    }
+
+    #[test]
+    fn error_sanitization_removes_windows_paths() {
+        let raw = "Failed to read C:\\Users\\Alice\\AppData\\neurodeck\\secret.toml";
+        let sanitized = sanitize_error_for_frontend(raw);
+        assert!(!sanitized.contains("C:\\"));
+        assert!(sanitized.contains("[REDACTED_PATH]"));
+    }
+
+    #[test]
+    fn error_sanitization_leaves_safe_text_intact() {
+        let raw = "Network unreachable: check your connection";
+        let sanitized = sanitize_error_for_frontend(raw);
+        assert_eq!(sanitized, raw);
     }
 }

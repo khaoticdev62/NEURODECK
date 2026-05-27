@@ -282,7 +282,7 @@ pub fn git_unstage(path: String, files: Vec<String>) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let head = repo.head().map_err(|e| e.to_string())?;
     let head_tree = repo
-        .find_commit(head.target().unwrap())
+        .find_commit(head.target().ok_or("HEAD has no target commit")?)
         .map_err(|e| e.to_string())?
         .tree()
         .map_err(|e| e.to_string())?;
@@ -407,7 +407,7 @@ pub fn git_branch_create(path: String, name: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let head = repo.head().map_err(|e| e.to_string())?;
     let commit = repo
-        .find_commit(head.target().unwrap())
+        .find_commit(head.target().ok_or("HEAD has no target commit")?)
         .map_err(|e| e.to_string())?;
     repo.branch(&name, &commit, false)
         .map_err(|e| e.to_string())?;
@@ -431,7 +431,7 @@ pub fn git_branch_checkout(path: String, name: String) -> Result<(), String> {
     repo.checkout_tree(&object, None)
         .map_err(|e| e.to_string())?;
     if let Some(ref_ref) = reference {
-        repo.set_head(ref_ref.name().unwrap())
+        repo.set_head(ref_ref.name().ok_or("Reference name is not valid UTF-8")?)
             .map_err(|e| e.to_string())?;
     } else {
         repo.set_head_detached(object.id())
@@ -627,7 +627,7 @@ pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, Str
             "-t",
             "ed25519",
             "-f",
-            key_path.to_str().unwrap(),
+            key_path.to_str().ok_or("Key path contains invalid Unicode")?,
             "-N",
             "",
             "-C",
