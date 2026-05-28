@@ -70,7 +70,7 @@ import { initCliMakerView } from "./cli_maker.js";
 import { initGraphView } from "./graph_view.js";
 import { initSchedulerView } from "./scheduler_view.js";
 import { initWorkflowView } from "./workflow_view.js";
-import { initIdeView } from "./ide_view.js";
+import { initIdeView, deactivateIdeView } from "./ide_view.js";
 import { initOrchestrator } from "./orchestrator.js";
 
 import { listen } from "@tauri-apps/api/event";
@@ -1529,6 +1529,9 @@ document.querySelector("#app").innerHTML = `
                             <div class="memory-filter-tabs">
                                 <button class="memory-filter-btn active" data-filter="all">All</button>
                                 <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>
+                                <button class="memory-filter-btn" data-filter="ns:chat">💬 Chat</button>
+                                <button class="memory-filter-btn" data-filter="ns:documents">📄 Docs</button>
+                                <button class="memory-filter-btn" data-filter="ns:game_notes">🎮 Games</button>
                                 <button class="memory-filter-btn" data-filter="user">User</button>
                                 <button class="memory-filter-btn" data-filter="ai">AI</button>
                                 <button class="memory-filter-btn" data-filter="fact">Facts</button>
@@ -2085,11 +2088,11 @@ document.querySelector("#app").innerHTML = `
                                 <div class="ide-tab-bar" id="ide-tab-bar"></div>
                                 <div class="ide-editor-wrap" style="position:relative;">
                                     <div class="ide-line-numbers" id="ide-line-numbers"><div class="ide-line-num">1</div></div>
-                                    <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…"></textarea>
-                                    <div class="lsp-completions" id="ide-lsp-completions"></div>
-                                    <div class="lsp-hover" id="ide-lsp-hover"></div>
+                                    <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…" aria-describedby="ide-lsp-hover-tooltip"></textarea>
+                                    <div class="lsp-completions" id="ide-lsp-completions" role="listbox" aria-label="Code completions"></div>
+                                    <div class="lsp-hover" id="ide-lsp-hover-tooltip" role="tooltip"></div>
                                 </div>
-                                <div class="ide-lsp-status" id="ide-lsp-status"></div>
+                                <div class="ide-lsp-status" id="ide-lsp-status" aria-live="polite" aria-atomic="false"></div>
                             </div>
                         </div>
                         <!-- Output panel -->
@@ -5529,6 +5532,7 @@ navTabs.forEach((tab) => {
       setTimeout(() => {
         outgoing.classList.remove(`view-exit-${direction}`);
       }, 300);
+      if (currentViewId === "view-ide") deactivateIdeView();
     }
 
     if (incoming) {

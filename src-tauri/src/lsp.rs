@@ -231,7 +231,7 @@ pub async fn spawn_server(
 ) -> Result<(), String> {
     // Kill any existing server for this language.
     {
-        let mut mgr = manager.lock().unwrap();
+        let mut mgr = manager.lock().unwrap_or_else(|e| e.into_inner());
         mgr.servers.remove(&language);
     }
 
@@ -319,7 +319,7 @@ pub async fn spawn_server(
                         .get("result")
                         .cloned()
                         .unwrap_or(Value::Null);
-                    let mut p = pending_r.lock().unwrap();
+                    let mut p = pending_r.lock().unwrap_or_else(|e| e.into_inner());
                     if let Some(tx) = p.remove(&id) {
                         let _ = tx.send(result);
                     }
@@ -364,7 +364,7 @@ pub async fn spawn_server(
         _reader_abort: reader_handle.abort_handle(),
     };
 
-    manager.lock().unwrap().servers.insert(language.clone(), state);
+    manager.lock().unwrap_or_else(|e| e.into_inner()).servers.insert(language.clone(), state);
 
     // ── Initialize handshake ─────────────────────────────────────────────────
     let id = next_id.fetch_add(1, Ordering::SeqCst);
@@ -407,7 +407,7 @@ pub async fn spawn_server(
     let body = serde_json::to_string(&init_msg).map_err(|e| e.to_string())?;
     let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
     let (init_tx, init_rx) = oneshot::channel();
-    pending.lock().unwrap().insert(id, init_tx);
+    pending.lock().unwrap_or_else(|e| e.into_inner()).insert(id, init_tx);
     stdin_tx.send(frame).map_err(|e| e.to_string())?;
 
     // Complete handshake asynchronously so this command returns quickly.
@@ -421,14 +421,22 @@ pub async fn spawn_server(
             Ok(Ok(_)) => {
                 // Send "initialized" notification.
                 let notif = json!({ "jsonrpc": "2.0", "method": "initialized", "params": {} });
-                let body = serde_json::to_string(&notif).unwrap_or_default();
-                let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
-                let _ = stdin_tx2.send(frame);
-                manager2.lock().unwrap().mark_status(&lang2, "ready");
+                match serde_json::to_string(&notif) {
+                    Ok(body) => {
+                        let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
+                        let _ = stdin_tx2.send(frame);
+                    }
+                    Err(e) => {
+                        manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "error");
+                        let _ = app2.emit("lsp:error", json!({ "language": lang2, "message": format!("Serialize error: {e}") }));
+                        return;
+                    }
+                }
+                manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "ready");
                 let _ = app2.emit("lsp:ready", json!({ "language": lang2 }));
             }
             _ => {
-                manager2.lock().unwrap().mark_status(&lang2, "error");
+                manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "error");
                 let _ = app2.emit(
                     "lsp:error",
                     json!({ "language": lang2, "message": "Initialize timed out" }),
@@ -480,7 +488,7 @@ async fn send_request(
     let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
 
     let (tx, rx) = oneshot::channel();
-    pending.lock().unwrap().insert(id, tx);
+    pending.lock().unwrap_or_else(|e| e.into_inner()).insert(id, tx);
     stdin_tx.send(frame).map_err(|e| e.to_string())?;
 
     tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx)
@@ -512,14 +520,14 @@ pub fn lsp_stop(
     language: String,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<(), String> {
-    state.lock().unwrap().servers.remove(&language);
+    state.lock().unwrap_or_else(|e| e.into_inner()).servers.remove(&language);
     Ok(())
 }
 
 /// List all running LSP servers and their status.
 #[tauri::command]
 pub fn lsp_list(state: tauri::State<'_, Arc<Mutex<LspManager>>>) -> Vec<LspServerInfo> {
-    state.lock().unwrap().server_list()
+    state.lock().unwrap_or_else(|e| e.into_inner()).server_list()
 }
 
 /// Get cached diagnostics for a document URI.
@@ -528,7 +536,7 @@ pub fn lsp_get_diagnostics(
     uri: String,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Vec<LspDiagnostic> {
-    state.lock().unwrap().diagnostics_for(&uri)
+    state.lock().unwrap_or_else(|e| e.into_inner()).diagnostics_for(&uri)
 }
 
 /// Notify server that a document was opened.
@@ -539,7 +547,7 @@ pub async fn lsp_open_document(
     content: String,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<(), String> {
-    let channels = take_channels(&state.lock().unwrap(), &language)
+    let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
     let lang_id = language_id(&language).to_string();
     send_notification(
@@ -563,7 +571,7 @@ pub async fn lsp_close_document(
     uri: String,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<(), String> {
-    let channels = take_channels(&state.lock().unwrap(), &language)
+    let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
     send_notification(
         &channels.0,
@@ -581,7 +589,7 @@ pub async fn lsp_change_document(
     version: u32,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<(), String> {
-    let channels = take_channels(&state.lock().unwrap(), &language)
+    let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
     send_notification(
         &channels.0,
@@ -602,7 +610,7 @@ pub async fn lsp_get_completions(
     character: u32,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<Vec<LspCompletionItem>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap(), &language)
+    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(
@@ -659,7 +667,7 @@ pub async fn lsp_get_hover(
     character: u32,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<Option<LspHover>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap(), &language)
+    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(
@@ -716,7 +724,7 @@ pub async fn lsp_get_definitions(
     character: u32,
     state: tauri::State<'_, Arc<Mutex<LspManager>>>,
 ) -> Result<Vec<LspLocation>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap(), &language)
+    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(

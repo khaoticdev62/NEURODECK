@@ -11,7 +11,7 @@
 - Codename: `Isis`
 - Tag: `v1.3.0-isis`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-28T16:14:48Z`
+- Last stamped build: `2026-05-28T16:20:37Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
@@ -333,6 +333,18 @@ Recommended MVP scope:
 4. Build production AppImage (`scripts/shell/build_appimage.sh`) and verify on SteamOS.
 5. Cut KFMS release tag `v1.3.0-isis` after all blockers pass.
 
+### Sprint 5.3 - Multi-LSP Client (v1.3.x / Isis)
+
+**Status:** Shipped — integrated into Mini IDE view
+
+**Scope:**
+- `src-tauri/src/lsp.rs` — LspManager, stdio JSON-RPC framing, Content-Length parser, reader/writer tasks, multi-server lifecycle, diagnostics routing via Tauri events
+- `frontend/src/lsp_client.js` — frontend LSP client: server config persistence, document sync (open/change/close), completions popup, hover tooltip, diagnostic rendering
+- `frontend/src/ide_view.js` — IDE integration: switchTab notifies LSP, save syncs LSP, duplicate listener guard, deactivateIdeView teardown
+- `frontend/src/settings.js` — LSP settings panel (toggle servers, configure executables, start/stop)
+- Supported servers: rust-analyzer, pylsp, typescript-language-server, lua-language-server, clangd, gopls, bash-language-server
+- AAAA audit pass: Windows URI fix, mutex poison recovery, path traversal pre-validation, ARIA roles on completions/hover/status bar
+
 ### Next Net-New Sprint (v1.4+ / Osiris)
 1. Mobile Companion App (Sprint 5.2) — deferred until cloud sync auth is production-stable.
 
@@ -347,6 +359,7 @@ Current branch complete:
 - [x] Sprint 4.5 Desktop Computer Use
 - [x] Sprint 4.6 Cloud Sync
 - [x] Sprint 5.1 Real-Time Collaborative Workspaces
+- [x] Sprint 5.3 Multi-LSP Client
 
 Completed elsewhere, needs integration:
 - [ ] Sprint 3.3 Knowledge Graph View

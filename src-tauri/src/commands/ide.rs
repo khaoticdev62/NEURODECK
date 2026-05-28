@@ -15,12 +15,24 @@ fn ensure_workspace() -> Result<PathBuf, String> {
 fn sanitize_workspace_path(path: &str) -> Result<PathBuf, String> {
     let workspace = ensure_workspace()?;
     let resolved = workspace.join(path);
-    // Prevent directory traversal outside workspace
+
+    // Normalize path components first (removes `..` and `.`) so that paths for
+    // files that don't exist yet are still validated correctly — canonicalize()
+    // fails for non-existent paths, leaving raw `..` components that bypass the
+    // starts_with check.
+    let normalized: PathBuf = resolved.components().collect();
     let canonical_workspace = workspace.canonicalize().unwrap_or(workspace.clone());
-    let canonical_resolved = resolved.canonicalize().unwrap_or(resolved.clone());
-    if !canonical_resolved.starts_with(&canonical_workspace) {
+    if !normalized.starts_with(&canonical_workspace) {
         return Err("Path escapes workspace directory".to_string());
     }
+
+    // Additional defense: if the file exists, re-check with the real canonical path.
+    if let Ok(canon) = resolved.canonicalize() {
+        if !canon.starts_with(&canonical_workspace) {
+            return Err("Path escapes workspace directory".to_string());
+        }
+    }
+
     Ok(resolved)
 }
 

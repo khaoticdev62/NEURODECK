@@ -17337,7 +17337,7 @@ button.tab-btn:active,
   background: var(--panel-bg);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 24px var(--shadow-color, rgba(0, 0, 0, 0.6));
   max-height: 220px;
   min-width: 220px;
   max-width: 420px;
@@ -17406,12 +17406,12 @@ button.tab-btn:active,
 .lsp-hover {
   position: fixed;
   z-index: 600;
-  background: #0d1117;
+  background: var(--panel-bg);
   border: 1px solid rgba(var(--accent-rgb), 0.25);
   border-radius: 6px;
   padding: 8px 12px;
   max-width: 480px;
-  max-height: 200px;
+  max-height: 220px;
   overflow: auto;
   font-family: var(--font-mono);
   font-size: 0.75rem;

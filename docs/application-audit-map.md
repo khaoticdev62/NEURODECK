@@ -30,6 +30,7 @@ NEURODECK is a Tauri v2 desktop application built for Steam Deck and desktop Lin
 - SSH session management
 - PromptLab and command generation tools
 - Plugin auto-loading and custom slash commands
+- Mini IDE with multi-LSP support (rust-analyzer, pylsp, typescript-language-server, lua-language-server, clangd, gopls, bash-language-server)
 
 ## Routes
 
@@ -110,6 +111,7 @@ Notable backend command groups:
 
 - `src-tauri/src/lib.rs` - command registration and shared state
 - `src-tauri/src/commands/*` - feature-specific backend commands
+- `src-tauri/src/lsp.rs` - LSP client manager (stdio JSON-RPC, multi-server lifecycle, diagnostics)
 - `src-tauri/src/llm.rs` - provider implementations and streaming
 - `src-tauri/src/lua.rs` - Lua runtime and plugin hooks
 - `src-tauri/src/pty_manager.rs` - shell session lifecycle
@@ -121,6 +123,8 @@ Notable backend command groups:
 - `frontend/src/state.js` - shared client state
 - `frontend/src/shortcuts.js` - keyboard/gamepad shortcut definitions
 - `frontend/src/haptics.js` - vibration feedback
+- `frontend/src/ide_view.js` - Mini IDE view logic and LSP UI integration
+- `frontend/src/lsp_client.js` - LSP client frontend (server config, document sync, completions, hover, diagnostics)
 
 ## Shared Libraries and Utilities
 
@@ -187,6 +191,7 @@ Notable backend command groups:
 - Docs browser
 - Settings modal
 - Agent execution and streamed output
+- Mini IDE with LSP completions and diagnostics (debounced change notifications, popup rendering)
 
 ## Current Risk Areas
 

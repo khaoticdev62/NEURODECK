@@ -215,6 +215,36 @@ NEURODECK uses `mlua` with the `lua54` feature — standard Lua 5.4. Most Lua co
 
 ---
 
+## LSP Server Integration
+
+The Mini IDE tab supports Language Server Protocol (LSP) servers for code completions, hover docs, and inline diagnostics. Plugins do not configure LSP directly — instead, users configure LSP servers through **Settings → LSP**.
+
+### Enabling an LSP Server
+
+1. Open **Settings** (⚙ icon or `Ctrl+,`).
+2. Navigate to **LSP** in the left panel.
+3. Toggle the language server you want to enable.
+4. Optionally override the **command** (executable path) and **arguments**.
+5. Click **Save** — the server starts automatically when you open the IDE tab.
+
+### Supported Servers
+
+| Language | Server | Install |
+|---|---|---|
+| Rust | `rust-analyzer` | `rustup component add rust-analyzer` |
+| Python | `pylsp` | `pip install python-lsp-server` |
+| TypeScript/JS | `typescript-language-server` | `npm i -g typescript-language-server typescript` |
+| Lua | `lua-language-server` | Download from GitHub releases |
+| C/C++ | `clangd` | System package manager |
+| Go | `gopls` | `go install golang.org/x/tools/gopls@latest` |
+| Bash | `bash-language-server` | `npm i -g bash-language-server` |
+
+### How It Works
+
+NEURODECK spawns each LSP server as a child process and communicates over stdio using the JSON-RPC protocol with `Content-Length` framing. Each open file is tracked as a document with an incrementing version number. The backend emits `lsp:diagnostics`, `lsp:ready`, and `lsp:error` Tauri events that the IDE frontend subscribes to.
+
+Plugin authors cannot currently extend LSP behavior via Lua, but plugins can call `registerCommand` to invoke `invoke("lsp_start")` / `invoke("lsp_stop")` for programmatic server control.
+
 ## File Structure Reference
 
 ```

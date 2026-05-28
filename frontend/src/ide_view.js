@@ -36,6 +36,7 @@ const _s = {
   lspHoverEl: null,
   lspStatusBarEl: null,
   lspInitialized: false,
+  viewInitialized: false,
 };
 
 // ── Language detection ──────────────────────────────────────────────────────
@@ -198,6 +199,7 @@ function switchTab(path) {
     _s.editorEl.dataset.lang = tab.lang;
     _s.editorEl.dataset.path = tab.path;
     updateLineNumbers();
+    openDocument(tab.lang, workspaceUri(path), tab.content).catch(() => {});
   }
   renderTabs();
 }
@@ -244,7 +246,7 @@ function renderTabs() {
     btn.innerHTML = `
       <span class="ide-tab-icon">${getLangIcon(tab.lang)}</span>
       <span class="ide-tab-label">${escapeHtml(tab.name)}${tab.dirty ? " ●" : ""}</span>
-      <span class="ide-tab-close">×</span>
+      <span class="ide-tab-close" aria-label="Close ${escapeHtml(tab.name)}">×</span>
     `;
     btn.onclick = () => switchTab(tab.path);
     btn.querySelector(".ide-tab-close").onclick = (e) => closeTab(tab.path, e);
@@ -319,6 +321,7 @@ async function saveActiveFile() {
       tab.dirty = false;
       tab.content = _s.editorEl.value;
     }
+    scheduleDocumentChange(_s.editorEl.value);
     renderTabs();
     logOutput(`[Saved] ${_s.activeTab}`, "ok");
   } catch (e) {
@@ -394,53 +397,54 @@ export async function initIdeView() {
   _s.lineNumbersEl = $("ide-line-numbers");
   _s.outputEl = $("ide-output");
   _s.lspCompletionEl = $("ide-lsp-completions");
-  _s.lspHoverEl = $("ide-lsp-hover");
+  _s.lspHoverEl = $("ide-lsp-hover-tooltip");
   _s.lspStatusBarEl = $("ide-lsp-status");
 
   if (!_s.editorEl) return;
 
-  // Wire editor events
-  _s.editorEl.addEventListener("input", onEditorInput);
-  _s.editorEl.addEventListener("scroll", onEditorScroll);
-  _s.editorEl.addEventListener("keydown", onEditorKeydown);
+  // DOM event listeners are wired once — guard prevents duplicate handlers on
+  // repeated calls to initIdeView() when the user re-activates the IDE tab.
+  if (!_s.viewInitialized) {
+    _s.viewInitialized = true;
 
-  // Hover: show LSP hover tooltip on mouse movement over the editor.
-  _s.editorEl.addEventListener("mousemove", (e) => {
-    scheduleHover(_s.editorEl, _s.lspHoverEl, e);
-  });
-  _s.editorEl.addEventListener("mouseleave", () => {
-    hideHover(_s.lspHoverEl);
-  });
+    _s.editorEl.addEventListener("input", onEditorInput);
+    _s.editorEl.addEventListener("scroll", onEditorScroll);
+    _s.editorEl.addEventListener("keydown", onEditorKeydown);
 
-  // Hide completions and hover when clicking outside.
-  document.addEventListener("click", (e) => {
-    if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) {
-      hideCompletions(_s.lspCompletionEl);
-    }
-    if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) {
+    _s.editorEl.addEventListener("mousemove", (e) => {
+      scheduleHover(_s.editorEl, _s.lspHoverEl, e);
+    });
+    _s.editorEl.addEventListener("mouseleave", () => {
       hideHover(_s.lspHoverEl);
-    }
-  });
+    });
 
-  // Wire toolbar buttons
-  $("ide-btn-new-file")?.addEventListener("click", newFile);
-  $("ide-btn-new-folder")?.addEventListener("click", newFolder);
-  $("ide-btn-save")?.addEventListener("click", saveActiveFile);
-  $("ide-btn-delete")?.addEventListener("click", deleteSelected);
-  $("ide-btn-refresh")?.addEventListener("click", () => loadFileTree(_s.currentPath));
-  $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
-  $("ide-btn-run")?.addEventListener("click", runActiveFile);
-
-  // Keyboard shortcut: Ctrl+S to save
-  document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-      const view = $("view-ide");
-      if (view && view.classList.contains("active")) {
-        e.preventDefault();
-        saveActiveFile();
+    document.addEventListener("click", (e) => {
+      if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) {
+        hideCompletions(_s.lspCompletionEl);
       }
-    }
-  });
+      if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) {
+        hideHover(_s.lspHoverEl);
+      }
+    });
+
+    $("ide-btn-new-file")?.addEventListener("click", newFile);
+    $("ide-btn-new-folder")?.addEventListener("click", newFolder);
+    $("ide-btn-save")?.addEventListener("click", saveActiveFile);
+    $("ide-btn-delete")?.addEventListener("click", deleteSelected);
+    $("ide-btn-refresh")?.addEventListener("click", () => loadFileTree(_s.currentPath));
+    $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
+    $("ide-btn-run")?.addEventListener("click", runActiveFile);
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        const view = $("view-ide");
+        if (view && view.classList.contains("active")) {
+          e.preventDefault();
+          saveActiveFile();
+        }
+      }
+    });
+  }
 
   // ── LSP init ──────────────────────────────────────────────────────────────
   if (!_s.lspInitialized) {
@@ -511,6 +515,15 @@ function _renderDiagnostics(language, uri, diagnostics) {
 
   _s.outputEl.appendChild(section);
   _s.outputEl.scrollTop = _s.outputEl.scrollHeight;
+}
+
+/** Called when the user navigates away from the IDE tab. Tears down LSP
+ *  event listeners so they don't accumulate across view switches. */
+export function deactivateIdeView() {
+  if (_s.lspInitialized) {
+    destroyLspClient();
+    _s.lspInitialized = false;
+  }
 }
 
 async function runActiveFile() {

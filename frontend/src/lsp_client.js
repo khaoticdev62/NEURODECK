@@ -284,7 +284,8 @@ function _renderCompletions(textarea, popupEl) {
       const detail = item.detail
         ? `<span class="lsp-comp-detail">${_esc(item.detail)}</span>`
         : "";
-      return `<div class="lsp-comp-item${active}" data-idx="${idx}">
+      const isSelected = idx === _state.completionSelectedIdx;
+      return `<div class="lsp-comp-item${active}" role="option" aria-selected="${isSelected}" data-idx="${idx}">
         <span class="lsp-comp-kind">${kindLabel}</span>
         <span class="lsp-comp-label">${_esc(item.label)}</span>${detail}
       </div>`;
@@ -429,8 +430,7 @@ function _cursorPosition(textarea) {
 
 /** Approximate file:// URI for workspace-relative path. */
 export function workspaceUri(relativePath) {
-  // We use a synthetic URI; the LSP server sees what the frontend sends.
-  return `file:///workspace/${relativePath}`;
+  return `file:///workspace/${relativePath.replace(/\\/g, '/')}`;
 }
 
 /** Escape HTML special chars. */
