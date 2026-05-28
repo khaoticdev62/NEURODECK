@@ -398,14 +398,32 @@ A syntax error in a plugin silently suppresses that plugin only — the app keep
 
 ### Community Plugin Registry
 
-The built-in **Plugin Marketplace** tab (inside Settings → Plugins) connects to the [neurodeck-plugins](https://github.com/khaoticdev62/neurodeck-plugins) registry. Browse, search by tag, and install plugins without leaving the app. The registry currently includes:
+The built-in **Plugin Marketplace** tab (inside Settings → Plugins) connects to the [neurodeck-plugins](https://github.com/khaoticdev62/neurodeck-plugins) registry. Browse, search by tag, and install plugins without leaving the app. The registry includes 22 plugins across 8 categories:
 
-| Plugin | What It Does |
-|---|---|
-| `bmad.lua` | BMAD AI personas — `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary` |
-| `promptgen.lua` | Prompt Lab commands — `/promptlab`, `/promptgen <task>`, `/formula <name> <task>` |
-| `ip_lookup.lua` | `/iplookup <address>` — geo and ASN info via ip-api.com |
-| `auto_responder.lua` | Keyword-triggered auto-replies in Chat |
+| Plugin | Category | What It Does |
+|---|---|---|
+| `bmad.lua` | AI | BMAD AI personas — `/john`, `/sally`, `/winston`, `/amelia`, `/paige`, `/mary` |
+| `promptgen.lua` | AI | Formula-driven prompt generation — `/promptlab`, `/promptgen`, `/formula` |
+| `aitools.lua` | AI | One-shot LLM shortcuts — `/summarize`, `/explain`, `/eli5`, `/improve`, `/review`, `/debug`, `/docstring`, `/regex`, `/naming` |
+| `sysmon.lua` | System | CPU / RAM / disk / uptime / process stats — `/sysmon`, `/cpu`, `/ram`, `/disk`, `/procs` |
+| `devtools.lua` | Dev | Open ports, env vars, running processes, tool versions — `/ports`, `/which`, `/versions` |
+| `gitops.lua` | Dev | Short-hand git workflow — `/gs`, `/gd`, `/gl`, `/gc`, `/gp`, `/gb`, `/gco`, `/gst` |
+| `docker.lua` | DevOps | Full Docker toolkit — `/dps`, `/dlogs`, `/dstart`, `/dstop`, `/dexec`, `/dclean`, `/dstats` |
+| `coderunner.lua` | Dev | Run Python / JS / Lua / Rust snippets inline — `/py`, `/js`, `/sh`, `/lua`, `/rs`, `/eval` |
+| `sprint.lua` | Productivity | Sprint board with velocity tracking — `/task`, `/tasks`, `/doing`, `/done`, `/blocked` |
+| `notes.lua` | Productivity | Persistent terminal scratchpad — `/note`, `/notes`, `/delnote`, `/searchnotes` |
+| `snippets.lua` | Productivity | Named code snippet library — `/snip`, `/addsnip`, `/snips`, `/copysnip` |
+| `aliases.lua` | Productivity | Persistent command aliases — `/alias`, `/aliases`, `/unalias` |
+| `journal.lua` | Productivity | Auto-log dev journal — `/log`, `/journal`, `/jtoday`, `/searchlog`, `/jstats` |
+| `timetools.lua` | Utility | Timezones, timestamps, Pomodoro — `/now`, `/ts`, `/utc`, `/tzlist`, `/pomodoro` |
+| `crypto.lua` | Utility | Hashing, Base64, UUID, password gen — `/hash`, `/b64enc`, `/b64dec`, `/uuid`, `/pwgen` |
+| `weather.lua` | Utility | Weather via wttr.in, no API key — `/weather`, `/forecast`, `/moon` |
+| `filetools.lua` | Utility | Find, tree, size, SHA-256 hash, diff — `/find`, `/tree`, `/size`, `/hashfile`, `/diff` |
+| `netcheck.lua` | Network | Ping, DNS, curl, port check, traceroute — `/ping`, `/myip`, `/dns`, `/nc`, `/ipinfo` |
+| `ip_lookup.lua` | Network | Geo + ASN lookup for any IP — `/iplookup <address>` |
+| `steamdeck.lua` | Steam Deck | Battery, TDP, perf governor, FPS cap — `/deck`, `/battery`, `/tdp`, `/perf`, `/fps` |
+| `sysevents.lua` | Security | Passive security watchlist (rm -rf, plaintext secrets, curl\|bash) — `/stats`, `/watch` |
+| `auto_responder.lua` | Chat | Keyword-triggered auto-replies in Chat |
 
 ---
 
