@@ -128,6 +128,14 @@ The sprint branches (`feature/sprint-3.3-knowledge-graph` through `feature/sprin
 
 ---
 
+## Release Status: SHIPPED ✅
+
+**Tagged:** `v1.3.0-isis` on `master` — 2026-05-27  
+**Final commit:** Premium Notification overlay CSS (Screen 6 — AAAA pass complete across all 6 core screens)  
+**KFMS gate:** GO (readiness score 100/100)
+
+---
+
 ## Bottom Line
 
 v1.3.0-Isis is a **control and consolidation release**.

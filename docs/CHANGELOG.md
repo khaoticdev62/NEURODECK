@@ -14,10 +14,11 @@ For detailed release notes, see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md)
 ## [1.3.0-Isis] — 2026-05-27
 
 ### Added
-- **Universal Design/UI System Starter Kit**: Extracted and exported a standalone design/UI system starter template directly to `C:\Users\thecr\Desktop\design-system\`. Includes `index.html`, `style.css`, `app.js`, `README.md`, and PDF spec sheet. Designed to be completely universal and CORS-friendly (removes ES module import requirements for `file://` protocol).
+- **Universal Design/UI System Starter Kit**: Extracted and exported a standalone design/UI system starter template directly to `design-system/`. Includes `index.html`, `style.css`, `app.js`, `README.md`, and PDF spec sheet. Designed to be completely universal and CORS-friendly (removes ES module import requirements for `file://` protocol).
 - **Secure User-Space CLI Path**: Automated directory verification and creation of `~/.config/neurodeck/bin` on startup (`self_heal.rs`). Integrated the custom path into interactive shell environments, one-off execution, and streaming runtimes (`pty_manager.rs`, `system.rs`).
 - **Command Palette Expansion**: Registered "Open Knowledge Graph", "Open Scheduler", "Open Workflow Builder", and "Open IDE" to `COMMAND_PALETTE_ACTIONS` (`main.js`) to close navigation gaps.
 - **Diagnostics & Self-Healing**: Enhanced boot diagnostics check and output path resolution options.
+- **Premium Notification Overlay UI (Screen 6)**: High-fidelity AAAA-grade CSS overrides for the Notifications modal — glassmorphic card shell with `backdrop-filter: blur(16px)`, per-type left-border accent (cyan / green / amber / red) with matching glow shadows, hover lift animation, gradient text headers, and a kicker label above the title. Covers `.notif-modal-card`, `.notif-item`, `.notif-item-header`, and all severity variants.
 
 ### Fixed
 - **FTP/SFTP Streaming & Progress**: Replaced memory buffers (`retr_as_buffer`) with disk streaming and implemented `ProgressReader` in Tauri uploads emitting updates every 64KB.

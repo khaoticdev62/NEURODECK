@@ -6,7 +6,7 @@
 
 ## Quick State Summary
 
-> Last updated: 2026-05-24 — **OMEGA PASS COMPLETE** — ALL P1–P22 + C13–C22 SHIPPED ✅ | 56 Tauri commands wired across 28 modules | Sprint 5.2
+> Last updated: 2026-05-27 — **v1.3.0-Isis RELEASED** — ALL P1–P22 + C13–C22 SHIPPED ✅ | 56 Tauri commands wired across 28 modules | AAAA premium CSS pass complete (all 6 screens) | Tagged `v1.3.0-isis` on master
 
 | Layer | Status |
 |---|---|
