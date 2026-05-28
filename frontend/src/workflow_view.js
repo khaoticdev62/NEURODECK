@@ -776,11 +776,10 @@ async function _execNode(node, input) {
 
     // Find outgoing edges from this node
     if (node.type === 'condition') {
-        // Evaluate condition
+        // Evaluate condition using a safe expression evaluator (no dynamic eval/Function).
         let result = false;
         try {
-            // eslint-disable-next-line no-new-func
-            result = !!new Function('input', `return (${node.config.expression || 'false'})`)(output);
+            result = _evalCondition(node.config.expression || 'false', output);
         } catch { result = false; }
         const port = result ? 'out-true' : 'out-false';
         const override = result ? node.config.trueSeed : node.config.falseSeed;
@@ -991,6 +990,70 @@ function _importWorkflowFromJson(json) {
     } catch (e) {
         _logLine(`Import failed: ${e.message}`, 'error');
     }
+}
+
+// ── Condition evaluator (no eval / no Function constructor) ───────────────────
+// Supports: truthy/falsy checks, comparison operators, .length, .includes(),
+// .startsWith(), .endsWith(), isEmpty, isNotEmpty, regex match.
+// "input" refers to the upstream node's output string.
+
+function _evalCondition(expr, input) {
+    const s = expr.trim();
+
+    // Boolean literals
+    if (s === 'true')  return true;
+    if (s === 'false') return false;
+
+    // isEmpty / isNotEmpty
+    if (s === 'isEmpty' || s === 'input.length === 0' || s === 'input === ""') return input.trim() === '';
+    if (s === 'isNotEmpty' || s === 'input.length > 0' || s === 'input !== ""') return input.trim() !== '';
+
+    // input.includes("...")
+    const includesM = s.match(/^input\.includes\s*\(\s*["'](.+?)["']\s*\)$/);
+    if (includesM) return input.includes(includesM[1]);
+
+    // !input.includes("...")
+    const notIncludesM = s.match(/^!input\.includes\s*\(\s*["'](.+?)["']\s*\)$/);
+    if (notIncludesM) return !input.includes(notIncludesM[1]);
+
+    // input.startsWith("...")
+    const startsM = s.match(/^input\.startsWith\s*\(\s*["'](.+?)["']\s*\)$/);
+    if (startsM) return input.startsWith(startsM[1]);
+
+    // input.endsWith("...")
+    const endsM = s.match(/^input\.endsWith\s*\(\s*["'](.+?)["']\s*\)$/);
+    if (endsM) return input.endsWith(endsM[1]);
+
+    // input.length OP number
+    const lenM = s.match(/^input\.length\s*(===|!==|>=|<=|>|<)\s*(\d+)$/);
+    if (lenM) {
+        const len = input.length;
+        const n   = parseInt(lenM[2], 10);
+        switch (lenM[1]) {
+            case '===': return len === n;
+            case '!==': return len !== n;
+            case '>=':  return len >= n;
+            case '<=':  return len <= n;
+            case '>':   return len > n;
+            case '<':   return len < n;
+        }
+    }
+
+    // input OP "string"
+    const strCmpM = s.match(/^input\s*(===|!==|==|!=)\s*["'](.*)["']$/);
+    if (strCmpM) {
+        const op = strCmpM[1], val = strCmpM[2];
+        return (op === '===' || op === '==') ? input === val : input !== val;
+    }
+
+    // /regex/.test(input)
+    const regexM = s.match(/^\/(.+?)\/([gimsuy]*)\s*\.test\s*\(\s*input\s*\)$/);
+    if (regexM) {
+        try { return new RegExp(regexM[1], regexM[2]).test(input); } catch { return false; }
+    }
+
+    // Bare string — treat as "input contains this string"
+    return input.includes(s);
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

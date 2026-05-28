@@ -1,17 +1,17 @@
 # NEURODECK Implementation Plan
 ## Sprint Roadmap and Integration Ledger
-### Last Updated: 2026-05-27 | KFMS: v1.2.2-ra | Active Branch: `master`
+### Last Updated: 2026-05-28 | KFMS: v1.4.0-osiris | Active Branch: `master`
 
 ---
 
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.3.0`
-- Codename: `Isis`
-- Tag: `v1.3.0-isis`
+- Version: `1.4.0`
+- Codename: `Osiris`
+- Tag: `v1.4.0-osiris`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-28T16:59:06Z`
+- Last stamped build: `2026-05-28T17:06:40Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

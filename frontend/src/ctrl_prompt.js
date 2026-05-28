@@ -817,7 +817,7 @@ const PANEL_TEMPLATES = {
         { label: "SQL query",        text: "SELECT *\nFROM {{input}}\nWHERE created_at > NOW() - INTERVAL '7 days'\nORDER BY created_at DESC\nLIMIT 100;" },
         { label: "Bash function",    text: "{{input}}() {\n  local arg=\"$1\"\n  echo \"Running: $arg\"\n}" },
         { label: "Lua plugin",       text: "registerCommand('{{input}}', function(args)\n  return execute(args)\nend)" },
-        { label: "JSON schema",      text: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": { \"type\": \"string\" }\n  }\n}" },
+        { label: "JSON schema",      text: "{\n  \"$schema\": \"https://json-schema.org/draft-07/schema\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": { \"type\": \"string\" }\n  }\n}" },
         { label: "Dockerfile",       text: "FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD [\"python\", \"main.py\"]" },
         { label: "Github Actions",   text: "name: {{input}}\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4" },
     ],
