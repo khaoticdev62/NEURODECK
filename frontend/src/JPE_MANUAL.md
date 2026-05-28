@@ -94,6 +94,7 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 ## 20. ⚙️ Settings
 **What it is:** The control panel where you tweak how the app looks and how its brain works.
 **How to use it:** Click the gear icon in the top right. Here you can change the app's colors, switch the AI from Google Gemini to a private local model (Ollama), or update your passwords.
+- **About & Licenses:** Check the "About" tab to see your current NEURODECK version and review the open-source software licenses that power the application.
 
 ## 21. 🧩 Plugins Marketplace
 **What it is:** An app store for community-made superpowers.
@@ -106,6 +107,7 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 ## 23. 🎮 DeckCode
 **What it is:** A translator that turns your gamepad buttons into real software actions.
 **How to use it:** Pick up a gamepad (like an Xbox controller or Steam Deck). Pressing a button—or holding it, or double-tapping it—can instantly open a terminal, trigger a macro, or send a prompt to the AI. It runs quietly in the background!
+- **Smart Snippets:** DeckCode can now instantly type out blocks of code (like loops or boilerplate) straight into the IDE or Canvas editors, and will even automatically place your cursor exactly where you need to start typing.
 
 ---
 *Created by the Khaotic Labs Team.*
