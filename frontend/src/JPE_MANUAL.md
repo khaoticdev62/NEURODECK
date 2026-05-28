@@ -31,6 +31,40 @@ Because NEURODECK has so many tools, it can be whatever you need it to be. Here 
 
 ---
 
+## 📥 Installation & Setup
+
+Before you can use NEURODECK, you need to install it and give it a brain.
+
+### Installing on SteamOS / Linux
+1. Open your terminal and navigate to the project folder.
+2. Run `./install.sh`. This will automatically set up NEURODECK as a Desktop Application.
+3. You can now launch it directly from Game Mode using the `./launch_gamescope.sh` script, which perfectly scales the window to your handheld's 1280x800 screen.
+
+### Installing on Windows
+1. Open PowerShell and navigate to the project folder.
+2. Run `.\package_release.ps1` to build a standard Windows `.msi` installer.
+3. Run the `.msi` file to install NEURODECK like any regular Windows application.
+
+### Setting up the AI (CRITICAL STEP)
+By default, NEURODECK uses Google's Gemini AI. To make this work, you *must* provide an API key.
+1. Get a free API key from Google AI Studio.
+2. Open NEURODECK, go to Settings (gear icon), and paste your key into the `GEMINI_API_KEY` field.
+3. **Offline Fallback:** If you do not set an API key, the system will silently fall back to Ollama. If you don't have Ollama installed on your computer, the AI will simply not respond to your chat messages.
+
+---
+
+## 🚀 Quick Start Guide: Your First 5 Minutes
+
+Here is exactly what you should do the very first time you open NEURODECK:
+
+1. **Complete the Wizard:** When you first boot up, a welcome wizard will run diagnostics to make sure your network and terminal are working. Click through it to verify your system is healthy.
+2. **Send a Chat:** In the Chat tab, type *"Write a python script that prints a random number"* and hit Enter. Watch the AI write the code.
+3. **Use the Radial Menu:** Hold down the Backtick (\`) key on your keyboard (or `L2` on your controller), press the Right arrow to highlight the **Canvas** tab, and let go to instantly switch views.
+4. **Run the Code:** Copy the python code the AI wrote, paste it into the left side of the Canvas, and click the **Run** button (or press `Select` on your gamepad). You will see the random number printed on the right side!
+
+---
+
+## 🧰 The Core Tools
 Here is a detailed breakdown of everything NEURODECK can do and exactly how you can use it.
 
 ## 1. 🎡 The Radial Menu (App Navigation)
@@ -281,6 +315,38 @@ registerCommand("/pirate", function(args)
     return "Arrr! I be ready to code!"
 end)
 ```
+
+---
+
+## 🧰 Troubleshooting & Known Issues
+
+If something goes wrong, don't panic. Here are the most common issues and exactly how to fix them:
+
+**1. The AI is completely silent and ignores my chat messages.**
+- **The Fix:** You are missing your `GEMINI_API_KEY`. Open Settings, paste your API key, and restart the app. Without an API key, NEURODECK tries to fall back to Ollama. If Ollama isn't running on your computer, the AI will just sit there silently.
+
+**2. The Terminal (PTY) froze or stopped accepting input.**
+- **The Fix:** Sometimes background processes (like a hung python script) can lock up the terminal. Type `clear` in the terminal, or simply close the Terminal tab and re-open it to force the `pty_kill` command to reset the session.
+
+**3. I tried to edit the CSS and now the tabs won't switch.**
+- **The Fix:** You fell into the "CSS Specificity Trap." Never add `display: flex` or `display: block` to an ID rule (like `#view-chat`) in `app.css`. It will permanently override the logic that hides inactive tabs. Only use those layout rules on classes!
+
+**4. My custom Lua plugin isn't loading.**
+- **The Fix:** You likely have a syntax error in your `.lua` file. The app won't crash, but it will silently ignore your plugin. Check the background console (the terminal window where you originally launched NEURODECK) and look for a line starting with `[Lua Error]`.
+
+---
+
+## 📖 Glossary of Terms
+
+We tried to write this manual in Just Plain English, but you will still run into these technical acronyms across the app:
+
+- **AI Persona:** A set of instructions that changes how the AI acts (e.g., telling it to act like a Teacher vs. a Software Engineer).
+- **CLI (Command Line Interface):** A text-based way of talking to your computer, bypassing the mouse entirely.
+- **IDE (Integrated Development Environment):** A fancy text editor built specifically for writing code, with features like color-coding and syntax highlighting.
+- **LLM (Large Language Model):** The actual "Brain" powering the AI. Google Gemini and Ollama are examples of LLMs.
+- **PTY (Pseudo-Terminal):** The technical name for the live, interactive terminal window running inside NEURODECK.
+- **RAG (Retrieval-Augmented Generation):** How the "Memory" tab works. It’s a process where NEURODECK searches your old conversations, finds relevant facts, and secretly injects them into the AI's prompt before it answers you.
+- **Warpinator:** The underlying protocol NEURODECK uses in the "Share" tab to securely beam files across your local Wi-Fi network.
 
 ---
 *Created by the Khaotic Labs Team.*

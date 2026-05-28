@@ -11,7 +11,7 @@
 - Codename: `Horus`
 - Tag: `v1.5.0-horus`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-28T22:58:09Z`
+- Last stamped build: `2026-05-28T23:01:50Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
