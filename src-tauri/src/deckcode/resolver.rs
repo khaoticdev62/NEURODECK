@@ -1,12 +1,14 @@
-use std::collections::HashSet;
 use crate::deckcode::schema::{ControllerProfileSchema, Binding};
+use crate::deckcode::multilang_schema::MultiLangProfileSchema;
 use crate::deckcode::input::InputEvent;
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct ResolverContext {
     pub active_set: String,
     pub active_layers: HashSet<String>,
     pub focused_app: String,
+    pub active_language_id: String,
 }
 
 impl Default for ResolverContext {
@@ -15,17 +17,19 @@ impl Default for ResolverContext {
             active_set: "global".to_string(),
             active_layers: HashSet::new(),
             focused_app: "".to_string(),
+            active_language_id: "plain_text".to_string(),
         }
     }
 }
 
 pub struct DeckCodeResolver {
     pub schema: ControllerProfileSchema,
+    pub multilang: Option<MultiLangProfileSchema>,
 }
 
 impl DeckCodeResolver {
-    pub fn new(schema: ControllerProfileSchema) -> Self {
-        Self { schema }
+    pub fn new(schema: ControllerProfileSchema, multilang: Option<MultiLangProfileSchema>) -> Self {
+        Self { schema, multilang }
     }
 
     pub fn resolve(&self, event: &InputEvent, context: &ResolverContext) -> Option<Binding> {
@@ -89,7 +93,56 @@ impl DeckCodeResolver {
             rank_b.cmp(&rank_a)
         });
 
-        Some(valid_candidates.first().unwrap().1.clone())
+        let mut final_binding = valid_candidates.first().unwrap().1.clone();
+
+        // --- MULTILANG OVERRIDE PHASE ---
+        if let Some(ml) = &self.multilang {
+            let active_pack = ml.language_packs.get(&context.active_language_id);
+            
+            // Override left_trackpad slots with the language palette
+            if let Some(slot_idx) = final_binding.slot {
+                if let Some(ml_slot) = ml.left_trackpad_language_palette.iter().find(|s| s.slot == slot_idx as u32) {
+                    final_binding.emit = ml_slot.emit.clone();
+                    final_binding.label = Some(ml_slot.label.clone());
+                }
+            } else if let Some(source) = &final_binding.source {
+                if source.starts_with("left_trackpad.slot_") {
+                    if let Ok(slot_idx) = source.replace("left_trackpad.slot_", "").parse::<u32>() {
+                        if let Some(ml_slot) = ml.left_trackpad_language_palette.iter().find(|s| s.slot == slot_idx) {
+                            final_binding.emit = ml_slot.emit.clone();
+                            final_binding.label = Some(ml_slot.label.clone());
+                        }
+                    }
+                }
+            }
+
+            // Resolve the emit string (e.g. "entry.function") using the active language pack snippets
+            if final_binding.emit.starts_with("entry.") {
+                if let Some(pack) = active_pack {
+                    if let Some(snippet) = pack.snippets.get(&final_binding.emit) {
+                        final_binding.emit = format!("insert_snippet:{}", snippet.template);
+                    }
+                }
+            } else if final_binding.emit == "insert.comment_toggle" || final_binding.emit == "toggle.comment" {
+                 if let Some(pack) = active_pack {
+                     final_binding.emit = format!("insert_snippet:{} ${{cursor}}", pack.comment);
+                 }
+            } else if final_binding.emit == "insert.semicolon_or_line_end" || final_binding.emit == "insert.statement_end" {
+                 if let Some(pack) = active_pack {
+                     final_binding.emit = format!("insert_snippet:{}", pack.statement_end);
+                 }
+            } else if final_binding.emit == "insert.parens_pair" {
+                 final_binding.emit = "insert_snippet:(${{cursor}})".to_string();
+            } else if final_binding.emit == "insert.braces_pair" {
+                 final_binding.emit = "insert_snippet:{${{cursor}}}".to_string();
+            } else if final_binding.emit == "insert.brackets_pair" {
+                 final_binding.emit = "insert_snippet:[${{cursor}}]".to_string();
+            } else if final_binding.emit == "insert.quotes_pair" {
+                 final_binding.emit = "insert_snippet:\"${{cursor}}\"".to_string();
+            }
+        }
+
+        Some(final_binding)
     }
 
     fn matches_source_and_event(&self, mapping_source: &str, event: &InputEvent) -> bool {

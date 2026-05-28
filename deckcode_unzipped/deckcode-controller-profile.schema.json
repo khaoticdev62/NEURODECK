@@ -1,0 +1,872 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "deckcode-controller-profile.schema.json",
+  "title": "DeckCode Steam Deck Coding Controller Profile Schema",
+  "version": "1.0.0",
+  "device": "steamdeck.coding.fullspec.v1",
+  "profile_name": "DeckCode Predictive Coding Profile",
+  "description": "A Steam Deck-first controller mapping schema for coding workflows across editors, terminals, Git, testing, debugging, and AI-assisted coding.",
+  "design_rules": [
+    "Every non-system Steam Deck input must map to a semantic coding action, layer, or auxiliary channel.",
+    "Steam/QAM/power/volume remain system_reserved unless running as an explicit SteamOS utility.",
+    "Right trackpad is always the precision pointer/caret surface.",
+    "Left trackpad is always the high-density command surface.",
+    "Rear grips are modifier layers, not throwaway buttons.",
+    "All destructive commands require either a hold, chord, or confirmation gate.",
+    "Predictive actions must never execute destructive commands automatically."
+  ],
+  "source_inventory": {
+    "face_buttons": [
+      "a",
+      "b",
+      "x",
+      "y"
+    ],
+    "dpad": [
+      "up",
+      "down",
+      "left",
+      "right"
+    ],
+    "shoulders": [
+      "lb",
+      "rb"
+    ],
+    "triggers": [
+      "lt_analog",
+      "rt_analog"
+    ],
+    "sticks": [
+      "left_stick",
+      "left_stick_click",
+      "left_stick_touch",
+      "right_stick",
+      "right_stick_click",
+      "right_stick_touch"
+    ],
+    "trackpads": [
+      "left_trackpad",
+      "left_trackpad_click",
+      "right_trackpad",
+      "right_trackpad_click"
+    ],
+    "rear_grips": [
+      "l4",
+      "l5",
+      "r4",
+      "r5"
+    ],
+    "meta_buttons": [
+      "view",
+      "menu"
+    ],
+    "motion": [
+      "gyro"
+    ],
+    "auxiliary": [
+      "touchscreen",
+      "mic"
+    ],
+    "system_reserved": [
+      "steam",
+      "quick_access",
+      "power",
+      "volume_up",
+      "volume_down"
+    ]
+  },
+  "action_sets": {
+    "global": {
+      "purpose": "Always-available navigation, pointer, focus, and emergency actions.",
+      "bindings": [
+        {
+          "source": "right_trackpad.axis",
+          "event": "touch/axis",
+          "mode": "absolute_mouse",
+          "emit": "pointer.move.precise"
+        },
+        {
+          "source": "right_trackpad.click",
+          "event": "press",
+          "emit": "pointer.primary_click"
+        },
+        {
+          "source": "right_trackpad.click",
+          "event": "hold(350)",
+          "emit": "pointer.secondary_click"
+        },
+        {
+          "source": "right_trackpad.swipe_up",
+          "event": "swipe",
+          "emit": "viewport.scroll_up"
+        },
+        {
+          "source": "right_trackpad.swipe_down",
+          "event": "swipe",
+          "emit": "viewport.scroll_down"
+        },
+        {
+          "source": "gyro.rotvel",
+          "event": "axis",
+          "guard": "right_trackpad.touch || right_stick.touch",
+          "emit": "pointer.micro_adjust"
+        },
+        {
+          "source": "left_stick.axis",
+          "event": "axis",
+          "mode": "joystick_move",
+          "emit": "viewport.pan_or_scroll"
+        },
+        {
+          "source": "left_stick.click",
+          "event": "press",
+          "emit": "viewport.center_on_cursor"
+        },
+        {
+          "source": "left_stick.touch",
+          "event": "touch",
+          "emit": "layer.scroll_precision.preview"
+        },
+        {
+          "source": "right_stick.axis",
+          "event": "axis",
+          "mode": "caret_nav",
+          "emit": "caret.move_analog"
+        },
+        {
+          "source": "right_stick.click",
+          "event": "press",
+          "emit": "focus.editor"
+        },
+        {
+          "source": "right_stick.touch",
+          "event": "touch",
+          "emit": "gyro.cursor_gate"
+        },
+        {
+          "source": "a",
+          "event": "press",
+          "emit": "confirm_or_enter"
+        },
+        {
+          "source": "b",
+          "event": "press",
+          "emit": "cancel_or_escape"
+        },
+        {
+          "source": "x",
+          "event": "press",
+          "emit": "quick_fix_or_completion"
+        },
+        {
+          "source": "y",
+          "event": "press",
+          "emit": "search_or_symbol_picker"
+        },
+        {
+          "source": "view",
+          "event": "press",
+          "emit": "toggle_explorer"
+        },
+        {
+          "source": "view",
+          "event": "hold(500)",
+          "emit": "toggle_panel_layout"
+        },
+        {
+          "source": "menu",
+          "event": "press",
+          "emit": "command_palette"
+        },
+        {
+          "source": "menu",
+          "event": "hold(500)",
+          "emit": "profile_help_overlay"
+        }
+      ]
+    },
+    "editing": {
+      "purpose": "Normal editor mode for writing, navigating, and refactoring code.",
+      "bindings": [
+        {
+          "source": "dpad.left",
+          "event": "press/repeat",
+          "emit": "caret.left"
+        },
+        {
+          "source": "dpad.right",
+          "event": "press/repeat",
+          "emit": "caret.right"
+        },
+        {
+          "source": "dpad.up",
+          "event": "press/repeat",
+          "emit": "caret.up"
+        },
+        {
+          "source": "dpad.down",
+          "event": "press/repeat",
+          "emit": "caret.down"
+        },
+        {
+          "source": "lb",
+          "event": "press",
+          "emit": "tab.previous"
+        },
+        {
+          "source": "rb",
+          "event": "press",
+          "emit": "tab.next"
+        },
+        {
+          "source": "lb",
+          "event": "hold",
+          "emit": "file.previous_recent"
+        },
+        {
+          "source": "rb",
+          "event": "hold",
+          "emit": "file.next_recent"
+        },
+        {
+          "source": "lt_analog",
+          "event": "soft_pull",
+          "emit": "layer.selection_soft"
+        },
+        {
+          "source": "lt_analog",
+          "event": "full_pull",
+          "emit": "selection.block_or_multi_cursor"
+        },
+        {
+          "source": "rt_analog",
+          "event": "soft_pull",
+          "emit": "completion.accept"
+        },
+        {
+          "source": "rt_analog",
+          "event": "full_pull",
+          "emit": "line.execute_or_insert_newline"
+        },
+        {
+          "source": "l4",
+          "event": "hold",
+          "emit": "layer.ctrl"
+        },
+        {
+          "source": "l5",
+          "event": "hold",
+          "emit": "layer.alt_symbol"
+        },
+        {
+          "source": "r4",
+          "event": "hold",
+          "emit": "layer.shift_select"
+        },
+        {
+          "source": "r5",
+          "event": "hold",
+          "emit": "layer.meta_ai"
+        },
+        {
+          "source": "a",
+          "event": "double(250)",
+          "emit": "line.insert_below"
+        },
+        {
+          "source": "b",
+          "event": "hold(400)",
+          "emit": "undo"
+        },
+        {
+          "source": "x",
+          "event": "double(250)",
+          "emit": "refactor.rename_symbol"
+        },
+        {
+          "source": "y",
+          "event": "double(250)",
+          "emit": "find_in_files"
+        }
+      ]
+    },
+    "left_trackpad_command_hub": {
+      "purpose": "Sixteen-slot coding command surface. Touch previews command. Click executes highlighted command.",
+      "mode": "touch_menu_16",
+      "bindings": [
+        {
+          "slot": 0,
+          "label": "Files",
+          "emit": "palette.files"
+        },
+        {
+          "slot": 1,
+          "label": "Symbols",
+          "emit": "palette.symbols"
+        },
+        {
+          "slot": 2,
+          "label": "Search",
+          "emit": "palette.search"
+        },
+        {
+          "slot": 3,
+          "label": "Terminal",
+          "emit": "terminal.toggle"
+        },
+        {
+          "slot": 4,
+          "label": "Run",
+          "emit": "run.current"
+        },
+        {
+          "slot": 5,
+          "label": "Test",
+          "emit": "test.nearest_or_file"
+        },
+        {
+          "slot": 6,
+          "label": "Debug",
+          "emit": "debug.start_or_continue"
+        },
+        {
+          "slot": 7,
+          "label": "Git",
+          "emit": "git.status"
+        },
+        {
+          "slot": 8,
+          "label": "Problems",
+          "emit": "problems.focus"
+        },
+        {
+          "slot": 9,
+          "label": "Refactor",
+          "emit": "refactor.menu"
+        },
+        {
+          "slot": 10,
+          "label": "Format",
+          "emit": "format.document_or_selection"
+        },
+        {
+          "slot": 11,
+          "label": "Snippets",
+          "emit": "snippets.open"
+        },
+        {
+          "slot": 12,
+          "label": "AI Explain",
+          "emit": "ai.explain_selection"
+        },
+        {
+          "slot": 13,
+          "label": "AI Fix",
+          "emit": "ai.fix_error"
+        },
+        {
+          "slot": 14,
+          "label": "AI Generate",
+          "emit": "ai.generate_from_comment"
+        },
+        {
+          "slot": 15,
+          "label": "Settings",
+          "emit": "profile.settings"
+        }
+      ],
+      "click": {
+        "source": "left_trackpad.click",
+        "event": "press",
+        "emit": "touch_menu.execute_highlighted"
+      },
+      "hold": {
+        "source": "left_trackpad.click",
+        "event": "hold(500)",
+        "emit": "touch_menu.pin_open"
+      }
+    },
+    "ctrl_layer_l4": {
+      "purpose": "Ctrl-like coding shortcuts while L4 is held.",
+      "bindings": [
+        {
+          "source": "dpad.left",
+          "emit": "caret.word_left"
+        },
+        {
+          "source": "dpad.right",
+          "emit": "caret.word_right"
+        },
+        {
+          "source": "dpad.up",
+          "emit": "document.top"
+        },
+        {
+          "source": "dpad.down",
+          "emit": "document.bottom"
+        },
+        {
+          "source": "a",
+          "emit": "select_all"
+        },
+        {
+          "source": "b",
+          "emit": "redo"
+        },
+        {
+          "source": "x",
+          "emit": "cut"
+        },
+        {
+          "source": "y",
+          "emit": "copy"
+        },
+        {
+          "source": "lb",
+          "emit": "split.previous"
+        },
+        {
+          "source": "rb",
+          "emit": "split.next"
+        },
+        {
+          "source": "rt_analog.full_pull",
+          "emit": "save_file"
+        },
+        {
+          "source": "right_trackpad.click",
+          "emit": "go_to_definition"
+        }
+      ]
+    },
+    "alt_symbol_layer_l5": {
+      "purpose": "High-speed symbol, bracket, quote, and syntax insertion.",
+      "bindings": [
+        {
+          "source": "a",
+          "emit": "insert.parens_pair"
+        },
+        {
+          "source": "b",
+          "emit": "insert.braces_pair"
+        },
+        {
+          "source": "x",
+          "emit": "insert.brackets_pair"
+        },
+        {
+          "source": "y",
+          "emit": "insert.quotes_pair"
+        },
+        {
+          "source": "dpad.left",
+          "emit": "insert.less_than"
+        },
+        {
+          "source": "dpad.right",
+          "emit": "insert.greater_than"
+        },
+        {
+          "source": "dpad.up",
+          "emit": "insert.pipe"
+        },
+        {
+          "source": "dpad.down",
+          "emit": "insert.backtick"
+        },
+        {
+          "source": "lb",
+          "emit": "insert.comment_toggle"
+        },
+        {
+          "source": "rb",
+          "emit": "insert.semicolon_or_line_end"
+        },
+        {
+          "source": "right_trackpad.swipe_left",
+          "emit": "insert.arrow_left"
+        },
+        {
+          "source": "right_trackpad.swipe_right",
+          "emit": "insert.arrow_right"
+        },
+        {
+          "source": "rt_analog.soft_pull",
+          "emit": "symbol_prediction.accept"
+        }
+      ]
+    },
+    "shift_selection_layer_r4": {
+      "purpose": "Selection, multi-cursor, and text manipulation while R4 is held.",
+      "bindings": [
+        {
+          "source": "dpad.left",
+          "emit": "selection.extend_left"
+        },
+        {
+          "source": "dpad.right",
+          "emit": "selection.extend_right"
+        },
+        {
+          "source": "dpad.up",
+          "emit": "selection.extend_up"
+        },
+        {
+          "source": "dpad.down",
+          "emit": "selection.extend_down"
+        },
+        {
+          "source": "a",
+          "emit": "selection.commit"
+        },
+        {
+          "source": "b",
+          "emit": "selection.clear"
+        },
+        {
+          "source": "x",
+          "emit": "selection.duplicate_line_or_selection"
+        },
+        {
+          "source": "y",
+          "emit": "selection.find_next_occurrence"
+        },
+        {
+          "source": "lb",
+          "emit": "selection.expand"
+        },
+        {
+          "source": "rb",
+          "emit": "selection.shrink"
+        },
+        {
+          "source": "right_trackpad.click",
+          "emit": "multi_cursor.place"
+        },
+        {
+          "source": "rt_analog.full_pull",
+          "emit": "extract_selection_to_snippet"
+        }
+      ]
+    },
+    "meta_ai_layer_r5": {
+      "purpose": "AI, build, refactor, and high-level workflow commands while R5 is held.",
+      "bindings": [
+        {
+          "source": "a",
+          "emit": "ai.accept_suggestion"
+        },
+        {
+          "source": "b",
+          "emit": "ai.reject_suggestion"
+        },
+        {
+          "source": "x",
+          "emit": "ai.refactor_selection"
+        },
+        {
+          "source": "y",
+          "emit": "ai.explain_context"
+        },
+        {
+          "source": "dpad.up",
+          "emit": "prediction.previous"
+        },
+        {
+          "source": "dpad.down",
+          "emit": "prediction.next"
+        },
+        {
+          "source": "dpad.left",
+          "emit": "ai.scope_smaller"
+        },
+        {
+          "source": "dpad.right",
+          "emit": "ai.scope_larger"
+        },
+        {
+          "source": "lb",
+          "emit": "test.run_nearest"
+        },
+        {
+          "source": "rb",
+          "emit": "test.run_file"
+        },
+        {
+          "source": "lt_analog.full_pull",
+          "emit": "ai.review_diff"
+        },
+        {
+          "source": "rt_analog.full_pull",
+          "emit": "ai.apply_safe_patch_with_preview"
+        }
+      ]
+    },
+    "terminal": {
+      "purpose": "Terminal-focused command entry, history, process control, and pane navigation.",
+      "activation": "context.terminal_focused || left_trackpad.slot_terminal",
+      "bindings": [
+        {
+          "source": "dpad.up",
+          "emit": "terminal.history_previous"
+        },
+        {
+          "source": "dpad.down",
+          "emit": "terminal.history_next"
+        },
+        {
+          "source": "dpad.left",
+          "emit": "terminal.cursor_left"
+        },
+        {
+          "source": "dpad.right",
+          "emit": "terminal.cursor_right"
+        },
+        {
+          "source": "a",
+          "emit": "terminal.enter"
+        },
+        {
+          "source": "b",
+          "emit": "terminal.escape"
+        },
+        {
+          "source": "x",
+          "emit": "terminal.ctrl_c_interrupt"
+        },
+        {
+          "source": "y",
+          "emit": "terminal.search"
+        },
+        {
+          "source": "lb",
+          "emit": "terminal.previous_pane"
+        },
+        {
+          "source": "rb",
+          "emit": "terminal.next_pane"
+        },
+        {
+          "source": "lt_analog.full_pull",
+          "emit": "terminal.clear"
+        },
+        {
+          "source": "rt_analog.full_pull",
+          "emit": "terminal.run_predicted_command"
+        },
+        {
+          "source": "left_trackpad",
+          "mode": "radial_menu_8",
+          "emit": "terminal.command_macro_menu"
+        }
+      ]
+    },
+    "git": {
+      "purpose": "Git source-control workflow.",
+      "bindings": [
+        {
+          "source": "left_trackpad.slot_git",
+          "emit": "git.status"
+        },
+        {
+          "source": "l4+a",
+          "emit": "git.stage_selection_or_file"
+        },
+        {
+          "source": "l4+x",
+          "emit": "git.discard_with_confirm"
+        },
+        {
+          "source": "l4+y",
+          "emit": "git.copy_diff"
+        },
+        {
+          "source": "r5+y",
+          "emit": "git.generate_commit_message"
+        },
+        {
+          "source": "r5+rt_analog.full_pull",
+          "emit": "git.commit_with_review"
+        },
+        {
+          "source": "r5+lb",
+          "emit": "git.pull"
+        },
+        {
+          "source": "r5+rb",
+          "emit": "git.push_with_confirm"
+        }
+      ]
+    },
+    "debug": {
+      "purpose": "Debug, test, breakpoint, and execution controls.",
+      "bindings": [
+        {
+          "source": "left_trackpad.slot_debug",
+          "emit": "debug.start_or_continue"
+        },
+        {
+          "source": "l4+dpad.up",
+          "emit": "debug.step_out"
+        },
+        {
+          "source": "l4+dpad.down",
+          "emit": "debug.step_into"
+        },
+        {
+          "source": "l4+dpad.right",
+          "emit": "debug.step_over"
+        },
+        {
+          "source": "l4+dpad.left",
+          "emit": "debug.restart"
+        },
+        {
+          "source": "x",
+          "event": "hold(450)",
+          "emit": "debug.toggle_breakpoint"
+        },
+        {
+          "source": "b",
+          "event": "hold(450)",
+          "emit": "debug.stop"
+        },
+        {
+          "source": "r5+lb",
+          "emit": "test.run_nearest"
+        },
+        {
+          "source": "r5+rb",
+          "emit": "test.run_file"
+        }
+      ]
+    }
+  },
+  "predictive_engine": {
+    "name": "DeckCode Prediction Router",
+    "inputs": [
+      "focused_app",
+      "editor_context",
+      "cursor_scope",
+      "language_server_suggestions",
+      "diagnostics",
+      "git_status",
+      "terminal_prompt_state",
+      "recent_command_history",
+      "test_status",
+      "selection_state"
+    ],
+    "ranking_formula": "score = context_match*0.35 + recency*0.18 + confidence*0.20 + safety*0.17 + user_frequency*0.10",
+    "safety_classes": {
+      "safe_auto_accept": [
+        "completion.accept",
+        "format.selection",
+        "open.file",
+        "go_to_definition"
+      ],
+      "preview_required": [
+        "ai.apply_patch",
+        "git.commit",
+        "rename_symbol",
+        "bulk_replace"
+      ],
+      "confirm_required": [
+        "git.push",
+        "git.discard",
+        "delete_file",
+        "run_shell_command_with_side_effects"
+      ]
+    },
+    "rules": [
+      {
+        "when": "diagnostics.visible && cursor_on_error",
+        "predict": [
+          "quick_fix",
+          "ai.fix_error",
+          "go_to_problem"
+        ],
+        "bind_hint": "X"
+      },
+      {
+        "when": "completion_menu.visible",
+        "predict": [
+          "completion.accept",
+          "completion.next",
+          "completion.docs"
+        ],
+        "bind_hint": "RT soft"
+      },
+      {
+        "when": "terminal_focused && command_history_match",
+        "predict": [
+          "terminal.run_predicted_command"
+        ],
+        "bind_hint": "RT full"
+      },
+      {
+        "when": "selection.exists && r5.held",
+        "predict": [
+          "ai.refactor_selection",
+          "ai.explain_selection",
+          "extract_function"
+        ],
+        "bind_hint": "R5 + X/Y"
+      },
+      {
+        "when": "git.dirty && tests.green",
+        "predict": [
+          "git.generate_commit_message",
+          "git.stage_all",
+          "git.commit_with_review"
+        ],
+        "bind_hint": "R5 + Y"
+      },
+      {
+        "when": "test.failed && diagnostics.visible",
+        "predict": [
+          "ai.fix_test",
+          "open_failure",
+          "run_nearest_test"
+        ],
+        "bind_hint": "Left pad Test/AI Fix"
+      }
+    ]
+  },
+  "conflict_resolution": {
+    "priority_order": [
+      "system_reserved",
+      "active_action_set",
+      "held_modifier_layer",
+      "explicit_chord",
+      "destructive_command_gate",
+      "activator_specificity",
+      "prediction_confidence",
+      "base_binding"
+    ],
+    "activator_specificity": [
+      "hold",
+      "double",
+      "chord",
+      "release",
+      "press"
+    ],
+    "rules": [
+      "Never let a base press fire while a valid hold/double/chord is still within its timing window unless marked non_interruptible.",
+      "If two layers are held, prefer the newest layer unless a chord is explicitly registered.",
+      "If a command is destructive, downgrade emit to preview/confirm state.",
+      "If focus detection is uncertain, use global safe mappings only."
+    ]
+  },
+  "validation": {
+    "required_tests": [
+      "Every non-system physical source appears in at least one binding.",
+      "System-reserved buttons are never bound to coding actions.",
+      "All destructive commands require hold/chord/confirmation.",
+      "Prediction never runs unsafe terminal/Git commands without user confirmation.",
+      "No trackpad action blocks right-trackpad pointer availability.",
+      "No modifier layer permanently latches unless accessibility toggle mode is enabled.",
+      "Suspend/resume flushes gesture timers, held-layer states, and gyro baselines.",
+      "All command labels expose glyph-compatible prompts and fallback text."
+    ]
+  }
+}

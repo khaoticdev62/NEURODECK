@@ -1,6 +1,6 @@
 use crate::deckcode::schema::Binding;
 use tauri::AppHandle;
-use tauri::Manager;
+use tauri::Emitter;
 
 pub fn dispatch_action(app: &AppHandle, binding: &Binding) {
     let action_id = &binding.emit;

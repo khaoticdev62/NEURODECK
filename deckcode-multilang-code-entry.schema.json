@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "deckcode-multilang-code-entry.schema.json",
+  "title": "DeckCode Multi-Language Code Entry Schema",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "target",
+    "base_physical_layers",
+    "universal_entry_actions",
+    "language_packs"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "base_physical_layers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "universal_entry_actions": {
+      "type": "object"
+    },
+    "left_trackpad_language_palette": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "slot",
+          "label",
+          "emit"
+        ],
+        "properties": {
+          "slot": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "label": {
+            "type": "string"
+          },
+          "emit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "language_detection": {
+      "type": "object"
+    },
+    "language_packs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "language_id",
+          "extensions",
+          "comment",
+          "statement_end",
+          "snippets"
+        ],
+        "properties": {
+          "language_id": {
+            "type": "string"
+          },
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comment": {
+            "type": "string"
+          },
+          "statement_end": {
+            "type": "string"
+          },
+          "symbol_overrides": {
+            "type": "object"
+          },
+          "snippets": {
+            "type": "object",
+            "patternProperties": {
+              "^entry\\.[a-zA-Z0-9_]+$": {
+                "type": "object",
+                "required": [
+                  "template"
+                ],
+                "properties": {
+                  "template": {
+                    "type": "string"
+                  },
+                  "placeholders": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "prediction_rules": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "acceptance_tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

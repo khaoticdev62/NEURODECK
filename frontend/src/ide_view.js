@@ -204,6 +204,11 @@ function switchTab(path) {
     _s.editorEl.dataset.path = tab.path;
     updateLineNumbers();
     openDocument(tab.lang, workspaceUri(path), tab.content).catch(() => {});
+    
+    // Notify DeckCode runtime of the active language
+    invoke("deckcode_set_active_language", { languageId: tab.lang }).catch((e) => {
+      console.warn("[DeckCode] Failed to sync active language:", e);
+    });
   }
   renderTabs();
 }

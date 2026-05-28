@@ -12931,6 +12931,46 @@ initDocsView();
 listen("deckcode-action", (event) => {
   const actionId = event.payload;
   console.log("[DeckCode] Received Action:", actionId);
+
+  if (typeof actionId === "string" && actionId.startsWith("insert_snippet:")) {
+    const snippetTemplate = actionId.substring("insert_snippet:".length);
+    const activeEl = document.activeElement;
+    
+    // Check if we are in a textarea or input
+    if (activeEl && (activeEl.tagName === "TEXTAREA" || activeEl.tagName === "INPUT")) {
+      const start = activeEl.selectionStart;
+      const end = activeEl.selectionEnd;
+      const val = activeEl.value;
+
+      // Basic snippet placeholder parsing
+      // e.g., "def ${name}(${params}):\n    ${cursor}"
+      // We will just strip out named placeholders except ${cursor} for now to make it valid code,
+      // or replace them with empty strings/defaults.
+      let snippet = snippetTemplate;
+      
+      // If we have ${cursor}, we want to place the cursor there.
+      let cursorOffset = snippet.indexOf("${cursor}");
+      if (cursorOffset !== -1) {
+          snippet = snippet.replace("${cursor}", "");
+      } else {
+          cursorOffset = snippet.length; // Default to end of snippet
+      }
+
+      // Strip remaining ${...} placeholders (keep them empty for manual typing)
+      // A more complex implementation could select the first placeholder
+      snippet = snippet.replace(/\$\{[^}]+\}/g, "");
+      
+      // Insert the snippet
+      activeEl.value = val.substring(0, start) + snippet + val.substring(end);
+      
+      // Update cursor position
+      activeEl.selectionStart = activeEl.selectionEnd = start + cursorOffset;
+      
+      // Dispatch input event so ide_view or canvas knows the content changed
+      activeEl.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+  }
   
   if (window.addNotification) {
     window.addNotification(

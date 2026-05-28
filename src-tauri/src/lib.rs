@@ -714,6 +714,8 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 // Stop the active collab session.
 
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let config_root = user_config_dir();
@@ -828,7 +830,8 @@ pub fn run() {
         .manage(Arc::new(scheduler::SchedulerManaged::new()))
         .manage(orchestrator::OrchestratorManaged::new())
         .manage(Arc::new(Mutex::new(lsp::LspManager::new())))
-        .manage(crate::deckcode::DeckCodeState(Mutex::new(None)))
+        .manage(crate::deckcode::DeckCodeState(Mutex::new((None, None))))
+        .manage(crate::deckcode::DeckCodeActiveLang(Arc::new(Mutex::new("plain_text".to_string()))))
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
@@ -841,27 +844,56 @@ pub fn run() {
             } else {
                 std::path::PathBuf::from("deckcode-controller-profile.schema.json")
             };
-            if let Ok(schema) = crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default()) {
-                let state = app.state::<crate::deckcode::DeckCodeState>();
-                *state.0.lock().unwrap() = Some(schema.clone());
-                tracing::info!("Loaded DeckCode Predictive Coding Profile");
+            
+            let multilang_path = std::path::PathBuf::from("../deckcode-multilang-code-entry.profile.json");
+            let multilang_path = if multilang_path.exists() {
+                multilang_path
+            } else {
+                std::path::PathBuf::from("deckcode-multilang-code-entry.profile.json")
+            };
 
+            let mut loaded_schema = None;
+            let mut loaded_multilang = None;
+
+            if let Ok(schema) = crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default()) {
+                loaded_schema = Some(schema);
+                tracing::info!("Loaded DeckCode Controller Profile");
+            } else {
+                tracing::warn!("Failed to load deckcode-controller-profile.schema.json");
+            }
+
+            if let Ok(ml_schema) = crate::deckcode::load_multilang_profile(multilang_path.to_str().unwrap_or_default()) {
+                loaded_multilang = Some(ml_schema);
+                tracing::info!("Loaded DeckCode MultiLang Profile");
+            } else {
+                tracing::warn!("Failed to load deckcode-multilang-code-entry.profile.json");
+            }
+            
+            {
+                let state = app.state::<crate::deckcode::DeckCodeState>();
+                *state.0.lock().unwrap() = (loaded_schema.clone(), loaded_multilang.clone());
+            }
+
+            if let Some(schema) = loaded_schema {
                 let (tx, rx) = std::sync::mpsc::channel();
                 crate::deckcode::input::start_input_daemon(tx);
 
                 let app_handle_clone = app.handle().clone();
+                let active_lang = app.state::<crate::deckcode::DeckCodeActiveLang>().0.clone();
+                
                 tauri::async_runtime::spawn_blocking(move || {
-                    let resolver = crate::deckcode::resolver::DeckCodeResolver::new(schema);
+                    let resolver = crate::deckcode::resolver::DeckCodeResolver::new(schema, loaded_multilang);
                     let mut context = crate::deckcode::resolver::ResolverContext::default();
                     
                     while let Ok(event) = rx.recv() {
+                        // Update context with latest language
+                        context.active_language_id = active_lang.lock().unwrap().clone();
+                        
                         if let Some(binding) = resolver.resolve(&event, &context) {
                             crate::deckcode::dispatch::dispatch_action(&app_handle_clone, &binding);
                         }
                     }
                 });
-            } else {
-                tracing::warn!("Failed to load deckcode-controller-profile.schema.json");
             }
 
             // Initialize Lua state
@@ -1217,6 +1249,8 @@ pub fn run() {
             ide::create_workspace_file,
             ide::delete_workspace_file,
             ide::rename_workspace_file,
+            // ── DeckCode ───────────────────────────────────────────────────────
+            crate::deckcode::deckcode_set_active_language,
             // ── LSP ────────────────────────────────────────────────────────────
             lsp::lsp_start,
             lsp::lsp_stop,
