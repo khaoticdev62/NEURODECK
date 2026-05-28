@@ -11,7 +11,7 @@
 - Codename: `Isis`
 - Tag: `v1.3.0-isis`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-28T16:05:18Z`
+- Last stamped build: `2026-05-28T16:14:48Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

@@ -1,3 +1,4 @@
+use base64::Engine as _;
 use crate::llm::GeminiProvider;
 use crate::*;
 use neurodeck_core::ipc::{Intent, StatePatch};
@@ -2422,11 +2423,17 @@ pub async fn canvas_collab_send(
         s.collab_tx.clone()
     };
     if let Some(tx) = tx {
+        // Build a CRDT update using the session's shared Doc
+        let tmp_doc = crate::canvas_collab::CollabDoc::new();
+        let update_bytes = tmp_doc.set_content(&code);
+        let data_b64 = base64::engine::general_purpose::STANDARD.encode(&update_bytes);
         let payload = serde_json::json!({
-            "type": "sync",
-            "code": code,
+            "type": "y_update",
+            "data": data_b64,
             "lang": lang,
-            "sender": sender.unwrap_or_default()
+            "sender": sender.unwrap_or_default(),
+            // Include code so recipients that don't understand y_update can still fall back
+            "code": code
         });
         tx.send(payload.to_string())
             .await

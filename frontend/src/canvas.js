@@ -943,7 +943,7 @@ function initCanvasCollab() {
             const data = typeof event.payload === 'string'
                 ? JSON.parse(event.payload) : event.payload;
             if (data.sender && data.sender === COLLAB_CLIENT_ID) return;
-            if (data.type === 'sync' && data.code !== undefined) {
+            if ((data.type === 'sync' || data.type === 'y_update' || data.type === 'sync_full') && data.code !== undefined) {
                 const sender = data.sender || 'unknown';
                 if (!approvedSyncPeers.has(sender)) {
                     pendingSyncs.set(sender, data);
