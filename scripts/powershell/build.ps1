@@ -299,6 +299,29 @@ function Invoke-Preflight {
 
     Write-Step "PRE" "Running pre-flight checks..."
 
+    # Self-heal common PATH issues dynamically before asserting commands
+    if (-not (Get-Command "cargo" -ErrorAction SilentlyContinue)) {
+        $userCargoBin = Join-Path $env:USERPROFILE ".cargo\bin"
+        if (Test-Path $userCargoBin) {
+            $env:PATH = "$env:PATH;$userCargoBin"
+            Write-Warn "Added cargo bin to PATH dynamically: $userCargoBin"
+        }
+    }
+    if (-not (Get-Command "npm" -ErrorAction SilentlyContinue)) {
+        $npmPaths = @(
+            "${env:ProgramFiles}\nodejs",
+            "${env:ProgramFiles(x86)}\nodejs",
+            "${env:APPDATA}\npm"
+        )
+        foreach ($p in $npmPaths) {
+            if (Test-Path $p) {
+                $env:PATH = "$env:PATH;$p"
+                Write-Warn "Added node/npm to PATH dynamically: $p"
+                break
+            }
+        }
+    }
+
     # Required on all paths
     Assert-Command "cargo"  "Install Rust: https://rustup.rs"
     Assert-Command "git"    "Install Git: https://git-scm.com"
@@ -306,8 +329,8 @@ function Invoke-Preflight {
     if ($TargetMode -in "win", "all") {
         Assert-Command "npm"     "Install Node.js 20+: https://nodejs.org"
 
-        # npx tauri must resolve
-        $r = Invoke-Process -Exe "npx" -ExeArgs @("tauri", "--version") -WorkDir $Script:ROOT
+        # npx @tauri-apps/cli must resolve
+        $r = Invoke-Process -Exe "npx" -ExeArgs @("@tauri-apps/cli", "--version") -WorkDir $Script:ROOT
         if ($r.ExitCode -ne 0) { throw "tauri CLI not available via npx. Run: npm install" }
         Write-Ok "Tauri CLI: $($r.Output.Trim())"
     }
@@ -355,21 +378,43 @@ function Invoke-KfmsGate {
 # ── Phase: Frontend ────────────────────────────────────────────────────────────
 
 function Invoke-FrontendBuild {
-    Write-Step "FE" "Installing frontend dependencies..."
-    $r = Invoke-WithRetry -Label "npm ci" -Action {
-        Invoke-Process -Exe "npm.cmd" -ExeArgs @("ci", "--prefer-offline") `
-            -WorkDir $Script:ROOT `
-            -LogFile (Join-Path $Script:LOG_DIR "npm-ci.log")
-    }
-    if ($r.ExitCode -ne 0) { throw "npm ci failed`n$($r.Output)" }
-    Write-Ok "npm ci complete"
+    Write-Step "FE" "Checking frontend dependencies..."
+    $lockFile = Join-Path $Script:ROOT "package-lock.json"
+    $hashFile = Join-Path $Script:ROOT ".package-lock.hash"
+    $nodeModules = Join-Path $Script:ROOT "node_modules"
 
-    Write-Step "FE" "Building frontend (Vite)..."
-    $r = Invoke-Process -Exe "npm.cmd" -ExeArgs @("run", "--prefix", "frontend", "build") `
-        -WorkDir $Script:ROOT `
-        -LogFile (Join-Path $Script:LOG_DIR "frontend-build.log")
-    if ($r.ExitCode -ne 0) { throw "Frontend build failed`n$($r.Output)" }
-    Write-Ok "Frontend built → frontend/dist"
+    $skipNpmCi = $false
+    if (Test-Path $nodeModules) {
+        if (Test-Path $lockFile) {
+            $currentHash = (Get-FileHash -Path $lockFile -Algorithm MD5).Hash
+            if (Test-Path $hashFile) {
+                $lastHash = Get-Content $hashFile -Raw
+                if ($currentHash -eq $lastHash) {
+                    $skipNpmCi = $true
+                }
+            }
+        }
+    }
+
+    if ($skipNpmCi) {
+        Write-Ok "JS dependencies up to date (cached)"
+    } else {
+        Write-Step "FE" "Installing frontend dependencies (npm ci)..."
+        $r = Invoke-WithRetry -Label "npm ci" -Action {
+            Invoke-Process -Exe "npm.cmd" -ExeArgs @("ci", "--prefer-offline") `
+                -WorkDir $Script:ROOT `
+                -LogFile (Join-Path $Script:LOG_DIR "npm-ci.log")
+        }
+        if ($r.ExitCode -ne 0) { throw "npm ci failed`n$($r.Output)" }
+
+        if (Test-Path $lockFile) {
+            $currentHash = (Get-FileHash -Path $lockFile -Algorithm MD5).Hash
+            Write-Utf8NoBom -Path $hashFile -Content $currentHash
+        }
+        Write-Ok "npm ci complete"
+    }
+
+    Write-Ok "Vite compilation skipped (handled automatically by Tauri build command)"
 }
 
 # ── Phase: Clean (optional) ────────────────────────────────────────────────────
@@ -403,7 +448,7 @@ function Invoke-WindowsBuild {
     }
 
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    $r = Invoke-Process -Exe "npx" -ExeArgs @("tauri", "build", "--bundles", "nsis") `
+    $r = Invoke-Process -Exe "npx" -ExeArgs @("@tauri-apps/cli", "build", "--bundles", "nsis") `
         -WorkDir $Script:ROOT `
         -LogFile (Join-Path $Script:LOG_DIR "tauri-build-win.log") `
         -Env $buildEnv
@@ -520,13 +565,13 @@ function Invoke-AppImageBuild {
     $skipDeps  = if ($env:NEURODECK_SKIP_DEPS -eq "1") { "1" } else { "0" }
     $cargoJobs = $Script:CARGO_JOBS
 
-    $bashCmd = @"
-set -euo pipefail
-export NEURODECK_SKIP_DEPS='$skipDeps'
-export CARGO_BUILD_JOBS='$cargoJobs'
-export DIST_OUT='$wslDist'
-bash '$wslScript'
-"@
+    $bashCmd = @(
+        "set -euo pipefail",
+        "export NEURODECK_SKIP_DEPS='$skipDeps'",
+        "export CARGO_BUILD_JOBS='$cargoJobs'",
+        "export DIST_OUT='$wslDist'",
+        "bash '$wslScript'"
+    ) -join "`n"
 
     # Write temp bash script so we can pass complex logic without escaping hell
     $guidSuffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 8)

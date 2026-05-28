@@ -3142,18 +3142,46 @@ document.querySelector("#app").innerHTML = `
 
         <!-- JPE Manual Modal -->
         <div class="settings-overlay" id="manual-modal">
-            <div class="settings-modal-card manual-modal-card" style="max-width: 800px; width: 90%; height: 85vh;">
-                <div class="settings-modal-header" style="justify-content: space-between;">
+            <div class="settings-modal-card manual-modal-card" style="max-width: 800px; width: 90%; height: 85vh; display: flex; flex-direction: column;">
+                <div class="settings-modal-header" style="justify-content: space-between; flex-shrink: 0;">
                     <div style="display:flex; flex-direction:column;">
                         <span class="notif-center-kicker">Just Plain English</span>
                         <h3>NEURODECK Manual</h3>
                     </div>
                     <button class="sidebar-toggle-btn" id="close-manual-x">${createIcon("x", { size: 16 })}</button>
                 </div>
+                <div class="manual-sub-header">
+                    <!-- Real-time search filter -->
+                    <div class="manual-search-wrapper">
+                        <span class="manual-search-icon-span">
+                            ${createIcon("search", { size: 14 })}
+                        </span>
+                        <input type="text" id="manual-search" placeholder="Search features, commands, or keywords..." autocomplete="off" spellcheck="false" />
+                    </div>
+
+                    <!-- System Health Check Widget -->
+                    <div class="manual-health-widget" id="manual-health-widget">
+                        <div class="health-item" title="PTY System Health">
+                            <span class="health-dot pending" id="manual-health-pty"></span>
+                            <span class="health-lbl">PTY</span>
+                        </div>
+                        <div class="health-item" title="Network Connectivity">
+                            <span class="health-dot pending" id="manual-health-net"></span>
+                            <span class="health-lbl">NET</span>
+                        </div>
+                        <div class="health-item" title="OS Keychain Health">
+                            <span class="health-dot pending" id="manual-health-key"></span>
+                            <span class="health-lbl">KEY</span>
+                        </div>
+                        <button class="canvas-btn" id="manual-health-refresh" title="Refresh Health Diagnostics">
+                            ${createIcon("refreshCw", { size: 11 })}
+                        </button>
+                    </div>
+                </div>
                 <div class="settings-modal-content manual-content" style="flex: 1; overflow-y: auto; padding: 24px;" id="manual-content-container">
                     <!-- Rendered markdown goes here -->
                 </div>
-                <div class="settings-modal-footer" style="justify-content: flex-end;">
+                <div class="settings-modal-footer" style="justify-content: flex-end; flex-shrink: 0;">
                     <button class="settings-close-btn" id="close-manual-btn" style="margin: 0;">Close</button>
                 </div>
             </div>
@@ -9451,14 +9479,257 @@ function initManualModal() {
 
   if (!manualBtn || !manualModal) return;
 
+  const closeManual = () => {
+    manualModal.classList.remove("active");
+  };
+
+  const viewMapping = {
+    "chat": "chat",
+    "canvas": "canvas",
+    "terminal": "terminal",
+    "ssh": "ssh",
+    "tunnel": "tunnel",
+    "share": "share",
+    "browser": "browser",
+    "agent": "agent",
+    "memory": "memory",
+    "prompt lab": "prompt-lab",
+    "remote": "remote",
+    "docs": "docs",
+    "git": "git",
+    "api lab": "api-lab",
+    "cli maker": "cli-maker",
+    "graph": "graph",
+    "scheduler": "scheduler",
+    "flow": "workflow",
+    "ide": "ide",
+    "settings": "settings",
+    "plugins marketplace": "plugins",
+    "prompt sidebar": "prompt-sidebar"
+  };
+
+  const buildManualUI = () => {
+    if (!contentContainer) return;
+    const parts = manualContent.split(/\n##\s+/);
+    const introMarkdown = parts[0];
+    const sections = parts.slice(1);
+
+    let html = `<div class="manual-intro-banner">${marked.parse(introMarkdown)}</div>`;
+    html += `<div class="manual-accordions-list">`;
+
+    sections.forEach((sec) => {
+      const lines = sec.split("\n");
+      const headingLine = lines[0].trim();
+      const contentMarkdown = lines.slice(1).join("\n").trim();
+      
+      const headingRegex = /^(\d+)\.\s*([^\s]+)\s+(.*)$/;
+      const headingMatch = headingLine.match(headingRegex);
+      
+      let number = "";
+      let emoji = "📖";
+      let title = headingLine;
+      
+      if (headingMatch) {
+        number = headingMatch[1];
+        emoji = headingMatch[2];
+        title = headingMatch[3];
+      }
+      
+      const cleanTitle = title.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+      const viewId = viewMapping[cleanTitle] || "";
+      
+      const renderedContent = marked.parse(contentMarkdown);
+      
+      html += `
+        <div class="manual-accordion-card" data-title="${escapeHtml(title)}" data-content="${escapeHtml(contentMarkdown.toLowerCase())}">
+          <button class="manual-accordion-header" aria-expanded="false">
+            <span class="manual-header-emoji">${emoji}</span>
+            <span class="manual-header-title"><span class="manual-header-num">${number}.</span> ${escapeHtml(title)}</span>
+            <span class="manual-header-chevron">${createIcon("chevronDown", { size: 14 })}</span>
+          </button>
+          <div class="manual-accordion-body">
+            <div class="manual-accordion-inner">
+              <div class="manual-markdown-content">${renderedContent}</div>
+              <div class="manual-actions-row">
+                ${viewId ? `
+                  <button class="manual-action-btn launch-btn" data-view="${viewId}">
+                    ${createIcon("externalLink", { size: 12 })}
+                    <span>Launch ${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}</span>
+                  </button>
+                ` : ""}
+                <button class="manual-action-btn ai-btn" data-feature="${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}">
+                  ${createIcon("sparkles", { size: 12 })}
+                  <span>Ask AI</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    contentContainer.innerHTML = html;
+
+    // Attach click events to accordion headers
+    const headers = contentContainer.querySelectorAll(".manual-accordion-header");
+    headers.forEach(header => {
+      header.addEventListener("click", () => {
+        const card = header.closest(".manual-accordion-card");
+        const wasExpanded = card.classList.contains("expanded");
+        
+        // Collapse other cards
+        contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove("expanded");
+            otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
+            const otherBody = otherCard.querySelector(".manual-accordion-body");
+            otherBody.style.maxHeight = null;
+          }
+        });
+        
+        card.classList.toggle("expanded", !wasExpanded);
+        header.setAttribute("aria-expanded", !wasExpanded ? "true" : "false");
+        
+        const body = card.querySelector(".manual-accordion-body");
+        if (!wasExpanded) {
+          body.style.maxHeight = body.scrollHeight + "px";
+        } else {
+          body.style.maxHeight = null;
+        }
+      });
+    });
+
+    // Attach click events to launch buttons
+    const launchButtons = contentContainer.querySelectorAll(".launch-btn");
+    launchButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const viewId = btn.getAttribute("data-view");
+        closeManual();
+        
+        if (viewId === "settings") {
+          openSettingsModal();
+        } else if (viewId === "plugins") {
+          openSettingsModal();
+          setTimeout(() => {
+            activateSettingsPanel("sp-extensions");
+          }, 50);
+        } else if (viewId === "prompt-sidebar") {
+          openCtrlPromptOverlay();
+        } else {
+          const tab = document.querySelector(`.nav-tab[data-view="${viewId}"]`);
+          if (tab) {
+            tab.click();
+          }
+        }
+      });
+    });
+
+    // Attach click events to Ask AI buttons
+    const aiButtons = contentContainer.querySelectorAll(".ai-btn");
+    aiButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const feature = btn.getAttribute("data-feature");
+        closeManual();
+        
+        const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+        if (chatTab) {
+          chatTab.click();
+        }
+        
+        const chatInput = document.getElementById("user-input");
+        if (chatInput) {
+          chatInput.value = `How do I use the ${feature} feature in NEURODECK?`;
+          chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+          chatInput.focus();
+        }
+      });
+    });
+  };
+
+  const runManualHealthDiagnostics = async () => {
+    const ptyDot = document.getElementById("manual-health-pty");
+    const netDot = document.getElementById("manual-health-net");
+    const keyDot = document.getElementById("manual-health-key");
+    const refreshBtn = document.getElementById("manual-health-refresh");
+
+    if (!ptyDot || !netDot || !keyDot) return;
+
+    ptyDot.className = "health-dot pending";
+    netDot.className = "health-dot pending";
+    keyDot.className = "health-dot pending";
+    
+    if (refreshBtn) {
+      refreshBtn.classList.add("spinning");
+    }
+
+    try {
+      const result = await invoke("run_onboarding_diagnostics");
+      
+      ptyDot.className = "health-dot " + (result.pty_ok ? "success" : "error");
+      ptyDot.title = result.pty_details || (result.pty_ok ? "PTY working correctly" : "PTY failed");
+
+      netDot.className = "health-dot " + (result.network_ok ? "success" : "error");
+      netDot.title = result.network_details || (result.network_ok ? "Network working correctly" : "Network failed");
+
+      keyDot.className = "health-dot " + (result.keychain_ok ? "success" : "error");
+      keyDot.title = result.keychain_details || (result.keychain_ok ? "Keychain working correctly" : "Keychain failed");
+    } catch (err) {
+      console.error("Manual health diagnostics failed:", err);
+      ptyDot.className = "health-dot error";
+      netDot.className = "health-dot error";
+      keyDot.className = "health-dot error";
+      
+      ptyDot.title = String(err);
+      netDot.title = String(err);
+      keyDot.title = String(err);
+    } finally {
+      if (refreshBtn) {
+        refreshBtn.classList.remove("spinning");
+      }
+    }
+  };
+
   manualBtn.addEventListener("click", () => {
     manualModal.classList.add("active");
     if (contentContainer && contentContainer.innerHTML.trim() === "") {
-      contentContainer.innerHTML = marked.parse(manualContent);
+      buildManualUI();
     }
+    runManualHealthDiagnostics();
   });
 
-  const closeManual = () => manualModal.classList.remove("active");
+  const refreshBtn = document.getElementById("manual-health-refresh");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", runManualHealthDiagnostics);
+  }
+
+  const searchInput = document.getElementById("manual-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      if (!contentContainer) return;
+      const cards = contentContainer.querySelectorAll(".manual-accordion-card");
+      
+      const introBanner = contentContainer.querySelector(".manual-intro-banner");
+      if (introBanner) {
+        introBanner.style.display = query ? "none" : "";
+      }
+
+      cards.forEach(card => {
+        const title = card.getAttribute("data-title").toLowerCase();
+        const content = card.getAttribute("data-content");
+        
+        if (title.includes(query) || content.includes(query)) {
+          card.style.display = "";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    });
+  }
+
   if (closeX) closeX.addEventListener("click", closeManual);
   if (closeBtn) closeBtn.addEventListener("click", closeManual);
 }

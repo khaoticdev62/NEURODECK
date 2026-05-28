@@ -47,6 +47,7 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 ## 9. 🧠 Memory
 **What it is:** The AI's brain. It remembers important facts about you so you don't have to repeat yourself.
 **How to use it:** As you chat, the AI automatically saves useful tidbits here. You can search your memories, delete ones you don't want it to know, or "Pin" important facts so the AI *never* forgets them.
+- **Filters:** Easily sort your memories by clicking the filter buttons at the top to only show facts from "Chat", "Docs", or "Games".
 
 ## 10. 📝 Prompt Lab
 **What it is:** A workshop to help you write better questions for the AI. Better questions get much better answers.
@@ -88,6 +89,7 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 ## 19. 💻 IDE
 **What it is:** A mini code editor built straight into NEURODECK.
 **How to use it:** (Integrated Development Environment) You get a list of your files on the left and a big text editor on the right. Use this when you want to write or edit real code files manually without relying on the AI.
+- **Smart Autocomplete:** As you type, the IDE will suggest code completions (just like a real professional editor) and show helpful tooltips when you hover over code.
 
 ## 20. ⚙️ Settings
 **What it is:** The control panel where you tweak how the app looks and how its brain works.
@@ -96,6 +98,10 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 ## 21. 🧩 Plugins Marketplace
 **What it is:** An app store for community-made superpowers.
 **How to use it:** Inside Settings, go to the Plugins tab. You can browse and download tiny scripts written by other people that give NEURODECK brand new slash commands or abilities.
+
+## 22. 📋 Prompt Sidebar (Ctrl+P)
+**What it is:** A hidden drawer full of smart, ready-to-use AI prompts that change depending on what you're doing.
+**How to use it:** Press `Ctrl+P` on your keyboard. A panel slides out from the side offering prompt templates tailored specifically to the screen you are currently looking at.
 
 ---
 *Created by the Khaotic Labs Team.*
