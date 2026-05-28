@@ -1864,7 +1864,8 @@ listen("stream_done", function () {
         }
     }
 
-    if (!state.isMuted && state.currentAIText && state.currentAIText.trim().length > 0) {
+    const _ttsMode = localStorage.getItem("neurodeck_tts_mode") || "complete";
+    if (!state.isMuted && _ttsMode === "complete" && state.currentAIText && state.currentAIText.trim().length > 0) {
         let speechText = cleanTextForSpeech(state.currentAIText);
         if (speechText.length > 0) {
             invoke("speak_text", { text: speechText }).catch(err => console.error("TTS Error:", err));
@@ -1884,6 +1885,15 @@ listen("stream_done", function () {
 
     // Refresh context drawer live metrics
     updateContextDrawer();
+});
+
+// Streaming TTS — speak each sentence as it arrives (mode: "stream")
+listen("tts_chunk", function (event) {
+    const ttsMode = localStorage.getItem("neurodeck_tts_mode") || "complete";
+    if (ttsMode !== "stream" || state.isMuted) return;
+    const text = event.payload;
+    if (!text || !text.trim()) return;
+    invoke("speak_text_stream", { text }).catch(() => {});
 });
 
 // Listen for command stream events

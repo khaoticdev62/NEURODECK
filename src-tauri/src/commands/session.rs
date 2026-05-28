@@ -239,6 +239,69 @@ pub async fn speak_text(text: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Detect sentence boundaries and pop complete sentences from the buffer.
+fn pop_complete_sentences(buf: &mut String) -> Vec<String> {
+    const TERMINATORS: &[&str] = &[". ", "! ", "? ", ".\n", "!\n", "?\n", "\n\n"];
+    let mut out = Vec::new();
+    loop {
+        let earliest = TERMINATORS
+            .iter()
+            .filter_map(|t| buf.find(t).map(|i| i + t.len()))
+            .min();
+        match earliest {
+            Some(end) => {
+                let sentence = buf[..end].trim().to_string();
+                if !sentence.is_empty() {
+                    out.push(sentence);
+                }
+                *buf = buf[end..].to_string();
+            }
+            None => break,
+        }
+    }
+    out
+}
+
+/// Non-blocking TTS: fires a speak task without blocking the caller.
+/// Used for sentence-by-sentence streaming TTS on `tts_chunk` events.
+#[tauri::command]
+pub async fn speak_text_stream(text: String) -> Result<(), String> {
+    let sanitized: String = text
+        .chars()
+        .filter(|c| {
+            c.is_ascii_alphanumeric()
+                || matches!(c, ' ' | '.' | '!' | '?' | ',' | ';' | ':' | '-' | '\'')
+        })
+        .collect();
+
+    if sanitized.is_empty() {
+        return Ok(());
+    }
+
+    tokio::task::spawn(async move {
+        let _ = tokio::task::spawn_blocking(move || {
+            if cfg!(target_os = "windows") {
+                let ps_cmd = format!(
+                    "Add-Type -AssemblyName System.Speech; \
+                     (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('{}')",
+                    sanitized.replace('\'', "''")
+                );
+                let _ = std::process::Command::new("powershell")
+                    .arg("-Command")
+                    .arg(&ps_cmd)
+                    .output();
+            } else {
+                let _ = std::process::Command::new("espeak")
+                    .arg(&sanitized)
+                    .output();
+            }
+        })
+        .await;
+    });
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn cancel_generation(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
@@ -1049,6 +1112,7 @@ pub async fn send_command(
     } else {
         // Normal streaming path
         let mut stream = provider.stream_response(&full_prompt, &system_prompt);
+        let mut sentence_buf = String::new();
 
         while let Some(chunk_res) = stream.next().await {
             if cancel_rx.try_recv().is_ok() {
@@ -1056,12 +1120,20 @@ pub async fn send_command(
                     "stream_chunk",
                     "\n\n[Generation Cancelled by User]".to_string(),
                 );
+                let remaining = sentence_buf.trim().to_string();
+                if !remaining.is_empty() {
+                    let _ = app_handle.emit("tts_chunk", remaining);
+                }
                 break;
             }
             match chunk_res {
                 Ok(chunk) => {
                     full_response.push_str(&chunk);
+                    sentence_buf.push_str(&chunk);
                     let _ = app_handle.emit("stream_chunk", chunk);
+                    for sentence in pop_complete_sentences(&mut sentence_buf) {
+                        let _ = app_handle.emit("tts_chunk", sentence);
+                    }
                 }
                 Err(e) => {
                     let _ = app_handle.emit("stream_error", e);
@@ -1072,6 +1144,11 @@ pub async fn send_command(
                     return Ok(());
                 }
             }
+        }
+        // Flush remaining sentence buffer
+        let remaining = sentence_buf.trim().to_string();
+        if !remaining.is_empty() {
+            let _ = app_handle.emit("tts_chunk", remaining);
         }
     }
 

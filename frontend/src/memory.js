@@ -93,6 +93,8 @@ export function initMemoryView() {
             const ns        = record.metadata.namespace || "chat";
             const sourcePath = record.metadata.source_file || "";
             const gameId    = record.metadata.game_app_id || "";
+            const chunkIdx  = record.metadata.chunk_index;
+            const chunkTotal = record.metadata.chunk_total;
             const card = document.createElement("div");
             card.className = `memory-record-card${isPinned ? " memory-record-pinned" : ""}`;
             card.dataset.id = record.id;
@@ -100,6 +102,8 @@ export function initMemoryView() {
             const nsBadge = `<span class="memory-ns-badge memory-ns-${escHtml(ns)}" title="Namespace: ${escHtml(ns)}">${_nsIcon(ns)}</span>`;
             const sourceRow = sourcePath
                 ? `<div class="memory-record-source">${escHtml(sourcePath)}</div>` : "";
+            const chunkBreadcrumb = (chunkIdx !== undefined && chunkTotal !== undefined)
+                ? `<div class="memory-chunk-breadcrumb"><span class="memory-chunk-icon">⛶</span> chunk ${chunkIdx}/${chunkTotal}</div>` : "";
             const gameThumb = gameId
                 ? `<img class="memory-game-thumb" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${escHtml(gameId)}/header.jpg"
                        alt="Game ${escHtml(gameId)}" loading="lazy" onerror="this.remove()">` : "";
@@ -117,6 +121,7 @@ export function initMemoryView() {
                 ${gameThumb}
                 <div class="memory-record-content">${escHtml(record.content)}</div>
                 ${sourceRow}
+                ${chunkBreadcrumb}
                 <div class="memory-record-id">${escHtml(record.id)}</div>`;
 
             card.querySelector(".mem-pin-btn").onclick = async function() {

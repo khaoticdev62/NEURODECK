@@ -1525,6 +1525,27 @@ pub fn memory_restore_backup(
     Ok(())
 }
 
+/// Run an embedding-based MMR search over memory records.
+/// Returns up to `limit` semantically diverse results for the given `query`.
+#[tauri::command]
+pub async fn memory_search_semantic(
+    query: String,
+    limit: u8,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<crate::memory::MemoryRecord>, String> {
+    let (provider, mem_db) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        (app.provider.clone(), app.mem_db.clone())
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let embedding = provider
+        .generate_embedding(&query)
+        .await
+        .map_err(|e| format!("Embedding error: {}", e))?;
+    let n = limit.max(1) as usize;
+    db.search_mmr(&embedding, n, 0.5, n * 4)
+}
+
 #[tauri::command]
 pub async fn start_oauth_flow(
     state: State<'_, Mutex<AppState>>,

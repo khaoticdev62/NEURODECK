@@ -1024,6 +1024,7 @@ pub fn run() {
             compare_models,
             send_command,
             speak_text,
+            speak_text_stream,
             cancel_generation,
             #[cfg(debug_assertions)]
             execute_lua,
@@ -1095,6 +1096,7 @@ pub fn run() {
             memory_backup_auto,
             memory_list_backups,
             memory_restore_backup,
+            memory_search_semantic,
             ftp::ftp_list_dir,
             ftp::ftp_download_file,
             ftp::ftp_upload_file,

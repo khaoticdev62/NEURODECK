@@ -88,6 +88,38 @@ function _wireFilters() {
     _clearEditor();
     document.getElementById("cli-editor-title").textContent = "New Command";
   });
+
+  // Import from Lua file
+  const importInput = document.getElementById("cli-import-file-input");
+  document.getElementById("cli-import-btn")?.addEventListener("click", () => {
+    importInput?.click();
+  });
+  importInput?.addEventListener("change", async () => {
+    const file = importInput.files?.[0];
+    if (!file) return;
+    try {
+      // Write temp file via Tauri path — use the file path directly
+      const filePath = file.path ?? (await _writeTempFile(file));
+      const json = await invoke("cli_import_lua", { path: filePath });
+      const imported = JSON.parse(json || "[]");
+      if (imported.length === 0) {
+        alert("No registerCommand(...) blocks found.");
+        return;
+      }
+      await _loadCommands();
+      alert(`Imported ${imported.length} command(s) from Lua.`);
+    } catch (e) {
+      alert(`Import failed: ${e}`);
+    } finally {
+      importInput.value = "";
+    }
+  });
+}
+
+async function _writeTempFile(file) {
+  // Fallback: read text and write via a data URL we can't use easily
+  // Instead, inform user we need a native file path
+  throw new Error("File path not available — use Tauri native file picker context.");
 }
 
 // ── Editor wiring ─────────────────────────────────────────────────────────────

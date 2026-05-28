@@ -513,7 +513,7 @@ export function openSettingsModal() {
     refreshSettingsPersonaDropdown();
   }
 
-  // Populate themes
+  // Populate themes + live preview
   invoke("get_themes").then((themes) => {
     let select = document.getElementById("theme-select");
     if (select) {
@@ -528,6 +528,7 @@ export function openSettingsModal() {
         }
         select.appendChild(option);
       });
+      initThemeLivePreview(select, savedTheme);
     }
   });
 
@@ -1522,6 +1523,19 @@ function initWhisperSettings() {
       testBtn.disabled = false;
     }
   });
+
+  // TTS mode radio
+  const ttsModeGroup = document.getElementById("tts-mode-group");
+  if (ttsModeGroup) {
+    const saved = localStorage.getItem("neurodeck_tts_mode") || "complete";
+    const radio = ttsModeGroup.querySelector(`input[value="${saved}"]`);
+    if (radio) radio.checked = true;
+    ttsModeGroup.querySelectorAll("input[type=radio]").forEach(r => {
+      r.addEventListener("change", () => {
+        if (r.checked) localStorage.setItem("neurodeck_tts_mode", r.value);
+      });
+    });
+  }
 }
 
 // ==========================================================================
@@ -1784,6 +1798,76 @@ async function initLspSettings() {
 
   await render();
   window._lspSettingsRefresh = render;
+}
+
+// ==========================================================================
+// THEME LIVE PREVIEW
+// ==========================================================================
+
+function initThemeLivePreview(selectEl, savedThemeName) {
+  // Build a small preview row under the select
+  const card = selectEl.closest(".stv-card");
+  if (!card) return;
+
+  let previewRow = card.querySelector(".theme-live-preview");
+  if (!previewRow) {
+    previewRow = document.createElement("div");
+    previewRow.className = "theme-live-preview";
+    previewRow.innerHTML = `
+      <span class="theme-live-swatch" id="tlp-accent"></span>
+      <span class="theme-live-swatch" id="tlp-bg"></span>
+      <span class="theme-live-swatch" id="tlp-response"></span>
+      <span class="theme-live-name" id="tlp-name"></span>
+      <button class="theme-reset-btn" id="tlp-reset-btn" title="Reset to saved theme">Reset</button>
+    `;
+    selectEl.parentNode.insertBefore(previewRow, selectEl.nextSibling);
+  }
+
+  let _savedTheme = savedThemeName || localStorage.getItem("selectedTheme") || "";
+
+  function updateSwatches(theme) {
+    if (!theme) return;
+    const accentSwatch = document.getElementById("tlp-accent");
+    const bgSwatch = document.getElementById("tlp-bg");
+    const respSwatch = document.getElementById("tlp-response");
+    const nameEl = document.getElementById("tlp-name");
+    if (accentSwatch) accentSwatch.style.background = theme.accent || theme.color || "";
+    if (bgSwatch) bgSwatch.style.background = theme.background || "";
+    if (respSwatch) respSwatch.style.background = theme.response || "";
+    if (nameEl) nameEl.textContent = theme.name || "";
+  }
+
+  // Preview on select change (without immediately persisting)
+  const origOnchange = selectEl.onchange;
+  selectEl.onchange = function () {
+    const val = this.value;
+    invoke("set_theme", { name: val }).then((theme) => {
+      if (theme) {
+        window.applyThemeColors(theme);
+        updateSwatches(theme);
+        // Persist immediately (consistent with existing behaviour)
+        localStorage.setItem("selectedTheme", val);
+        _savedTheme = val;
+      }
+    });
+  };
+
+  // Load current theme swatches
+  invoke("set_theme", { name: _savedTheme }).then((theme) => {
+    if (theme) updateSwatches(theme);
+  }).catch(() => {});
+
+  // Reset button — revert to last saved theme
+  document.getElementById("tlp-reset-btn")?.addEventListener("click", () => {
+    if (!_savedTheme) return;
+    invoke("set_theme", { name: _savedTheme }).then((theme) => {
+      if (theme) {
+        window.applyThemeColors(theme);
+        updateSwatches(theme);
+        selectEl.value = _savedTheme;
+      }
+    });
+  });
 }
 
 // ==========================================================================

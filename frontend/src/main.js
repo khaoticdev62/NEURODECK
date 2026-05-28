@@ -1957,6 +1957,8 @@ document.querySelector("#app").innerHTML = `
                                 <div class="cli-maker-empty">Loading commands…</div>
                             </div>
                             <button class="cli-maker-btn-primary" id="cli-new-cmd-btn" aria-label="New command">+ New Command</button>
+                            <label class="cli-import-btn" id="cli-import-btn" tabindex="0" role="button" aria-label="Import from Lua file">⬇ Import Lua</label>
+                            <input type="file" id="cli-import-file-input" class="cli-import-input" accept=".lua">
                         </div>
 
                         <!-- Center: form editor -->
@@ -2964,6 +2966,22 @@ document.querySelector("#app").innerHTML = `
                                 <button class="stv-btn-ghost" id="whisper-test-btn" style="flex:1;">Test Transcription</button>
                             </div>
                             <div id="whisper-status-line" class="stv-status-line"></div>
+                        </div>
+
+                        <div class="stv-group-label">Text-to-Speech Mode</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Controls when the AI response is spoken aloud. Streaming mode speaks each sentence as it arrives.</p>
+                            <div class="tts-mode-group" id="tts-mode-group" role="radiogroup" aria-label="TTS mode">
+                                <label class="tts-mode-option">
+                                    <input type="radio" name="tts-mode" value="off" id="tts-mode-off"> Off
+                                </label>
+                                <label class="tts-mode-option">
+                                    <input type="radio" name="tts-mode" value="complete" id="tts-mode-complete"> After complete
+                                </label>
+                                <label class="tts-mode-option">
+                                    <input type="radio" name="tts-mode" value="stream" id="tts-mode-stream"> Stream sentences
+                                </label>
+                            </div>
                         </div>
                     </div>
 

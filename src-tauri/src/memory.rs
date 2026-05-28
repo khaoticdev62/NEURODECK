@@ -225,6 +225,76 @@ impl MemoryDB {
 
         Ok(results)
     }
+
+    /// Maximal Marginal Relevance search: retrieve `fetch` candidates by cosine
+    /// similarity, then iteratively select the `limit` results that maximize
+    /// relevance while minimising redundancy between selected chunks.
+    ///
+    /// `lambda` (0–1): 1.0 = pure relevance, 0.0 = pure diversity. Default 0.5.
+    pub fn search_mmr(
+        &self,
+        query_embedding: &[f32],
+        limit: usize,
+        lambda: f32,
+        fetch: usize,
+    ) -> Result<Vec<MemoryRecord>, String> {
+        let records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+
+        if records.is_empty() || query_embedding.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let candidates: Vec<(f32, &MemoryRecord)> = {
+            let mut v: Vec<(f32, &MemoryRecord)> = records
+                .iter()
+                .filter(|r| !r.embedding.is_empty())
+                .map(|r| (cosine_similarity(query_embedding, &r.embedding), r))
+                .collect();
+            v.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+            v.into_iter().take(fetch).collect()
+        };
+
+        if candidates.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let limit = limit.min(candidates.len());
+        let mut selected_indices: Vec<usize> = Vec::with_capacity(limit);
+
+        // First pick: highest relevance
+        selected_indices.push(0);
+
+        while selected_indices.len() < limit {
+            let mut best_score = f32::NEG_INFINITY;
+            let mut best_idx = 0;
+
+            for (i, (rel_sim, rec)) in candidates.iter().enumerate() {
+                if selected_indices.contains(&i) {
+                    continue;
+                }
+                // Max similarity to already-selected chunks
+                let max_red = selected_indices
+                    .iter()
+                    .map(|&j| cosine_similarity(&rec.embedding, &candidates[j].1.embedding))
+                    .fold(f32::NEG_INFINITY, f32::max);
+
+                let mmr = lambda * rel_sim - (1.0 - lambda) * max_red;
+                if mmr > best_score {
+                    best_score = mmr;
+                    best_idx = i;
+                }
+            }
+            selected_indices.push(best_idx);
+        }
+
+        Ok(selected_indices
+            .into_iter()
+            .map(|i| candidates[i].1.clone())
+            .collect())
+    }
 }
 
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {

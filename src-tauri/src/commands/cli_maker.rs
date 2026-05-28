@@ -211,17 +211,145 @@ end)"#,
                 cmd.name, view_name
             )
         }
-        CliAction::Chain { .. } => "-- Chain export not yet implemented\n".to_string(),
+        CliAction::Chain { steps } => {
+            let steps_lua = steps
+                .iter()
+                .enumerate()
+                .map(|(i, step)| {
+                    let escaped = step.replace('\\', "\\\\").replace('"', "\\\"");
+                    format!(
+                        "    -- step {}\n    step_result = execute(\"{}\" .. \" \" .. step_result)",
+                        i + 1,
+                        escaped
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!(
+                r#"registerCommand("{}", function(args)
+    local step_result = args
+{}
+    return step_result
+end)"#,
+                cmd.name, steps_lua
+            )
+        }
         CliAction::Plugin { lua_code } => lua_code,
     };
 
     Ok(lua)
 }
 
+/// Parse a Lua file containing `registerCommand(...)` blocks and return
+/// a JSON array of `CliCommandDef` structs. Also saves them to disk.
 #[command]
-pub fn cli_import_lua(_path: String) -> Result<String, String> {
-    // Stub: would parse Lua registerCommand block back into CliCommandDef
-    Ok("{}".to_string())
+pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
+    // Reject path-traversal attempts
+    if path.contains("..") {
+        return Err("Invalid path".into());
+    }
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Cannot read file: {}", e))?;
+
+    let mut defs: Vec<CliCommandDef> = Vec::new();
+    let mut pos = 0usize;
+
+    while pos < content.len() {
+        let Some(rel) = content[pos..].find("registerCommand(") else {
+            break;
+        };
+        let abs_start = pos + rel;
+        let after_paren = abs_start + "registerCommand(".len();
+
+        // Extract quoted name
+        let Some(q1) = content[after_paren..].find('"') else {
+            pos = abs_start + 1;
+            continue;
+        };
+        let name_start = after_paren + q1 + 1;
+        let Some(q2) = content[name_start..].find('"') else {
+            pos = abs_start + 1;
+            continue;
+        };
+        let name = content[name_start..name_start + q2].to_string();
+
+        // Find closing end)
+        let block_end_rel = content[abs_start..].find("end)");
+        let block_end = match block_end_rel {
+            Some(e) => abs_start + e + "end)".len(),
+            None => {
+                pos = abs_start + 1;
+                continue;
+            }
+        };
+        let body = &content[abs_start..block_end];
+
+        // Classify action by body content
+        let (category, action) = if body.contains("sendPrompt(") || body.contains("template") {
+            let template = lua_extract_long_string(body).unwrap_or_default();
+            let use_llm = body.contains("sendPrompt(");
+            ("prompt".to_string(), CliAction::Prompt { template, use_llm })
+        } else if body.contains("execute(") {
+            let command = lua_extract_execute_arg(body).unwrap_or_default();
+            (
+                "shell".to_string(),
+                CliAction::Shell {
+                    command,
+                    cwd: None,
+                },
+            )
+        } else {
+            (
+                "plugin".to_string(),
+                CliAction::Plugin {
+                    lua_code: body.to_string(),
+                },
+            )
+        };
+
+        let id = lua_id_from_name(&name);
+        let def = CliCommandDef {
+            id,
+            name: name.clone(),
+            description: format!("Imported from Lua: {}", name),
+            icon: "code2".to_string(),
+            category,
+            action,
+            shortcut: None,
+            radial_bind: None,
+        };
+        save_one(&app, &def);
+        defs.push(def);
+
+        pos = block_end;
+    }
+
+    if defs.is_empty() {
+        return Err("No registerCommand(...) blocks found in file".into());
+    }
+
+    serde_json::to_string(&defs).map_err(|e| e.to_string())
+}
+
+fn lua_extract_long_string(body: &str) -> Option<String> {
+    let s = body.find("[[")? + 2;
+    let e = body[s..].find("]]")? + s;
+    Some(body[s..e].trim().to_string())
+}
+
+fn lua_extract_execute_arg(body: &str) -> Option<String> {
+    let marker = "execute(\"";
+    let s = body.find(marker)? + marker.len();
+    let e = body[s..].find('"')? + s;
+    Some(body[s..e].to_string())
+}
+
+fn lua_id_from_name(name: &str) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut h = DefaultHasher::new();
+    name.hash(&mut h);
+    format!("imported_{:x}", h.finish())
 }
 
 /// Save a command as a Lua plugin file in the plugins/ directory, then hot-reload.
