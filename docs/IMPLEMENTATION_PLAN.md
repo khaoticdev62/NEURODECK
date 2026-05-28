@@ -7,11 +7,11 @@
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.5.0`
+- Version: `1.5.1`
 - Codename: `Horus`
-- Tag: `v1.5.0-horus`
-- Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-28T23:17:16Z`
+- Tag: `v1.5.1-horus`
+- Workspace state: `generated-only`
+- Last stamped build: `2026-05-28T23:23:22Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
