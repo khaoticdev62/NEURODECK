@@ -48,6 +48,7 @@
 | Nav Layout (1280px) | ✅ 12 tabs in dedicated `nav-tab-row` strip; `flex: 1` even distribution; no overflow |
 | Multi-Agent Orchestrator View (P0-1) | ✅ Sprint 7.0 — `#view-orchestrator` tab; visual pipeline canvas; drag-drop nodes; SVG bezier arrows; save/load pipelines; auto-plan (LLM decomposition); run/pause/stop controls |
 | Workflow Visual Builder (P0-2) | ✅ Sprint 7.1 — Condition node (if-else + true/false ports); File Op node; PTY Command node; Trigger type selector (manual/cron/event); zoom (Ctrl+scroll + buttons); Import/Export `.ndwf`; `workflow_export`, `workflow_import`, `workflow_run` backend commands |
+| API Lab full implementation (P0-3) | ✅ Sprint 7.2 — Auth panel (Bearer/Basic/API Key); Environment variables `{{VAR}}`; Request history (localStorage, 50 entries); Collection request list (save/load/delete individual requests); Response headers panel; cURL import/export; "Send to Canvas"; Body mode (raw/form/none); sidebar tab layout |
 
 ---
 

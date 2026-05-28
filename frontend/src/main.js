@@ -1751,46 +1751,148 @@ document.querySelector("#app").innerHTML = `
                      ═══════════════════════════════════════════════════════════ -->
                 <div class="view-content" id="view-api-lab" data-testid="view-api-lab">
                     <div class="api-lab-workspace">
-                        <div class="api-lab-pane api-lab-left">
-                            <div class="api-lab-header">Collections</div>
-                            <div class="api-lab-actions">
-                                <button class="api-lab-btn" id="api-new-collection-btn">+ Collection</button>
-                                <button class="api-lab-btn" id="api-new-request-btn">+ Request</button>
+                        <!-- Left: collections + env + history sidebar -->
+                        <div class="api-lab-sidebar">
+                            <div class="api-lab-sidebar-tabs">
+                                <button class="api-lab-stab active" data-stab="collections">Collections</button>
+                                <button class="api-lab-stab" data-stab="env">Env</button>
+                                <button class="api-lab-stab" data-stab="history">History</button>
                             </div>
-                            <div class="api-lab-collections" id="api-lab-collections">
-                                <div class="api-lab-empty">No collections yet.</div>
+
+                            <!-- Collections panel -->
+                            <div class="api-lab-stab-panel active" id="api-stab-collections">
+                                <div class="api-lab-actions">
+                                    <button class="api-lab-btn" id="api-new-collection-btn" aria-label="New collection">+ Collection</button>
+                                    <button class="api-lab-btn" id="api-save-request-btn" aria-label="Save request to collection">💾 Save</button>
+                                </div>
+                                <div class="api-lab-collections" id="api-lab-collections" role="list">
+                                    <div class="api-lab-empty">No collections yet.</div>
+                                </div>
+                            </div>
+
+                            <!-- Environment variables panel -->
+                            <div class="api-lab-stab-panel" id="api-stab-env">
+                                <div class="api-lab-env-hint">Use {{VAR}} in URLs and values.</div>
+                                <div class="api-lab-kv-list" id="api-env-list"></div>
+                                <button class="api-lab-btn-small" id="api-add-env-btn">+ Variable</button>
+                            </div>
+
+                            <!-- History panel -->
+                            <div class="api-lab-stab-panel" id="api-stab-history">
+                                <div class="api-lab-history-actions">
+                                    <button class="api-lab-btn-small" id="api-clear-history-btn">Clear history</button>
+                                </div>
+                                <div class="api-lab-history-list" id="api-history-list" role="list">
+                                    <div class="api-lab-empty">No history yet.</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="api-lab-pane api-lab-right">
-                            <div class="api-lab-request-builder">
-                                <div class="api-lab-method-row">
-                                    <select id="api-method-select" class="api-lab-method-select">
-                                        <option>GET</option><option>POST</option><option>PUT</option>
-                                        <option>PATCH</option><option>DELETE</option><option>HEAD</option>
+
+                        <!-- Right: request builder + response -->
+                        <div class="api-lab-main">
+                            <!-- URL bar -->
+                            <div class="api-lab-method-row">
+                                <select id="api-method-select" class="api-lab-method-select" aria-label="HTTP method">
+                                    <option>GET</option><option>POST</option><option>PUT</option>
+                                    <option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+                                </select>
+                                <input type="url" id="api-url-input" class="api-lab-url-input"
+                                       placeholder="https://api.example.com/v1/resource" aria-label="Request URL">
+                                <button class="api-lab-btn api-lab-btn-primary" id="api-send-btn" aria-label="Send request">Send ▶</button>
+                            </div>
+
+                            <!-- Request tabs -->
+                            <div class="api-lab-tabs" role="tablist">
+                                <button class="api-lab-tab active" data-api-tab="headers" role="tab" aria-selected="true">Headers</button>
+                                <button class="api-lab-tab" data-api-tab="body"    role="tab" aria-selected="false">Body</button>
+                                <button class="api-lab-tab" data-api-tab="auth"    role="tab" aria-selected="false">Auth</button>
+                                <button class="api-lab-tab" data-api-tab="curl"    role="tab" aria-selected="false">cURL</button>
+                                <button class="api-lab-tab" data-api-tab="ai"      role="tab" aria-selected="false">✨ AI</button>
+                            </div>
+
+                            <div class="api-lab-tab-panel active" id="api-tab-headers" role="tabpanel">
+                                <div class="api-lab-kv-list" id="api-headers-list"></div>
+                                <button class="api-lab-btn-small" id="api-add-header-btn" aria-label="Add header">+ Header</button>
+                            </div>
+
+                            <div class="api-lab-tab-panel" id="api-tab-body" role="tabpanel">
+                                <div class="api-lab-body-mode-row">
+                                    <label class="api-lab-body-mode-label">Mode:</label>
+                                    <select id="api-body-mode" class="api-lab-method-select" aria-label="Body mode">
+                                        <option value="raw">Raw (JSON)</option>
+                                        <option value="form">Form Data</option>
+                                        <option value="none">None</option>
                                     </select>
-                                    <input type="text" id="api-url-input" class="api-lab-url-input" placeholder="https://api.example.com/v1/resource">
-                                    <button class="api-lab-btn api-lab-btn-primary" id="api-send-btn">Send</button>
                                 </div>
-                                <div class="api-lab-tabs">
-                                    <button class="api-lab-tab active" data-api-tab="headers">Headers</button>
-                                    <button class="api-lab-tab" data-api-tab="body">Body</button>
-                                    <button class="api-lab-tab" data-api-tab="ai">✨ AI Generate</button>
+                                <textarea id="api-body-input" class="api-lab-body-input"
+                                          placeholder='{"key": "value"}' aria-label="Request body"></textarea>
+                                <div class="api-lab-form-list hidden" id="api-form-list"></div>
+                                <button class="api-lab-btn-small hidden" id="api-add-form-btn" aria-label="Add form field">+ Field</button>
+                            </div>
+
+                            <div class="api-lab-tab-panel" id="api-tab-auth" role="tabpanel">
+                                <label class="api-lab-prop-label">Auth type</label>
+                                <select id="api-auth-type" class="api-lab-method-select" aria-label="Auth type">
+                                    <option value="none">None</option>
+                                    <option value="bearer">Bearer Token</option>
+                                    <option value="basic">Basic Auth</option>
+                                    <option value="apikey">API Key Header</option>
+                                </select>
+                                <div id="api-auth-bearer" class="api-auth-fields hidden">
+                                    <label class="api-lab-prop-label" style="margin-top:8px">Token</label>
+                                    <input type="password" id="api-auth-token" class="api-lab-url-input"
+                                           placeholder="Bearer token value" aria-label="Bearer token">
                                 </div>
-                                <div class="api-lab-tab-panel active" id="api-tab-headers">
-                                    <div class="api-lab-kv-list" id="api-headers-list"></div>
-                                    <button class="api-lab-btn-small" id="api-add-header-btn">+ Header</button>
+                                <div id="api-auth-basic" class="api-auth-fields hidden">
+                                    <label class="api-lab-prop-label" style="margin-top:8px">Username</label>
+                                    <input type="text" id="api-auth-username" class="api-lab-url-input"
+                                           placeholder="Username" aria-label="Basic auth username">
+                                    <label class="api-lab-prop-label" style="margin-top:6px">Password</label>
+                                    <input type="password" id="api-auth-password" class="api-lab-url-input"
+                                           placeholder="Password" aria-label="Basic auth password">
                                 </div>
-                                <div class="api-lab-tab-panel" id="api-tab-body">
-                                    <textarea id="api-body-input" class="api-lab-body-input" placeholder="Request body (JSON, XML, etc.)"></textarea>
-                                </div>
-                                <div class="api-lab-tab-panel" id="api-tab-ai">
-                                    <textarea id="api-ai-input" class="api-lab-body-input" placeholder="Describe the API request you want to make…"></textarea>
-                                    <button class="api-lab-btn" id="api-ai-generate-btn">Generate Request</button>
+                                <div id="api-auth-apikey" class="api-auth-fields hidden">
+                                    <label class="api-lab-prop-label" style="margin-top:8px">Header name</label>
+                                    <input type="text" id="api-auth-key-name" class="api-lab-url-input"
+                                           placeholder="X-API-Key" aria-label="API key header name">
+                                    <label class="api-lab-prop-label" style="margin-top:6px">Value</label>
+                                    <input type="password" id="api-auth-key-value" class="api-lab-url-input"
+                                           placeholder="Key value" aria-label="API key value">
                                 </div>
                             </div>
+
+                            <div class="api-lab-tab-panel" id="api-tab-curl" role="tabpanel">
+                                <div class="api-lab-curl-row">
+                                    <button class="api-lab-btn" id="api-export-curl-btn" aria-label="Export as cURL">⬇ Export cURL</button>
+                                    <button class="api-lab-btn" id="api-import-curl-btn" aria-label="Import from cURL">⬆ Import cURL</button>
+                                </div>
+                                <textarea id="api-curl-area" class="api-lab-body-input"
+                                          placeholder="curl -X GET https://api.example.com/v1/resource" rows="5"
+                                          aria-label="cURL import/export area"></textarea>
+                            </div>
+
+                            <div class="api-lab-tab-panel" id="api-tab-ai" role="tabpanel">
+                                <textarea id="api-ai-input" class="api-lab-body-input"
+                                          placeholder="Describe the API request you want to make…"
+                                          aria-label="AI request description"></textarea>
+                                <button class="api-lab-btn" id="api-ai-generate-btn" aria-label="Generate request">✨ Generate Request</button>
+                            </div>
+
+                            <!-- Response viewer -->
                             <div class="api-lab-response-viewer" id="api-response-viewer">
-                                <div class="api-lab-response-status" id="api-response-status">Waiting…</div>
-                                <pre class="api-lab-response-body" id="api-response-body"></pre>
+                                <div class="api-lab-response-bar">
+                                    <span class="api-lab-response-status" id="api-response-status">Waiting…</span>
+                                    <div class="api-lab-response-actions">
+                                        <button class="api-lab-btn-small" id="api-resp-copy-btn" aria-label="Copy response body">Copy</button>
+                                        <button class="api-lab-btn-small" id="api-resp-canvas-btn" aria-label="Send to Canvas">→ Canvas</button>
+                                    </div>
+                                </div>
+                                <div class="api-lab-resp-tabs">
+                                    <button class="api-lab-resp-tab active" data-resp-tab="body" aria-selected="true">Body</button>
+                                    <button class="api-lab-resp-tab" data-resp-tab="headers" aria-selected="false">Headers</button>
+                                </div>
+                                <pre class="api-lab-response-body" id="api-response-body" role="region" aria-label="Response body"></pre>
+                                <div class="api-lab-response-headers hidden" id="api-response-headers" role="region" aria-label="Response headers"></div>
                             </div>
                         </div>
                     </div>
