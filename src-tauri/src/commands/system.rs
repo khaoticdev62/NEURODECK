@@ -2585,7 +2585,7 @@ pub async fn start_mcp_server(
     port: u16,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<serde_json::Value, String> {
-    let provider = {
+    let (provider, whitelist, mem_db) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         if app.mcp_abort.is_some() {
             return Err(format!(
@@ -2593,10 +2593,16 @@ pub async fn start_mcp_server(
                 app.mcp_port
             ));
         }
-        app.provider.clone()
+        (app.provider.clone(), app.mcp_tool_whitelist.clone(), app.mem_db.clone())
     };
 
-    let (bound_port, abort_handle, token) = mcp::start(port, provider).await?;
+    let config = mcp::McpServerConfig {
+        provider,
+        tool_whitelist: whitelist,
+        mem_db,
+        port,
+    };
+    let (bound_port, abort_handle, token) = mcp::start(config).await?;
 
     {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -2607,7 +2613,8 @@ pub async fn start_mcp_server(
 
     Ok(serde_json::json!({
         "url": format!("http://127.0.0.1:{}", bound_port),
-        "token": token
+        "token": token,
+        "discovery": format!("http://127.0.0.1:{}/.well-known/mcp", bound_port)
     }))
 }
 
@@ -2633,17 +2640,46 @@ pub fn get_mcp_status(
     if app.mcp_abort.is_some() {
         result.insert("running".to_string(), "true".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());
+        result.insert("url".to_string(), format!("http://127.0.0.1:{}", app.mcp_port));
         result.insert(
-            "url".to_string(),
-            format!("http://127.0.0.1:{}", app.mcp_port),
+            "discovery".to_string(),
+            format!("http://127.0.0.1:{}/.well-known/mcp", app.mcp_port),
         );
-        // SECURITY: Do not expose the bearer token to the frontend.
-        // The token is stored server-side only and validated on incoming requests.
+        // Token is shown in Settings so the user can copy it for their MCP client config.
+        // This is acceptable: the local UI is already trusted, it runs on the same machine.
+        if let Some(tok) = &app.mcp_token {
+            result.insert("token".to_string(), tok.clone());
+        }
     } else {
         result.insert("running".to_string(), "false".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());
     }
     Ok(result)
+}
+
+/// Returns the current MCP tool whitelist.
+#[tauri::command]
+pub fn get_mcp_tool_whitelist(state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
+    let app = state.lock().unwrap_or_else(|e| e.into_inner());
+    Ok(app.mcp_tool_whitelist.clone())
+}
+
+/// Updates the MCP tool whitelist. Changes take effect on the next server start.
+#[tauri::command]
+pub fn set_mcp_tool_whitelist(
+    tools: Vec<String>,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    // Validate: only allow names from the known set
+    let known: std::collections::HashSet<&str> = crate::mcp::ALL_TOOLS.iter().copied().collect();
+    for t in &tools {
+        if !known.contains(t.as_str()) {
+            return Err(format!("Unknown tool name: '{}'", t));
+        }
+    }
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    app.mcp_tool_whitelist = tools;
+    Ok(())
 }
 
 #[tauri::command]

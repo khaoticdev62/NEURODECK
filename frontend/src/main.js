@@ -2805,23 +2805,40 @@ document.querySelector("#app").innerHTML = `
 
                         <div class="stv-group-label">MCP Server</div>
                         <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Expose NEURODECK as a <strong>Model Context Protocol</strong> server so Claude Desktop or any MCP client can invoke tools directly.</p>
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Expose NEURODECK as a <strong>Model Context Protocol 2024-11</strong> server so Claude Desktop or any MCP client can invoke tools, read memory resources, and list prompt presets directly.</p>
                             <div class="stv-row" style="margin-bottom:12px;">
                                 <span class="stv-row-label">Port</span>
-                                <input type="number" id="mcp-port-input" value="13337" min="1024" max="65535" style="width:100px;">
+                                <input type="number" id="mcp-port-input" value="13337" min="1024" max="65535" style="width:100px;" aria-label="MCP server port">
                             </div>
                             <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-primary" id="mcp-start-btn" style="flex:1;">Start MCP Server</button>
-                                <button class="stv-btn-ghost" id="mcp-stop-btn" style="flex:1;" disabled>Stop Server</button>
+                                <button class="stv-btn-primary" id="mcp-start-btn" style="flex:1;" aria-label="Start MCP server">Start MCP Server</button>
+                                <button class="stv-btn-ghost" id="mcp-stop-btn" style="flex:1;" disabled aria-label="Stop MCP server">Stop Server</button>
                             </div>
-                            <div id="mcp-status-line" class="stv-status-line"></div>
-                            <div id="mcp-tools-info" style="display:none;margin-top:10px;padding:10px;background:rgba(0,240,255,0.04);border:1px solid rgba(0,240,255,0.12);border-radius:8px;font-size:0.75rem;font-family:var(--font-mono);line-height:1.7;">
-                                <strong style="color:var(--accent-color);">Available Tools</strong><br>
-                                neurodeck_chat &nbsp;·&nbsp; run_shell &nbsp;·&nbsp; run_code<br>read_file &nbsp;·&nbsp; write_file &nbsp;·&nbsp; get_status
+                            <div id="mcp-status-line" class="stv-status-line" role="status" aria-live="polite"></div>
+                            <!-- Token row (shown while running) -->
+                            <div id="mcp-token-row" style="display:none;margin-top:8px;display:none;">
+                                <div class="stv-row" style="margin-bottom:4px;">
+                                    <span class="stv-row-label">Bearer Token</span>
+                                    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+                                        <code id="mcp-token-display" style="font-size:0.68rem;color:var(--response-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;display:block;" aria-label="MCP bearer token"></code>
+                                        <button class="stv-btn-ghost" id="mcp-copy-token-btn" style="padding:2px 8px;font-size:0.68rem;" aria-label="Copy bearer token">Copy</button>
+                                    </div>
+                                </div>
+                                <div class="stv-row">
+                                    <span class="stv-row-label">Discovery</span>
+                                    <code id="mcp-discovery-url" style="font-size:0.68rem;color:var(--accent-color);"></code>
+                                </div>
                             </div>
+                            <!-- Tool whitelist -->
+                            <div class="stv-group-label" style="margin-top:14px;font-size:0.72rem;">Tool Whitelist</div>
+                            <div id="mcp-tool-whitelist" class="mcp-tool-checklist" role="group" aria-label="MCP tool whitelist">
+                                <div class="mcp-tool-check-loading">Loading…</div>
+                            </div>
+                            <p style="font-size:0.68rem;opacity:0.45;margin:6px 0 0;line-height:1.4;">Changes take effect on next server start. Exec tools also require <code>NEURODECK_ENABLE_MCP_EXEC=true</code>.</p>
+                            <!-- Claude Desktop config snippet -->
                             <div id="mcp-claude-config" style="display:none;margin-top:10px;">
                                 <p style="font-size:0.72rem;opacity:0.5;margin:0 0 4px;">Add to claude_desktop_config.json:</p>
-                                <pre id="mcp-claude-config-snippet" style="margin:0;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:7px;font-size:0.7rem;overflow-x:auto;white-space:pre;color:var(--response-color);"></pre>
+                                <pre id="mcp-claude-config-snippet" style="margin:0;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:7px;font-size:0.7rem;overflow-x:auto;white-space:pre;color:var(--response-color);" aria-label="Claude Desktop config snippet"></pre>
                             </div>
                         </div>
                     </div>

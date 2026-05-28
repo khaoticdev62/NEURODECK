@@ -1011,18 +1011,63 @@ function initMcpSettings() {
   const stopBtn = document.getElementById("mcp-stop-btn");
   const portInput = document.getElementById("mcp-port-input");
   const statusLine = document.getElementById("mcp-status-line");
-  const toolsInfo = document.getElementById("mcp-tools-info");
   const claudeConfig = document.getElementById("mcp-claude-config");
   const configSnippet = document.getElementById("mcp-claude-config-snippet");
+  const tokenRow = document.getElementById("mcp-token-row");
+  const tokenDisplay = document.getElementById("mcp-token-display");
+  const copyTokenBtn = document.getElementById("mcp-copy-token-btn");
+  const discoveryEl = document.getElementById("mcp-discovery-url");
+  const whitelistEl = document.getElementById("mcp-tool-whitelist");
 
   if (!startBtn) return;
 
-  function setRunningUI(port, token) {
+  // All known tool names with friendly labels
+  const TOOL_META = [
+    { name: "neurodeck_chat",  label: "neurodeck_chat",  desc: "LLM chat (always safe)" },
+    { name: "get_status",      label: "get_status",      desc: "Server info" },
+    { name: "memory_add_fact", label: "memory_add_fact", desc: "Add pinned memory fact" },
+    { name: "memory_list_all", label: "memory_list_all", desc: "List all memory records" },
+    { name: "read_file",       label: "read_file",       desc: "Read file from disk" },
+    { name: "write_file",      label: "write_file",      desc: "Write file to disk" },
+    { name: "run_shell",       label: "run_shell",       desc: "Shell exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
+    { name: "run_code",        label: "run_code",        desc: "Code exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
+  ];
+
+  async function loadWhitelistUI() {
+    if (!whitelistEl) return;
+    let current = [];
+    try { current = await invoke("get_mcp_tool_whitelist"); } catch (_) {}
+    whitelistEl.innerHTML = "";
+    TOOL_META.forEach(({ name, label, desc }) => {
+      const checked = current.includes(name);
+      const row = document.createElement("label");
+      row.className = "mcp-tool-check-row";
+      row.title = desc;
+      row.innerHTML = `<input type="checkbox" name="${window.escapeHtml(name)}"${checked ? " checked" : ""}> <span class="mcp-tool-check-name">${window.escapeHtml(label)}</span> <span class="mcp-tool-check-desc">${window.escapeHtml(desc)}</span>`;
+      row.querySelector("input").addEventListener("change", async () => {
+        const enabled = Array.from(whitelistEl.querySelectorAll("input[type=checkbox]"))
+          .filter((cb) => cb.checked)
+          .map((cb) => cb.name);
+        try {
+          await invoke("set_mcp_tool_whitelist", { tools: enabled });
+        } catch (e) {
+          if (typeof window.addNotification === "function") {
+            window.addNotification("Whitelist Error", String(e), "error");
+          }
+        }
+      });
+      whitelistEl.appendChild(row);
+    });
+  }
+
+  function setRunningUI(port, token, discovery) {
     startBtn.disabled = true;
     stopBtn.disabled = false;
-    statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <a href="http://127.0.0.1:${window.escapeHtml(String(port))}" style="color: var(--accent-color); text-decoration: none;" onclick="return false;">http://127.0.0.1:${window.escapeHtml(String(port))}</a>`;
-    toolsInfo.style.display = "block";
-    claudeConfig.style.display = "block";
+    statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <span style="color: var(--accent-color);">http://127.0.0.1:${window.escapeHtml(String(port))}</span>`;
+    if (tokenRow) tokenRow.style.display = "";
+    if (tokenDisplay && token) tokenDisplay.textContent = token;
+    if (discoveryEl && discovery) discoveryEl.textContent = discovery;
+    if (claudeConfig) claudeConfig.style.display = "block";
     if (configSnippet) {
       const snippet = {
         mcpServers: {
@@ -1040,27 +1085,39 @@ function initMcpSettings() {
     startBtn.disabled = false;
     stopBtn.disabled = true;
     statusLine.textContent = "Server is not running.";
-    toolsInfo.style.display = "none";
-    claudeConfig.style.display = "none";
+    if (tokenRow) tokenRow.style.display = "none";
+    if (claudeConfig) claudeConfig.style.display = "none";
+  }
+
+  // Copy token button
+  if (copyTokenBtn && tokenDisplay) {
+    copyTokenBtn.addEventListener("click", () => {
+      const tok = tokenDisplay.textContent;
+      if (tok) {
+        navigator.clipboard.writeText(tok).then(() => {
+          copyTokenBtn.textContent = "Copied!";
+          setTimeout(() => { copyTokenBtn.textContent = "Copy"; }, 1500);
+        }).catch(() => {});
+      }
+    });
   }
 
   // Sync UI on settings modal open
   document.getElementById("settings-btn") &&
-    document
-      .getElementById("settings-btn")
-      .addEventListener("click", async () => {
-        try {
-          const status = await invoke("get_mcp_status", { execToken: state.execToken });
-          if (status.running === "true") {
-            portInput.value = status.port || "13337";
-            setRunningUI(status.port, status.token);
-          } else {
-            setStoppedUI();
-          }
-        } catch (_) {
+    document.getElementById("settings-btn").addEventListener("click", async () => {
+      try {
+        const status = await invoke("get_mcp_status", { execToken: state.execToken });
+        if (status.running === "true") {
+          portInput.value = status.port || "13337";
+          setRunningUI(status.port, status.token, status.discovery);
+        } else {
           setStoppedUI();
         }
-      });
+      } catch (_) {
+        setStoppedUI();
+      }
+      loadWhitelistUI();
+    });
 
   startBtn.addEventListener("click", async () => {
     const port = parseInt(portInput.value, 10) || 13337;
@@ -1068,9 +1125,9 @@ function initMcpSettings() {
     statusLine.textContent = "Starting...";
     try {
       const result = await invoke("start_mcp_server", { port, execToken: state.execToken });
-      setRunningUI(result.url ? port : port, result.token);
-      if (typeof addNotification === "function") {
-        addNotification(
+      setRunningUI(port, result.token, result.discovery);
+      if (typeof window.addNotification === "function") {
+        window.addNotification(
           "MCP Server Started",
           `Listening on port ${port}. Copy the config snippet below.`,
           "success",
@@ -1091,12 +1148,8 @@ function initMcpSettings() {
     try {
       await invoke("stop_mcp_server", { execToken: state.execToken });
       setStoppedUI();
-      if (typeof addNotification === "function") {
-        addNotification(
-          "MCP Server Stopped",
-          "The MCP server has been shut down.",
-          "info",
-        );
+      if (typeof window.addNotification === "function") {
+        window.addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
       }
     } catch (err) {
       statusLine.innerHTML = "";
@@ -1113,12 +1166,14 @@ function initMcpSettings() {
     .then((status) => {
       if (status && status.running === "true") {
         portInput.value = status.port || "13337";
-        setRunningUI(status.port, status.token);
+        setRunningUI(status.port, status.token, status.discovery);
       } else {
         setStoppedUI();
       }
     })
     .catch(() => setStoppedUI());
+
+  loadWhitelistUI();
 }
 
 // --- PERSONAL KNOWLEDGE BASE (RAG) SETTINGS ---

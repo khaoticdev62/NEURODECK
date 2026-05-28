@@ -3584,6 +3584,57 @@ body::before {
   line-height: 1.45;
 }
 
+/* ── MCP Tool Whitelist ── */
+.mcp-tool-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.mcp-tool-check-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+  user-select: none;
+}
+.mcp-tool-check-row:hover {
+  background: rgba(0, 240, 255, 0.05);
+}
+
+.mcp-tool-check-row input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: var(--color-primary, #00f0ff);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.mcp-tool-check-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.mcp-tool-check-desc {
+  font-size: 0.67rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-family: var(--font-mono);
+}
+
+.mcp-tool-check-loading {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: var(--font-mono);
+  padding: 6px 0;
+}
+
 /* ── Toggle switches ── */
 .stv-toggle-row {
   display: flex;
