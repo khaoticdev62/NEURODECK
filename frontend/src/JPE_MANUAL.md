@@ -2,9 +2,36 @@
 
 Welcome to NEURODECK. This manual is written in **Just Plain English**. No jargon, no complicated tech terms, and no assumed knowledge. If you're looking for a feature, want to understand how a tool works, or need to figure out what a button does, you're in the right place.
 
-NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army knife where the knife can talk to you, write software, and run your computer. Here is a detailed breakdown of everything NEURODECK can do and exactly how you can use it.
+NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army knife where the knife can talk to you, write software, and run your computer. 
 
 ---
+
+## 🧑‍💻 Who is NEURODECK For? (Use Cases)
+Because NEURODECK has so many tools, it can be whatever you need it to be. Here is how different types of people use it every day:
+
+> ### **The Software Engineer**
+> - Uses the **Autonomous Agent** to write boilerplate code in the background while they focus on hard problems.
+> - Maps **DeckCode** to their controller to instantly inject multi-line snippets into the **IDE**.
+> - Uses the real **Terminal (PTY)** for local builds and the **Git** tab to visually review their commits before pushing to GitHub.
+
+> ### **The Web Developer & Designer**
+> - Lives in the **Canvas** tab, asking the AI to generate raw HTML/CSS layouts and watching them render instantly.
+> - Uses **LAN Collaboration** to host their Canvas session, letting a coworker on the same Wi-Fi connect and tweak CSS colors in real-time.
+> - Relies on the **Prompt Lab**'s visual formulas to craft perfectly structured requests for complex UI components.
+
+> ### **The Sysadmin & Power User**
+> - Manages dozens of remote servers using saved **SSH Profiles** and the visual **FTP File Manager**.
+> - Uses the **CLI Maker** to turn one-off bash scripts into permanent, easy-to-use custom commands.
+> - Relies on the **Scheduler** to automatically trigger background backups or server health checks at specific times.
+
+> ### **The Student & Casual User**
+> - Indexes all of their textbooks and PDFs using the **Docs** tab, then uses the AI to instantly find answers and summarize chapters.
+> - Uses the **Chat** to brainstorm essays, relying on **Memory** so the AI remembers their thesis statement across multiple days.
+> - Uses **Share (Warpinator)** to instantly beam large study files to their iPhone without needing a USB cable.
+
+---
+
+Here is a detailed breakdown of everything NEURODECK can do and exactly how you can use it.
 
 ## 1. 🎡 The Radial Menu (App Navigation)
 **What it is:** The pop-up circular menu used to switch between all of NEURODECK's different screens without ever needing to touch a mouse. Since NEURODECK is built for handhelds like the Steam Deck, this is the most important control in the app.
