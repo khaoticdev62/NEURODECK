@@ -151,7 +151,35 @@ Here is a detailed breakdown of everything NEURODECK can do and exactly how you 
 **What it is:** An app store for community-made superpowers and custom scripts.
 **How to use it:** Inside Settings, go to the Plugins tab. You can browse and download tiny `.lua` scripts written by other people that give NEURODECK brand new slash commands, new visual themes, or entirely new AI abilities. If you know how to code, you can easily drop your own `.lua` files into the `plugins/` folder to modify how NEURODECK works on the fly!
 
-## 25. ⌨️ Complete Command Reference
+## 25. 🚀 Deep Dive: Mastering the Advanced Tabs
+
+Once you are comfortable with Chat and the Terminal, you will want to master NEURODECK's most powerful tools. Here is exactly how to use the advanced tabs to get real work done:
+
+### Using the Share Tab (Warpinator)
+1. **Match your Group Code:** On both devices (e.g., NEURODECK and your iPhone), ensure the "Group Code" in settings is identical (like `MY_WIFI`).
+2. **Find the Peer:** Open the Share tab. You will see a list of connected devices pop up automatically.
+3. **Send the File:** Click "Browse", select the file you want to send, and click the "Send" button next to your peer's name.
+4. **Accept:** On the receiving device, a notification will pop up. Click "Accept" to instantly download the file over your local network.
+
+### Using the Git Tab
+1. **Make Changes:** Edit your code in the IDE or let the AI do it in the Canvas.
+2. **Review the Diff:** Open the Git tab. You will see a list of modified files. Click a file to see exactly what lines were added (green) or deleted (red).
+3. **Stage & Commit:** Type a short message explaining what you changed (e.g., "Fixed the login button color").
+4. **Push:** Click "Commit" to save the changes to history, then click "Push" to send your changes safely to your remote repository (like GitHub).
+
+### Using the Orchestrator (Flow Tab)
+1. **Create a Node:** Open the Flow tab. Drag a "Trigger" block onto the canvas.
+2. **Add an Action:** Drag an "AI Prompt" block next to it, and type an instruction inside it (like "Summarize this text").
+3. **Connect Them:** Click and drag a line from the Trigger block to the Action block to connect them together like Lego bricks.
+4. **Run the Flow:** Click the Play button. The Orchestrator will automatically trigger the first block, wait for it to finish, and pass the result down the wire to the next block!
+
+### Using the Agent Tab
+1. **Give it a Mission:** Open the Agent tab and type a complex goal, such as "Read the error logs, find the bug in my python script, and fix it."
+2. **Watch it Work:** Click Start. The Agent will write code, run it in a hidden terminal, and read the output. You can watch its "Thought Process" stream live on the screen.
+3. **Let it Iterate:** If the code fails, the Agent will realize it, rewrite the code, and try again automatically (up to 5 times).
+4. **Intervene:** If the Agent is doing the wrong thing, you can press the "Stop" button at any time to halt the loop and give it manual feedback.
+
+## 26. ⌨️ Complete Command Reference
 
 For the power users, here is the complete, official mapping for every Gamepad, Keyboard, and Slash Command built into NEURODECK.
 
@@ -210,7 +238,7 @@ You can type these directly into the chat box to trigger system actions or chang
 | `/promptgen <task>` | Tells the AI to generate a highly optimized prompt for your task |
 | `/formula <name>` | Applies a specific prompt formula (like AIDA or SCQA) to your text |
 
-## 26. 🛠️ Creating Lua Plugins & Mods
+## 27. 🛠️ Creating Lua Plugins & Mods
 
 NEURODECK isn't a closed box. It has a built-in **Lua API** that allows anyone to create custom mods, slash commands, and AI behaviors. 
 
