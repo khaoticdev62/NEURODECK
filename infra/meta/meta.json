@@ -14,9 +14,9 @@
   },
   "tag": "v1.4.0-osiris",
   "build": {
-    "git_sha": "704520490d3425be29d1a7a85ce41f37a80eccb6",
+    "git_sha": "42958ec002ccaeb7bd33f519c1de8bab4c8c01c5",
     "git_tag": null,
-    "built_at_utc": "2026-05-28T17:38:08Z",
+    "built_at_utc": "2026-05-28T17:44:45Z",
     "dirty": true
   },
   "studio": {

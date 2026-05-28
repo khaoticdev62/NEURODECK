@@ -6,7 +6,7 @@
 
 ## Quick State Summary
 
-> Last updated: 2026-05-28 — **v1.4.0-Osiris IN PROGRESS** 🔵 — Sprint 7.0 complete ✅ | Sprint 7.1 next: Workflow Visual Builder | Roadmap at `docs/ROADMAP_v1.4.0-Osiris.md`
+> Last updated: 2026-05-28 — **v1.4.0-Osiris RELEASED** ✅ | **v1.5.0-Horus PLANNING** 🔵 — 10 items across 3 priority tiers | Roadmap at `docs/ROADMAP_v1.5.0-Horus.md` | Sprint 8.0 target: Torrent/P2P pipeline
 
 | Layer | Status |
 |---|---|
