@@ -239,8 +239,10 @@ function Get-WslDistro {
     $override = $env:NEURODECK_WSL_DISTRO
     if ($override) { return $override }
 
-    # Prefer Ubuntu-* distros; fall back to first running distro
-    $lines = wsl.exe --list --quiet 2>$null | Where-Object { $_ -and $_.Trim() -ne "" }
+    # wsl.exe --list outputs UTF-16 LE; strip null bytes before matching
+    $lines = wsl.exe --list --quiet 2>$null |
+        ForEach-Object { ($_ -replace '\x00', '').Trim() } |
+        Where-Object { $_ -ne "" }
     $ubuntu = $lines | Where-Object { $_ -match '^Ubuntu' } | Select-Object -First 1
     if ($ubuntu) { return $ubuntu.Trim() }
     $first = $lines | Select-Object -First 1
