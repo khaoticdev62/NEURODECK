@@ -153,7 +153,13 @@ Here is a detailed breakdown of everything NEURODECK can do and exactly how you 
 
 ## 25. 🚀 Deep Dive: Mastering the Advanced Tabs
 
-Once you are comfortable with Chat and the Terminal, you will want to master NEURODECK's most powerful tools. Here is exactly how to use the advanced tabs to get real work done:
+Once you are comfortable with Chat, you will want to master NEURODECK's most powerful tools. Here is exactly how to use the advanced tabs to get real work done:
+
+### Using the Terminal Tab
+1. **Open the Terminal:** Switch to the Terminal tab. This gives you direct, raw access to your computer's underlying operating system.
+2. **Run Standard Commands:** Type standard bash or powershell commands (like `dir`, `ls`, `ping google.com`, or `python script.py`) to manage files and run programs exactly like a hacker in a movie.
+3. **Run CLI Maker Scripts:** If you saved a custom shortcut in the CLI Maker tab (e.g., `backup_db`), you can simply type `backup_db` here and hit Enter to instantly execute your custom script.
+4. **Use AI Assistance:** If you don't know the right terminal command to use, just switch back to the Chat tab and ask the AI "What is the command to find all large files on my C drive?" and it will write the command for you to paste back in.
 
 ### Using the Share Tab (Warpinator)
 1. **Match your Group Code:** On both devices (e.g., NEURODECK and your iPhone), ensure the "Group Code" in settings is identical (like `MY_WIFI`).
