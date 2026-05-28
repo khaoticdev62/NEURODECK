@@ -157,6 +157,37 @@ impl MemoryDB {
         Ok(removed)
     }
 
+    /// Returns a clone of all records for external export.
+    pub fn export_all_records(&self) -> Result<Vec<MemoryRecord>, String> {
+        let records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+        Ok(records.clone())
+    }
+
+    /// Imports a set of records. `merge=true` deduplicates by ID; `merge=false` replaces all.
+    pub fn import_records(&self, incoming: Vec<MemoryRecord>, merge: bool) -> Result<usize, String> {
+        let mut records = self
+            .records
+            .lock()
+            .map_err(|_| "Failed to lock memory DB")?;
+        let count = incoming.len();
+        if merge {
+            for rec in incoming {
+                records.retain(|r| r.id != rec.id);
+                records.push(rec);
+            }
+        } else {
+            *records = incoming;
+        }
+        let serialized = serde_json::to_string_pretty(&*records)
+            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+        fs::write(&self.file_path, serialized)
+            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        Ok(count)
+    }
+
     pub fn search(
         &self,
         query_embedding: &[f32],

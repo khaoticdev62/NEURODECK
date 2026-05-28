@@ -65,6 +65,7 @@ The heavy logic modules have been extracted from `main.js` into ES modules:
 | `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
 | `sync.rs` | Cross-device encrypted sync over HTTPS |
 | `commands/` | Sub-module split: `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` |
+| `deckcode/` | DeckCode input orchestration: schema parsing (`schema.rs`, `multilang_schema.rs`), raw input loop (`input.rs`), bindings mapping (`resolver.rs`), and frontend IPC dispatch (`dispatch.rs`). |
 
 ### Infrastructure Crate (`infrastructure/`)
 A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
@@ -176,6 +177,8 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **KFMS dirty-flag filtering** — `khaotic-init.sh stamp` excludes the 4 KFMS-managed artifact files (`meta.json`, `health.json`, `CODENAME_REGISTRY.md`, `IMPLEMENTATION_PLAN.md`) from the `git status --porcelain` dirty check. Without this, every post-commit amend would mark the build as dirty on the next stamp.
 
 - **`#[tauri::command]` handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs` and imported into `lib.rs` with `use crate::commands::*`. New commands go into the most appropriate sub-module, not directly into `lib.rs`.
+
+- **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection, avoiding generic JS evaluations or hardcoded Monaco commands.
 
 ---
 

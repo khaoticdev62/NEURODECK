@@ -1550,6 +1550,23 @@ document.querySelector("#app").innerHTML = `
                                 <button class="memory-filter-btn" data-filter="fact">Facts</button>
                             </div>
                             <button class="memory-btn memory-btn-refresh" id="memory-refresh-btn" aria-label="Refresh memory">↺ Refresh</button>
+                            <div class="memory-io-bar">
+                                <button class="memory-btn memory-btn-export" id="memory-export-btn" title="Export all memory to .ndmem file" aria-label="Export memory">⬆ Export</button>
+                                <label class="memory-btn memory-btn-import" for="memory-import-file" title="Import .ndmem file" aria-label="Import memory" tabindex="0" role="button">⬇ Import</label>
+                                <input type="file" id="memory-import-file" accept=".ndmem" style="display:none" aria-label="Choose .ndmem file to import">
+                                <button class="memory-btn memory-btn-backup" id="memory-backup-btn" title="Create a timestamped backup now" aria-label="Backup memory">💾 Backup</button>
+                                <button class="memory-btn memory-btn-backups-toggle" id="memory-show-backups-btn" title="Show/hide backup history" aria-label="Show backup history" aria-expanded="false">🗂 History</button>
+                            </div>
+                        </div>
+
+                        <div class="memory-backup-panel" id="memory-backup-panel" style="display:none" aria-label="Backup history panel">
+                            <div class="memory-backup-header">
+                                <span class="memory-backup-title">Backup History</span>
+                                <button class="memory-btn-icon memory-backup-close" id="memory-backup-close" aria-label="Close backup panel">✕</button>
+                            </div>
+                            <div class="memory-backup-list" id="memory-backup-list">
+                                <div class="memory-backup-empty">No backups yet.</div>
+                            </div>
                         </div>
 
                         <div class="memory-add-fact-bar" id="memory-add-fact-bar">

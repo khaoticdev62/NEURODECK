@@ -1283,6 +1283,243 @@ pub fn memory_add_fact(
     Ok(id)
 }
 
+// ── Memory Export / Import / Backup ──────────────────────────────────────────
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct NdmemEnvelope {
+    pub ndmem_version: String,
+    pub exported_at: String,
+    pub record_count: usize,
+    pub records: Vec<crate::memory::MemoryRecord>,
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct BackupInfo {
+    pub name: String,
+    pub path: String,
+    pub created_at: String,
+    pub record_count: usize,
+}
+
+fn memory_backup_dir() -> std::path::PathBuf {
+    crate::user_config_dir()
+        .join("data")
+        .join("memory")
+        .join("backups")
+}
+
+fn memory_export_dir() -> std::path::PathBuf {
+    crate::user_config_dir().join("exports")
+}
+
+/// Exports all memory records to `user_config_dir/exports/memory_TIMESTAMP.ndmem`.
+/// Returns the absolute path of the written file.
+#[tauri::command]
+pub fn memory_export(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let records = db.export_all_records()?;
+    let count = records.len();
+
+    let envelope = NdmemEnvelope {
+        ndmem_version: "1.0".into(),
+        exported_at: chrono::Utc::now().to_rfc3339(),
+        record_count: count,
+        records,
+    };
+    let json = serde_json::to_string_pretty(&envelope)
+        .map_err(|e| format!("Serialization error: {}", e))?;
+
+    let export_dir = memory_export_dir();
+    std::fs::create_dir_all(&export_dir)
+        .map_err(|e| format!("Cannot create exports dir: {}", e))?;
+
+    let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("memory_{}.ndmem", ts);
+    let dest = export_dir.join(&filename);
+    std::fs::write(&dest, json)
+        .map_err(|e| format!("Failed to write export file: {}", e))?;
+
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+/// Imports memory records from a JSON string (`.ndmem` envelope).
+/// `merge=true` deduplicates by ID; `merge=false` replaces all records.
+/// Returns the count of records imported.
+#[tauri::command]
+pub fn memory_import_data(
+    data: String,
+    merge: bool,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<usize, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+
+    // Accept either a bare Vec<MemoryRecord> or an NdmemEnvelope
+    let records: Vec<crate::memory::MemoryRecord> = if let Ok(env) =
+        serde_json::from_str::<NdmemEnvelope>(&data)
+    {
+        env.records
+    } else {
+        serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data)
+            .map_err(|e| format!("Invalid .ndmem file: {}", e))?
+    };
+
+    if records.is_empty() {
+        return Ok(0);
+    }
+    // Validate: each record must have a non-empty id and content
+    for r in &records {
+        if r.id.trim().is_empty() {
+            return Err("Invalid record: missing id".into());
+        }
+    }
+    db.import_records(records, merge)
+}
+
+/// Creates a timestamped backup in `user_config_dir/data/memory/backups/`.
+/// Keeps the 5 most recent backups, pruning older ones.
+/// Returns the backup file path.
+#[tauri::command]
+pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let records = db.export_all_records()?;
+
+    let backup_dir = memory_backup_dir();
+    std::fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Cannot create backup dir: {}", e))?;
+
+    let envelope = NdmemEnvelope {
+        ndmem_version: "1.0".into(),
+        exported_at: chrono::Utc::now().to_rfc3339(),
+        record_count: records.len(),
+        records,
+    };
+    let json = serde_json::to_string_pretty(&envelope)
+        .map_err(|e| format!("Serialization error: {}", e))?;
+
+    let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("backup_{}.ndmem", ts);
+    let dest = backup_dir.join(&filename);
+    std::fs::write(&dest, &json)
+        .map_err(|e| format!("Failed to write backup: {}", e))?;
+
+    // Prune: keep only the 5 most recent backups
+    if let Ok(entries) = std::fs::read_dir(&backup_dir) {
+        let mut files: Vec<std::path::PathBuf> = entries
+            .flatten()
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .map(|x| x == "ndmem")
+                    .unwrap_or(false)
+            })
+            .map(|e| e.path())
+            .collect();
+        files.sort();
+        if files.len() > 5 {
+            for old in &files[..files.len() - 5] {
+                let _ = std::fs::remove_file(old);
+            }
+        }
+    }
+
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+/// Returns a list of available backups sorted newest-first.
+#[tauri::command]
+pub fn memory_list_backups(_state: State<'_, Mutex<AppState>>) -> Result<Vec<BackupInfo>, String> {
+    let backup_dir = memory_backup_dir();
+    if !backup_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut infos: Vec<BackupInfo> = std::fs::read_dir(&backup_dir)
+        .map_err(|e| format!("Cannot read backup dir: {}", e))?
+        .flatten()
+        .filter(|e| {
+            e.path()
+                .extension()
+                .map(|x| x == "ndmem")
+                .unwrap_or(false)
+        })
+        .filter_map(|e| {
+            let path = e.path();
+            let name = path.file_name()?.to_string_lossy().into_owned();
+            let created_at = e
+                .metadata()
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| {
+                    t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| {
+                        let secs = d.as_secs() as i64;
+                        chrono::DateTime::<chrono::Utc>::from_timestamp(secs, 0)
+                            .unwrap_or_default()
+                            .format("%Y-%m-%d %H:%M:%S UTC")
+                            .to_string()
+                    })
+                })
+                .unwrap_or_default();
+            // Read record count from envelope without loading everything into state
+            let record_count = std::fs::read_to_string(&path)
+                .ok()
+                .and_then(|s| serde_json::from_str::<NdmemEnvelope>(&s).ok())
+                .map(|e| e.record_count)
+                .unwrap_or(0);
+            Some(BackupInfo {
+                name,
+                path: path.to_string_lossy().into_owned(),
+                created_at,
+                record_count,
+            })
+        })
+        .collect();
+
+    // Sort newest first
+    infos.sort_by(|a, b| b.name.cmp(&a.name));
+    Ok(infos)
+}
+
+/// Restores memory from a named backup file (full replace — not a merge).
+#[tauri::command]
+pub fn memory_restore_backup(
+    backup_name: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    // Sanitize: backup_name must be a plain filename with no path separators
+    if backup_name.contains('/') || backup_name.contains('\\') || backup_name.contains("..") {
+        return Err("Invalid backup name".into());
+    }
+    let backup_path = memory_backup_dir().join(&backup_name);
+    if !backup_path.exists() {
+        return Err(format!("Backup '{}' not found", backup_name));
+    }
+    let data = std::fs::read_to_string(&backup_path)
+        .map_err(|e| format!("Cannot read backup: {}", e))?;
+    // Delegate to import_data with merge=false (full replace)
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let records: Vec<crate::memory::MemoryRecord> = serde_json::from_str::<NdmemEnvelope>(&data)
+        .map(|e| e.records)
+        .or_else(|_| serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data))
+        .map_err(|e| format!("Corrupt backup file: {}", e))?;
+    db.import_records(records, false)?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn start_oauth_flow(
     state: State<'_, Mutex<AppState>>,
