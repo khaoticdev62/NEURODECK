@@ -61,25 +61,49 @@ Built to be used from a couch, in Game Mode, with a controller in your hands.
 
 ## 🦾 Core Superpowers
 
-Instead of simple lists, here is what NEURODECK brings to the table:
+NEURODECK replaces 8 different developer tools with a unified, controller-navigable interface:
 
 > ### 💬 **LLM Chat + RAG Memory**
 > Full streaming chat with Gemini or Ollama. Past conversations and your own docs are silently injected into every reply via cosine-similarity vector memory — no copy-paste, no re-explaining.
 
+> ### 🧪 **Prompt Lab & Visual Formula Builder**
+> Interactively build prompts using industry-standard formulas (AIDA, SCQA, PASTOR, Chain-of-Thought, PAS). Features a template gallery and a JPE (Justification, Purpose, Expectation) explanation pane backed by the active LLM.
+
 > ### 🎮 **DeckCode Smart Snippets**
-> Press a gamepad sequence and instantly open a terminal, trigger a macro, or send a prompt to the AI. With the latest update, DeckCode can dynamically inject multi-language code blocks straight into your IDE or Canvas and intelligently set your cursor.
+> Press a gamepad sequence to instantly trigger macros, open terminals, or send prompts. Dynamically inject multi-language code blocks straight into your IDE or Canvas and intelligently set your cursor using `${cursor}` placeholders.
 
 > ### 🤖 **Autonomous Agent Loop**
 > Give it a task in plain English. It writes code, runs it, reads the output, and iterates — up to 5 steps, fully observable in real time.
 
 > ### 💻 **Real PTY Shell & IDE**
-> Not a fake terminal. Multi-session Bash/Zsh with full process control, ANSI colors, and AI autocomplete on `Ctrl+Space`. Plus, a mini IDE equipped with an LSP client.
+> Multi-session Bash/Zsh with full process control, ANSI colors, and AI autocomplete on `Ctrl+Space`. Plus, a mini IDE equipped with an LSP client.
+
+> ### 🌐 **SSH & FTP Profiles**
+> Built-in SSH client and FTP/SFTP manager with persistent connection profiles and drag-and-drop file transfers.
 
 > ### 🎨 **Live Code Canvas**
 > Write HTML/CSS/JS and see it render instantly, split-pane. LAN canvas collaboration allows you to host a session where peers can edit together in real time.
 
 > ### 📤 **Zero-Cloud LAN Ecosystem**
-> Warpinator-compatible P2P file transfers over mDNS, FTP/SFTP clients, and a WebSocket iPhone remote. All running directly on your LAN.
+> Warpinator-compatible P2P file transfers over mDNS, WebSocket iPhone remote control, and local Torrents. All running directly on your LAN.
+
+---
+
+## 🧩 Lua Plugin API
+
+NEURODECK is dynamically extensible via Lua 5.4. Drop a `.lua` file into the `plugins/` directory, and it will auto-load on startup.
+
+- **Register Shell Commands:** Add custom `/commands` to the chat.
+- **Hook System Events:** Intercept UI events, LLM streaming, and PTY outputs.
+- **Define Custom Personas:** Create multi-agent personalities with custom system prompts (like the built-in BMAD agents).
+
+---
+
+## 🏛️ Architecture & Standards
+
+- **Khaotic Foundation Metadata Standard (KFMS v1.0):** Strict release gating, automated `meta.json` governance, and semantic versioning driven by Egyptian god codenames (v1.5.0 = Horus).
+- **Zero-Bloat Frontend:** Written entirely in Vanilla HTML/CSS/JS. No React, no bundler overhead in production, pure DOM manipulation for maximum performance on handheld devices.
+- **Tauri IPC:** Native capabilities (filesystem, network, PTY, Bluetooth) are handled by a lightweight Rust backend.
 
 ---
 
