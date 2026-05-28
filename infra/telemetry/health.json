@@ -7,7 +7,7 @@
   "tag": "v1.3.0-isis",
   "workspace_state": "manual-uncommitted",
   "dirty_build": true,
-  "stamped_at_utc": "2026-05-28T11:32:23Z",
+  "stamped_at_utc": "2026-05-28T11:39:06Z",
   "checks": {
     "meta_json_present": true,
     "schema_valid": true,
