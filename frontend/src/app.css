@@ -20366,3 +20366,295 @@ button[class*="send-prompt"]:hover {
 .mcp-tool-check-loading { font-size: 0.78rem; opacity: 0.5; font-style: italic; padding: 4px 0; }
 
 
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   UI LAYOUT AUDIT — STEAM DECK & COMPACT HEIGHT QUALITY FIXES
+   Sprint: UI Layout Audit Pass (2026-05-28)
+   Target: 1280×800 Steam Deck, compact landscape displays, touch/controller use
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. STEAM DECK COMPACT HEIGHT OPTIMIZATIONS (800px viewport height) ──── */
+/* The existing breakpoints cover 760px and 620px. 800px (Steam Deck LCD/OLED)
+   falls between these and the unconstrained default, leaving chrome taller
+   than necessary for the limited vertical space. */
+
+@media (max-height: 800px) {
+  /* Reduce top navigation chrome — saves ~10px for content area */
+  .top-nav {
+    min-height: 46px;
+    padding: 4px 16px;
+  }
+
+  /* Slightly tighter nav tab row — saves 4px */
+  .nav-tab-row {
+    height: 38px;
+  }
+
+  /* Chat session context header — reduce from 58px to 46px, saves 12px */
+  .chat-session-header {
+    min-height: 46px;
+    padding: 5px 16px;
+  }
+
+  /* Reduce chat message area top padding to gain content space */
+  .chat-workspace {
+    padding-top: 16px;
+    padding-bottom: 96px;
+  }
+
+  /* Compact docs view at Steam Deck height */
+  .docs-container {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  /* Compact agent/memory shell padding */
+  .agent-shell,
+  .memory-shell {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  /* Compact boot screen ASCII panel — match the 760px rule for 800px too */
+  .boot-main {
+    flex-direction: column;
+  }
+
+  .boot-ascii-panel {
+    width: 100%;
+    min-height: clamp(140px, 24dvh, 200px);
+    padding: 18px 16px 12px;
+    border-right: none;
+    border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
+  }
+
+  .boot-log-panel {
+    padding: 18px 16px 12px;
+  }
+
+  .boot-progress-bar-wrap {
+    padding: 10px 16px 14px;
+  }
+}
+
+/* ── 2. FONT SIZE FLOOR — READABILITY ON STEAM DECK ─────────────────────── */
+/* Elements below 0.65rem (~10.4px) are unreadable at arm's length.
+   WCAG SC 1.4.4 recommends scaling — we enforce a floor for tiny labels. */
+
+/* Agent switcher panel: bump smallest badges from 0.58rem to 0.65rem */
+.agent-provider-badge {
+  font-size: 0.65rem;
+}
+
+.agent-tier-badge {
+  font-size: 0.65rem;
+}
+
+.agent-tag {
+  font-size: 0.65rem;
+}
+
+.agent-card-active-chip {
+  font-size: 0.65rem;
+}
+
+.agent-rec-model-id {
+  font-size: 0.65rem;
+}
+
+/* Boot screen small labels */
+.boot-log-header {
+  font-size: 0.65rem;
+}
+
+/* ── 3. TOUCH / CONTROLLER TARGET SIZES ─────────────────────────────────── */
+/* WCAG 2.5.5 (AAA) recommends 44×44px; 36×36px is the minimum for
+   reliable touch/controller selection on Steam Deck. */
+
+/* Sidebar chat history action buttons */
+.history-action-btn {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* Settings navigation items — already ~35px, ensure floor */
+.stv-nav-item {
+  min-height: 36px;
+}
+
+/* Nav tabs — ensure comfortable tap height */
+.nav-tab {
+  min-height: 34px;
+}
+
+/* Sidebar toggle and icon buttons in top-nav */
+.sidebar-toggle-btn,
+.nd-icon-only {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* Memory and agent toolbar buttons */
+.memory-btn,
+.cli-import-btn {
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* Share inner tabs */
+.share-inner-tab {
+  min-height: 34px;
+}
+
+/* ── 4. SETTINGS MODAL AT STEAM DECK HEIGHT ──────────────────────────────── */
+/* At 800px viewport height the modal is min(760px, 736px) = 736px — fine,
+   but the sidebar navigation at 736px with 13 items can feel dense.
+   Add modest padding reduction for viewport heights 720–820px. */
+
+@media (max-height: 820px) and (min-height: 721px) {
+  .settings-modal-card {
+    height: min(720px, calc(100dvh - 56px));
+  }
+
+  .stv-sidebar {
+    padding: 12px 0 10px;
+  }
+
+  .stv-nav-item {
+    padding: 8px 14px;
+  }
+
+  .settings-panel {
+    padding: 16px 18px 14px;
+  }
+}
+
+/* ── 5. FLOATING INPUT CONTAINER AT COMPACT HEIGHTS ─────────────────────── */
+@media (max-height: 800px) {
+  .floating-input-container {
+    padding-bottom: 14px;
+  }
+}
+
+/* ── 6. OVERFLOW PROTECTION FOR LONG TEXT ───────────────────────────────── */
+/* Ensure text in cards, history items, and metadata rows never escapes 
+   its container. Uses safe wrapping that preserves layout stability. */
+
+/* Chat session name — already has overflow:hidden but add break-word */
+.chat-session-name {
+  overflow-wrap: anywhere;
+}
+
+/* Memory item content text — prevent overflow on very long facts */
+.memory-item-text,
+.memory-fact-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Agent card descriptions */
+.agent-card-desc,
+.agent-rec-desc {
+  overflow-wrap: anywhere;
+}
+
+/* ── 7. CONTENT MAX-WIDTH AT ULTRA-WIDE RESOLUTIONS ─────────────────────── */
+/* At 2560px+ the chat viewport is already capped at 820px max-width.
+   The agent and memory shells use --view-shell-max-width: 1480px.
+   No changes needed — these are already well-constrained. */
+
+/* ── 8. DOCK MODE (1920×1080) — ENSURE ADEQUATE BREATHING ROOM ──────────── */
+/* At 1920×1080 docked, the sidebar+content works well. Ensure the chat
+   session header and top chrome don't look spacious-but-wasted. */
+
+@media (min-height: 900px) {
+  .chat-session-header {
+    min-height: 58px; /* restore full height at generous viewport */
+  }
+
+  .top-nav {
+    min-height: 52px;
+  }
+}
+
+/* ── 9. HORIZONTAL SCROLL SAFETY — TABLE WRAPPERS ───────────────────────── */
+/* Any table that could overflow needs a contained scroll zone. Applied
+   to the settings panel content area as a safety net. */
+.settings-panel table,
+.stv-card table {
+  width: 100%;
+  table-layout: fixed;
+  overflow-wrap: anywhere;
+}
+
+/* ── 10. MODAL AND OVERLAY SAFETY AT COMPACT SIZES ──────────────────────── */
+/* Ensure modals never exceed the viewport even at unusual sizes. */
+.settings-overlay {
+  overflow: auto;
+}
+
+.command-palette-card {
+  max-height: min(580px, calc(100dvh - 80px));
+}
+
+/* ── 11. FOCUS RING VISIBILITY — CONTROLLER NAVIGATION ──────────────────── */
+/* Steam Deck controller navigation relies on visible focus rings.
+   Ensure they are never too thin or low-contrast for the dark theme. */
+
+*:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Prevent focus ring clipping inside overflow:hidden containers */
+.nav-tab:focus-visible,
+.stv-nav-item:focus-visible,
+.history-item:focus-visible {
+  outline-offset: -1px;
+}
+
+/* ── 12. REDUCED MOTION — ADDITIONAL GUARDS ──────────────────────────────── */
+/* Supplement the existing prefers-reduced-motion block with any additions
+   that were added after the original block. */
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-ascii-art,
+  .boot-status-dot,
+  .game-badge-dot--running {
+    animation: none !important;
+  }
+
+  .view-content.active {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 13. STEAM DECK LANDSCAPE SIDEBAR BEHAVIOR ───────────────────────────── */
+/* At 1280×800 with sidebar expanded (280px), main content is 1000px wide.
+   The sidebar collapse button in the top-nav must remain visible and tappable. */
+
+@media (max-height: 800px) {
+  /* Ensure sidebar header doesn't eat too much vertical space */
+  .sidebar-header {
+    padding: 10px 14px;
+  }
+
+  /* Compact sidebar brand area */
+  .sidebar-brand {
+    font-size: 1rem;
+  }
+
+  /* Slightly reduce new-chat button margin */
+  .new-chat-btn {
+    margin: 10px 12px;
+    padding: 8px 12px;
+  }
+
+  /* History group labels — tighten spacing */
+  .history-group-label {
+    padding: 8px 12px 4px;
+  }
+}
