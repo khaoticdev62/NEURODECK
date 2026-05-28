@@ -760,6 +760,200 @@ function initCtrlPromptPicker() {
 }
 
 
+// ── Ctrl+P Sliding Side Panel ────────────────────────────────────────────────
+// Separate from the overlay — this is a 300px fixed panel on the right edge.
+// View-aware: shows 12 templates relevant to the active NEURODECK tab.
+
+const PANEL_TEMPLATES = {
+    chat: [
+        { label: "Summarize",      text: "Summarize the key points of the following in 3 bullet points:\n\n{{input}}" },
+        { label: "Explain simply", text: "Explain this concept to a complete beginner: {{input}}" },
+        { label: "Compare",        text: "Compare and contrast {{input}} with its nearest alternative." },
+        { label: "Pros & Cons",    text: "List the pros and cons of {{input}} in a markdown table." },
+        { label: "Debate",         text: "Make the strongest possible argument against: {{input}}" },
+        { label: "Follow-up Qs",   text: "Generate 5 insightful follow-up questions about: {{input}}" },
+        { label: "ELI5",           text: "Explain like I'm 5: {{input}}" },
+        { label: "Action items",   text: "Extract all action items from the following:\n\n{{input}}" },
+        { label: "Critique",       text: "Give a critical, honest critique of: {{input}}" },
+        { label: "Rewrite",        text: "Rewrite the following to be clearer and more concise:\n\n{{input}}" },
+        { label: "Story form",     text: "Tell me a short story that illustrates: {{input}}" },
+        { label: "Research plan",  text: "Create a step-by-step research plan for: {{input}}" },
+    ],
+    terminal: [
+        { label: "Find files",     text: "find . -name '{{input}}' -type f 2>/dev/null" },
+        { label: "Disk usage",     text: "du -sh */ | sort -rh | head -20" },
+        { label: "Process list",   text: "ps aux | grep {{input}} | grep -v grep" },
+        { label: "Port check",     text: "lsof -i :{{input}}" },
+        { label: "Git log short",  text: "git log --oneline -20" },
+        { label: "Count lines",    text: "find . -name '*.{{input}}' | xargs wc -l | tail -1" },
+        { label: "Kill port",      text: "kill -9 $(lsof -ti :{{input}})" },
+        { label: "Archive dir",    text: "tar -czf {{input}}.tar.gz {{input}}/" },
+        { label: "Watch logs",     text: "tail -f {{input}}.log | grep --line-buffered 'ERROR\\|WARN'" },
+        { label: "Diff files",     text: "diff <(sort {{input}}) <(sort {{input2}})" },
+        { label: "Memory info",    text: "free -h && cat /proc/meminfo | grep -E 'MemTotal|MemFree|MemAvailable'" },
+        { label: "Network stats",  text: "ss -tulnp | grep LISTEN" },
+    ],
+    agent: [
+        { label: "Write script",   text: "Write a Python script that {{input}}. Include error handling and a usage example." },
+        { label: "Debug code",     text: "Debug the following code and explain the fix:\n\n{{input}}" },
+        { label: "Refactor",       text: "Refactor this code to be cleaner and more maintainable:\n\n{{input}}" },
+        { label: "Add tests",      text: "Write unit tests for the following function:\n\n{{input}}" },
+        { label: "Document",       text: "Add comprehensive docstrings and comments to:\n\n{{input}}" },
+        { label: "Automate task",  text: "Write a shell script to automate: {{input}}" },
+        { label: "API wrapper",    text: "Write a Python wrapper for the {{input}} API with error handling and retries." },
+        { label: "Data pipeline",  text: "Create a data pipeline that reads from {{input}}, transforms, and writes to CSV." },
+        { label: "Config gen",     text: "Generate a production-ready config file for {{input}}." },
+        { label: "Perf analyze",   text: "Analyze performance bottlenecks and suggest optimizations for:\n\n{{input}}" },
+        { label: "Security audit", text: "Perform a security audit of:\n\n{{input}}" },
+        { label: "Deploy script",  text: "Write a deployment script for {{input}} that handles rollback." },
+    ],
+    canvas: [
+        { label: "HTML boilerplate", text: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>{{input}}</title>\n</head>\n<body>\n  <h1>{{input}}</h1>\n</body>\n</html>" },
+        { label: "React component",  text: "export default function {{input}}({ children }) {\n  return <div className=\"{{input|lower}}\">{children}</div>;\n}" },
+        { label: "Python class",     text: "class {{input}}:\n    def __init__(self):\n        pass\n\n    def run(self):\n        pass" },
+        { label: "Fetch API",        text: "const res = await fetch('{{input}}');\nconst data = await res.json();\nconsole.log(data);" },
+        { label: "CSS variables",    text: ":root {\n  --primary: #00e5ff;\n  --bg: #0d0d14;\n  --text: #e0e0f0;\n}" },
+        { label: "Tailwind card",    text: "<div class=\"rounded-xl border border-zinc-700 bg-zinc-900 p-6\">\n  <h2 class=\"text-lg font-bold\">{{input}}</h2>\n</div>" },
+        { label: "SQL query",        text: "SELECT *\nFROM {{input}}\nWHERE created_at > NOW() - INTERVAL '7 days'\nORDER BY created_at DESC\nLIMIT 100;" },
+        { label: "Bash function",    text: "{{input}}() {\n  local arg=\"$1\"\n  echo \"Running: $arg\"\n}" },
+        { label: "Lua plugin",       text: "registerCommand('{{input}}', function(args)\n  return execute(args)\nend)" },
+        { label: "JSON schema",      text: "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": { \"type\": \"string\" }\n  }\n}" },
+        { label: "Dockerfile",       text: "FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD [\"python\", \"main.py\"]" },
+        { label: "Github Actions",   text: "name: {{input}}\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4" },
+    ],
+    default: [
+        { label: "Summarize",      text: "Summarize: {{input}}" },
+        { label: "Explain",        text: "Explain: {{input}}" },
+        { label: "Improve",        text: "Improve this: {{input}}" },
+        { label: "Translate EN",   text: "Translate to English: {{input}}" },
+        { label: "Bullet points",  text: "List the key points of:\n{{input}}" },
+        { label: "Simplify",       text: "Simplify the following:\n{{input}}" },
+        { label: "Examples",       text: "Give 3 concrete examples of: {{input}}" },
+        { label: "Step by step",   text: "Explain step by step how to: {{input}}" },
+        { label: "Pros & Cons",    text: "Pros and cons of: {{input}}" },
+        { label: "TL;DR",          text: "TL;DR:\n{{input}}" },
+        { label: "Action items",   text: "Extract action items from:\n{{input}}" },
+        { label: "Next steps",     text: "What are the next steps for: {{input}}" },
+    ],
+};
+
+let _panelOpen = false;
+
+export function initCtrlPromptPanel() {
+    const panel = document.getElementById("ctrl-prompt-panel");
+    const closeBtn = document.getElementById("ctrl-prompt-panel-close");
+    if (!panel) return;
+
+    closeBtn?.addEventListener("click", () => _closePanel());
+
+    // Ctrl+P (not Ctrl+Shift+P which is the overlay)
+    document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === "p") {
+            e.preventDefault();
+            _panelOpen ? _closePanel() : _openPanel();
+        }
+    });
+
+    // Click outside panel to close
+    document.addEventListener("click", (e) => {
+        if (_panelOpen && panel && !panel.contains(e.target)) {
+            _closePanel();
+        }
+    });
+}
+
+function _openPanel() {
+    const panel = document.getElementById("ctrl-prompt-panel");
+    if (!panel) return;
+    _panelOpen = true;
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+    _renderPanelTemplates();
+}
+
+function _closePanel() {
+    const panel = document.getElementById("ctrl-prompt-panel");
+    if (!panel) return;
+    _panelOpen = false;
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+}
+
+function _getActiveView() {
+    const active = document.querySelector(".nav-tab.active");
+    return active?.dataset.view || "chat";
+}
+
+function _renderPanelTemplates() {
+    const listEl  = document.getElementById("ctrl-prompt-panel-list");
+    const labelEl = document.getElementById("ctrl-prompt-panel-view-label");
+    if (!listEl) return;
+
+    const view      = _getActiveView();
+    const templates = PANEL_TEMPLATES[view] || PANEL_TEMPLATES.default;
+    const viewName  = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, " ");
+    if (labelEl) labelEl.textContent = viewName;
+
+    listEl.innerHTML = templates.map((t, i) => `
+        <div class="ctp-card" data-idx="${i}" role="article" aria-label="${_esc(t.label)}">
+            <div class="ctp-card-label">${_esc(t.label)}</div>
+            <div class="ctp-card-text">${_esc(t.text.slice(0, 80))}${t.text.length > 80 ? "…" : ""}</div>
+            <button class="ctp-use-btn" data-idx="${i}" aria-label="Use template: ${_esc(t.label)}">Use</button>
+        </div>
+    `).join("");
+
+    listEl.querySelectorAll(".ctp-use-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const tpl = templates[Number(btn.dataset.idx)];
+            if (tpl) _pasteTemplate(view, tpl.text);
+            _closePanel();
+        });
+    });
+}
+
+function _pasteTemplate(view, text) {
+    // Remove {{placeholder}} markers for pasting
+    const clean = text.replace(/\{\{[^}]+\}\}/g, "");
+    const full  = text;
+
+    // Chat: paste into user-input
+    const chatInput = document.getElementById("user-input");
+    if ((view === "chat" || !chatInput?.closest(".view-content:not(.active)")) && chatInput) {
+        chatInput.value = full;
+        chatInput.focus();
+        chatInput.dispatchEvent(new Event("input"));
+        return;
+    }
+    // Terminal: paste into active PTY (or agent task input)
+    if (view === "terminal") {
+        const ptyInput = document.querySelector(".xterm-helper-textarea");
+        if (ptyInput) { ptyInput.dispatchEvent(new InputEvent("input", { data: clean, bubbles: true })); }
+        return;
+    }
+    // Agent
+    const agentInput = document.getElementById("agent-task-input");
+    if (view === "agent" && agentInput) {
+        agentInput.value = full;
+        agentInput.focus();
+        agentInput.dispatchEvent(new Event("input"));
+        return;
+    }
+    // Canvas: set Monaco if available
+    if (view === "canvas") {
+        if (window._monacoEditor) { window._monacoEditor.setValue(full); return; }
+        const ta = document.getElementById("canvas-code-input");
+        if (ta) { ta.value = full; ta.dispatchEvent(new Event("input")); }
+        return;
+    }
+    // Fallback: try chat input
+    if (chatInput) { chatInput.value = full; chatInput.focus(); chatInput.dispatchEvent(new Event("input")); }
+}
+
+function _esc(s) {
+    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // ── Exports ─────────────────────────────────────────────────────────────────
 // Getter functions — guarantee live reads regardless of how the module is bundled.
 // Import these instead of the raw variables so pollGamepads always sees current state.

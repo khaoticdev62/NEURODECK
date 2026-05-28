@@ -1130,6 +1130,34 @@ pub fn memory_list_all(
         .collect())
 }
 
+#[tauri::command]
+pub fn memory_list_by_namespace(
+    namespace: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<MemoryRecordFrontend>, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    let all = db.list_all()?;
+    let filtered: Vec<MemoryRecordFrontend> = all
+        .into_iter()
+        .filter(|r| {
+            r.metadata
+                .get("namespace")
+                .map(|v| v == &namespace)
+                .unwrap_or(false)
+        })
+        .map(|r| MemoryRecordFrontend {
+            id: r.id,
+            content: r.content,
+            metadata: r.metadata,
+        })
+        .collect();
+    Ok(filtered)
+}
+
 #[derive(serde::Serialize, Clone)]
 pub struct GraphNode {
     pub id: String,
@@ -2119,6 +2147,26 @@ pub async fn search_history_ai(
     Ok(results)
 }
 
+/// Split text into word-based chunks with overlap for RAG indexing.
+fn chunk_text(text: &str, chunk_words: usize, overlap_words: usize) -> Vec<String> {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() {
+        return vec![];
+    }
+    let step = chunk_words.saturating_sub(overlap_words).max(1);
+    let mut chunks = Vec::new();
+    let mut start = 0usize;
+    while start < words.len() {
+        let end = (start + chunk_words).min(words.len());
+        chunks.push(words[start..end].join(" "));
+        if end == words.len() {
+            break;
+        }
+        start += step;
+    }
+    chunks
+}
+
 fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
     let extensions = [
         "txt", "md", "rs", "py", "js", "ts", "json", "toml", "yaml", "yml", "csv", "log",
@@ -2217,17 +2265,20 @@ pub async fn index_directory(
             Ok(c) if !c.trim().is_empty() => c,
             _ => continue,
         };
-        let snippet: String = content.chars().take(4096).collect();
         let file_path_str = file.to_string_lossy().to_string();
-
-        if let Ok(embedding) = provider.generate_embedding(&snippet).await {
-            let mut metadata = HashMap::new();
-            metadata.insert("namespace".to_string(), "docs".to_string());
-            metadata.insert("file".to_string(), file_path_str.clone());
-            metadata.insert("role".to_string(), "document".to_string());
-            let id = format!("doc::{}", file_path_str);
-            let _ = db.store_message(id, snippet, embedding, metadata);
-            indexed += 1;
+        // Chunk the file: 512 words per chunk, 64-word overlap
+        let chunks = chunk_text(&content, 512, 64);
+        for (chunk_idx, chunk) in chunks.iter().enumerate() {
+            if let Ok(embedding) = provider.generate_embedding(chunk).await {
+                let mut metadata = HashMap::new();
+                metadata.insert("namespace".to_string(), "documents".to_string());
+                metadata.insert("source_file".to_string(), file_path_str.clone());
+                metadata.insert("chunk_index".to_string(), chunk_idx.to_string());
+                metadata.insert("role".to_string(), "document".to_string());
+                let id = format!("doc::{}::{}", file_path_str, chunk_idx);
+                let _ = db.store_message(id, chunk.clone(), embedding, metadata);
+                indexed += 1;
+            }
         }
         let _ = app_handle.emit(
             "doc_index_progress",

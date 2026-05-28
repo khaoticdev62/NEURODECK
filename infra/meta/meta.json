@@ -14,10 +14,10 @@
   },
   "tag": "v1.3.0-isis",
   "build": {
-    "git_sha": "7a0d50e60db1cc5d2011b89e9dde90c13c8d1bb4",
+    "git_sha": "aa8d465a4ec7d9f197f1bdc9d7777c1386e3fe7d",
     "git_tag": null,
-    "built_at_utc": "2026-05-28T16:20:37Z",
-    "dirty": true
+    "built_at_utc": "2026-05-28T16:31:06Z",
+    "dirty": false
   },
   "studio": {
     "name": "Khaotic Labs",

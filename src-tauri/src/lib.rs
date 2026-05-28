@@ -991,6 +991,7 @@ pub fn run() {
             delete_agent,
             get_recommended_models,
             memory_list_all,
+            memory_list_by_namespace,
             memory_delete,
             memory_pin,
             memory_add_fact,

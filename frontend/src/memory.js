@@ -16,6 +16,11 @@ export function initMemoryView() {
     let allRecords = [];
     let activeFilter = "all";
 
+    function _nsIcon(ns) {
+        const map = { chat: "💬", documents: "📄", game_notes: "🎮", fact: "📌" };
+        return map[ns] || "🔹";
+    }
+
     function roleLabel(role) {
         const map = { user: "User", ai: "AI", fact: "Fact" };
         return map[role] || role || "—";
@@ -44,10 +49,14 @@ export function initMemoryView() {
         const pinned = allRecords.filter(r => r.metadata.pinned === "true");
 
         let filtered = allRecords;
-        if (activeFilter === "pinned")  filtered = allRecords.filter(r => r.metadata.pinned === "true");
-        else if (activeFilter === "user") filtered = allRecords.filter(r => r.metadata.role === "user");
-        else if (activeFilter === "ai")   filtered = allRecords.filter(r => r.metadata.role === "ai");
-        else if (activeFilter === "fact") filtered = allRecords.filter(r => r.metadata.role === "fact");
+        if (activeFilter === "pinned")           filtered = allRecords.filter(r => r.metadata.pinned === "true");
+        else if (activeFilter === "user")        filtered = allRecords.filter(r => r.metadata.role === "user");
+        else if (activeFilter === "ai")          filtered = allRecords.filter(r => r.metadata.role === "ai");
+        else if (activeFilter === "fact")        filtered = allRecords.filter(r => r.metadata.role === "fact");
+        else if (activeFilter.startsWith("ns:")) {
+            const ns = activeFilter.slice(3);
+            filtered = allRecords.filter(r => (r.metadata.namespace || "chat") === ns);
+        }
 
         if (query) {
             filtered = filtered.filter(r => r.content.toLowerCase().includes(query) || r.id.toLowerCase().includes(query));
@@ -79,14 +88,25 @@ export function initMemoryView() {
         if (emptyState) emptyState.style.display = "none";
 
         filtered.forEach(record => {
-            const isPinned = record.metadata.pinned === "true";
-            const role = record.metadata.role || "other";
+            const isPinned  = record.metadata.pinned === "true";
+            const role      = record.metadata.role || "other";
+            const ns        = record.metadata.namespace || "chat";
+            const sourcePath = record.metadata.source_file || "";
+            const gameId    = record.metadata.game_app_id || "";
             const card = document.createElement("div");
             card.className = `memory-record-card${isPinned ? " memory-record-pinned" : ""}`;
             card.dataset.id = record.id;
 
+            const nsBadge = `<span class="memory-ns-badge memory-ns-${escHtml(ns)}" title="Namespace: ${escHtml(ns)}">${_nsIcon(ns)}</span>`;
+            const sourceRow = sourcePath
+                ? `<div class="memory-record-source">${escHtml(sourcePath)}</div>` : "";
+            const gameThumb = gameId
+                ? `<img class="memory-game-thumb" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${escHtml(gameId)}/header.jpg"
+                       alt="Game ${escHtml(gameId)}" loading="lazy" onerror="this.remove()">` : "";
+
             card.innerHTML = `
                 <div class="memory-record-header">
+                    ${nsBadge}
                     <span class="memory-record-role ${roleBadgeClass(role)}">${roleLabel(role)}</span>
                     <span class="memory-record-ts">${tsFromId(record.id)}</span>
                     <div class="memory-record-actions">
@@ -94,7 +114,9 @@ export function initMemoryView() {
                         <button class="memory-icon-btn mem-del-btn" title="Delete" data-id="${escHtml(record.id)}">${createIcon('trash2', { size: 13 })}</button>
                     </div>
                 </div>
+                ${gameThumb}
                 <div class="memory-record-content">${escHtml(record.content)}</div>
+                ${sourceRow}
                 <div class="memory-record-id">${escHtml(record.id)}</div>`;
 
             card.querySelector(".mem-pin-btn").onclick = async function() {

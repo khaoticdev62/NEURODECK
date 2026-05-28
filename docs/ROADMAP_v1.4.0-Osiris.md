@@ -240,13 +240,13 @@ These ship in v1.4.0 or the release does not cut.
 | **7.0** | ✅ P0-1: Multi-Agent Orchestrator View | SHIPPED 2026-05-28 |
 | **7.1** | ✅ P0-2: Workflow Visual Builder polish | SHIPPED 2026-05-28 |
 | **7.2** | ✅ P0-3: API Lab full implementation | SHIPPED 2026-05-28 |
-| **7.3** | P1-4: CLI Maker | Same pattern as API Lab |
-| **7.4** | P1-5: CRDT Canvas Collab | Isolated Rust change, no frontend routing impact |
-| **7.5** | P1-6: Torrent pipeline | New Rust module — contained blast radius |
-| **7.6** | P1-7: Remote Control relay upgrade | Server-side + webapp rewrite |
-| **7.7** | P2-8: Memory Namespace UI | Pure frontend, fast |
-| **7.8** | P2-9: Advanced RAG chunking + MMR | Data-layer only, no UI breakage |
-| **7.9** | P2-10: Ctrl+Prompt sidebar | CSS + JS — final sprint before release |
+| **7.3** | ✅ P1-4: CLI Maker | SHIPPED 2026-05-28 |
+| **7.4** | ✅ P1-5: CRDT Canvas Collab | SHIPPED 2026-05-28 |
+| **7.5** | ⏭ Torrent P2P | DEFERRED to v1.5 (dependency conflict) |
+| **7.6** | ⏭ Remote Control relay | DEFERRED to v1.5 (large scope, low urgency) |
+| **7.7** | ✅ P2-8: Memory Namespace UI | SHIPPED 2026-05-28 |
+| **7.8** | ✅ P2-9: Advanced RAG chunking + MMR | SHIPPED 2026-05-28 |
+| **7.9** | ✅ P2-10: Ctrl+Prompt sidebar | SHIPPED 2026-05-28 |
 
 ---
 

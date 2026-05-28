@@ -91,6 +91,7 @@ import {
   navigateCtrlPromptList,
   navigateCtrlPromptCat,
   initCtrlPromptPicker,
+  initCtrlPromptPanel,
 } from "./ctrl_prompt.js";
 import { initRemoteControl } from "./remote_control_view.js";
 
@@ -379,6 +380,18 @@ window.applyThemeColors = function (theme) {
 };
 
 document.querySelector("#app").innerHTML = `
+    <!-- ═══════════════════════════════════════════════════════════
+         CTRL+P PROMPT SIDEBAR — view-aware sliding panel
+         ═══════════════════════════════════════════════════════════ -->
+    <aside class="ctrl-prompt-panel" id="ctrl-prompt-panel" aria-hidden="true" aria-label="Contextual prompt templates">
+        <div class="ctrl-prompt-panel-header">
+            <span class="ctrl-prompt-panel-title">Prompt Templates</span>
+            <button class="ctrl-prompt-panel-close" id="ctrl-prompt-panel-close" aria-label="Close panel">✕</button>
+        </div>
+        <div class="ctrl-prompt-panel-view-label" id="ctrl-prompt-panel-view-label">Chat</div>
+        <div class="ctrl-prompt-panel-list" id="ctrl-prompt-panel-list"></div>
+    </aside>
+
     <!-- ═══════════════════════════════════════════════════════════
          CINEMATIC BOOT SCREEN — removed from DOM after init
          ═══════════════════════════════════════════════════════════ -->
@@ -12457,6 +12470,7 @@ async function showOnboardingWizard() {
 
 // ── Module init calls ────────────────────────────────────────────────────
 initCtrlPromptPicker();
+initCtrlPromptPanel();
 initRemoteControl();
 
 // ============================= DOCS VIEW =================================
