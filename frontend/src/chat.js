@@ -487,7 +487,21 @@ function finalizeComparePane(paneId) {
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const metaRow = document.createElement('div');
         metaRow.className = 'msg-meta';
-        metaRow.innerHTML = `<span class="msg-meta-model">${provider}</span><span class="msg-meta-sep">·</span><span>${timeStr}</span><span class="msg-meta-sep">·</span><span>${pane.totalTokens} tokens</span>`;
+        // Build via textContent to prevent any XSS from provider/timeStr values
+        const modelSpan = document.createElement('span');
+        modelSpan.className = 'msg-meta-model';
+        modelSpan.textContent = provider;
+        const sep1 = document.createElement('span');
+        sep1.className = 'msg-meta-sep';
+        sep1.textContent = '·';
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = timeStr;
+        const sep2 = document.createElement('span');
+        sep2.className = 'msg-meta-sep';
+        sep2.textContent = '·';
+        const tokSpan = document.createElement('span');
+        tokSpan.textContent = `${pane.totalTokens} tokens`;
+        metaRow.append(modelSpan, sep1, timeSpan, sep2, tokSpan);
         msgCard.appendChild(metaRow);
         msgCard.appendChild(makeCopyBtn(() => pane.currentAIText));
     }

@@ -35,7 +35,6 @@ impl LuaEngine {
                 parts.push(s);
             }
             let output = parts.join("\t");
-            println!("Lua print: {}", output);
             // Emit to frontend using the existing command output stream
             let _ = app_handle_print.emit("command_stdout", output);
             Ok(())
@@ -281,7 +280,7 @@ impl LuaEngine {
         for entry in read_dir.flatten() {
             let path = entry.path();
             if path.is_file() && path.extension().is_some_and(|ext| ext == "lua") {
-                println!("Loading plugin: {}", path.display());
+                eprintln!("[neurodeck] loading plugin: {}", path.display());
                 let code = std::fs::read_to_string(&path)
                     .map_err(|e| format!("Failed to read script file {}: {}", path.display(), e))?;
                 self.run_script(&code)

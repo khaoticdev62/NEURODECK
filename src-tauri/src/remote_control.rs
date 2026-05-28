@@ -558,6 +558,18 @@ impl Default for RemoteControlState {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/// Constant-time byte-slice comparison to prevent timing-based PIN/token oracle attacks.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
 pub fn get_local_ip() -> String {
     UdpSocket::bind("0.0.0.0:0")
         .and_then(|s| {
@@ -577,7 +589,6 @@ fn generate_pin() -> String {
 // ── Axum route handlers ───────────────────────────────────────────────────────
 
 async fn root_handler() -> impl IntoResponse {
-    println!("[DEBUG remote_control] root_handler: serving WEBAPP_HTML");
     Html(WEBAPP_HTML)
 }
 
@@ -587,10 +598,6 @@ async fn ws_handler(
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr.ip();
-    println!(
-        "[DEBUG remote_control] ws_handler: incoming connection request from IP {:?}",
-        ip
-    );
 
     // SECURITY: Session token is intentionally NOT validated in the URL query
     // parameter. It is exchanged only inside the WebSocket auth message after
@@ -601,7 +608,6 @@ async fn ws_handler(
         let attempts_map = state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(&attempts) = attempts_map.get(&ip) {
             if attempts >= 5 {
-                println!("[DEBUG remote_control] ws_handler: IP locked out {:?}", ip);
                 return (
                     axum::http::StatusCode::FORBIDDEN,
                     "Lockout: Too many failed connection attempts.",
@@ -615,42 +621,34 @@ async fn ws_handler(
 }
 
 async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state: WsAppState) {
-    println!(
-        "[DEBUG remote_control] handle_ws_connection: upgraded connection for {:?}",
-        ip
-    );
     let (mut sender, mut receiver) = socket.split();
 
     // Send hello
-    println!("[DEBUG remote_control] handle_ws_connection: sending hello frame");
     let _ = sender
         .send(Message::Text(
             json!({"type":"hello","version":"1.0"}).to_string().into(),
         ))
         .await;
 
-    // Authenticate
+    // Authenticate — never log message content; it may contain pin/session.
     let mut authed = false;
-    println!("[DEBUG remote_control] handle_ws_connection: waiting for auth message...");
     while let Some(res) = receiver.next().await {
-        println!(
-            "[DEBUG remote_control] handle_ws_connection: received frame: {:?}",
-            res
-        );
         match res {
             Ok(Message::Text(txt)) => {
                 if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
                     if msg["type"] == "auth" {
-                        if msg["pin"].as_str() == Some(ws_state.pin.as_str())
-                            && msg["session"].as_str() == Some(ws_state.access_token.as_str())
-                        {
-                            println!("[DEBUG remote_control] handle_ws_connection: authentication succeeded for {:?}", ip);
+                        // Constant-length string comparison to resist timing attacks.
+                        let pin_ok = msg["pin"].as_str()
+                            .map(|p| constant_time_eq(p.as_bytes(), ws_state.pin.as_bytes()))
+                            .unwrap_or(false);
+                        let session_ok = msg["session"].as_str()
+                            .map(|s| constant_time_eq(s.as_bytes(), ws_state.access_token.as_bytes()))
+                            .unwrap_or(false);
+                        if pin_ok && session_ok {
                             let _ = sender
                                 .send(Message::Text(json!({"type":"auth_ok"}).to_string().into()))
                                 .await;
                             authed = true;
-                        } else {
-                            println!("[DEBUG remote_control] handle_ws_connection: invalid PIN from {:?}", ip);
                         }
                         break;
                     }
@@ -679,7 +677,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
                     .into(),
             ))
             .await;
-        // Sleep 2s to rate limit
+        // 2s delay to slow brute force without blocking the executor thread
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         return;
     }
@@ -700,29 +698,18 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
     let mut rx = ws_state.broadcast_tx.subscribe();
     let app_handle = ws_state.app_handle.clone();
 
-    println!("[DEBUG remote_control] handle_ws_connection: spawning fwd_task and recv_task");
-
     // Broadcast → WS forward task
     let mut fwd_task = tokio::spawn(async move {
-        println!("[DEBUG remote_control] fwd_task: started");
         while let Ok(msg) = rx.recv().await {
-            println!(
-                "[DEBUG remote_control] fwd_task: forwarding message to client: {}",
-                msg
-            );
             if sender.send(Message::Text(msg.into())).await.is_err() {
-                println!("[DEBUG remote_control] fwd_task: send failed");
                 break;
             }
         }
-        println!("[DEBUG remote_control] fwd_task: terminated");
     });
 
     // WS → app dispatch task
     let mut recv_task = tokio::spawn(async move {
-        println!("[DEBUG remote_control] recv_task: started");
         while let Some(res) = receiver.next().await {
-            println!("[DEBUG remote_control] recv_task: received frame {:?}", res);
             match res {
                 Ok(Message::Text(txt)) => {
                     if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
@@ -735,21 +722,12 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
                 _ => {} // Skip ping/pong/binary/etc.
             }
         }
-        println!("[DEBUG remote_control] recv_task: terminated");
     });
 
     tokio::select! {
-        res = (&mut fwd_task)  => {
-            println!("[DEBUG remote_control] fwd_task finished select: {:?}", res);
-            recv_task.abort();
-        }
-        res = (&mut recv_task) => {
-            println!("[DEBUG remote_control] recv_task finished select: {:?}", res);
-            fwd_task.abort();
-        }
+        _ = (&mut fwd_task)  => { recv_task.abort(); }
+        _ = (&mut recv_task) => { fwd_task.abort(); }
     }
-
-    println!("[DEBUG remote_control] handle_ws_connection: connection tasks finished, cleaning up");
 
     ws_state.connected.fetch_sub(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
@@ -1029,4 +1007,29 @@ pub fn remote_relay_notification(
         let _ = h.broadcast_tx.send(msg);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::constant_time_eq;
+
+    #[test]
+    fn constant_time_eq_matches_equal_slices() {
+        assert!(constant_time_eq(b"correct_token_xyz", b"correct_token_xyz"));
+    }
+
+    #[test]
+    fn constant_time_eq_rejects_different_values() {
+        assert!(!constant_time_eq(b"correct_token_xyz", b"wrong_token_abc_"));
+    }
+
+    #[test]
+    fn constant_time_eq_rejects_different_lengths() {
+        assert!(!constant_time_eq(b"short", b"short_longer"));
+    }
+
+    #[test]
+    fn constant_time_eq_empty_slices() {
+        assert!(constant_time_eq(b"", b""));
+    }
 }

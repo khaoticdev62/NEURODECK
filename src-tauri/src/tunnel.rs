@@ -35,6 +35,14 @@ lazy_static::lazy_static! {
     static ref TUNNEL_TOKEN: Mutex<Option<String>> = Mutex::new(None);
 }
 
+/// Constant-time byte comparison — prevents timing oracle on tunnel tokens.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() { return false; }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) { diff |= x ^ y; }
+    diff == 0
+}
+
 async fn read_framed<S>(socket: &mut S) -> std::io::Result<Vec<u8>>
 where
     S: AsyncRead + Unpin,
@@ -221,12 +229,9 @@ pub async fn start_tunnel_server() -> Result<String, String> {
                 return;
             }
         };
-        println!("Tunnel server running on 127.0.0.1:18337");
-
         loop {
             tokio::select! {
                 _ = &mut shutdown_rx => {
-                    println!("Tunnel server shutting down");
                     break;
                 }
                 accept_res = listener.accept() => {
@@ -241,7 +246,7 @@ pub async fn start_tunnel_server() -> Result<String, String> {
                                             guard.clone()
                                         };
                                         if let Some(expected_token) = expected {
-                                            if envelope.token == expected_token {
+                                            if constant_time_eq(envelope.token.as_bytes(), expected_token.as_bytes()) {
                                                 (true, handle_tunnel_request(envelope.request).await)
                                             } else {
                                                 (false, TunnelResponse::Error { message: "Authentication failed".to_string() })
@@ -348,7 +353,6 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
     let listener = TcpListener::bind("127.0.0.1:18337")
         .await
         .map_err(|e| format!("Failed to bind tunnel server to 18337: {}", e))?;
-    println!("Tunnel server running on 127.0.0.1:18337");
 
     loop {
         match listener.accept().await {
@@ -404,5 +408,25 @@ pub async fn run_tunnel_server_headless() -> Result<(), String> {
                 eprintln!("Error accepting connection: {}", e);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::constant_time_eq;
+
+    #[test]
+    fn tunnel_token_eq_matches() {
+        assert!(constant_time_eq(b"abc123", b"abc123"));
+    }
+
+    #[test]
+    fn tunnel_token_eq_rejects_wrong() {
+        assert!(!constant_time_eq(b"abc123", b"xyz789"));
+    }
+
+    #[test]
+    fn tunnel_token_eq_rejects_prefix() {
+        assert!(!constant_time_eq(b"abc", b"abcx"));
     }
 }

@@ -950,7 +950,7 @@ pub fn run() {
 
             // Load plugins on startup
             if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
-                println!("Error loading plugins: {}", e);
+                eprintln!("[neurodeck] plugin load error: {}", e);
             }
 
             // Manage LuaState

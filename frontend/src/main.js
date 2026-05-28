@@ -2323,7 +2323,7 @@ document.querySelector("#app").innerHTML = `
         </aside>
 
         <!-- Settings Modal Overlay — Apple TV Style -->
-        <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings">
             <div class="settings-modal-card">
 
                 <!-- ── Sidebar nav ── -->
@@ -3058,7 +3058,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Canvas Collaboration Modal -->
-        <div class="settings-overlay" id="collab-modal">
+        <div class="settings-overlay" id="collab-modal" role="dialog" aria-modal="true" aria-label="Canvas Collaboration">
             <div class="settings-modal-card collab-workspace-card collab-modal-card">
                 <div class="settings-modal-header">
                     <div class="modal-title-stack">
@@ -3128,7 +3128,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Incoming Transfer Confirmation Modal -->
-        <div class="settings-overlay" id="transfer-modal">
+        <div class="settings-overlay" id="transfer-modal" role="dialog" aria-modal="true" aria-label="Incoming File Transfer">
             <div class="settings-modal-card transfer-modal-card">
                 <div class="settings-modal-header">
                     <div class="modal-title-stack">
@@ -3163,7 +3163,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Game Context Panel Modal -->
-        <div class="settings-overlay" id="game-context-modal">
+        <div class="settings-overlay" id="game-context-modal" role="dialog" aria-modal="true" aria-label="Game Context">
             <div class="settings-modal-card game-context-card">
                 <div class="settings-modal-header">
                     <h3>Active Game Context</h3>
@@ -3209,7 +3209,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Computer Use Approval Modal -->
-        <div class="settings-overlay" id="computer-use-modal">
+        <div class="settings-overlay" id="computer-use-modal" role="alertdialog" aria-modal="true" aria-label="Computer Use Approval Required">
             <div class="settings-modal-card computer-use-modal-card">
                 <div class="settings-modal-header">
                     <h3>Computer Use Approval</h3>
@@ -3235,7 +3235,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Notification Center Modal -->
-        <div class="settings-overlay" id="notif-modal">
+        <div class="settings-overlay" id="notif-modal" role="dialog" aria-modal="true" aria-label="Notification Center">
             <div class="settings-modal-card notif-modal-card" style="max-width: 400px;">
                 <div class="settings-modal-header">
                     <div class="modal-title-stack">
@@ -3255,7 +3255,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- JPE Manual Modal -->
-        <div class="settings-overlay" id="manual-modal">
+        <div class="settings-overlay" id="manual-modal" role="dialog" aria-modal="true" aria-label="JPE Manual">
             <div class="settings-modal-card manual-modal-card" style="max-width: 800px; width: 90%; height: 85vh; display: flex; flex-direction: column;">
                 <div class="settings-modal-header" style="justify-content: space-between; flex-shrink: 0;">
                     <div style="display:flex; flex-direction:column;">
@@ -3325,7 +3325,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         </div>
 
         <!-- Toast Notifications Container -->
-        <div class="toast-container" id="toast-container"></div>
+        <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
         <!-- Screen-reader live region for dynamic announcements -->
         <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="false"></div>
