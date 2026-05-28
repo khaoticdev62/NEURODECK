@@ -2345,6 +2345,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="stv-nav-item" data-panel="sp-sync" data-settings-theme="sync"><span class="stv-nav-icon">${createIcon("share2", { size: 15 })}</span> Sync</button>
                     <button class="stv-nav-item" data-panel="sp-voice" data-settings-theme="voice"><span class="stv-nav-icon">${createIcon("mic", { size: 15 })}</span> Voice</button>
                     <button class="stv-nav-item" data-panel="sp-lsp" data-settings-theme="lsp"><span class="stv-nav-icon">${createIcon("code2", { size: 15 })}</span> LSP</button>
+                    <button class="stv-nav-item" data-panel="sp-about" data-settings-theme="general"><span class="stv-nav-icon">${createIcon("info", { size: 15 })}</span> About</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
 
@@ -2990,6 +2991,57 @@ document.querySelector("#app").innerHTML = `
                         <p class="stv-section-title">Language Server Protocol</p>
                         <p class="stv-section-sub">Real-time code intelligence — completions, hover docs, and diagnostics — powered by local LSP servers.</p>
                         <div id="lsp-settings-container" class="lsp-settings-container"></div>
+                    </div>
+
+                    <!-- ░ About & Licenses ░ -->
+                    <div class="settings-panel settings-panel--about" id="sp-about" data-settings-theme="general">
+                        <p class="stv-section-title">About NEURODECK</p>
+                        <p class="stv-section-sub">Version 1.5.0 (Horus)</p>
+                        
+                        <div class="stv-group-label">Open Source Attributions</div>
+                        <div class="stv-card" style="padding: 10px;">
+                            <textarea readonly style="width: 100%; height: 350px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; color: var(--foreground-color); font-family: monospace; font-size: 0.75rem; padding: 10px; resize: none;">
+NEURODECK incorporates several open-source libraries. We are grateful to the authors and contributors of these projects. The following licenses apply to those components.
+
+==================================================
+Tauri
+==================================================
+Copyright (c) 2024 Tauri Programme within The Commons Conservancy
+Licensed under the MIT License and Apache License 2.0.
+
+==================================================
+Vite
+==================================================
+Copyright (c) 2019-present, Yuxi (Evan) You and Vite contributors
+Licensed under the MIT License.
+
+==================================================
+xterm.js
+==================================================
+Copyright (c) 2017-2022, The xterm.js authors
+Licensed under the MIT License.
+
+==================================================
+marked
+==================================================
+Copyright (c) 2011-2022, Christopher Jeffrey
+Licensed under the MIT License.
+
+==================================================
+Rust Crates & Standard Library
+==================================================
+Portions of this software use Rust crates licensed under the MIT License and Apache License 2.0. The Rust Project is dual-licensed under Apache 2.0 and MIT.
+
+---
+
+THE MIT LICENSE
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                            </textarea>
+                        </div>
                     </div>
 
                 </div><!-- end stv-content-area -->
