@@ -151,5 +151,64 @@ Here is a detailed breakdown of everything NEURODECK can do and exactly how you 
 **What it is:** An app store for community-made superpowers and custom scripts.
 **How to use it:** Inside Settings, go to the Plugins tab. You can browse and download tiny `.lua` scripts written by other people that give NEURODECK brand new slash commands, new visual themes, or entirely new AI abilities. If you know how to code, you can easily drop your own `.lua` files into the `plugins/` folder to modify how NEURODECK works on the fly!
 
+## 25. ⌨️ Complete Command Reference
+
+For the power users, here is the complete, official mapping for every Gamepad, Keyboard, and Slash Command built into NEURODECK.
+
+### 🎮 Gamepad & Controller Mappings
+*Requires Steam Input profile if launching from Steam, otherwise uses standard XInput.*
+
+| Button | Action |
+|---|---|
+| **L2 (Hold)** | Open the **Radial Menu**. Use Left Stick to point, let go to switch tabs. |
+| **A** (Cross) | Confirm / Click the focused item |
+| **B** (Circle) | Back / Close modals / Dismiss keyboard |
+| **X** (Square) | Jump to Chat tab and focus input |
+| **Y** (Triangle) | Cycle active AI Persona |
+| **L1 / R1** | Cycle tabs Left / Right (or scroll chat up/down) |
+| **L4 / R4** (Grips) | Toggle left Sidebar / Toggle right Context Drawer |
+| **L5 / R5** (Paddles)| Clear Canvas / Cycle UI Theme |
+| **R2** | Open Prompt Picker overlay |
+| **D-Pad** | Navigate focus menus and adjust sliders |
+| **Select** | Run code inside the Canvas |
+| **Start** | Open the Settings menu |
+
+### 🖱️ Touchpad Controls (Steam Deck)
+| Input | Action |
+|---|---|
+| **Right Touchpad** | Move the OS mouse cursor |
+| **Right Pad Tap** | Left Click |
+| **Right Pad Double-Tap**| Right Click |
+| **Left Pad Swipe** | Scroll up and down natively |
+
+### ⌨️ Keyboard Shortcuts
+| Shortcut | Action |
+|---|---|
+| \` (Backtick) | Open the **Radial Menu** (Use arrows to pick, Enter to select) |
+| **Ctrl + K** | Open the Command Palette |
+| **Ctrl + P** | Cycle AI Persona (or open Prompt Sidebar) |
+| **Ctrl + M** | Mute / Unmute Text-to-Speech |
+| **Ctrl + R** | Start Voice Input (Microphone) |
+| **Ctrl + N / S / L** | New Session / Save Session / Load Session |
+| **Ctrl + Alt + 1** | Toggle left Sidebar |
+| **Ctrl + Alt + 2** | Toggle right Context Drawer |
+| **Ctrl + Alt + 3** | Clear Canvas |
+| **Ctrl + Alt + 4** | Cycle Theme |
+| **Alt + ← / →** | Browser Back / Forward |
+
+### 💬 Built-in Slash Commands (Chat)
+You can type these directly into the chat box to trigger system actions or change personas.
+
+| Command | Action |
+|---|---|
+| `/clear` | Clears the current chat history |
+| `/help` | Shows the available commands |
+| `/john` | Switches AI persona to **John** (Product Manager) |
+| `/amelia` | Switches AI persona to **Amelia** (Software Engineer) |
+| `/sally` | Switches AI persona to **Sally** (UX Designer) |
+| `/promptlab` | Instantly switches to the Prompt Lab tab |
+| `/promptgen <task>` | Tells the AI to generate a highly optimized prompt for your task |
+| `/formula <name>` | Applies a specific prompt formula (like AIDA or SCQA) to your text |
+
 ---
 *Created by the Khaotic Labs Team.*
