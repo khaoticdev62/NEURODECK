@@ -575,10 +575,12 @@ function Invoke-AppImageBuild {
         "bash '$wslScript'"
     ) -join "`n"
 
-    # Write temp bash script so we can pass complex logic without escaping hell
+    # Write temp bash script — no BOM, LF-only line endings (both required by bash)
     $guidSuffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 8)
     $tmpBash    = Join-Path $env:TEMP "nd_appimage_$guidSuffix.sh"
-    Set-Content -Path $tmpBash -Value $bashCmd -Encoding utf8
+    $bashLf     = $bashCmd -replace "`r`n", "`n" -replace "`r", "`n"
+    $utf8NoBom  = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($tmpBash, $bashLf, $utf8NoBom)
     $wslTmpBash = ConvertTo-WslPath $tmpBash
 
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
