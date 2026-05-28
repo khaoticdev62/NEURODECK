@@ -20,7 +20,7 @@ use tauri::{AppHandle, Emitter, State as TauriState};
 
 // ── Embedded mobile webapp ────────────────────────────────────────────────────
 
-const WEBAPP_HTML: &str = r#"<!DOCTYPE html>
+const WEBAPP_HTML: &str = r##"<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -140,6 +140,7 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
   <div class="stxt" id="stxt">Connecting...</div>
   <div class="emsg" id="emsg" style="display:none"></div>
   <button class="rbtn" id="rbtn" style="display:none" onclick="doConnect()">Retry</button>
+  <a class="rbtn" id="obtn" href="#" target="_blank" style="display:none;text-decoration:none;margin-top:-6px">Open in Safari ↗</a>
 </div>
 
 <!-- ── Main shell ── -->
@@ -297,11 +298,14 @@ function gp(n){
   try{var h=location.hash.substring(1);return new URLSearchParams(h).get(n);}catch(e){return null;}
 }
 function setS(t){document.getElementById('stxt').textContent=t;}
-function showErr(m){
+function showErr(m, showOpenBtn){
   document.getElementById('emsg').textContent=m;
   document.getElementById('emsg').style.display='';
   document.getElementById('spin').style.display='none';
   document.getElementById('rbtn').style.display='';
+  var ob=document.getElementById('obtn');
+  if(showOpenBtn){ob.href=location.href;ob.style.display='';}
+  else{ob.style.display='none';}
 }
 
 function doConnect(){
@@ -340,12 +344,12 @@ function doConnect(){
       appendMsg('a','⚠ '+m.message);
     }
   };
-  ws.onerror=function(){showErr('Connection error. Ensure your phone and NEURODECK are on the same Wi-Fi. If using an in-app browser, copy the URL and open in Safari or Chrome.');};
+  ws.onerror=function(){showErr('Connection error. Make sure your phone and NEURODECK are on the same Wi-Fi. In-app browsers (QR scanners) may block local connections — tap "Open in Safari" below.',true);};
   ws.onclose=function(){
     clearInterval(pingT);
     document.getElementById('cdot').style.background='var(--red)';
     document.getElementById('status-txt').textContent='● Disconnected';
-    if(!authed) showErr('Connection closed. Make sure the remote server is running.');
+    if(!authed) showErr('Connection closed. Make sure the remote server is running.',true);
   };
 }
 
@@ -468,7 +472,7 @@ document.addEventListener('keydown',function(e){
 doConnect();
 </script>
 </body>
-</html>"#;
+</html>"##;
 
 // ── Shared state ──────────────────────────────────────────────────────────────
 
@@ -486,6 +490,7 @@ pub struct RemoteServerHandle {
     pub port: u16,
     pub local_ip: String,
     pub pin: String,
+    pub access_token: String,
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub shutdown_tx: tokio::sync::oneshot::Sender<()>,
@@ -821,12 +826,12 @@ pub async fn start_remote_server(
         *rtx = Some(broadcast_tx.clone());
     }
 
-    // SECURITY: Session token is NOT placed in the URL fragment to reduce
-    // leakage via browser history, referrer logs, or shoulder-surfing.
-    // The token is sent only inside the WebSocket auth message body.
+    // The session token is safe in the URL fragment: hash fragments are never
+    // sent to the server in HTTP requests and are not logged by proxies.
+    // They do appear in browser history — acceptable for a LAN remote control.
     let url = format!(
-        "http://{}:{}/#pin={}",
-        local_ip, port, pin
+        "http://{}:{}/#pin={}&session={}",
+        local_ip, port, pin, access_token
     );
 
     {
@@ -835,16 +840,13 @@ pub async fn start_remote_server(
             port,
             local_ip: local_ip.clone(),
             pin: pin.clone(),
+            access_token: access_token.clone(),
             broadcast_tx,
             connected,
             shutdown_tx,
         });
     }
 
-    // SECURITY: session token is intentionally omitted from the JSON response
-    // to prevent accidental logging or clipboard exposure. The frontend receives
-    // only the PIN and URL; the session token is embedded in the QR code page
-    // server-side via the WebSocket auth handshake.
     Ok(json!({
         "port": port,
         "ip":   local_ip,
@@ -886,8 +888,8 @@ pub fn get_remote_server_info(
                 "ip":        h.local_ip,
                 "pin":       h.pin,
                 "url":       format!(
-                    "http://{}:{}/#pin={}",
-                    h.local_ip, h.port, h.pin
+                    "http://{}:{}/#pin={}&session={}",
+                    h.local_ip, h.port, h.pin, h.access_token
                 ),
                 "connected": connected,
             })
