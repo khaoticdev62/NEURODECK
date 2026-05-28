@@ -5,7 +5,7 @@ export function updateNotifBadge() {
     const badge = document.getElementById("notif-badge");
     if (!badge) return;
     if (state.unreadNotifCount > 0) {
-        badge.innerText = state.unreadNotifCount;
+        badge.textContent = String(state.unreadNotifCount);
         badge.classList.remove("hidden");
     } else {
         badge.classList.add("hidden");
@@ -70,7 +70,7 @@ export function addNotification(title, text, type = 'info', navigateTo = null) {
     state.unreadNotifCount++;
     updateNotifBadge();
 
-    if (typeof window.announceToScreenReader === 'function') {
+    if (typeof globalThis.window !== 'undefined' && typeof window.announceToScreenReader === 'function') {
         window.announceToScreenReader(`${title}: ${text}`);
     }
 

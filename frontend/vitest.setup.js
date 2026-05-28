@@ -1,5 +1,7 @@
-// Global mocks for Vitest (Node environment)
+// Global mocks for Vitest (Node + jsdom/happy-dom environments)
 // This runs before any test file imports execute.
+
+import { vi } from "vitest";
 
 const storage = new Map();
 
@@ -42,3 +44,14 @@ Object.defineProperty(globalThis, "performance", {
   },
   configurable: true,
 });
+
+// Mock @tauri-apps/api/core so modules that import invoke() work in tests
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock @tauri-apps/api/event
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn().mockResolvedValue(() => {}),
+  emit: vi.fn().mockResolvedValue(undefined),
+}));

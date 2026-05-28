@@ -1,14 +1,14 @@
 # NEURODECK Testing Coverage Map
 
-> Last updated: 2026-05-26 — after the dynamic testing implementation pass.
+> Last updated: 2026-05-28 — after security/QA audit pass (added notifications unit tests, sanitize tests, memory-view E2E, edge-cases E2E, keyboard-nav E2E, settings-behavior E2E).
 
 ## Summary
 
 | Layer | Files | Tests | Coverage | CI Gate |
 |---|---|---|---|---|
-| **Rust unit** | 14 modules | 58 tests | ~30% of modules | Gate 3 (`cargo test`) |
-| **Frontend unit** | 4 test files | 43 assertions | Pure functions only | Gate 3 (`npm run frontend:test`) |
-| **E2E** | 7 spec files | 55+ tests | UI flows + a11y | Gate 4 (Playwright) |
+| **Rust unit** | 14+ modules | 65+ tests | ~30% of modules | Gate 3 (`cargo test`) |
+| **Frontend unit** | 6 test files | 75+ assertions | Pure functions + DOM | Gate 3 (`npm run frontend:test`) |
+| **E2E** | 11 spec files | 90+ tests | UI flows + a11y + edge cases | Gate 4 (Playwright) |
 
 ---
 
@@ -80,6 +80,8 @@
 | `shortcuts.test.js` | 8 | `KEYBOARD_SHORTCUTS` shape, `GAMEPAD_COMMANDS` shape, `validateShortcuts` duplicate detection |
 | `state.test.js` | 6 | Default state shape, primitive defaults, array defaults, nested `chatSearch`/`compareLeft`/`compareRight` shapes |
 | `haptics.test.js` | 13 | `triggerHaptic` (disabled, unknown preset, no gamepad, simple presets, debounce, force bypass, sequenced patterns, error rejection), `setHapticsEnabled` |
+| `notifications.test.js` | 20 | `updateNotifBadge` (badge count, hidden class, absent element), `renderNotificationsList` (empty state, XSS-safe rendering, type class), `addNotification` (state mutation, cap at 100, unshift order, unique IDs, SR announce, toast creation, edge cases) |
+| `sanitize.test.js` | 10+ | `sanitizeHtml` contracts (falsy input, safe HTML, no-throw guarantee, script blocking, on\* attrs, iframe, object/embed, javascript: href) |
 
 ### Untestable by Design
 
@@ -104,11 +106,15 @@
 
 | Spec File | Tests | Coverage |
 |---|---|---|
-| `a11y.spec.ts` | 4 | A11y audit on nav, chat, settings, canvas |
+| `a11y.spec.ts` | 15 | A11y audit on all 12 views + settings + command palette + shortcuts overlay |
 | `chat.spec.ts` | 2 | Message send, stream error handling |
-| `command-palette.spec.ts` | 3 | Open, search, execute commands |
-| `functional-views.spec.ts` | 5 | View switching, radial menu, agent switcher |
-| `settings-shell.spec.ts` | 15 | Settings tabs, palette shortcuts, nav tabs, compact viewport, canvas toolbar, **theme persistence** |
+| `command-palette.spec.ts` | 12 | Open/close, fuzzy search, group headers, highlight, history, keyboard nav, state-aware actions, empty state, Quick Switcher |
+| `edge-cases.spec.ts` | 14 | Empty/whitespace/long/unicode/XSS input, rapid double-click, modal Escape, settings persistence, Steam Deck viewport, compact viewport, stream error, navigate-during-stream |
+| `functional-views.spec.ts` | 7 | View switching, radial menu, agent switcher |
+| `keyboard-nav.spec.ts` | 11 | Ctrl+K, palette→Enter, settings Tab/Enter, chat Enter/Shift+Enter, nav tab keyboard, ? shortcut overlay, Ctrl+Shift+P, Ctrl+Tab, focus return |
+| `memory-view.spec.ts` | 9 | Search input, filter chips, fact input/save, empty state, clear button, keyboard |
+| `settings-behavior.spec.ts` | 18 | Per-panel behavioral tests for all 10 panels: controls visible, localStorage persistence, TTS radio, theme select |
+| `settings-shell.spec.ts` | 15 | Settings tabs, palette shortcuts, nav tabs, compact viewport, canvas toolbar, theme persistence |
 | `settings-tabs.spec.ts` | 1 | All 10 settings panels render |
 | `visual.spec.ts` | 2 | Visual regression snapshots |
 

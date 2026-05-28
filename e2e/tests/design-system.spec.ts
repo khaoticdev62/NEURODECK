@@ -1,5 +1,4 @@
 import fs from "fs";
-import fs from "fs";
 import { test, expect } from "@playwright/test";
 import path from "path";
 
