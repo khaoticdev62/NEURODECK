@@ -1943,10 +1943,13 @@ document.querySelector("#app").innerHTML = `
                             <!-- Editor area -->
                             <div class="ide-editor-area">
                                 <div class="ide-tab-bar" id="ide-tab-bar"></div>
-                                <div class="ide-editor-wrap">
+                                <div class="ide-editor-wrap" style="position:relative;">
                                     <div class="ide-line-numbers" id="ide-line-numbers"><div class="ide-line-num">1</div></div>
                                     <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…"></textarea>
+                                    <div class="lsp-completions" id="ide-lsp-completions"></div>
+                                    <div class="lsp-hover" id="ide-lsp-hover"></div>
                                 </div>
+                                <div class="ide-lsp-status" id="ide-lsp-status"></div>
                             </div>
                         </div>
                         <!-- Output panel -->
@@ -2156,6 +2159,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="stv-nav-item" data-panel="sp-computer" data-settings-theme="computer"><span class="stv-nav-icon">${createIcon("camera", { size: 15 })}</span> Computer</button>
                     <button class="stv-nav-item" data-panel="sp-sync" data-settings-theme="sync"><span class="stv-nav-icon">${createIcon("share2", { size: 15 })}</span> Sync</button>
                     <button class="stv-nav-item" data-panel="sp-voice" data-settings-theme="voice"><span class="stv-nav-icon">${createIcon("mic", { size: 15 })}</span> Voice</button>
+                    <button class="stv-nav-item" data-panel="sp-lsp" data-settings-theme="lsp"><span class="stv-nav-icon">${createIcon("code2", { size: 15 })}</span> LSP</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
 
@@ -2761,6 +2765,13 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <div id="whisper-status-line" class="stv-status-line"></div>
                         </div>
+                    </div>
+
+                    <!-- ░ LSP ░ -->
+                    <div class="settings-panel settings-panel--lsp" id="sp-lsp" data-settings-theme="lsp">
+                        <p class="stv-section-title">Language Server Protocol</p>
+                        <p class="stv-section-sub">Real-time code intelligence — completions, hover docs, and diagnostics — powered by local LSP servers.</p>
+                        <div id="lsp-settings-container" class="lsp-settings-container"></div>
                     </div>
 
                 </div><!-- end stv-content-area -->

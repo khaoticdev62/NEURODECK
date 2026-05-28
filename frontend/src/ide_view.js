@@ -1,4 +1,24 @@
 import { invoke } from "@tauri-apps/api/core";
+import {
+  initLspClient,
+  destroyLspClient,
+  startServer,
+  stopServer,
+  refreshServerList,
+  getServerStatus,
+  openDocument,
+  closeDocument,
+  scheduleDocumentChange,
+  requestCompletions,
+  hideCompletions,
+  completionKeydown,
+  scheduleHover,
+  hideHover,
+  workspaceUri,
+  getLspConfig,
+  setLspServerConfig,
+  loadLspConfig,
+} from "./lsp_client.js";
 
 // ── State ───────────────────────────────────────────────────────────────────
 const _s = {
@@ -11,6 +31,11 @@ const _s = {
   outputEl: null,
   fileTreeEl: null,
   tabBarEl: null,
+  // LSP UI refs
+  lspCompletionEl: null,
+  lspHoverEl: null,
+  lspStatusBarEl: null,
+  lspInitialized: false,
 };
 
 // ── Language detection ──────────────────────────────────────────────────────
@@ -143,16 +168,15 @@ async function openFile(path, name) {
 
   try {
     const content = await invoke("read_workspace_file", { path });
-    const tab = {
-      path,
-      name,
-      content,
-      dirty: false,
-      lang: getLanguage(name),
-    };
+    const lang = getLanguage(name);
+    const tab = { path, name, content, dirty: false, lang };
     _s.openTabs.push(tab);
     switchTab(path);
     renderTabs();
+
+    // Notify LSP of open document.
+    const uri = workspaceUri(path);
+    await openDocument(lang, uri, content);
   } catch (e) {
     logOutput(`[Error] Cannot open ${name}: ${e}`, "error");
   }
@@ -187,6 +211,9 @@ function closeTab(path, event) {
   if (tab.dirty) {
     if (!confirm(`'${tab.name}' has unsaved changes. Close anyway?`)) return;
   }
+
+  // Notify LSP of close.
+  closeDocument().catch(() => {});
 
   _s.openTabs.splice(idx, 1);
 
@@ -244,6 +271,10 @@ function onEditorInput() {
       renderTabs();
     }
   }
+  // Notify LSP of the content change (debounced).
+  scheduleDocumentChange(_s.editorEl.value);
+  // Hide stale completions on input.
+  hideCompletions(_s.lspCompletionEl);
 }
 
 function onEditorScroll() {
@@ -253,7 +284,17 @@ function onEditorScroll() {
 }
 
 function onEditorKeydown(e) {
-  // Tab key inserts spaces
+  // Let LSP completion popup intercept navigation keys first.
+  if (completionKeydown(e, _s.editorEl, _s.lspCompletionEl)) return;
+
+  // Ctrl+Space → trigger completions.
+  if ((e.ctrlKey || e.metaKey) && e.key === " ") {
+    e.preventDefault();
+    requestCompletions(_s.editorEl, _s.lspCompletionEl);
+    return;
+  }
+
+  // Tab key inserts spaces (only when completion is not open).
   if (e.key === "Tab") {
     e.preventDefault();
     const start = _s.editorEl.selectionStart;
@@ -352,6 +393,9 @@ export async function initIdeView() {
   _s.editorEl = $("ide-editor");
   _s.lineNumbersEl = $("ide-line-numbers");
   _s.outputEl = $("ide-output");
+  _s.lspCompletionEl = $("ide-lsp-completions");
+  _s.lspHoverEl = $("ide-lsp-hover");
+  _s.lspStatusBarEl = $("ide-lsp-status");
 
   if (!_s.editorEl) return;
 
@@ -359,6 +403,24 @@ export async function initIdeView() {
   _s.editorEl.addEventListener("input", onEditorInput);
   _s.editorEl.addEventListener("scroll", onEditorScroll);
   _s.editorEl.addEventListener("keydown", onEditorKeydown);
+
+  // Hover: show LSP hover tooltip on mouse movement over the editor.
+  _s.editorEl.addEventListener("mousemove", (e) => {
+    scheduleHover(_s.editorEl, _s.lspHoverEl, e);
+  });
+  _s.editorEl.addEventListener("mouseleave", () => {
+    hideHover(_s.lspHoverEl);
+  });
+
+  // Hide completions and hover when clicking outside.
+  document.addEventListener("click", (e) => {
+    if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) {
+      hideCompletions(_s.lspCompletionEl);
+    }
+    if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) {
+      hideHover(_s.lspHoverEl);
+    }
+  });
 
   // Wire toolbar buttons
   $("ide-btn-new-file")?.addEventListener("click", newFile);
@@ -380,8 +442,75 @@ export async function initIdeView() {
     }
   });
 
+  // ── LSP init ──────────────────────────────────────────────────────────────
+  if (!_s.lspInitialized) {
+    _s.lspInitialized = true;
+    await initLspClient({
+      onStatusChange: (statusMap) => _renderLspStatusBar(statusMap),
+      onDiagnostics: (language, uri, diagnostics) =>
+        _renderDiagnostics(language, uri, diagnostics),
+      onLog: (msg, tone) => logOutput(msg, tone),
+    });
+  }
+
   await loadFileTree("");
   logOutput("Mini IDE ready. Workspace loaded.", "ok");
+  logOutput("Tip: Ctrl+Space for completions — configure LSP servers in ⚙ Settings → LSP.", "info");
+}
+
+// ── LSP UI helpers ───────────────────────────────────────────────────────────
+
+function _renderLspStatusBar(statusMap) {
+  if (!_s.lspStatusBarEl) return;
+  const entries = Object.entries(statusMap);
+  if (entries.length === 0) {
+    _s.lspStatusBarEl.innerHTML =
+      `<span class="lsp-status-idle">LSP: no servers running</span>`;
+    return;
+  }
+  _s.lspStatusBarEl.innerHTML = entries
+    .map(([lang, status]) => {
+      const cls = `lsp-dot lsp-dot-${status}`;
+      return `<span class="lsp-status-entry"><span class="${cls}"></span>${lang}<span class="lsp-status-label">${status}</span></span>`;
+    })
+    .join("");
+}
+
+function _renderDiagnostics(language, uri, diagnostics) {
+  if (!_s.outputEl || !diagnostics) return;
+
+  // Remove existing diagnostics section for this URI.
+  _s.outputEl
+    .querySelectorAll(`.ide-lsp-diag-section[data-uri="${CSS.escape(uri)}"]`)
+    .forEach((el) => el.remove());
+
+  if (diagnostics.length === 0) return;
+
+  const section = document.createElement("div");
+  section.className = "ide-lsp-diag-section";
+  section.dataset.uri = uri;
+
+  const header = document.createElement("div");
+  header.className = "ide-lsp-diag-header";
+  const filename = uri.split("/").pop() || uri;
+  const errorCount = diagnostics.filter((d) => d.severity === 1).length;
+  const warnCount = diagnostics.filter((d) => d.severity === 2).length;
+  header.textContent = `${language.toUpperCase()} · ${filename} — ${errorCount} error${errorCount !== 1 ? "s" : ""}, ${warnCount} warning${warnCount !== 1 ? "s" : ""}`;
+  section.appendChild(header);
+
+  for (const diag of diagnostics) {
+    const line = document.createElement("div");
+    const sev = diag.severity || 3;
+    const tone = sev === 1 ? "error" : sev === 2 ? "warn" : "info";
+    line.className = `ide-output-line ide-output-${tone} ide-lsp-diag`;
+    const lineNo = diag.range?.start?.line ?? 0;
+    const charNo = diag.range?.start?.character ?? 0;
+    line.textContent = `  Ln ${lineNo + 1}, Col ${charNo + 1}: ${diag.message}`;
+    section.appendChild(line);
+  }
+
+  _s.outputEl.appendChild(section);
+  _s.outputEl.scrollTop = _s.outputEl.scrollHeight;
 }
 
 async function runActiveFile() {

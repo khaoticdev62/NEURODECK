@@ -12,7 +12,7 @@ Codenames must be unique within a MAJOR release line.
 - Current tag: `v1.3.0-isis`
 - Current MINOR line: `3`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-05-28T14:40:03Z`
+- Last stamped build: `2026-05-28T14:53:25Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules

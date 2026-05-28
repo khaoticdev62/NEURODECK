@@ -2982,6 +2982,162 @@ body::before {
 .settings-panel--voice {
   --settings-panel-accent: 255, 128, 74;
 }
+.settings-panel--lsp {
+  --settings-panel-accent: 94, 235, 255;
+}
+
+/* LSP settings panel UI */
+.lsp-settings-container {
+  margin-top: 8px;
+}
+
+.lsp-settings-hint {
+  font-size: 0.78rem;
+  color: rgba(200, 230, 255, 0.5);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.lsp-settings-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-color);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.lsp-server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lsp-server-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(var(--accent-rgb), 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lsp-server-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.lsp-server-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.lsp-toggle-input {
+  accent-color: var(--accent-color);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.lsp-server-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--fg-color);
+}
+
+.lsp-server-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: rgba(200, 220, 255, 0.45);
+  font-family: var(--font-mono);
+}
+
+.lsp-server-fields {
+  padding: 0 12px 12px;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lsp-field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: rgba(200, 220, 255, 0.5);
+}
+
+.lsp-field-input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--fg-color);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-snap);
+}
+
+.lsp-field-input:focus {
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+
+.lsp-hint {
+  font-size: 0.68rem;
+  color: rgba(200, 220, 255, 0.35);
+  font-family: var(--font-mono);
+  padding: 4px 0;
+}
+
+.lsp-server-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lsp-btn {
+  padding: 4px 12px;
+  border-radius: 5px;
+  font-size: 0.76rem;
+  cursor: pointer;
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-color);
+  transition: background var(--dur-fast) var(--ease-snap),
+              border-color var(--dur-fast) var(--ease-snap);
+}
+
+.lsp-btn:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.55);
+}
+
+.lsp-btn-start {
+  background: rgba(var(--response-rgb), 0.08);
+  border-color: rgba(var(--response-rgb), 0.3);
+  color: var(--response-color);
+}
+
+.lsp-btn-start:hover {
+  background: rgba(var(--response-rgb), 0.18);
+}
+
+.lsp-btn-stop {
+  background: rgba(var(--error-rgb), 0.08);
+  border-color: rgba(var(--error-rgb), 0.3);
+  color: var(--error-color);
+}
+
+.lsp-btn-stop:hover {
+  background: rgba(var(--error-rgb), 0.18);
+}
 
 #sp-general > .stv-section-title,
 #sp-general > .stv-section-sub,
@@ -15621,12 +15777,28 @@ button.tab-btn:active,
 .wf-btn-stop { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); color: #fca5a5; }
 .wf-btn-stop:hover { background: rgba(239,68,68,0.2); }
 .wf-toolbar-sep { flex: 1; }
+.wf-btn-danger { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+.wf-btn-danger:hover { background: rgba(239,68,68,0.2); }
+.wf-zoom-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.wf-zoom-btn { padding: 4px 8px !important; font-size: 1rem !important; line-height: 1; }
+.wf-zoom-label { font-size: 0.72rem; color: #64748b; min-width: 38px; text-align: center; }
+.wf-canvas-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 0.68rem; color: rgba(255,255,255,0.2); pointer-events: none; white-space: nowrap; }
 .wf-run-status { font-size: 0.75rem; color: #64748b; }
 .wf-run-status-running { color: #22c55e; }
+.wf-props-actions { padding: 12px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
 .wf-canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: grab; }
 .wf-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .wf-edge { fill: none; stroke: rgba(0,240,255,0.25); stroke-width: 2; pointer-events: stroke; cursor: pointer; }
 .wf-edge:hover { stroke: rgba(0,240,255,0.5); }
+.wf-edge-true  { stroke: rgba(34,197,94,0.55) !important; }
+.wf-edge-false { stroke: rgba(239,68,68,0.55) !important; }
+.wf-edge-true:hover  { stroke: rgba(34,197,94,0.85) !important; }
+.wf-edge-false:hover { stroke: rgba(239,68,68,0.85) !important; }
+.wf-edge-label-true  { fill: #22c55e; font-size: 10px; font-family: var(--font-mono, monospace); pointer-events: none; }
+.wf-edge-label-false { fill: #ef4444; font-size: 10px; font-family: var(--font-mono, monospace); pointer-events: none; }
+.wf-port-true  { background: rgba(34,197,94,0.7) !important; top: 35% !important; }
+.wf-port-false { background: rgba(239,68,68,0.7) !important; top: 65% !important; }
 .wf-live-edge { fill: none; }
 .wf-nodes { position: absolute; inset: 0; }
 .wf-node {
@@ -15688,6 +15860,7 @@ button.tab-btn:active,
 .wf-props {
   width: 240px; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.02); padding: 12px; overflow-y: auto;
+  display: flex; flex-direction: column;
 }
 .wf-props-empty { color: #475569; font-size: 0.8rem; text-align: center; margin-top: 24px; }
 .wf-props-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -16987,6 +17160,181 @@ button.tab-btn:active,
     padding: 4px 6px;
     font-size: 0.7rem;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LSP — Completion popup, hover tooltip, status bar, diagnostic display
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Completion popup */
+.lsp-completions {
+  position: absolute;
+  z-index: 500;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  max-height: 220px;
+  min-width: 220px;
+  max-width: 420px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  display: none;
+}
+
+.lsp-comp-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-color);
+  transition: background var(--dur-micro) var(--ease-snap);
+}
+
+.lsp-comp-item:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.lsp-comp-active {
+  background: rgba(var(--accent-rgb), 0.14) !important;
+  color: var(--accent-color);
+}
+
+.lsp-comp-kind {
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+  font-size: 0.65rem;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent-color);
+  letter-spacing: 0.01em;
+}
+
+.lsp-comp-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lsp-comp-detail {
+  font-size: 0.68rem;
+  color: rgba(var(--fg-color, 200, 220, 255), 0.45);
+  margin-left: auto;
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Scrollbar for completion list */
+.lsp-completions::-webkit-scrollbar { width: 4px; }
+.lsp-completions::-webkit-scrollbar-track { background: transparent; }
+.lsp-completions::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), 0.25); border-radius: 2px; }
+
+/* Hover tooltip */
+.lsp-hover {
+  position: fixed;
+  z-index: 600;
+  background: #0d1117;
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 6px;
+  padding: 8px 12px;
+  max-width: 480px;
+  max-height: 200px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--fg-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+  display: none;
+}
+
+/* LSP status bar (below tab bar, above editor) */
+.ide-lsp-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
+  min-height: 20px;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.lsp-status-idle {
+  color: rgba(var(--fg-color, 200, 220, 255), 0.3);
+  font-style: italic;
+}
+
+.lsp-status-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(var(--fg-color, 200, 220, 255), 0.6);
+}
+
+.lsp-status-label {
+  color: rgba(var(--fg-color, 200, 220, 255), 0.38);
+  margin-left: 2px;
+}
+
+/* Status indicator dots */
+.lsp-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lsp-dot-ready    { background: var(--response-color); box-shadow: 0 0 4px var(--response-color); }
+.lsp-dot-starting { background: var(--warning-color); animation: lsp-pulse 1.2s ease-in-out infinite; }
+.lsp-dot-error    { background: var(--error-color); }
+.lsp-dot-stopped  { background: rgba(150, 150, 150, 0.4); }
+
+@keyframes lsp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* Diagnostic entries in output panel */
+.ide-lsp-diag-section {
+  margin: 6px 0;
+  border-left: 2px solid rgba(var(--accent-rgb), 0.25);
+  padding-left: 6px;
+}
+
+.ide-lsp-diag-header {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent-color);
+  opacity: 0.7;
+  padding: 2px 0;
+  margin-bottom: 2px;
+}
+
+.ide-lsp-diag {
+  padding-left: 4px;
+  font-size: 0.76rem;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lsp-dot-starting { animation: none; opacity: 0.7; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

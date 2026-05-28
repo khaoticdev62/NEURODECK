@@ -2,6 +2,7 @@ mod autocomplete;
 mod canvas_collab;
 pub mod commands;
 mod computer_use;
+pub mod lsp;
 mod config;
 mod doc_indexer;
 mod error;
@@ -816,6 +817,7 @@ pub fn run() {
         .manage(torrent::TorrentState::new(torrent_download_root))
         .manage(Arc::new(scheduler::SchedulerManaged::new()))
         .manage(orchestrator::OrchestratorManaged::new())
+        .manage(Arc::new(Mutex::new(lsp::LspManager::new())))
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
@@ -1152,6 +1154,9 @@ pub fn run() {
             workflow::load_workflow,
             workflow::save_workflow,
             workflow::delete_workflow,
+            workflow::workflow_export,
+            workflow::workflow_import,
+            workflow::workflow_run,
             // ── Orchestrator ───────────────────────────────────────────────────
             orchestrator::start_orchestrated_task,
             orchestrator::get_orchestration_status,
@@ -1167,6 +1172,18 @@ pub fn run() {
             ide::create_workspace_file,
             ide::delete_workspace_file,
             ide::rename_workspace_file,
+            // ── LSP ────────────────────────────────────────────────────────────
+            lsp::lsp_start,
+            lsp::lsp_stop,
+            lsp::lsp_list,
+            lsp::lsp_get_diagnostics,
+            lsp::lsp_open_document,
+            lsp::lsp_close_document,
+            lsp::lsp_change_document,
+            lsp::lsp_get_completions,
+            lsp::lsp_get_hover,
+            lsp::lsp_get_definitions,
+            lsp::lsp_known_servers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

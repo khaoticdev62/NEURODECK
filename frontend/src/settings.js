@@ -1573,6 +1573,165 @@ function initSyncSettings() {
 }
 
 // ==========================================================================
+// LSP SETTINGS
+// ==========================================================================
+
+async function initLspSettings() {
+  const container = document.getElementById("lsp-settings-container");
+  if (!container) return;
+
+  let knownServers = [];
+  try {
+    knownServers = await invoke("lsp_known_servers");
+  } catch (_) {}
+
+  function loadLspConf() {
+    try {
+      const raw = localStorage.getItem("neurodeck_lsp_config");
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveLspConf(cfg) {
+    localStorage.setItem("neurodeck_lsp_config", JSON.stringify(cfg));
+  }
+
+  function escLsp(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function render() {
+    const cfg = loadLspConf();
+    let running = [];
+    try {
+      running = await invoke("lsp_list");
+    } catch (_) {}
+    const statusMap = Object.fromEntries(running.map((s) => [s.language, s.status]));
+
+    container.innerHTML = `
+      <p class="lsp-settings-hint">
+        Language servers run locally and provide real-time completions, hover docs, and diagnostics
+        in the IDE tab. Each server must be installed separately. Trigger completions with
+        <kbd>Ctrl+Space</kbd>.
+      </p>
+      <div class="lsp-server-list">
+        ${knownServers
+          .map((s) => {
+            const saved = cfg[s.language] || {};
+            const enabled = saved.enabled || false;
+            const command = saved.command || s.command;
+            const args = (saved.args || s.args).join(" ");
+            const status = statusMap[s.language] || "stopped";
+            const dotCls = `lsp-dot lsp-dot-${status}`;
+            return `
+              <div class="lsp-server-row" data-lang="${s.language}">
+                <div class="lsp-server-row-header">
+                  <label class="lsp-server-toggle">
+                    <input type="checkbox" class="lsp-toggle-input" data-lang="${s.language}" ${enabled ? "checked" : ""}>
+                    <span class="lsp-server-name">${escLsp(s.label)}</span>
+                  </label>
+                  <span class="lsp-server-status">
+                    <span class="${dotCls}"></span>${status}
+                  </span>
+                </div>
+                <div class="lsp-server-fields" ${enabled ? "" : 'style="display:none"'}>
+                  <label class="lsp-field-label">Command
+                    <input class="lsp-field-input lsp-cmd-input" data-lang="${s.language}" type="text"
+                      value="${escLsp(command)}" placeholder="${escLsp(s.command)}">
+                  </label>
+                  <label class="lsp-field-label">Args (space-separated)
+                    <input class="lsp-field-input lsp-args-input" data-lang="${s.language}" type="text"
+                      value="${escLsp(args)}" placeholder="${escLsp(s.args.join(" "))}">
+                  </label>
+                  <div class="lsp-hint">${escLsp(s.install_hint)}</div>
+                  <div class="lsp-server-actions">
+                    <button class="lsp-btn lsp-btn-save" data-lang="${s.language}">Save</button>
+                    ${
+                      status === "stopped" || status === "error"
+                        ? `<button class="lsp-btn lsp-btn-start" data-lang="${s.language}">Start</button>`
+                        : `<button class="lsp-btn lsp-btn-stop" data-lang="${s.language}">Stop</button>`
+                    }
+                  </div>
+                </div>
+              </div>`;
+          })
+          .join("")}
+      </div>`;
+
+    // Toggle field visibility when enabling/disabling.
+    container.querySelectorAll(".lsp-toggle-input").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const row = container.querySelector(`.lsp-server-row[data-lang="${cb.dataset.lang}"]`);
+        const fields = row?.querySelector(".lsp-server-fields");
+        if (fields) fields.style.display = cb.checked ? "" : "none";
+      });
+    });
+
+    // Save config for a server.
+    container.querySelectorAll(".lsp-btn-save").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const lang = btn.dataset.lang;
+        const row = container.querySelector(`.lsp-server-row[data-lang="${lang}"]`);
+        const enabled = row.querySelector(".lsp-toggle-input").checked;
+        const cmd = row.querySelector(".lsp-cmd-input").value.trim();
+        const argsRaw = row.querySelector(".lsp-args-input").value.trim();
+        const args = argsRaw ? argsRaw.split(/\s+/) : [];
+        const newCfg = loadLspConf();
+        newCfg[lang] = { enabled, command: cmd, args };
+        saveLspConf(newCfg);
+        addNotification({
+          type: "success",
+          title: "LSP",
+          message: `'${lang}' config saved.`,
+        });
+      });
+    });
+
+    // Start a server.
+    container.querySelectorAll(".lsp-btn-start").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const lang = btn.dataset.lang;
+        const cfg2 = loadLspConf();
+        const saved = cfg2[lang] || {};
+        const known = knownServers.find((s) => s.language === lang) || {};
+        const cmd = saved.command || known.command || lang;
+        const args = saved.args || known.args || [];
+        try {
+          await invoke("lsp_start", { language: lang, command: cmd, args });
+          addNotification({ type: "success", title: "LSP", message: `Starting '${lang}'…` });
+          setTimeout(render, 1500);
+        } catch (e) {
+          addNotification({ type: "error", title: "LSP", message: `Failed to start: ${e}` });
+        }
+      });
+    });
+
+    // Stop a server.
+    container.querySelectorAll(".lsp-btn-stop").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const lang = btn.dataset.lang;
+        try {
+          await invoke("lsp_stop", { language: lang });
+          addNotification({ type: "info", title: "LSP", message: `'${lang}' stopped.` });
+          setTimeout(render, 400);
+        } catch (e) {
+          addNotification({ type: "error", title: "LSP", message: `Stop failed: ${e}` });
+        }
+      });
+    });
+  }
+
+  await render();
+  window._lspSettingsRefresh = render;
+}
+
+// ==========================================================================
 
 export {
   applySettings,
@@ -1646,6 +1805,7 @@ export function initSettings() {
   initBmadInstaller();
   initWhisperSettings();
   initSyncSettings();
+  initLspSettings();
 
   // Shell Switcher (terminal top bar)
   document.querySelectorAll(".term-shell-btn").forEach((pill) => {
