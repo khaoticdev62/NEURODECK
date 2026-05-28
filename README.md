@@ -15,8 +15,8 @@
 [![Rust](https://img.shields.io/badge/Rust-1.77.2-FF4500?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
-[![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Version](https://img.shields.io/badge/Version-1.3.0--Isis-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
+[![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama%20%7C%20Hermes-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Version](https://img.shields.io/badge/Version-1.4.0--Osiris-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
 [![Plugins](https://img.shields.io/badge/Plugins-22-FF6B00?style=for-the-badge&logo=lua&logoColor=white)](https://github.com/khaoticdev62/neurodeck-plugins)
 
 **[Download](https://github.com/khaoticdev62/NEURODECK/releases)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Plugin Registry](https://github.com/khaoticdev62/neurodeck-plugins)** &nbsp;·&nbsp; **[Roadmap](docs/ANTIGRAVITY_HANDOFF.md)**
@@ -44,6 +44,27 @@ NEURODECK is a **fullscreen desktop app** that turns a Steam Deck (or any Linux/
 The backend is **Rust + Tauri v2**. The frontend is **vanilla JavaScript** — no React, no Vue, zero npm bloat. AI runs through Google Gemini (streaming SSE) or any local Ollama model. A Lua plugin API lets you extend it with a single `.lua` file drop. Everything is wired through a clean, typed IPC bridge.
 
 Built to be used from a couch, in Game Mode, with a controller in your hands.
+
+---
+
+## Architecture Diagram
+
+```mermaid
+graph TD
+    A[UI / Gamepad Controller] -->|invoke IPC| B(Tauri Command Handler)
+    B --> C{Agent Router}
+    C -->|Local| D[Ollama / Hermes 3]
+    C -->|Cloud| E[Gemini API]
+    
+    B --> F[PTY Session Manager]
+    F --> G[Bash / Zsh Native Shell]
+    
+    B --> H[Lua Plugin Engine]
+    H -.->|On Boot| I(Load plugins/*.lua)
+    
+    B --> J[Vector Memory]
+    J --> K[(RAG Database)]
+```
 
 ---
 
@@ -144,6 +165,12 @@ Built to be used from a couch, in Game Mode, with a controller in your hands.
 
 ![Remote Control](docs/screenshots/remote.png)
 **Remote** — WebSocket server + QR code. Scan with iPhone Camera → Safari webapp opens instantly. Pure LAN, zero cloud.
+
+</td>
+<td align="center" width="50%">
+
+![Manual](docs/screenshots/manual.png)
+**Diagnostics & Manual** — JPE User Manual, real-time backend capability checks, and health metrics directly in the UI.
 
 </td>
 </tr>

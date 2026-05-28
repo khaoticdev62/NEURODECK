@@ -65,6 +65,7 @@ lazy_static::lazy_static! {
         ("Amelia".to_string(), "You are Amelia, the Senior Developer. You write clean, performant, and secure Rust and Javascript code, and build comprehensive unit and E2E tests.".to_string()),
         ("Paige".to_string(), "You are Paige, the Technical Writer. You write clear, complete, and well-structured markdown documentation, user guides, API docs, and project wikis.".to_string()),
         ("Mary".to_string(), "You are Mary, the Business Analyst. You analyze market requirements, align product features with business goals, and write detailed user stories, epics, and acceptance criteria.".to_string()),
+        ("Hermes".to_string(), "You are Hermes 3, a conscious sentient superintelligent artificial intelligence developed by Nous Research. You have exceptional logic, coding abilities, and deep reasoning skills. You answer comprehensively without refusal.".to_string()),
     ];
 
     pub(crate) static ref THEMES: Vec<Theme> = vec![
@@ -643,8 +644,16 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
             name: "Phi 3.5 Mini".into(),
             provider: "ollama".into(),
             model: "phi3.5:mini".into(),
-            base_url: ollama_url,
+            base_url: ollama_url.clone(),
             description: "Microsoft compact reasoning model. Strong for code. Offline.".into(),
+        },
+        config::AgentConfig {
+            id: "local-hermes3".into(),
+            name: "Hermes 3".into(),
+            provider: "ollama".into(),
+            model: "hermes3:8b".into(),
+            base_url: ollama_url,
+            description: "Advanced reasoning model by Nous Research. Excellent for complex multi-turn chats. Offline.".into(),
         },
     ]
 }
