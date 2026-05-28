@@ -5,6 +5,7 @@ mod computer_use;
 pub mod lsp;
 mod config;
 mod doc_indexer;
+pub mod deckcode;
 mod error;
 mod ftp;
 mod hf_model_mgr;
@@ -827,10 +828,26 @@ pub fn run() {
         .manage(Arc::new(scheduler::SchedulerManaged::new()))
         .manage(orchestrator::OrchestratorManaged::new())
         .manage(Arc::new(Mutex::new(lsp::LspManager::new())))
+        .manage(crate::deckcode::DeckCodeState(Mutex::new(None)))
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
             transfer::start_transfer_services(app.handle().clone(), transfer_state);
+
+            // Load DeckCode schema if available
+            let schema_path = std::path::PathBuf::from("../deckcode-controller-profile.schema.json");
+            let schema_path = if schema_path.exists() {
+                schema_path
+            } else {
+                std::path::PathBuf::from("deckcode-controller-profile.schema.json")
+            };
+            if let Ok(schema) = crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default()) {
+                let state = app.state::<crate::deckcode::DeckCodeState>();
+                *state.0.lock().unwrap() = Some(schema);
+                tracing::info!("Loaded DeckCode Predictive Coding Profile");
+            } else {
+                tracing::warn!("Failed to load deckcode-controller-profile.schema.json");
+            }
 
             // Initialize Lua state
             let lua_engine = lua::LuaEngine::new(app.handle().clone()).map_err(|e| {
