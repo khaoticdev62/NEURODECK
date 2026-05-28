@@ -2408,7 +2408,7 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <div class="setting-field-group" style="margin-bottom:0;">
                                 <label>Model Name</label>
-                                <input type="text" id="settings-ollama-model" placeholder="llama3.2:1b">
+                                <input type="text" id="settings-ollama-model" placeholder="hermes3:8b, llama3.2:1b">
                             </div>
                         </div>
 
@@ -2453,7 +2453,7 @@ document.querySelector("#app").innerHTML = `
                         <div class="stv-group-label">Local Models</div>
                         <div class="stv-card" id="settings-ollama-models-section" style="display:none;">
                             <div style="display:flex;gap:8px;margin-bottom:12px;">
-                                <input type="text" id="settings-ollama-pull-input" placeholder="e.g. llama3.2:1b" style="flex:1;">
+                                <input type="text" id="settings-ollama-pull-input" placeholder="e.g. hermes3:8b, llama3.2:1b" style="flex:1;">
                                 <button class="stv-btn-primary" id="settings-ollama-pull-btn">Pull</button>
                             </div>
                             <div id="settings-ollama-pull-progress-container" style="display:none;margin-bottom:10px;">
@@ -5656,6 +5656,9 @@ navTabs.forEach((tab) => {
     if (targetViewName === "orchestrator" && typeof initOrchestrator === "function") {
       initOrchestrator();
     }
+    if (targetViewName === "share" && typeof initTorrentClient === "function") {
+      initTorrentClient();
+    }
   };
 });
 
@@ -6952,6 +6955,9 @@ document.querySelectorAll(".share-inner-tab").forEach((tab) => {
       .forEach((s) => s.classList.remove("active"));
     const el = document.getElementById(`share-panel-${panel}`);
     if (el) el.classList.add("active");
+    if (panel === "torrent" && typeof initTorrentClient === "function") {
+      initTorrentClient();
+    }
   };
 });
 
@@ -10862,7 +10868,7 @@ async function showOnboardingWizard() {
                         </div>
                         <div class="onboarding-input-wrapper">
                             <label for="ob-ollama-model">OLLAMA MODEL NAME</label>
-                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="llama3.2:1b" placeholder="e.g. llama3.2:1b, mistral, codegemma">
+                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="hermes3:8b" placeholder="e.g. hermes3:8b, llama3.2:1b, mistral">
                         </div>
                         <div style="display:flex;gap:8px;margin-top:4px;align-items:center;flex-wrap:wrap;">
                             <button class="onboarding-btn secondary" id="ob-btn-pull-model" style="font-size:0.72rem;padding:5px 12px;">Pull Model Now</button>
@@ -11452,7 +11458,7 @@ async function showOnboardingWizard() {
         provider: "ollama",
         model:
           document.getElementById("ob-ollama-model").value.trim() ||
-          "llama3.2:1b",
+          "hermes3:8b",
         url:
           document.getElementById("ob-ollama-url").value.trim() ||
           "http://localhost:11434",
@@ -11492,7 +11498,7 @@ async function showOnboardingWizard() {
         "http://localhost:11434";
       const model =
         document.getElementById("ob-ollama-model").value.trim() ||
-        "llama3.2:1b";
+        "hermes3:8b";
       btnPullModel.disabled = true;
       if (pullStatus) pullStatus.textContent = "Starting pull...";
       appendLog(
