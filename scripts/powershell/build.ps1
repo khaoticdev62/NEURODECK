@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # NEURODECK Unified Build Orchestrator  ·  scripts/powershell/build.ps1
 # =============================================================================
 #
@@ -55,8 +55,8 @@ param(
     # Emit structured JSON to stdout on completion (useful in CI)
     [switch]$Json,
 
-    # Verbose — show raw cargo/npm output instead of suppressing it
-    [switch]$Verbose
+    # ShowOutput — print raw cargo/npm output instead of suppressing it
+    [switch]$ShowOutput
 )
 
 Set-StrictMode -Version Latest
@@ -146,54 +146,52 @@ function Get-Meta {
     return Get-Content $Script:META_PATH -Raw | ConvertFrom-Json
 }
 
-# Run a process, capture output, return exit code + combined stdout/stderr
+# Run a process, capture output, return exit code + combined stdout/stderr.
+# Uses PowerShell's & operator via cmd /c — works for .cmd, .ps1, and .exe wrappers
+# without requiring ProcessStartInfo (which fails in restricted execution contexts).
 function Invoke-Process {
     param(
         [string]$Exe,
-        [string[]]$Args,
+        [string[]]$ExeArgs = @(),
         [string]$WorkDir = $Script:ROOT,
         [string]$LogFile = $null,
         [hashtable]$Env = @{}
     )
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName               = $Exe
-    $psi.WorkingDirectory       = $WorkDir
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.UseShellExecute        = $false
-
-    # Merge caller-supplied env overrides
+    # Temporarily apply caller-supplied env overrides
+    $savedEnv = @{}
     foreach ($kv in $Env.GetEnumerator()) {
-        $psi.EnvironmentVariables[$kv.Key] = $kv.Value
+        $savedEnv[$kv.Key] = [System.Environment]::GetEnvironmentVariable($kv.Key)
+        [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value)
     }
 
-    # Build argument string safely (quote args with spaces)
-    $psi.Arguments = ($Args | ForEach-Object {
-        if ($_ -match '\s') { "`"$_`"" } else { $_ }
-    }) -join ' '
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    [void]$proc.Start()
-
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-
-    $combined = "$stdout`n$stderr".Trim()
+    $combined  = ''
+    $exitCode  = 0
+    try {
+        Push-Location $WorkDir
+        # Temporarily allow Continue so native-command stderr (git warnings, etc.)
+        # doesn't throw under the global Stop preference.
+        $lines    = & { $ErrorActionPreference = 'Continue'; & cmd /c $Exe $ExeArgs 2>&1 }
+        $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+        $combined = ($lines | Out-String).Trim()
+    } finally {
+        Pop-Location
+        foreach ($kv in $savedEnv.GetEnumerator()) {
+            [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value)
+        }
+    }
 
     if ($LogFile) {
         New-Item -ItemType Directory -Force -Path (Split-Path $LogFile) | Out-Null
         Write-Utf8NoBom -Path $LogFile -Content $combined
     }
 
-    if ($Verbose) {
+    if ($ShowOutput) {
         if ($combined) { Write-Host $combined }
     }
 
     return [pscustomobject]@{
-        ExitCode = $proc.ExitCode
+        ExitCode = $exitCode
         Output   = $combined
     }
 }
@@ -282,7 +280,7 @@ function Invoke-SignFile {
     param([string]$FilePath, [string]$Thumbprint, [string]$SignTool)
     if (-not $Thumbprint -or -not $SignTool) { return }
     Write-Step "SIGN" (Split-Path $FilePath -Leaf)
-    $r = Invoke-Process -Exe $SignTool -Args @(
+    $r = Invoke-Process -Exe $SignTool -ExeArgs @(
         "sign",
         "/sha1", $Thumbprint,
         "/tr",  "http://timestamp.digicert.com",
@@ -309,7 +307,7 @@ function Invoke-Preflight {
         Assert-Command "npm"     "Install Node.js 20+: https://nodejs.org"
 
         # npx tauri must resolve
-        $r = Invoke-Process -Exe "npx" -Args @("tauri", "--version") -WorkDir $Script:ROOT
+        $r = Invoke-Process -Exe "npx" -ExeArgs @("tauri", "--version") -WorkDir $Script:ROOT
         if ($r.ExitCode -ne 0) { throw "tauri CLI not available via npx. Run: npm install" }
         Write-Ok "Tauri CLI: $($r.Output.Trim())"
     }
@@ -337,7 +335,7 @@ function Invoke-Preflight {
 
 function Invoke-KfmsGate {
     Write-Step "GATE" "Running KFMS release gate..."
-    $r = Invoke-Process -Exe "powershell.exe" -Args @(
+    $r = Invoke-Process -Exe "powershell.exe" -ExeArgs @(
         "-NoProfile", "-ExecutionPolicy", "Bypass",
         "-File", $Script:KFMS_SCRIPT, "-Json"
     ) -LogFile (Join-Path $Script:LOG_DIR "kfms-gate.json")
@@ -359,7 +357,7 @@ function Invoke-KfmsGate {
 function Invoke-FrontendBuild {
     Write-Step "FE" "Installing frontend dependencies..."
     $r = Invoke-WithRetry -Label "npm ci" -Action {
-        Invoke-Process -Exe "npm.cmd" -Args @("ci", "--prefer-offline") `
+        Invoke-Process -Exe "npm.cmd" -ExeArgs @("ci", "--prefer-offline") `
             -WorkDir $Script:ROOT `
             -LogFile (Join-Path $Script:LOG_DIR "npm-ci.log")
     }
@@ -367,7 +365,7 @@ function Invoke-FrontendBuild {
     Write-Ok "npm ci complete"
 
     Write-Step "FE" "Building frontend (Vite)..."
-    $r = Invoke-Process -Exe "npm.cmd" -Args @("run", "--prefix", "frontend", "build") `
+    $r = Invoke-Process -Exe "npm.cmd" -ExeArgs @("run", "--prefix", "frontend", "build") `
         -WorkDir $Script:ROOT `
         -LogFile (Join-Path $Script:LOG_DIR "frontend-build.log")
     if ($r.ExitCode -ne 0) { throw "Frontend build failed`n$($r.Output)" }
@@ -378,7 +376,7 @@ function Invoke-FrontendBuild {
 
 function Invoke-CargoClean {
     Write-Step "CLEAN" "Running cargo clean..."
-    $r = Invoke-Process -Exe "cargo" -Args @("clean") `
+    $r = Invoke-Process -Exe "cargo" -ExeArgs @("clean") `
         -WorkDir $Script:CARGO_DIR `
         -LogFile (Join-Path $Script:LOG_DIR "cargo-clean.log")
     if ($r.ExitCode -ne 0) { throw "cargo clean failed`n$($r.Output)" }
@@ -405,7 +403,7 @@ function Invoke-WindowsBuild {
     }
 
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    $r = Invoke-Process -Exe "npx" -Args @("tauri", "build", "--bundles", "nsis") `
+    $r = Invoke-Process -Exe "npx" -ExeArgs @("tauri", "build", "--bundles", "nsis") `
         -WorkDir $Script:ROOT `
         -LogFile (Join-Path $Script:LOG_DIR "tauri-build-win.log") `
         -Env $buildEnv
@@ -531,7 +529,8 @@ bash '$wslScript'
 "@
 
     # Write temp bash script so we can pass complex logic without escaping hell
-    $tmpBash    = Join-Path $env:TEMP "nd_appimage_$([System.Guid]::NewGuid().ToString("N")[0..7] -join '').sh"
+    $guidSuffix = [System.Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $tmpBash    = Join-Path $env:TEMP "nd_appimage_$guidSuffix.sh"
     Set-Content -Path $tmpBash -Value $bashCmd -Encoding utf8
     $wslTmpBash = ConvertTo-WslPath $tmpBash
 
@@ -539,7 +538,7 @@ bash '$wslScript'
     Write-Info "WSL is building — this may take 10-25 min on first run (Rust compile)..."
 
     $logFile = Join-Path $Script:LOG_DIR "appimage-build.log"
-    $r = Invoke-Process -Exe "wsl.exe" -Args @("-d", $distro, "--", "bash", $wslTmpBash) `
+    $r = Invoke-Process -Exe "wsl.exe" -ExeArgs @("-d", $distro, "--", "bash", $wslTmpBash) `
         -WorkDir $Script:ROOT `
         -LogFile $logFile
     $watch.Stop()
@@ -548,7 +547,7 @@ bash '$wslScript'
 
     if ($r.ExitCode -ne 0) {
         Write-Fail "AppImage build failed. Log: $logFile"
-        if ($Verbose) { Write-Host $r.Output }
+        if ($ShowOutput) { Write-Host $r.Output }
         throw "AppImage build failed (WSL exit $($r.ExitCode)). See $logFile"
     }
     Write-Ok "WSL build complete ($([int]($watch.ElapsedMilliseconds/1000))s)"
@@ -649,7 +648,7 @@ function Write-BuildManifest {
 
 function Invoke-PostBuildStamp {
     Write-Step "KFMS" "Stamping build block in meta.json..."
-    $r = Invoke-Process -Exe "bash" -Args @($Script:KFMS_INIT, "stamp") `
+    $r = Invoke-Process -Exe "bash" -ExeArgs @($Script:KFMS_INIT, "stamp") `
         -WorkDir $Script:ROOT `
         -LogFile (Join-Path $Script:LOG_DIR "kfms-stamp.log")
     if ($r.ExitCode -eq 0) {

@@ -159,22 +159,8 @@ function Get-LooseRootFileCount {
 }
 
 function Test-DiffHygiene {
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = (Get-Command "git").Source
-    $psi.WorkingDirectory = $script:Root
-    $psi.Arguments = "diff --check"
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo = $psi
-    [void]$process.Start()
-    $stdout = $process.StandardOutput.ReadToEnd()
-    $stderr = $process.StandardError.ReadToEnd()
-    $process.WaitForExit()
-
-    return ($process.ExitCode -eq 0)
+    & { $ErrorActionPreference = 'Continue'; & cmd /c git -C $script:Root diff --check 2>&1 } | Out-Null
+    return ($LASTEXITCODE -eq 0)
 }
 
 function Invoke-Gate {
@@ -203,30 +189,15 @@ function Invoke-Gate {
         }
     }
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = (Get-Command $Executable).Source
-    $psi.WorkingDirectory = $WorkingDirectory
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-    $psi.Arguments = (($Arguments | ForEach-Object {
-        if ($_ -match '\s') {
-            '"' + ($_ -replace '"', '\"') + '"'
-        } else {
-            $_
-        }
-    }) -join ' ')
-
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo = $psi
-    [void]$process.Start()
-    $stdout = $process.StandardOutput.ReadToEnd()
-    $stderr = $process.StandardError.ReadToEnd()
-    $process.WaitForExit()
-    $exitCode = $process.ExitCode
+    $savedLoc = Get-Location
+    Set-Location $WorkingDirectory
+    $lines    = & { $ErrorActionPreference = 'Continue'; & cmd /c $Executable $Arguments 2>&1 }
+    $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+    Set-Location $savedLoc
+    $combined = ($lines | Out-String).TrimEnd()
     $watch.Stop()
 
-    Write-Utf8NoBomFile -Path $LogPath -Content ($stdout + $stderr)
+    Write-Utf8NoBomFile -Path $LogPath -Content $combined
 
     if ($exitCode -eq 0) {
         return [pscustomobject]@{

@@ -14,9 +14,9 @@
   },
   "tag": "v1.3.0-isis",
   "build": {
-    "git_sha": "dff326f4ac57b3258ece95ce048827c1ee90b937",
+    "git_sha": "b3812459031b3758e2cd312ed89ad9d47f6ceef9",
     "git_tag": null,
-    "built_at_utc": "2026-05-28T11:39:06Z",
+    "built_at_utc": "2026-05-28T14:03:17Z",
     "dirty": true
   },
   "studio": {
