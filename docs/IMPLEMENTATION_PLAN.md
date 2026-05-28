@@ -10,8 +10,8 @@
 - Version: `1.4.0`
 - Codename: `Osiris`
 - Tag: `v1.4.0-osiris`
-- Workspace state: `generated-only`
-- Last stamped build: `2026-05-28T17:12:46Z`
+- Workspace state: `manual-uncommitted`
+- Last stamped build: `2026-05-28T17:38:08Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

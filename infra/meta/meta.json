@@ -14,10 +14,10 @@
   },
   "tag": "v1.4.0-osiris",
   "build": {
-    "git_sha": "5f8de3506f11b080f2f5a23fb2f14bb1c03fc1e8",
+    "git_sha": "704520490d3425be29d1a7a85ce41f37a80eccb6",
     "git_tag": null,
-    "built_at_utc": "2026-05-28T17:12:46Z",
-    "dirty": false
+    "built_at_utc": "2026-05-28T17:38:08Z",
+    "dirty": true
   },
   "studio": {
     "name": "Khaotic Labs",

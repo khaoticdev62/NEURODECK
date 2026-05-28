@@ -183,7 +183,6 @@ if [[ "$SKIP_DEPS" != "1" ]]; then
     REQUIRED_PKGS=(
         libgtk-3-dev
         libwebkit2gtk-4.1-dev
-        libappindicator3-dev
         librsvg2-dev
         patchelf
         pkg-config
@@ -243,6 +242,7 @@ fi
 # beforeBuildCommand in tauri.conf.json already triggers the Vite build!
 print_step "Compiling Tauri AppImage (Rust + bundler)..."
 print_info "Using $CARGO_JOBS parallel jobs"
+export APPIMAGE_EXTRACT_AND_RUN=1
 RUSTFLAGS="-C target-cpu=native" npx @tauri-apps/cli build --bundles appimage
 print_ok "Tauri build finished"
 
