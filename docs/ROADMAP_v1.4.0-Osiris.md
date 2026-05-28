@@ -237,7 +237,7 @@ These ship in v1.4.0 or the release does not cut.
 
 | Sprint | Items | Rationale |
 |---|---|---|
-| **7.0** | P0-1: Multi-Agent Orchestrator View | Largest visible gap — closes immediately |
+| **7.0** | ✅ P0-1: Multi-Agent Orchestrator View | SHIPPED 2026-05-28 |
 | **7.1** | P0-2: Workflow Visual Builder polish | Node editor + trigger system |
 | **7.2** | P0-3: API Lab full implementation | Quick win — pure frontend + thin backend |
 | **7.3** | P1-4: CLI Maker | Same pattern as API Lab |

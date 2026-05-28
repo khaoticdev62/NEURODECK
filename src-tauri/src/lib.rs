@@ -1156,6 +1156,9 @@ pub fn run() {
             orchestrator::start_orchestrated_task,
             orchestrator::get_orchestration_status,
             orchestrator::stop_orchestration,
+            orchestrator::save_pipeline,
+            orchestrator::load_pipelines,
+            orchestrator::delete_pipeline,
             llm_oneshot,
             // ── Mini IDE ───────────────────────────────────────────────────────
             ide::list_workspace_files,

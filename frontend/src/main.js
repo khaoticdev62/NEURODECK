@@ -71,6 +71,7 @@ import { initGraphView } from "./graph_view.js";
 import { initSchedulerView } from "./scheduler_view.js";
 import { initWorkflowView } from "./workflow_view.js";
 import { initIdeView } from "./ide_view.js";
+import { initOrchestrator } from "./orchestrator.js";
 
 import { listen } from "@tauri-apps/api/event";
 import { marked } from "marked";
@@ -516,6 +517,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="nav-tab" data-view="scheduler" data-testid="nav-tab-scheduler">⏰ Scheduler</button>
                     <button class="nav-tab" data-view="workflow" data-testid="nav-tab-workflow">🔀 Flow</button>
                     <button class="nav-tab" data-view="ide" data-testid="nav-tab-ide">💻 IDE</button>
+                    <button class="nav-tab" data-view="orchestrator" data-testid="nav-tab-orchestrator">🧩 Orchestrate</button>
                 </div>
             </nav>
 
@@ -1954,6 +1956,104 @@ document.querySelector("#app").innerHTML = `
                                 <button class="ide-output-clear" id="ide-btn-clear-output">Clear</button>
                             </div>
                             <div class="ide-output" id="ide-output"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     MULTI-AGENT ORCHESTRATOR VIEW
+                     ═══════════════════════════════════════════════════════════ -->
+                <div class="view-content view-layout-column" id="view-orchestrator" data-testid="view-orchestrator">
+                    <div class="orch-shell">
+                        <!-- Toolbar -->
+                        <div class="orch-toolbar">
+                            <span class="orch-kicker">Multi-Agent Pipeline Builder</span>
+                            <div class="orch-toolbar-controls">
+                                <input type="text" id="orch-pipeline-name" class="orch-name-input"
+                                       value="New Pipeline" aria-label="Pipeline name" />
+                                <button class="orch-btn orch-btn-primary" id="orch-add-node-btn"
+                                        title="Add agent node" aria-label="Add agent node">
+                                    + Node
+                                </button>
+                                <button class="orch-btn orch-btn-run" id="orch-run-btn"
+                                        title="Run pipeline" aria-label="Run pipeline">
+                                    ▶ Run
+                                </button>
+                                <button class="orch-btn" id="orch-pause-btn" disabled
+                                        title="Pause / resume" aria-label="Pause or resume pipeline">
+                                    ⏸ Pause
+                                </button>
+                                <button class="orch-btn orch-btn-stop" id="orch-stop-btn" disabled
+                                        title="Stop pipeline" aria-label="Stop pipeline">
+                                    ■ Stop
+                                </button>
+                                <button class="orch-btn" id="orch-save-btn"
+                                        title="Save pipeline" aria-label="Save pipeline">
+                                    💾 Save
+                                </button>
+                                <button class="orch-btn" id="orch-new-btn"
+                                        title="New pipeline" aria-label="New pipeline">
+                                    + New
+                                </button>
+                                <button class="orch-btn orch-btn-ghost" id="orch-clear-btn"
+                                        title="Clear canvas" aria-label="Clear all nodes">
+                                    🗑 Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Auto-orchestration bar -->
+                        <div class="orch-auto-bar">
+                            <span class="orch-auto-label">Auto-Plan:</span>
+                            <input type="text" id="orch-auto-goal" class="orch-auto-input"
+                                   placeholder="Describe a high-level goal — AI decomposes it into agents automatically…"
+                                   aria-label="Auto-orchestration goal" />
+                            <button class="orch-btn orch-btn-primary" id="orch-auto-btn"
+                                    title="Auto-generate agent plan" aria-label="Auto-generate plan">
+                                🧠 Auto
+                            </button>
+                        </div>
+
+                        <!-- Main body -->
+                        <div class="orch-body">
+                            <!-- Left: saved pipelines + log -->
+                            <div class="orch-left-panel">
+                                <div class="orch-panel-header">Saved Pipelines</div>
+                                <div class="orch-pipeline-list" id="orch-pipeline-list">
+                                    <div class="orch-empty-list">No saved pipelines</div>
+                                </div>
+                                <div class="orch-panel-header" style="margin-top:12px;">Execution Log</div>
+                                <div class="orch-log" id="orch-log" aria-live="polite" aria-label="Execution log"></div>
+                            </div>
+
+                            <!-- Center: visual canvas -->
+                            <div class="orch-canvas-wrap">
+                                <svg class="orch-defs-svg" aria-hidden="true">
+                                    <defs>
+                                        <marker id="orch-arrowhead" markerWidth="8" markerHeight="6"
+                                                refX="8" refY="3" orient="auto">
+                                            <polygon points="0 0, 8 3, 0 6" class="orch-arrowhead-poly" />
+                                        </marker>
+                                    </defs>
+                                </svg>
+                                <div class="orch-canvas" id="orch-canvas" role="region"
+                                     aria-label="Pipeline canvas">
+                                    <div class="orch-canvas-empty" id="orch-canvas-empty">
+                                        <div class="orch-canvas-empty-icon">🧩</div>
+                                        <p>Click <strong>+ Node</strong> to add an agent,<br>
+                                           or use <strong>Auto</strong> to generate a plan from a goal.</p>
+                                        <p class="orch-canvas-hint">Drag handles to move nodes · Drag → button to connect</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: output -->
+                            <div class="orch-right-panel">
+                                <div class="orch-panel-header">Pipeline Output</div>
+                                <div class="orch-output" id="orch-output">
+                                    <div class="orch-output-empty">Run a pipeline to see output here.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4039,6 +4139,7 @@ const RADIAL_SEGMENTS = [
   { icon: "clock", label: "Scheduler", view: "scheduler" },
   { icon: "workflow", label: "Flow", view: "workflow" },
   { icon: "code2", label: "IDE", view: "ide" },
+  { icon: "network", label: "Orchestrate", view: "orchestrator" },
 ];
 
 function getGamepadFocusableElements() {
@@ -5337,6 +5438,9 @@ navTabs.forEach((tab) => {
     }
     if (targetViewName === "ide" && typeof initIdeView === "function") {
       initIdeView();
+    }
+    if (targetViewName === "orchestrator" && typeof initOrchestrator === "function") {
+      initOrchestrator();
     }
   };
 });

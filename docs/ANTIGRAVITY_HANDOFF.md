@@ -6,7 +6,7 @@
 
 ## Quick State Summary
 
-> Last updated: 2026-05-28 — **v1.3.0-Isis RELEASED** ✅ | **v1.4.0-Osiris PLANNING** 🔵 — Roadmap at `docs/ROADMAP_v1.4.0-Osiris.md` | 10 items across 3 priority tiers | Sprint 7.0 target: Multi-Agent Orchestrator View
+> Last updated: 2026-05-28 — **v1.4.0-Osiris IN PROGRESS** 🔵 — Sprint 7.0 complete ✅ | Sprint 7.1 next: Workflow Visual Builder | Roadmap at `docs/ROADMAP_v1.4.0-Osiris.md`
 
 | Layer | Status |
 |---|---|
@@ -46,6 +46,7 @@
 | Chat Welcome Screen | ✅ NEURODECK branded welcome with 6 feature-card starters; dismissed on first message |
 | Boot Sequence | ✅ Cinematic 28-step boot at 220–350ms/step; v1.2.0-ra branding; real system stats |
 | Nav Layout (1280px) | ✅ 12 tabs in dedicated `nav-tab-row` strip; `flex: 1` even distribution; no overflow |
+| Multi-Agent Orchestrator View (P0-1) | ✅ Sprint 7.0 — `#view-orchestrator` tab; visual pipeline canvas; drag-drop nodes; SVG bezier arrows; save/load pipelines; auto-plan (LLM decomposition); run/pause/stop controls |
 
 ---
 

@@ -7,6 +7,31 @@ use crate::llm::LlmProvider;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+/// A single node in a user-built pipeline.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PipelineNode {
+    pub id: String,
+    pub label: String,
+    /// Persona / agent id to use for this node ("" = active agent)
+    pub agent_id: String,
+    pub prompt: String,
+    /// IDs of nodes whose output feeds into this node as context
+    pub inputs: Vec<String>,
+    /// Canvas position (pixels from top-left of the canvas area)
+    pub x: f64,
+    pub y: f64,
+}
+
+/// A saved multi-agent pipeline (user-defined).
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Pipeline {
+    pub id: String,
+    pub name: String,
+    pub nodes: Vec<PipelineNode>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AgentTask {
     pub id: String,
@@ -380,6 +405,58 @@ async fn _run_orchestration(
     );
 
     Ok(())
+}
+
+// ── Pipeline persistence commands ─────────────────────────────────────────────
+
+fn pipelines_path() -> std::path::PathBuf {
+    let dir = crate::user_config_dir().join("data").join("orchestrator");
+    let _ = std::fs::create_dir_all(&dir);
+    dir.join("pipelines.json")
+}
+
+#[tauri::command]
+pub fn save_pipeline(pipeline: Pipeline) -> Result<(), String> {
+    let path = pipelines_path();
+    let mut all: Vec<Pipeline> = if path.exists() {
+        let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&raw).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    // Upsert by id
+    if let Some(idx) = all.iter().position(|p| p.id == pipeline.id) {
+        all[idx] = pipeline;
+    } else {
+        all.push(pipeline);
+    }
+
+    let json = serde_json::to_string_pretty(&all).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn load_pipelines() -> Result<Vec<Pipeline>, String> {
+    let path = pipelines_path();
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&raw).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_pipeline(id: String) -> Result<(), String> {
+    let path = pipelines_path();
+    if !path.exists() {
+        return Ok(());
+    }
+    let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut all: Vec<Pipeline> = serde_json::from_str(&raw).unwrap_or_default();
+    all.retain(|p| p.id != id);
+    let json = serde_json::to_string_pretty(&all).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
