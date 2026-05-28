@@ -3,6 +3,7 @@
   "version": "1.5.0",
   "description": "AI-native terminal OS for Steam Deck — Tauri v2 + Rust + Gemini",
   "private": true,
+  "license": "UNLICENSED",
   "workspaces": [
     "frontend"
   ],
