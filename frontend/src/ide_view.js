@@ -35,6 +35,10 @@ const _s = {
   lspCompletionEl: null,
   lspHoverEl: null,
   lspStatusBarEl: null,
+  lspServerSelectEl: null,
+  lspToggleBtnEl: null,
+  // Known servers catalog from backend
+  knownServers: [],
   lspInitialized: false,
   viewInitialized: false,
 };
@@ -275,8 +279,14 @@ function onEditorInput() {
   }
   // Notify LSP of the content change (debounced).
   scheduleDocumentChange(_s.editorEl.value);
-  // Hide stale completions on input.
-  hideCompletions(_s.lspCompletionEl);
+  // Auto-trigger completions after a dot; hide on other input.
+  const pos = _s.editorEl.selectionStart;
+  const charBefore = _s.editorEl.value[pos - 1];
+  if (charBefore === ".") {
+    requestCompletions(_s.editorEl, _s.lspCompletionEl);
+  } else {
+    hideCompletions(_s.lspCompletionEl);
+  }
 }
 
 function onEditorScroll() {
@@ -293,6 +303,13 @@ function onEditorKeydown(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === " ") {
     e.preventDefault();
     requestCompletions(_s.editorEl, _s.lspCompletionEl);
+    return;
+  }
+
+  // F12 → go to definition.
+  if (e.key === "F12") {
+    e.preventDefault();
+    _gotoDefinition();
     return;
   }
 
@@ -389,6 +406,142 @@ function clearOutput() {
   if (_s.outputEl) _s.outputEl.innerHTML = "";
 }
 
+// ── LSP Toolbar ─────────────────────────────────────────────────────────────
+
+async function _initLspToolbar() {
+  _s.lspServerSelectEl = $("ide-lsp-server-select");
+  _s.lspToggleBtnEl = $("ide-lsp-toggle");
+  if (!_s.lspServerSelectEl || !_s.lspToggleBtnEl) return;
+
+  try {
+    _s.knownServers = await invoke("lsp_known_servers");
+  } catch (_) {
+    _s.knownServers = [];
+  }
+
+  // Populate dropdown — only list servers whose binary exists on PATH (checked by backend).
+  _s.lspServerSelectEl.innerHTML =
+    _s.knownServers.length === 0
+      ? `<option value="">No LSP servers found</option>`
+      : _s.knownServers
+          .map((s) => `<option value="${s.language}">${s.label}</option>`)
+          .join("");
+
+  _s.lspToggleBtnEl.addEventListener("click", async () => {
+    const lang = _s.lspServerSelectEl.value;
+    if (!lang) return;
+
+    const status = getServerStatus();
+    const isRunning = status[lang] === "ready" || status[lang] === "starting";
+
+    if (isRunning) {
+      _s.lspToggleBtnEl.textContent = "⏹ LSP";
+      _s.lspToggleBtnEl.setAttribute("aria-pressed", "false");
+      await stopServer(lang);
+    } else {
+      const server = _s.knownServers.find((s) => s.language === lang);
+      if (!server) return;
+      _s.lspToggleBtnEl.textContent = "⌛ LSP";
+      _s.lspToggleBtnEl.setAttribute("aria-pressed", "true");
+      await startServer(lang, server.command, server.args || []);
+    }
+    _updateLspToggleLabel();
+  });
+
+  _s.lspServerSelectEl.addEventListener("change", _updateLspToggleLabel);
+}
+
+function _updateLspToggleLabel() {
+  if (!_s.lspToggleBtnEl || !_s.lspServerSelectEl) return;
+  const lang = _s.lspServerSelectEl.value;
+  const status = getServerStatus();
+  const st = status[lang];
+  if (st === "ready") {
+    _s.lspToggleBtnEl.textContent = "⏹ LSP";
+    _s.lspToggleBtnEl.setAttribute("aria-pressed", "true");
+    _s.lspToggleBtnEl.classList.add("ide-lsp-toggle-active");
+  } else if (st === "starting") {
+    _s.lspToggleBtnEl.textContent = "⌛ LSP";
+    _s.lspToggleBtnEl.setAttribute("aria-pressed", "true");
+    _s.lspToggleBtnEl.classList.remove("ide-lsp-toggle-active");
+  } else {
+    _s.lspToggleBtnEl.textContent = "▶ LSP";
+    _s.lspToggleBtnEl.setAttribute("aria-pressed", "false");
+    _s.lspToggleBtnEl.classList.remove("ide-lsp-toggle-active");
+  }
+}
+
+// ── Go to Definition (F12) ──────────────────────────────────────────────────
+
+async function _gotoDefinition() {
+  if (!_s.editorEl || !_s.activeTab) return;
+  const tab = _s.openTabs.find((t) => t.path === _s.activeTab);
+  if (!tab) return;
+
+  const before = _s.editorEl.value.slice(0, _s.editorEl.selectionStart);
+  const lines = before.split("\n");
+  const line = lines.length - 1;
+  const character = lines[line].length;
+
+  try {
+    const locations = await invoke("lsp_get_definitions", {
+      language: tab.lang,
+      uri: workspaceUri(tab.path),
+      line,
+      character,
+    });
+
+    if (!locations || locations.length === 0) {
+      logOutput("[LSP] No definition found at cursor.", "warn");
+      return;
+    }
+
+    if (locations.length === 1) {
+      _openDefinitionLocation(locations[0]);
+    } else {
+      // Multiple results — show a picker in the output panel.
+      logOutput(`[LSP] ${locations.length} definitions found:`, "info");
+      locations.forEach((loc, idx) => {
+        const line = document.createElement("div");
+        line.className = "ide-output-line ide-output-info ide-lsp-def-item";
+        line.style.cursor = "pointer";
+        line.textContent = `  ${idx + 1}. ${loc.uri.split("/").pop()} Ln ${(loc.range?.start?.line ?? 0) + 1}`;
+        line.onclick = () => _openDefinitionLocation(loc);
+        if (_s.outputEl) _s.outputEl.appendChild(line);
+      });
+      if (_s.outputEl) _s.outputEl.scrollTop = _s.outputEl.scrollHeight;
+    }
+  } catch (e) {
+    logOutput(`[LSP] Go to definition failed: ${e}`, "error");
+  }
+}
+
+function _openDefinitionLocation(loc) {
+  const filePath = loc.uri.replace(/^file:\/\/\/workspace\//, "");
+  const targetLine = (loc.range?.start?.line ?? 0);
+
+  const existing = _s.openTabs.find((t) => t.path === filePath);
+  if (existing) {
+    switchTab(filePath);
+    _scrollEditorToLine(targetLine);
+  } else {
+    openFile(filePath, filePath.split("/").pop() || filePath)
+      .then(() => _scrollEditorToLine(targetLine))
+      .catch(() => logOutput(`[LSP] Cannot open ${filePath}`, "error"));
+  }
+}
+
+function _scrollEditorToLine(lineNo) {
+  if (!_s.editorEl) return;
+  const lines = _s.editorEl.value.split("\n");
+  const charOffset = lines.slice(0, lineNo).reduce((acc, l) => acc + l.length + 1, 0);
+  _s.editorEl.focus();
+  _s.editorEl.selectionStart = _s.editorEl.selectionEnd = charOffset;
+  // Scroll the textarea so the target line is visible.
+  const lineHeight = parseInt(getComputedStyle(_s.editorEl).lineHeight, 10) || 18;
+  _s.editorEl.scrollTop = Math.max(0, lineNo * lineHeight - _s.editorEl.clientHeight / 2);
+}
+
 // ── Init ────────────────────────────────────────────────────────────────────
 export async function initIdeView() {
   _s.fileTreeEl = $("ide-file-tree");
@@ -435,6 +588,8 @@ export async function initIdeView() {
     $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
     $("ide-btn-run")?.addEventListener("click", runActiveFile);
 
+    await _initLspToolbar();
+
     document.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         const view = $("view-ide");
@@ -450,7 +605,10 @@ export async function initIdeView() {
   if (!_s.lspInitialized) {
     _s.lspInitialized = true;
     await initLspClient({
-      onStatusChange: (statusMap) => _renderLspStatusBar(statusMap),
+      onStatusChange: (statusMap) => {
+        _renderLspStatusBar(statusMap);
+        _updateLspToggleLabel();
+      },
       onDiagnostics: (language, uri, diagnostics) =>
         _renderDiagnostics(language, uri, diagnostics),
       onLog: (msg, tone) => logOutput(msg, tone),
@@ -506,10 +664,13 @@ function _renderDiagnostics(language, uri, diagnostics) {
     const line = document.createElement("div");
     const sev = diag.severity || 3;
     const tone = sev === 1 ? "error" : sev === 2 ? "warn" : "info";
-    line.className = `ide-output-line ide-output-${tone} ide-lsp-diag`;
+    line.className = `ide-output-line ide-output-${tone} ide-lsp-diag ide-lsp-diag-jump`;
     const lineNo = diag.range?.start?.line ?? 0;
     const charNo = diag.range?.start?.character ?? 0;
     line.textContent = `  Ln ${lineNo + 1}, Col ${charNo + 1}: ${diag.message}`;
+    line.title = "Click to jump to this line";
+    line.style.cursor = "pointer";
+    line.addEventListener("click", () => _scrollEditorToLine(lineNo));
     section.appendChild(line);
   }
 

@@ -2087,6 +2087,12 @@ document.querySelector("#app").innerHTML = `
                             <button class="ide-toolbar-btn" id="ide-btn-run" title="Run">▶ Run</button>
                             <button class="ide-toolbar-btn" id="ide-btn-refresh" title="Refresh">🔄 Refresh</button>
                             <span class="ide-toolbar-spacer"></span>
+                            <span class="ide-lsp-server-row" id="ide-lsp-server-row" aria-label="Language server selector">
+                                <select class="ide-lsp-server-select" id="ide-lsp-server-select" aria-label="Language server">
+                                    <option value="">Loading LSP servers…</option>
+                                </select>
+                                <button class="ide-toolbar-btn ide-lsp-toggle-btn" id="ide-lsp-toggle" title="Start / stop language server" aria-pressed="false">▶ LSP</button>
+                            </span>
                             <span class="ide-toolbar-title">Mini IDE</span>
                         </div>
                         <!-- Main area -->
