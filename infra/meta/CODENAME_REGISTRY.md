@@ -12,7 +12,7 @@ Codenames must be unique within a MAJOR release line.
 - Current tag: `v1.4.0-osiris`
 - Current MINOR line: `4`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-05-28T17:06:40Z`
+- Last stamped build: `2026-05-28T17:08:38Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules
