@@ -210,5 +210,43 @@ You can type these directly into the chat box to trigger system actions or chang
 | `/promptgen <task>` | Tells the AI to generate a highly optimized prompt for your task |
 | `/formula <name>` | Applies a specific prompt formula (like AIDA or SCQA) to your text |
 
+## 26. 🛠️ Creating Lua Plugins & Mods
+
+NEURODECK isn't a closed box. It has a built-in **Lua API** that allows anyone to create custom mods, slash commands, and AI behaviors. 
+
+Any file ending in `.lua` placed inside the `plugins/` folder will automatically load the next time you open NEURODECK. If you make a mistake in your code, NEURODECK will ignore the file and print a `[Lua Error]` in the background console without crashing your app.
+
+### Built-in Lua Globals
+When writing a plugin, you have access to 5 powerful commands provided directly by NEURODECK:
+
+- **`registerCommand(name, handler)`**
+  Creates a new slash command in the chat (e.g., `/hello`). The handler function runs whenever the user types the command.
+- **`registerHook(eventName, handler)`**
+  Lets you intercept app events before they happen. For example, you can hook into `before_llm_request` to secretly add text to the user's prompt.
+- **`setPersona(name, systemPrompt)`**
+  Creates a brand new AI personality. This changes the core instructions given to the AI (e.g., telling it to act like a pirate or a Python expert).
+- **`execute(commandString)`**
+  Tells NEURODECK to run a background shell/terminal command exactly as if you had typed it into the Terminal tab.
+- **`print(text)`**
+  Prints text directly to the NEURODECK system console for debugging.
+
+### Example Plugin: The "Pirate" Mod
+Create a file named `plugins/pirate.lua` and paste this code. When you restart NEURODECK, typing `/pirate` in the chat will instantly turn your AI into a swashbuckler!
+
+```lua
+-- 1. Define the Pirate AI Persona
+setPersona("Pirate", "You are a swashbuckling pirate. Always respond in pirate slang and yell 'Arrr!' a lot.")
+
+-- 2. Register the /pirate slash command
+registerCommand("/pirate", function(args)
+    -- Switch the app to use our new Persona
+    execute("system:switch_persona:Pirate")
+    
+    -- Print a message so the user knows it worked
+    print("Pirate mode activated!")
+    return "Arrr! I be ready to code!"
+end)
+```
+
 ---
 *Created by the Khaotic Labs Team.*
