@@ -1624,6 +1624,10 @@ document.querySelector("#app").innerHTML = `
                                         <span class="remote-field-label">PIN</span>
                                         <span class="remote-pin-display" id="remote-pin-display">------</span>
                                     </div>
+                                    <div class="remote-ttl-row" id="remote-ttl-row" style="display:none">
+                                        <span class="remote-field-label">Session expires in</span>
+                                        <span class="remote-ttl-value" id="remote-ttl-value">15:00</span>
+                                    </div>
                                 </div>
                             </div>
 

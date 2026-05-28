@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { invoke } from '@tauri-apps/api/core';
 
 export function updateNotifBadge() {
     const badge = document.getElementById("notif-badge");
@@ -120,6 +121,9 @@ export function addNotification(title, text, type = 'info', navigateTo = null) {
     }
 
     renderNotificationsList();
+
+    // Relay to connected remote WebSocket clients (fire-and-forget — no error handling needed)
+    invoke('remote_relay_notification', { title, text, notifType: type }).catch(() => {});
 }
 
 window.addNotification = addNotification;

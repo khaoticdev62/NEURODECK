@@ -1100,6 +1100,7 @@ pub fn run() {
             remote_control::stop_remote_server,
             remote_control::get_remote_server_info,
             remote_control::remote_send_to_clients,
+            remote_control::remote_relay_notification,
             sync::start_sync,
             sync::get_sync_status,
             sync::sync_now,

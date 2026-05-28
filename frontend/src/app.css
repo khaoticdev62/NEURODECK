@@ -12752,6 +12752,23 @@ body.crt-flicker-disabled .crt-flicker {
   text-shadow: 0 0 12px rgba(94, 235, 255, 0.12);
 }
 
+.remote-ttl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.remote-ttl-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  letter-spacing: 0.08em;
+  transition: color 0.3s;
+}
+
 /* Connection log */
 .remote-log {
   flex: 1;

@@ -16,7 +16,7 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter, State as TauriState};
+use tauri::{AppHandle, Emitter, Listener, State as TauriState};
 
 // ── Embedded mobile webapp ────────────────────────────────────────────────────
 
@@ -123,6 +123,17 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
 .qprompt:active { border-color: var(--a); background: rgba(0,240,255,.07); color: var(--a); }
 .qprompt-cat { font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mu); font-family: ui-monospace, monospace; margin-top: 10px; margin-bottom: 2px; }
 
+/* ── Notifications panel ── */
+.notif-list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; -webkit-overflow-scrolling: touch; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+.notif-card { background: var(--sf2); border: 1px solid var(--br); border-radius: 10px; padding: 10px 12px; }
+.notif-card.success { border-left: 3px solid var(--green); }
+.notif-card.error { border-left: 3px solid var(--red); }
+.notif-card.warn { border-left: 3px solid var(--warn); }
+.notif-card-title { font-size: .72rem; font-weight: 600; color: var(--tx); margin-bottom: 3px; display: flex; justify-content: space-between; }
+.notif-card-time { font-size: .58rem; color: var(--mu); font-family: ui-monospace, monospace; }
+.notif-card-text { font-size: .74rem; color: var(--mu); line-height: 1.4; }
+.notif-empty { font-size: .78rem; color: var(--mu); text-align: center; padding: 40px 20px; font-family: ui-monospace, monospace; }
+
 /* ── Status bar ── */
 .statusbar { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--sf); border-top: 1px solid var(--br); flex-shrink: 0; font-size: .62rem; color: var(--mu); font-family: ui-monospace, monospace; }
 .statusbar-ping { margin-left: auto; }
@@ -156,6 +167,7 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <button class="tab"     onclick="showTab('terminal',this)">💻 TERM</button>
     <button class="tab"     onclick="showTab('actions',this)">⚡ ACTIONS</button>
     <button class="tab"     onclick="showTab('prompts',this)">🎯 PROMPTS</button>
+    <button class="tab" id="notif-tab" onclick="showTab('notif',this)">🔔 <span id="notif-badge-tab" style="display:none;background:var(--red);color:#fff;border-radius:8px;padding:0 5px;font-size:.6rem;">0</span></button>
   </div>
 
   <!-- CHAT -->
@@ -284,6 +296,13 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <div class="qprompt" onclick="qp('How do I do this in a SteamOS/Linux terminal?')">How to do this on SteamOS</div>
   </div>
 
+  <!-- NOTIFICATIONS -->
+  <div class="pnl" id="p-notif">
+    <div class="notif-list" id="notif-list">
+      <div class="notif-empty" id="notif-empty">No notifications yet.<br>They'll appear here as NEURODECK generates them.</div>
+    </div>
+  </div>
+
   <div class="statusbar">
     <span id="status-txt">● Connected</span>
     <span class="statusbar-ping" id="ping-txt"></span>
@@ -342,6 +361,8 @@ function doConnect(){
       document.getElementById('topbar-agent').textContent=m.name||'—';
     } else if(m.type==='error'){
       appendMsg('a','⚠ '+m.message);
+    } else if(m.type==='notification'){
+      appendNotif(m);
     }
   };
   ws.onerror=function(){showErr('Connection error. Make sure your phone and NEURODECK are on the same Wi-Fi. In-app browsers (QR scanners) may block local connections — tap "Open in Safari" below.',true);};
@@ -416,12 +437,7 @@ function appendPty(d){
   el.scrollTop=el.scrollHeight;
 }
 
-function showTab(id, btn){
-  document.querySelectorAll('.pnl').forEach(function(p){p.classList.remove('on');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
-  document.getElementById('p-'+id).classList.add('on');
-  btn.classList.add('on');
-}
+// showTab is defined in the notification section above
 
 function startPing(){
   pingT=setInterval(function(){pingStart=Date.now();s({type:'ping'});},5000);
@@ -455,6 +471,35 @@ function toggleVoice(){
     document.getElementById('voice-btn').classList.remove('recording');
   };
   recog.start();
+}
+
+var notifCount=0;
+function appendNotif(n){
+  var list=document.getElementById('notif-list');
+  var empty=document.getElementById('notif-empty');
+  if(empty) empty.style.display='none';
+  var now=new Date();
+  var time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  var card=document.createElement('div');
+  card.className='notif-card '+(n.notifType||'info');
+  card.innerHTML='<div class="notif-card-title"><span>'+esc(n.title||'')+'</span><span class="notif-card-time">'+time+'</span></div><div class="notif-card-text">'+esc(n.text||'')+'</div>';
+  list.insertBefore(card,list.firstChild);
+  // Keep at most 20
+  while(list.children.length>21) list.removeChild(list.lastChild);
+  // Badge
+  notifCount++;
+  var badge=document.getElementById('notif-badge-tab');
+  if(badge){badge.textContent=notifCount;badge.style.display='';}
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showTab(id,btn){
+  document.querySelectorAll('.pnl').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById('p-'+id).classList.add('on');
+  btn.classList.add('on');
+  // Reset notification badge when notif tab opened
+  if(id==='notif'){notifCount=0;var b=document.getElementById('notif-badge-tab');if(b)b.style.display='none';}
 }
 
 // ── Keyboard ──
@@ -494,6 +539,9 @@ pub struct RemoteServerHandle {
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
     pub shutdown_tx: tokio::sync::oneshot::Sender<()>,
+    pub started_at: std::time::Instant,
+    #[allow(dead_code)]
+    pub listener_ids: Vec<tauri::EventId>,
 }
 
 pub struct RemoteControlState {
@@ -826,6 +874,42 @@ pub async fn start_remote_server(
         *rtx = Some(broadcast_tx.clone());
     }
 
+    // Wire LLM streaming → WebSocket relay
+    let mut listener_ids: Vec<tauri::EventId> = Vec::new();
+
+    let btx_chunk = broadcast_tx.clone();
+    let id_chunk = app_handle.listen("stream_chunk", move |ev| {
+        let text: String = serde_json::from_str(ev.payload()).unwrap_or_default();
+        let msg = json!({"type":"chat_token","text":text,"done":false}).to_string();
+        let _ = btx_chunk.send(msg);
+    });
+    listener_ids.push(id_chunk);
+
+    let btx_done = broadcast_tx.clone();
+    let id_done = app_handle.listen("stream_done", move |_| {
+        let msg = json!({"type":"chat_token","text":"","done":true}).to_string();
+        let _ = btx_done.send(msg);
+    });
+    listener_ids.push(id_done);
+
+    let btx_err = broadcast_tx.clone();
+    let id_err = app_handle.listen("stream_error", move |ev| {
+        let msg_text: String = serde_json::from_str(ev.payload()).unwrap_or_default();
+        let msg = json!({"type":"error","message":msg_text}).to_string();
+        let _ = btx_err.send(msg);
+    });
+    listener_ids.push(id_err);
+
+    // Wire notification relay
+    let btx_notif = broadcast_tx.clone();
+    let id_notif = app_handle.listen("remote_notification_relay", move |ev| {
+        let payload: String = serde_json::from_str(ev.payload()).unwrap_or_default();
+        let _ = btx_notif.send(payload);
+    });
+    listener_ids.push(id_notif);
+
+    let started_at = std::time::Instant::now();
+
     // The session token is safe in the URL fragment: hash fragments are never
     // sent to the server in HTTP requests and are not logged by proxies.
     // They do appear in browser history — acceptable for a LAN remote control.
@@ -844,6 +928,8 @@ pub async fn start_remote_server(
             broadcast_tx,
             connected,
             shutdown_tx,
+            started_at,
+            listener_ids,
         });
     }
 
@@ -857,6 +943,7 @@ pub async fn start_remote_server(
 
 #[tauri::command]
 pub async fn stop_remote_server(
+    app_handle: AppHandle,
     _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
     state: TauriState<'_, RemoteControlState>,
     pty_state: TauriState<'_, crate::pty_manager::PtyState>,
@@ -864,6 +951,9 @@ pub async fn stop_remote_server(
     let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
+        for id in handle.listener_ids {
+            app_handle.unlisten(id);
+        }
     }
     let mut rtx = pty_state
         .remote_tx
@@ -882,16 +972,21 @@ pub fn get_remote_server_info(
     Ok(match guard.as_ref() {
         Some(h) => {
             let connected = h.connected.load(Ordering::Relaxed);
+            const SESSION_TTL_SECS: u64 = 900; // 15 minutes
+            let elapsed = h.started_at.elapsed().as_secs();
+            let ttl_remaining = SESSION_TTL_SECS.saturating_sub(elapsed);
             json!({
-                "running":   true,
-                "port":      h.port,
-                "ip":        h.local_ip,
-                "pin":       h.pin,
-                "url":       format!(
+                "running":              true,
+                "port":                 h.port,
+                "ip":                   h.local_ip,
+                "pin":                  h.pin,
+                "url":                  format!(
                     "http://{}:{}/#pin={}&session={}",
                     h.local_ip, h.port, h.pin, h.access_token
                 ),
-                "connected": connected,
+                "connected":            connected,
+                "ttl_seconds_remaining": ttl_remaining,
+                "session_ttl_seconds":  SESSION_TTL_SECS,
             })
         }
         None => json!({"running": false}),
@@ -911,4 +1006,27 @@ pub fn remote_send_to_clients(
     } else {
         Err("Remote server not running".into())
     }
+}
+
+/// Relay a desktop notification to all connected remote WebSocket clients.
+/// Called from notifications.js via invoke() on every addNotification().
+#[tauri::command]
+pub fn remote_relay_notification(
+    title: String,
+    text: String,
+    notif_type: String,
+    state: TauriState<'_, RemoteControlState>,
+) -> Result<(), String> {
+    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(ref h) = *guard {
+        let msg = json!({
+            "type": "notification",
+            "title": title,
+            "text": text,
+            "notifType": notif_type,
+        })
+        .to_string();
+        let _ = h.broadcast_tx.send(msg);
+    }
+    Ok(())
 }

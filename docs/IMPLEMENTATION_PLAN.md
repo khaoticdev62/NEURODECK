@@ -11,7 +11,7 @@
 - Codename: `Horus`
 - Tag: `v1.5.0-horus`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-05-28T18:37:15Z`
+- Last stamped build: `2026-05-28T18:56:44Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
@@ -59,6 +59,8 @@ Core shipped capabilities:
 - CLI Maker (custom command builder with hooks and Lua export).
 - IDE tab (workspace file explorer, tabbed Monaco editor, output panel).
 - Command Palette (`Ctrl+K` fuzzy search across views, commands, and plugins).
+- **JPE Diagnostics & Manual UI** (searchable, collapsible manual with real-time capability health checks).
+- **Hermes 3 Native Integration** (built-in agent, `plugins/hermes.lua` extension, and advanced reasoning persona).
 
 ---
 
@@ -84,7 +86,7 @@ Core shipped capabilities:
 | 3.4 | Task Scheduler | COMPLETE | `src-tauri/src/scheduler.rs`, `scheduler::*` commands, Scheduler tab |
 | 3.5 | Git Integration | COMPLETE | `src-tauri/src/commands/git.rs`, 20+ git commands, Git tab |
 | 4.1 | Workflow Visual Builder | COMPLETE | `src-tauri/src/workflow.rs`, `workflow::*` commands, Workflow tab |
-| 4.2 | Multi-Agent Orchestrator | PARTIAL | `src-tauri/src/orchestrator.rs`, `orchestrator::*` commands wired; **frontend view missing** |
+| 4.2 | Multi-Agent Orchestrator | COMPLETE | `src-tauri/src/orchestrator.rs`, `#view-orchestrator` node builder, and Agent tab integration |
 | 4.3 | Browser Automation | COMPLETE | `src-tauri/src/commands/browser.rs`, headless + embedded browser commands |
 | 4.3 | Command Palette | COMPLETE | `frontend/src/main.js` palette overlay, `Ctrl+K`, fuzzy search |
 | 4.4 | Plugin Marketplace | COMPLETE | `src-tauri/src/plugin_mgr.rs`, Settings Marketplace UI |
@@ -92,6 +94,8 @@ Core shipped capabilities:
 | 4.6 | Cloud Sync | COMPLETE | `src-tauri/src/sync.rs`, Settings Sync UI |
 | 5.1 | Real-Time Collaborative Workspaces | COMPLETE | `src-tauri/src/canvas_collab.rs`, multi-peer LAN workspace UI |
 | 5.2 | Mobile Companion App | PLANNED | Native iOS/Android app not started |
+| 5.4 | JPE Diagnostics & Manual UI | COMPLETE | `frontend/src/main.js`, `#manual-modal` |
+| 5.5 | Hermes 3 Native Integration | COMPLETE | `src-tauri/src/lib.rs`, `plugins/hermes.lua`, `main.js` |
 
 ---
 
@@ -178,17 +182,14 @@ Remaining release smoke:
 - Validate 1280×800 layout with 8+ nodes.
 
 ### Sprint 4.2 - Multi-Agent Orchestrator
-Status: PARTIAL
+Status: COMPLETE
 
 Current state:
 - Backend: `src-tauri/src/orchestrator.rs` with task decomposition and parallel agent execution.
-- Commands: `start_orchestrated_task`, `get_orchestration_status`, `stop_orchestration`.
-- **Frontend: No dedicated view or tab exists.** The orchestrator is callable via backend only.
-
-Integration tasks:
-- Build frontend view (`#view-orchestrator`) or integrate into Agent tab as "Orchestrate" mode.
-- Audit agent task planning, cancellation, and result aggregation.
-- Verify stop behavior under concurrent agent tasks.
+- Commands: `start_orchestrated_task`, `get_orchestration_status`, `stop_orchestration`, plus pipeline persistence logic.
+- Frontend: Dedicated `#view-orchestrator` tab (visual Multi-Agent Pipeline Builder) with drag-and-drop nodes.
+- Secondary UI: Native integration into the Agent tab (`#view-agent`) for "Auto-Plan" mode and real-time status tracking.
+- Navigation: Accessible via standard sidebar tabs, radial menu (`network` icon), and Command Palette.
 
 ### Sprint 4.3 - Browser Automation
 Status: COMPLETE
@@ -345,7 +346,22 @@ Recommended MVP scope:
 - Supported servers: rust-analyzer, pylsp, typescript-language-server, lua-language-server, clangd, gopls, bash-language-server
 - AAAA audit pass: Windows URI fix, mutex poison recovery, path traversal pre-validation, ARIA roles on completions/hover/status bar
 
-### Next Net-New Sprint (v1.4+ / Osiris)
+### Sprint 5.4 - JPE Diagnostics & Manual UI (v1.4.0 / Osiris)
+**Status:** Shipped
+
+**Scope:**
+- **Frontend:** Searchable, collapsible accordion UI for the User Manual.
+- **Diagnostics:** Real-time health metrics checking PTY binaries, network connectivity, and keychain access directly inside the modal.
+
+### Sprint 5.5 - Hermes 3 Native Integration (v1.4.0 / Osiris)
+**Status:** Shipped
+
+**Scope:**
+- **Backend (`lib.rs`):** Added `hermes3:8b` native agent to `default_agents()` and created the advanced reasoning `Hermes` persona.
+- **Frontend:** Updated placeholders and settings to feature `hermes3:8b`.
+- **Plugin:** Bundled `plugins/hermes.lua` extension to instantly load the Hermes persona via `/hermes` and provide setup instructions via `/hermes_config`.
+
+### Next Net-New Sprint (v1.5+ / Horus)
 1. Mobile Companion App (Sprint 5.2) — deferred until cloud sync auth is production-stable.
 
 ---
@@ -355,21 +371,21 @@ Recommended MVP scope:
 Current branch complete:
 - [x] Sprint 3.1 Monaco Editor
 - [x] Sprint 3.2 Whisper STT
+- [x] Sprint 3.3 Knowledge Graph View
+- [x] Sprint 3.4 Task Scheduler
+- [x] Sprint 3.5 Git Integration
+- [x] Sprint 4.1 Workflow Visual Builder
+- [x] Sprint 4.2 Multi-Agent Orchestrator
+- [x] Sprint 4.3 Browser Automation
 - [x] Sprint 4.4 Plugin Marketplace
 - [x] Sprint 4.5 Desktop Computer Use
 - [x] Sprint 4.6 Cloud Sync
 - [x] Sprint 5.1 Real-Time Collaborative Workspaces
 - [x] Sprint 5.3 Multi-LSP Client
-
-Completed elsewhere, needs integration:
-- [ ] Sprint 3.3 Knowledge Graph View
-- [ ] Sprint 3.4 Task Scheduler
-- [ ] Sprint 3.5 Git Integration
-- [ ] Sprint 4.1 Workflow Visual Builder
-- [ ] Sprint 4.2 Multi-Agent Orchestrator
+- [x] Sprint 5.4 JPE Diagnostics & Manual UI
+- [x] Sprint 5.5 Hermes 3 Native Integration
 
 Partial or follow-up:
-- [x] Sprint 4.3 Browser Automation full headless tool layer
 - [ ] Sprint 5.1 WebSocket/CRDT collaboration hardening
 
 Planned:
@@ -387,11 +403,14 @@ Planned:
 | 3.4 Scheduler | v1.3.0 | Isis | COMPLETE |
 | 3.5 Git | v1.3.0 | Isis | COMPLETE |
 | 4.1 Workflow | v1.3.0 | Isis | COMPLETE |
-| 4.2 Multi-Agent | v1.3.0 | Isis | PARTIAL (backend done, frontend missing) |
+| 4.2 Multi-Agent | v1.3.0 | Isis | COMPLETE |
 | 4.3 Browser Automation | v1.3.0 | Isis | COMPLETE |
 | 4.3 Command Palette | v1.3.0 | Isis | COMPLETE |
 | 4.4 Marketplace | v1.3.0 | Isis | COMPLETE |
 | 4.5 Computer Use | v1.3.0 | Isis | COMPLETE |
 | 4.6 Cloud Sync | v1.3.0 | Isis | COMPLETE |
 | 5.1 Collaborative Workspaces | v1.3.0 | Isis | COMPLETE |
-| 5.2 Mobile Companion | v1.4.0+ | Osiris | PLANNED |
+| 5.3 Multi-LSP Client | v1.3.0 | Isis | COMPLETE |
+| 5.4 JPE Diagnostics & Manual UI | v1.4.0 | Osiris | COMPLETE |
+| 5.5 Hermes 3 Integration | v1.4.0 | Osiris | COMPLETE |
+| 5.2 Mobile Companion | v1.5.0+ | Horus | PLANNED |

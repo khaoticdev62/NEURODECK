@@ -8,6 +8,8 @@ import { state } from './state.js';
 
 export function initRemoteControl() {
     var remoteRunning = false;
+    var ttlTimer = null;
+    var ttlSecondsLeft = 0;
 
     function el(id) { return document.getElementById(id); }
 
@@ -49,15 +51,41 @@ export function initRemoteControl() {
             if (ipEl)  ipEl.textContent  = info.ip;
             if (prtEl) prtEl.textContent = info.port;
             generateQR(info.url);
+            // Start TTL countdown
+            clearInterval(ttlTimer);
+            ttlSecondsLeft = info.ttl_seconds_remaining != null ? info.ttl_seconds_remaining : 900;
+            var ttlRow = el('remote-ttl-row');
+            if (ttlRow) ttlRow.style.display = '';
+            _updateTtlDisplay();
+            ttlTimer = setInterval(function() {
+                ttlSecondsLeft = Math.max(0, ttlSecondsLeft - 1);
+                _updateTtlDisplay();
+                if (ttlSecondsLeft === 0) {
+                    clearInterval(ttlTimer);
+                    remoteLog('Session token expired. Restart the server to refresh.', 'warn');
+                }
+            }, 1000);
         } else {
             if (startBtn) startBtn.style.display = '';
             if (stopBtn)  stopBtn.style.display  = 'none';
             if (qrSec)    qrSec.style.display    = 'none';
             if (stats)    stats.style.display    = 'none';
+            var ttlRowOff = el('remote-ttl-row');
+            if (ttlRowOff) ttlRowOff.style.display = 'none';
             if (badge)    badge.classList.remove('remote-status-online');
             if (dot)      dot.classList.remove('remote-dot-online');
             if (statusTx) statusTx.textContent   = 'Offline';
+            clearInterval(ttlTimer);
         }
+    }
+
+    function _updateTtlDisplay() {
+        var val = el('remote-ttl-value');
+        if (!val) return;
+        var mins = Math.floor(ttlSecondsLeft / 60);
+        var secs = ttlSecondsLeft % 60;
+        val.textContent = mins + ':' + String(secs).padStart(2, '0');
+        val.style.color = ttlSecondsLeft < 60 ? 'var(--error-color, #ff5f5f)' : '';
     }
 
     async function generateQR(url) {
