@@ -8399,6 +8399,151 @@ body.crt-flicker-disabled .crt-flicker {
   opacity: 0.4;
 }
 
+/* ── Memory IO Bar (Export / Import / Backup) ──────────────────────────── */
+.memory-io-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.memory-btn-export,
+.memory-btn-import,
+.memory-btn-backup,
+.memory-btn-backups-toggle {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  background: rgba(0, 240, 255, 0.06);
+  color: var(--color-primary, #00f0ff);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.memory-btn-export:hover,
+.memory-btn-import:hover,
+.memory-btn-backup:hover,
+.memory-btn-backups-toggle:hover {
+  background: rgba(0, 240, 255, 0.14);
+  border-color: rgba(0, 240, 255, 0.5);
+}
+.memory-btn-export:disabled,
+.memory-btn-backup:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Backup History Panel ──────────────────────────────────────────────── */
+.memory-backup-panel {
+  background: rgba(8, 12, 16, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.18);
+  border-radius: 12px;
+  margin: 0 0 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.memory-backup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.memory-backup-title {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--color-primary, #00f0ff);
+  letter-spacing: 0.04em;
+}
+
+.memory-backup-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.memory-backup-close:hover { color: #fff; }
+
+.memory-backup-list {
+  padding: 6px 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.memory-backup-empty {
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: var(--font-mono);
+}
+
+.memory-backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+}
+.memory-backup-row:hover { background: rgba(0, 240, 255, 0.04); }
+
+.memory-backup-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.memory-backup-name {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-backup-date {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: var(--font-mono);
+}
+
+.memory-backup-count {
+  font-size: 0.65rem;
+  color: var(--color-primary, #00f0ff);
+  opacity: 0.7;
+  font-family: var(--font-mono);
+}
+
+.memory-btn-restore {
+  font-size: 0.68rem;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(0, 240, 255, 0.07);
+  color: var(--color-primary, #00f0ff);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.memory-btn-restore:hover { background: rgba(0, 240, 255, 0.18); }
+.memory-btn-restore:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ==========================================================================
    RADIAL MENU (Steam Input / Gamepad)
    ========================================================================== */

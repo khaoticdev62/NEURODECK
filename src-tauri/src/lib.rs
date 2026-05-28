@@ -926,6 +926,26 @@ pub fn run() {
                 }
             });
 
+            // Auto-backup memory on startup (runs in background, non-blocking)
+            {
+                let backup_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    let mem_db = {
+                        let state = backup_handle.state::<Mutex<AppState>>();
+                        let guard = state.lock().unwrap_or_else(|e| e.into_inner());
+                        guard.mem_db.clone()
+                    };
+                    if let Some(db) = mem_db {
+                        if let Ok(records) = db.export_all_records() {
+                            if !records.is_empty() {
+                                let _ = commands::system::run_memory_backup(&db);
+                            }
+                        }
+                    }
+                });
+            }
+
             // Load plugins on startup
             if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
                 println!("Error loading plugins: {}", e);

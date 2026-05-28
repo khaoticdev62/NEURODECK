@@ -202,4 +202,148 @@ export function initMemoryView() {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveFact(); }
         });
     }
+
+    // ── Memory Export ────────────────────────────────────────────────────────
+    const exportBtn = document.getElementById("memory-export-btn");
+    if (exportBtn) {
+        exportBtn.onclick = async function() {
+            exportBtn.disabled = true;
+            exportBtn.textContent = "Exporting…";
+            try {
+                const path = await invoke("memory_export");
+                if (typeof window.addNotification === "function") {
+                    window.addNotification("Memory Exported", `Saved to: ${path}`, "success");
+                }
+            } catch (e) {
+                if (typeof window.addNotification === "function") {
+                    window.addNotification("Export Failed", String(e), "error");
+                }
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.textContent = "⬆ Export";
+            }
+        };
+    }
+
+    // ── Memory Import ────────────────────────────────────────────────────────
+    const importFile = document.getElementById("memory-import-file");
+    const importLabel = document.querySelector("label[for='memory-import-file']");
+    if (importFile) {
+        importFile.onchange = async function() {
+            const file = importFile.files && importFile.files[0];
+            if (!file) return;
+            const merge = confirm(
+                `Import "${file.name}"?\n\nClick OK to MERGE (keep existing records + add new ones).\nClick Cancel to REPLACE all current memory with this file.`
+            );
+            if (importLabel) { importLabel.textContent = "Importing…"; }
+            try {
+                const text = await file.text();
+                const count = await invoke("memory_import_data", { data: text, merge });
+                if (typeof window.addNotification === "function") {
+                    window.addNotification(
+                        "Memory Imported",
+                        `${count} records ${merge ? "merged" : "replaced"}.`,
+                        "success"
+                    );
+                }
+                await loadMemory();
+            } catch (e) {
+                if (typeof window.addNotification === "function") {
+                    window.addNotification("Import Failed", String(e), "error");
+                }
+            } finally {
+                if (importLabel) { importLabel.textContent = "⬇ Import"; }
+                importFile.value = "";
+            }
+        };
+    }
+
+    // ── Memory Backup ────────────────────────────────────────────────────────
+    const backupBtn = document.getElementById("memory-backup-btn");
+    if (backupBtn) {
+        backupBtn.onclick = async function() {
+            backupBtn.disabled = true;
+            backupBtn.textContent = "Backing up…";
+            try {
+                const path = await invoke("memory_backup_auto");
+                if (typeof window.addNotification === "function") {
+                    window.addNotification("Backup Created", `Saved to: ${path}`, "success");
+                }
+            } catch (e) {
+                if (typeof window.addNotification === "function") {
+                    window.addNotification("Backup Failed", String(e), "error");
+                }
+            } finally {
+                backupBtn.disabled = false;
+                backupBtn.textContent = "💾 Backup";
+            }
+        };
+    }
+
+    // ── Backup History Panel ─────────────────────────────────────────────────
+    const showBackupsBtn = document.getElementById("memory-show-backups-btn");
+    const backupPanel = document.getElementById("memory-backup-panel");
+    const backupClose = document.getElementById("memory-backup-close");
+    const backupList = document.getElementById("memory-backup-list");
+
+    async function renderBackupList() {
+        if (!backupList) return;
+        backupList.innerHTML = '<div class="memory-backup-empty">Loading…</div>';
+        try {
+            const backups = await invoke("memory_list_backups");
+            if (backups.length === 0) {
+                backupList.innerHTML = '<div class="memory-backup-empty">No backups yet. Click 💾 Backup to create one.</div>';
+                return;
+            }
+            backupList.innerHTML = "";
+            backups.forEach(b => {
+                const row = document.createElement("div");
+                row.className = "memory-backup-row";
+                row.innerHTML = `
+                    <div class="memory-backup-meta">
+                        <span class="memory-backup-name">${escHtml(b.name)}</span>
+                        <span class="memory-backup-date">${escHtml(b.created_at)}</span>
+                        <span class="memory-backup-count">${b.record_count} records</span>
+                    </div>
+                    <button class="memory-btn memory-btn-restore" data-name="${escHtml(b.name)}" aria-label="Restore ${escHtml(b.name)}">Restore</button>`;
+                row.querySelector(".memory-btn-restore").onclick = async function() {
+                    const name = this.dataset.name;
+                    if (!confirm(`Restore from backup "${name}"?\nThis will REPLACE all current memory records.`)) return;
+                    this.disabled = true;
+                    this.textContent = "Restoring…";
+                    try {
+                        await invoke("memory_restore_backup", { backupName: name });
+                        if (typeof window.addNotification === "function") {
+                            window.addNotification("Memory Restored", `Restored from ${name}`, "success");
+                        }
+                        await loadMemory();
+                    } catch (e) {
+                        if (typeof window.addNotification === "function") {
+                            window.addNotification("Restore Failed", String(e), "error");
+                        }
+                        this.disabled = false;
+                        this.textContent = "Restore";
+                    }
+                };
+                backupList.appendChild(row);
+            });
+        } catch (e) {
+            backupList.innerHTML = `<div class="memory-backup-empty">Error: ${escHtml(String(e))}</div>`;
+        }
+    }
+
+    if (showBackupsBtn && backupPanel) {
+        showBackupsBtn.onclick = async function() {
+            const open = backupPanel.style.display !== "none";
+            backupPanel.style.display = open ? "none" : "";
+            showBackupsBtn.setAttribute("aria-expanded", String(!open));
+            if (!open) await renderBackupList();
+        };
+    }
+    if (backupClose && backupPanel) {
+        backupClose.onclick = function() {
+            backupPanel.style.display = "none";
+            if (showBackupsBtn) showBackupsBtn.setAttribute("aria-expanded", "false");
+        };
+    }
 }

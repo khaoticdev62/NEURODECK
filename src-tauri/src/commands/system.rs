@@ -1383,18 +1383,10 @@ pub fn memory_import_data(
     db.import_records(records, merge)
 }
 
-/// Creates a timestamped backup in `user_config_dir/data/memory/backups/`.
-/// Keeps the 5 most recent backups, pruning older ones.
-/// Returns the backup file path.
-#[tauri::command]
-pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
+/// Core backup logic — operates directly on a `MemoryDB` reference.
+/// Usable from both the Tauri command and internal startup tasks.
+pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String> {
     let records = db.export_all_records()?;
-
     let backup_dir = memory_backup_dir();
     std::fs::create_dir_all(&backup_dir)
         .map_err(|e| format!("Cannot create backup dir: {}", e))?;
@@ -1435,6 +1427,19 @@ pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, S
     }
 
     Ok(dest.to_string_lossy().into_owned())
+}
+
+/// Creates a timestamped backup in `user_config_dir/data/memory/backups/`.
+/// Keeps the 5 most recent backups, pruning older ones.
+/// Returns the backup file path.
+#[tauri::command]
+pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+    let mem_db = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.mem_db.clone()
+    };
+    let db = mem_db.ok_or("Memory database not initialized")?;
+    run_memory_backup(&db)
 }
 
 /// Returns a list of available backups sorted newest-first.
