@@ -1141,6 +1141,8 @@ pub fn run() {
             cli_toggle_hook,
             cli_export_lua,
             cli_import_lua,
+            cli_maker_save_plugin,
+            cli_maker_export,
             // ── Knowledge Graph ────────────────────────────────────────────────
             get_memory_graph_data,
             // ── Task Scheduler ─────────────────────────────────────────────────

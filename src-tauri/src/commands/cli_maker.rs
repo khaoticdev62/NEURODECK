@@ -223,3 +223,90 @@ pub fn cli_import_lua(_path: String) -> Result<String, String> {
     // Stub: would parse Lua registerCommand block back into CliCommandDef
     Ok("{}".to_string())
 }
+
+/// Save a command as a Lua plugin file in the plugins/ directory, then hot-reload.
+#[command]
+pub fn cli_maker_save_plugin(id: String, app: AppHandle) -> Result<String, String> {
+    let lua = cli_export_lua(id.clone(), app.clone())?;
+
+    // Find plugins directory: <user_config_dir>/plugins or adjacent to binary
+    let plugins_dir = crate::user_config_dir().join("plugins");
+    std::fs::create_dir_all(&plugins_dir).map_err(|e| e.to_string())?;
+
+    let cmds = load_all(&app);
+    let cmd = cmds
+        .into_iter()
+        .find(|c| c.id == id)
+        .ok_or("Command not found")?;
+
+    let filename = format!(
+        "{}.lua",
+        cmd.name
+            .to_lowercase()
+            .replace(|c: char| !c.is_alphanumeric(), "_")
+    );
+    let path = plugins_dir.join(&filename);
+    std::fs::write(&path, &lua).map_err(|e| format!("Write failed: {}", e))?;
+
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// Export a command as a standalone script (.lua / .sh / .py) to ~/scripts/.
+#[command]
+pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<String, String> {
+    let cmds = load_all(&app);
+    let cmd = cmds
+        .into_iter()
+        .find(|c| c.id == id)
+        .ok_or("Command not found")?;
+
+    let scripts_dir = {
+        #[cfg(target_os = "windows")]
+        let home = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOMEDRIVE").and_then(|d| std::env::var("HOMEPATH").map(|p| d + &p)))
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| std::path::PathBuf::from("."));
+        #[cfg(not(target_os = "windows"))]
+        let home = std::env::var("HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| std::path::PathBuf::from("."));
+        home.join("scripts")
+    };
+    std::fs::create_dir_all(&scripts_dir).map_err(|e| e.to_string())?;
+
+    let (content, ext) = match format.as_str() {
+        "bash" | "sh" => {
+            let body = match &cmd.action {
+                CliAction::Shell { command, cwd } => {
+                    let cd = cwd.as_deref().map(|d| format!("cd \"{d}\"\n")).unwrap_or_default();
+                    format!("#!/usr/bin/env bash\n# {}\n{}{}\n", cmd.description, cd, command)
+                }
+                _ => format!("#!/usr/bin/env bash\n# {}\necho \"Run: {}\"\n", cmd.description, cmd.name),
+            };
+            (body, "sh")
+        }
+        "python" | "py" => {
+            let body = format!(
+                "#!/usr/bin/env python3\n# {}\n\nimport sys\n\ndef main(args):\n    print('{}:', args)\n\nif __name__ == '__main__':\n    main(' '.join(sys.argv[1:]))\n",
+                cmd.description, cmd.name
+            );
+            (body, "py")
+        }
+        _ => {
+            let lua = cli_export_lua(id, app)?;
+            (lua, "lua")
+        }
+    };
+
+    let filename = format!(
+        "{}.{}",
+        cmd.name
+            .to_lowercase()
+            .replace(|c: char| !c.is_alphanumeric(), "_"),
+        ext
+    );
+    let path = scripts_dir.join(&filename);
+    std::fs::write(&path, &content).map_err(|e| format!("Write failed: {}", e))?;
+
+    Ok(path.to_string_lossy().to_string())
+}

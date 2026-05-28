@@ -77,6 +77,7 @@ import { listen } from "@tauri-apps/api/event";
 import { marked } from "marked";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
+import manualContent from "./JPE_MANUAL.md?raw";
 import {
   getCtrlPromptVisible,
   getCtrlPromptTemplateMode,
@@ -481,6 +482,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)" aria-label="Mute Speech">${createIcon("volume2", { size: 18 })}</button>
                     <button class="input-btn" id="notif-btn" title="Notifications" aria-label="Notifications" style="position: relative;">${createIcon("bell", { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon("search", { size: 18 })}</button>
+                    <button class="input-btn" id="manual-btn" title="App Manual" aria-label="Open App Manual">${createIcon("bookOpen", { size: 18 })}</button>
                     <button class="input-btn" id="settings-btn" title="Settings" aria-label="Open Settings">${createIcon("settings2", { size: 18 })}</button>
                 </div>
             </header>
@@ -1903,8 +1905,9 @@ document.querySelector("#app").innerHTML = `
                      ═══════════════════════════════════════════════════════════ -->
                 <div class="view-content" id="view-cli-maker" data-testid="view-cli-maker">
                     <div class="cli-maker-workspace">
+                        <!-- Left: command list -->
                         <div class="cli-maker-pane cli-maker-left">
-                            <div class="cli-maker-header">Commands</div>
+                            <div class="cli-maker-header">CLI Commands</div>
                             <div class="cli-maker-filters" id="cli-maker-filters">
                                 <button class="cli-filter active" data-filter="all">All</button>
                                 <button class="cli-filter" data-filter="prompt">Prompt</button>
@@ -1913,51 +1916,86 @@ document.querySelector("#app").innerHTML = `
                                 <button class="cli-filter" data-filter="chain">Chain</button>
                                 <button class="cli-filter" data-filter="plugin">Plugin</button>
                             </div>
-                            <div class="cli-maker-list" id="cli-maker-list">
+                            <div class="cli-maker-list" id="cli-maker-list" role="list">
                                 <div class="cli-maker-empty">Loading commands…</div>
                             </div>
-                            <button class="cli-maker-btn-primary" id="cli-new-cmd-btn">+ New Command</button>
+                            <button class="cli-maker-btn-primary" id="cli-new-cmd-btn" aria-label="New command">+ New Command</button>
                         </div>
+
+                        <!-- Center: form editor -->
                         <div class="cli-maker-pane cli-maker-center">
                             <div class="cli-maker-header" id="cli-editor-title">New Command</div>
                             <div class="cli-editor-form" id="cli-editor-form">
-                                <input type="text" id="cli-cmd-name" class="cli-input" placeholder="Command name">
-                                <input type="text" id="cli-cmd-desc" class="cli-input" placeholder="Description">
-                                <select id="cli-cmd-category" class="cli-select">
-                                    <option value="prompt">Prompt</option>
-                                    <option value="shell">Shell</option>
-                                    <option value="view">View</option>
-                                    <option value="chain">Chain</option>
-                                    <option value="plugin">Plugin</option>
-                                </select>
+                                <!-- Core fields -->
+                                <div class="cli-form-row">
+                                    <input type="text" id="cli-cmd-name" class="cli-input cli-input-name"
+                                           placeholder="command-name" aria-label="Command name">
+                                    <select id="cli-icon-select" class="cli-select cli-select-icon" aria-label="Icon"></select>
+                                </div>
+                                <input type="text" id="cli-cmd-desc" class="cli-input"
+                                       placeholder="Short description shown in --help" aria-label="Description">
+                                <div class="cli-form-row">
+                                    <select id="cli-cmd-category" class="cli-select" aria-label="Action type">
+                                        <option value="prompt">Prompt</option>
+                                        <option value="shell">Shell</option>
+                                        <option value="view">View</option>
+                                        <option value="chain">Chain</option>
+                                        <option value="plugin">Plugin</option>
+                                    </select>
+                                    <select id="cli-lang-select" class="cli-select" aria-label="Language" style="display:none">
+                                        <option value="lua">Lua</option>
+                                        <option value="bash">Bash</option>
+                                        <option value="python">Python</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dynamic action fields -->
                                 <div class="cli-dynamic-fields" id="cli-dynamic-fields"></div>
+
+                                <!-- Flags editor -->
+                                <div class="cli-flags-section" id="cli-flags-section">
+                                    <div class="cli-section-label">Flags / Arguments</div>
+                                    <div class="cli-flags-list" id="cli-flags-list"></div>
+                                    <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-flag-btn"
+                                            aria-label="Add flag">+ Flag</button>
+                                </div>
+
+                                <!-- Subcommands -->
+                                <div class="cli-subcmds-section" id="cli-subcmds-section">
+                                    <div class="cli-section-label">Subcommands</div>
+                                    <div class="cli-subcmds-list" id="cli-subcmds-list"></div>
+                                    <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-subcmd-btn"
+                                            aria-label="Add subcommand">+ Subcommand</button>
+                                </div>
+
+                                <!-- Bindings row -->
+                                <div class="cli-bindings-row">
+                                    <input type="text" id="cli-shortcut-input" class="cli-input"
+                                           placeholder="Shortcut (e.g. Ctrl+K)" readonly
+                                           title="Press a key combination" aria-label="Keyboard shortcut">
+                                    <select id="cli-radial-select" class="cli-select" aria-label="Radial slot">
+                                        <option value="">No radial</option>
+                                        ${Array.from({length: 20}, (_, i) => `<option value="${i}">Slot ${i}</option>`).join('')}
+                                    </select>
+                                </div>
+
+                                <!-- Action buttons -->
                                 <div class="cli-editor-actions">
-                                    <button class="cli-maker-btn" id="cli-save-btn">Save</button>
-                                    <button class="cli-maker-btn" id="cli-test-btn">Test</button>
-                                    <button class="cli-maker-btn" id="cli-export-btn">Export Lua</button>
+                                    <button class="cli-maker-btn cli-maker-btn-primary" id="cli-save-btn" aria-label="Save command">💾 Save</button>
+                                    <button class="cli-maker-btn" id="cli-test-btn" aria-label="Test command">▶ Test</button>
+                                    <button class="cli-maker-btn" id="cli-save-plugin-btn" aria-label="Save as plugin">🔌 Save Plugin</button>
+                                    <button class="cli-maker-btn" id="cli-export-script-btn" aria-label="Export as script">⬇ Export Script</button>
+                                    <button class="cli-maker-btn" id="cli-export-btn" aria-label="Export Lua to clipboard">📋 Copy Lua</button>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Right: --help preview + test output -->
                         <div class="cli-maker-pane cli-maker-right">
-                            <div class="cli-maker-header">Preview</div>
-                            <div class="cli-preview-output" id="cli-preview-output"></div>
-                            <div class="cli-maker-header" style="margin-top:12px;">Bindings</div>
-                            <div class="cli-bindings">
-                                <label>Shortcut</label>
-                                <input type="text" id="cli-shortcut-input" class="cli-input" placeholder="None" readonly>
-                                <label>Radial Slot</label>
-                                <select id="cli-radial-select" class="cli-select">
-                                    <option value="">None</option>
-                                    <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-                                    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-                                    <option value="6">6</option><option value="7">7</option><option value="8">8</option>
-                                    <option value="9">9</option><option value="10">10</option><option value="11">11</option>
-                                    <option value="12">12</option><option value="13">13</option><option value="14">14</option>
-                                    <option value="15">15</option>
-                                </select>
-                                <label>Icon</label>
-                                <select id="cli-icon-select" class="cli-select"></select>
-                            </div>
+                            <div class="cli-maker-header">--help Preview</div>
+                            <pre class="cli-help-preview" id="cli-help-preview" aria-label="Generated help text">Select or create a command to see the --help preview.</pre>
+                            <div class="cli-maker-header" style="margin-top:12px;">Test Output</div>
+                            <pre class="cli-preview-output" id="cli-preview-output" aria-label="Test output">No output yet.</pre>
                         </div>
                     </div>
                 </div>
@@ -3082,6 +3120,25 @@ document.querySelector("#app").innerHTML = `
                 <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
                     <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
                     <button class="settings-close-btn" id="close-notif-btn" style="margin: 0;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- JPE Manual Modal -->
+        <div class="settings-overlay" id="manual-modal">
+            <div class="settings-modal-card manual-modal-card" style="max-width: 800px; width: 90%; height: 85vh;">
+                <div class="settings-modal-header" style="justify-content: space-between;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span class="notif-center-kicker">Just Plain English</span>
+                        <h3>NEURODECK Manual</h3>
+                    </div>
+                    <button class="sidebar-toggle-btn" id="close-manual-x">${createIcon("x", { size: 16 })}</button>
+                </div>
+                <div class="settings-modal-content manual-content" style="flex: 1; overflow-y: auto; padding: 24px;" id="manual-content-container">
+                    <!-- Rendered markdown goes here -->
+                </div>
+                <div class="settings-modal-footer" style="justify-content: flex-end;">
+                    <button class="settings-close-btn" id="close-manual-btn" style="margin: 0;">Close</button>
                 </div>
             </div>
         </div>
@@ -5212,7 +5269,6 @@ toggleDrawerBtn.onclick = function () {
 inspectCloseBtn.onclick = function () {
   inspectDrawer.classList.add("collapsed");
 };
-
 // Expose main.js functions to global scope for submodules
 window.hideRadialMenu = hideRadialMenu;
 window.showRadialMenu = showRadialMenu;
@@ -5368,11 +5424,11 @@ invoke("get_initial_state")
     initGameContextPanel();
     initTunnelClient();
     initFileShare();
-    initTorrentClient();
     initBrowser();
     initAgentView();
     initMemoryView();
     initRadialMenu();
+    initManualModal();
 
     // Check Onboarding
     checkOnboarding();
@@ -9367,6 +9423,27 @@ function initGameContextPanel() {
       dismiss();
     }
   });
+}
+
+function initManualModal() {
+  const manualBtn = document.getElementById("manual-btn");
+  const manualModal = document.getElementById("manual-modal");
+  const closeX = document.getElementById("close-manual-x");
+  const closeBtn = document.getElementById("close-manual-btn");
+  const contentContainer = document.getElementById("manual-content-container");
+
+  if (!manualBtn || !manualModal) return;
+
+  manualBtn.addEventListener("click", () => {
+    manualModal.classList.add("active");
+    if (contentContainer && contentContainer.innerHTML.trim() === "") {
+      contentContainer.innerHTML = marked.parse(manualContent);
+    }
+  });
+
+  const closeManual = () => manualModal.classList.remove("active");
+  if (closeX) closeX.addEventListener("click", closeManual);
+  if (closeBtn) closeBtn.addEventListener("click", closeManual);
 }
 
 /* --- SEPARATOR --- */

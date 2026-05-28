@@ -16925,6 +16925,49 @@ button.tab-btn:active,
 }
 
 
+/* ── CLI Maker Sprint 7.3 additions ───────────────────────────────────────── */
+.cli-form-row { display: flex; gap: 8px; align-items: center; }
+.cli-input-name { flex: 1; }
+.cli-select-icon { width: auto; flex-shrink: 0; }
+.cli-maker-btn-sm { padding: 4px 8px; font-size: 0.72rem; }
+.cli-section-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 4px; padding: 6px 0 0; }
+.cli-flags-section, .cli-subcmds-section { display: flex; flex-direction: column; gap: 6px; }
+.cli-flags-list, .cli-subcmds-list { display: flex; flex-direction: column; gap: 5px; }
+.cli-flag-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.cli-flag-row .cli-input { padding: 4px 7px; font-size: 0.72rem; }
+.cli-flag-row .cli-select { padding: 4px 6px; font-size: 0.72rem; width: auto; }
+.cli-flag-name { width: 90px; flex-shrink: 0; }
+.cli-flag-short { width: 40px; flex-shrink: 0; }
+.cli-flag-type { width: 72px; flex-shrink: 0; }
+.cli-subcmd-row { display: flex; align-items: center; gap: 6px; }
+.cli-subcmd-name { width: 110px; flex-shrink: 0; }
+.cli-check-label { display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.55); font-size: 0.72rem; cursor: pointer; white-space: nowrap; }
+.cli-check-label input { accent-color: var(--accent-color); }
+.cli-warn-row { font-size: 0.72rem; color: #fbbf24; }
+.cli-bindings-row { display: flex; gap: 8px; align-items: center; }
+.cli-bindings-row .cli-input, .cli-bindings-row .cli-select { flex: 1; padding: 5px 8px; font-size: 0.78rem; }
+.cli-help-preview {
+  flex: 1;
+  min-height: 120px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+  padding: 10px 12px;
+  color: #94a3b8;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  line-height: 1.65;
+  overflow-y: auto;
+  white-space: pre;
+}
+.cli-textarea { min-height: 80px; resize: vertical; font-family: var(--font-mono, monospace); }
+.cli-code-area { min-height: 120px; font-size: 0.78rem; }
+.cli-chain-step { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.cli-chain-step .cli-select { flex: 1; }
+.cli-cmd-selected { background: rgba(var(--accent-rgb),0.08) !important; border-left: 2px solid var(--accent-color) !important; }
+.cli-cmd-actions { display: flex; gap: 4px; margin-left: auto; }
+
 /* ==========================================================================
    MINI IDE VIEW
    ========================================================================== */
@@ -19419,5 +19462,81 @@ button[class*="send-prompt"]:hover {
   .orch-running {
     animation: none !important;
   }
+}
+
+
+/* ----------------------------------------------------------------------------
+   JPE MANUAL MODAL
+   ---------------------------------------------------------------------------- */
+
+.manual-modal-card {
+  background: linear-gradient(160deg, rgba(20,26,40,0.95) 0%, rgba(14,18,30,0.98) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-top-color: rgba(255,255,255,0.1) !important;
+  border-radius: var(--nd-radius-lg) !important;
+  box-shadow: var(--nd-shadow-card-hover) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.manual-content {
+  font-family: "Inter", system-ui, sans-serif !important;
+  color: rgba(255,255,255,0.85) !important;
+  line-height: 1.6 !important;
+  font-size: 0.95rem !important;
+}
+
+.manual-content h1 {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #fff 20%, var(--nd-glow-cyan) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem !important;
+  letter-spacing: -0.5px !important;
+}
+
+.manual-content h2 {
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  color: var(--nd-glow-cyan) !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1rem !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.manual-content p {
+  margin-bottom: 1.25rem !important;
+}
+
+.manual-content strong {
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.manual-content ul {
+  margin-left: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.manual-content li {
+  margin-bottom: 0.5rem !important;
+}
+
+.manual-content code {
+  font-family: var(--nd-font-mono) !important;
+  background: rgba(255,255,255,0.08) !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 4px !important;
+  font-size: 0.85em !important;
+  color: var(--nd-glow-cyan) !important;
+}
+
+.manual-content hr {
+  border: 0 !important;
+  border-top: 1px solid rgba(255,255,255,0.1) !important;
+  margin: 2.5rem 0 !important;
 }
 
