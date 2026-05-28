@@ -487,11 +487,34 @@ CI builds (`.github/workflows/ci.yml`) run automatically on every push and produ
 
 ---
 
+## What's Next — v1.4.0 Osiris
+
+> Roadmap: [`docs/ROADMAP_v1.4.0-Osiris.md`](docs/ROADMAP_v1.4.0-Osiris.md)
+
+**Theme: Resurrection — Surface the Hidden Layer.**  
+Six frontend modules committed but never fully wired (`workflow_view.js`, `api_lab.js`, `cli_maker.js`, `torrent.js`, `remote_control_view.js`, `ctrl_prompt.js`) get production-grade implementations. The multi-agent orchestrator backend gets a full visual pipeline UI. Canvas collab upgrades from last-write-wins to CRDT. Memory gains namespace filtering and chunk-level RAG precision.
+
+| Sprint | Item |
+|---|---|
+| 7.0 | Multi-Agent Orchestrator View (drag-and-drop pipeline canvas) |
+| 7.1 | Workflow Visual Builder (node editor, triggers, cron scheduling) |
+| 7.2 | API Lab (full HTTP client, collections, env variables) |
+| 7.3 | CLI Maker (visual CLI scaffolder → Lua plugin output) |
+| 7.4 | CRDT Canvas Collaboration (Yjs upgrade) |
+| 7.5 | Torrent / P2P Distribution pipeline |
+| 7.6 | Remote Control relay upgrade (Chat + Terminal + Notify from iPhone) |
+| 7.7 | Memory Namespace UI (chat / documents / game notes filter) |
+| 7.8 | Advanced RAG (512-token chunking + MMR re-ranking) |
+| 7.9 | Ctrl+Prompt sidebar (view-aware prompt template panel) |
+
+---
+
 ## Documentation
 
 | Document | What It Covers |
 |---|---|
 | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | Full feature walkthrough for end users |
+| [`docs/ROADMAP_v1.4.0-Osiris.md`](docs/ROADMAP_v1.4.0-Osiris.md) | v1.4.0 sprint plan — 10 items, 3 priority tiers |
 | [`docs/ANTIGRAVITY_HANDOFF.md`](docs/ANTIGRAVITY_HANDOFF.md) | Feature backlog, sprint history, priority matrix |
 | [`docs/project-context.md`](docs/project-context.md) | Project identity, command registry, sprint log |
 | [`docs/gamescope_guide.md`](docs/gamescope_guide.md) | SteamOS Game Mode integration, gamescope flags |

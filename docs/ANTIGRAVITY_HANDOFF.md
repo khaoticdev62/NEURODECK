@@ -6,7 +6,7 @@
 
 ## Quick State Summary
 
-> Last updated: 2026-05-27 — **v1.3.0-Isis RELEASED** — ALL P1–P22 + C13–C22 SHIPPED ✅ | 56 Tauri commands wired across 28 modules | AAAA premium CSS pass complete (all 6 screens) | Tagged `v1.3.0-isis` on master
+> Last updated: 2026-05-28 — **v1.3.0-Isis RELEASED** ✅ | **v1.4.0-Osiris PLANNING** 🔵 — Roadmap at `docs/ROADMAP_v1.4.0-Osiris.md` | 10 items across 3 priority tiers | Sprint 7.0 target: Multi-Agent Orchestrator View
 
 | Layer | Status |
 |---|---|
