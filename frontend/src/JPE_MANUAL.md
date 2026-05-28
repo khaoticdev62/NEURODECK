@@ -103,5 +103,9 @@ NEURODECK is an all-in-one smart command center. Think of it like a Swiss Army k
 **What it is:** A hidden drawer full of smart, ready-to-use AI prompts that change depending on what you're doing.
 **How to use it:** Press `Ctrl+P` on your keyboard. A panel slides out from the side offering prompt templates tailored specifically to the screen you are currently looking at.
 
+## 23. 🎮 DeckCode
+**What it is:** A translator that turns your gamepad buttons into real software actions.
+**How to use it:** Pick up a gamepad (like an Xbox controller or Steam Deck). Pressing a button—or holding it, or double-tapping it—can instantly open a terminal, trigger a macro, or send a prompt to the AI. It runs quietly in the background!
+
 ---
 *Created by the Khaotic Labs Team.*
