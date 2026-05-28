@@ -47,6 +47,7 @@
 | Boot Sequence | ✅ Cinematic 28-step boot at 220–350ms/step; v1.2.0-ra branding; real system stats |
 | Nav Layout (1280px) | ✅ 12 tabs in dedicated `nav-tab-row` strip; `flex: 1` even distribution; no overflow |
 | Multi-Agent Orchestrator View (P0-1) | ✅ Sprint 7.0 — `#view-orchestrator` tab; visual pipeline canvas; drag-drop nodes; SVG bezier arrows; save/load pipelines; auto-plan (LLM decomposition); run/pause/stop controls |
+| Workflow Visual Builder (P0-2) | ✅ Sprint 7.1 — Condition node (if-else + true/false ports); File Op node; PTY Command node; Trigger type selector (manual/cron/event); zoom (Ctrl+scroll + buttons); Import/Export `.ndwf`; `workflow_export`, `workflow_import`, `workflow_run` backend commands |
 
 ---
 
