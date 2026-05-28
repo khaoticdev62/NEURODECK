@@ -12924,3 +12924,19 @@ function initDocsView() {
 }
 
 initDocsView();
+
+// ==========================================================================
+// DECKCODE RUNTIME INTEGRATION
+// ==========================================================================
+listen("deckcode-action", (event) => {
+  const actionId = event.payload;
+  console.log("[DeckCode] Received Action:", actionId);
+  
+  if (window.addNotification) {
+    window.addNotification(
+      "DeckCode Action",
+      `Triggered: ${actionId}`,
+      "info"
+    );
+  }
+});

@@ -843,8 +843,23 @@ pub fn run() {
             };
             if let Ok(schema) = crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default()) {
                 let state = app.state::<crate::deckcode::DeckCodeState>();
-                *state.0.lock().unwrap() = Some(schema);
+                *state.0.lock().unwrap() = Some(schema.clone());
                 tracing::info!("Loaded DeckCode Predictive Coding Profile");
+
+                let (tx, rx) = std::sync::mpsc::channel();
+                crate::deckcode::input::start_input_daemon(tx);
+
+                let app_handle_clone = app.handle().clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    let resolver = crate::deckcode::resolver::DeckCodeResolver::new(schema);
+                    let mut context = crate::deckcode::resolver::ResolverContext::default();
+                    
+                    while let Ok(event) = rx.recv() {
+                        if let Some(binding) = resolver.resolve(&event, &context) {
+                            crate::deckcode::dispatch::dispatch_action(&app_handle_clone, &binding);
+                        }
+                    }
+                });
             } else {
                 tracing::warn!("Failed to load deckcode-controller-profile.schema.json");
             }
