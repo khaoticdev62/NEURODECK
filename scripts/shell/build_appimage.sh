@@ -188,6 +188,7 @@ if [[ "$SKIP_DEPS" != "1" ]]; then
         pkg-config
         libssl-dev
         libasound2-dev
+        libudev-dev
         protobuf-compiler
         file
         libayatana-appindicator3-dev
