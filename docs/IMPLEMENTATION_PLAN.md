@@ -1,17 +1,17 @@
 # NEURODECK Implementation Plan
 ## Sprint Roadmap and Integration Ledger
-### Last Updated: 2026-05-28 | KFMS: v1.5.0-horus | Active Branch: `master`
+### Last Updated: 2026-05-29 | KFMS: v1.6.0-bastet | Active Branch: `master`
 
 ---
 
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.5.1`
-- Codename: `Horus`
-- Tag: `v1.5.1-horus`
+- Version: `1.6.0`
+- Codename: `Bastet`
+- Tag: `v1.6.0-bastet`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-29T13:15:09Z`
+- Last stamped build: `2026-05-29T13:32:34Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

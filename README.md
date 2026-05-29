@@ -16,7 +16,7 @@
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
 [![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama%20%7C%20OpenAI--Compat-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Version](https://img.shields.io/badge/Version-1.5.1--Horus-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
+[![Version](https://img.shields.io/badge/Version-1.6.0--Bastet-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
 [![Plugins](https://img.shields.io/badge/Plugins-33-FF6B00?style=for-the-badge&logo=lua&logoColor=white)](https://github.com/khaoticdev62/neurodeck-plugins)
 
 **[Download](https://github.com/khaoticdev62/NEURODECK/releases/latest)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Plugin Registry](https://github.com/khaoticdev62/neurodeck-plugins)** &nbsp;·&nbsp; **[Changelog](docs/RELEASE_NOTES.md)**
@@ -247,10 +247,10 @@ The built-in **Plugin Marketplace** (Settings → Extensions) connects to the [n
 # 1. Download the AppImage from the releases page
 # 2. Open Desktop Mode → Konsole
 
-chmod +x ~/Downloads/neurodeck_1.5.1_steamdeck_amd64.AppImage
+chmod +x ~/Downloads/neurodeck_1.6.0_steamdeck_amd64.AppImage
 
 # Run directly (no FUSE required on stock SteamOS)
-~/Downloads/neurodeck_1.5.1_steamdeck_amd64.AppImage --appimage-extract-and-run
+~/Downloads/neurodeck_1.6.0_steamdeck_amd64.AppImage --appimage-extract-and-run
 ```
 
 **Or use `install.sh` for a full setup** (desktop entry, Ollama config, gamepad profiles):
@@ -266,7 +266,7 @@ bash install.sh
 
 ### Windows
 
-Download `neurodeck_1.5.1_windows_x64.exe` from the [releases page](https://github.com/khaoticdev62/NEURODECK/releases/latest) and run the installer.
+Download `neurodeck_1.6.0_windows_x64.exe` from the [releases page](https://github.com/khaoticdev62/NEURODECK/releases/latest) and run the installer.
 
 ### Build from Source
 
@@ -372,7 +372,7 @@ NEURODECK heavily leverages open-source technology. The **About** section in Set
 
 **Built for the Steam Deck. Runs anywhere.**
 
-`com.neurodeck.app` &nbsp;·&nbsp; v1.5.1-Horus &nbsp;·&nbsp; KFMS Codename: Horus
+`com.neurodeck.app` &nbsp;·&nbsp; v1.6.0-Bastet &nbsp;·&nbsp; KFMS Codename: Bastet
 
 [github.com/khaoticdev62/NEURODECK](https://github.com/khaoticdev62/NEURODECK)
 
