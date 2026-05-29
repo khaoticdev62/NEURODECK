@@ -20,6 +20,8 @@ neurodeck_rc.zip
 neurodeck_win_release.zip
 *.exe
 *.msi
+*.AppImage
+.package-lock.hash
 
 # --- Test screenshots & temporary output ---
 test-*.png
