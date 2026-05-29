@@ -211,3 +211,73 @@ export function validateShortcuts() {
   }
   return issues;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHORTCUT OVERRIDE SYSTEM — Sprint 9.6
+// Overrides are stored in localStorage as:
+//   { "Command Palette": ["Ctrl", "J"], "App Manual": ["F2"], ... }
+// Actions not present in overrides use the default binding.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const OVERRIDE_KEY = "nd_shortcut_overrides_v1";
+
+export function getShortcutOverrides() {
+  try {
+    const raw = localStorage.getItem(OVERRIDE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveShortcutOverride(action, keys) {
+  const overrides = getShortcutOverrides();
+  if (!keys || keys.length === 0) {
+    delete overrides[action];
+  } else {
+    overrides[action] = keys;
+  }
+  localStorage.setItem(OVERRIDE_KEY, JSON.stringify(overrides));
+}
+
+export function resetShortcutOverride(action) {
+  const overrides = getShortcutOverrides();
+  delete overrides[action];
+  localStorage.setItem(OVERRIDE_KEY, JSON.stringify(overrides));
+}
+
+/** Returns the effective keys for an action, respecting user overrides. */
+export function getEffectiveKeys(action) {
+  const overrides = getShortcutOverrides();
+  if (overrides[action]) return overrides[action];
+  const sc = KEYBOARD_SHORTCUTS.find((s) => s.action === action);
+  return sc ? sc.keys : null;
+}
+
+/**
+ * Returns true if a KeyboardEvent matches the effective binding for an action.
+ * Usage: if (matchesShortcut(e, "Command Palette")) { ... }
+ */
+export function matchesShortcut(event, action) {
+  const keys = getEffectiveKeys(action);
+  if (!keys || keys.length === 0) return false;
+  const mods = {
+    ctrl: event.ctrlKey || event.metaKey,
+    shift: event.shiftKey,
+    alt: event.altKey,
+  };
+  let mainKey = null;
+  const needCtrl = keys.some((k) => k === "Ctrl" || k === "Meta");
+  const needShift = keys.some((k) => k === "Shift");
+  const needAlt = keys.some((k) => k === "Alt");
+  for (const k of keys) {
+    if (!["Ctrl", "Meta", "Shift", "Alt"].includes(k)) mainKey = k;
+  }
+  if (!mainKey) return false;
+  return (
+    mods.ctrl === needCtrl &&
+    mods.shift === needShift &&
+    mods.alt === needAlt &&
+    (event.key === mainKey || event.code === mainKey)
+  );
+}

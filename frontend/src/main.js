@@ -63,7 +63,7 @@ import { initAgentView } from "./agent.js";
 import { initMemoryView } from "./memory.js";
 import { initTorrentClient } from "./torrent.js";
 import { FocusTrap } from "./focus-trap.js";
-import { renderShortcutsOverlay } from "./shortcuts.js";
+import { renderShortcutsOverlay, KEYBOARD_SHORTCUTS, getShortcutOverrides, saveShortcutOverride, resetShortcutOverride, getEffectiveKeys } from "./shortcuts.js";
 import { initGitView } from "./git.js";
 import { initApiLabView } from "./api_lab.js";
 import { initCliMakerView } from "./cli_maker.js";
@@ -2405,6 +2405,12 @@ document.querySelector("#app").innerHTML = `
                                     <option value="pressstart">Press Start 2P (8-Bit Arcade)</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="stv-group-label">Keyboard Shortcuts</div>
+                        <div class="stv-card" id="shortcut-customization-card">
+                            <p style="font-size:0.75rem;opacity:0.5;margin:0 0 10px;line-height:1.4;">Click any shortcut row and press a new key combination to rebind. Reset to restore the default.</p>
+                            <div id="shortcut-customization-table" style="display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;"></div>
                         </div>
 
                         <div class="stv-group-label">Window Behavior</div>
@@ -5617,6 +5623,7 @@ invoke("get_initial_state")
     initNotificationCenter();
     initSessionBrowser();
     initShortcutsOverlay();
+    initShortcutCustomization();
     initOsThemeSync();
 
     // Position tab glide indicator on initial active tab
@@ -9644,6 +9651,112 @@ function initNotificationCenter() {
       renderNotificationsList();
     };
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHORTCUT CUSTOMIZATION — Sprint 9.6
+// ═══════════════════════════════════════════════════════════════════════════
+function initShortcutCustomization() {
+  const table = document.getElementById("shortcut-customization-table");
+  if (!table) return;
+
+  function formatKeys(keys) {
+    return keys.map((k) => `<kbd style="font-size:0.7rem;padding:2px 6px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.06);font-family:var(--font-mono)">${escapeHtml(k)}</kbd>`).join(" + ");
+  }
+
+  function renderTable() {
+    const overrides = getShortcutOverrides();
+    table.innerHTML = "";
+    // Only show global + chat scope (skip radial menu digit bindings)
+    const relevant = KEYBOARD_SHORTCUTS.filter(
+      (s) => s.scope !== "radial" && s.scope !== "browser"
+    );
+    relevant.forEach((sc) => {
+      const effectiveKeys = overrides[sc.action] || sc.keys;
+      const isCustom = !!overrides[sc.action];
+
+      const row = document.createElement("div");
+      row.className = "shortcut-row-custom";
+      row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background 0.12s,border-color 0.12s;";
+
+      const actionSpan = document.createElement("span");
+      actionSpan.style.cssText = "flex:1;font-size:0.78rem;color:rgba(255,255,255,0.7);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+      actionSpan.textContent = sc.action;
+      if (sc.scope !== "global") {
+        const scope = document.createElement("span");
+        scope.style.cssText = "font-size:0.65rem;opacity:0.4;margin-left:6px;font-family:var(--font-mono)";
+        scope.textContent = `[${sc.scope}]`;
+        actionSpan.appendChild(scope);
+      }
+
+      const keysSpan = document.createElement("span");
+      keysSpan.style.cssText = "display:flex;gap:3px;align-items:center;flex-shrink:0;";
+      keysSpan.innerHTML = formatKeys(effectiveKeys);
+      if (isCustom) {
+        const badge = document.createElement("span");
+        badge.style.cssText = "font-size:0.6rem;color:var(--warning-color);margin-left:4px;opacity:0.8;";
+        badge.textContent = "✎";
+        keysSpan.appendChild(badge);
+      }
+
+      const resetBtn = document.createElement("button");
+      resetBtn.style.cssText = "background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.65rem;display:" + (isCustom ? "block" : "none") + ";";
+      resetBtn.title = "Reset to default";
+      resetBtn.textContent = "↺";
+      resetBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resetShortcutOverride(sc.action);
+        renderTable();
+      });
+
+      row.append(actionSpan, keysSpan, resetBtn);
+
+      // Click to rebind
+      row.addEventListener("click", () => {
+        // Highlight as capturing
+        row.style.background = "rgba(var(--accent-rgb),0.1)";
+        row.style.borderColor = "rgba(var(--accent-rgb),0.3)";
+        keysSpan.innerHTML = `<span style="font-size:0.72rem;color:var(--accent-color);font-family:var(--font-mono)">Press keys…</span>`;
+
+        const onKey = (e) => {
+          if (e.key === "Escape") {
+            document.removeEventListener("keydown", onKey, true);
+            renderTable();
+            return;
+          }
+          // Build keys array
+          const keys = [];
+          if (e.ctrlKey || e.metaKey) keys.push("Ctrl");
+          if (e.shiftKey) keys.push("Shift");
+          if (e.altKey) keys.push("Alt");
+          if (!["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
+            keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+          }
+          if (keys.length > 0 && !keys.every((k) => ["Ctrl","Shift","Alt"].includes(k))) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.removeEventListener("keydown", onKey, true);
+            saveShortcutOverride(sc.action, keys);
+            renderTable();
+          }
+        };
+        document.addEventListener("keydown", onKey, true);
+      });
+
+      row.addEventListener("mouseenter", () => {
+        row.style.background = "rgba(255,255,255,0.03)";
+        row.style.borderColor = "var(--border-color)";
+      });
+      row.addEventListener("mouseleave", () => {
+        row.style.background = "";
+        row.style.borderColor = "transparent";
+      });
+
+      table.appendChild(row);
+    });
+  }
+
+  renderTable();
 }
 
 function initShortcutsOverlay() {
