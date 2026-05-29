@@ -57,6 +57,14 @@ const SLASH_COMMANDS = [
         icon: 'helpCircle',
         template: 'What can you help me with?',
     },
+    {
+        id: 'manual',
+        label: 'App Manual',
+        desc: 'Open the JPE Manual — full feature reference and diagnostics',
+        icon: 'bookOpen',
+        template: '',
+        action: 'manual',
+    },
 ];
 
 let slashPaletteEl = null;
@@ -146,6 +154,13 @@ function executeSlashCommand(cmd) {
         input.value = '';
         input.style.height = '36px';
         if (typeof _onClearSession === 'function') _onClearSession();
+        return;
+    }
+
+    if (cmd.action === 'manual') {
+        input.value = '';
+        input.style.height = '36px';
+        document.getElementById('manual-btn')?.click();
         return;
     }
 

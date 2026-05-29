@@ -495,7 +495,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)" aria-label="Mute Speech">${createIcon("volume2", { size: 18 })}</button>
                     <button class="input-btn" id="notif-btn" title="Notifications" aria-label="Notifications" style="position: relative;">${createIcon("bell", { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
                     <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon("search", { size: 18 })}</button>
-                    <button class="input-btn" id="manual-btn" title="App Manual" aria-label="Open App Manual">${createIcon("bookOpen", { size: 18 })}</button>
+                    <button class="input-btn" id="manual-btn" title="App Manual (F1)" aria-label="Open App Manual">${createIcon("bookOpen", { size: 18 })}</button>
                     <button class="input-btn" id="settings-btn" title="Settings" aria-label="Open Settings">${createIcon("settings2", { size: 18 })}</button>
                 </div>
             </header>
@@ -6237,6 +6237,13 @@ const COMMAND_PALETTE_ACTIONS = [
     keywords: ["settings", "preferences"],
     run: () => document.getElementById("settings-btn")?.click(),
   },
+  {
+    label: "App Manual",
+    group: "System",
+    icon: "bookOpen",
+    keywords: ["manual", "help", "guide", "jpe", "docs", "documentation", "reference", "how to"],
+    run: () => document.getElementById("manual-btn")?.click(),
+  },
 ];
 
 const commandPaletteState = {
@@ -9371,6 +9378,11 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       openShortcutsOverlay();
     }
+  }
+  // F1 opens the App Manual from any view
+  if (e.key === "F1" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    document.getElementById("manual-btn")?.click();
   }
 });
 

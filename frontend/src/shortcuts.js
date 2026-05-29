@@ -18,6 +18,7 @@
 export const KEYBOARD_SHORTCUTS = [
   // ═══ Navigation ═══
   { keys: ["Ctrl", "K"], action: "Command Palette", scope: "global", description: "Open the command palette overlay" },
+  { keys: ["F1"], action: "App Manual", scope: "global", description: "Open the JPE Manual — full feature reference and health diagnostics" },
   { keys: ["Ctrl", "Shift", "P"], action: "Prompt Library", scope: "global", description: "Open the controller prompt picker" },
   { keys: ["Ctrl", "Shift", "M"], action: "Agent Switcher", scope: "global", description: "Toggle the agent/model switcher panel" },
   { keys: ["?"], action: "Keyboard Help", scope: "global", description: "Show this shortcuts reference (when not typing)" },
