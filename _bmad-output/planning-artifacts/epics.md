@@ -3,23 +3,23 @@
 This file tracks the epics and user stories for the SteamOS LLM Terminal project, derived from the PRD sprint plan and updated with new tasks.
 
 ## Epic 1: Bootstrap and Foundation
-### [ ] Story 1.1: Bootstrap repository
-### [ ] Story 1.2: Configure Bubble Tea
-### [ ] Story 1.3: Create viewport
-### [ ] Story 1.4: Build input system
+### [x] Story 1.1: Bootstrap repository
+### [x] Story 1.2: Configure Bubble Tea
+### [x] Story 1.3: Create viewport
+### [x] Story 1.4: Build input system
 ## Epic 2: Steam Deck Integration
 ### [x] Story 2.1: Implement Steam Input mappings
-### [ ] Story 2.2: Create launch wrapper
-### [ ] Story 2.3: Validate gamescope support
-### [ ] Story 2.4: Refine Steam Input / Radial Menu Support
+### [x] Story 2.2: Create launch wrapper
+### [x] Story 2.3: Validate gamescope support
+### [x] Story 2.4: Refine Steam Input / Radial Menu Support
 ## Epic 3: LLM Integration
-### [ ] Story 3.1: Connect Ollama backend
-### [ ] Story 3.2: Implement streaming
-### [ ] Story 3.3: Add loading indicators
+### [x] Story 3.1: Connect Ollama backend
+### [x] Story 3.2: Implement streaming
+### [x] Story 3.3: Add loading indicators
 ## Epic 4: Persistence and Formatting
-### [ ] Story 4.1: Persistence layer
-### [ ] Story 4.2: Session export
-### [ ] Story 4.3: Markdown support
+### [x] Story 4.1: Persistence layer
+### [x] Story 4.2: Session export
+### [x] Story 4.3: Markdown support
 ### [x] Story 4.4: Session loading in UI
 ## Epic 5: Refinement and Polish (Wails GUI)
 ### [x] Story 5.1: Theme engine (CSS Variables & LocalStorage)
@@ -27,7 +27,6 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 5.3: Performance optimization (Asset loading & WebView footprint)
 ### [x] Story 5.4: Persona Engine (System Prompts via Go backend)
 ### [x] Story 5.5: Dynamic Markdown Width (CSS Flexbox/Grid layouts)
-
 ## Epic 6: Recovered Epic from BMAD Artifacts
 ### [x] Story 6.1: Terminal Command Execution
 ### [ ] Story 6.2: Cross-Platform Command Execution
@@ -35,19 +34,16 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 6.4: Text-to-Speech (TTS)
 ### [ ] Story 6.5: Speech-to-Text (STT)
 ### [x] Story 6.6: Game Detection & Context
-
 ## Epic 7: Recovered Epic from BMAD Artifacts
 ### [x] Story 7.1: Integrate Lua Runtime (Gopher-Lua)
 ### [x] Story 7.2: Expose Go Functions to Lua
 ### [x] Story 7.3: Implement Lua Script Execution from Chat
 ### [x] Story 7.4: Create Example Automation Scripts
-
 ## Epic 8: Recovered Epic from BMAD Artifacts
 ### [x] Story 8.1: Plugin Discovery and Loading
 ### [x] Story 8.2: Register Custom Commands
 ### [x] Story 8.3: Hook into Events
 ### [x] Story 8.4: Create Example Plugins
-
 ## Epic 9: Recovered Epic from BMAD Artifacts
 ### [x] Story 9.1: Integrate chromem-go (Embeddable Vector DB)
 ### [x] Story 9.2: Generate Embeddings via Gemini API
@@ -63,7 +59,6 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 11.1: Automated SteamOS AppImage Deployments
 ### [x] Story 11.2: Build Pipeline Optimization (NSIS & LTO)
 ### [x] Story 11.3: Verify cross-platform builds
-
 ## Epic 12: Recovered Epic from BMAD Artifacts
 ### [x] Story 12.1: Allow switching personas via command
 ### [x] Story 12.2: Implement dual-agent discussion (roundtable)

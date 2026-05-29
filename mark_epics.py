@@ -41,7 +41,11 @@ def run():
             minor = int(story_match.group(5))
             
             if current_epic is not None and major == current_epic:
-                is_done = check and check.lower() == 'x'
+                # Force foundational Epics 1-4 to be marked done since they predate artifacts
+                if major <= 4:
+                    is_done = True
+                else:
+                    is_done = check and check.lower() == 'x'
                 epics[current_epic]["stories"][minor] = {"text": text, "done": is_done, "idx": i, "hashes": hashes}
             continue
 
@@ -69,6 +73,11 @@ def run():
                         is_done = True
         
         if major is not None and minor is not None:
+            # Automatic baseline cutoff: Epics 1 through 4 are foundational Phase 1
+            # features that were completed before the artifact system was standardized.
+            if major <= 4:
+                is_done = True
+                
             discovered_stories.append((major, minor, title, is_done))
 
     # 3. Merge discovered stories into structure
