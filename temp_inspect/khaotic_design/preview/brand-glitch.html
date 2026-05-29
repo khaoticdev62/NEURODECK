@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_preview.css"><style>
+  .stage { padding: 40px 32px; }
+  .h { font-family: var(--fn-disp); font-weight: 900; font-size: 56px; line-height: 1.03; color: var(--text-hi); margin: 0; }
+  .glitch-wrap { position: relative; display: inline-block; }
+  .glitch-wrap::before, .glitch-wrap::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .glitch-wrap::before { color: var(--uv-400); animation: gb 4s infinite; clip-path: polygon(0 15%, 100% 15%, 100% 35%, 0 35%); }
+  .glitch-wrap::after  { color: var(--lime); animation: ga 4s infinite; clip-path: polygon(0 65%, 100% 65%, 100% 85%, 0 85%); }
+  @keyframes gb {
+    0%, 80%, 100% { transform: translateX(0); opacity: 0; }
+    84% { transform: translateX(-4px); opacity: 0.9; }
+    88% { transform: translateX(4px); opacity: 0.9; }
+    92% { transform: translateX(0); opacity: 0; }
+  }
+  @keyframes ga {
+    0%, 80%, 100% { transform: translateX(0); opacity: 0; }
+    86% { transform: translateX(3px); opacity: 0.9; }
+    90% { transform: translateX(-3px); opacity: 0.9; }
+    94% { transform: translateX(0); opacity: 0; }
+  }
+  .uv { color: var(--uv-400); }
+  .lm { color: var(--lime); text-shadow: 0 0 24px var(--lime-dim); }
+</style></head><body><div class="card">
+  <span class="lbl">glitch headlines · brand signature</span>
+  <div class="stage glass">
+    <h1 class="h">
+      <span class="glitch-wrap" data-text="Khaotic">Khaotic</span><br/>
+      <span class="uv">Engineering</span><br/>
+      <span class="lm">The Future_</span>
+    </h1>
+  </div>
+  <span class="token">4–5s loop. Wrap any word with .glitch-wrap + data-text. Top-slice UV, bottom-slice lime, 8% flicker window.</span>
+</div></body></html>

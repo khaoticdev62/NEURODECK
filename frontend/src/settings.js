@@ -20,6 +20,7 @@ function setStatusMarkup(el, icon, text, color) {
 let settingsOverlay = null;
 let settingsBtn = null;
 let settingsFocusTrap = null;
+let tsFocusTrap = null;
 let closeSettings = null;
 let closeSettingsX = null;
 
@@ -399,9 +400,17 @@ function handleSaveLlmClick() {
     .then(() =>
       invoke("set_config", {
         key: "llm.openai_compat_base_url",
-        value: oaUrl || "",
+        value: oaUrl || "https://api.groq.com/openai/v1",
       }),
     )
+    .then(() => {
+      const pToggle = document.getElementById("privacy-workspace-toggle");
+      const pPath = document.getElementById("privacy-workspace-path");
+      let promises = [];
+      if (pToggle) promises.push(invoke("set_config", { key: "security.agent_workspace_only", value: pToggle.checked.toString() }));
+      if (pPath) promises.push(invoke("set_config", { key: "security.agent_workspace_path", value: pPath.value.toString() }));
+      return Promise.all(promises);
+    })
     .then(() => {
       if (statusEl) {
         statusEl.style.color = "var(--response-color)";
@@ -479,6 +488,32 @@ function initSettingsSidebar() {
   });
 }
 
+export function showTrustSafetyModal() {
+  const tsModal = document.getElementById("trust-safety-modal");
+  if (!tsModal) return;
+
+  const providerLabel = document.getElementById("ts-active-provider");
+  const cloudCard = document.getElementById("ts-cloud-data-card");
+  const localCard = document.getElementById("ts-local-llm-card");
+  
+  if (providerLabel) {
+    const activeProvider = localStorage.getItem("llmProvider") || "gemini";
+    providerLabel.innerText = activeProvider.toUpperCase();
+    
+    if (activeProvider === "ollama") {
+      if (cloudCard) cloudCard.style.display = "none";
+      if (localCard) localCard.style.display = "block";
+    } else {
+      if (cloudCard) cloudCard.style.display = "block";
+      if (localCard) localCard.style.display = "none";
+    }
+  }
+
+  tsModal.classList.add("active");
+  if (!tsFocusTrap) tsFocusTrap = new FocusTrap(tsModal);
+  tsFocusTrap.activate();
+}
+
 export function openSettingsModal() {
   if (settingsOverlay) settingsOverlay.classList.add("active");
   const lastPanel = localStorage.getItem("settingsActivePanel") || "sp-general";
@@ -528,6 +563,11 @@ export function openSettingsModal() {
       if (oaKeyInput) oaKeyInput.value = oaApiKey || "";
       if (oaModelInput) oaModelInput.value = config.llm.openai_compat_model || "";
       if (oaUrlInput) oaUrlInput.value = config.llm.openai_compat_base_url || "";
+
+      const privacyToggle = document.getElementById("privacy-workspace-toggle");
+      const privacyPath = document.getElementById("privacy-workspace-path");
+      if (privacyToggle) privacyToggle.checked = config.security?.agent_workspace_only || false;
+      if (privacyPath) privacyPath.value = config.security?.agent_workspace_path || "~/.neurodeck_workspace";
 
       toggleSettingsLlmGroups(config.llm.default_provider);
     })
@@ -2078,6 +2118,34 @@ export function initSettings() {
     settingsOverlay.addEventListener("click", (event) => {
       if (event.target === settingsOverlay) {
         settingsOverlay.classList.remove("active");
+        if (settingsFocusTrap) settingsFocusTrap.deactivate();
+      }
+    });
+  }
+
+  const tsBtn = document.getElementById("trust-safety-btn");
+  if (tsBtn) {
+    tsBtn.onclick = showTrustSafetyModal;
+  }
+
+  const tsModal = document.getElementById("trust-safety-modal");
+  const closeTsBtn = document.getElementById("close-trust-safety-btn");
+  const closeTsX = document.getElementById("close-trust-safety-x");
+
+  const closeTs = () => {
+    if (tsModal) {
+      tsModal.classList.remove("active");
+      if (tsFocusTrap) tsFocusTrap.deactivate();
+    }
+  };
+
+  if (closeTsBtn) closeTsBtn.onclick = closeTs;
+  if (closeTsX) closeTsX.onclick = closeTs;
+  if (tsModal) {
+    tsModal.addEventListener("click", (event) => {
+      if (event.target === tsModal) {
+        tsModal.classList.remove("active");
+        if (tsFocusTrap) tsFocusTrap.deactivate();
       }
     });
   }

@@ -1196,6 +1196,8 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <button class="browser-btn go-btn" id="browser-go-btn">${createIcon("sendHorizontal", { size: 14 })}<span>Go</span></button>
                             <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">${createIcon("arrowUpRight", { size: 14 })}<span>Open Ext</span></button>
+                            <button class="browser-btn save-memory-btn" id="browser-save-memory-btn" title="Save page content to Vector DB">${createIcon("database", { size: 14 })}<span>Save to Memory</span></button>
+                            <button class="browser-btn copy-citation-btn" id="browser-copy-citation-btn" title="Copy Markdown Citation">${createIcon("quote", { size: 14 })}<span>Copy Citation</span></button>
                             <button class="browser-btn download-model-btn" id="browser-download-model-btn" title="Download Model from HuggingFace" disabled>${createIcon("download", { size: 14 })}<span>Download Model</span></button>
                         </div>
 
@@ -2367,6 +2369,7 @@ document.querySelector("#app").innerHTML = `
                     <button class="stv-nav-item" data-panel="sp-sync" data-settings-theme="sync"><span class="stv-nav-icon">${createIcon("share2", { size: 15 })}</span> Sync</button>
                     <button class="stv-nav-item" data-panel="sp-voice" data-settings-theme="voice"><span class="stv-nav-icon">${createIcon("mic", { size: 15 })}</span> Voice</button>
                     <button class="stv-nav-item" data-panel="sp-lsp" data-settings-theme="lsp"><span class="stv-nav-icon">${createIcon("code2", { size: 15 })}</span> LSP</button>
+                    <button class="stv-nav-item" data-panel="sp-privacy" data-settings-theme="privacy"><span class="stv-nav-icon">${createIcon("shieldCheck", { size: 15 })}</span> Privacy &amp; Security</button>
                     <button class="stv-nav-item" data-panel="sp-about" data-settings-theme="general"><span class="stv-nav-icon">${createIcon("info", { size: 15 })}</span> About</button>
                     <div class="stv-nav-spacer"></div>
                 </nav>
@@ -2540,6 +2543,17 @@ document.querySelector("#app").innerHTML = `
                         </div>
                         <div id="settings-llm-status" class="stv-status-line stv-status-row"></div>
 
+                        <div class="stv-group-label">Data Privacy & Security</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <div style="display:flex;flex-direction:column;gap:2px;max-width:300px;">
+                                    <span class="stv-row-label">Trust & Safety Center</span>
+                                    <span style="font-size:0.7rem;opacity:0.6;">Audit data handling and understand local vs cloud API boundaries.</span>
+                                </div>
+                                <button class="stv-btn-ghost" id="trust-safety-btn" style="padding: 0 16px;">Review Data Flow</button>
+                            </div>
+                        </div>
+
                         <div class="stv-group-label">Local Models</div>
                         <div class="stv-card" id="settings-ollama-models-section" style="display:none;">
                             <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -2595,15 +2609,15 @@ document.querySelector("#app").innerHTML = `
                             <div class="hf-browser-container">
                                 <div class="hf-browser-toolbar">
                                     <div class="hf-browser-nav">
-                                        <button class="hf-browser-btn" id="hf-browser-back" title="Back">${createIcon("arrowLeft", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-forward" title="Forward">${createIcon("arrowRight", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-refresh" title="Refresh">${createIcon("refreshCw", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-home" title="Home">${createIcon("house", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-back" title="Back" aria-label="Go Back">${createIcon("arrowLeft", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-forward" title="Forward" aria-label="Go Forward">${createIcon("arrowRight", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-refresh" title="Refresh" aria-label="Refresh">${createIcon("refreshCw", { size: 14 })}</button>
+                                        <button class="hf-browser-btn" id="hf-browser-home" title="Home" aria-label="Home">${createIcon("house", { size: 14 })}</button>
                                     </div>
                                     <div class="hf-browser-address">
                                         <input type="text" id="hf-browser-url" class="hf-browser-url-input" value="https://huggingface.co/models" placeholder="Enter HuggingFace URL…">
                                     </div>
-                                    <button class="hf-browser-btn hf-browser-go" id="hf-browser-go">${createIcon("sendHorizontal", { size: 14 })}</button>
+                                    <button class="hf-browser-btn hf-browser-go" id="hf-browser-go" aria-label="Go to URL">${createIcon("sendHorizontal", { size: 14 })}</button>
                                     <button class="hf-browser-btn hf-browser-download" id="hf-browser-download" title="Download this model">${createIcon("download", { size: 14 })}<span>Download</span></button>
                                 </div>
                                 <div class="hf-browser-viewport">
@@ -3062,6 +3076,24 @@ document.querySelector("#app").innerHTML = `
                         <div id="lsp-settings-container" class="lsp-settings-container"></div>
                     </div>
 
+                    <!-- ░ Privacy ░ -->
+                    <div class="settings-panel settings-panel--privacy" id="sp-privacy" data-settings-theme="privacy">
+                        <p class="stv-section-title">Privacy &amp; Security</p>
+                        <p class="stv-section-sub">Control workspace boundaries and sandbox permissions.</p>
+
+                        <div class="stv-group-label">Workspace Sandbox</div>
+                        <div class="stv-card">
+                            <div class="stv-toggle-row">
+                                <div><div class="stv-toggle-label">Restrict Agent & Terminal Workspace</div><div class="stv-toggle-desc">Prevent the agent and terminal from executing code or accessing files outside the specified directory.</div></div>
+                                <input type="checkbox" id="privacy-workspace-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
+                            </div>
+                            <div class="setting-field-group" style="margin-top:10px;">
+                                <label>Authorized Workspace Path</label>
+                                <input type="text" id="privacy-workspace-path" placeholder="~/.neurodeck_workspace">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ░ About & Licenses ░ -->
                     <div class="settings-panel settings-panel--about" id="sp-about" data-settings-theme="general">
                         <p class="stv-section-title">About NEURODECK</p>
@@ -3389,6 +3421,57 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
                 </div>
                 <div class="ctrl-prompt-footer">
                     <div class="ctrl-prompt-preview" id="ctrl-prompt-preview">Select a prompt to preview it here.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trust & Safety Modal -->
+        <div class="settings-overlay" id="trust-safety-modal" role="dialog" aria-modal="true" aria-label="Trust & Safety Center">
+            <div class="settings-modal-card" style="width: 700px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;" data-settings-theme="general">
+                <div class="settings-modal-header" style="flex-shrink:0;">
+                    <div class="settings-modal-title">${createIcon("shieldCheck", { size: 16 })} Trust & Safety Center</div>
+                    <button class="settings-close-btn" id="close-trust-safety-x" aria-label="Close Trust & Safety">${createIcon("x", { size: 18 })}</button>
+                </div>
+                <div class="settings-modal-body" style="padding: 24px; overflow-y:auto; flex:1;">
+                    <h3 style="margin: 0 0 4px; color: var(--accent-color);">DATA HANDLING & PRIVACY</h3>
+                    <p style="font-size: 0.8rem; opacity: 0.7; margin: 0 0 16px;">Active LLM Provider: <strong id="ts-active-provider" style="color: var(--foreground-color);">Unknown</strong></p>
+
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="background: rgba(0, 255, 128, 0.05); border: 1px solid rgba(0, 255, 128, 0.2); border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: rgb(0, 255, 128); font-weight: bold;">
+                                ${createIcon("hardDrive", { size: 16 })} Strictly Local Data
+                            </div>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.75rem; opacity: 0.85; line-height: 1.5;">
+                                <li style="margin-bottom: 4px;"><strong>Vector Database:</strong> Memory embeddings and retrieved context never leave your device.</li>
+                                <li style="margin-bottom: 4px;"><strong>Filesystem & FTP:</strong> Synced files and local workspace data remain entirely on-disk.</li>
+                                <li style="margin-bottom: 4px;"><strong>PTY Shell Output:</strong> Terminal commands and their output are processed locally.</li>
+                                <li><strong>Chat History:</strong> Saved in your <code>~/.neurodeck</code> config folder locally.</li>
+                            </ul>
+                        </div>
+
+                        <div id="ts-cloud-data-card" style="background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.2); border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: rgb(255, 170, 0); font-weight: bold;">
+                                ${createIcon("cloud", { size: 16 })} Cloud API Transmissions
+                            </div>
+                            <p style="font-size: 0.75rem; opacity: 0.85; margin: 0 0 8px;">The following data is sent securely via TLS to your active cloud provider:</p>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 0.75rem; opacity: 0.85; line-height: 1.5;">
+                                <li style="margin-bottom: 4px;"><strong>Chat Prompts:</strong> Text typed in the chat input.</li>
+                                <li style="margin-bottom: 4px;"><strong>Injected RAG Context:</strong> Relevant Memory blocks injected dynamically to answer queries.</li>
+                                <li><strong>Game Context (If Active):</strong> Current Steam game title for context-aware prompts.</li>
+                            </ul>
+                        </div>
+
+                        <div id="ts-local-llm-card" style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 16px; display: none;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--accent-color); font-weight: bold;">
+                                ${createIcon("shieldCheck", { size: 16 })} Full Offline Mode
+                            </div>
+                            <p style="font-size: 0.75rem; opacity: 0.85; margin: 0;">You are using a Local LLM (Ollama). <strong>Zero data is being sent to the cloud.</strong> All chat prompts, memory context, and logic are processed securely on this device.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 24px; text-align: center;">
+                        <button class="settings-close-btn stv-btn-ghost" id="close-trust-safety-btn" style="padding: 6px 24px;">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7192,6 +7275,7 @@ function initFileShare() {
   const acceptBtn = document.getElementById("transfer-modal-accept");
   const rejectBtn = document.getElementById("transfer-modal-reject");
   const closeXBtn = document.getElementById("transfer-modal-close-x");
+  let transferFocusTrap = null;
 
   // Initial fetch of peers and transfers
   invoke("get_discovered_peers")
@@ -7258,6 +7342,8 @@ function initFileShare() {
       modalFilename.innerText = transfer.filename;
       modalSize.innerText = formatBytes(transfer.size);
       modal.classList.add("active");
+      if (!transferFocusTrap) transferFocusTrap = new FocusTrap(modal);
+      transferFocusTrap.activate();
     }
 
     if (typeof addNotification === "function") {
@@ -7360,9 +7446,9 @@ function initFileShare() {
           accept: true,
         })
           .then(() => {
-            document
-              .getElementById("transfer-modal")
-              .classList.remove("active");
+            const modal = document.getElementById("transfer-modal");
+            if (modal) modal.classList.remove("active");
+            if (transferFocusTrap) transferFocusTrap.deactivate();
             state.pendingTransferId = null;
             invoke("get_active_transfers").then(renderTransfers);
           })
@@ -7382,9 +7468,9 @@ function initFileShare() {
           accept: false,
         })
           .then(() => {
-            document
-              .getElementById("transfer-modal")
-              .classList.remove("active");
+            const modal = document.getElementById("transfer-modal");
+            if (modal) modal.classList.remove("active");
+            if (transferFocusTrap) transferFocusTrap.deactivate();
             state.pendingTransferId = null;
             invoke("get_active_transfers").then(renderTransfers);
           })
@@ -7403,12 +7489,16 @@ function initFileShare() {
           transferId: state.pendingTransferId,
           accept: false,
         }).then(() => {
-          document.getElementById("transfer-modal").classList.remove("active");
+          const modal = document.getElementById("transfer-modal");
+          if (modal) modal.classList.remove("active");
+          if (transferFocusTrap) transferFocusTrap.deactivate();
           state.pendingTransferId = null;
           invoke("get_active_transfers").then(renderTransfers);
         });
       } else {
-        document.getElementById("transfer-modal").classList.remove("active");
+        const modal = document.getElementById("transfer-modal");
+        if (modal) modal.classList.remove("active");
+        if (transferFocusTrap) transferFocusTrap.deactivate();
       }
     };
   }
@@ -7488,6 +7578,8 @@ function initBrowser() {
   const hfBtn = document.getElementById("browser-hf-btn");
   const homeSearchInput = document.getElementById("browser-home-search-input");
   const homeSearchBtn = document.getElementById("browser-home-search-btn");
+  const saveMemoryBtn = document.getElementById("browser-save-memory-btn");
+  const copyCitationBtn = document.getElementById("browser-copy-citation-btn");
   const speedDialCards = document.querySelectorAll(".speed-dial-card");
 
   // Permanently hide the old iframe — the native window replaces it
@@ -7736,6 +7828,61 @@ function initBrowser() {
       const parsed = parseUrlOrSearch(url);
       if (parsed && parsed !== "neurodeck://home") {
         invoke("open_external", { url: parsed }).catch(() => {});
+      }
+    };
+  }
+
+  if (saveMemoryBtn) {
+    saveMemoryBtn.onclick = async () => {
+      const url = urlInput?.value.trim() || currentUrl;
+      const parsed = parseUrlOrSearch(url);
+      if (parsed && parsed !== "neurodeck://home") {
+        saveMemoryBtn.disabled = true;
+        const originalHtml = saveMemoryBtn.innerHTML;
+        saveMemoryBtn.innerHTML = `${createIcon("database", { size: 14 })}<span>Saving...</span>`;
+        try {
+          const res = await invoke("browser_save_to_memory", { url: parsed });
+          saveMemoryBtn.innerHTML = `${createIcon("check", { size: 14 })}<span>Saved (${res.indexed} chunks)</span>`;
+          setTimeout(() => {
+            saveMemoryBtn.disabled = false;
+            saveMemoryBtn.innerHTML = originalHtml;
+          }, 3000);
+        } catch (e) {
+          console.error("Save memory error:", e);
+          saveMemoryBtn.innerHTML = `${createIcon("x", { size: 14 })}<span>Failed</span>`;
+          setTimeout(() => {
+            saveMemoryBtn.disabled = false;
+            saveMemoryBtn.innerHTML = originalHtml;
+          }, 3000);
+        }
+      }
+    };
+  }
+
+  if (copyCitationBtn) {
+    copyCitationBtn.onclick = async () => {
+      const url = urlInput?.value.trim() || currentUrl;
+      const parsed = parseUrlOrSearch(url);
+      if (parsed && parsed !== "neurodeck://home") {
+        copyCitationBtn.disabled = true;
+        const originalHtml = copyCitationBtn.innerHTML;
+        copyCitationBtn.innerHTML = `${createIcon("quote", { size: 14 })}<span>Fetching...</span>`;
+        try {
+          const citation = await invoke("browser_get_citation", { url: parsed });
+          await navigator.clipboard.writeText(citation);
+          copyCitationBtn.innerHTML = `${createIcon("check", { size: 14 })}<span>Copied</span>`;
+          setTimeout(() => {
+            copyCitationBtn.disabled = false;
+            copyCitationBtn.innerHTML = originalHtml;
+          }, 2000);
+        } catch (e) {
+          console.error("Copy citation error:", e);
+          copyCitationBtn.innerHTML = `${createIcon("x", { size: 14 })}<span>Failed</span>`;
+          setTimeout(() => {
+            copyCitationBtn.disabled = false;
+            copyCitationBtn.innerHTML = originalHtml;
+          }, 2000);
+        }
       }
     };
   }
@@ -8656,6 +8803,8 @@ function positionComputerTargetBox(target) {
   box.style.height = `${Math.max(8, target.height * scaleY)}px`;
 }
 
+let computerUseFocusTrap = null;
+
 async function requestComputerUseApproval({ action, details, target } = {}) {
   if (computerUseState.approveAll) return true;
 
@@ -8691,6 +8840,8 @@ async function requestComputerUseApproval({ action, details, target } = {}) {
   }
 
   modal.classList.add("active");
+  if (!computerUseFocusTrap) computerUseFocusTrap = new FocusTrap(modal);
+  computerUseFocusTrap.activate();
   setTimeout(
     () => document.getElementById("computer-use-approve-btn")?.focus(),
     50,
@@ -8707,7 +8858,9 @@ function finishComputerUseApproval(approved, approveSession = false) {
     const toggle = document.getElementById("computer-approve-all-toggle");
     if (toggle) toggle.checked = true;
   }
-  document.getElementById("computer-use-modal")?.classList.remove("active");
+  const modal = document.getElementById("computer-use-modal");
+  if (modal) modal.classList.remove("active");
+  if (computerUseFocusTrap) computerUseFocusTrap.deactivate();
   positionComputerTargetBox(null);
   const resolve = computerUseState.pendingResolve;
   computerUseState.pendingResolve = null;
@@ -9362,10 +9515,13 @@ function initNotificationCenter() {
   const closeX = document.getElementById("close-notif-x");
   const closeBtn = document.getElementById("close-notif-btn");
   const clearAllBtn = document.getElementById("notif-clear-all-btn");
+  let notifFocusTrap = null;
 
   if (notifBtn && notifModal) {
     notifBtn.onclick = () => {
       notifModal.classList.add("active");
+      if (!notifFocusTrap) notifFocusTrap = new FocusTrap(notifModal);
+      notifFocusTrap.activate();
       state.unreadNotifCount = 0;
       updateNotifBadge();
       renderNotificationsList();
@@ -9373,7 +9529,10 @@ function initNotificationCenter() {
   }
 
   const dismiss = () => {
-    if (notifModal) notifModal.classList.remove("active");
+    if (notifModal) {
+      notifModal.classList.remove("active");
+      if (notifFocusTrap) notifFocusTrap.deactivate();
+    }
   };
 
   if (closeX) closeX.onclick = dismiss;
@@ -9542,9 +9701,13 @@ function initGameContextPanel() {
   const headerImg = document.getElementById("game-context-header");
   const fallbackEl = document.getElementById("game-context-fallback");
   const fallbackNameEl = document.getElementById("game-context-fallback-name");
+  let gameFocusTrap = null;
 
   const dismiss = () => {
-    if (gameModal) gameModal.classList.remove("active");
+    if (gameModal) {
+      gameModal.classList.remove("active");
+      if (gameFocusTrap) gameFocusTrap.deactivate();
+    }
   };
 
   const applyHeaderState = (appId, name) => {
@@ -9624,6 +9787,8 @@ function initGameContextPanel() {
           }
 
           gameModal.classList.add("active");
+          if (!gameFocusTrap) gameFocusTrap = new FocusTrap(gameModal);
+          gameFocusTrap.activate();
         })
         .catch((err) => {
           console.error("Error loading game context panel:", err);
@@ -9676,10 +9841,13 @@ function initManualModal() {
   const closeBtn = document.getElementById("close-manual-btn");
   const contentContainer = document.getElementById("manual-content-container");
 
+  let manualFocusTrap = null;
+
   if (!manualBtn || !manualModal) return;
 
   const closeManual = () => {
     manualModal.classList.remove("active");
+    if (manualFocusTrap) manualFocusTrap.deactivate();
   };
 
   const viewMapping = {
@@ -9893,6 +10061,8 @@ function initManualModal() {
 
   manualBtn.addEventListener("click", () => {
     manualModal.classList.add("active");
+    if (!manualFocusTrap) manualFocusTrap = new FocusTrap(manualModal);
+    manualFocusTrap.activate();
     if (contentContainer && contentContainer.innerHTML.trim() === "") {
       buildManualUI();
     }
@@ -10879,6 +11049,7 @@ async function showOnboardingWizard() {
                     <span class="onboarding-step-dot" data-step="8"></span>
                     <span class="onboarding-step-dot" data-step="9"></span>
                     <span class="onboarding-step-dot" data-step="10"></span>
+                    <span class="onboarding-step-dot" data-step="11"></span>
                 </div>
             </header>
 
@@ -11256,8 +11427,37 @@ async function showOnboardingWizard() {
                     </div>
                 </div>
 
-                <!-- Slide 9: Additional Features -->
+                <!-- Slide 9: Sandboxing & Boundaries -->
                 <div class="onboarding-slide" id="slide-9">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">LOCAL SANDBOXING & BOUNDARIES</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Understand what the Agent and Terminal can access on your system.</p>
+
+                    <div class="ob-sandbox-grid">
+                        <div class="ob-sandbox-card">
+                            <div class="ob-sandbox-icon">${createIcon("folderTree", { size: 24 })}</div>
+                            <span class="ob-sandbox-name">Workspace Sandboxing</span>
+                            <span class="ob-sandbox-desc">By default, the AI Agent operates strictly within the current workspace directory. It cannot read or modify files outside this boundary without explicit user elevation.</span>
+                        </div>
+                        <div class="ob-sandbox-card">
+                            <div class="ob-sandbox-icon">${createIcon("squareTerminal", { size: 24 })}</div>
+                            <span class="ob-sandbox-name">PTY Terminal Access</span>
+                            <span class="ob-sandbox-desc">The Terminal view is a real PTY shell. Commands you execute here run with your user account privileges. The AI can propose commands, but you must approve them.</span>
+                        </div>
+                        <div class="ob-sandbox-card">
+                            <div class="ob-sandbox-icon">${createIcon("shieldAlert", { size: 24 })}</div>
+                            <span class="ob-sandbox-name">Execution Pauses</span>
+                            <span class="ob-sandbox-desc">When the autonomous Agent attempts to run a potentially destructive command (e.g. deletion, global installs), it will pause and request human-in-the-loop approval.</span>
+                        </div>
+                    </div>
+
+                    <div class="ob-sec-footer" style="margin-top: 16px;">
+                        <strong style="color: var(--accent-color);">Your system, your rules.</strong><br>
+                        Review the Trust & Safety center in Settings anytime to audit data handling and permissions.
+                    </div>
+                </div>
+
+                <!-- Slide 10: Additional Features -->
+                <div class="onboarding-slide" id="slide-10">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">POWER USER TOOLKIT</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Capabilities that make NEURODECK more than a chat app.</p>
 
@@ -11335,8 +11535,8 @@ async function showOnboardingWizard() {
                     </div>
                 </div>
 
-                <!-- Slide 10: System Integration Diagnostics (6-check) -->
-                <div class="onboarding-slide" id="slide-10">
+                <!-- Slide 11: System Integration Diagnostics (6-check) -->
+                <div class="onboarding-slide" id="slide-11">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 10px;">FINAL SYSTEM CHECK</h3>
 
                     <div class="onboarding-diagnostic-list">
@@ -11462,11 +11662,11 @@ async function showOnboardingWizard() {
     // Update footer buttons
     btnPrev.disabled = currentStep === 1;
 
-    if (currentStep === 10) {
+    if (currentStep === 11) {
       btnNext.innerText = "Launch NEURODECK";
       btnNext.classList.add("primary");
       btnNext.disabled = !isDiagnosticsPassed;
-      // Auto-trigger diagnostics on step 10
+      // Auto-trigger diagnostics on step 11
       runDiagnostics();
     } else {
       btnNext.innerText = "Next";
@@ -11493,7 +11693,7 @@ async function showOnboardingWizard() {
   };
 
   btnNext.onclick = () => {
-    if (currentStep === 10) {
+    if (currentStep === 11) {
       // Finish onboarding!
       localStorage.setItem("neurodeck_onboarding_complete", "true");
       overlay.classList.add("hidden");

@@ -547,7 +547,7 @@ pub async fn execute_command(
 #[cfg(debug_assertions)]
 #[tauri::command]
 pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
-    crate::security::validate_script_payload(&code, "lua", "lua-exec")?;
+    crate::security::validate_script_payload(&code, "lua", "lua-exec", None)?;
 
     let app_handle_clone = app_handle.clone();
     tokio::task::spawn_blocking(move || {

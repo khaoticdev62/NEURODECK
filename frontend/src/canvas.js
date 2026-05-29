@@ -4,6 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { marked } from 'marked';
 import { addNotification } from './notifications.js';
+import { FocusTrap } from './focus-trap.js';
 
 // --- LIVE CODE CANVAS SYSTEM ---
 
@@ -696,10 +697,22 @@ function initCanvasCollab() {
     if (hostTabBtn) hostTabBtn.addEventListener("click", () => showTab('host'));
     if (joinTabBtn) joinTabBtn.addEventListener("click", () => showTab('join'));
 
-    collabBtn.addEventListener("click", () => collabModal.classList.add("active"));
-    if (closeX) closeX.addEventListener("click", () => collabModal.classList.remove("active"));
+    let collabFocusTrap = null;
+
+    collabBtn.addEventListener("click", () => {
+        collabModal.classList.add("active");
+        if (!collabFocusTrap) collabFocusTrap = new FocusTrap(collabModal);
+        collabFocusTrap.activate();
+    });
+    if (closeX) closeX.addEventListener("click", () => {
+        collabModal.classList.remove("active");
+        if (collabFocusTrap) collabFocusTrap.deactivate();
+    });
     collabModal.addEventListener("click", (e) => {
-        if (e.target === collabModal) collabModal.classList.remove("active");
+        if (e.target === collabModal) {
+            collabModal.classList.remove("active");
+            if (collabFocusTrap) collabFocusTrap.deactivate();
+        }
     });
 
     const statusBar = document.getElementById("canvas-collab-status-bar");

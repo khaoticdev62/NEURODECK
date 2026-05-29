@@ -877,9 +877,28 @@ pub async fn send_command(
         if let Some(results) = rag_results {
             if !results.is_empty() {
                 system_prompt.push_str("\n\nRelevant past context:\n");
+                
+                // Track provenance for the frontend
+                let mut provenance_list = Vec::new();
+
                 for res in results {
                     system_prompt.push_str(&format!("- {}\n", res.content));
+                    
+                    let title = res.metadata.get("title")
+                        .or_else(|| res.metadata.get("filename"))
+                        .map(|s| s.as_str())
+                        .unwrap_or(if res.content.len() > 30 { &res.content[0..30] } else { &res.content });
+                        
+                    provenance_list.push(serde_json::json!({
+                        "id": res.id,
+                        "title": title,
+                        "content_snippet": if res.content.len() > 100 { format!("{}...", &res.content[0..97]) } else { res.content.clone() },
+                        "role": res.metadata.get("role").unwrap_or(&"unknown".to_string())
+                    }));
                 }
+
+                // Emit the provenance to the frontend so it can attach citations to the upcoming message
+                let _ = app_handle.emit("rag_sources", serde_json::json!(provenance_list).to_string());
             }
         }
     }

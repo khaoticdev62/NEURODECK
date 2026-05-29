@@ -1,0 +1,220 @@
+/* Chat-specific styles: token bindings + scrollbars + a few
+   things Tailwind utility classes can't express without arbitrary
+   value syntax. Loaded after Tailwind CDN. */
+
+@import url("../../colors_and_type.css");
+
+/* Map legacy token names to the new Khaotic Ultraviolet/Lime
+   system. The chat was first built with forge/phos tokens; these
+   aliases preserve every existing `var(--forge-*)` reference. */
+:root {
+  --forge-300: var(--lime-300);
+  --forge-400: var(--lime);
+  --forge-500: var(--lime-600);
+  --forge-700: var(--lime-700);
+  --phos-300: var(--lime-200);
+  --phos-400: var(--lime);
+  --phos-700: var(--lime-700);
+  --line-0: var(--uv-border);
+  --line-1: var(--uv-border);
+  --line-2: var(--uv-border-2);
+  --line-3: var(--uv-border-2);
+  --accent-fg: var(--void);
+  --secondary-glow: var(--lime-glow);
+  --font-mono: var(--fn-mono);
+  --font-code: var(--fn-mono);
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--fn-mono);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Make Tailwind colors map to our tokens where used */
+:root {
+  --tw-color-bg0: var(--bg-0);
+  --tw-color-bg1: var(--bg-1);
+}
+
+/* Scrollbars — thin, opt-in visible only on hover */
+.scroll-y {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 200ms;
+}
+.scroll-y:hover {
+  scrollbar-color: var(--line-2) transparent;
+}
+.scroll-y::-webkit-scrollbar { width: 8px; }
+.scroll-y::-webkit-scrollbar-track { background: transparent; }
+.scroll-y::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.scroll-y:hover::-webkit-scrollbar-thumb { background: var(--line-2); }
+.scroll-y::-webkit-scrollbar-thumb:hover { background: var(--line-3); }
+
+/* Hide scrollbar for the workspace rail (Discord-style) */
+.scroll-hidden { overflow-y: auto; scrollbar-width: none; }
+.scroll-hidden::-webkit-scrollbar { display: none; }
+
+/* Mechanical entrance — used on mounted messages, panels.
+   IMPORTANT: starting opacity stays at 1 so messages remain
+   visible even if the animation engine fails to tick (some
+   iframe / headless renderers throttle paint). */
+@keyframes kh-fade-up {
+  from { transform: translateY(6px); }
+  to   { transform: translateY(0); }
+}
+.fade-up { animation: kh-fade-up 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes kh-snap-in {
+  0%   { opacity: 0; transform: scale(0.96); }
+  60%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.snap-in { animation: kh-snap-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Typing dots */
+@keyframes kh-dot { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+.typing-dot { animation: kh-dot 1.2s infinite; display: inline-block; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* Caret blink */
+@keyframes kh-caret { 50% { opacity: 0; } }
+.caret { animation: kh-caret 1.05s steps(1) infinite; }
+
+/* Tailwind helpers — token-aware utility classes for things we
+   use a lot */
+.btn-forge {
+  background: var(--forge-400);
+  color: var(--void);
+  border: 1px solid var(--forge-400);
+  font-family: var(--fn-mono);
+  transition: background 120ms;
+}
+.btn-forge:hover { background: var(--forge-300); border-color: var(--forge-300); }
+.btn-forge:active { background: var(--forge-500); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fg-1);
+  border: 1px solid transparent;
+  transition: background 120ms, color 120ms;
+}
+.btn-ghost:hover { background: var(--bg-3); color: var(--fg-0); }
+
+.input-flat {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--fg-0);
+  font-family: var(--fn-mono);
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.input-flat:focus {
+  border-color: var(--forge-400);
+  box-shadow: 0 0 0 2px rgba(163,230,53,0.18);
+}
+
+/* Avatar rings */
+.av { position: relative; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-3); border: 1px solid var(--line-1); color: var(--fg-0); font-family: var(--fn-mono); font-weight: 600; }
+.av-online::after {
+  content: ""; position: absolute; right: -1px; bottom: -1px;
+  width: 9px; height: 9px; border-radius: 999px;
+  background: var(--phos-400);
+  border: 2px solid var(--bg-1);
+  box-shadow: 0 0 8px var(--secondary-glow);
+}
+.av-idle::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: var(--warn-400); border: 2px solid var(--bg-1); }
+.av-offline::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: var(--fg-3); border: 2px solid var(--bg-1); }
+.av-dnd::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: var(--err-400); border: 2px solid var(--bg-1); }
+
+/* Mention highlight */
+.mention {
+  color: var(--forge-300);
+  background: rgba(163,230,53,0.10);
+  padding: 0 4px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* Code in messages */
+.in-msg-code {
+  font-family: var(--font-code);
+  background: var(--bg-0);
+  border: 1px solid var(--line-1);
+  padding: 8px 12px;
+  border-radius: 2px;
+  color: var(--fg-0);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+  display: block;
+  margin: 6px 0 0;
+}
+.in-msg-code .k { color: var(--term-keyword); }
+.in-msg-code .s { color: var(--term-string); }
+.in-msg-code .c { color: var(--term-comment); }
+.in-msg-code .n { color: var(--term-number); }
+.in-msg-code .f { color: var(--term-function); }
+
+/* Inline code in message */
+code.inl {
+  font-family: var(--font-code);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-1);
+  border-radius: 2px;
+  color: var(--phos-300);
+}
+
+/* Waveform for voice messages */
+.wave { display: inline-flex; align-items: center; gap: 2px; height: 22px; }
+.wave i { display: inline-block; width: 2px; background: var(--forge-300); border-radius: 1px; opacity: 0.7; }
+
+/* Read receipts */
+.recpt { display: inline-flex; align-items: center; gap: 1px; }
+.recpt svg { width: 14px; height: 10px; }
+.recpt.sent     { color: var(--fg-3); }
+.recpt.delivered{ color: var(--fg-2); }
+.recpt.read     { color: var(--phos-400); }
+
+/* Disappearing-message chip */
+.disappear {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--fn-mono); font-size: 10px;
+  color: var(--phos-300);
+  background: rgba(163,230,53,0.06);
+  padding: 2px 6px; border-radius: 2px;
+  border: 1px solid var(--phos-700);
+  letter-spacing: 0.06em;
+}
+
+/* Pinned banner */
+.pin-banner {
+  background: linear-gradient(to bottom, rgba(163,230,53,0.06), rgba(163,230,53,0.0));
+  border-bottom: 1px solid var(--forge-700);
+}
+
+/* Selection */
+::selection { background: var(--forge-400); color: var(--void); }
+
+/* Misc */
+.divider-h { height: 1px; background: var(--line-1); }
+.divider-v { width: 1px; background: var(--line-1); }
+.hairline-b { border-bottom: 1px solid var(--line-1); }
+.hairline-t { border-top: 1px solid var(--line-1); }
+.hairline-r { border-right: 1px solid var(--line-1); }
+.hairline-l { border-left: 1px solid var(--line-1); }
+
+/* New-day separator */
+.day-sep { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px; }
+.day-sep::before, .day-sep::after { content: ""; flex: 1; height: 1px; background: var(--line-1); }
+.day-sep span { font-family: var(--fn-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.16em; text-transform: uppercase; }

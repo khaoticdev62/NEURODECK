@@ -1127,6 +1127,8 @@ pub fn run() {
             browser_screenshot,
             browser_evaluate_js,
             browser_close_session,
+            browser_save_to_memory,
+            browser_get_citation,
             install_bmad_to_dir,
             get_game_context,
             agent_step,

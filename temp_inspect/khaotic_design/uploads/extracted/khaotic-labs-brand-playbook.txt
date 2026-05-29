@@ -1,0 +1,342 @@
+
+
+// SYSTEM DOCUMENT
+
+KHAOTIC LABS
+
+BRAND PLAYBOOK & OPERATIONAL MANUAL
+
+v1.0  ·  EST. 2026  ·  SOUTHFIELD, MI
+
+AI Systems  ·  Agentic Workflows  ·  Terminal-First Architecture
+
+01 // VISION & ETHOS
+
+1.1  Mission Statement
+
+Khaotic Labs exists to prove that one developer with the right tools, the right mindset, and the right systems can build enterprise-grade AI products that outperform entire teams. We are not a traditional agency. We are a precision strike unit.
+
+1.2  Vision
+
+To be the most technically capable solo AI studio in the Midwest — recognized not for headcount, but for the velocity, depth, and craft of every system we ship.
+
+1.3  Core Ethos — The Lean Giant Protocol
+
+Every decision Khaotic Labs makes filters through five immutable principles:
+
+ZERO BLOAT: Lean, deterministic systems only. Enterprise frameworks earn their place or they stay out.
+
+JPE MANDATE (Just Plain English): Every technical explanation, architecture decision, and client deliverable is written in plain language first. Clarity before complexity.
+
+SECURITY FIRST: Every architectural decision is treated as a potential threat vector. Zero-trust by default. Memory-safe languages where stakes are high.
+
+ANTIGRAVITY PRINCIPLE: All projects are modular components of a larger ecosystem. Reuse pkg/ libraries before reinventing logic.
+
+ONE SPRINT ITEM: Agile execution means focused execution. One task scoped, approved, delivered, and validated before the next begins. No parallel sprawl.
+
+1.4  The Vibe-Engineering Standard
+
+Khaotic Labs operates at the intersection of elite engineering and distinctive aesthetic. "Vibe-Engineering" is not decoration — it is the principle that the systems we build should feel intentional at every layer: the architecture, the UI, the documentation, and the terminal output. A Khaotic Labs product is identifiable by its precision and its character.
+
+02 // BRAND IDENTITY
+
+2.1  Brand Name & Legal Entity
+
+Trading Name:  Khaotic Labs
+
+Legal Entity:  Khaotic Labs LLC (registered, State of Michigan)
+
+Jurisdiction:  Southfield, Oakland County, Michigan
+
+Founded:       2026
+
+2.2  Brand Voice & Tone
+
+Khaotic Labs speaks with a direct, technically resonant, and culturally attuned voice. The tone is never condescending, never corporate-hollow, and never performatively casual. Key attributes:
+
+Direct — say what you mean, mean what you say. No hedging language.
+
+Technical — precision over simplicity when precision matters.
+
+Culturally resonant — AAVE inflection and colloquial clarity where it fits naturally.
+
+Confident but earned — never boastful without receipts.
+
+2.3  Color Palette  —  The Khaotic Ultraviolet/Lime System
+
+ 
+Deep Void (Primary Background)
+#0B0B0D
+
+ 
+Ultraviolet (Accent — Structure & Borders)
+#8900E1
+
+ 
+Electric Lime (Accent — Primary CTA & Highlights)
+#A3E635
+
+Usage Rules:
+
+Deep Void (#0B0B0D): All backgrounds. Never use white or light backgrounds for primary surfaces.
+
+Ultraviolet (#8900E1): Borders, structural accents, secondary CTAs, phase labels. Never use as primary body text.
+
+Electric Lime (#A3E635): Primary calls-to-action, key data points, highlighted values, logo mark. Use sparingly for maximum impact.
+
+Text Body: Use #B8B8C8 for standard body text. Use #5A5A6E for secondary/muted text. Use #F0F0F8 for high-emphasis headings.
+
+2.4  Typography
+
+Display / Headings: Orbitron (Bold 700/900)  —  Terminal-aesthetic, technical, distinctive
+
+Code / Monospace:  Share Tech Mono  —  Terminal output, pricing labels, system tags
+
+Body / UI Text:    Exo 2 (300, 400, 500, 600)  —  Readable, tech-forward, versatile
+
+Rule: Never use Inter, Roboto, Arial, or system fonts in external-facing UI. Internal documents may use Arial for compatibility.
+
+2.5  Logo Usage
+
+The Khaotic Labs wordmark follows this composition:
+
+  [K in #A3E635]  +  "haotic Labs"  +  [_ cursor in #8900E1, blinking]
+
+The underscore cursor is the visual signature of the brand. It signals: always running, always executing, never idle. Do not remove it from lockups where technically feasible.
+
+Taglines in rotation: "AI Systems & Vibe Engineering" · "Terminal-First. Zero Bloat." · "Engineering the Future_"
+
+03 // SOFTWARE DEVELOPMENT LIFECYCLE (SDLC)
+
+Khaotic Labs uses a custom Agile Sprint Machine methodology — a lean, deterministic SDLC designed for solo execution at maximum velocity. The process is sequential, approval-gated, and leaves no ambiguity.
+
+3.1  Phase 1 — Agile Discovery & Stack Selection
+
+Triggered by: Any new project engagement
+
+Deliverables: A single comprehensive Markdown document containing:
+
+Core Mechanical Problem: The fundamental engineering challenge in JPE.
+
+The Moat: The product's technical or strategic competitive advantage.
+
+Stack Selection: Optimal languages, frameworks, and interfaces with justification.
+
+File-Tree Blueprint: Complete directory architecture.
+
+Sprint Backlog: Prioritized list of modular Sprint Tasks (Step 1, Step 2, Step 3...).
+
+Gate: Zero execution begins without explicit client/founder approval.
+
+3.2  Phase 1 (Alt) — Codebase Ingestion (Existing Projects)
+
+Triggered by: Adding features or refactoring to an existing codebase
+
+Deliverables:
+
+Stack & Architecture Identification: Languages, frameworks, structural patterns detected.
+
+Technical Debt & Threat Audit: Syntax bugs, performance bottlenecks, security vulnerabilities.
+
+Targeted Sprint Backlog: Incremental roadmap for the new feature within existing constraints.
+
+3.3  Phase 2 — Sprint Execution
+
+Execution cycle per sprint task:
+
+Step-Back Reasoning: Before any code, map abstraction, logic flow, and safety/threat surface.
+
+Code Delivery: Complete, un-truncated file or function. No placeholders. No "// rest of code here."
+
+Micro-Demo Checklist: Short JPE checklist for local validation before advancing.
+
+Gate: Wait for explicit approval or validation before moving to the next task.
+
+3.4  Phase 3 — Surgical Diagnostics
+
+Triggered by: Compiler error, runtime panic, or unexpected behavior at any phase
+
+Hypothesis: Identify exact line, type mismatch, or logic error.
+
+Context Cross-Reference: Check for RAG context collapse or historical hallucination.
+
+JPE Root Cause Analysis: Plain English explanation of what broke and why.
+
+Surgical Fix: Only the corrected function. Zero orphaned variables or broken comments.
+
+Log Entry: Bug pattern gets flagged to .corrections.log and evaluated for pkg/ extraction.
+
+3.5  Phase 4 — Production Deploy
+
+Standard deployment pipeline:
+
+  Code → GitHub (private) → Cloudflare Pages → Live URL
+
+SPA routing fix: _redirects file in public/ with rule:
+
+  /* /index.html 200
+
+Database: Turso — one database per client (100 free databases, 5GB storage).
+
+Automation: n8n self-hosted via Docker + Cloudflare Tunnel for zero-cost workflows.
+
+04 // CANONICAL TECH STACK
+
+4.1  AI Intelligence Layer
+
+PRIMARY ENGINE
+
+Claude Pro (Anthropic) — Primary LLM for all coding, UI prototyping, sprint execution, and client deliverables. Artifacts feature for React/SVG prototyping. Projects feature for client context isolation.
+
+RESEARCH & CONTEXT
+
+Google Gemini AI Pro — Deep Research (120 reports/day), Deep Think 3.1 (192K context, 10 prompts/day), Workspace integration (Docs, Sheets, Slides, Gmail automation).
+
+INFERENCE ENGINE
+
+Groq — High-volume, real-time inference for deployed apps. 14,400 free requests/day using open-source models at near-zero latency.
+
+FAILOVER ROUTER
+
+OpenRouter — Automatic fallback routing to free models if primary systems are rate-limited or down. Ensures 100% uptime for deployed apps.
+
+4.2  Development Stack
+
+TUI / CLI SYSTEMS
+
+Go + Bubble Tea — Terminal-native tools. Go's concurrency model (goroutines, channels) and Bubble Tea's Elm-inspired TUI framework are the default for any CLI or TUI product.
+
+SYSTEM HOOKS
+
+Rust — Memory-safe, high-performance system-level code. Used for security-critical components, OS hooks, and performance-sensitive processing pipelines.
+
+WEB ENDPOINTS & FRONTEND
+
+TypeScript / Next.js — Typed, predictable web applications. Used for client-facing dashboards, landing pages, and API endpoints where a web interface is required.
+
+CLOUD IDE
+
+Firebase Studio (Google) — Browser-based development environment. Use for backend integrations, database connections, and full-stack testing. Jules AI agent for async code generation.
+
+4.3  Infrastructure & Hosting
+
+VERSION CONTROL
+
+GitHub — Private repositories for all client work. Free tier. All deployments flow through GitHub.
+
+COMMERCIAL HOSTING
+
+Cloudflare Pages — Explicitly permits commercial applications on free tier. Unlimited bandwidth, 500 builds/month. DO NOT use Vercel free tier for commercial projects (prohibited by ToS).
+
+EDGE TUNNELS
+
+Cloudflare Tunnel — Expose self-hosted services (n8n, local APIs) to the internet securely, without a public IP, at zero cost.
+
+4.4  Data & Automation
+
+EDGE DATABASE
+
+Turso — SQLite-based edge database. 100 free databases, 5GB storage. Ideal for isolated per-client data stores. Treated as "simple files" for agent memory.
+
+POSTGRESQL (ALTERNATIVE)
+
+Neon — Serverless PostgreSQL. Free tier does not force-pause inactive projects (unlike Supabase). Use when relational structure is required.
+
+WORKFLOW AUTOMATION
+
+n8n (Self-Hosted via Docker) — Unlimited automations at zero cost. Run locally, exposed to internet via Cloudflare Tunnel. Alternative to Make.com's restrictive 1,000 task/month limit.
+
+4.5  Business Operations Stack
+
+SCHEDULING
+
+Cal.com — Unlimited event types, unlimited bookings, unlimited calendar connections on free tier. Use for discovery calls and client strategy sessions.
+
+CONTRACTS & PAYMENTS
+
+Contra — Zero commission on earnings. Use to process contracts and payment after organic client acquisition. Do not pay $29/mo for Pro (use for contract execution only, not discovery).
+
+INVOICING
+
+Wave — 100% free invoicing platform. Credit card processing at standard 2.9% + $0.60 rate. No monthly fee.
+
+BANKING
+
+Mercury — Zero monthly fees. Zero minimum balance. Free domestic and international USD wire transfers. Purpose-built for tech businesses.
+
+EMAIL ROUTING
+
+Cloudflare Email Routing — Free. Routes founder@khaoticlabs.com to personal Gmail inbox. No Google Workspace required.
+
+SOCIAL MEDIA SCHEDULING
+
+Buffer — Free tier supports 3 channels, 10 scheduled posts per channel. Connect LinkedIn (personal), LinkedIn (Khaotic Labs Company), and X (@KhaoticLabs).
+
+05 // OPERATIONAL RULES & STANDARDS
+
+5.1  Scope Neutrality
+
+All project contexts are isolated by default. A resource or library is only shared between projects if it is explicitly located in the shared pkg/ or .khaotic/ base directories. Cross-contaminating client contexts is a critical failure.
+
+5.2  Recursive Feedback & .corrections.log
+
+When a recurring bug or sub-optimal process pattern is identified, it must:
+
+Be logged to .khaotic/.corrections.log with a clear description and root cause.
+
+Be evaluated as a candidate for extraction into a pkg/ shared library or protocol.
+
+Inform the sprint process to prevent the same error class from occurring again.
+
+5.3  Zero-Capital Focus
+
+Every architectural decision is evaluated against the question: "Can this be achieved at zero or near-zero cost without sacrificing quality?" The answer must be yes before any paid service is considered. The current operational cost of Khaotic Labs at full capability is the cost of two existing subscriptions (Claude Pro + Google AI Pro) — everything else is free.
+
+5.4  Data Integrity
+
+User-provided images, photos, and raw data assets are never modified, augmented, cosmetically altered, or processed without explicit instruction. This is a hard constraint, not a preference.
+
+5.5  Security Standards
+
+All client data is isolated in dedicated Turso databases. No cross-client data access is ever permitted. All AI model usage routes through secure API endpoints (Claude Pro and Google developer tiers) where data is encrypted in transit, isolated per-request, and explicitly not used to train public LLM models. This guarantee must be documented in all client contracts.
+
+06 // LEGAL FRAMEWORK
+
+6.1  Business Structure
+
+Khaotic Labs operates as Khaotic Labs LLC, registered with the State of Michigan (LARA) at a one-time cost of $50. Annual Statement fee: $25, due February 15 each year. Registered Agent: founder (self).
+
+Note: As of March 2026, the FinCEN Beneficial Ownership Information (BOI) reporting requirement has been eliminated for all U.S. companies under the Corporate Transparency Act interim final rule. No federal BOI filing is required.
+
+6.2  Home Office Compliance (Southfield, MI)
+
+Khaotic Labs operates under Southfield's Home Occupation ordinance. Compliance rules:
+
+Operations conducted entirely within the primary residence.
+
+Workspace does not exceed 25% of total home floor space.
+
+No external business signage.
+
+No client visits to the residence. All meetings are remote or at client location.
+
+Southfield, MI charges zero city income tax — full tax advantage maintained.
+
+6.3  Critical Contract Clauses
+
+All client engagements must include a signed services agreement containing:
+
+Data Inputs & Training Exclusions: Client retains 100% ownership of proprietary data. Data is processed via encrypted API endpoints and never used to train public LLM models.
+
+Warranties & AI Disclaimers: "Any components generated using AI tools are provided as-is. Provider makes no warranties regarding the absolute accuracy or absolute originality of AI-generated content."
+
+Third-Party IP Indemnity: Limitation of liability cap on direct damages plus mutual indemnity clause protecting against third-party copyright or data privacy violations.
+
+Scope Creep Protection: Explicit definition of deliverables with a change order process for out-of-scope work.
+
+Use Cooley GO for base contract templates. Customize with the clauses above.
+
+// END OF DOCUMENT
+
+Khaotic Labs LLC  ·  © 2026  ·  All Rights Reserved
+

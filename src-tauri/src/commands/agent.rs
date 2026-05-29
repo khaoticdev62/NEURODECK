@@ -385,9 +385,15 @@ pub async fn agent_step(
     state: State<'_, Mutex<AppState>>,
     app_handle: AppHandle,
 ) -> Result<String, String> {
-    let provider = {
+    let (provider, workspace_prompt) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
+        let wp = if app.config.security.agent_workspace_only {
+            let path = app.config.get_resolved_workspace();
+            path.map(|p| format!("\n- YOU ARE RESTRICTED TO THE FOLLOWING WORKSPACE DIRECTORY: {}\n- Any attempt to access files outside this directory will be strictly blocked.", p.display())).unwrap_or_default()
+        } else {
+            String::new()
+        };
+        (app.provider.clone(), wp)
     };
 
     let os_name = std::env::consts::OS;
@@ -424,9 +430,10 @@ RULES:
 - For web automation, set action to "browser" with one of these tools:
   browser_open_session, browser_navigate_session, browser_get_content, browser_click,
   browser_fill, browser_screenshot, browser_evaluate_js, browser_close_session.
-- Max 5 iterations total — be efficient."#,
+- Max 5 iterations total — be efficient.{workspace_prompt}"#,
         os = os_name,
-        lang = preferred_lang
+        lang = preferred_lang,
+        workspace_prompt = workspace_prompt
     );
 
     // Build the prompt: task + history context
@@ -511,7 +518,12 @@ pub async fn agent_exec_code(
     lang: String,
     _state: State<'_, Mutex<AppState>>,
 ) -> Result<String, String> {
-    crate::security::validate_script_payload(&code, &lang, "agent-exec")?;
+    let workspace_path = {
+        let app = _state.lock().unwrap_or_else(|e| e.into_inner());
+        app.config.get_resolved_workspace()
+    };
+
+    crate::security::validate_script_payload(&code, &lang, "agent-exec", workspace_path.as_deref())?;
 
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
@@ -539,11 +551,16 @@ pub async fn agent_exec_code(
     let result = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         tokio::task::spawn_blocking(move || {
-            let output = std::process::Command::new(&program_owned)
-                .args(args_owned.iter().map(|s| s.as_str()).collect::<Vec<_>>())
+            let mut cmd = std::process::Command::new(&program_owned);
+            cmd.args(args_owned.iter().map(|s| s.as_str()).collect::<Vec<_>>())
                 .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output();
+                .stderr(Stdio::piped());
+            
+            if let Some(wp) = workspace_path {
+                cmd.current_dir(wp);
+            }
+            
+            let output = cmd.output();
 
             match output {
                 Ok(out) => {
@@ -588,7 +605,12 @@ pub async fn exec_code_stream(
     state: State<'_, Mutex<AppState>>,
     app_handle: AppHandle,
 ) -> Result<(), String> {
-    crate::security::validate_script_payload(&code, &lang, "canvas-exec")?;
+    let workspace_path = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        app.config.get_resolved_workspace()
+    };
+
+    crate::security::validate_script_payload(&code, &lang, "canvas-exec", workspace_path.as_deref())?;
 
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
@@ -628,11 +650,16 @@ pub async fn exec_code_stream(
 
     tokio::spawn(async move {
         let start = std::time::Instant::now();
-        let mut child = match tokio::process::Command::new(&program_owned)
-            .args(&args_owned)
+        let mut cmd = tokio::process::Command::new(&program_owned);
+        cmd.args(&args_owned)
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
+            .stderr(Stdio::piped());
+        
+        if let Some(wp) = workspace_path {
+            cmd.current_dir(wp);
+        }
+
+        let mut child = match cmd.spawn()
         {
             Ok(child) => child,
             Err(e) => {

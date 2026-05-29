@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Khaotic Labs">
+  <rect width="32" height="32" fill="#0B0B0D"></rect>
+  <rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#8900E1" stroke-width="1" opacity="0.45"></rect>
+  <text x="6" y="24" font-family="Orbitron, &#39;Arial Black&#39;, sans-serif" font-weight="900" font-size="22" fill="#A3E635">K</text>
+  <rect x="20" y="22" width="8" height="2.5" fill="#A020F0"></rect>
+</svg>

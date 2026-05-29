@@ -1,0 +1,66 @@
+/* Self-hosted brand fonts. Activate by running fonts/download.sh,
+   then linking this file instead of the Google Fonts @import in
+   colors_and_type.css.
+
+   The filenames below assume download.sh's naming
+   (family-prefixed basename). If Google's CDN basenames differ,
+   adjust the src paths to match what landed in ./files/.
+
+   Until the woff2 files exist, these @font-face rules resolve to
+   nothing and pages fall back to the CDN @import — so this file
+   is safe to link at any time. */
+
+/* ── Orbitron — display ─────────────────────────────────────── */
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Orbitron Bold"), url("./files/orbitron-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: local("Orbitron Black"), url("./files/orbitron-900.woff2") format("woff2");
+}
+
+/* ── Share Tech Mono — mono ─────────────────────────────────── */
+@font-face {
+  font-family: "Share Tech Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Share Tech Mono"), url("./files/sharetechmono-400.woff2") format("woff2");
+}
+
+/* ── Exo 2 — body ───────────────────────────────────────────── */
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: local("Exo 2 Light"), url("./files/exo2-300.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Exo 2"), url("./files/exo2-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local("Exo 2 Medium"), url("./files/exo2-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Exo 2";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local("Exo 2 SemiBold"), url("./files/exo2-600.woff2") format("woff2");
+}

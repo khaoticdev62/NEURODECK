@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_preview.css"><style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pr { padding: 24px 22px; position: relative; }
+  .pr.feat::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--lime); box-shadow: 0 0 16px var(--lime-glow); border-radius: 14px 14px 0 0; opacity: 1 !important; filter: none !important; }
+  .pr.feat .ribbon { position: absolute; top: 0.7rem; right: 1rem; font-family: var(--fn-mono); font-size: 9px; color: var(--lime); letter-spacing: 0.15em; }
+  .pr-tier { font-family: var(--fn-mono); font-size: 10px; color: var(--uv-400); letter-spacing: 0.20em; text-transform: uppercase; margin-bottom: 12px; }
+  .pr-price { font-family: var(--fn-disp); font-size: 32px; font-weight: 900; color: var(--text-hi); line-height: 1; margin-bottom: 6px; }
+  .pr-price .dl { font-size: 14px; color: var(--lime); vertical-align: top; margin-top: 6px; display: inline-block; }
+  .pr-price .pl { font-size: 14px; color: var(--text-dim); }
+  .pr-range { font-family: var(--fn-mono); font-size: 10px; color: var(--text-dim); margin-bottom: 16px; }
+  .pr-name { font-family: var(--fn-disp); font-weight: 700; font-size: 13px; color: var(--text-hi); }
+  .pr-feats { list-style: none; margin: 16px 0 0; padding: 0; }
+  .pr-feats li { font-family: var(--fn-mono); font-size: 11px; color: var(--text); padding: 5px 0; display: flex; gap: 8px; }
+  .pr-feats li::before { content: '→'; color: var(--lime); flex-shrink: 0; }
+</style></head><body><div class="card">
+  <span class="lbl">pricing card · w/ featured ribbon</span>
+  <div class="grid">
+    <div class="pr glass-tile uv">
+      <p class="pr-tier">Tier 01 // Rapid Strike</p>
+      <div class="pr-price"><span class="dl">$</span>750<span class="pl">+</span></div>
+      <p class="pr-range">$750 – $3,000 · Fixed Fee</p>
+      <h3 class="pr-name">AI Micro-Consulting</h3>
+      <ul class="pr-feats"><li>24-48hr delivery</li><li>JPE Audit + Report</li></ul>
+    </div>
+    <div class="pr glass-tile feat">
+      <span class="ribbon">// MOST POPULAR</span>
+      <p class="pr-tier">Tier 02 // Full Build</p>
+      <div class="pr-price"><span class="dl">$</span>20K<span class="pl">+</span></div>
+      <p class="pr-range">$20,000 – $50,000 · Fixed Fee</p>
+      <h3 class="pr-name">Custom AI MVP / PoC</h3>
+      <ul class="pr-feats"><li>RAG knowledge base</li><li>Cloudflare deploy</li></ul>
+    </div>
+  </div>
+</div></body></html>

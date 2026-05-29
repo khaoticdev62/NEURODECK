@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_preview.css"><style>
+  .grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tile { height: 92px; display:flex; flex-direction:column; justify-content:flex-end; padding: 12px; }
+  .demo-shape { position: absolute; top: 12px; left: 12px; width: 32px; height: 22px; background: var(--uv-mid); border: 1px solid var(--uv-border-2); }
+  .nm { font-family: var(--fn-mono); font-size: 11px; color: var(--text-hi); }
+  .hx { font-family: var(--fn-mono); font-size: 10px; color: var(--text-dim); }
+  .cta-row { display:flex; gap: 16px; align-items: center; }
+  .cta { font-family: var(--fn-mono); font-size: 11px; padding: 11px 24px; background: var(--lime); color: var(--void); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%); box-shadow: 0 0 20px var(--lime-dim); }
+</style></head><body><div class="card">
+  <span class="lbl">radii · sharp / angular</span>
+  <div class="grid">
+    <div class="tile glass-tile uv" style="position: relative;"><span class="demo-shape" style="border-radius: 0;"></span><span class="nm">--r-0</span><span class="hx">0 · default</span></div>
+    <div class="tile glass-tile uv" style="position: relative;"><span class="demo-shape" style="border-radius: 2px;"></span><span class="nm">--r-1</span><span class="hx">2px · cards</span></div>
+    <div class="tile glass-tile uv" style="position: relative;"><span class="demo-shape" style="border-radius: 4px;"></span><span class="nm">--r-2</span><span class="hx">4px · modals</span></div>
+    <div class="tile glass-tile uv" style="position: relative;"><span class="demo-shape" style="border-radius: 999px;"></span><span class="nm">pill</span><span class="hx">cursor only</span></div>
+  </div>
+  <div class="cta-row">
+    <div class="cta">init_contact()</div>
+    <span class="hx" style="color: var(--lime);">↑ signature: clip-path polygon · 10px chamfer · NEVER rounded</span>
+  </div>
+</div></body></html>

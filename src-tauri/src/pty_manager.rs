@@ -90,6 +90,7 @@ fn spawn_pty_with_timeout(
     candidates: Vec<String>,
     args: Option<Vec<String>>,
     shell_name: String,
+    workspace_path: Option<std::path::PathBuf>,
 ) -> Result<SpawnParts, String> {
     let (tx, rx) = std::sync::mpsc::channel::<Result<SpawnParts, String>>();
 
@@ -108,6 +109,11 @@ fn spawn_pty_with_timeout(
             let mut child_opt: Option<Box<dyn portable_pty::Child + Send + Sync>> = None;
             for (i, candidate) in candidates.iter().enumerate() {
                 let mut cmd = CommandBuilder::new(candidate);
+                
+                if let Some(ref wp) = workspace_path {
+                    cmd.cwd(wp);
+                }
+
                 let bin_dir = crate::user_bin_dir();
                 let bin_str = bin_dir.to_string_lossy().to_string();
                 if let Some(existing_path) = std::env::var_os("PATH") {
@@ -168,6 +174,7 @@ pub fn pty_spawn(
     args: Option<Vec<String>>,
     app_handle: AppHandle,
     state: State<'_, PtyState>,
+    app_state: State<'_, std::sync::Mutex<crate::AppState>>,
 ) -> Result<(), String> {
     let requested_shell = shell.unwrap_or_default();
     let candidates = build_shell_candidates(&requested_shell);
@@ -180,8 +187,13 @@ pub fn pty_spawn(
             .clone()
     };
 
+    let workspace_path = {
+        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
+        app.config.get_resolved_workspace()
+    };
+
     let (writer, mut reader, master, mut child) =
-        spawn_pty_with_timeout(cols, rows, candidates, args, requested_shell)?;
+        spawn_pty_with_timeout(cols, rows, candidates, args, requested_shell, workspace_path)?;
 
     let app_handle_clone = app_handle.clone();
     let id_clone = id.clone();

@@ -37,6 +37,7 @@ export const state = {
     streamStartTime: 0,
     firstChunkTime: 0,
     totalTokens: 0,
+    currentRagSources: null,
     radialMenuVisible: false,
     gamepadActive: false,
     hapticsEnabled: readStoredBoolean("hapticsEnabled", true),

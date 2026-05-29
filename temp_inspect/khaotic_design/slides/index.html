@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Khaotic Labs · Slide Templates</title>
+  <link rel="icon" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="../colors_and_type.css" />
+  <style>
+    :root {
+      --slide-w: 1920px;
+      --slide-h: 1080px;
+      --pad: 96px;
+    }
+    html, body { margin: 0; background: #000; }
+
+    /* Every slide */
+    deck-stage > section {
+      width: var(--slide-w);
+      height: var(--slide-h);
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--fn-body);
+      padding: var(--pad);
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Default-on overlays (scoped per-slide so they show in PPTX export too) */
+    .scan {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.10) 3px, rgba(0,0,0,0.10) 6px);
+      z-index: 50;
+    }
+    .vig {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(11,11,13,0.7) 100%);
+      z-index: 49;
+    }
+
+    /* Rails */
+    .rail-top, .rail-bot {
+      position: absolute;
+      left: var(--pad); right: var(--pad);
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--fn-mono);
+      font-size: 18px;
+      color: var(--text-dim);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      z-index: 51;
+    }
+    .rail-top { top: 48px; }
+    .rail-bot { bottom: 48px; font-size: 16px; }
+    .rail-bot .lv { color: var(--lime); }
+    .rail-top .wm { font-family: var(--fn-disp); font-weight: 700; font-size: 22px; letter-spacing: 0.04em; color: var(--text-hi); text-transform: none; }
+    .rail-top .wm .k  { color: var(--lime); }
+    .rail-top .wm .us { color: var(--uv-400); animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Eyebrow */
+    .eb {
+      font-family: var(--fn-mono);
+      font-size: 22px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--lime);
+      font-weight: 400;
+      margin-bottom: 24px;
+      display: inline-flex; align-items: center; gap: 0.8rem;
+    }
+    .eb::before {
+      content: ""; display: block;
+      width: 36px; height: 1px; background: var(--lime);
+    }
+    .eb.muted { color: var(--text-dim); }
+    .eb.muted::before { background: var(--text-dim); }
+
+    /* Display & headings */
+    .d1 { font-family: var(--fn-disp); font-size: 196px; line-height: 1.03; font-weight: 900; color: var(--text-hi); letter-spacing: -0.045em; }
+    .d2 { font-family: var(--fn-disp); font-size: 140px; line-height: 1.03; font-weight: 900; color: var(--text-hi); letter-spacing: -0.04em; }
+    .h1 { font-family: var(--fn-disp); font-size: 96px;  line-height: 1.05; font-weight: 700; color: var(--text-hi); letter-spacing: -0.03em; }
+    .h2 { font-family: var(--fn-disp); font-size: 64px;  line-height: 1.10; font-weight: 700; color: var(--text-hi); letter-spacing: -0.02em; }
+    .h3 { font-family: var(--fn-disp); font-size: 40px;  line-height: 1.20; font-weight: 700; color: var(--text-hi); }
+
+    .b  { font-family: var(--fn-body); font-size: 28px; line-height: 1.5; color: var(--text); }
+    .meta { font-family: var(--fn-mono); font-size: 18px; color: var(--text-dim); letter-spacing: 0.05em; }
+
+    .uv { color: var(--uv-400); }
+    .lm { color: var(--lime); }
+
+    /* Grid + orbs background variant */
+    .bg-grid {
+      background:
+        radial-gradient(60% 70% at 50% 100%, rgba(137,0,225,0.16) 0%, transparent 70%),
+        radial-gradient(50% 60% at 10% 110%, rgba(163,230,53,0.06) 0%, transparent 70%),
+        var(--void);
+    }
+    .bg-grid::before {
+      content: ""; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(137,0,225,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(137,0,225,0.045) 1px, transparent 1px);
+      background-size: 80px 80px;
+      -webkit-mask-image: radial-gradient(ellipse 85% 90% at 55% 50%, black 0%, transparent 100%);
+              mask-image: radial-gradient(ellipse 85% 90% at 55% 50%, black 0%, transparent 100%);
+      z-index: 0;
+    }
+
+    /* Anything that should sit above the bg-grid pseudo */
+    .above { position: relative; z-index: 2; }
+
+    /* Hairline divider */
+    .hr { height: 1px; background: var(--uv-border); margin: 32px 0; }
+
+    /* Caret */
+    @keyframes c { 50% { opacity: 0; } }
+    .car { display:inline-block; width:0.55em; height: 0.95em; background: var(--lime); vertical-align: text-bottom; animation: c 1.05s steps(1) infinite; margin-left: 6px; }
+
+    /* Service ID tag */
+    .svc-id { font-family: var(--fn-mono); font-size: 22px; color: var(--uv-400); letter-spacing: 0.22em; text-transform: uppercase; }
+
+    /* CTA shapes */
+    .btn-p { font-family: var(--fn-mono); font-size: 22px; padding: 22px 56px; background: var(--lime); color: var(--void); letter-spacing: 0.10em; text-transform: uppercase; font-weight: 600; clip-path: polygon(20px 0%, 100% 0%, calc(100% - 20px) 100%, 0% 100%); display: inline-block; }
+
+    /* Glitch */
+    .glitch-wrap { position: relative; display: inline-block; }
+    .glitch-wrap::before, .glitch-wrap::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .glitch-wrap::before { color: var(--uv-400); animation: gb 5s infinite; clip-path: polygon(0 15%, 100% 15%, 100% 35%, 0 35%); }
+    .glitch-wrap::after  { color: var(--lime); animation: ga 5s infinite; clip-path: polygon(0 65%, 100% 65%, 100% 85%, 0 85%); }
+    @keyframes gb { 0%, 88%, 100% { transform: translateX(0); opacity: 0; } 90% { transform: translateX(-5px); opacity: 0.9; } 93% { transform: translateX(5px); opacity: 0.9; } 96% { transform: translateX(0); opacity: 0; } }
+    @keyframes ga { 0%, 88%, 100% { transform: translateX(0); opacity: 0; } 91% { transform: translateX(4px); opacity: 0.9; } 94% { transform: translateX(-4px); opacity: 0.9; } 97% { transform: translateX(0); opacity: 0; } }
+  </style>
+</head>
+<body>
+  <script type="application/json" id="speaker-notes">[
+    "Open with the brand. Khaotic Labs — engineering the future. Solo studio, zero overhead, maximum output. The hero sets the tone for everything after.",
+    "The agenda. Five sections. Vision, services, stack, process, and what we ship.",
+    "The Lean Giant Protocol — our five immutable principles. Read them out loud. They explain how everything else works.",
+    "The services tiers. SVC-01 Rapid Strike, SVC-02 Full Build, SVC-03 Embedded CTO. Fixed-fee where possible, retainer where it makes sense.",
+    "The zero-capital premium stack. Every tool earns its place. Operational cost today is the price of two subscriptions — Claude Pro and Google AI Pro. Everything else is free or commercial-allowed-on-free.",
+    "The SDLC. Four phases — Discovery, Sprint Execution, Surgical Diagnostics, Production Deploy. Approval-gated between every phase. One sprint item at a time.",
+    "A pull quote that doubles as a mission. From the brand playbook.",
+    "Close. CTA is one call. Discovery is free. We engineer the advantage from there."
+  ]</script>
+
+  <deck-stage width="1920" height="1080">
+
+    <!-- 01 · TITLE / HERO ─────────────────────────────────── -->
+    <section data-screen-label="01 Title" class="bg-grid">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>CONFIDENTIAL · INTERNAL · Q2 2026</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// System Online · Southfield, MI · Est. 2026</p>
+        <h1 class="d1">
+          <span class="glitch-wrap" data-text="Khaotic">Khaotic</span><br/>
+          <span class="uv">Engineering</span><br/>
+          <span class="lm">The Future_</span>
+        </h1>
+        <p class="b" style="margin-top: 48px; max-width: 1100px;">
+          Solo AI studio. Zero overhead. Maximum output.<br/>
+          Building autonomous systems that run while you sleep.
+        </p>
+      </div>
+
+      <div class="rail-bot above">
+        <span>AI SYSTEMS · AGENTIC WORKFLOWS · TERMINAL-FIRST</span>
+        <span><span class="lv">●</span>&nbsp;&nbsp;STATUS: ACCEPTING_CLIENTS</span>
+      </div>
+    </section>
+
+    <!-- 02 · AGENDA ───────────────────────────────────────── -->
+    <section data-screen-label="02 Agenda">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>02 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb muted">// AGENDA</p>
+        <h2 class="d2">What's covered.</h2>
+
+        <div style="margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px 96px;">
+          <div style="display:flex; gap: 32px; align-items: baseline;">
+            <span class="d1" style="font-size: 88px; color: var(--lime); width: 88px;">01</span>
+            <div><div class="h3">Vision</div><div class="b" style="color: var(--text-dim);">The Lean Giant Protocol</div></div>
+          </div>
+          <div style="display:flex; gap: 32px; align-items: baseline;">
+            <span class="d1" style="font-size: 88px; color: var(--lime); width: 88px;">02</span>
+            <div><div class="h3">Services</div><div class="b" style="color: var(--text-dim);">Three tiers · fixed-fee</div></div>
+          </div>
+          <div style="display:flex; gap: 32px; align-items: baseline;">
+            <span class="d1" style="font-size: 88px; color: var(--lime); width: 88px;">03</span>
+            <div><div class="h3">Stack</div><div class="b" style="color: var(--text-dim);">Zero-capital, premium</div></div>
+          </div>
+          <div style="display:flex; gap: 32px; align-items: baseline;">
+            <span class="d1" style="font-size: 88px; color: var(--lime); width: 88px;">04</span>
+            <div><div class="h3">SDLC</div><div class="b" style="color: var(--text-dim);">The Sprint Machine</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS</span><span>02 · AGENDA</span></div>
+    </section>
+
+    <!-- 03 · LEAN GIANT PROTOCOL ──────────────────────────── -->
+    <section data-screen-label="03 Lean Giant" style="background: var(--void-2);">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>03 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// 01 · CORE ETHOS</p>
+        <h2 class="d2" style="margin-bottom: 64px;">The Lean Giant Protocol.</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; max-width: 1700px;">
+          <div style="border-top: 2px solid var(--lime); padding: 24px 0;">
+            <div class="svc-id" style="font-size: 18px;">01</div>
+            <div class="h3" style="font-size: 28px; margin-top: 18px;">Zero Bloat</div>
+            <p class="meta" style="margin-top: 12px; line-height: 1.6;">Lean, deterministic systems only. Frameworks earn their place.</p>
+          </div>
+          <div style="border-top: 2px solid var(--lime); padding: 24px 0;">
+            <div class="svc-id" style="font-size: 18px;">02</div>
+            <div class="h3" style="font-size: 28px; margin-top: 18px;">JPE Mandate</div>
+            <p class="meta" style="margin-top: 12px; line-height: 1.6;">Just Plain English. Every doc, decision, deliverable.</p>
+          </div>
+          <div style="border-top: 2px solid var(--lime); padding: 24px 0;">
+            <div class="svc-id" style="font-size: 18px;">03</div>
+            <div class="h3" style="font-size: 28px; margin-top: 18px;">Security First</div>
+            <p class="meta" style="margin-top: 12px; line-height: 1.6;">Zero-trust by default. Memory-safe where stakes are high.</p>
+          </div>
+          <div style="border-top: 2px solid var(--lime); padding: 24px 0;">
+            <div class="svc-id" style="font-size: 18px;">04</div>
+            <div class="h3" style="font-size: 28px; margin-top: 18px;">Antigravity</div>
+            <p class="meta" style="margin-top: 12px; line-height: 1.6;">Reuse <code style="background: var(--void-4); padding: 2px 8px; color: var(--lime); font-family: var(--fn-mono); font-size: 20px;">pkg/</code> before reinventing.</p>
+          </div>
+          <div style="border-top: 2px solid var(--lime); padding: 24px 0;">
+            <div class="svc-id" style="font-size: 18px;">05</div>
+            <div class="h3" style="font-size: 28px; margin-top: 18px;">One Sprint Item</div>
+            <p class="meta" style="margin-top: 12px; line-height: 1.6;">Scoped. Approved. Delivered. Validated. Then the next.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS · ETHOS</span><span>03 / 08</span></div>
+    </section>
+
+    <!-- 04 · SERVICES ─────────────────────────────────────── -->
+    <section data-screen-label="04 Services">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>04 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// 02 · SERVICES</p>
+        <h2 class="d2" style="margin-bottom: 64px;">Three tiers.<br/><span class="uv">Value-based pricing.</span></h2>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--uv-border-2); border: 1px solid var(--uv-border-2);">
+          <div style="background: var(--void-2); padding: 40px;">
+            <p class="svc-id">Tier 01 // RAPID STRIKE</p>
+            <div class="d2" style="font-size: 96px; margin: 24px 0 8px;"><span class="lm" style="font-size: 48px; vertical-align: top;">$</span>750<span style="font-size: 48px; color: var(--text-dim);">+</span></div>
+            <p class="meta" style="margin-bottom: 8px;">$750 – $3,000 · Fixed Fee</p>
+            <h3 class="h3" style="font-size: 30px; margin-bottom: 8px;">AI Micro-Consulting</h3>
+            <p class="b" style="font-size: 22px; color: var(--text-dim); line-height: 1.6;">24-to-48-hour precision assessments. Pure intelligence, zero waiting rooms.</p>
+          </div>
+          <div style="background: var(--void-3); padding: 40px; border-top: 4px solid var(--lime); position: relative;">
+            <div style="position: absolute; top: 14px; right: 24px; font-family: var(--fn-mono); font-size: 16px; color: var(--lime); letter-spacing: 0.20em;">// MOST POPULAR</div>
+            <p class="svc-id">Tier 02 // FULL BUILD</p>
+            <div class="d2" style="font-size: 96px; margin: 24px 0 8px;"><span class="lm" style="font-size: 48px; vertical-align: top;">$</span>20K<span style="font-size: 48px; color: var(--text-dim);">+</span></div>
+            <p class="meta" style="margin-bottom: 8px;">$20K – $50K · Fixed Fee</p>
+            <h3 class="h3" style="font-size: 30px; margin-bottom: 8px;">Custom AI MVP / PoC</h3>
+            <p class="b" style="font-size: 22px; color: var(--text-dim); line-height: 1.6;">End-to-end production AI apps. Deployed on Cloudflare in 4–8 weeks.</p>
+          </div>
+          <div style="background: var(--void-2); padding: 40px;">
+            <p class="svc-id">Tier 03 // EMBEDDED CTO</p>
+            <div class="d2" style="font-size: 96px; margin: 24px 0 8px;"><span class="lm" style="font-size: 48px; vertical-align: top;">$</span>5K<span style="font-size: 48px; color: var(--text-dim);">/mo</span></div>
+            <p class="meta" style="margin-bottom: 8px;">$5K – $15K/mo · Retainer</p>
+            <h3 class="h3" style="font-size: 30px; margin-bottom: 8px;">Fractional CTO</h3>
+            <p class="b" style="font-size: 22px; color: var(--text-dim); line-height: 1.6;">Continuous strategic AI leadership. Your pipeline never stalls.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS · SERVICES</span><span>04 / 08</span></div>
+    </section>
+
+    <!-- 05 · STACK ────────────────────────────────────────── -->
+    <section data-screen-label="05 Stack" style="background: var(--void-2);">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>05 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// 03 · STACK</p>
+        <h2 class="d2" style="margin-bottom: 48px;">Zero-capital,<br/><span class="lm">premium stack.</span></h2>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--uv-border); border: 1px solid var(--uv-border); max-width: 1700px;">
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🤖</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Claude Pro</div><div class="meta" style="margin-top: 4px;">Primary Engine</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🧠</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Gemini AI Pro</div><div class="meta" style="margin-top: 4px;">Research + Context</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">⚡</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Groq</div><div class="meta" style="margin-top: 4px;">Inference</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🔀</div><div class="h3" style="font-size: 24px; margin-top: 12px;">OpenRouter</div><div class="meta" style="margin-top: 4px;">Failover</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🐹</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Go + Bubble Tea</div><div class="meta" style="margin-top: 4px;">TUI / CLI</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🦀</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Rust</div><div class="meta" style="margin-top: 4px;">System Hooks</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">☁️</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Cloudflare</div><div class="meta" style="margin-top: 4px;">Pages + Tunnel</div></div>
+          <div style="background: var(--void); padding: 28px;"><div style="font-size: 36px;">🗄️</div><div class="h3" style="font-size: 24px; margin-top: 12px;">Turso</div><div class="meta" style="margin-top: 4px;">Edge Database</div></div>
+        </div>
+
+        <p class="b" style="margin-top: 40px; max-width: 1500px;">
+          Operational cost today: <span class="lm">$0</span> overhead beyond Claude Pro + Google AI Pro subscriptions. Every tool earns its place by leverage-per-dollar.
+        </p>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS · STACK</span><span>05 / 08</span></div>
+    </section>
+
+    <!-- 06 · SDLC ─────────────────────────────────────────── -->
+    <section data-screen-label="06 SDLC">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>06 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// 04 · SDLC</p>
+        <h2 class="d2" style="margin-bottom: 64px;">The Agile<br/><span class="uv">Sprint Machine.</span></h2>
+
+        <div style="position: relative;">
+          <div style="position: absolute; left: 32px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--lime) 0%, var(--uv) 70%, transparent 100%);"></div>
+
+          <div style="display: grid; grid-template-columns: 86px 1fr; gap: 48px; margin-bottom: 36px;">
+            <div style="width: 66px; height: 66px; border: 2px solid var(--lime); background: var(--void); display: flex; align-items: center; justify-content: center; font-family: var(--fn-disp); font-weight: 700; color: var(--lime); font-size: 22px;">01</div>
+            <div><p class="svc-id">Discovery Phase</p><h3 class="h3" style="margin-top: 8px;">Agile Discovery &amp; Stack Selection</h3><p class="b" style="margin-top: 8px; color: var(--text-dim); max-width: 1300px;">JPE problem definition. Stack with justification. File-tree blueprint. Sprint backlog. Zero execution without explicit approval.</p></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 86px 1fr; gap: 48px; margin-bottom: 36px;">
+            <div style="width: 66px; height: 66px; border: 2px solid var(--lime); background: var(--void); display: flex; align-items: center; justify-content: center; font-family: var(--fn-disp); font-weight: 700; color: var(--lime); font-size: 22px;">02</div>
+            <div><p class="svc-id">Execution Phase</p><h3 class="h3" style="margin-top: 8px;">Incremental Sprint Execution</h3><p class="b" style="margin-top: 8px; color: var(--text-dim); max-width: 1300px;">Step-back reasoning. Complete file delivery, no truncation. Micro-demo checklist for local validation before advancing.</p></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 86px 1fr; gap: 48px; margin-bottom: 36px;">
+            <div style="width: 66px; height: 66px; border: 2px solid var(--lime); background: var(--void); display: flex; align-items: center; justify-content: center; font-family: var(--fn-disp); font-weight: 700; color: var(--lime); font-size: 22px;">03</div>
+            <div><p class="svc-id">Diagnostics Phase</p><h3 class="h3" style="margin-top: 8px;">Surgical Debugging Protocol</h3><p class="b" style="margin-top: 8px; color: var(--text-dim); max-width: 1300px;">JPE root-cause analysis. Targeted fix, zero side-effects. Recurring patterns logged to <code style="background: var(--void-3); padding: 2px 8px; color: var(--lime); font-family: var(--fn-mono); font-size: 22px;">.corrections.log</code>.</p></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 86px 1fr; gap: 48px;">
+            <div style="width: 66px; height: 66px; border: 2px solid var(--lime); background: var(--void); display: flex; align-items: center; justify-content: center; font-family: var(--fn-disp); font-weight: 700; color: var(--lime); font-size: 22px;">04</div>
+            <div><p class="svc-id">Deploy Phase</p><h3 class="h3" style="margin-top: 8px;">Zero-Cost Production Deploy</h3><p class="b" style="margin-top: 8px; color: var(--text-dim); max-width: 1300px;">GitHub → Cloudflare Pages. Turso edge DB. n8n self-hosted via Cloudflare Tunnel. Live. Wallet untouched.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS · SDLC</span><span>06 / 08</span></div>
+    </section>
+
+    <!-- 07 · BIG QUOTE ────────────────────────────────────── -->
+    <section data-screen-label="07 Big Quote" style="background: var(--void-2);">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>07 / 08</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width: 1700px;">
+        <div style="font-family: var(--fn-disp); font-weight: 900; font-size: 220px; color: var(--lime); line-height: 0.5; letter-spacing: -0.04em;">&ldquo;</div>
+        <blockquote style="margin: 0; font-family: var(--fn-disp); font-weight: 700; font-size: 92px; line-height: 1.1; color: var(--text-hi); letter-spacing: -0.02em;">
+          A Khaotic Labs product<br/>
+          is identifiable by its <span class="lm">precision</span><br/>
+          and its <span class="uv">character.</span>
+        </blockquote>
+        <div style="margin-top: 80px; display: flex; align-items: center; gap: 24px;">
+          <div style="width: 4px; height: 72px; background: var(--lime);"></div>
+          <div>
+            <div style="font-family: var(--fn-disp); font-size: 28px; color: var(--text-hi); font-weight: 700;">Brand Playbook v1.0</div>
+            <div class="meta">VIBE-ENGINEERING STANDARD · KHAOTIC LABS LLC</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bot above"><span>KHAOTIC LABS</span><span>07 / 08</span></div>
+    </section>
+
+    <!-- 08 · END / CTA ────────────────────────────────────── -->
+    <section data-screen-label="08 End" class="bg-grid">
+      <div class="scan"></div>
+      <div class="vig"></div>
+
+      <div class="rail-top above">
+        <span class="wm"><span class="k">K</span>haotic Labs<span class="us">_</span></span>
+        <span>END</span>
+      </div>
+
+      <div class="above" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <p class="eb">// READY TO ENGINEER YOUR ADVANTAGE?</p>
+        <h1 class="d1">
+          <span class="glitch-wrap" data-text="One call.">One call.</span><br/>
+          <span class="lm">Zero commitment.</span>
+        </h1>
+
+        <div style="margin-top: 64px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--uv-border); border: 1px solid var(--uv-border); max-width: 1700px;">
+          <div style="background: var(--void); padding: 36px;"><div class="meta">EMAIL</div><div style="font-family: var(--fn-mono); font-size: 32px; color: var(--text-hi); margin-top: 8px;">founder@khaoticlabs.com</div></div>
+          <div style="background: var(--void); padding: 36px;"><div class="meta">DISCOVERY CALL</div><div style="font-family: var(--fn-mono); font-size: 32px; color: var(--text-hi); margin-top: 8px;">cal.com/khaoticlabs</div></div>
+          <div style="background: var(--void); padding: 36px;"><div class="meta">SLA</div><div style="font-family: var(--fn-mono); font-size: 32px; color: var(--text-hi); margin-top: 8px;">&lt; 24 hours</div></div>
+        </div>
+
+        <div style="margin-top: 56px;">
+          <a class="btn-p">init_contact()</a>
+        </div>
+      </div>
+
+      <div class="rail-bot above">
+        <span>© 2026 KHAOTIC LABS LLC · SOUTHFIELD, MI</span>
+        <span><span class="lv">●</span>&nbsp;&nbsp;END · 08 / 08</span>
+      </div>
+    </section>
+
+  </deck-stage>
+
+  <script src="deck-stage.js"></script>
+  <script>
+    addEventListener('load', () => {
+      const ds = document.querySelector('deck-stage');
+      const kick = () => ds && ds._fit && ds._fit();
+      kick();
+      requestAnimationFrame(() => { kick(); requestAnimationFrame(kick); });
+      setTimeout(kick, 200);
+      setTimeout(kick, 600);
+    });
+  </script>
+</body>
+</html>

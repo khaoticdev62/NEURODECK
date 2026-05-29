@@ -53,6 +53,7 @@ impl LuaEngine {
                     "bash"
                 },
                 "lua-execute",
+                None,
             )
             .map_err(mlua::Error::external)?;
             let mut cmd = if cfg!(target_os = "windows") {

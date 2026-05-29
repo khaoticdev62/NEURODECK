@@ -176,6 +176,18 @@ impl Default for PrefsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SecurityConfig {
+    #[serde(default)]
+    pub agent_workspace_only: bool,
+    #[serde(default = "default_agent_workspace_path")]
+    pub agent_workspace_path: String,
+}
+
+fn default_agent_workspace_path() -> String {
+    "~/.neurodeck_workspace".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub theme: ThemeConfig,
@@ -187,6 +199,8 @@ pub struct Config {
     pub sync: SyncConfig,
     #[serde(default)]
     pub prefs: PrefsConfig,
+    #[serde(default)]
+    pub security: SecurityConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -224,6 +238,24 @@ impl Default for SyncConfig {
             api_base_url: String::new(),
             last_sync_at: None,
             device_id: default_sync_device_id(),
+        }
+    }
+}
+
+impl Config {
+    pub fn get_resolved_workspace(&self) -> Option<std::path::PathBuf> {
+        if self.security.agent_workspace_only {
+            let raw = &self.security.agent_workspace_path;
+            if raw.starts_with("~/") || raw.starts_with("~\\") {
+                crate::get_home_dir().map(|mut h| {
+                    h.push(&raw[2..]);
+                    h
+                }).or_else(|| Some(std::path::PathBuf::from(raw)))
+            } else {
+                Some(std::path::PathBuf::from(raw))
+            }
+        } else {
+            None
         }
     }
 }

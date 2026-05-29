@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_preview.css"><style>
+  .panel { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .btn-p { font-family: var(--fn-mono); font-size: 12px; padding: 0.85rem 2rem; background: var(--lime); color: var(--void); letter-spacing: 0.10em; text-transform: uppercase; font-weight: 600; border: 0; cursor: pointer; clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%); transition: all 0.14s; text-decoration: none; display: inline-block; }
+  .btn-p:hover { background: var(--lime-300); box-shadow: 0 0 28px var(--lime-glow); }
+  .btn-s { font-family: var(--fn-mono); font-size: 12px; padding: 0.85rem 1.6rem; border: 1px solid var(--uv-mid); color: var(--uv-400); background: transparent; letter-spacing: 0.10em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; }
+  .btn-s:hover { border-color: var(--uv-400); background: var(--uv-dim); box-shadow: 0 0 22px var(--uv-glow); }
+  .nav-cta { font-family: var(--fn-mono); font-size: 11px; padding: 0.55rem 1.3rem; border: 1px solid var(--lime); color: var(--lime); background: transparent; letter-spacing: 0.10em; text-transform: uppercase; position: relative; overflow: hidden; transition: color 0.25s; }
+  .nav-cta::before { content:''; position: absolute; inset: 0; background: var(--lime); transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1); }
+  .nav-cta:hover::before { transform: translateX(0); }
+  .nav-cta:hover { color: var(--void); }
+  .nav-cta span { position: relative; z-index: 1; }
+  .row-b { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+</style></head><body><div class="card">
+  <span class="lbl">buttons · the three CTAs</span>
+  <div class="glass panel">
+    <div class="row-b">
+      <a class="btn-p">init_contact()</a>
+      <a class="btn-p">Book Discovery Call</a>
+      <span class="cap">primary · lime + clip-path · hover glow</span>
+    </div>
+    <div class="row-b">
+      <a class="btn-s">View Services →</a>
+      <a class="btn-s">init_inquiry()</a>
+      <span class="cap">secondary · UV-bordered · hover fill</span>
+    </div>
+    <div class="row-b">
+      <a class="nav-cta"><span>init_contact()</span></a>
+      <span class="cap">nav · slide-fill on hover</span>
+    </div>
+  </div>
+</div></body></html>

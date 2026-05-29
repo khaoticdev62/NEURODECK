@@ -1754,6 +1754,14 @@ function runLuaScript(scriptCode, preElement, execBtn) {
     });
 }
 
+listen("rag_sources", function (event) {
+    try {
+        state.currentRagSources = JSON.parse(event.payload);
+    } catch(e) {
+        console.error("Failed to parse RAG sources", e);
+    }
+});
+
 // Listen for stream events
 listen("stream_chunk", function (event) {
     let chunk = event.payload;
@@ -1871,6 +1879,58 @@ listen("stream_done", function () {
                 const reg = state.chatMessageRegistry.find(r => r.id === msgId);
                 if (reg) msgCard.appendChild(makeActionMenuBtn(reg));
             }
+
+            // Provenance UI (RAG Sources)
+            if (state.currentRagSources && state.currentRagSources.length > 0) {
+                const ragContainer = document.createElement("div");
+                ragContainer.className = "rag-sources-container";
+                
+                const toggleBtn = document.createElement("button");
+                toggleBtn.className = "rag-sources-toggle";
+                toggleBtn.innerHTML = `<span class="rag-toggle-text">📚 Injected Context (${state.currentRagSources.length})</span><span class="rag-toggle-icon">▼</span>`;
+                
+                const listEl = document.createElement("div");
+                listEl.className = "rag-sources-list";
+                listEl.style.display = "none";
+                
+                toggleBtn.onclick = () => {
+                    const isHidden = listEl.style.display === "none";
+                    listEl.style.display = isHidden ? "block" : "none";
+                    toggleBtn.querySelector(".rag-toggle-icon").innerText = isHidden ? "▲" : "▼";
+                };
+
+                state.currentRagSources.forEach((src, idx) => {
+                    const srcEl = document.createElement("div");
+                    srcEl.className = "rag-source-item";
+                    
+                    const srcHeader = document.createElement("div");
+                    srcHeader.className = "rag-source-header";
+                    srcHeader.innerHTML = `<span class="rag-source-chip">[${idx + 1}]</span> <span class="rag-source-title">${window.sanitizeHtml(src.title || src.id)}</span> <span class="rag-source-role">${window.sanitizeHtml(src.role)}</span>`;
+                    
+                    const srcSnippet = document.createElement("div");
+                    srcSnippet.className = "rag-source-snippet";
+                    srcSnippet.innerText = src.content_snippet;
+                    
+                    srcEl.onclick = () => {
+                        const searchInput = document.getElementById("memory-search-input");
+                        if (searchInput) {
+                            searchInput.value = src.id;
+                            // Also focus and select it if possible, but switching views is key
+                        }
+                        const memoryTab = document.querySelector('[data-view="memory"]');
+                        if (memoryTab) memoryTab.click();
+                    };
+                    
+                    srcEl.appendChild(srcHeader);
+                    srcEl.appendChild(srcSnippet);
+                    listEl.appendChild(srcEl);
+                });
+                
+                ragContainer.appendChild(toggleBtn);
+                ragContainer.appendChild(listEl);
+                msgCard.appendChild(ragContainer);
+            }
+            state.currentRagSources = null;
         }
         if (typeof window.announceToScreenReader === 'function') {
             const preview = state.currentAIText.slice(0, 120).replace(/\s+/g, ' ').trim();
