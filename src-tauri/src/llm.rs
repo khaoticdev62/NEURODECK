@@ -1533,12 +1533,13 @@ impl LlmProvider for OpenAICompatProvider {
                 req = req.header("Authorization", auth_val);
             }
             let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
-            if !res.status().is_success() {
+            let mut byte_stream = if !res.status().is_success() {
                 let status = res.status();
                 let err = res.text().await.unwrap_or_default();
                 Err(format!("OpenAI-compat error ({}): {}", status, err))?
-            }
-            let mut byte_stream = res.bytes_stream();
+            } else {
+                res.bytes_stream()
+            };
             let mut buffer = String::new();
             while let Some(chunk_res) = byte_stream.next().await {
                 let chunk = chunk_res.map_err(|e| format!("Stream error: {}", e))?;

@@ -212,31 +212,25 @@ function toggleSettingsLlmGroups(provider) {
   const kimiLabel = document.getElementById("stv-kimi-label");
   const hfGroup = document.getElementById("settings-hf-group");
   const hfLabel = document.getElementById("stv-hf-label");
+  const oaGroup = document.getElementById("settings-openai-compat-group");
+  const oaLabel = document.getElementById("stv-openai-compat-label");
+
+  // Hide everything first, then show only what belongs to the selected provider
+  const allGroups = [geminiGroup, ollamaGroup, kimiGroup, hfGroup, oaGroup];
+  const allLabels = [ollamaLabel, kimiLabel, hfLabel, oaLabel];
+  allGroups.forEach(g => g && (g.style.display = "none"));
+  allLabels.forEach(l => l && (l.style.display = "none"));
+  if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+
   if (provider === "gemini") {
     if (geminiGroup) geminiGroup.style.display = "block";
-    if (kimiGroup) kimiGroup.style.display = "none";
-    if (kimiLabel) kimiLabel.style.display = "none";
-    if (ollamaGroup) ollamaGroup.style.display = "none";
-    if (ollamaLabel) ollamaLabel.style.display = "none";
-    if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
-    if (hfGroup) hfGroup.style.display = "none";
-    if (hfLabel) hfLabel.style.display = "none";
+  } else if (provider === "openai_compat") {
+    if (oaGroup) oaGroup.style.display = "block";
+    if (oaLabel) oaLabel.style.display = "block";
   } else if (provider === "kimi") {
-    if (geminiGroup) geminiGroup.style.display = "none";
     if (kimiGroup) kimiGroup.style.display = "block";
     if (kimiLabel) kimiLabel.style.display = "block";
-    if (ollamaGroup) ollamaGroup.style.display = "none";
-    if (ollamaLabel) ollamaLabel.style.display = "none";
-    if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
-    if (hfGroup) hfGroup.style.display = "none";
-    if (hfLabel) hfLabel.style.display = "none";
   } else if (provider === "huggingface") {
-    if (geminiGroup) geminiGroup.style.display = "none";
-    if (kimiGroup) kimiGroup.style.display = "none";
-    if (kimiLabel) kimiLabel.style.display = "none";
-    if (ollamaGroup) ollamaGroup.style.display = "none";
-    if (ollamaLabel) ollamaLabel.style.display = "none";
-    if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
     if (hfGroup) hfGroup.style.display = "block";
     if (hfLabel) hfLabel.style.display = "block";
   } else {
@@ -275,6 +269,9 @@ function handleTestConnectionClick() {
   const hfKey = document.getElementById("settings-hf-key")?.value.trim();
   const hfModel = document.getElementById("settings-hf-model")?.value.trim();
   const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
+  const oaKey = document.getElementById("settings-openai-compat-key")?.value.trim();
+  const oaModel = document.getElementById("settings-openai-compat-model")?.value.trim();
+  const oaUrl = document.getElementById("settings-openai-compat-url")?.value.trim();
 
   const statusEl = document.getElementById("settings-llm-status");
   const testBtn = document.getElementById("settings-test-connection-btn");
@@ -290,6 +287,10 @@ function handleTestConnectionClick() {
     model = geminiModel;
     url = "";
     key = geminiKey;
+  } else if (provider === "openai_compat") {
+    model = oaModel;
+    url = oaUrl;
+    key = oaKey;
   } else if (provider === "huggingface") {
     model = hfModel;
     url = hfUrl;
@@ -338,6 +339,9 @@ function handleSaveLlmClick() {
   const hfKey = document.getElementById("settings-hf-key")?.value.trim();
   const hfModel = document.getElementById("settings-hf-model")?.value.trim();
   const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
+  const oaKey = document.getElementById("settings-openai-compat-key")?.value.trim();
+  const oaModel = document.getElementById("settings-openai-compat-model")?.value.trim();
+  const oaUrl = document.getElementById("settings-openai-compat-url")?.value.trim();
 
   const statusEl = document.getElementById("settings-llm-status");
   if (statusEl) {
@@ -348,6 +352,8 @@ function handleSaveLlmClick() {
   let saveKeyPromise = Promise.resolve();
   if (provider === "gemini" && geminiKey) {
     saveKeyPromise = invoke("save_gemini_api_key", { key: geminiKey });
+  } else if (provider === "openai_compat" && oaKey) {
+    saveKeyPromise = invoke("save_openai_compat_api_key", { key: oaKey });
   } else if (provider === "kimi" && kimiKey) {
     saveKeyPromise = invoke("save_kimi_api_key", { key: kimiKey });
   } else if (provider === "huggingface" && hfKey) {
@@ -383,6 +389,13 @@ function handleSaveLlmClick() {
         value: hfUrl || "https://api-inference.huggingface.co",
       }),
     )
+    .then(() => invoke("set_config", { key: "llm.openai_compat_model", value: oaModel || "gpt-4o-mini" }))
+    .then(() =>
+      invoke("set_config", {
+        key: "llm.openai_compat_base_url",
+        value: oaUrl || "",
+      }),
+    )
     .then(() => {
       if (statusEl) {
         statusEl.style.color = "var(--response-color)";
@@ -390,6 +403,7 @@ function handleSaveLlmClick() {
       }
       let activeModelName;
       if (provider === "gemini") activeModelName = geminiModel;
+      else if (provider === "openai_compat") activeModelName = oaModel || "openai-compat";
       else if (provider === "kimi") activeModelName = kimiModel;
       else if (provider === "huggingface") activeModelName = hfModel;
       else activeModelName = ollamaModel;
@@ -476,8 +490,9 @@ export function openSettingsModal() {
     invoke("get_gemini_api_key"),
     invoke("get_kimi_api_key"),
     invoke("get_hf_api_key"),
+    invoke("get_openai_compat_api_key"),
   ])
-    .then(([config, apiKey, kimiApiKey, hfApiKey]) => {
+    .then(([config, apiKey, kimiApiKey, hfApiKey, oaApiKey]) => {
       const providerSelect = document.getElementById("llm-provider-select");
       const geminiKeyInput = document.getElementById("settings-gemini-key");
       const geminiModelInput = document.getElementById("settings-gemini-model");
@@ -489,6 +504,9 @@ export function openSettingsModal() {
       const hfKeyInput = document.getElementById("settings-hf-key");
       const hfModelInput = document.getElementById("settings-hf-model");
       const hfUrlInput = document.getElementById("settings-hf-url");
+      const oaKeyInput = document.getElementById("settings-openai-compat-key");
+      const oaModelInput = document.getElementById("settings-openai-compat-model");
+      const oaUrlInput = document.getElementById("settings-openai-compat-url");
 
       if (providerSelect) providerSelect.value = config.llm.default_provider;
       if (geminiKeyInput) geminiKeyInput.value = apiKey;
@@ -501,6 +519,9 @@ export function openSettingsModal() {
       if (hfKeyInput) hfKeyInput.value = hfApiKey;
       if (hfModelInput) hfModelInput.value = config.llm.hf_model;
       if (hfUrlInput) hfUrlInput.value = config.llm.hf_base_url;
+      if (oaKeyInput) oaKeyInput.value = oaApiKey || "";
+      if (oaModelInput) oaModelInput.value = config.llm.openai_compat_model || "";
+      if (oaUrlInput) oaUrlInput.value = config.llm.openai_compat_base_url || "";
 
       toggleSettingsLlmGroups(config.llm.default_provider);
     })

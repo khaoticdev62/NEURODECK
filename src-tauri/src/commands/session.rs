@@ -756,15 +756,45 @@ pub async fn send_command(
         std::env::consts::OS
     ));
 
-    // RAG: Search memory for relevant messages
+    // RAG: Search memory for relevant messages.
+    // Primary path: vector similarity search using provider embeddings.
+    // Fallback: keyword search when the provider does not support embeddings
+    // (e.g. Ollama, OpenAI-compat endpoints without an /embeddings route).
     if let Some(ref db) = mem_db {
-        if let Ok(query_embed) = provider.generate_embedding(&prompt).await {
-            if let Ok(results) = db.search(&query_embed, 3) {
-                if !results.is_empty() {
-                    system_prompt.push_str("\n\nRelevant past context:\n");
-                    for res in results {
-                        system_prompt.push_str(&format!("- {}\n", res.content));
+        let rag_results = match provider.generate_embedding(&prompt).await {
+            Ok(query_embed) => db.search(&query_embed, 3).ok(),
+            Err(_) => {
+                // Keyword fallback: split prompt into words and score records by
+                // how many prompt words appear in the record content.
+                db.list_all().ok().map(|records| {
+                    let query_words: Vec<&str> = prompt
+                        .split_whitespace()
+                        .filter(|w| w.len() > 3)
+                        .collect();
+                    if query_words.is_empty() {
+                        return Vec::new();
                     }
+                    let mut scored: Vec<(usize, _)> = records
+                        .into_iter()
+                        .filter_map(|rec| {
+                            let lower = rec.content.to_lowercase();
+                            let hits = query_words
+                                .iter()
+                                .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                                .count();
+                            if hits > 0 { Some((hits, rec)) } else { None }
+                        })
+                        .collect();
+                    scored.sort_by(|a, b| b.0.cmp(&a.0));
+                    scored.into_iter().take(3).map(|(_, rec)| rec).collect()
+                })
+            }
+        };
+        if let Some(results) = rag_results {
+            if !results.is_empty() {
+                system_prompt.push_str("\n\nRelevant past context:\n");
+                for res in results {
+                    system_prompt.push_str(&format!("- {}\n", res.content));
                 }
             }
         }

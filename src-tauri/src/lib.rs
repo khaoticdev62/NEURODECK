@@ -39,7 +39,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Manager;
 
-use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider, OpenAICompatProvider};
+use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider,
+    OpenAICompatProvider};
 use crate::memory::MemoryDB;
 
 #[derive(Clone, serde::Serialize)]
@@ -553,6 +554,15 @@ pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
             config.llm.kimi_model.clone(),
             config.llm.kimi_base_url.clone(),
         )),
+        "openai_compat" => {
+            let api_key = neurodeck_infrastructure::secrets::get_openai_compat_api_key()
+                .unwrap_or_default();
+            Arc::new(OpenAICompatProvider::new(
+                config.llm.openai_compat_base_url.clone(),
+                config.llm.openai_compat_model.clone(),
+                api_key,
+            ))
+        }
         _ => Arc::new(OllamaProvider::new(
             config.llm.ollama_model.clone(),
             config.llm.ollama_base_url.clone(),
@@ -573,6 +583,15 @@ pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmPro
             agent.model.clone(),
             agent.base_url.clone(),
         )),
+        "openai_compat" => {
+            let api_key = neurodeck_infrastructure::secrets::get_openai_compat_api_key()
+                .unwrap_or_default();
+            Arc::new(OpenAICompatProvider::new(
+                agent.base_url.clone(),
+                agent.model.clone(),
+                api_key,
+            ))
+        }
         _ => Arc::new(OllamaProvider::new(
             agent.model.clone(),
             agent.base_url.clone(),
@@ -1124,6 +1143,8 @@ pub fn run() {
             get_hf_api_key,
             save_kimi_api_key,
             get_kimi_api_key,
+            save_openai_compat_api_key,
+            get_openai_compat_api_key,
             save_ssh_credential,
             get_ssh_credential,
             delete_ssh_credential,

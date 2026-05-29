@@ -1,4 +1,4 @@
-use crate::llm::{GeminiProvider, HuggingFaceProvider, LlmProvider, OllamaProvider};
+use crate::llm::{GeminiProvider, HuggingFaceProvider, LlmProvider, OllamaProvider, OpenAICompatProvider};
 use crate::*;
 use futures_util::StreamExt;
 use std::collections::HashMap;
@@ -54,6 +54,13 @@ pub fn set_config(
         "llm.kimi_base_url" => {
             validate_config_url(&value, "llm.kimi_base_url")?;
             config.llm.kimi_base_url = value;
+        }
+        "llm.openai_compat_model" => config.llm.openai_compat_model = value,
+        "llm.openai_compat_base_url" => {
+            if !value.is_empty() {
+                validate_config_url(&value, "llm.openai_compat_base_url")?;
+            }
+            config.llm.openai_compat_base_url = value;
         }
         "llm.google_client_id" => config.llm.google_client_id = value,
         "sync.api_base_url" => {
@@ -148,6 +155,25 @@ pub fn get_kimi_api_key() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn save_openai_compat_api_key(
+    key: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+    neurodeck_infrastructure::secrets::save_openai_compat_api_key(&key)?;
+    app.provider = create_provider(&app.config);
+    let path = get_config_path();
+    config::save_config(&path, &app.config)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_openai_compat_api_key() -> Result<String, String> {
+    neurodeck_infrastructure::secrets::get_openai_compat_api_key()
+        .or_else(|_| Ok(String::new()))
+}
+
+#[tauri::command]
 pub async fn test_llm_connection(
     provider: String,
     model: String,
@@ -209,6 +235,22 @@ pub async fn test_llm_connection(
                 Some(Ok(_)) => Ok("Kimi Connection Successful!".to_string()),
                 Some(Err(e)) => Err(format!("Kimi Connection Failed: {}", e)),
                 None => Err("Kimi Connection Failed: Empty response".to_string()),
+            }
+        }
+        "openai_compat" => {
+            let api_key = match key {
+                Some(ref k) if !k.is_empty() => k.clone(),
+                _ => neurodeck_infrastructure::secrets::get_openai_compat_api_key()
+                    .unwrap_or_default(),
+            };
+            let test_provider = OpenAICompatProvider::new(url, model, api_key);
+            let mut stream =
+                test_provider.stream_response("Say 'success' in 1 word", "");
+            let first_chunk = stream.next().await;
+            match first_chunk {
+                Some(Ok(_)) => Ok("OpenAI-Compatible Connection Successful!".to_string()),
+                Some(Err(e)) => Err(format!("OpenAI-compat Connection Failed: {}", e)),
+                None => Err("OpenAI-compat Connection Failed: Empty response".to_string()),
             }
         }
         _ => {

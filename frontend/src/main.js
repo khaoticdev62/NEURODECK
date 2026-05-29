@@ -2411,6 +2411,7 @@ document.querySelector("#app").innerHTML = `
                                 <span class="stv-row-label">LLM Provider</span>
                                 <select id="llm-provider-select" style="flex:1;">
                                     <option value="gemini">Google Gemini</option>
+                                    <option value="openai_compat">OpenAI-Compatible (Groq, OpenRouter, llama.cpp…)</option>
                                     <option value="kimi">Kimi (Moonshot AI)</option>
                                     <option value="ollama">Ollama (Local / Remote)</option>
                                     <option value="huggingface">Hugging Face</option>
@@ -2428,6 +2429,26 @@ document.querySelector("#app").innerHTML = `
                                 <label>Model ID</label>
                                 <input type="text" id="settings-gemini-model" placeholder="gemini-1.5-flash">
                             </div>
+                        </div>
+
+                        <div class="stv-group-label" style="display:none;" id="stv-openai-compat-label">OpenAI-Compatible Endpoint</div>
+                        <div class="stv-card" id="settings-openai-compat-group" style="display:none;">
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>Base URL</label>
+                                <input type="text" id="settings-openai-compat-url" placeholder="https://api.groq.com/openai/v1">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:12px;">
+                                <label>API Key</label>
+                                <input type="password" id="settings-openai-compat-key" placeholder="sk-…  (leave blank for keyless endpoints)">
+                            </div>
+                            <div class="setting-field-group" style="margin-bottom:8px;">
+                                <label>Model ID</label>
+                                <input type="text" id="settings-openai-compat-model" placeholder="llama-3.3-70b-versatile">
+                            </div>
+                            <p style="font-size:0.72rem;opacity:0.5;margin:0 0 4px;">
+                                Works with Groq · OpenRouter · llama.cpp · Mistral · Together · Perplexity · any /v1/chat/completions endpoint.
+                                Memory search falls back to keyword matching when the endpoint lacks /v1/embeddings.
+                            </p>
                         </div>
 
                         <div class="stv-group-label" style="display:none;" id="stv-ollama-label">Ollama Server</div>
