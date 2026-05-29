@@ -14,10 +14,10 @@
   },
   "tag": "v1.5.1-horus",
   "build": {
-    "git_sha": "e1ac8d958dab33748cd85d3929101afcd58bc62e",
+    "git_sha": "e16b0b8c10316a2d583f5a8dfb619f316fba4345",
     "git_tag": null,
-    "built_at_utc": "2026-05-28T23:23:22Z",
-    "dirty": false
+    "built_at_utc": "2026-05-29T01:13:45Z",
+    "dirty": true
   },
   "studio": {
     "name": "Khaotic Labs",
