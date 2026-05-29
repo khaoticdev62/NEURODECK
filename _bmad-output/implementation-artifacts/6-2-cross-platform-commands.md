@@ -1,6 +1,6 @@
 # Story 6.2: Cross-Platform Command Execution
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -18,7 +18,7 @@ so that I can use it on my development machine and on my Steam Deck.
 
 - [x] Implement OS detection and conditional shell selection (AC: 1, 2)
 - [x] Verify execution on Windows (AC: 3)
-- [ ] Verify execution on Linux (Steam Deck) (AC: 3)
+- [x] Verify execution on Linux (Steam Deck) (AC: 3)
 
 ## Dev Notes
 

@@ -29,10 +29,10 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 5.5: Dynamic Markdown Width (CSS Flexbox/Grid layouts)
 ## Epic 6: Recovered Epic from BMAD Artifacts
 ### [x] Story 6.1: Terminal Command Execution
-### [ ] Story 6.2: Cross-Platform Command Execution
+### [x] Story 6.2: Cross-Platform Command Execution
 ### [x] Story 6.3: File Mentions (@file)
 ### [x] Story 6.4: Text-to-Speech (TTS)
-### [ ] Story 6.5: Speech-to-Text (STT)
+### [x] Story 6.5: Speech-to-Text (STT)
 ### [x] Story 6.6: Game Detection & Context
 ## Epic 7: Recovered Epic from BMAD Artifacts
 ### [x] Story 7.1: Integrate Lua Runtime (Gopher-Lua)

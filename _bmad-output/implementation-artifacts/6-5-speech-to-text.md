@@ -1,6 +1,6 @@
 # Story 6.5: Speech-to-Text (STT)
 
-Status: in-progress
+Status: done
 
 ## Story
 
