@@ -14,9 +14,9 @@
   },
   "tag": "v1.5.1-horus",
   "build": {
-    "git_sha": "8c851e18be5c21d7ce939af170167493251e13d2",
+    "git_sha": "3505fba26209bf4cca3cb2f24b48e53a9df0edbc",
     "git_tag": null,
-    "built_at_utc": "2026-05-29T04:56:10Z",
+    "built_at_utc": "2026-05-29T05:01:56Z",
     "dirty": false
   },
   "studio": {

@@ -49,6 +49,12 @@ pub struct MarketplacePlugin {
     pub installed: bool,
     #[serde(default)]
     pub enabled: bool,
+    /// Plugin category: "ai" | "productivity" | "system" | "integration" | "gaming" | "utility"
+    #[serde(default)]
+    pub category: Option<String>,
+    /// Version string of the installed copy (for update detection)
+    #[serde(default)]
+    pub installed_version: Option<String>,
 }
 
 #[tauri::command]

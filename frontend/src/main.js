@@ -2782,7 +2782,16 @@ document.querySelector("#app").innerHTML = `
                         <div class="stv-group-label">Plugin Marketplace</div>
                         <div class="stv-card">
                             <div class="marketplace-toolbar">
-                                <input type="text" id="plugin-marketplace-search" placeholder="Search community plugins">
+                                <input type="text" id="plugin-marketplace-search" placeholder="Search plugins…">
+                                <select id="plugin-marketplace-category">
+                                    <option value="">All Categories</option>
+                                    <option value="ai">AI / LLM</option>
+                                    <option value="productivity">Productivity</option>
+                                    <option value="system">System</option>
+                                    <option value="integration">Integration</option>
+                                    <option value="gaming">Gaming</option>
+                                    <option value="utility">Utility</option>
+                                </select>
                                 <select id="plugin-marketplace-tag">
                                     <option value="">All Tags</option>
                                 </select>
@@ -8454,6 +8463,7 @@ function escapeMarketplaceHtml(value) {
 function renderPluginMarketplace() {
   const grid = document.getElementById("plugin-marketplace-grid");
   const tagSelect = document.getElementById("plugin-marketplace-tag");
+  const categorySelect = document.getElementById("plugin-marketplace-category");
   if (!grid) return;
 
   const tags = [
@@ -8478,13 +8488,14 @@ function renderPluginMarketplace() {
 
   const query = pluginMarketplaceState.search.trim().toLowerCase();
   const selectedTag = pluginMarketplaceState.tag;
+  const selectedCategory = categorySelect?.value || "";
   const filtered = pluginMarketplaceState.plugins.filter((plugin) => {
     const haystack =
-      `${plugin.name} ${plugin.description} ${plugin.author} ${(plugin.tags || []).join(" ")}`.toLowerCase();
+      `${plugin.name} ${plugin.description} ${plugin.author} ${(plugin.tags || []).join(" ")} ${plugin.category || ""}`.toLowerCase();
     const matchesQuery = !query || haystack.includes(query);
-    const matchesTag =
-      !selectedTag || (plugin.tags || []).includes(selectedTag);
-    return matchesQuery && matchesTag;
+    const matchesTag = !selectedTag || (plugin.tags || []).includes(selectedTag);
+    const matchesCategory = !selectedCategory || (plugin.category || "utility") === selectedCategory;
+    return matchesQuery && matchesTag && matchesCategory;
   });
 
   if (filtered.length === 0) {
@@ -8508,8 +8519,15 @@ function renderPluginMarketplace() {
     strong.textContent = String(plugin.name ?? "");
     const secondary = document.createElement("span");
     secondary.className = "plugin-marketplace-badge";
+    const hasUpdate = plugin.installed && plugin.installed_version &&
+      plugin.version && plugin.version !== plugin.installed_version;
     if (plugin.installed && !plugin.enabled) {
       secondary.textContent = "Disabled";
+    } else if (hasUpdate) {
+      secondary.textContent = `Update → v${plugin.version}`;
+      secondary.style.background = "rgba(255,200,87,0.15)";
+      secondary.style.color = "var(--warning-color)";
+      secondary.style.borderColor = "rgba(255,200,87,0.3)";
     } else if (plugin.installed) {
       secondary.textContent = "Installed";
     } else {
@@ -8726,6 +8744,10 @@ print("[Plugin] New plugin loaded successfully!")
       pluginMarketplaceState.tag = marketplaceTag.value || "";
       renderPluginMarketplace();
     };
+  }
+  const marketplaceCategory = document.getElementById("plugin-marketplace-category");
+  if (marketplaceCategory) {
+    marketplaceCategory.onchange = () => renderPluginMarketplace();
   }
   if (marketplaceRefresh) {
     marketplaceRefresh.onclick = () => loadPluginMarketplace();
