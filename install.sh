@@ -7,7 +7,7 @@
 
 set -e
 
-NEURODECK_VERSION="1.3.0"
+NEURODECK_VERSION="1.5.1"
 INSTALL_DIR="$HOME/Applications/neurodeck"
 DESKTOP_FILE="$HOME/.local/share/applications/neurodeck.desktop"
 AUTOSTART_FILE="$HOME/.config/autostart/neurodeck.desktop"
@@ -69,25 +69,44 @@ print_ok "Directories created at $INSTALL_DIR"
 # --- Locate and copy binary ---
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-print_step "Locating NEURODECK binary..."
+print_step "Locating NEURODECK binary or AppImage..."
 
 BINARY_SRC=""
-# Look for pre-built binary in common locations
+APPIMAGE_SRC=""
+
+# ── 1. Check for AppImage in script dir or Downloads ────────────────────────
 for candidate in \
-    "$SCRIPT_DIR/neurodeck" \
-    "$SCRIPT_DIR/src-tauri/target/release/neurodeck" \
-    "$SCRIPT_DIR/src-tauri/target/release/app"
+    "$SCRIPT_DIR"/neurodeck_*.AppImage \
+    "$SCRIPT_DIR/neurodeck.AppImage" \
+    "$HOME/Downloads"/neurodeck_*.AppImage \
+    "$HOME/Downloads/neurodeck.AppImage"
 do
     if [ -f "$candidate" ]; then
-        BINARY_SRC="$candidate"
+        APPIMAGE_SRC="$candidate"
+        print_ok "Found AppImage: $APPIMAGE_SRC"
         break
     fi
 done
 
-if [ -z "$BINARY_SRC" ]; then
-    # Try to build from source
+# ── 2. Check for pre-built raw binary ───────────────────────────────────────
+if [ -z "$APPIMAGE_SRC" ]; then
+    for candidate in \
+        "$SCRIPT_DIR/neurodeck" \
+        "$SCRIPT_DIR/src-tauri/target/release/neurodeck" \
+        "$SCRIPT_DIR/src-tauri/target/release/app"
+    do
+        if [ -f "$candidate" ]; then
+            BINARY_SRC="$candidate"
+            print_ok "Found binary: $BINARY_SRC"
+            break
+        fi
+    done
+fi
+
+# ── 3. Try to build from source as last resort ──────────────────────────────
+if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
     if command -v cargo &> /dev/null && command -v npm &> /dev/null; then
-        print_step "No pre-built binary found — building from source..."
+        print_step "No binary found — building from source (this takes ~5 minutes)..."
         cd "$SCRIPT_DIR"
         npm install --prefix frontend
         npx @tauri-apps/cli build
@@ -103,15 +122,58 @@ if [ -z "$BINARY_SRC" ]; then
     fi
 fi
 
-if [ -z "$BINARY_SRC" ]; then
-    print_err "Could not find or build NEURODECK binary."
-    print_err "Please build the project first: npm run tauri build"
+if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
+    print_err "Could not find a NEURODECK binary or AppImage."
+    print_err ""
+    print_err "Options:"
+    print_err "  1. Download neurodeck_${NEURODECK_VERSION}_steamdeck_amd64.AppImage from"
+    print_err "     https://github.com/khaoticdev62/NEURODECK/releases/latest"
+    print_err "     and place it in the same folder as install.sh"
+    print_err "  2. Build from source: npm run tauri build"
     exit 1
 fi
 
-cp "$BINARY_SRC" "$INSTALL_DIR/neurodeck"
-chmod +x "$INSTALL_DIR/neurodeck"
-print_ok "Binary installed to $INSTALL_DIR/neurodeck"
+# ── 4. Install: AppImage path ────────────────────────────────────────────────
+if [ -n "$APPIMAGE_SRC" ]; then
+    # Always mark executable — SteamOS strips the bit on download
+    chmod +x "$APPIMAGE_SRC"
+
+    # Detect FUSE availability (required for standard AppImage mounting)
+    FUSE_OK=false
+    if modprobe fuse 2>/dev/null || [ -c /dev/fuse ]; then
+        FUSE_OK=true
+    fi
+
+    # Copy AppImage to install dir
+    cp "$APPIMAGE_SRC" "$INSTALL_DIR/neurodeck.AppImage"
+    chmod +x "$INSTALL_DIR/neurodeck.AppImage"
+
+    if $FUSE_OK; then
+        # Standard: run AppImage directly
+        echo '#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+[ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
+        print_ok "AppImage installed (FUSE mode)"
+    else
+        # SteamOS often lacks FUSE — use --appimage-extract-and-run
+        print_warn "FUSE not available — using --appimage-extract-and-run (no FUSE needed)"
+        echo '#!/bin/bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+[ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+exec "$SCRIPT_DIR/neurodeck.AppImage" --appimage-extract-and-run "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
+        print_ok "AppImage installed (extract-and-run mode, no FUSE required)"
+    fi
+
+    chmod +x "$INSTALL_DIR/neurodeck-launch.sh"
+    print_ok "AppImage installed to $INSTALL_DIR/neurodeck.AppImage"
+
+# ── 5. Install: raw binary path ──────────────────────────────────────────────
+else
+    cp "$BINARY_SRC" "$INSTALL_DIR/neurodeck"
+    chmod +x "$INSTALL_DIR/neurodeck"
+    print_ok "Binary installed to $INSTALL_DIR/neurodeck"
+fi
 
 # --- Copy configuration files ---
 print_step "Copying configuration files..."
@@ -209,13 +271,14 @@ else
     print_ok "GEMINI_API_KEY already set — skipping"
 fi
 
-# --- Create launch wrapper that sources env ---
-cat > "$INSTALL_DIR/neurodeck-launch.sh" << 'EOF'
+# --- Create/update launch wrapper (AppImage path was already written above) ---
+# Only overwrite for raw-binary installs; AppImage installs write the wrapper earlier.
+if [ -z "$APPIMAGE_SRC" ]; then
+    cat > "$INSTALL_DIR/neurodeck-launch.sh" << 'EOF'
 #!/bin/bash
 # NEURODECK Launch Wrapper — sources env and starts the app
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Load saved API key if present
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
 
 cd "$SCRIPT_DIR"
@@ -226,8 +289,9 @@ else
     exec "$SCRIPT_DIR/neurodeck"
 fi
 EOF
-chmod +x "$INSTALL_DIR/neurodeck-launch.sh"
-print_ok "Launch wrapper created"
+    chmod +x "$INSTALL_DIR/neurodeck-launch.sh"
+fi
+print_ok "Launch wrapper ready: $INSTALL_DIR/neurodeck-launch.sh"
 
 # --- Create .desktop file ---
 print_step "Creating desktop entry..."
