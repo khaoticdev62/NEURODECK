@@ -192,12 +192,15 @@ jobs:
 
       # Decode and install code-signing cert if secret is present
       - name: Install code-signing certificate
-        if: secrets.NEURODECK_CERT_P12 != ''
         shell: pwsh
         env:
           CERT_P12_B64: ${{ secrets.NEURODECK_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.NEURODECK_CERT_PASSWORD }}
         run: |
+          if (-not $env:CERT_P12_B64) {
+            Write-Host "No certificate provided. Skipping code signing setup."
+            exit 0
+          }
           $certBytes = [Convert]::FromBase64String($env:CERT_P12_B64)
           $certPath  = "$env:TEMP\neurodeck-sign.p12"
           [IO.File]::WriteAllBytes($certPath, $certBytes)
