@@ -55,6 +55,9 @@ pub fn set_config(
             validate_config_url(&value, "llm.kimi_base_url")?;
             config.llm.kimi_base_url = value;
         }
+        "prefs.minimize_to_tray_on_close" => {
+            config.prefs.minimize_to_tray_on_close = value == "true";
+        }
         "llm.openai_compat_model" => config.llm.openai_compat_model = value,
         "llm.openai_compat_base_url" => {
             if !value.is_empty() {

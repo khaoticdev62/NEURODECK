@@ -2399,6 +2399,17 @@ document.querySelector("#app").innerHTML = `
                             </div>
                         </div>
 
+                        <div class="stv-group-label">Window Behavior</div>
+                        <div class="stv-card">
+                            <div class="stv-toggle-row">
+                                <div>
+                                    <div class="stv-toggle-label">Minimize to tray on close</div>
+                                    <div class="stv-toggle-desc">Closing the window hides NEURODECK to the system tray instead of quitting. Background agent and scheduled tasks keep running.</div>
+                                </div>
+                                <input type="checkbox" id="minimize-to-tray-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;" aria-label="Minimize to tray on close">
+                            </div>
+                        </div>
+
                         <div class="stv-group-label">CRT Effects</div>
                         <div class="stv-card">
                             <div class="stv-toggle-row">

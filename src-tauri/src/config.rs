@@ -158,6 +158,23 @@ pub struct SttConfig {
     pub whisper_model: String,
 }
 
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrefsConfig {
+    /// Minimize to system tray on window close instead of quitting (default: true)
+    #[serde(default = "default_true")]
+    pub minimize_to_tray_on_close: bool,
+}
+
+impl Default for PrefsConfig {
+    fn default() -> Self {
+        Self { minimize_to_tray_on_close: true }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
@@ -168,6 +185,8 @@ pub struct Config {
     pub stt: SttConfig,
     #[serde(default)]
     pub sync: SyncConfig,
+    #[serde(default)]
+    pub prefs: PrefsConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

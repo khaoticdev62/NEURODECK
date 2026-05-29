@@ -106,6 +106,12 @@ function applySettings() {
     }
   });
 
+  // 3b. Minimize-to-tray toggle — reads from backend config
+  invoke("get_config").then((cfg) => {
+    const toggle = document.getElementById("minimize-to-tray-toggle");
+    if (toggle) toggle.checked = cfg?.prefs?.minimize_to_tray_on_close !== false;
+  }).catch(() => {});
+
   // 4. CRT Scanlines (default to false / disabled for "remove crt animation")
   const scanlinesStr = localStorage.getItem("scanlinesEnabled");
   const scanlines = scanlinesStr === "true"; // default false
@@ -1937,6 +1943,16 @@ export function initSettings() {
 
   const flickerToggle = document.getElementById("flicker-toggle");
   if (flickerToggle) flickerToggle.onchange = handleFlickerToggle;
+
+  const trayToggle = document.getElementById("minimize-to-tray-toggle");
+  if (trayToggle) {
+    trayToggle.onchange = function() {
+      invoke("set_config", {
+        key: "prefs.minimize_to_tray_on_close",
+        value: this.checked ? "true" : "false",
+      }).catch((e) => console.error("Failed to save tray preference:", e));
+    };
+  }
 
   const shellSelect = document.getElementById("shell-select");
   if (shellSelect) shellSelect.onchange = handleShellSelect;

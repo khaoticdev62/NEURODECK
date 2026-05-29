@@ -991,8 +991,7 @@ pub fn run() {
                 .menu(&tauri::menu::Menu::with_items(
                     app,
                     &[
-                        &tauri::menu::MenuItem::with_id(app, "show", "Show", true, None::<&str>)?,
-                        &tauri::menu::MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?,
+                        &tauri::menu::MenuItem::with_id(app, "show", "Open NEURODECK", true, None::<&str>)?,
                         &tauri::menu::PredefinedMenuItem::separator(app)?,
                         &tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
                     ],
@@ -1004,19 +1003,52 @@ pub fn run() {
                             let _ = win.set_focus();
                         }
                     }
-                    "hide" => {
-                        if let Some(win) = app.get_webview_window("main") {
-                            let _ = win.hide();
-                        }
-                    }
                     "quit" => {
                         app.exit(0);
                     }
                     _ => {}
                 })
+                // Left-click on tray icon toggles window visibility
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(win) = app.get_webview_window("main") {
+                            if win.is_visible().unwrap_or(false) {
+                                let _ = win.hide();
+                            } else {
+                                let _ = win.show();
+                                let _ = win.set_focus();
+                            }
+                        }
+                    }
+                })
                 .build(app);
             if let Err(e) = tray {
                 tracing::warn!("Failed to create system tray: {}", e);
+            }
+
+            // Close-to-tray: intercept window close and minimize instead of quit
+            // unless the user has opted out in Settings → General.
+            {
+                let close_handle = app.handle().clone();
+                if let Some(main_win) = app.get_webview_window("main") {
+                    main_win.on_window_event(move |event| {
+                        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                            let should_minimize = {
+                                let state = close_handle.state::<Mutex<AppState>>();
+                                state.lock()
+                                    .map(|s| s.config.prefs.minimize_to_tray_on_close)
+                                    .unwrap_or(true)
+                            };
+                            if should_minimize {
+                                api.prevent_close();
+                                if let Some(win) = close_handle.get_webview_window("main") {
+                                    let _ = win.hide();
+                                }
+                            }
+                        }
+                    });
+                }
             }
 
             Ok(())
