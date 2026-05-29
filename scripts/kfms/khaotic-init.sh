@@ -325,6 +325,12 @@ JSEOF
   ok "  tag:  $git_tag"
   ok "  at:   $built_at"
   ok "  dirty: $dirty_flag"
+
+  # Always sync derived artifacts so health.json stamped_at_utc
+  # stays consistent with meta.json built_at_utc. Without this,
+  # running stamp in CI (without the post-commit hook chain) leaves
+  # health.json stale and the subsequent validate step fails.
+  cmd_sync
 }
 
 # ---------------------------------------------------------------------------
