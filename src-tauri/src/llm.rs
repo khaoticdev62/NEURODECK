@@ -1413,6 +1413,268 @@ impl LlmProvider for KimiProvider {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OpenAI-Compatible Provider
+// Works with Groq, OpenRouter, llama.cpp server, Mistral, Together, Perplexity,
+// and any endpoint implementing the OpenAI /v1/chat/completions API.
+// ─────────────────────────────────────────────────────────────────────────────
+
+pub struct OpenAICompatProvider {
+    pub base_url: String,
+    pub model: String,
+    api_key: String,
+}
+
+impl OpenAICompatProvider {
+    pub fn new(base_url: String, model: String, api_key: String) -> Self {
+        let url = if base_url.trim().is_empty() {
+            "http://localhost:8080/v1".to_string()
+        } else {
+            base_url.trim_end_matches('/').to_string()
+        };
+        let m = if model.trim().is_empty() {
+            "gpt-4o-mini".to_string()
+        } else {
+            model
+        };
+        Self { base_url: url, model: m, api_key }
+    }
+
+    fn auth_header(&self) -> Option<String> {
+        if self.api_key.is_empty() {
+            None
+        } else {
+            Some(format!("Bearer {}", self.api_key))
+        }
+    }
+}
+
+// OpenAI-compat JSON structs
+#[derive(Serialize)]
+struct OAMessage {
+    role: String,
+    content: String,
+}
+
+#[derive(Serialize)]
+struct OAChatRequest {
+    model: String,
+    messages: Vec<OAMessage>,
+    stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+}
+
+#[derive(Deserialize)]
+struct OAStreamDelta {
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct OAStreamChoice {
+    delta: OAStreamDelta,
+}
+
+#[derive(Deserialize)]
+struct OAStreamChunk {
+    choices: Option<Vec<OAStreamChoice>>,
+}
+
+#[derive(Deserialize)]
+struct OAMessage2 {
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct OAChoice {
+    message: Option<OAMessage2>,
+}
+
+#[derive(Deserialize)]
+struct OAChatResponse {
+    choices: Option<Vec<OAChoice>>,
+}
+
+#[derive(Serialize)]
+struct OAEmbedRequest {
+    input: String,
+    model: String,
+}
+
+#[derive(Deserialize)]
+struct OAEmbedData {
+    embedding: Vec<f32>,
+}
+
+#[derive(Deserialize)]
+struct OAEmbedResponse {
+    data: Option<Vec<OAEmbedData>>,
+}
+
+impl LlmProvider for OpenAICompatProvider {
+    fn stream_response(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+    ) -> Pin<Box<dyn Stream<Item = Result<String, String>> + Send>> {
+        let url = format!("{}/chat/completions", self.base_url);
+        let auth = self.auth_header();
+        let mut messages = Vec::new();
+        if !system_prompt.is_empty() {
+            messages.push(OAMessage { role: "system".to_string(), content: system_prompt.to_string() });
+        }
+        messages.push(OAMessage { role: "user".to_string(), content: prompt.to_string() });
+        let body = OAChatRequest { model: self.model.clone(), messages, stream: true, max_tokens: None };
+        let client = reqwest::Client::new();
+
+        let stream = async_stream::try_stream! {
+            let mut req = client.post(&url).json(&body);
+            if let Some(auth_val) = auth {
+                req = req.header("Authorization", auth_val);
+            }
+            let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err = res.text().await.unwrap_or_default();
+                Err(format!("OpenAI-compat error ({}): {}", status, err))?
+            }
+            let mut byte_stream = res.bytes_stream();
+            let mut buffer = String::new();
+            while let Some(chunk_res) = byte_stream.next().await {
+                let chunk = chunk_res.map_err(|e| format!("Stream error: {}", e))?;
+                buffer.push_str(&String::from_utf8_lossy(&chunk));
+                while let Some(nl) = buffer.find('\n') {
+                    let line = buffer[..nl].trim().to_string();
+                    buffer.drain(..=nl);
+                    if let Some(data) = line.strip_prefix("data:") {
+                        let json = data.trim();
+                        if json == "[DONE]" { break; }
+                        if let Ok(chunk) = serde_json::from_str::<OAStreamChunk>(json) {
+                            if let Some(choices) = chunk.choices {
+                                for choice in choices {
+                                    if let Some(text) = choice.delta.content {
+                                        if !text.is_empty() { yield text; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        Box::pin(stream.map(|r| r.map_err(|e: String| e)))
+    }
+
+    fn transcribe_audio(
+        &self,
+        _audio_data: &[u8],
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        Box::pin(async move {
+            Err("Audio transcription not supported by OpenAI-compatible provider. Configure Whisper in Settings → Voice.".to_string())
+        })
+    }
+
+    fn generate_embedding(
+        &self,
+        text: &str,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
+        let url = format!("{}/embeddings", self.base_url);
+        let auth = self.auth_header();
+        let body = OAEmbedRequest { input: text.to_string(), model: self.model.clone() };
+        let client = reqwest::Client::new();
+        Box::pin(async move {
+            let mut req = client.post(&url).json(&body);
+            if let Some(auth_val) = auth {
+                req = req.header("Authorization", auth_val);
+            }
+            let res = req.send().await.map_err(|e| format!("Embedding request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err = res.text().await.unwrap_or_default();
+                return Err(format!("Embedding error ({}): {}", status, err));
+            }
+            let parsed = res.json::<OAEmbedResponse>().await
+                .map_err(|e| format!("Failed to parse embedding response: {}", e))?;
+            match parsed.data.and_then(|mut d| d.pop()) {
+                Some(entry) => Ok(entry.embedding),
+                None => Err("No embedding data returned".to_string()),
+            }
+        })
+    }
+
+    fn chat_with_image(
+        &self,
+        prompt: &str,
+        system_prompt: &str,
+        _image_base64: Option<&str>,
+        _image_mime: Option<&str>,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        // Vision support varies across OpenAI-compat endpoints; use text-only path
+        let prompt_str = prompt.to_string();
+        let sys_str = system_prompt.to_string();
+        let url = format!("{}/chat/completions", self.base_url);
+        let auth = self.auth_header();
+        let model = self.model.clone();
+        Box::pin(async move {
+            let mut messages = Vec::new();
+            if !sys_str.is_empty() {
+                messages.push(OAMessage { role: "system".to_string(), content: sys_str });
+            }
+            messages.push(OAMessage { role: "user".to_string(), content: prompt_str });
+            let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(2048) };
+            let client = reqwest::Client::new();
+            let mut req = client.post(&url).json(&body);
+            if let Some(auth_val) = auth {
+                req = req.header("Authorization", auth_val);
+            }
+            let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err = res.text().await.unwrap_or_default();
+                return Err(format!("OpenAI-compat error ({}): {}", status, err));
+            }
+            let parsed = res.json::<OAChatResponse>().await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            match parsed.choices.and_then(|mut c| c.pop()) {
+                Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
+                None => Err("No choices in response".to_string()),
+            }
+        })
+    }
+
+    fn generate_oneshot(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let url = format!("{}/chat/completions", self.base_url);
+        let auth = self.auth_header();
+        let model = self.model.clone();
+        let prompt_str = prompt.to_string();
+        Box::pin(async move {
+            let messages = vec![OAMessage { role: "user".to_string(), content: prompt_str }];
+            let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(max_tokens) };
+            let client = reqwest::Client::new();
+            let mut req = client.post(&url).json(&body);
+            if let Some(auth_val) = auth {
+                req = req.header("Authorization", auth_val);
+            }
+            let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err = res.text().await.unwrap_or_default();
+                return Err(format!("OpenAI-compat error ({}): {}", status, err));
+            }
+            let parsed = res.json::<OAChatResponse>().await
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+            match parsed.choices.and_then(|mut c| c.pop()) {
+                Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
+                None => Err("No choices in oneshot response".to_string()),
+            }
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1466,5 +1728,20 @@ mod tests {
 
         let provider_default = KimiProvider::new("".to_string(), "".to_string());
         assert_eq!(provider_default.model, "kimi-k2.5");
+    }
+
+    #[test]
+    fn test_openai_compat_provider_new() {
+        let p = OpenAICompatProvider::new(
+            "https://api.groq.com/openai/v1".to_string(),
+            "llama-3.3-70b-versatile".to_string(),
+            "sk-test".to_string(),
+        );
+        assert_eq!(p.model, "llama-3.3-70b-versatile");
+        assert_eq!(p.base_url, "https://api.groq.com/openai/v1");
+
+        let p_defaults = OpenAICompatProvider::new("".to_string(), "".to_string(), "".to_string());
+        assert_eq!(p_defaults.model, "gpt-4o-mini");
+        assert_eq!(p_defaults.base_url, "http://localhost:8080/v1");
     }
 }

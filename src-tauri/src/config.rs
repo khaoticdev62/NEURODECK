@@ -77,6 +77,15 @@ pub struct LlmConfig {
     pub kimi_model: String,
     #[serde(default = "default_kimi_base_url")]
     pub kimi_base_url: String,
+    /// OpenAI-compatible endpoint — base URL (e.g. https://api.groq.com/openai/v1)
+    #[serde(default)]
+    pub openai_compat_base_url: String,
+    /// OpenAI-compatible model name (e.g. llama-3.3-70b-versatile, gpt-4o-mini)
+    #[serde(default = "default_openai_compat_model")]
+    pub openai_compat_model: String,
+    /// Cleared on save — stored in OS keychain via save_openai_compat_api_key
+    #[serde(default)]
+    pub openai_compat_api_key: String,
     /// Google OAuth2 client ID for device flow (Gemini API key auth).
     /// Register at console.cloud.google.com → APIs & Services → Credentials.
     #[serde(default)]
@@ -113,6 +122,9 @@ fn default_kimi_model() -> String {
 fn default_kimi_base_url() -> String {
     "https://api.moonshot.ai/v1".to_string()
 }
+fn default_openai_compat_model() -> String {
+    "gpt-4o-mini".to_string()
+}
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -126,6 +138,9 @@ impl Default for LlmConfig {
             hf_base_url: default_hf_base_url(),
             kimi_model: default_kimi_model(),
             kimi_base_url: default_kimi_base_url(),
+            openai_compat_base_url: String::new(),
+            openai_compat_model: default_openai_compat_model(),
+            openai_compat_api_key: String::new(),
             google_client_id: String::new(),
             active_agent_id: String::new(),
             agents: Vec::new(),
@@ -203,6 +218,13 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
                 cfg.llm.hf_api_key.clear();
                 let _ = save_config(path_ref, &cfg);
             }
+            if !cfg.llm.openai_compat_api_key.trim().is_empty() {
+                let _ = neurodeck_infrastructure::secrets::save_openai_compat_api_key(
+                    &cfg.llm.openai_compat_api_key,
+                );
+                cfg.llm.openai_compat_api_key.clear();
+                let _ = save_config(path_ref, &cfg);
+            }
             return cfg;
         }
     }
@@ -212,6 +234,7 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> Config {
 pub fn save_config<P: AsRef<Path>>(path: P, config: &Config) -> Result<(), String> {
     let mut sanitized = config.clone();
     sanitized.llm.hf_api_key.clear();
+    sanitized.llm.openai_compat_api_key.clear();
     let content = toml::to_string_pretty(&sanitized)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
     fs::write(path, content).map_err(|e| format!("Failed to write config file: {}", e))?;

@@ -183,6 +183,36 @@ pub fn delete_kimi_api_key() -> Result<(), String> {
         .map_err(|e| format!("Failed to delete Kimi API Key: {}", e))
 }
 
+/// Retrieve the OpenAI-compatible API key from the OS secure keychain
+pub fn get_openai_compat_api_key() -> Result<String, String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "openai_compat_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .get_password()
+        .map_err(|e| format!("OpenAI-compat API Key not found or inaccessible: {}", e))
+}
+
+/// Save the OpenAI-compatible API key to the OS secure keychain
+pub fn save_openai_compat_api_key(key: &str) -> Result<(), String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "openai_compat_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .set_password(key)
+        .map_err(|e| format!("Failed to save OpenAI-compat API Key: {}", e))
+}
+
+/// Delete the OpenAI-compatible API key from the OS secure keychain
+pub fn delete_openai_compat_api_key() -> Result<(), String> {
+    ensure_store_initialized()?;
+    let entry = Entry::new(SERVICE_NAME, "openai_compat_api_key")
+        .map_err(|e| format!("Failed to access keyring: {}", e))?;
+    entry
+        .delete_credential()
+        .map_err(|e| format!("Failed to delete OpenAI-compat API Key: {}", e))
+}
+
 /// Retrieve an SFTP profile credential from the OS secure keychain
 pub fn get_sftp_credential(profile_name: &str) -> Result<String, String> {
     ensure_store_initialized()?;

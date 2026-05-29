@@ -383,7 +383,7 @@ document.querySelector("#app").innerHTML = `
     <!-- ═══════════════════════════════════════════════════════════
          CTRL+P PROMPT SIDEBAR — view-aware sliding panel
          ═══════════════════════════════════════════════════════════ -->
-    <aside class="ctrl-prompt-panel" id="ctrl-prompt-panel" aria-hidden="true" aria-label="Contextual prompt templates">
+    <aside class="ctrl-prompt-panel" id="ctrl-prompt-panel" aria-hidden="true" inert aria-label="Contextual prompt templates">
         <div class="ctrl-prompt-panel-header">
             <span class="ctrl-prompt-panel-title">Prompt Templates</span>
             <button class="ctrl-prompt-panel-close" id="ctrl-prompt-panel-close" aria-label="Close panel">✕</button>

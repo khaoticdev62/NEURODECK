@@ -868,6 +868,7 @@ function _openPanel() {
     _panelOpen = true;
     panel.classList.add("open");
     panel.setAttribute("aria-hidden", "false");
+    panel.removeAttribute("inert");
     _renderPanelTemplates();
 }
 
@@ -877,6 +878,7 @@ function _closePanel() {
     _panelOpen = false;
     panel.classList.remove("open");
     panel.setAttribute("aria-hidden", "true");
+    panel.setAttribute("inert", "");
 }
 
 function _getActiveView() {

@@ -169,14 +169,28 @@ NEURODECK is dynamically extensible via Lua 5.4. Drop a `.lua` file into the `pl
 <tr>
 <td align="center" width="50%">
 
+![Memory](docs/screenshots/memory.png)
+**Memory** — Cosine-similarity vector DB management.
+
+</td>
+<td align="center" width="50%">
+
+![Tunnel](docs/screenshots/tunnel.png)
+**Tunnel** — Game Mode to Desktop Mode TCP loopback bridge.
+
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+
 ![Remote Control](docs/screenshots/remote.png)
 **Remote** — WebSocket server + QR code for mobile control.
 
 </td>
 <td align="center" width="50%">
 
-![Manual](docs/screenshots/manual.png)
-**Diagnostics & Manual** — Real-time backend capability checks and health metrics.
+![Docs](docs/screenshots/docs.png)
+**Docs** — Offline system documentation and API reference.
 
 </td>
 </tr>

@@ -39,7 +39,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Manager;
 
-use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider};
+use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider, OpenAICompatProvider};
 use crate::memory::MemoryDB;
 
 #[derive(Clone, serde::Serialize)]
