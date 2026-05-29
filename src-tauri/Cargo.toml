@@ -6,7 +6,7 @@ authors = ["khaoticdev62"]
 license = "Proprietary"
 repository = ""
 edition = "2021"
-rust-version = "1.85.0"
+rust-version = "1.92.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

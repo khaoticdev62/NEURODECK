@@ -7,7 +7,7 @@ NEURODECK is a Tauri v2 desktop application built for Steam Deck and desktop Lin
 ## Tech Stack
 
 - Desktop runtime: Tauri v2
-- Backend language: Rust 1.85.0
+- Backend language: Rust 1.92.0
 - Frontend: Vite + vanilla JavaScript
 - UI terminal: `xterm.js`
 - State helper pattern: shared frontend module state
