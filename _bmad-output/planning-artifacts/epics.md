@@ -53,8 +53,8 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 10.1: Add a help screen or command list
 ### [x] Story 10.2: Improve layout responsiveness
 ### [x] Story 10.3: Add a "Loading" indicator for AI responses
-### [ ] Story 10.5: Hermes Lua Extension Framework
-### [ ] Story 10.6: Universal Adapter Ecosystem
+### [x] Story 10.5: Hermes Lua Extension Framework
+### [x] Story 10.6: Universal Adapter Ecosystem
 ## Epic 11: CI/CD & Infrastructure
 ### [x] Story 11.1: Automated SteamOS AppImage Deployments
 ### [x] Story 11.2: Build Pipeline Optimization (NSIS & LTO)
