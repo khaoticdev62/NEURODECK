@@ -100,6 +100,10 @@
             "codename_unique_per_major": { "type": "boolean" },
             "no_secrets_in_build":       { "type": "boolean" },
             "loose_zone":                { "type": "string", "description": "Path to scratch isolation directory." },
+            "build_on_release":          { "type": "boolean" },
+            "build_trigger_pattern":     { "type": "string" },
+            "build_targets":             { "type": "array", "items": { "type": "string" } },
+            "build_script":              { "type": "string" },
             "release_policy": {
               "type": "object",
               "required": ["go_threshold", "hold_threshold", "penalties"],
