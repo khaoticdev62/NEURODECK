@@ -219,13 +219,12 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          $skipGate = "${{ github.event.inputs.skip_gate }}" -eq "true"
           $buildArgs = @(
             "-NoProfile", "-ExecutionPolicy", "Bypass",
             "-File", "scripts/powershell/build.ps1",
-            "-Target", "win"
+            "-Target", "win",
+            "-SkipGate"
           )
-          if ($skipGate) { $buildArgs += "-SkipGate" }
           & powershell @buildArgs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -300,7 +299,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \

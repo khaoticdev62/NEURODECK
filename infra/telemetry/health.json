@@ -7,7 +7,7 @@
     "tag":  "v1.5.1-horus",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-05-29T01:28:25Z",
+    "stamped_at_utc":  "2026-05-29T01:35:53Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,42 +47,42 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  716,
-                                           "started_at_utc":  "2026-05-29T01:28:27Z",
-                                           "finished_at_utc":  "2026-05-29T01:28:27Z"
+                                           "duration_ms":  710,
+                                           "started_at_utc":  "2026-05-29T01:35:54Z",
+                                           "finished_at_utc":  "2026-05-29T01:35:55Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1446,
-                                           "started_at_utc":  "2026-05-29T01:28:27Z",
-                                           "finished_at_utc":  "2026-05-29T01:28:29Z"
+                                           "duration_ms":  1396,
+                                           "started_at_utc":  "2026-05-29T01:35:55Z",
+                                           "finished_at_utc":  "2026-05-29T01:35:57Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  4776,
-                                           "started_at_utc":  "2026-05-29T01:28:29Z",
-                                           "finished_at_utc":  "2026-05-29T01:28:33Z"
+                                           "duration_ms":  4599,
+                                           "started_at_utc":  "2026-05-29T01:35:57Z",
+                                           "finished_at_utc":  "2026-05-29T01:36:01Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  1045,
-                                           "started_at_utc":  "2026-05-29T01:28:33Z",
-                                           "finished_at_utc":  "2026-05-29T01:28:35Z"
+                                           "duration_ms":  924,
+                                           "started_at_utc":  "2026-05-29T01:36:01Z",
+                                           "finished_at_utc":  "2026-05-29T01:36:02Z"
                                        }
                                    ],
                          "blockers":  [
                                           "Workspace has uncommitted manual changes."
                                       ],
-                         "duration_ms":  8007,
-                         "checked_at_utc":  "2026-05-29T01:28:35Z"
+                         "duration_ms":  7651,
+                         "checked_at_utc":  "2026-05-29T01:36:02Z"
                      }
 }
