@@ -85,6 +85,9 @@ jobs:
       - name: KFMS — stamp
         run: bash scripts/kfms/khaotic-init.sh stamp
 
+      - name: KFMS — sync
+        run: bash scripts/kfms/khaotic-init.sh sync
+
       - name: KFMS — validate
         run: bash scripts/kfms/khaotic-init.sh validate
 
