@@ -87,6 +87,15 @@ NEURODECK replaces 8 different developer tools with a unified, controller-naviga
 > ### 📤 **Zero-Cloud LAN Ecosystem**
 > Warpinator-compatible P2P file transfers over mDNS, WebSocket iPhone remote control, and local Torrents. All running directly on your LAN.
 
+> ### ⚙️ **Model Context Protocol (MCP)**
+> Hot-plug any standard MCP server (Chrome DevTools, GitHub, Firebase, local files) directly into the agent's brain, granting the LLM native access to external tools and context.
+
+> ### 👥 **BMAD Agent Ensemble**
+> Ships out-of-the-box with a complete virtual software studio via Lua registration: Product Managers, Systems Architects, UX Designers, and Developers that you can easily toggle between using the `/persona` command.
+
+> ### 🎛️ **Command Palette & Granular Settings**
+> Instantly search history, swap themes, change LLM providers, map memory paths, or configure network tunnels via the `Ctrl+Shift+P` Command Palette and detailed Settings hierarchy.
+
 ---
 
 ## 🧩 Lua Plugin API
@@ -104,6 +113,7 @@ NEURODECK is dynamically extensible via Lua 5.4. Drop a `.lua` file into the `pl
 - **Khaotic Foundation Metadata Standard (KFMS v1.0):** Strict release gating, automated `meta.json` governance, and semantic versioning driven by Egyptian god codenames (v1.5.0 = Horus).
 - **Zero-Bloat Frontend:** Written entirely in Vanilla HTML/CSS/JS. No React, no bundler overhead in production, pure DOM manipulation for maximum performance on handheld devices.
 - **Tauri IPC:** Native capabilities (filesystem, network, PTY, Bluetooth) are handled by a lightweight Rust backend.
+- **E2E Validation:** Governed by a 390+ test Playwright suite that enforces strict WCAG accessibility rules and tracks pixel-perfect visual regressions across Chromium, Firefox, and Steam Deck viewports.
 
 ---
 
@@ -194,6 +204,20 @@ NEURODECK is dynamically extensible via Lua 5.4. Drop a `.lua` file into the `pl
 
 </td>
 </tr>
+<tr>
+<td align="center" width="50%">
+
+![Settings](docs/screenshots/settings.png)
+**Settings** — Granular configuration for API providers, TTS voices, network tunnels, and MCP integration.
+
+</td>
+<td align="center" width="50%">
+
+![Command Palette](docs/screenshots/command-palette.png)
+**Command Palette** — Blazing fast global navigation, shortcut execution, and history search.
+
+</td>
+</tr>
 </table>
 
 ---
@@ -219,10 +243,11 @@ npm run tauri dev
 
 ---
 
-## 🎮 Gamepad Navigation
+## 🎮 Navigation & Shortcuts
 
 The entire app is controllable with a Steam Deck controller — designed for couch sessions and Game Mode.
 
+**Gamepad Navigation (Radial Menu):**
 | Input | Action |
 |---|---|
 | <kbd>L2</kbd> **(hold)** | Open the 12-segment radial menu |
@@ -231,6 +256,13 @@ The entire app is controllable with a Steam Deck controller — designed for cou
 | <kbd>D-Pad</kbd> | Navigate inner tabs (e.g., multiple SSH sessions) |
 | <kbd>\`</kbd> **(Backtick)** | Open / close radial menu from keyboard |
 | <kbd>Enter</kbd> **(radial open)** | Activate highlighted segment |
+
+**Desktop / Keyboard Power Users:**
+| Shortcut | Action |
+|---|---|
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> | Open the **Command Palette** |
+| <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | **Quick Switcher** (Recent Views) |
+| <kbd>?</kbd> | Open the **Shortcuts Overlay** (when no input is focused) |
 
 To enable full controller support in Steam Game Mode, load the NEURODECK Steam Input profile described in [`docs/steam_input_guide.md`](docs/steam_input_guide.md).
 
