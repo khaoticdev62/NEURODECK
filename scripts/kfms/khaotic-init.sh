@@ -85,6 +85,8 @@ count_loose_root_files() {
     -not -name "neurodeck_win_release.zip" \
     -not -name "neurodeck_installer.exe" \
     -not -name "neurodeck_1.3.0_amd64.AppImage" \
+    -not -name "pyproject.toml" \
+    -not -name "uv.lock" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
@@ -479,7 +481,7 @@ cmd_validate() {
 
   # Use ajv-cli if available, else fallback to structural checks via Python.
   if command -v ajv &>/dev/null; then
-    ajv validate -s "$schema" -d "$meta" && ok "meta.json passes schema validation." || \
+    ajv validate -s "$schema" -d "$meta" --spec=draft7 --strict=false && ok "meta.json passes schema validation." || \
       die "meta.json failed schema validation."
   else
     local py_bin=""
