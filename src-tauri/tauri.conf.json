@@ -41,7 +41,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["appimage", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -62,11 +62,6 @@
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"
-    },
-    "windows": {
-      "wix": {
-        "template": "wix.template.wxs"
-      }
     }
   }
 }

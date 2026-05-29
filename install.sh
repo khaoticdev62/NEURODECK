@@ -123,13 +123,33 @@ if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
 fi
 
 if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
-    print_err "Could not find a NEURODECK binary or AppImage."
+    print_step "Could not find a local binary. Attempting to fetch the latest release from GitHub..."
+    
+    LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/khaoticdev62/NEURODECK/releases/latest" | grep "browser_download_url.*amd64\.AppImage" | cut -d '"' -f 4 | head -n 1)
+    
+    if [ -n "$LATEST_RELEASE_URL" ]; then
+        print_ok "Found latest release: $LATEST_RELEASE_URL"
+        print_step "Downloading AppImage (this may take a moment)..."
+        TEMP_APPIMAGE="/tmp/neurodeck_latest.AppImage"
+        if curl -L "$LATEST_RELEASE_URL" -o "$TEMP_APPIMAGE"; then
+            APPIMAGE_SRC="$TEMP_APPIMAGE"
+            print_ok "Download complete."
+        else
+            print_err "Failed to download the AppImage."
+        fi
+    else
+        print_warn "Could not resolve the latest AppImage URL from GitHub API."
+    fi
+fi
+
+if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
+    print_err "Installation failed: No local binary, and auto-download failed."
     print_err ""
     print_err "Options:"
     print_err "  1. Download neurodeck_${NEURODECK_VERSION}_steamdeck_amd64.AppImage from"
     print_err "     https://github.com/khaoticdev62/NEURODECK/releases/latest"
     print_err "     and place it in the same folder as install.sh"
-    print_err "  2. Build from source: npm run tauri build"
+    print_err "  2. Build from source manually: npm run tauri build"
     exit 1
 fi
 
