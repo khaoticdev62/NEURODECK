@@ -19,6 +19,8 @@ so that users can easily install and set up the terminal on their Steam Deck.
 - [x] Create `install.sh` in the root directory.
 - [x] Update `install.sh` to support Wails (build or copy).
 - [x] Create necessary directories in user's home folder.
+- [x] Add auto-fetch capability to query `api.github.com/repos/khaoticdev62/NEURODECK/releases/latest` if local binary is missing.
+- [x] Automatically parse and download the `amd64.AppImage` to `/tmp/` before continuing install.
 
 ## Dev Notes
 

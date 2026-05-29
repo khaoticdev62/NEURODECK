@@ -46,6 +46,20 @@ Based on the roadmap alignment handoff, this release will focus on the following
   - Aria-label audits and WCAG color contrast passes.
   - Focus trapping in modals and complete keyboard tab-indexing for the Steam Deck D-pad and external keyboards.
 
+## Sprint 10.5: Hermes Lua Extension Framework (MVP)
+- **Goal:** Create a robust, extensible Lua framework to allow external integrations into NEURODECK.
+- **Features:** 
+  - Dynamic Command Registry and Event Bus.
+  - Pluggable adapters (CLI, Node, Tauri, Web, Generic).
+  - Standalone build system compiling 26 modules into a single artifact.
+
+## Sprint 10.6: CI/CD Build Optimization & Automated Installers
+- **Goal:** Drastically reduce build times and friction for deployment on Steam Deck.
+- **Features:**
+  - Fast Rust compilation profile (`lto="thin"`, parallel codegen).
+  - Switched from WiX to NSIS for near-instant Windows installers.
+  - `install.sh` automated GitHub release fetch for SteamOS one-liner installation.
+
 ---
 
 ## Implementation Rule

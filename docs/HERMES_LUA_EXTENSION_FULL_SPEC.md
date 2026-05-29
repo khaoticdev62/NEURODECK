@@ -5,7 +5,7 @@
 **Purpose:** Universal, project-adaptable Lua extension framework with built-in installer and integration wiring  
 **Target User:** Solo developer, mod creator, app builder, toolmaker, AI-assisted development workflow  
 **Primary Runtime:** Lua 5.1+ / LuaJIT compatible where possible  
-**Status:** Implementation-ready planning document
+**Status:** Implemented (MVP v1.0)
 
 ---
 

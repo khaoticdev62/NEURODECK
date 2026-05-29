@@ -31,3 +31,11 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### Story 5.3: Performance optimization (Asset loading & WebView footprint)
 ### Story 5.4: Persona Engine (System Prompts via Go backend)
 ### Story 5.5: Dynamic Markdown Width (CSS Flexbox/Grid layouts)
+
+## Epic 10: Extension & Customization Framework
+### Story 10.5: Hermes Lua Extension Framework
+### Story 10.6: Universal Adapter Ecosystem
+
+## Epic 11: CI/CD & Infrastructure
+### Story 11.1: Automated SteamOS AppImage Deployments
+### Story 11.2: Build Pipeline Optimization (NSIS & LTO)

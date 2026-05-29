@@ -9,6 +9,11 @@ For detailed release notes, see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md)
 
 ## [Unreleased]
 
+### Added
+- **Hermes Lua Extension Framework**: Shipped v1.0 of the extensible plugin ecosystem to `plugins/hermes.lua`. Features a dynamic Command Registry, Event Bus, and multiple platform adapters (CLI, Node, Tauri, Generic) combined into a standalone bundle.
+- **Steam Deck Auto-Installer**: Upgraded `install.sh` to automatically query the GitHub API, parse the latest release, and fetch the `amd64.AppImage` if no local binary is present, enabling one-liner installation.
+- **Build Optimization**: Switch to NSIS installer format in `tauri.conf.json` for massive speedups over WiX. Injected `[profile.release]` with `lto = "thin"`, `codegen-units = 16`, and `strip = true` into `src-tauri/Cargo.toml` to cut Rust CI compilation times by over 75%.
+
 ---
 
 ## [1.3.0-Isis] — 2026-05-27
