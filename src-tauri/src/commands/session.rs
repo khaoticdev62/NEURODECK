@@ -1,4 +1,4 @@
-use crate::storage::{load_session, Session};
+use crate::storage::{load_session, Session, SessionMeta};
 use crate::*;
 use chrono::Utc;
 use futures_util::StreamExt;
@@ -19,6 +19,7 @@ pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String>
         id: app.session_id.clone(),
         created_at: Utc::now(),
         messages: app.messages.clone(),
+        name: None,
     };
 
     storage::save_session(user_config_dir().join("sessions"), &session)?;
@@ -200,6 +201,7 @@ pub fn fork_session(
         id: app.session_id.clone(),
         created_at: Utc::now(),
         messages: app.messages.clone(),
+        name: None,
     };
     if let Err(e) = storage::save_session(user_config_dir().join("sessions"), &session) {
         return Err(format!("Failed to save forked session: {}", e));
@@ -1218,5 +1220,31 @@ pub async fn send_command(
     }
 
     let _ = app_handle.emit("stream_done", ());
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_sessions_meta() -> Result<Vec<SessionMeta>, String> {
+    storage::list_sessions_meta(user_config_dir().join("sessions"))
+}
+
+#[tauri::command]
+pub fn rename_session(id: String, name: String) -> Result<(), String> {
+    if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err(format!("Invalid session ID: {}", id));
+    }
+    let file_path = user_config_dir()
+        .join("sessions")
+        .join(format!("{}.json", id));
+    if !file_path.exists() {
+        return Err(format!("Session {} does not exist", id));
+    }
+    let mut session = load_session(&file_path)?;
+    let trimmed = name.trim().to_string();
+    session.name = if trimmed.is_empty() { None } else { Some(trimmed) };
+    let serialized = serde_json::to_string_pretty(&session)
+        .map_err(|e| format!("Serialization error: {}", e))?;
+    std::fs::write(&file_path, serialized)
+        .map_err(|e| format!("Failed to write session: {}", e))?;
     Ok(())
 }

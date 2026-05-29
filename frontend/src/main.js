@@ -450,6 +450,18 @@ document.querySelector("#app").innerHTML = `
                 <div class="history-group-label">Recent Sessions</div>
                 <!-- Sessions will be loaded here -->
             </div>
+            <!-- ═══════ SESSION BROWSER ═══════ -->
+            <div class="session-browser" id="session-browser">
+                <button class="session-browser-toggle" id="session-browser-toggle" aria-expanded="false">
+                    ${createIcon("clock", { size: 13 })}
+                    <span>Saved Sessions</span>
+                    <span class="session-browser-chevron" id="session-browser-chevron">${createIcon("chevronRight", { size: 12 })}</span>
+                </button>
+                <div class="session-browser-list hidden" id="session-browser-list" aria-label="Saved sessions list">
+                    <!-- Populated by initSessionBrowser() -->
+                </div>
+            </div>
+
             <div class="sidebar-diagnostics" id="sidebar-diagnostics">
                 <div class="diag-header">SYSTEM DIAGNOSTICS</div>
                 <div class="diag-grid">
@@ -5575,6 +5587,7 @@ invoke("get_initial_state")
     initTerminal();
     initCanvas();
     initNotificationCenter();
+    initSessionBrowser();
     initShortcutsOverlay();
     initOsThemeSync();
 
@@ -9415,6 +9428,149 @@ document.addEventListener("click", (e) => {
     panel.classList.add("hidden");
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SESSION BROWSER — Sprint 9.1
+// ═══════════════════════════════════════════════════════════════════════════
+function initSessionBrowser() {
+  const toggleBtn = document.getElementById("session-browser-toggle");
+  const list = document.getElementById("session-browser-list");
+  const chevron = document.getElementById("session-browser-chevron");
+  if (!toggleBtn || !list) return;
+
+  let loaded = false;
+
+  function formatSessionDate(isoStr) {
+    try {
+      const d = new Date(isoStr);
+      const now = new Date();
+      const diff = now - d;
+      if (diff < 86_400_000) {
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+      if (diff < 7 * 86_400_000) {
+        return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+      }
+      return d.toLocaleDateString([], { month: "short", day: "numeric" });
+    } catch { return isoStr || ""; }
+  }
+
+  function renderSessionList(sessions) {
+    list.innerHTML = "";
+    if (!sessions || sessions.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "session-browser-empty";
+      empty.textContent = "No saved sessions yet.";
+      list.appendChild(empty);
+      return;
+    }
+    sessions.forEach(session => {
+      const item = document.createElement("div");
+      item.className = "session-browser-item";
+      item.dataset.id = session.id;
+
+      const title = document.createElement("div");
+      title.className = "session-browser-title";
+      title.textContent = session.name || formatSessionDate(session.created_at);
+
+      const meta = document.createElement("div");
+      meta.className = "session-browser-meta";
+      meta.textContent = `${session.message_count} msgs${session.preview ? " · " + session.preview : ""}`;
+
+      const actions = document.createElement("div");
+      actions.className = "session-browser-actions";
+
+      const openBtn = document.createElement("button");
+      openBtn.className = "session-browser-btn";
+      openBtn.title = "Restore session";
+      openBtn.innerHTML = createIcon("cornerDownLeft", { size: 12 });
+      openBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        invoke("load_session_by_id", { id: session.id })
+          .then((data) => {
+            activateViewByName("chat");
+            if (typeof window.restoreSessionMessages === "function") {
+              window.restoreSessionMessages(data);
+            }
+            addNotification("Session Restored", `Loaded: ${session.name || session.id}`, "success");
+          })
+          .catch((err) => addNotification("Session Error", String(err), "error"));
+      });
+
+      const renameBtn = document.createElement("button");
+      renameBtn.className = "session-browser-btn";
+      renameBtn.title = "Rename";
+      renameBtn.innerHTML = createIcon("pencil", { size: 12 });
+      renameBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const current = session.name || "";
+        const newName = prompt("Rename session:", current);
+        if (newName === null) return;
+        invoke("rename_session", { id: session.id, name: newName.trim() })
+          .then(() => loadSessions())
+          .catch((err) => addNotification("Rename Error", String(err), "error"));
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "session-browser-btn session-browser-btn--danger";
+      deleteBtn.title = "Delete";
+      deleteBtn.innerHTML = createIcon("trash2", { size: 12 });
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete session "${session.name || session.id}"?`)) return;
+        invoke("delete_session", { id: session.id })
+          .then(() => loadSessions())
+          .catch((err) => addNotification("Delete Error", String(err), "error"));
+      });
+
+      actions.append(openBtn, renameBtn, deleteBtn);
+      item.append(title, meta, actions);
+
+      item.addEventListener("click", () => {
+        openBtn.click();
+      });
+
+      list.appendChild(item);
+    });
+  }
+
+  function loadSessions() {
+    invoke("list_sessions_meta")
+      .then(renderSessionList)
+      .catch(() => {
+        list.innerHTML = '<div class="session-browser-empty" style="color:var(--error-color)">Failed to load sessions.</div>';
+      });
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const isHidden = list.classList.contains("hidden");
+    list.classList.toggle("hidden", !isHidden);
+    toggleBtn.setAttribute("aria-expanded", String(isHidden));
+    chevron.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
+    if (isHidden && !loaded) {
+      loaded = true;
+      loadSessions();
+    }
+  });
+
+  // Refresh when a session is saved
+  document.addEventListener("neurodeck:session-saved", loadSessions);
+}
+
+// expose for chat.js to refresh the list after auto-save
+window.refreshSessionBrowser = function() {
+  const list = document.getElementById("session-browser-list");
+  if (list && !list.classList.contains("hidden")) {
+    invoke("list_sessions_meta")
+      .then((sessions) => {
+        if (typeof initSessionBrowser !== "undefined") {
+          const event = new CustomEvent("neurodeck:session-saved");
+          document.dispatchEvent(event);
+        }
+      })
+      .catch(() => {});
+  }
+};
 
 function initNotificationCenter() {
   const notifBtn = document.getElementById("notif-btn");

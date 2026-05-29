@@ -451,6 +451,7 @@ fn save_remote_session(session: SessionPayload, timestamp: &str) -> Result<(), S
         id: session.id,
         created_at: session.created_at,
         messages: session.messages,
+        name: None,
     };
     storage::save_session(session_dir(), &stored)
 }
