@@ -654,6 +654,14 @@ document.querySelector("#app").innerHTML = `
                         <div class="chat-session-header-right">
                             <span class="chat-session-tokens" id="chat-session-tokens">0 tokens</span>
                             <button class="chat-session-compare-btn" id="compare-toggle-btn" title="Toggle Model Comparison" aria-label="Toggle Model Comparison">${createIcon("columns", { size: 14 })}</button>
+                            <div class="chat-export-dropdown" id="chat-export-dropdown">
+                                <button class="chat-session-new-btn" id="chat-export-btn" title="Export session" aria-label="Export session" aria-haspopup="true" aria-expanded="false">${createIcon("download", { size: 13 })}</button>
+                                <div class="chat-export-menu hidden" id="chat-export-menu" role="menu">
+                                    <button class="chat-export-item" data-format="markdown" role="menuitem">${createIcon("fileText", { size: 13 })} Copy as Markdown</button>
+                                    <button class="chat-export-item" data-format="html" role="menuitem">${createIcon("globe", { size: 13 })} Copy as HTML</button>
+                                    <button class="chat-export-item" data-format="json" role="menuitem">${createIcon("code", { size: 13 })} Copy as JSON</button>
+                                </div>
+                            </div>
                             <button class="chat-session-new-btn" id="new-chat-btn-header" title="New Session (Ctrl+N)">+ New</button>
                         </div>
                     </div>

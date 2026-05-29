@@ -2442,6 +2442,45 @@ export function initChat() {
         compareToggleBtn.onclick = toggleComparisonMode;
     }
 
+    // ── Chat Export Dropdown ──────────────────────────────────────────────
+    const exportBtn = document.getElementById("chat-export-btn");
+    const exportMenu = document.getElementById("chat-export-menu");
+    if (exportBtn && exportMenu) {
+        exportBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const open = !exportMenu.classList.contains("hidden");
+            exportMenu.classList.toggle("hidden", open);
+            exportBtn.setAttribute("aria-expanded", String(!open));
+        });
+        exportMenu.querySelectorAll(".chat-export-item").forEach((item) => {
+            item.addEventListener("click", async () => {
+                exportMenu.classList.add("hidden");
+                exportBtn.setAttribute("aria-expanded", "false");
+                const fmt = item.dataset.format;
+                try {
+                    const { invoke } = await import("@tauri-apps/api/core");
+                    const sessionId = document.getElementById("chat-session-name")?.dataset?.sessionId
+                        || window.__currentSessionId
+                        || "";
+                    if (!sessionId) {
+                        addNotification("Export", "Save the session first (Ctrl+S), then export.", "info");
+                        return;
+                    }
+                    const content = await invoke("export_session_content", { id: sessionId, format: fmt });
+                    await navigator.clipboard.writeText(content);
+                    addNotification("Exported", `Session copied as ${fmt.toUpperCase()} to clipboard.`, "success");
+                } catch (err) {
+                    addNotification("Export Failed", String(err), "error");
+                }
+            });
+        });
+        // Close on outside click
+        document.addEventListener("click", () => {
+            exportMenu.classList.add("hidden");
+            exportBtn.setAttribute("aria-expanded", "false");
+        });
+    }
+
     const personaSelect = document.getElementById("persona-select");
     if (personaSelect) {
         personaSelect.onchange = handlePersonaChange;

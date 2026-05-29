@@ -1082,6 +1082,7 @@ pub fn run() {
             #[cfg(debug_assertions)]
             execute_lua,
             export_session_markdown,
+            export_session_content,
             autocomplete::get_terminal_autocomplete,
             doc_indexer::get_indexed_docs,
             doc_indexer::search_docs_semantic,
