@@ -4,7 +4,7 @@
 
 | Tool     | Version | Notes                                      |
 |----------|---------|--------------------------------------------|
-| Rust     | 1.77.2  | Pinned. Use `rustup override set 1.77.2`   |
+| Rust     | 1.85.0  | Pinned. Use `rustup override set 1.85.0`   |
 | Node.js  | >= 18   | LTS recommended                            |
 | Python   | >= 3.8  | Only for brand-asset generator scripts     |
 | uv       | latest  | Python package manager (optional)          |

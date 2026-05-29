@@ -30,7 +30,7 @@ NEURODECK is an AI-powered terminal and productivity interface designed for the 
 | Layer | Technology |
 |---|---|
 | **Desktop runtime** | Tauri v2 (Rust + WebView2/WebKit) |
-| **Backend language** | Rust (edition 2021, rust-version 1.77.2) |
+| **Backend language** | Rust (edition 2021, rust-version 1.85.0) |
 | **Frontend** | Vite + Vanilla JavaScript (no framework) |
 | **Scripting** | Lua 5.4 via `mlua` crate |
 | **Terminal emulator** | `portable-pty` (Rust) + `xterm.js` (frontend) |

@@ -167,7 +167,7 @@ Rebuilt from 4 steps to 5 with richer content and expanded diagnostics.
 - Bundle install: `flatpak install --user neurodeck.flatpak` → run: `flatpak run com.neurodeck.app`
 
 #### README Overhaul
-- ASCII art banner, badge row (License, Rust 1.77.2, Tauri v2, Platform, LLM, Version)
+- ASCII art banner, badge row (License, Rust 1.85.0, Tauri v2, Platform, LLM, Version)
 - JPE (Just Plain English) explanations throughout — no jargon without a plain-English definition
 - Architecture diagram with IPC bridge explanation
 - RAG memory plain-English callout

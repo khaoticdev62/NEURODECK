@@ -12,7 +12,7 @@
 ### AI-Powered Terminal OS for Steam Deck
 
 [![License: Proprietary EULA](https://img.shields.io/badge/License-Proprietary%20EULA-D32F2F?style=for-the-badge&logo=probot&logoColor=white)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-1.77.2-FF4500?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.85.0-FF4500?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
 [![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama%20%7C%20Hermes-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
@@ -186,7 +186,7 @@ NEURODECK is dynamically extensible via Lua 5.4. Drop a `.lua` file into the `pl
 
 ## 🚀 Quick Start
 
-> **Prerequisites:** [Rust 1.77.2+](https://rustup.rs/), [Node.js 18+](https://nodejs.org/), and either a `GEMINI_API_KEY` set or [Ollama](https://ollama.com/) running locally.
+> **Prerequisites:** [Rust 1.85.0+](https://rustup.rs/), [Node.js 18+](https://nodejs.org/), and either a `GEMINI_API_KEY` set or [Ollama](https://ollama.com/) running locally.
 
 ```bash
 git clone https://github.com/khaoticdev62/NEURODECK.git && cd NEURODECK

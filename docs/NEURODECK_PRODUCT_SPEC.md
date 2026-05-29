@@ -977,7 +977,7 @@ system = false
 | Layer | Technology | Version |
 |---|---|---|
 | Desktop runtime | Tauri v2 | 2.x |
-| Backend language | Rust | 1.77.2 (pinned) |
+| Backend language | Rust | 1.85.0 (pinned) |
 | Frontend | Vite + Vanilla JS | Vite 8.x |
 | Scripting | Lua 5.4 via mlua | vendored |
 | Terminal | portable-pty + xterm.js | latest |

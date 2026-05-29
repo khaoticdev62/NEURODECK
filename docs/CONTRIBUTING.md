@@ -19,7 +19,7 @@ npm run tauri dev
 ```
 
 **Requirements:**
-- Rust 1.77.2 (pinned — use `rustup override set 1.77.2`)
+- Rust 1.85.0 (pinned — use `rustup override set 1.85.0`)
 - Node 18+
 - On Linux: `libwebkit2gtk-4.1-dev`, `libssl-dev`, `libayatana-appindicator3-dev`
 
