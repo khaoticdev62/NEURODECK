@@ -432,6 +432,17 @@ GDK_BACKEND=x11 LD_PRELOAD=/usr/lib/libwayland-client.so.0 \
 - ✅ **Security Audit:** `security_audit.py` now invoked via `python3` (was `bash` trying to execute Python).
 - ✅ **KFMS Release Gate:** GO status (100/100 score) — all hardening checks pass, tests pass, builds pass. Version tagged as `v1.6.0-bastet`.
 
+### 🎮 Steam Deck Validation Workflow
+- ✅ **Automated Runtime Compatibility Checks:** New `steam-deck-validation.yml` workflow validates every build:
+  - **Binary Architecture:** Confirms x86-64 (Steam Deck native), rejects ARM/other archs
+  - **Runtime Dependencies:** Checks glibc, GLVND, SDL2, EGL library requirements
+  - **Desktop Integration:** Validates `.desktop` file, AppImage metadata, launcher compatibility
+  - **Flatpak Permissions:** Ensures all required Steam Deck permissions (Wayland, gamepad, GPU, keychain)
+  - **GPU Stack Validation:** Confirms Vulkan ICD loader, GLVND availability for graphics
+  - **Resource Constraints:** Warns if AppImage >1GB (Steam Deck disk is limited)
+- **Runs on:** Every push to `master`, every PR, and manual trigger (`workflow_dispatch`)
+- **Purpose:** Catch binary incompatibilities **before release** — prevents users downloading broken AppImages
+
 ---
 
 ## 📦 Distribution: Flatpak & AUR (v1.6.1 — Next Sprint)
