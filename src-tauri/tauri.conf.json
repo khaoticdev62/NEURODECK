@@ -58,7 +58,9 @@
       "llm-term.toml": "llm-term.toml",
       "../assets/bmad-bundle/**/*": "bmad-bundle",
       "../assets/boot-pipeline.json": "boot-pipeline.json",
-      "../assets/boot-pipeline.schema.json": "boot-pipeline.schema.json"
+      "../assets/boot-pipeline.schema.json": "boot-pipeline.schema.json",
+      "../install.sh": "install.sh",
+      "../launch_gamescope.sh": "launch_gamescope.sh"
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"

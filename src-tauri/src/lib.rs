@@ -744,6 +744,10 @@ pub fn run() {
         if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
             std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
         }
+        // Disable DMA-BUF renderer — causes blank white page under Gamescope/Wayland on Steam Deck
+        if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
     }
 
     let config_root = user_config_dir();

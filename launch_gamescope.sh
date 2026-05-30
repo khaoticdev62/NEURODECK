@@ -16,7 +16,11 @@ else
     exit 1
 fi
 
+# WebKit & Tauri runtime optimizations for Steam Deck / Gamescope
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
+export APPIMAGE_EXTRACT_AND_RUN=1
+export GDK_SCALE=1
 
 echo "Launching NEURODECK via Gamescope..."
 
