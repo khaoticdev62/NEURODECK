@@ -387,21 +387,29 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install flatpak-builder
+      - name: Install flatpak-builder and Python dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y flatpak flatpak-builder python3 python3-pip
+          pip install aiohttp toml
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.gnome.Platform//47 org.gnome.Sdk//47
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.node20//24.08
 
-      - name: Generate cargo sources (if missing)
+      - name: Generate offline cargo sources for Flatpak
         run: |
-          if [ ! -f flatpak/cargo-sources.json ]; then
-            bash flatpak/generate-cargo-sources.sh
+          # Always regenerate from Cargo.lock to ensure it's in sync
+          bash flatpak/generate-cargo-sources.sh
+          echo "✓ cargo-sources.json regenerated from Cargo.lock"
+
+          # Verify the file was created and has content
+          if [ -f flatpak/cargo-sources.json ] && [ -s flatpak/cargo-sources.json ]; then
+            SIZE=$(du -h flatpak/cargo-sources.json | cut -f1)
+            echo "✓ cargo-sources.json ready ($SIZE)"
           else
-            echo "cargo-sources.json already present"
+            echo "✗ Failed to generate cargo-sources.json"
+            exit 1
           fi
 
       - name: Build Flatpak
@@ -414,6 +422,13 @@ jobs:
           mkdir -p dist
           flatpak build-bundle flatpak-repo \
             "dist/neurodeck_${{ env.VERSION }}_linux.flatpak" com.neurodeck.app
+
+      - name: Upload cargo sources (for reference)
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-cargo-sources-${{ env.VERSION }}
+          path: flatpak/cargo-sources.json
+          retention-days: 7
 
       - name: Upload Flatpak artifact
         uses: actions/upload-artifact@v4
