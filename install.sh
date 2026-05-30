@@ -174,6 +174,29 @@ export WEBKIT_DISABLE_COMPOSITING_MODE=1
 export APPIMAGE_EXTRACT_AND_RUN=1
 export GDK_SCALE=1
 
+# Detect system libwayland-client to bypass AppImage'"'"'s bundled version
+# (prevents EGL_BAD_PARAMETER crash on Arch/SteamOS/Fedora)
+LIBWAYLAND=""
+for path in \
+    /usr/lib/libwayland-client.so.0 \
+    /usr/lib/x86_64-linux-gnu/libwayland-client.so.0 \
+    /usr/lib64/libwayland-client.so.0 \
+    /usr/lib/libwayland-client.so; do
+    if [ -f "$path" ]; then
+        LIBWAYLAND="$path"
+        break
+    fi
+done
+
+if [ -n "$LIBWAYLAND" ]; then
+    export LD_PRELOAD="${LIBWAYLAND}${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+
+# Fallback to X11 if no Wayland display (Gamescope without --expose-wayland)
+if [ -z "$WAYLAND_DISPLAY" ]; then
+    export GDK_BACKEND=x11
+fi
+
 if [ -f "$SCRIPT_DIR/neurodeck.AppImage" ]; then
     exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"
 else

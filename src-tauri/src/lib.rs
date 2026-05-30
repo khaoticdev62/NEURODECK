@@ -748,6 +748,12 @@ pub fn run() {
         if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
             std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         }
+        // Fall back to X11/XWayland if no Wayland display socket is available.
+        // Under Gamescope without --expose-wayland, WAYLAND_DISPLAY is unset,
+        // causing GTK to attempt Wayland EGL → fails with EGL_BAD_PARAMETER.
+        if std::env::var("WAYLAND_DISPLAY").is_err() && std::env::var("GDK_BACKEND").is_err() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
     }
 
     let config_root = user_config_dir();
