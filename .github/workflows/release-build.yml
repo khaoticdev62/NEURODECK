@@ -53,7 +53,7 @@ env:
 
 jobs:
 
-  # ── Job 1: KFMS Gate ─────────────────────────────────────────────────────────
+  # ── Job 1: KFMS Gate ────────────────────────────────────────────────────────[...]
   kfms-gate:
     name: KFMS Release Gate
     runs-on: ubuntu-latest
@@ -409,10 +409,20 @@ jobs:
 
       - name: Debug - Inspect AppImage contents
         run: |
+          set -e
           cd flatpak/
           chmod +x neurodeck.AppImage
           echo "Extracting AppImage..."
-          ./neurodeck.AppImage --appimage-extract
+          if ! ./neurodeck.AppImage --appimage-extract; then
+            echo "::error::Failed to extract AppImage"
+            exit 1
+          fi
+          
+          if [[ ! -d squashfs-root ]]; then
+            echo "::error::squashfs-root directory not found after extraction"
+            exit 1
+          fi
+          
           echo "=== AppImage directory structure ==="
           ls -la squashfs-root/ | head -20
           echo "=== Looking for binary ==="
