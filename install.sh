@@ -173,8 +173,21 @@ if [ -n "$APPIMAGE_SRC" ]; then
         echo '#!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+
+# WebKit & Tauri runtime optimizations for Steam Deck
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
-exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
+export GDK_SCALE=1
+export LIBGL_ALWAYS_SOFTWARE=0
+
+# Debug mode (uncomment to see logs): set -x
+
+if [ -f "$SCRIPT_DIR/neurodeck.AppImage" ]; then
+    exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"
+else
+    echo "[ERROR] AppImage not found at $SCRIPT_DIR/neurodeck.AppImage"
+    exit 1
+fi' > "$INSTALL_DIR/neurodeck-launch.sh"
         print_ok "AppImage installed (FUSE mode)"
     else
         # SteamOS often lacks FUSE — use --appimage-extract-and-run
@@ -182,8 +195,22 @@ exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
         echo '#!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+
+# WebKit & Tauri runtime optimizations for Steam Deck
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
-exec "$SCRIPT_DIR/neurodeck.AppImage" --appimage-extract-and-run "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
+export GDK_SCALE=1
+export APPIMAGE_EXTRACT_AND_RUN=1
+export LIBGL_ALWAYS_SOFTWARE=0
+
+# Debug mode (uncomment to see logs): set -x
+
+if [ -f "$SCRIPT_DIR/neurodeck.AppImage" ]; then
+    exec "$SCRIPT_DIR/neurodeck.AppImage" --appimage-extract-and-run "$@"
+else
+    echo "[ERROR] AppImage not found at $SCRIPT_DIR/neurodeck.AppImage"
+    exit 1
+fi' > "$INSTALL_DIR/neurodeck-launch.sh"
         print_ok "AppImage installed (extract-and-run mode, no FUSE required)"
     fi
 
@@ -239,8 +266,36 @@ fi
 find "$INSTALL_DIR/scripts" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 print_ok "Config files copied"
 
-# --- Install voice / audio system dependencies (SteamOS/Arch) ---
+# --- Install WebKit/GTK runtime dependencies (SteamOS/Arch) ---
 if $IS_STEAMOS; then
+    print_step "Checking WebKit and GTK runtime dependencies..."
+
+    WEBKIT_MISSING=false
+    if ! pacman -Q libwebkit2gtk 2>/dev/null && ! pacman -Q webkit2gtk 2>/dev/null; then
+        WEBKIT_MISSING=true
+        print_warn "WebKit2GTK not found — installing..."
+        sudo pacman -S --needed --noconfirm webkit2gtk 2>/dev/null || \
+            print_err "CRITICAL: Failed to install webkit2gtk. Cannot run NEURODECK without it."
+    fi
+
+    # Additional runtime libraries
+    EXTRA_DEPS=(glib2 gtk3 libsoup libsecret libssl libudev libfuse2)
+    MISSING_EXTRA=()
+    for dep in "${EXTRA_DEPS[@]}"; do
+        if ! pacman -Q "$dep" 2>/dev/null >/dev/null; then
+            MISSING_EXTRA+=("$dep")
+        fi
+    done
+
+    if [ ${#MISSING_EXTRA[@]} -gt 0 ]; then
+        print_warn "Installing missing runtime libraries: ${MISSING_EXTRA[*]}"
+        sudo pacman -S --needed --noconfirm "${MISSING_EXTRA[@]}" 2>/dev/null || \
+            print_warn "Could not install some runtime libraries. Continuing (app may have issues)..."
+    fi
+
+    print_ok "WebKit/GTK dependencies satisfied"
+
+    # Install voice / audio system dependencies
     print_step "Installing voice and audio dependencies..."
     if command -v pacman &> /dev/null; then
         # arecord (alsa-utils) — required for microphone recording (Voice STT)
@@ -368,4 +423,13 @@ echo ""
 echo "  Configuration:       $INSTALL_DIR/llm-term.toml"
 echo "  Plugins:             $INSTALL_DIR/plugins/"
 echo "  Sessions:            $INSTALL_DIR/sessions/"
+echo ""
+echo "  Troubleshooting:"
+echo "    If NEURODECK doesn't launch, open a terminal and run:"
+echo "      bash $INSTALL_DIR/neurodeck-launch.sh"
+echo ""
+echo "    This will show any error messages. Common fixes:"
+echo "    • Missing WebKit: sudo pacman -S webkit2gtk"
+echo "    • Missing FUSE: sudo pacman -S fuse2"
+echo "    • Permissions: chmod +x $INSTALL_DIR/neurodeck.AppImage"
 echo ""
