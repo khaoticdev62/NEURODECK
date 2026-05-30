@@ -126,4 +126,53 @@ export function addNotification(title, text, type = 'info', navigateTo = null) {
     invoke('remote_relay_notification', { title, text, notifType: type }).catch(() => {});
 }
 
+export function showConfirm(message, options = {}) {
+    const { confirmText = 'Confirm', cancelText = 'Cancel', title = 'Confirm' } = options;
+
+    return new Promise((resolve) => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'confirm-modal';
+        dialog.innerHTML = `
+            <div class="confirm-modal-content">
+                <h3 class="confirm-modal-title">${escapeHtml(title)}</h3>
+                <p class="confirm-modal-message">${escapeHtml(message)}</p>
+                <div class="confirm-modal-actions">
+                    <button class="btn btn-secondary" id="cancel-btn">${escapeHtml(cancelText)}</button>
+                    <button class="btn btn-primary" id="confirm-btn">${escapeHtml(confirmText)}</button>
+                </div>
+            </div>
+        `;
+
+        const confirmBtn = dialog.querySelector('#confirm-btn');
+        const cancelBtn = dialog.querySelector('#cancel-btn');
+
+        confirmBtn.addEventListener('click', () => {
+            dialog.close();
+            dialog.remove();
+            resolve(true);
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            dialog.close();
+            dialog.remove();
+            resolve(false);
+        });
+
+        dialog.addEventListener('cancel', () => {
+            dialog.remove();
+            resolve(false);
+        });
+
+        document.body.appendChild(dialog);
+        dialog.showModal();
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 window.addNotification = addNotification;
+window.showConfirm = showConfirm;

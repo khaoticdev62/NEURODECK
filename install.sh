@@ -2,12 +2,12 @@
 
 # =============================================================================
 # NEURODECK Installation Script for SteamOS / Linux
-# Version: 1.3.0
+# Version: 1.6.0
 # =============================================================================
 
 set -e
 
-NEURODECK_VERSION="1.5.1"
+NEURODECK_VERSION="1.6.0"
 INSTALL_DIR="$HOME/Applications/neurodeck"
 DESKTOP_FILE="$HOME/.local/share/applications/neurodeck.desktop"
 AUTOSTART_FILE="$HOME/.config/autostart/neurodeck.desktop"

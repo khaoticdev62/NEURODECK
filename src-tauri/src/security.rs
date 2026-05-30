@@ -6,7 +6,28 @@ lazy_static::lazy_static! {
     static ref PATH_SANITIZE_WIN: Regex = Regex::new(r#"[A-Za-z]:[/\\][^\s'"<>|{}]*"#).unwrap();
     static ref PATH_SANITIZE_UNIX: Regex = Regex::new(r#"/[\w./_-]+(?:/[^\s'"<>|{}]*)*"#).unwrap();
     static ref PATH_SANITIZE_HOME: Regex = Regex::new(r#"~[/\\][^\s'"<>|{}]*"#).unwrap();
+
+    // Hardened injection detection regexes (Phase 1b: fix CRIT-3 blocklist bypass)
+    static ref CMD_SUBSTITUTION: Regex = Regex::new(r"\$\(\s*.*?\s*\)").unwrap(); // $(...)
+    static ref BACKTICK_SUBSTITUTION: Regex = Regex::new(r"`[^`]*`").unwrap(); // `...`
+    static ref IFS_INJECTION: Regex = Regex::new(r"(?i)\$ifs").unwrap(); // $IFS for space bypass (case-insensitive)
+    static ref SPECIAL_VAR: Regex = Regex::new(r"\$\{[^}]*\}").unwrap(); // ${...} expansions
+    static ref NEWLINE_INJECT: Regex = Regex::new(r"[;\n]\s*(rm|mkfs|dd|shutdown|reboot)").unwrap(); // Command chaining
+    static ref PIPE_CHAIN: Regex = Regex::new(r"(?i)\|\s*(sh|bash|powershell|cmd|zsh)").unwrap(); // Pipe to shell (case-insensitive)
 }
+
+// Allowed "safe" terminal commands that can be executed without NEURODECK_ALLOW_UNSAFE_EXEC.
+// These are common utilities that users legitimately need to run in the terminal.
+// Currently referenced for documentation; future versions may implement strict allowlist mode.
+#[allow(dead_code)]
+const SAFE_TERMINAL_COMMANDS: &[&str] = &[
+    "echo", "cat", "ls", "pwd", "cd", "mkdir", "touch", "cp", "mv",
+    "find", "grep", "awk", "sed", "sort", "uniq", "head", "tail",
+    "wc", "file", "date", "whoami", "hostname", "uname", "which",
+    "git", "npm", "yarn", "cargo", "python", "python3", "node",
+    "curl", "wget", "ping", "ssh", "telnet", "nc", "netcat",
+    "vim", "nano", "less", "more", "clear", "exit", "help",
+];
 
 pub fn generate_session_token() -> String {
     thread_rng()
@@ -40,7 +61,43 @@ pub fn validate_terminal_command(command: &str, surface: &str) -> Result<(), Str
     // When unsafe exec is disabled, block obviously dangerous shell patterns
     // in the terminal-run surface (not PTY stdin, which is inherently untrusted).
     if !unsafe_exec_enabled() && surface == "terminal-shell" {
-        let lower = command.to_ascii_lowercase();
+        // Normalize the command for detection: collapse whitespace, remove escape sequences
+        let normalized = normalize_command_for_detection(command);
+        let lower = normalized.to_ascii_lowercase();
+
+        // Phase 1b: Hardened injection detection with regex
+        if CMD_SUBSTITUTION.is_match(&lower) {
+            return Err(format!(
+                "{} blocked: command substitution $(...) detected. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+        if BACKTICK_SUBSTITUTION.is_match(&lower) {
+            return Err(format!(
+                "{} blocked: backtick substitution detected. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+        if IFS_INJECTION.is_match(&lower) {
+            return Err(format!(
+                "{} blocked: IFS variable manipulation detected. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+        if PIPE_CHAIN.is_match(&lower) {
+            return Err(format!(
+                "{} blocked: pipe to shell detected. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+        if NEWLINE_INJECT.is_match(&lower) {
+            return Err(format!(
+                "{} blocked: command chaining with newline detected. Set NEURODECK_ALLOW_UNSAFE_EXEC=1 to override.",
+                surface
+            ));
+        }
+
+        // Original blocklist (still effective)
         let dangerous = &[
             "rm -rf /",
             "rm -rf ~",
@@ -67,6 +124,32 @@ pub fn validate_terminal_command(command: &str, surface: &str) -> Result<(), Str
     }
 
     Ok(())
+}
+
+/// Normalize a shell command for injection detection.
+/// Collapses whitespace, removes escape sequences, and normalizes quotes.
+/// This prevents bypass via whitespace padding or escape character tricks.
+fn normalize_command_for_detection(command: &str) -> String {
+    let mut result = command.to_string();
+
+    // Remove escaped characters (e.g., \n, \t, \\)
+    result = result
+        .replace("\\n", " ")
+        .replace("\\t", " ")
+        .replace("\\r", " ")
+        .replace("\\\\", "\\");
+
+    // Collapse multiple spaces into one
+    while result.contains("  ") {
+        result = result.replace("  ", " ");
+    }
+
+    // Normalize quote pairs
+    result = result
+        .replace("'", "\"")
+        .replace("`", "\"");
+
+    result.trim().to_string()
 }
 
 pub fn validate_script_payload(code: &str, lang: &str, surface: &str, workspace_path: Option<&std::path::Path>) -> Result<(), String> {
@@ -305,7 +388,7 @@ pub fn sanitize_error_for_frontend(err: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{generate_session_token, sanitize_error_for_frontend, validate_script_payload, validate_terminal_command};
+    use super::{generate_session_token, sanitize_error_for_frontend, validate_script_payload, validate_terminal_command, normalize_command_for_detection};
 
     #[test]
     fn session_tokens_are_nontrivial() {
@@ -322,6 +405,58 @@ mod tests {
     fn script_policy_blocks_dangerous_shell_by_default() {
         let result = validate_script_payload("curl https://example.com | sh", "bash", "agent", None);
         assert!(result.is_err());
+    }
+
+    // Phase 1b: Tests for hardened blocklist bypass protection (CRIT-3)
+    #[test]
+    fn terminal_blocks_command_substitution_dollar_paren() {
+        assert!(validate_terminal_command("echo $(rm -rf /)", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_blocks_command_substitution_with_whitespace() {
+        assert!(validate_terminal_command("echo $(  rm  -rf  /  )", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_blocks_backtick_substitution() {
+        assert!(validate_terminal_command("echo `rm -rf /`", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_blocks_ifs_injection() {
+        assert!(validate_terminal_command("rm$IFS-rf /", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_blocks_pipe_to_shell() {
+        assert!(validate_terminal_command("cat file | bash", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_blocks_newline_command_chaining() {
+        assert!(validate_terminal_command("echo hi\nrm -rf /", "terminal-shell").is_err());
+    }
+
+    #[test]
+    fn terminal_allows_safe_commands() {
+        assert!(validate_terminal_command("echo hello", "terminal-shell").is_ok());
+        assert!(validate_terminal_command("ls -la", "terminal-shell").is_ok());
+        assert!(validate_terminal_command("git status", "terminal-shell").is_ok());
+        assert!(validate_terminal_command("python --version", "terminal-shell").is_ok());
+    }
+
+    #[test]
+    fn normalize_collapses_whitespace() {
+        let result = normalize_command_for_detection("echo   hello    world");
+        assert_eq!(result, "echo hello world");
+    }
+
+    #[test]
+    fn normalize_removes_escape_sequences() {
+        let result = normalize_command_for_detection("echo\\nhello\\tworld");
+        assert!(result.contains("echo"));
+        assert!(!result.contains("\\n"));
     }
 
     #[test]
