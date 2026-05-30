@@ -2,14 +2,14 @@ mod autocomplete;
 mod canvas_collab;
 pub mod commands;
 mod computer_use;
-pub mod lsp;
 mod config;
-mod doc_indexer;
 pub mod deckcode;
+mod doc_indexer;
 mod error;
 mod ftp;
 mod hf_model_mgr;
 mod llm;
+pub mod lsp;
 mod lua;
 mod mcp;
 pub mod memory;
@@ -39,8 +39,10 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Manager;
 
-use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider,
-    OpenAICompatProvider};
+use crate::llm::{
+    GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider,
+    OpenAICompatProvider,
+};
 use crate::memory::MemoryDB;
 
 #[derive(Clone, serde::Serialize)]
@@ -555,8 +557,8 @@ pub(crate) fn create_provider(config: &config::Config) -> Arc<dyn LlmProvider> {
             config.llm.kimi_base_url.clone(),
         )),
         "openai_compat" => {
-            let api_key = neurodeck_infrastructure::secrets::get_openai_compat_api_key()
-                .unwrap_or_default();
+            let api_key =
+                neurodeck_infrastructure::secrets::get_openai_compat_api_key().unwrap_or_default();
             Arc::new(OpenAICompatProvider::new(
                 config.llm.openai_compat_base_url.clone(),
                 config.llm.openai_compat_model.clone(),
@@ -584,8 +586,8 @@ pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmPro
             agent.base_url.clone(),
         )),
         "openai_compat" => {
-            let api_key = neurodeck_infrastructure::secrets::get_openai_compat_api_key()
-                .unwrap_or_default();
+            let api_key =
+                neurodeck_infrastructure::secrets::get_openai_compat_api_key().unwrap_or_default();
             Arc::new(OpenAICompatProvider::new(
                 agent.base_url.clone(),
                 agent.model.clone(),
@@ -734,8 +736,6 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 // Stop the active collab session.
 
-
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -860,21 +860,25 @@ pub fn run() {
         .manage(orchestrator::OrchestratorManaged::new())
         .manage(Arc::new(Mutex::new(lsp::LspManager::new())))
         .manage(crate::deckcode::DeckCodeState(Mutex::new((None, None))))
-        .manage(crate::deckcode::DeckCodeActiveLang(Arc::new(Mutex::new("plain_text".to_string()))))
+        .manage(crate::deckcode::DeckCodeActiveLang(Arc::new(Mutex::new(
+            "plain_text".to_string(),
+        ))))
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
             transfer::start_transfer_services(app.handle().clone(), transfer_state);
 
             // Load DeckCode schema if available
-            let schema_path = std::path::PathBuf::from("../deckcode-controller-profile.schema.json");
+            let schema_path =
+                std::path::PathBuf::from("../deckcode-controller-profile.schema.json");
             let schema_path = if schema_path.exists() {
                 schema_path
             } else {
                 std::path::PathBuf::from("deckcode-controller-profile.schema.json")
             };
-            
-            let multilang_path = std::path::PathBuf::from("../deckcode-multilang-code-entry.profile.json");
+
+            let multilang_path =
+                std::path::PathBuf::from("../deckcode-multilang-code-entry.profile.json");
             let multilang_path = if multilang_path.exists() {
                 multilang_path
             } else {
@@ -884,20 +888,24 @@ pub fn run() {
             let mut loaded_schema = None;
             let mut loaded_multilang = None;
 
-            if let Ok(schema) = crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default()) {
+            if let Ok(schema) =
+                crate::deckcode::load_schema(schema_path.to_str().unwrap_or_default())
+            {
                 loaded_schema = Some(schema);
                 tracing::info!("Loaded DeckCode Controller Profile");
             } else {
                 tracing::warn!("Failed to load deckcode-controller-profile.schema.json");
             }
 
-            if let Ok(ml_schema) = crate::deckcode::load_multilang_profile(multilang_path.to_str().unwrap_or_default()) {
+            if let Ok(ml_schema) =
+                crate::deckcode::load_multilang_profile(multilang_path.to_str().unwrap_or_default())
+            {
                 loaded_multilang = Some(ml_schema);
                 tracing::info!("Loaded DeckCode MultiLang Profile");
             } else {
                 tracing::warn!("Failed to load deckcode-multilang-code-entry.profile.json");
             }
-            
+
             {
                 let state = app.state::<crate::deckcode::DeckCodeState>();
                 *state.0.lock().unwrap() = (loaded_schema.clone(), loaded_multilang.clone());
@@ -909,15 +917,16 @@ pub fn run() {
 
                 let app_handle_clone = app.handle().clone();
                 let active_lang = app.state::<crate::deckcode::DeckCodeActiveLang>().0.clone();
-                
+
                 tauri::async_runtime::spawn_blocking(move || {
-                    let resolver = crate::deckcode::resolver::DeckCodeResolver::new(schema, loaded_multilang);
+                    let resolver =
+                        crate::deckcode::resolver::DeckCodeResolver::new(schema, loaded_multilang);
                     let mut context = crate::deckcode::resolver::ResolverContext::default();
-                    
+
                     while let Ok(event) = rx.recv() {
                         // Update context with latest language
                         context.active_language_id = active_lang.lock().unwrap().clone();
-                        
+
                         if let Some(binding) = resolver.resolve(&event, &context) {
                             crate::deckcode::dispatch::dispatch_action(&app_handle_clone, &binding);
                         }
@@ -999,7 +1008,13 @@ pub fn run() {
                 .menu(&tauri::menu::Menu::with_items(
                     app,
                     &[
-                        &tauri::menu::MenuItem::with_id(app, "show", "Open NEURODECK", true, None::<&str>)?,
+                        &tauri::menu::MenuItem::with_id(
+                            app,
+                            "show",
+                            "Open NEURODECK",
+                            true,
+                            None::<&str>,
+                        )?,
                         &tauri::menu::PredefinedMenuItem::separator(app)?,
                         &tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
                     ],
@@ -1018,7 +1033,11 @@ pub fn run() {
                 })
                 // Left-click on tray icon toggles window visibility
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        ..
+                    } = event
+                    {
                         let app = tray.app_handle();
                         if let Some(win) = app.get_webview_window("main") {
                             if win.is_visible().unwrap_or(false) {
@@ -1044,7 +1063,8 @@ pub fn run() {
                         if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                             let should_minimize = {
                                 let state = close_handle.state::<Mutex<AppState>>();
-                                state.lock()
+                                state
+                                    .lock()
                                     .map(|s| s.config.prefs.minimize_to_tray_on_close)
                                     .unwrap_or(true)
                             };

@@ -31,6 +31,6 @@ pub fn deckcode_set_active_language(
     lang_state: tauri::State<'_, DeckCodeActiveLang>,
     language_id: String,
 ) -> Result<(), String> {
-    *lang_state.0.lock().unwrap() = language_id;
+    *lang_state.0.lock().unwrap_or_else(|e| e.into_inner()) = language_id;
     Ok(())
 }

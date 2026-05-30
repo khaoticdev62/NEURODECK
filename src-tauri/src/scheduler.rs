@@ -44,7 +44,7 @@ impl SchedulerManaged {
 
     pub async fn start(&self, app_handle: AppHandle) -> Result<(), String> {
         let sched = JobScheduler::new().await.map_err(|e| e.to_string())?;
-        let tasks = self.tasks.lock().unwrap().clone();
+        let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
         for task in tasks {
             if task.enabled {
                 let _ =
@@ -121,7 +121,7 @@ pub async fn register_task(
     .map_err(|e| e.to_string())?;
 
     let job_id = scheduler.add(job).await.map_err(|e| e.to_string())?;
-    job_map.lock().unwrap().insert(task.id.clone(), job_id);
+    job_map.lock().unwrap_or_else(|e| e.into_inner()).insert(task.id.clone(), job_id);
     Ok(job_id)
 }
 
@@ -132,12 +132,12 @@ pub async fn unregister_task(
     job_map: &JobMap,
 ) -> Result<(), String> {
     let uuid = {
-        let map = job_map.lock().unwrap();
+        let map = job_map.lock().unwrap_or_else(|e| e.into_inner());
         map.get(task_id).copied()
     };
     if let Some(uuid) = uuid {
         scheduler.remove(&uuid).await.map_err(|e| e.to_string())?;
-        job_map.lock().unwrap().remove(task_id);
+        job_map.lock().unwrap_or_else(|e| e.into_inner()).remove(task_id);
     }
     Ok(())
 }
@@ -146,7 +146,7 @@ pub async fn unregister_task(
 
 #[tauri::command]
 pub fn list_scheduled_tasks(state: tauri::State<'_, Arc<SchedulerManaged>>) -> Vec<ScheduledTask> {
-    state.tasks.lock().unwrap().clone()
+    state.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
 #[tauri::command]
@@ -175,7 +175,7 @@ pub async fn add_scheduled_task(
     };
 
     {
-        let mut tasks = state.tasks.lock().unwrap();
+        let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
         tasks.push(task.clone());
         let _ = save_tasks(&state.tasks_path, &tasks);
     }
@@ -194,7 +194,7 @@ pub async fn delete_scheduled_task(
     id: String,
 ) -> Result<(), String> {
     {
-        let mut tasks = state.tasks.lock().unwrap();
+        let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
         tasks.retain(|t| t.id != id);
         let _ = save_tasks(&state.tasks_path, &tasks);
     }
@@ -215,7 +215,7 @@ pub async fn toggle_scheduled_task(
     enabled: bool,
 ) -> Result<(), String> {
     let task = {
-        let mut tasks = state.tasks.lock().unwrap();
+        let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
         let mut found = None;
         if let Some(t) = tasks.iter_mut().find(|t| t.id == id) {
             t.enabled = enabled;
@@ -248,7 +248,7 @@ pub fn run_task_now(
     id: String,
 ) -> Result<(), String> {
     let task = {
-        let tasks = state.tasks.lock().unwrap();
+        let tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
         tasks.iter().find(|t| t.id == id).cloned()
     };
 

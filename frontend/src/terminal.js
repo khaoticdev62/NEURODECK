@@ -907,7 +907,9 @@ async function initSshProfilesFromDisk() {
     if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "ssh" });
-        if (raw && raw !== "[]" && !localStorage.getItem("sshProfiles")) {
+        // Disk is always authoritative — overwrite localStorage unconditionally
+        // so data survives WebView cache wipes on Steam Deck.
+        if (raw && raw !== "[]") {
             localStorage.setItem("sshProfiles", raw);
         }
     } catch (_) {}
@@ -1083,7 +1085,8 @@ async function initFtpProfilesFromDisk() {
     if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "ftp" });
-        if (raw && raw !== "[]" && !localStorage.getItem("ftpProfiles")) {
+        // Disk is always authoritative — overwrite localStorage unconditionally.
+        if (raw && raw !== "[]") {
             localStorage.setItem("ftpProfiles", raw);
         }
     } catch (_) {}
@@ -1178,6 +1181,7 @@ function initFtpProfileListeners() {
 
     document.getElementById("settings-clear-ftp-profiles")?.addEventListener("click", () => {
         localStorage.removeItem("ftpProfiles");
+        saveFtpProfiles([]);
         renderFtpProfiles();
         renderFtpProfilesSettings();
     });
@@ -1535,7 +1539,8 @@ async function initSftpProfilesFromDisk() {
     if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "sftp" });
-        if (raw && raw !== "[]" && !localStorage.getItem("sftpProfiles")) {
+        // Disk is always authoritative — overwrite localStorage unconditionally.
+        if (raw && raw !== "[]") {
             localStorage.setItem("sftpProfiles", raw);
         }
     } catch (_) {}
