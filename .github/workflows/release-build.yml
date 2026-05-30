@@ -368,14 +368,15 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # ── Job 3b: Flatpak Build ───────────────────────────────────────────────────────
+  # ── Job 3b: Flatpak Build (DISABLED — use AppImage wrap approach) ────────────────
   build-flatpak:
     name: Build Flatpak Bundle
     runs-on: ubuntu-latest
     needs: kfms-gate
-    if: |
-      needs.kfms-gate.outputs.is_minor_or_major == 'true' &&
-      (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'flatpak')
+    if: false  # Disabled: v1.6.1 will use AppImage-wrap approach instead of source build
+    # Reason: Building from source in Flatpak sandbox hits libudev isolation issues.
+    # Solution: Use flatpak/com.neurodeck.app.json (AppImage wrap) instead of source build.
+    # Manifest is ready in flatpak/com.neurodeck.app.json.appimage-wrap
 
     env:
       VERSION:  ${{ needs.kfms-gate.outputs.version }}
