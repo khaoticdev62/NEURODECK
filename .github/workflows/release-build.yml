@@ -391,7 +391,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y flatpak flatpak-builder python3 python3-pip
-          pip install aiohttp toml
+          pip install aiohttp tomlkit
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.gnome.Platform//47 org.gnome.Sdk//47
           sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08

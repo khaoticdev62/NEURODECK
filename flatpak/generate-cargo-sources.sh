@@ -1,7 +1,7 @@
 #!/bin/bash
 # Regenerate cargo-sources.json for offline Flatpak builds.
 # Run this whenever Cargo.lock changes, then commit cargo-sources.json.
-# Requires: pip install aiohttp toml
+# Requires: pip install aiohttp tomlkit
 
 set -e
 
