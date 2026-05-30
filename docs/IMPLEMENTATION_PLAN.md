@@ -11,7 +11,7 @@
 - Codename: `Bastet`
 - Tag: `v1.6.0-bastet`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-05-30T23:52:41Z`
+- Last stamped build: `2026-05-30T23:53:46Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
