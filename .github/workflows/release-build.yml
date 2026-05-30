@@ -402,17 +402,17 @@ jobs:
 
       - name: Prepare AppImage for Flatpak wrapping
         run: |
-          # Copy AppImage to build location
-          cp appimage-download/neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage ./neurodeck.AppImage
-          chmod +x ./neurodeck.AppImage
+          # Copy AppImage to build location where Flatpak manifest can access it
+          mkdir -p flatpak/
+          cp appimage-download/neurodeck_${{ env.VERSION }}_steamdeck_amd64.AppImage flatpak/neurodeck.AppImage
+          chmod +x flatpak/neurodeck.AppImage
           echo "✓ AppImage ready for Flatpak wrapping"
 
       - name: Build Flatpak (wrapping AppImage)
         run: |
-          # Use the AppImage-wrap manifest (simpler approach: wraps pre-built binary)
-          # The manifest extracts the AppImage and packages it as a Flatpak
+          # Use the AppImage-wrap manifest (extracts pre-built AppImage, no compilation)
           flatpak-builder --repo=flatpak-repo --force-clean build-dir \
-            flatpak/com.neurodeck.app.json
+            flatpak/com.neurodeck.app.appimage-wrap.json
 
       - name: Bundle Flatpak (.flatpak file)
         run: |

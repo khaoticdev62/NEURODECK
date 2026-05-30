@@ -1,0 +1,50 @@
+{
+  "app-id": "com.neurodeck.app",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "command": "neurodeck",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--socket=pulseaudio",
+    "--device=dri",
+    "--device=all",
+    "--filesystem=home",
+    "--filesystem=xdg-config/neurodeck:create",
+    "--filesystem=xdg-data/neurodeck:create",
+    "--env=WEBKIT_DISABLE_DMABUF_RENDERER=1",
+    "--env=WEBKIT_DISABLE_COMPOSITING_MODE=1",
+    "--env=WEBKIT_FORCE_SANDBOX=0",
+    "--talk-name=org.freedesktop.secrets",
+    "--talk-name=org.kde.StatusNotifierWatcher",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.freedesktop.portal.Desktop",
+    "--talk-name=org.freedesktop.portal.FileChooser"
+  ],
+  "modules": [
+    {
+      "name": "neurodeck",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/bin /app/share/{applications,icons,metainfo}",
+        "chmod +x neurodeck.AppImage",
+        "./neurodeck.AppImage --appimage-extract",
+        "install -Dm755 squashfs-root/usr/bin/neurodeck /app/bin/neurodeck",
+        "install -Dm644 squashfs-root/usr/share/applications/neurodeck.desktop /app/share/applications/com.neurodeck.app.desktop",
+        "install -Dm644 squashfs-root/usr/share/metainfo/com.neurodeck.app.metainfo.xml /app/share/metainfo/com.neurodeck.app.metainfo.xml",
+        "for size in 32x32 48x48 64x64 128x128 256x256; do [ -f squashfs-root/usr/share/icons/hicolor/$size/apps/neurodeck.png ] && install -Dm644 squashfs-root/usr/share/icons/hicolor/$size/apps/neurodeck.png /app/share/icons/hicolor/$size/apps/neurodeck.png; done",
+        "install -Dm644 squashfs-root/LICENSE /app/share/licenses/neurodeck/LICENSE || echo 'Proprietary' > /app/share/licenses/neurodeck/LICENSE"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "path": "neurodeck.AppImage",
+          "dest": "."
+        }
+      ]
+    }
+  ]
+}
