@@ -408,6 +408,17 @@ jobs:
           chmod +x flatpak/neurodeck.AppImage
           echo "✓ AppImage ready for Flatpak wrapping"
 
+      - name: Debug - Inspect AppImage contents
+        run: |
+          cd flatpak/
+          chmod +x neurodeck.AppImage
+          echo "Extracting AppImage..."
+          ./neurodeck.AppImage --appimage-extract
+          echo "=== AppImage directory structure ==="
+          ls -la squashfs-root/ | head -20
+          echo "=== Looking for binary ==="
+          find squashfs-root -type f -executable 2>/dev/null | head -20
+
       - name: Build Flatpak (wrapping AppImage)
         run: |
           # Use the AppImage-wrap manifest (extracts pre-built AppImage, no compilation)
