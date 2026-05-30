@@ -417,7 +417,7 @@ function _renderHistory() {
   });
 }
 
-function _clearHistory() {
+async function _clearHistory() {
   const confirmed = await showConfirm("Clear all request history?", { confirmText: "Clear", cancelText: "Keep" }); if (!confirmed) return;
   localStorage.removeItem(HISTORY_KEY);
   _renderHistory();

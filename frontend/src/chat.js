@@ -1600,7 +1600,7 @@ function formatCodeBlocks(container) {
             const execBtn = document.createElement("button");
             execBtn.className = "code-header-btn execute-btn";
             execBtn.innerText = "Execute";
-            execBtn.onclick = function() {
+            execBtn.onclick = async function() {
                 const confirmed = await window.showConfirm(`Execute this ${lang} snippet?`, { confirmText: "Execute", cancelText: "Cancel" }); if (!confirmed) return;
                 if (state.isProcessRunning) {
                     invoke("kill_process", {  }).catch(e => console.error("Error killing process:", e));
@@ -1669,7 +1669,7 @@ function formatCodeBlocks(container) {
     });
 }
 
-function runLuaScript(scriptCode, preElement, execBtn) {
+async function runLuaScript(scriptCode, preElement, execBtn) {
     if (!scriptCode || scriptCode.trim() === "") {
         console.warn("No Lua script to execute.");
         return;
@@ -2161,7 +2161,7 @@ function refreshSessionsList() {
             deleteBtn.title = "Delete Session";
             deleteBtn.setAttribute("aria-label", "Delete Session");
             deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
-            deleteBtn.onclick = function(e) {
+            deleteBtn.onclick = async function(e) {
                 e.stopPropagation();
                 const confirmed = await showConfirm(`Delete session ${sid}?`, { confirmText: "Delete", cancelText: "Keep" }); if (confirmed) {
                     invoke("delete_session", { id: sid }).then(() => {

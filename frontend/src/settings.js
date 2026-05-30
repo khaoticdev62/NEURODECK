@@ -691,7 +691,7 @@ function loadCustomPersonas() {
 
       // Wire delete button listeners
       listEl.querySelectorAll(".persona-delete-btn").forEach((btn) => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           const name = btn.getAttribute("data-name");
           if (
             await showConfirm(`Are you sure you want to delete custom persona '${name}'?`, { confirmText: "Delete", cancelText: "Keep" })
