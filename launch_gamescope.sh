@@ -9,10 +9,14 @@ if [ -f "$DIR/neurodeck" ]; then
     BINARY="$DIR/neurodeck"
 elif [ -f "$DIR/app" ]; then
     BINARY="$DIR/app"
+elif [ -f "$DIR/neurodeck.AppImage" ]; then
+    BINARY="$DIR/neurodeck.AppImage"
 else
     echo "Error: NEURODECK binary not found in $DIR"
     exit 1
 fi
+
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 echo "Launching NEURODECK via Gamescope..."
 

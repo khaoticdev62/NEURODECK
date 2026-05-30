@@ -173,6 +173,7 @@ if [ -n "$APPIMAGE_SRC" ]; then
         echo '#!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
         print_ok "AppImage installed (FUSE mode)"
     else
@@ -181,6 +182,7 @@ exec "$SCRIPT_DIR/neurodeck.AppImage" "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
         echo '#!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 exec "$SCRIPT_DIR/neurodeck.AppImage" --appimage-extract-and-run "$@"' > "$INSTALL_DIR/neurodeck-launch.sh"
         print_ok "AppImage installed (extract-and-run mode, no FUSE required)"
     fi
@@ -300,6 +302,8 @@ if [ -z "$APPIMAGE_SRC" ]; then
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
+
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
 
 cd "$SCRIPT_DIR"
 

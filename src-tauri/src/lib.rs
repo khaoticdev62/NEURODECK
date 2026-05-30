@@ -738,6 +738,14 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // Disable WebKit compositing by default on Linux to prevent blank/white screens in Gamescope/Wayland
+        if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        }
+    }
+
     let config_root = user_config_dir();
     let _ = std::fs::create_dir_all(&config_root);
 
