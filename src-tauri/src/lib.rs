@@ -908,7 +908,7 @@ pub fn run() {
 
             {
                 let state = app.state::<crate::deckcode::DeckCodeState>();
-                *state.0.lock().unwrap() = (loaded_schema.clone(), loaded_multilang.clone());
+                *state.0.lock().unwrap_or_else(|e| e.into_inner()) = (loaded_schema.clone(), loaded_multilang.clone());
             }
 
             if let Some(schema) = loaded_schema {
@@ -925,7 +925,7 @@ pub fn run() {
 
                     while let Ok(event) = rx.recv() {
                         // Update context with latest language
-                        context.active_language_id = active_lang.lock().unwrap().clone();
+                        context.active_language_id = active_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
 
                         if let Some(binding) = resolver.resolve(&event, &context) {
                             crate::deckcode::dispatch::dispatch_action(&app_handle_clone, &binding);
