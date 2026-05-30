@@ -311,7 +311,7 @@ async function _generateRequest() {
     (req.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
     document.querySelector('.api-lab-tab[data-api-tab="headers"]')?.click();
   } catch (e) {
-    alert("Generate failed: " + e);
+    addNotification('Generate Failed', String(e), 'error');
   } finally {
     btn.textContent = "✨ Generate Request";
     btn.disabled = false;
@@ -330,7 +330,7 @@ async function _exportCurl() {
     const area = document.getElementById("api-curl-area");
     if (area) { area.value = curl; area.select(); }
   } catch (e) {
-    alert("Export failed: " + e);
+    addNotification('Export Failed', String(e), 'error');
   }
 }
 
@@ -348,7 +348,7 @@ async function _importCurl() {
     (req.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
     document.querySelector('.api-lab-tab[data-api-tab="headers"]')?.click();
   } catch (e) {
-    alert("Import failed: " + e);
+    addNotification('Import Failed', String(e), 'error');
   }
 }
 
@@ -418,7 +418,7 @@ function _renderHistory() {
 }
 
 function _clearHistory() {
-  if (!confirm("Clear all request history?")) return;
+  const confirmed = await showConfirm("Clear all request history?", { confirmText: "Clear", cancelText: "Keep" }); if (!confirmed) return;
   localStorage.removeItem(HISTORY_KEY);
   _renderHistory();
 }
@@ -460,7 +460,7 @@ async function _createCollection() {
   try {
     await invoke("api_save_collection", { name: name.trim(), requests: "[]" });
     _loadCollections();
-  } catch (e) { alert("Save failed: " + e); }
+  } catch (e) { addNotification('Save Failed', String(e), 'error'); }
 }
 
 async function _loadCollection(name) {
@@ -470,16 +470,16 @@ async function _loadCollection(name) {
     _currentCollection = name;
     _renderRequestList();
     _loadCollections();
-  } catch (e) { alert("Load failed: " + e); }
+  } catch (e) { addNotification('Load Failed', String(e), 'error'); }
 }
 
 async function _deleteCollection(name) {
-  if (!confirm(`Delete collection "${name}"?`)) return;
+  const confirmed = await showConfirm(`Delete collection "${name}"?`, { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
   try {
     await invoke("api_delete_collection", { name });
     if (_currentCollection === name) { _currentCollection = null; _currentRequests = []; _renderRequestList(); }
     _loadCollections();
-  } catch (e) { alert("Delete failed: " + e); }
+  } catch (e) { addNotification('Delete Failed', String(e), 'error'); }
 }
 
 async function _saveRequestToCollection() {
@@ -504,7 +504,7 @@ async function _saveRequestToCollection() {
   try {
     await invoke("api_save_collection", { name: _currentCollection, requests: JSON.stringify(_currentRequests) });
     _renderRequestList();
-  } catch (e) { alert("Save failed: " + e); }
+  } catch (e) { addNotification('Save Failed', String(e), 'error'); }
 }
 
 function _renderRequestList() {

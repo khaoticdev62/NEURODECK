@@ -592,7 +592,7 @@ function initCanvasView() {
     // Clear button
     if (clearBtn) {
         clearBtn.onclick = () => {
-            if (confirm("Clear the editor?")) {
+            const confirmed = await showConfirm("Clear the editor?", { confirmText: "Clear", cancelText: "Keep" }); if (confirmed) {
                 if (monacoEditor) monacoEditor.setValue('');
                 window.neurodeckCanvas.currentCode = '';
                 const frame = document.getElementById("canvas-preview-frame");

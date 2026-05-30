@@ -1601,7 +1601,7 @@ function formatCodeBlocks(container) {
             execBtn.className = "code-header-btn execute-btn";
             execBtn.innerText = "Execute";
             execBtn.onclick = function() {
-                if (!window.confirm(`Execute this ${lang} snippet?\n\nReview the command before running.`)) return;
+                const confirmed = await window.showConfirm(`Execute this ${lang} snippet?`, { confirmText: "Execute", cancelText: "Cancel" }); if (!confirmed) return;
                 if (state.isProcessRunning) {
                     invoke("kill_process", {  }).catch(e => console.error("Error killing process:", e));
                 }
@@ -1675,7 +1675,7 @@ function runLuaScript(scriptCode, preElement, execBtn) {
         return;
     }
 
-    if (!window.confirm("Execute this Lua script?")) {
+    const confirmed = await window.showConfirm("Execute this Lua script?", { confirmText: "Execute", cancelText: "Cancel" }); if (!confirmed) {
         return;
     }
 
@@ -2149,9 +2149,9 @@ function refreshSessionsList() {
             exportBtn.onclick = function(e) {
                 e.stopPropagation();
                 invoke("export_session_markdown", { id: sid }).then((msg) => {
-                    alert(msg);
+                    addNotification('Export Complete', msg, 'success');
                 }).catch((err) => {
-                    alert("Error exporting session: " + err);
+                    addNotification('Export Failed', String(err), 'error');
                 });
             };
             actions.appendChild(exportBtn);
@@ -2163,7 +2163,7 @@ function refreshSessionsList() {
             deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
             deleteBtn.onclick = function(e) {
                 e.stopPropagation();
-                if (confirm(`Delete session ${sid}?`)) {
+                const confirmed = await showConfirm(`Delete session ${sid}?`, { confirmText: "Delete", cancelText: "Keep" }); if (confirmed) {
                     invoke("delete_session", { id: sid }).then(() => {
                         if (sid === state.currentSessionId) {
                             startNewSession();

@@ -45,7 +45,7 @@ function syncShellPillsForSession(shell) {
 
 function createTerminalSession(shellPath) {
     if (state.terminalSessions.length >= MAX_TERMINAL_SESSIONS) {
-        alert(`Maximum of ${MAX_TERMINAL_SESSIONS} active terminal tabs allowed.`);
+        addNotification('Tab Limit Reached', `Maximum of ${MAX_TERMINAL_SESSIONS} active terminal tabs allowed.`, 'warning');
         return;
     }
 
@@ -1025,7 +1025,7 @@ function initSshProfileListeners() {
         const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
         const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
         const password = document.getElementById("ssh-pass-input")?.value || "";
-        if (!host || !user) { alert("Enter host and username first."); return; }
+        if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
         const name = prompt("Profile name:", `${user}@${host}`);
         if (!name) return;
 
@@ -1170,7 +1170,7 @@ function initFtpProfileListeners() {
         const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
         const user = document.getElementById("ftp-user-input")?.value.trim();
         const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
-        if (!host || !user) { alert("Enter host and username first."); return; }
+        if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
         const name = prompt("Profile name:", `${user}@${host}`);
         if (!name) return;
         const profiles = getFtpProfiles();
@@ -1658,7 +1658,7 @@ function initSftpProfileListeners() {
         const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
         const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
         const password = document.getElementById("sftp-pass-input")?.value || "";
-        if (!host || !user) { alert("Enter host and username first."); return; }
+        if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
         const name = prompt("Profile name:", `${user}@${host}`);
         if (!name) return;
 

@@ -694,7 +694,7 @@ function loadCustomPersonas() {
         btn.onclick = () => {
           const name = btn.getAttribute("data-name");
           if (
-            confirm(`Are you sure you want to delete custom persona '${name}'?`)
+            await showConfirm(`Are you sure you want to delete custom persona '${name}'?`, { confirmText: "Delete", cancelText: "Keep" })
           ) {
             const statusEl = document.getElementById("settings-persona-status");
             if (statusEl) statusEl.innerText = "Deleting custom persona...";
@@ -734,7 +734,7 @@ function initCustomPersonas() {
       const prompt = promptInput.value.trim();
 
       if (!name || !prompt) {
-        alert("Please enter a name and system prompt.");
+        addNotification('Missing Fields', 'Please enter a name and system prompt.', 'warning');
         return;
       }
 

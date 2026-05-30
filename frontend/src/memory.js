@@ -140,7 +140,7 @@ export function initMemoryView() {
 
             card.querySelector(".mem-del-btn").onclick = async function() {
                 const id = this.dataset.id;
-                if (!confirm("Delete this memory record?")) return;
+                const confirmed = await showConfirm("Delete this memory record?", { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
                 try {
                     await invoke("memory_delete", { id });
                     allRecords = allRecords.filter(r => r.id !== id);
@@ -237,7 +237,7 @@ export function initMemoryView() {
         importFile.onchange = async function() {
             const file = importFile.files && importFile.files[0];
             if (!file) return;
-            const merge = confirm(
+            const merge = await showConfirm(
                 `Import "${file.name}"?\n\nClick OK to MERGE (keep existing records + add new ones).\nClick Cancel to REPLACE all current memory with this file.`
             );
             if (importLabel) { importLabel.textContent = "Importing…"; }
@@ -313,7 +313,7 @@ export function initMemoryView() {
                     <button class="memory-btn memory-btn-restore" data-name="${escHtml(b.name)}" aria-label="Restore ${escHtml(b.name)}">Restore</button>`;
                 row.querySelector(".memory-btn-restore").onclick = async function() {
                     const name = this.dataset.name;
-                    if (!confirm(`Restore from backup "${name}"?\nThis will REPLACE all current memory records.`)) return;
+                    const confirmed = await showConfirm(`Restore from backup "${name}"?\nThis will REPLACE all current memory records.`, { confirmText: "Restore", cancelText: "Cancel" }); if (!confirmed) return;
                     this.disabled = true;
                     this.textContent = "Restoring…";
                     try {
