@@ -103,13 +103,13 @@ function _wireFilters() {
       const json = await invoke("cli_import_lua", { path: filePath });
       const imported = JSON.parse(json || "[]");
       if (imported.length === 0) {
-        alert("No registerCommand(...) blocks found.");
+        addNotification('No Commands Found', 'No registerCommand(...) blocks found.', 'info');
         return;
       }
       await _loadCommands();
-      alert(`Imported ${imported.length} command(s) from Lua.`);
+      addNotification('Import Successful', `Imported ${imported.length} command(s) from Lua.`, 'success');
     } catch (e) {
-      alert(`Import failed: ${e}`);
+      addNotification('Import Failed', String(e), 'error');
     } finally {
       importInput.value = "";
     }
@@ -546,7 +546,7 @@ async function _runCommand(id) {
 }
 
 async function _deleteCommand(id) {
-  if (!confirm("Delete this command?")) return;
+  const confirmed = await showConfirm("Delete this command?", { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
   try {
     await invoke("cli_delete_command", { id });
     if (_editingId === id) { _editingId = null; _clearEditor(); }

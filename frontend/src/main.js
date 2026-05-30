@@ -441,7 +441,7 @@ document.querySelector("#app").innerHTML = `
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <span>NEURODECK</span>
-                    <span class="sidebar-brand-version">v0.1.0</span>
+                    <span class="sidebar-brand-version">v1.6.0</span>
                 </div>
                 <button class="sidebar-toggle-btn" id="sidebar-close-btn" title="Collapse Sidebar" aria-label="Collapse Sidebar">◀</button>
             </div>
@@ -13313,7 +13313,6 @@ initDocsView();
 // ==========================================================================
 listen("deckcode-action", (event) => {
   const actionId = event.payload;
-  console.log("[DeckCode] Received Action:", actionId);
 
   if (typeof actionId === "string" && actionId.startsWith("insert_snippet:")) {
     const snippetTemplate = actionId.substring("insert_snippet:".length);

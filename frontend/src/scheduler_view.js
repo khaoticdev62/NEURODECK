@@ -63,7 +63,7 @@ async function handleAddTask() {
     const goal = document.getElementById('scheduler-goal-input').value.trim();
 
     if (!name || !cron || !goal) {
-        alert("Please fill in all fields.");
+        addNotification('Missing Fields', 'Please fill in all fields.', 'warning');
         return;
     }
 
@@ -74,17 +74,17 @@ async function handleAddTask() {
         document.getElementById('scheduler-goal-input').value = '';
         await loadTasks();
     } catch (e) {
-        alert("Failed to add task. Is the cron expression valid? Error: " + e);
+        addNotification('Add Task Failed', 'Check cron expression. ' + String(e), 'error');
     }
 }
 
 window.deleteSchedulerTask = async function(id) {
-    if (!confirm("Delete this task?")) return;
+    const confirmed = await showConfirm("Delete this task?", { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
     try {
         await invoke('delete_scheduled_task', { id });
         await loadTasks();
     } catch (e) {
-        alert("Failed to delete task: " + e);
+        addNotification('Delete Failed', String(e), 'error');
     }
 };
 
@@ -93,15 +93,15 @@ window.toggleSchedulerTask = async function(id, enabled) {
         await invoke('toggle_scheduled_task', { id, enabled });
         await loadTasks();
     } catch (e) {
-        alert("Failed to toggle task: " + e);
+        addNotification('Toggle Failed', String(e), 'error');
     }
 };
 
 window.runSchedulerTaskNow = async function(id) {
     try {
         await invoke('run_task_now', { id });
-        alert("Task triggered!");
+        addNotification('Task Triggered', 'Task has been executed.', 'success');
     } catch (e) {
-        alert("Failed to run task: " + e);
+        addNotification('Run Failed', String(e), 'error');
     }
 };

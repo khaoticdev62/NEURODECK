@@ -47,7 +47,7 @@ function wireRepoActions() {
       await openRepo(path);
       await loadRepoList();
     } catch (e) {
-      alert("Clone failed: " + e);
+      addNotification('Clone Failed', String(e), 'error');
     }
   });
 
@@ -59,7 +59,7 @@ function wireRepoActions() {
       await openRepo(path);
       await loadRepoList();
     } catch (e) {
-      alert("Init failed: " + e);
+      addNotification('Init Failed', String(e), 'error');
     }
   });
 
@@ -85,7 +85,7 @@ async function openRepo(path) {
     await refreshHistory();
     await refreshRemotes();
   } catch (e) {
-    alert("Open repo failed: " + e);
+    addNotification('Open Repo Failed', String(e), 'error');
     currentRepoPath = null;
   }
 }
@@ -171,7 +171,7 @@ function wireCommitBar() {
 
   document.getElementById("git-discard-btn")?.addEventListener("click", async () => {
     if (!currentRepoPath || selectedFiles.size === 0) return;
-    if (!confirm("Discard changes to selected files?")) return;
+    const confirmed = await showConfirm("Discard changes to selected files?", { confirmText: "Discard", cancelText: "Keep" }); if (!confirmed) return;
     const files = Array.from(selectedFiles);
     await invoke("git_discard", { path: currentRepoPath, files });
     selectedFiles.clear();
@@ -181,16 +181,16 @@ function wireCommitBar() {
   document.getElementById("git-commit-btn")?.addEventListener("click", async () => {
     if (!currentRepoPath) return;
     const msg = document.getElementById("git-commit-msg").value.trim();
-    if (!msg) return alert("Enter a commit message.");
+    if (!msg) { addNotification('Missing Commit Message', 'Enter a commit message.', 'warning'); return; }
     // Use generic author for now; could be configurable
     try {
       const sha = await invoke("git_commit", { path: currentRepoPath, message: msg, authorName: "NEURODECK", authorEmail: "dev@neurodeck.local" });
       document.getElementById("git-commit-msg").value = "";
       await refreshWorktree();
       await refreshHistory();
-      alert(`Committed: ${sha.slice(0, 7)}`);
+      addNotification('Commit Successful', `Committed: ${sha.slice(0, 7)}`, 'success');
     } catch (e) {
-      alert("Commit failed: " + e);
+      addNotification('Commit Failed', String(e), 'error');
     }
   });
 
@@ -202,7 +202,7 @@ function wireCommitBar() {
       const msg = await invoke("git_generate_commit_message", { path: currentRepoPath });
       document.getElementById("git-commit-msg").value = msg;
     } catch (e) {
-      alert("AI suggest failed: " + e);
+      addNotification('AI Suggestion Failed', String(e), 'error');
     } finally {
       btn.textContent = "✨";
     }
@@ -232,7 +232,7 @@ async function refreshBranches() {
     });
     list.querySelectorAll("[data-action='delete']").forEach(btn => {
       btn.addEventListener("click", async () => {
-        if (!confirm(`Delete branch ${btn.dataset.branch}?`)) return;
+        const confirmed = await showConfirm(`Delete branch ${btn.dataset.branch}?`, { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
         await invoke("git_branch_delete", { path: currentRepoPath, name: btn.dataset.branch });
         await refreshBranches();
       });
