@@ -372,7 +372,7 @@ jobs:
   build-flatpak:
     name: Build Flatpak Bundle
     runs-on: ubuntu-latest
-    needs: [kfms-gate, build-appimage]
+    needs: kfms-gate
     if: |
       needs.kfms-gate.outputs.is_minor_or_major == 'true' &&
       (github.event.inputs.target == '' || github.event.inputs.target == 'all' || github.event.inputs.target == 'flatpak')
