@@ -33,7 +33,7 @@ on:
         required: false
         default: 'all'
         type: choice
-        options: [all, windows, appimage]
+        options: [all, windows, appimage, flatpak]
       skip_gate:
         description: 'Skip KFMS release gate (emergency builds only)'
         required: false
