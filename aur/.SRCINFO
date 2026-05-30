@@ -1,0 +1,23 @@
+pkgbase = neurodeck-bin
+	pkgdesc = AI Terminal Interface for Steam Deck — Tauri v2 + LLM integration
+	pkgver = 1.6.0
+	pkgrel = 1
+	url = https://github.com/khaoticdev62/NEURODECK
+	arch = x86_64
+	license = custom:Proprietary
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	depends = libayatana-appindicator
+	depends = libpulse
+	depends = openssl
+	depends = dbus
+	depends = xdg-utils
+	optdepends = gamemode: performance mode on gamepad detection
+	optdepends = steam-devices: Steam Deck controller udev rules
+	provides = neurodeck
+	conflicts = neurodeck
+	options = !strip
+	source = neurodeck_1.6.0_steamdeck_amd64.AppImage::https://github.com/khaoticdev62/NEURODECK/releases/download/v1.6.0-bastet/neurodeck_1.6.0_steamdeck_amd64.AppImage
+	sha256sums = SKIP
+
+pkgname = neurodeck-bin

@@ -6,7 +6,7 @@
   <summary>AI Terminal Interface for Steam Deck</summary>
 
   <metadata_license>MIT</metadata_license>
-  <project_license>MIT</project_license>
+  <project_license>LicenseRef-Proprietary</project_license>
 
   <description>
     <p>
@@ -67,10 +67,24 @@
   <screenshots>
     <screenshot type="default">
       <caption>NEURODECK chat interface with AI response and RAG memory</caption>
+      <image>https://raw.githubusercontent.com/khaoticdev62/NEURODECK/master/assets/screenshots/chat.png</image>
     </screenshot>
   </screenshots>
 
   <releases>
+    <release version="1.6.0" date="2026-05-30">
+      <description>
+        <p>v1.6.0 Bastet — Production hardening and Steam Deck launch fixes.</p>
+        <ul>
+          <li>Fixed EGL_BAD_PARAMETER crash on SteamOS via system libwayland LD_PRELOAD</li>
+          <li>Fixed blank white page via WEBKIT_DISABLE_DMABUF_RENDERER=1 in Rust startup</li>
+          <li>Replaced all alert()/confirm() calls with accessible modal system</li>
+          <li>Hardened command injection detection with regex normalization</li>
+          <li>Bundled install.sh and launch_gamescope.sh inside AppImage</li>
+          <li>Flatpak and AUR packaging support</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-05-23">
       <description>
         <p>v1.1.0 — Touch and Onboarding Update.</p>

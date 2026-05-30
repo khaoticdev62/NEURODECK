@@ -14,9 +14,9 @@
   },
   "tag": "v1.6.0-bastet",
   "build": {
-    "git_sha": "1fa772a6d06841c1fbdd168ed3d5511f6216e93f",
+    "git_sha": "b4e9feb3352fd76c8c5417d3387656002c584a17",
     "git_tag": null,
-    "built_at_utc": "2026-05-30T19:58:50Z",
+    "built_at_utc": "2026-05-30T20:15:13Z",
     "dirty": false
   },
   "studio": {
@@ -29,7 +29,9 @@
       "build_trigger_pattern": "v[0-9]+.[0-9]+.[0-9]+-*",
       "build_targets": [
         "windows",
-        "appimage"
+        "appimage",
+        "flatpak",
+        "aur"
       ],
       "build_script": "scripts/powershell/build.ps1",
       "release_policy": {

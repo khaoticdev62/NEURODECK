@@ -1,0 +1,72 @@
+# Maintainer: khaoticdev62 <thecreativeone62@gmail.com>
+# AUR package: neurodeck-bin
+# Wraps the official AppImage release of NEURODECK.
+# Source: https://github.com/khaoticdev62/NEURODECK
+
+pkgname=neurodeck-bin
+pkgver=1.6.0
+pkgrel=1
+pkgdesc="AI Terminal Interface for Steam Deck — Tauri v2 + LLM integration"
+arch=('x86_64')
+url="https://github.com/khaoticdev62/NEURODECK"
+license=('custom:Proprietary')
+
+_codename=bastet
+_tag="v${pkgver}-${_codename}"
+_appimage="neurodeck_${pkgver}_steamdeck_amd64.AppImage"
+
+# Runtime dependencies: what must be present on the host Arch system
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libayatana-appindicator'
+  'libpulse'
+  'openssl'
+  'dbus'
+  'xdg-utils'
+)
+
+optdepends=(
+  'gamemode: performance mode on gamepad detection'
+  'steam-devices: Steam Deck controller udev rules'
+)
+
+provides=('neurodeck')
+conflicts=('neurodeck')
+
+source=("${_appimage}::https://github.com/khaoticdev62/NEURODECK/releases/download/${_tag}/${_appimage}")
+
+# IMPORTANT: Replace SKIP with actual sha256sum from GitHub Release's SHA256SUMS.txt
+# To obtain: download the SHA256SUMS.txt file and grep for the AppImage
+sha256sums=('SKIP')
+
+options=(!strip)
+
+prepare() {
+  chmod +x "${srcdir}/${_appimage}"
+  "${srcdir}/${_appimage}" --appimage-extract
+}
+
+package() {
+  # Install binary
+  install -Dm755 "${srcdir}/squashfs-root/usr/bin/neurodeck" \
+    "${pkgdir}/usr/bin/neurodeck"
+
+  # Install desktop entry
+  install -Dm644 "${srcdir}/squashfs-root/usr/share/applications/neurodeck.desktop" \
+    "${pkgdir}/usr/share/applications/neurodeck.desktop"
+
+  # Install icons (all available sizes)
+  for size in 32x32 128x128 256x256; do
+    icon_src="${srcdir}/squashfs-root/usr/share/icons/hicolor/${size}/apps/neurodeck.png"
+    if [[ -f "${icon_src}" ]]; then
+      install -Dm644 "${icon_src}" \
+        "${pkgdir}/usr/share/icons/hicolor/${size}/apps/neurodeck.png"
+    fi
+  done
+
+  # Install license
+  install -Dm644 /dev/stdin "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE" <<'EOF'
+Proprietary. All rights reserved. See https://github.com/khaoticdev62/NEURODECK
+EOF
+}
