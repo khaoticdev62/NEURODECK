@@ -1161,7 +1161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "codename": "bastet",
                 "tag": "v1.6.0-bastet",
                 "bridge_api_version": "1.0",
-                "commands_implemented": 235
+                "commands_implemented": 265
             }))
         }
 
@@ -3847,11 +3847,308 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining — final stub
+        // SFTP (calls public async fns — no AppHandle needed)
+        // ────────────────────────────────────────────────────────────────────
+        "sftp_test_connection" => {
+            let host      = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port      = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user      = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
+            let auth_type = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
+            let password  = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let key_path  = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let result = crate::sftp::sftp_test_connection(host, port, user, auth_type, password, key_path).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "connected", "cwd": result }))
+        }
+
+        "sftp_list_dir" => {
+            let host      = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port      = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user      = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
+            let auth_type = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
+            let password  = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let key_path  = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let path      = args.get("path").and_then(|v| v.as_str()).unwrap_or("/").to_string();
+            let entries = crate::sftp::sftp_list_dir(host, port, user, auth_type, password, key_path, path.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "path": path, "entries": entries, "count": entries.len() }))
+        }
+
+        "sftp_download_file" => {
+            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user        = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
+            let auth_type   = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
+            let password    = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let key_path    = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
+            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
+            crate::sftp::sftp_download_file(host, port, user, auth_type, password, key_path, remote_path.clone(), local_path.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "downloaded", "remote_path": remote_path, "local_path": local_path }))
+        }
+
+        "sftp_upload_file" => {
+            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user        = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
+            let auth_type   = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
+            let password    = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let key_path    = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
+            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
+            crate::sftp::sftp_upload_file(host, port, user, auth_type, password, key_path, local_path.clone(), remote_path.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "uploaded", "local_path": local_path, "remote_path": remote_path }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // LLM Connection Test
+        // ────────────────────────────────────────────────────────────────────
+        "test_llm_connection" => {
+            let provider = args.get("provider").and_then(|v| v.as_str()).ok_or("Missing 'provider'")?.to_string();
+            let model    = args.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let url      = args.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let key      = args.get("key").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let result = crate::commands::test_llm_connection(provider, model, url, key).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "ok", "message": result }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Whisper Configuration
+        // ────────────────────────────────────────────────────────────────────
+        "set_whisper_config" => {
+            let binary = args.get("binary").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let model  = args.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            app_state.config.stt.whisper_binary = binary.clone();
+            app_state.config.stt.whisper_model  = model.clone();
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "updated", "binary": binary, "model": model }))
+        }
+
+        "download_whisper_model" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Whisper model download requires Tauri AppHandle for progress events; use the Tauri UI" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Plugin Install / Uninstall (no-AppHandle paths)
+        // ────────────────────────────────────────────────────────────────────
+        "install_plugin" => {
+            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            crate::plugin_mgr::install_plugin(url.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "installed", "url": url, "note": "Restart or call reload_plugins to activate" }))
+        }
+
+        "uninstall_plugin" => {
+            let plugin_id = args.get("plugin_id").and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
+            // Delete file without AppHandle reload (reload requires AppHandle)
+            let dir_buf = crate::user_config_dir().join("../plugins").canonicalize()
+                .unwrap_or_else(|_| std::path::PathBuf::from("plugins"));
+            let dir = dir_buf.as_path();
+            let mut removed = false;
+            for suffix in &[".lua", ".lua.disabled", format!("{}.lua", plugin_id).as_str(), format!("{}.lua.disabled", plugin_id).as_str()] {
+                let path = dir.join(format!("{}{}", plugin_id, suffix));
+                if path.exists() { let _ = std::fs::remove_file(&path); removed = true; }
+            }
+            // Also try exact name match
+            for candidate in &[format!("{}.lua", plugin_id), format!("{}.lua.disabled", plugin_id)] {
+                let path = dir.join(candidate);
+                if path.exists() { let _ = std::fs::remove_file(&path); removed = true; }
+            }
+            if removed {
+                Ok(serde_json::json!({ "status": "uninstalled", "plugin_id": plugin_id, "note": "Restart to deactivate" }))
+            } else {
+                Err(format!("Plugin '{}' not found", plugin_id))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Ollama Pull (streaming via broadcaster)
+        // ────────────────────────────────────────────────────────────────────
+        "ollama_pull_model" => {
+            let base_url = {
+                let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                args.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string())
+                    .unwrap_or_else(|| app_state.config.llm.ollama_base_url.clone())
+            };
+            let model    = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?.to_string();
+            let broadcaster = state.broadcaster.clone();
+            let url = format!("{}/api/pull", base_url.trim_end_matches('/'));
+            let model_c = model.clone();
+            tokio::spawn(async move {
+                let client = reqwest::Client::new();
+                let body = serde_json::json!({ "model": model_c, "stream": true });
+                match client.post(&url).json(&body).send().await {
+                    Ok(mut resp) => {
+                        while let Ok(Some(chunk)) = resp.chunk().await {
+                            if let Ok(s) = std::str::from_utf8(&chunk) {
+                                broadcaster.emit("ollama_pull_progress", serde_json::json!({ "model": model_c, "data": s }));
+                            }
+                        }
+                        broadcaster.emit("ollama_pull_done", serde_json::json!({ "model": model_c }));
+                    }
+                    Err(e) => broadcaster.emit("ollama_pull_error", serde_json::json!({ "model": model_c, "error": e.to_string() }))
+                }
+            });
+            Ok(serde_json::json!({ "status": "streaming", "model": model, "note": "Monitor WebSocket for ollama_pull_progress events" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // HuggingFace Download (streaming via broadcaster)
+        // ────────────────────────────────────────────────────────────────────
+        "hf_download_model" => {
+            let repo_id  = args.get("repo_id").and_then(|v| v.as_str()).ok_or("Missing 'repo_id'")?.to_string();
+            let filename = args.get("filename").and_then(|v| v.as_str()).ok_or("Missing 'filename'")?.to_string();
+            let broadcaster = state.broadcaster.clone();
+            let download_id = format!("{}_{}", repo_id.replace('/', "_"), uuid::Uuid::new_v4().to_string().chars().take(8).collect::<String>());
+            let dl_id = download_id.clone();
+            let repo_c = repo_id.clone();
+            let file_c = filename.clone();
+            tokio::spawn(async move {
+                let url = format!("https://huggingface.co/{}/resolve/main/{}", repo_c, file_c);
+                let client = reqwest::Client::new();
+                match client.get(&url).send().await {
+                    Ok(resp) => {
+                        let total = resp.content_length().unwrap_or(0);
+                        broadcaster.emit("hf_download_started", serde_json::json!({ "download_id": dl_id, "total_bytes": total }));
+                        let dest = crate::user_config_dir().join("data/models").join(&file_c);
+                        std::fs::create_dir_all(dest.parent().unwrap_or(std::path::Path::new("."))).ok();
+                        if let Ok(bytes) = resp.bytes().await {
+                            if std::fs::write(&dest, &bytes).is_ok() {
+                                broadcaster.emit("hf_download_done", serde_json::json!({ "download_id": dl_id, "path": dest.display().to_string() }));
+                            } else {
+                                broadcaster.emit("hf_download_error", serde_json::json!({ "download_id": dl_id, "error": "Write failed" }));
+                            }
+                        }
+                    }
+                    Err(e) => broadcaster.emit("hf_download_error", serde_json::json!({ "download_id": dl_id, "error": e.to_string() }))
+                }
+            });
+            Ok(serde_json::json!({ "status": "downloading", "download_id": download_id, "repo_id": repo_id, "filename": filename }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Git SSH Key Generation
+        // ────────────────────────────────────────────────────────────────────
+        "git_generate_ssh_key" => {
+            let label = args.get("label").and_then(|v| v.as_str()).unwrap_or("neurodeck").to_string();
+            let ssh_dir = crate::user_config_dir().join("data/ssh_keys");
+            std::fs::create_dir_all(&ssh_dir).ok();
+            let key_path = ssh_dir.join(format!("{}_rsa", label));
+            let key_path_str = key_path.display().to_string();
+            let result = tokio::task::spawn_blocking(move || {
+                std::process::Command::new("ssh-keygen")
+                    .args(["-t", "rsa", "-b", "4096", "-C", &label, "-f", &key_path_str, "-N", ""])
+                    .output()
+            }).await.map_err(|e| e.to_string())?;
+            match result {
+                Ok(out) if out.status.success() => {
+                    let pub_path = format!("{}.pub", key_path.display());
+                    let pub_key = std::fs::read_to_string(&pub_path).unwrap_or_default();
+                    Ok(serde_json::json!({ "status": "generated", "private_key_path": key_path.display().to_string(), "public_key": pub_key.trim().to_string() }))
+                }
+                Ok(out) => Err(format!("ssh-keygen failed: {}", String::from_utf8_lossy(&out.stderr))),
+                Err(e) => Err(format!("ssh-keygen not available: {}", e))
+            }
+        }
+
+        "git_ssh_public_keys" => {
+            let ssh_dir = crate::user_config_dir().join("data/ssh_keys");
+            let mut keys = Vec::new();
+            if let Ok(entries) = std::fs::read_dir(&ssh_dir) {
+                for entry in entries.flatten() {
+                    if entry.path().extension().map(|e| e == "pub").unwrap_or(false) {
+                        if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                            keys.push(content.trim().to_string());
+                        }
+                    }
+                }
+            }
+            Ok(serde_json::json!({ "keys": keys, "count": keys.len() }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // API Lab — AI Request Generation
+        // ────────────────────────────────────────────────────────────────────
+        "api_generate_request" => {
+            let description = args.get("description").and_then(|v| v.as_str()).ok_or("Missing 'description'")?;
+            let provider = { state.app_state.lock().unwrap_or_else(|e| e.into_inner()).provider.clone() };
+            let prompt = format!(
+                "Generate an HTTP API request for: '{}'\n\
+                Return ONLY a JSON object with keys: method (GET/POST/PUT/DELETE), url, headers (object), body (string or null). No markdown.", description
+            );
+            let result = provider.chat_with_image(&prompt, "You are an API expert. Return only JSON.", None, None).await
+                .map_err(|e| e.to_string())?;
+            let cleaned = result.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+            let parsed: serde_json::Value = serde_json::from_str(cleaned)
+                .unwrap_or_else(|_| serde_json::json!({ "raw": result }));
+            Ok(parsed)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Boot Diagnostics (bridge-adapted snapshot)
+        // ────────────────────────────────────────────────────────────────────
+        "get_boot_diagnostics" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let memory_count = app_state.mem_db.as_ref()
+                .and_then(|db| db.export_all_records().ok().map(|r| r.len())).unwrap_or(0);
+            let plugins = crate::plugin_mgr::list_local_plugins().unwrap_or_default();
+            Ok(serde_json::json!({
+                "version":       "1.6.0-bastet",
+                "provider":      app_state.config.llm.default_provider,
+                "model":         if app_state.config.llm.default_provider == "gemini" { &app_state.config.llm.gemini_model } else { &app_state.config.llm.ollama_model },
+                "memory_ready":  app_state.mem_db.is_some(),
+                "memory_count":  memory_count,
+                "mcp_running":   app_state.mcp_abort.is_some(),
+                "plugin_count":  plugins.len(),
+                "session_id":    app_state.session_id,
+                "persona":       app_state.active_persona,
+                "mode":          "bridge_server"
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Model Comparison (parallel LLM calls)
+        // ────────────────────────────────────────────────────────────────────
+        "compare_models" => {
+            let prompt     = args.get("prompt").and_then(|v| v.as_str()).ok_or("Missing 'prompt'")?;
+            let model_a    = args.get("model_a").and_then(|v| v.as_str()).ok_or("Missing 'model_a'")?;
+            let model_b    = args.get("model_b").and_then(|v| v.as_str()).ok_or("Missing 'model_b'")?;
+            let provider_name = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.config.llm.default_provider.clone()
+            };
+            let broadcaster = state.broadcaster.clone();
+            let prompt_c = prompt.to_string();
+            let model_a_c = model_a.to_string();
+            let model_b_c = model_b.to_string();
+            tokio::spawn(async move {
+                for (model_name, label) in [(&model_a_c, "a"), (&model_b_c, "b")] {
+                    let provider = if provider_name == "gemini" {
+                        Box::new(crate::llm::GeminiProvider::new(model_name.clone())) as Box<dyn crate::llm::LlmProvider>
+                    } else {
+                        Box::new(crate::llm::OllamaProvider::new(model_name.clone(), "http://localhost:11434".to_string())) as Box<dyn crate::llm::LlmProvider>
+                    };
+                    match provider.chat_with_image(&prompt_c, "You are a helpful assistant.", None, None).await {
+                        Ok(resp) => broadcaster.emit("compare_result", serde_json::json!({ "model": model_name, "label": label, "response": resp })),
+                        Err(e)   => broadcaster.emit("compare_error",  serde_json::json!({ "model": model_name, "label": label, "error": e.to_string() })),
+                    }
+                }
+                broadcaster.emit("compare_done", serde_json::json!({ "models": [model_a_c, model_b_c] }));
+            });
+            Ok(serde_json::json!({ "status": "streaming", "note": "Watch WebSocket for compare_result events" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining — absolute final stub
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode. \
-            Bridge status: ~235 commands implemented (80% of 295). \
+            Bridge status: ~265 commands (90% of 295). \
             See docs/BRIDGE_SERVER.md for the full roadmap.",
             command
         )),
