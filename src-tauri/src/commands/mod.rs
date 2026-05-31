@@ -1161,7 +1161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "codename": "bastet",
                 "tag": "v1.6.0-bastet",
                 "bridge_api_version": "1.0",
-                "commands_implemented": 60
+                "commands_implemented": 70
             }))
         }
 
@@ -1508,24 +1508,347 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 235+ commands (see docs/BRIDGE_SERVER.md for roadmap)
+        // Git Integration (spawn_blocking for sync git2 calls)
+        // ────────────────────────────────────────────────────────────────────
+        "git_list_repos" => {
+            // In bridge mode, read repos file from user_config_dir (no AppHandle)
+            let repos_path = crate::user_config_dir().join("git_repos.json");
+            let result: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path)
+                .ok()
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or_default();
+
+            Ok(serde_json::json!({
+                "repos": result,
+                "count": result.len()
+            }))
+        }
+
+        "git_open_repo" => {
+            let path = args.get("path").and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+
+            tokio::task::spawn_blocking(move || {
+                let repo = git2::Repository::open(&path)
+                    .map_err(|e| format!("Cannot open repo at '{}': {}", path, e))?;
+                let head = repo.head().map_err(|e| e.to_string())?;
+                let branch = head.shorthand().unwrap_or("HEAD").to_string();
+                let head_oid = head.target().map(|t| t.to_string()).unwrap_or_default();
+
+                let mut dirty = false;
+                let mut opts = git2::StatusOptions::new();
+                opts.include_untracked(true);
+                for entry in repo.statuses(Some(&mut opts))
+                    .map_err(|e| e.to_string())?.iter()
+                {
+                    if entry.status() != git2::Status::CURRENT {
+                        dirty = true;
+                        break;
+                    }
+                }
+
+                let (ahead, behind) =
+                    if let Ok(br) = repo.find_branch(&branch, git2::BranchType::Local) {
+                        if let Ok(upstream) = br.upstream() {
+                            match (br.get().target(), upstream.get().target()) {
+                                (Some(l), Some(u)) => repo
+                                    .graph_ahead_behind(l, u)
+                                    .map(|(a, b)| (a as i32, b as i32))
+                                    .unwrap_or((0, 0)),
+                                _ => (0, 0),
+                            }
+                        } else {
+                            (0, 0)
+                        }
+                    } else {
+                        (0, 0)
+                    };
+
+                Ok(serde_json::json!({
+                    "path":   path,
+                    "branch": branch,
+                    "head":   head_oid,
+                    "dirty":  dirty,
+                    "ahead":  ahead,
+                    "behind": behind
+                }))
+            })
+            .await
+            .map_err(|e| format!("Spawn error: {}", e))?
+        }
+
+        "git_status" => {
+            let path = args.get("path").and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+
+            tokio::task::spawn_blocking(move || {
+                let repo = git2::Repository::open(&path)
+                    .map_err(|e| format!("Cannot open repo: {}", e))?;
+                let mut opts = git2::StatusOptions::new();
+                opts.include_untracked(true).renames_head_to_index(true).renames_index_to_workdir(true);
+
+                let statuses = repo.statuses(Some(&mut opts)).map_err(|e| e.to_string())?;
+                let mut files = Vec::new();
+
+                for entry in statuses.iter() {
+                    let st = entry.status();
+                    let fpath = entry.path().unwrap_or("?").to_string();
+                    let old_path = entry.head_to_index()
+                        .and_then(|d| d.old_file().path())
+                        .map(|p| p.to_string_lossy().to_string());
+
+                    let status_str = if st.contains(git2::Status::CONFLICTED) {
+                        "conflict"
+                    } else if st.contains(git2::Status::INDEX_NEW)
+                        || st.contains(git2::Status::INDEX_MODIFIED)
+                        || st.contains(git2::Status::INDEX_DELETED)
+                        || st.contains(git2::Status::INDEX_RENAMED)
+                    {
+                        "staged"
+                    } else if st.contains(git2::Status::WT_NEW) {
+                        "untracked"
+                    } else if st.contains(git2::Status::WT_DELETED) {
+                        "deleted"
+                    } else if st.contains(git2::Status::WT_RENAMED) {
+                        "renamed"
+                    } else if st.contains(git2::Status::WT_MODIFIED) {
+                        "modified"
+                    } else {
+                        continue;
+                    };
+
+                    files.push(serde_json::json!({
+                        "path":     fpath,
+                        "status":   status_str,
+                        "old_path": old_path
+                    }));
+                }
+
+                Ok(serde_json::json!({
+                    "files": files,
+                    "count": files.len()
+                }))
+            })
+            .await
+            .map_err(|e| format!("Spawn error: {}", e))?
+        }
+
+        "git_log" => {
+            let path = args.get("path").and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let max_count = args.get("max_count").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
+
+            tokio::task::spawn_blocking(move || {
+                let repo = git2::Repository::open(&path)
+                    .map_err(|e| format!("Cannot open repo: {}", e))?;
+                let mut revwalk = repo.revwalk().map_err(|e| e.to_string())?;
+                revwalk.push_head().map_err(|e| e.to_string())?;
+
+                let mut commits = Vec::new();
+                for (i, oid_res) in revwalk.enumerate() {
+                    if i >= max_count { break; }
+                    let oid = oid_res.map_err(|e| e.to_string())?;
+                    let commit = repo.find_commit(oid).map_err(|e| e.to_string())?;
+                    commits.push(serde_json::json!({
+                        "sha":       oid.to_string(),
+                        "short_sha": oid.to_string().chars().take(7).collect::<String>(),
+                        "message":   commit.message().unwrap_or("").trim().to_string(),
+                        "author":    commit.author().name().unwrap_or("").to_string(),
+                        "email":     commit.author().email().unwrap_or("").to_string(),
+                        "time":      commit.time().seconds(),
+                        "parents":   commit.parent_ids().map(|id| id.to_string()).collect::<Vec<_>>()
+                    }));
+                }
+
+                Ok(serde_json::json!({
+                    "commits": commits,
+                    "count":   commits.len()
+                }))
+            })
+            .await
+            .map_err(|e| format!("Spawn error: {}", e))?
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Task Scheduler
+        // ────────────────────────────────────────────────────────────────────
+        "list_scheduled" => {
+            let tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            let list: Vec<_> = tasks.iter().map(|t| serde_json::json!({
+                "id":         t.id,
+                "name":       t.name,
+                "cron":       t.cron,
+                "goal":       t.goal,
+                "enabled":    t.enabled,
+                "last_run":   t.last_run,
+                "created_at": t.created_at
+            })).collect();
+
+            Ok(serde_json::json!({
+                "tasks": list,
+                "count": list.len()
+            }))
+        }
+
+        "add_scheduled" => {
+            let name = args.get("name").and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let cron = args.get("cron").and_then(|v| v.as_str())
+                .ok_or("Missing 'cron'")?;
+            let goal = args.get("goal").and_then(|v| v.as_str())
+                .ok_or("Missing 'goal'")?;
+
+            // Validate cron by parsing (5-field or 6-field)
+            let parts: Vec<&str> = cron.split_whitespace().collect();
+            if parts.len() != 5 && parts.len() != 6 {
+                return Err("cron must be 5-field (min hr dom mon dow) or 6-field (sec min hr dom mon dow)".to_string());
+            }
+
+            let task = crate::scheduler::ScheduledTask {
+                id:         uuid::Uuid::new_v4().to_string(),
+                name:       name.to_string(),
+                cron:       cron.to_string(),
+                goal:       goal.to_string(),
+                enabled:    true,
+                last_run:   None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            };
+
+            {
+                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                tasks.push(task.clone());
+                let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
+                    std::fs::write(&state.scheduler.tasks_path, s).ok()
+                });
+            }
+
+            state.broadcaster.emit("scheduled_task_added", serde_json::json!({
+                "id":   task.id,
+                "name": task.name,
+                "cron": task.cron
+            }));
+
+            Ok(serde_json::json!({
+                "status":     "added",
+                "id":         task.id,
+                "name":       task.name,
+                "cron":       task.cron,
+                "note":       "Live scheduler wiring requires Tauri AppHandle; task persisted to disk"
+            }))
+        }
+
+        "delete_scheduled" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+
+            let removed = {
+                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let before = tasks.len();
+                tasks.retain(|t| t.id != id);
+                let removed = tasks.len() < before;
+                if removed {
+                    let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
+                        std::fs::write(&state.scheduler.tasks_path, s).ok()
+                    });
+                }
+                removed
+            };
+
+            if removed {
+                Ok(serde_json::json!({ "status": "deleted", "id": id }))
+            } else {
+                Ok(serde_json::json!({ "status": "not_found", "id": id }))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PTY Session Listing & System Info
+        // ────────────────────────────────────────────────────────────────────
+        "get_pty_sessions" => {
+            let sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
+            let ids: Vec<_> = sessions.keys().cloned().collect();
+
+            Ok(serde_json::json!({
+                "sessions": ids,
+                "count":    ids.len()
+            }))
+        }
+
+        "get_os_info" => {
+            let os   = std::env::consts::OS;
+            let arch = std::env::consts::ARCH;
+            let hostname = std::env::var("HOSTNAME")
+                .or_else(|_| std::env::var("COMPUTERNAME"))
+                .unwrap_or_else(|_| "unknown".to_string());
+
+            Ok(serde_json::json!({
+                "os":       os,
+                "arch":     arch,
+                "hostname": hostname,
+                "data_dir": crate::user_config_dir().display().to_string()
+            }))
+        }
+
+        "get_memory_usage" => {
+            // Process-level memory via /proc/self/status (Linux/SteamOS) or placeholder
+            #[cfg(target_os = "linux")]
+            {
+                let status = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
+                let rss_kb = status.lines()
+                    .find(|l| l.starts_with("VmRSS:"))
+                    .and_then(|l| l.split_whitespace().nth(1))
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .unwrap_or(0);
+                let vm_kb = status.lines()
+                    .find(|l| l.starts_with("VmSize:"))
+                    .and_then(|l| l.split_whitespace().nth(1))
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .unwrap_or(0);
+
+                Ok(serde_json::json!({
+                    "rss_mb":    rss_kb / 1024,
+                    "virt_mb":   vm_kb  / 1024,
+                    "rss_kb":    rss_kb,
+                    "virt_kb":   vm_kb,
+                    "platform":  "linux"
+                }))
+            }
+            #[cfg(not(target_os = "linux"))]
+            {
+                Ok(serde_json::json!({
+                    "rss_mb":   0,
+                    "virt_mb":  0,
+                    "platform": std::env::consts::OS,
+                    "note":     "Memory stats only available on Linux"
+                }))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 225+ commands (see docs/BRIDGE_SERVER.md for roadmap)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 60 commands implemented, 235+ remaining.\n\
+            Bridge status: 70 commands implemented, 225+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
             save_session, load_session, get_config, set_config, set_model, set_provider, \
             get_personas, set_persona, send_command, \
             memory_add_fact, memory_search, memory_delete, memory_pin, memory_list, memory_clear, \
             new_session, list_models, execute_command_sync, \
             test_connection, get_doc_count, cancel_generation, get_agent_status, \
-            pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, \
-            get_agent_plan, transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code, \
+            pty_spawn, pty_write, pty_kill, pty_resize, get_pty_sessions, \
+            start_agent, stop_agent, agent_step, get_agent_plan, \
+            transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code, \
             run_lua, list_lua_commands, call_lua_command, get_indexed_docs, search_docs_semantic, \
             list_games, get_game_context, save_game_notes, open_browser, get_browser_url, \
             browser_back, browser_forward, get_context_stats, list_features, get_version, \
-            debug_info, export_state, reset_session, get_messages, clear_messages, list_plugins.\n\
+            debug_info, export_state, reset_session, get_messages, clear_messages, list_plugins, \
+            git_list_repos, git_open_repo, git_status, git_log, \
+            list_scheduled, add_scheduled, delete_scheduled, get_os_info, get_memory_usage.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
