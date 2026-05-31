@@ -1161,7 +1161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "codename": "bastet",
                 "tag": "v1.6.0-bastet",
                 "bridge_api_version": "1.0",
-                "commands_implemented": 50
+                "commands_implemented": 60
             }))
         }
 
@@ -1223,22 +1223,309 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 245+ commands (templates provided in BRIDGE_SERVER.md)
+        // Configuration Updates
+        // ────────────────────────────────────────────────────────────────────
+        "set_config" => {
+            let key = args.get("key").and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
+            let value = args.get("value").and_then(|v| v.as_str())
+                .ok_or("Missing 'value'")?;
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+
+            match key {
+                "llm.default_provider" => config.llm.default_provider = value.to_string(),
+                "llm.ollama_model"     => config.llm.ollama_model = value.to_string(),
+                "llm.gemini_model"     => config.llm.gemini_model = value.to_string(),
+                "llm.ollama_base_url"  => {
+                    let parsed = reqwest::Url::parse(value)
+                        .map_err(|e| format!("Invalid URL: {}", e))?;
+                    if !matches!(parsed.scheme(), "http" | "https") {
+                        return Err("ollama_base_url must use http or https".to_string());
+                    }
+                    config.llm.ollama_base_url = value.to_string();
+                }
+                "llm.openai_compat_model"    => config.llm.openai_compat_model = value.to_string(),
+                "llm.openai_compat_base_url" => {
+                    if !value.is_empty() {
+                        let parsed = reqwest::Url::parse(value)
+                            .map_err(|e| format!("Invalid URL: {}", e))?;
+                        if !matches!(parsed.scheme(), "http" | "https") {
+                            return Err("openai_compat_base_url must use http or https".to_string());
+                        }
+                    }
+                    config.llm.openai_compat_base_url = value.to_string();
+                }
+                "theme.primary_color"    => config.theme.primary_color = value.to_string(),
+                "theme.secondary_color"  => config.theme.secondary_color = value.to_string(),
+                "theme.bg_color"         => config.theme.bg_color = value.to_string(),
+                "theme.foreground_color" => config.theme.foreground_color = value.to_string(),
+                "theme.response_color"   => config.theme.response_color = value.to_string(),
+                _ => return Err(format!("Unknown or read-only config key: '{}'", key)),
+            }
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+
+            app_state.config = config.clone();
+            app_state.provider = crate::create_provider(&config);
+
+            Ok(serde_json::json!({
+                "status": "updated",
+                "key": key,
+                "value": value
+            }))
+        }
+
+        "set_model" => {
+            let model = args.get("model").and_then(|v| v.as_str())
+                .ok_or("Missing 'model'")?;
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+
+            if config.llm.default_provider == "gemini" {
+                config.llm.gemini_model = model.to_string();
+            } else {
+                config.llm.ollama_model = model.to_string();
+            }
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+
+            app_state.config = config.clone();
+            app_state.provider = crate::create_provider(&config);
+
+            Ok(serde_json::json!({
+                "status": "updated",
+                "provider": config.llm.default_provider,
+                "model": model
+            }))
+        }
+
+        "set_provider" => {
+            let provider = args.get("provider").and_then(|v| v.as_str())
+                .ok_or("Missing 'provider'")?;
+
+            if !matches!(provider, "gemini" | "ollama" | "openai_compat" | "huggingface" | "kimi") {
+                return Err(format!("Unknown provider '{}'. Valid: gemini, ollama, openai_compat, huggingface, kimi", provider));
+            }
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+            config.llm.default_provider = provider.to_string();
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+
+            app_state.config = config.clone();
+            app_state.provider = crate::create_provider(&config);
+
+            let active_model = match provider {
+                "gemini"       => config.llm.gemini_model.clone(),
+                "huggingface"  => config.llm.hf_model.clone(),
+                "kimi"         => config.llm.kimi_model.clone(),
+                "openai_compat"=> config.llm.openai_compat_model.clone(),
+                _              => config.llm.ollama_model.clone(),
+            };
+
+            Ok(serde_json::json!({
+                "status": "updated",
+                "provider": provider,
+                "model": active_model
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Memory CRUD (delete, pin, list, clear)
+        // ────────────────────────────────────────────────────────────────────
+        "memory_delete" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                db.delete_record(id)?;
+                Ok(serde_json::json!({
+                    "status": "deleted",
+                    "id": id
+                }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_pin" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+            let pinned = args.get("pinned").and_then(|v| v.as_bool()).unwrap_or(true);
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                db.set_pinned(id, pinned)?;
+                Ok(serde_json::json!({
+                    "status": "updated",
+                    "id": id,
+                    "pinned": pinned
+                }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_list" => {
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+            let offset = args.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                let all = db.list_all().map_err(|e| format!("Memory list error: {}", e))?;
+                let total = all.len();
+                let page: Vec<_> = all
+                    .into_iter()
+                    .skip(offset)
+                    .take(limit)
+                    .map(|rec| serde_json::json!({
+                        "id":       rec.id,
+                        "content":  rec.content,
+                        "metadata": rec.metadata
+                    }))
+                    .collect();
+
+                Ok(serde_json::json!({
+                    "records": page,
+                    "count": page.len(),
+                    "total": total,
+                    "offset": offset,
+                    "limit": limit
+                }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_clear" => {
+            // Delete every non-pinned record from the memory DB
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                let all = db.list_all().map_err(|e| format!("Memory clear error: {}", e))?;
+                let mut deleted = 0usize;
+                for rec in &all {
+                    let pinned = rec.metadata.get("pinned").map(|v| v == "true").unwrap_or(false);
+                    if !pinned {
+                        let _ = db.delete_record(&rec.id);
+                        deleted += 1;
+                    }
+                }
+                Ok(serde_json::json!({
+                    "status": "cleared",
+                    "deleted": deleted,
+                    "preserved_pinned": all.len() - deleted
+                }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Chat History Management
+        // ────────────────────────────────────────────────────────────────────
+        "get_messages" => {
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+            let offset = args.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let total = app_state.messages.len();
+            let page: Vec<_> = app_state.messages
+                .iter()
+                .skip(offset)
+                .take(limit)
+                .enumerate()
+                .map(|(i, msg)| {
+                    let (role, content) = if msg.starts_with("User: ") {
+                        ("user", msg["User: ".len()..].to_string())
+                    } else if msg.starts_with("AI: ") {
+                        ("assistant", msg["AI: ".len()..].to_string())
+                    } else {
+                        ("system", msg.clone())
+                    };
+                    serde_json::json!({
+                        "index":   offset + i,
+                        "role":    role,
+                        "content": content
+                    })
+                })
+                .collect();
+
+            Ok(serde_json::json!({
+                "messages": page,
+                "count": page.len(),
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+                "session_id": app_state.session_id
+            }))
+        }
+
+        "clear_messages" => {
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let count = app_state.messages.len();
+            app_state.messages.clear();
+
+            Ok(serde_json::json!({
+                "status": "cleared",
+                "messages_removed": count
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Plugin System
+        // ────────────────────────────────────────────────────────────────────
+        "list_plugins" => {
+            match crate::plugin_mgr::list_local_plugins() {
+                Ok(plugins) => {
+                    let list: Vec<_> = plugins.iter().map(|p| serde_json::json!({
+                        "name":      p.name,
+                        "file_name": p.file_name,
+                        "enabled":   p.enabled,
+                        "id":        p.id,
+                        "author":    p.author,
+                        "version":   p.version
+                    })).collect();
+
+                    Ok(serde_json::json!({
+                        "plugins": list,
+                        "count":   list.len(),
+                        "enabled": list.iter().filter(|p| p["enabled"].as_bool().unwrap_or(false)).count()
+                    }))
+                }
+                Err(e) => Err(format!("Failed to list plugins: {}", e))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 235+ commands (see docs/BRIDGE_SERVER.md for roadmap)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 50 commands implemented, 245+ remaining.\n\
+            Bridge status: 60 commands implemented, 235+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
-            save_session, load_session, get_config, get_personas, set_persona, send_command, \
-            memory_add_fact, memory_search, new_session, list_models, execute_command_sync, \
+            save_session, load_session, get_config, set_config, set_model, set_provider, \
+            get_personas, set_persona, send_command, \
+            memory_add_fact, memory_search, memory_delete, memory_pin, memory_list, memory_clear, \
+            new_session, list_models, execute_command_sync, \
             test_connection, get_doc_count, cancel_generation, get_agent_status, \
             pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, \
             get_agent_plan, transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code, \
             run_lua, list_lua_commands, call_lua_command, get_indexed_docs, search_docs_semantic, \
             list_games, get_game_context, save_game_notes, open_browser, get_browser_url, \
             browser_back, browser_forward, get_context_stats, list_features, get_version, \
-            debug_info, export_state, reset_session.\n\
+            debug_info, export_state, reset_session, get_messages, clear_messages, list_plugins.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
