@@ -1,4 +1,5 @@
 mod autocomplete;
+mod bridge;
 mod canvas_collab;
 pub mod commands;
 mod computer_use;
@@ -736,6 +737,111 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
 
 // Stop the active collab session.
 
+/// Run NEURODECK as a pure HTTP + WebSocket bridge server (no Tauri WebView).
+/// Used for headless backends, Electron wrappers, or external client control.
+///
+/// Startup: `neurodeck --bridge`
+/// Port: 9477 (override with NEURODECK_PORT env var)
+///
+/// Status: Foundation implemented. See docs/BRIDGE_SERVER.md for extending command dispatch.
+async fn run_bridge_server(config_root: &std::path::Path, config_path: &std::path::Path) -> anyhow::Result<()> {
+    tracing::info!("Starting NEURODECK bridge server on port 9477");
+    eprintln!("Bridge server mode is ALPHA — only PTY commands are currently dispatched.");
+    eprintln!("To add more commands, extend the dispatch() function in src-tauri/src/commands/mod.rs");
+
+    // Minimal setup for bridge mode (without Tauri's WebView)
+    load_env_file();
+    let boot_self_heal = self_heal::boot_self_heal(config_root, config_path);
+    let mut config = boot_self_heal.config;
+
+    if config.llm.agents.is_empty() {
+        config.llm.agents = default_agents();
+        let target_provider = config.llm.default_provider.clone();
+        let target_model = if target_provider == "gemini" {
+            config.llm.gemini_model.clone()
+        } else {
+            config.llm.ollama_model.clone()
+        };
+        config.llm.active_agent_id = config
+            .llm
+            .agents
+            .iter()
+            .find(|a| a.provider == target_provider && a.model == target_model)
+            .map(|a| a.id.clone())
+            .unwrap_or_else(|| config.llm.agents[0].id.clone());
+        let _ = config::save_config(config_path, &config);
+    }
+
+    let provider = create_provider(&config);
+    let torrent_download_root = config_root.join("data/torrents/downloads");
+    let _ = std::fs::create_dir_all(&torrent_download_root);
+
+    let app_state = AppState {
+        provider,
+        config,
+        session_id: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
+        messages: Vec::new(),
+        active_persona: "Default".to_string(),
+        mem_db: boot_self_heal.mem_db,
+        record_child: None,
+        process_stdin_tx: None,
+        kill_tx: None,
+        active_process_id: 0,
+        cancel_stream_tx: None,
+        compare_cancel_flag: None,
+        custom_personas: boot_self_heal.custom_personas,
+        mcp_abort: None,
+        mcp_port: 13337,
+        mcp_token: None,
+        mcp_tool_whitelist: mcp::default_tool_whitelist(),
+        whisper_binary: String::new(),
+        whisper_model: String::new(),
+        collab_abort: None,
+        collab_tx: None,
+        collab_mode: None,
+        collab_addr: None,
+        collab_peer_count: None,
+        canvas_exec_cancel_tx: None,
+        boot_self_heal: boot_self_heal.report,
+    };
+
+    // Create server state
+    let (broadcaster, _) = bridge::WsBroadcaster::new();
+    let pty_state = Arc::new(pty_manager::PtyState {
+        sessions: Mutex::new(HashMap::new()),
+        remote_tx: Mutex::new(None),
+    });
+    let remote_state = Arc::new(remote_control::RemoteControlState::default());
+    let torrent_state = Arc::new(torrent::TorrentState::new(torrent_download_root));
+    let scheduler = Arc::new(scheduler::SchedulerManaged::new());
+    let orchestrator = Arc::new(orchestrator::OrchestratorManaged::new());
+    let lsp = Arc::new(Mutex::new(lsp::LspManager::new()));
+
+    // TODO: Initialize Lua engine when bridge mode has a proper AppHandle mock
+    // For now, create a placeholder. Full Lua support requires Tauri's event system.
+
+    // Create server state (minimal for initial bridge server release)
+    // TODO: Add lua engine and full command dispatch table
+    let dummy_transfer = Arc::new(Mutex::new(transfer::TransferState::new()));
+
+    let server_state = bridge::ServerState {
+        app_state: Arc::new(Mutex::new(app_state)),
+        broadcaster,
+        pty: pty_state,
+        remote: remote_state,
+        transfer: transfer::SharedTransferState(dummy_transfer),
+        torrent: torrent_state,
+        scheduler,
+        orchestrator,
+        lsp,
+        lua: Arc::new(Mutex::new(lua::LuaEngine::new_headless()?)),
+        deckcode_state: Arc::new(Mutex::new((None, None))),
+        deckcode_lang: Arc::new(Mutex::new("plain_text".to_string())),
+    };
+
+    bridge::start_server(server_state).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -775,6 +881,16 @@ pub fn run() {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
         if let Err(e) = rt.block_on(tunnel::run_tunnel_server_headless()) {
             eprintln!("Tunnel server error: {}", e);
+            std::process::exit(1);
+        }
+        std::process::exit(0);
+    }
+
+    // Bridge server mode: HTTP + WebSocket instead of Tauri IPC
+    if args.contains(&"--bridge".to_string()) {
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+        if let Err(e) = rt.block_on(run_bridge_server(&config_root, &get_config_path())) {
+            eprintln!("Bridge server error: {}", e);
             std::process::exit(1);
         }
         std::process::exit(0);

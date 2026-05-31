@@ -160,6 +160,36 @@ impl LuaEngine {
         Ok(Self { lua })
     }
 
+    /// Create a headless Lua engine (for bridge server mode without Tauri events).
+    /// This version skips Tauri event emitting and works without an AppHandle.
+    pub fn new_headless() -> mlua::Result<Self> {
+        let lua = Lua::new();
+        lua.globals().set("_commands", lua.create_table()?)?;
+        lua.globals().set("_hooks", lua.create_table()?)?;
+
+        // Minimal print function (no Tauri event)
+        let print_fn = lua.create_function(|_, args: Variadic<Value>| {
+            for (i, arg) in args.into_iter().enumerate() {
+                if i > 0 { eprint!("\t"); }
+                match arg {
+                    Value::Nil => eprint!("nil"),
+                    Value::Boolean(b) => eprint!("{}", b),
+                    Value::Integer(i) => eprint!("{}", i),
+                    Value::Number(n) => eprint!("{}", n),
+                    Value::String(s) => eprint!("{}", s.to_str().unwrap_or("")),
+                    Value::Table(_) => eprint!("[table]"),
+                    Value::Function(_) => eprint!("[function]"),
+                    _ => eprint!("[value]"),
+                }
+            }
+            eprintln!();
+            Ok(())
+        })?;
+        lua.globals().set("print", print_fn)?;
+
+        Ok(Self { lua })
+    }
+
     pub fn run_script(&self, code: &str) -> Result<(), String> {
         self.lua
             .load(code)

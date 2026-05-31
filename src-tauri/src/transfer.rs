@@ -71,6 +71,7 @@ impl TransferState {
     }
 }
 
+#[derive(Clone)]
 pub struct SharedTransferState(pub Arc<Mutex<TransferState>>);
 
 fn sanitize_relative_transfer_path(relative_path: &str) -> Result<PathBuf, String> {
