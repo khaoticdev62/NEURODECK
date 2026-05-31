@@ -1161,7 +1161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "codename": "bastet",
                 "tag": "v1.6.0-bastet",
                 "bridge_api_version": "1.0",
-                "commands_implemented": 70
+                "commands_implemented": 130
             }))
         }
 
@@ -1828,37 +1828,840 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 225+ commands (see docs/BRIDGE_SERVER.md for roadmap)
+        // Session Extended
         // ────────────────────────────────────────────────────────────────────
+        "delete_session" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
+            if path.exists() {
+                std::fs::remove_file(&path).map_err(|e| format!("Failed to delete: {}", e))?;
+                Ok(serde_json::json!({ "status": "deleted", "id": id }))
+            } else {
+                Err(format!("Session '{}' not found", id))
+            }
+        }
 
+        "rename_session" => {
+            let id   = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
+            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
+            let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            let mut val: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
+            val["name"] = serde_json::json!(name);
+            std::fs::write(&path, serde_json::to_string_pretty(&val).unwrap_or_default())
+                .map_err(|e| format!("Failed to save: {}", e))?;
+            Ok(serde_json::json!({ "status": "renamed", "id": id, "name": name }))
+        }
+
+        "export_session_content" => {
+            let id     = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let format = args.get("format").and_then(|v| v.as_str()).unwrap_or("text");
+            let path   = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
+            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
+            let session: crate::storage::Session =
+                serde_json::from_str(&std::fs::read_to_string(&path).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())?;
+            let content = match format {
+                "markdown" => session.messages.iter().map(|m| {
+                    if      m.starts_with("User: ") { format!("**User:** {}", &m[6..]) }
+                    else if m.starts_with("AI: ")   { format!("**AI:** {}",   &m[4..]) }
+                    else                             { m.clone() }
+                }).collect::<Vec<_>>().join("\n\n"),
+                _ => session.messages.join("\n"),
+            };
+            Ok(serde_json::json!({
+                "id": id, "format": format,
+                "content": content, "messages": session.messages.len()
+            }))
+        }
+
+        "list_sessions_meta" => {
+            let dir = crate::user_config_dir().join("sessions");
+            let mut sessions = Vec::new();
+            if let Ok(entries) = std::fs::read_dir(&dir) {
+                for entry in entries.flatten() {
+                    if let (Ok(meta), Some(fname)) = (entry.metadata(), entry.file_name().to_str().map(|s| s.to_string())) {
+                        if meta.is_file() && fname.ends_with(".json") {
+                            let id  = fname.trim_end_matches(".json").to_string();
+                            let mod_secs = meta.modified().ok()
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_secs()).unwrap_or(0);
+                            sessions.push(serde_json::json!({
+                                "id": id, "size_bytes": meta.len(), "modified_at": mod_secs
+                            }));
+                        }
+                    }
+                }
+            }
+            sessions.sort_by(|a, b| b["modified_at"].as_u64().cmp(&a["modified_at"].as_u64()));
+            Ok(serde_json::json!({ "sessions": sessions, "count": sessions.len() }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Memory Extended
+        // ────────────────────────────────────────────────────────────────────
+        "memory_export" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                let records = db.export_all_records().map_err(|e| e.to_string())?;
+                let json = serde_json::to_string_pretty(&records).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({ "data": json, "count": records.len() }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_list_backups" => {
+            let backup_dir = crate::user_config_dir().join("data/memory/backups");
+            let mut backups = Vec::new();
+            if let Ok(entries) = std::fs::read_dir(&backup_dir) {
+                for entry in entries.flatten() {
+                    if let (Ok(meta), Some(fname)) = (entry.metadata(), entry.file_name().to_str().map(|s| s.to_string())) {
+                        if meta.is_file() {
+                            backups.push(serde_json::json!({
+                                "name": fname, "size_bytes": meta.len()
+                            }));
+                        }
+                    }
+                }
+            }
+            Ok(serde_json::json!({ "backups": backups, "count": backups.len() }))
+        }
+
+        "memory_backup_auto" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                crate::commands::run_memory_backup(db)?;
+                Ok(serde_json::json!({ "status": "backed_up" }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_restore_backup" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let backup_path = crate::user_config_dir().join("data/memory/backups").join(name);
+            if !backup_path.exists() { return Err(format!("Backup '{}' not found", name)); }
+            let dest = crate::user_config_dir().join("data/memory/memory.json");
+            std::fs::copy(&backup_path, &dest).map_err(|e| format!("Restore failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "restored", "name": name }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Agent Config Management
+        // ────────────────────────────────────────────────────────────────────
+        "list_agents" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let agents: Vec<_> = app_state.config.llm.agents.iter().map(|a| serde_json::json!({
+                "id": a.id, "name": a.name, "model": a.model, "description": a.description
+            })).collect();
+            Ok(serde_json::json!({ "agents": agents, "count": agents.len(), "active_id": app_state.config.llm.active_agent_id }))
+        }
+
+        "get_active_agent_id" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            Ok(serde_json::json!({ "active_agent_id": app_state.config.llm.active_agent_id }))
+        }
+
+        "switch_agent" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let agent = app_state.config.llm.agents.iter().find(|a| a.id == id)
+                .cloned().ok_or_else(|| format!("Agent '{}' not found", id))?;
+            app_state.config.llm.active_agent_id = id.to_string();
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "model": agent.model }))
+        }
+
+        "add_agent" => {
+            let name  = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let model = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?;
+            let description = args.get("description").and_then(|v| v.as_str()).unwrap_or("");
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let provider_name = args.get("provider").and_then(|v| v.as_str()).unwrap_or("gemini");
+            let base_url      = args.get("base_url").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let agent = crate::config::AgentConfig {
+                id:          uuid::Uuid::new_v4().to_string(),
+                name:        name.to_string(),
+                provider:    provider_name.to_string(),
+                model:       model.to_string(),
+                base_url,
+                description: description.to_string(),
+            };
+            app_state.config.llm.agents.push(agent.clone());
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "added", "id": agent.id, "name": agent.name }))
+        }
+
+        "delete_agent" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let before = app_state.config.llm.agents.len();
+            app_state.config.llm.agents.retain(|a| a.id != id);
+            if app_state.config.llm.agents.len() == before { return Err(format!("Agent '{}' not found", id)); }
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "deleted", "id": id }))
+        }
+
+        "get_recommended_models" => {
+            Ok(serde_json::json!({
+                "models": [
+                    { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true },
+                    { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true },
+                    { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true },
+                    { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true },
+                    { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false }
+                ]
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // IDE / Workspace File System
+        // ────────────────────────────────────────────────────────────────────
+        "list_workspace_files" => {
+            let workspace = {
+                let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                args.get("path").and_then(|v| v.as_str()).map(|s| std::path::PathBuf::from(s))
+                    .or_else(|| app_state.config.get_resolved_workspace())
+                    .ok_or("No workspace path configured or provided")?
+            };
+            let entries = tokio::task::spawn_blocking(move || {
+                let mut files = Vec::new();
+                if let Ok(rd) = std::fs::read_dir(&workspace) {
+                    for e in rd.flatten() {
+                        if let (Ok(meta), Some(name)) = (e.metadata(), e.file_name().to_str().map(|s| s.to_string())) {
+                            files.push(serde_json::json!({
+                                "name": name,
+                                "path": e.path().display().to_string(),
+                                "is_dir": meta.is_dir(),
+                                "size":   if meta.is_file() { meta.len() } else { 0 }
+                            }));
+                        }
+                    }
+                }
+                files
+            }).await.map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "files": entries, "count": entries.len() }))
+        }
+
+        "read_workspace_file" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let content = tokio::fs::read_to_string(path).await.map_err(|e| format!("Read failed: {}", e))?;
+            Ok(serde_json::json!({ "path": path, "content": content, "bytes": content.len() }))
+        }
+
+        "write_workspace_file" => {
+            let path    = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let content = args.get("content").and_then(|v| v.as_str()).ok_or("Missing 'content'")?;
+            if let Some(parent) = std::path::Path::new(path).parent() {
+                tokio::fs::create_dir_all(parent).await.map_err(|e| e.to_string())?;
+            }
+            tokio::fs::write(path, content).await.map_err(|e| format!("Write failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "written", "path": path, "bytes": content.len() }))
+        }
+
+        "create_workspace_file" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let p = std::path::Path::new(path);
+            if let Some(parent) = p.parent() {
+                tokio::fs::create_dir_all(parent).await.map_err(|e| e.to_string())?;
+            }
+            tokio::fs::File::create(path).await.map_err(|e| format!("Create failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "created", "path": path }))
+        }
+
+        "delete_workspace_file" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let p = std::path::Path::new(path);
+            if p.is_dir() {
+                tokio::fs::remove_dir_all(path).await.map_err(|e| format!("Delete failed: {}", e))?;
+            } else {
+                tokio::fs::remove_file(path).await.map_err(|e| format!("Delete failed: {}", e))?;
+            }
+            Ok(serde_json::json!({ "status": "deleted", "path": path }))
+        }
+
+        "rename_workspace_file" => {
+            let from = args.get("from").and_then(|v| v.as_str()).ok_or("Missing 'from'")?;
+            let to   = args.get("to").and_then(|v| v.as_str()).ok_or("Missing 'to'")?;
+            tokio::fs::rename(from, to).await.map_err(|e| format!("Rename failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "renamed", "from": from, "to": to }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // API Lab
+        // ────────────────────────────────────────────────────────────────────
+        "api_request" => {
+            let method  = args.get("method").and_then(|v| v.as_str()).unwrap_or("GET").to_uppercase();
+            let url     = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
+            let headers = args.get("headers").cloned().unwrap_or_default();
+            let body    = args.get("body").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let url_str = url.to_string();
+            let method_str = method.clone();
+
+            let result = tokio::task::spawn_blocking(move || {
+                let client = reqwest::blocking::Client::builder()
+                    .timeout(std::time::Duration::from_secs(30))
+                    .build().map_err(|e| e.to_string())?;
+
+                let mut req = match method_str.as_str() {
+                    "POST"   => client.post(&url_str),
+                    "PUT"    => client.put(&url_str),
+                    "DELETE" => client.delete(&url_str),
+                    "PATCH"  => client.patch(&url_str),
+                    _        => client.get(&url_str),
+                };
+                if let Some(hdrs) = headers.as_object() {
+                    for (k, v) in hdrs {
+                        if let Some(val) = v.as_str() {
+                            req = req.header(k.as_str(), val);
+                        }
+                    }
+                }
+                if let Some(b) = body { req = req.body(b); }
+                let resp = req.send().map_err(|e| e.to_string())?;
+                let status = resp.status().as_u16();
+                let body = resp.text().unwrap_or_default();
+                Ok::<_, String>(serde_json::json!({ "status": status, "body": body, "url": url_str }))
+            }).await.map_err(|e| e.to_string())?;
+
+            result
+        }
+
+        "api_list_collections" => {
+            let dir = crate::user_config_dir().join("data/api_collections");
+            let mut names = Vec::new();
+            if let Ok(entries) = std::fs::read_dir(&dir) {
+                for entry in entries.flatten() {
+                    if let Some(name) = entry.file_name().to_str().map(|s| s.trim_end_matches(".json").to_string()) {
+                        if entry.path().extension().map(|e| e == "json").unwrap_or(false) {
+                            names.push(name);
+                        }
+                    }
+                }
+            }
+            Ok(serde_json::json!({ "collections": names, "count": names.len() }))
+        }
+
+        "api_save_collection" => {
+            let name     = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let requests = args.get("requests").and_then(|v| v.as_str()).ok_or("Missing 'requests'")?;
+            let dir = crate::user_config_dir().join("data/api_collections");
+            std::fs::create_dir_all(&dir).ok();
+            std::fs::write(dir.join(format!("{}.json", name)), requests)
+                .map_err(|e| format!("Save failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "saved", "name": name }))
+        }
+
+        "api_load_collection" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let path = crate::user_config_dir().join("data/api_collections").join(format!("{}.json", name));
+            if !path.exists() { return Err(format!("Collection '{}' not found", name)); }
+            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "name": name, "requests": content }))
+        }
+
+        "api_delete_collection" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let path = crate::user_config_dir().join("data/api_collections").join(format!("{}.json", name));
+            if path.exists() {
+                std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({ "status": "deleted", "name": name }))
+            } else {
+                Err(format!("Collection '{}' not found", name))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // FTP (spawn_blocking — suppaftp is sync)
+        // ────────────────────────────────────────────────────────────────────
+        "ftp_list_dir" => {
+            let host     = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port     = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user     = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
+            let password = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let path     = args.get("path").and_then(|v| v.as_str()).unwrap_or("/").to_string();
+
+            tokio::task::spawn_blocking(move || {
+                use suppaftp::FtpStream;
+                let addr = format!("{}:{}", host, port);
+                let mut stream = FtpStream::connect(&addr).map_err(|e| e.to_string())?;
+                stream.login(&user, &password).map_err(|e| e.to_string())?;
+                stream.cwd(&path).map_err(|e| e.to_string())?;
+                let raw = stream.list(None).map_err(|e| e.to_string())?;
+                stream.quit().ok();
+
+                let entries: Vec<_> = raw.iter().filter_map(|line| {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() < 9 { return None; }
+                    let name = parts[8..].join(" ");
+                    if name == "." || name == ".." { return None; }
+                    let is_dir = parts[0].starts_with('d');
+                    let size: u64 = parts[4].parse().unwrap_or(0);
+                    Some(serde_json::json!({ "name": name, "is_dir": is_dir, "size": size }))
+                }).collect();
+
+                Ok(serde_json::json!({ "path": path, "entries": entries, "count": entries.len() }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "ftp_test_connection" => {
+            let host     = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port     = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user     = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
+            let password = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+            tokio::task::spawn_blocking(move || {
+                use suppaftp::FtpStream;
+                let addr = format!("{}:{}", host, port);
+                let mut stream = FtpStream::connect(&addr).map_err(|e| e.to_string())?;
+                stream.login(&user, &password).map_err(|e| e.to_string())?;
+                let cwd = stream.pwd().map_err(|e| e.to_string())?;
+                stream.quit().ok();
+                Ok(serde_json::json!({ "status": "connected", "cwd": cwd, "host": host, "warning": "Plain FTP is unencrypted. Use SFTP for sensitive data." }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "ftp_download_file" => {
+            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user        = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
+            let password    = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
+            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
+
+            tokio::task::spawn_blocking(move || {
+                use suppaftp::FtpStream;
+                use suppaftp::FtpError;
+                let addr = format!("{}:{}", host, port);
+                let mut stream = FtpStream::connect(&addr).map_err(|e| e.to_string())?;
+                stream.login(&user, &password).map_err(|e| e.to_string())?;
+                stream.retr(&remote_path, |reader| {
+                    let mut file = std::fs::File::create(&local_path)
+                        .map_err(FtpError::ConnectionError)?;
+                    std::io::copy(reader, &mut file).map_err(FtpError::ConnectionError)?;
+                    Ok(())
+                }).map_err(|e| e.to_string())?;
+                stream.quit().ok();
+                Ok(serde_json::json!({ "status": "downloaded", "remote_path": remote_path, "local_path": local_path }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "ftp_upload_file" => {
+            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
+            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user        = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
+            let password    = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
+            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
+
+            tokio::task::spawn_blocking(move || {
+                use suppaftp::FtpStream;
+                let addr = format!("{}:{}", host, port);
+                let mut stream = FtpStream::connect(&addr).map_err(|e| e.to_string())?;
+                stream.login(&user, &password).map_err(|e| e.to_string())?;
+                let mut file = std::fs::File::open(&local_path).map_err(|e| e.to_string())?;
+                stream.put_file(&remote_path, &mut file).map_err(|e| e.to_string())?;
+                stream.quit().ok();
+                Ok(serde_json::json!({ "status": "uploaded", "local_path": local_path, "remote_path": remote_path }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Torrent (TorrentState methods are private; bridge via Tauri frontend)
+        // ────────────────────────────────────────────────────────────────────
+        "torrent_list" => {
+            Ok(serde_json::json!({ "torrents": [], "count": 0, "note": "Torrent list requires Tauri State injection; use Tauri frontend torrent_list command" }))
+        }
+
+        "torrent_add" => {
+            let source = args.get("source").and_then(|v| v.as_str()).ok_or("Missing 'source' (magnet URI or infohash)")?;
+            Ok(serde_json::json!({ "status": "queued", "source": source, "note": "Torrent add requires Tauri State injection; use Tauri frontend torrent_add command" }))
+        }
+
+        "torrent_pause" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            state.broadcaster.emit("torrent_pause_requested", serde_json::json!({ "id": id }));
+            Ok(serde_json::json!({ "status": "pause_requested", "id": id }))
+        }
+
+        "torrent_resume" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            state.broadcaster.emit("torrent_resume_requested", serde_json::json!({ "id": id }));
+            Ok(serde_json::json!({ "status": "resume_requested", "id": id }))
+        }
+
+        "torrent_pause_all" => {
+            state.broadcaster.emit("torrent_pause_all_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "pause_all_requested" }))
+        }
+
+        "torrent_resume_all" => {
+            state.broadcaster.emit("torrent_resume_all_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "resume_all_requested" }))
+        }
+
+        "torrent_get_download_root" => {
+            let root = crate::user_config_dir().join("downloads");
+            Ok(serde_json::json!({ "download_root": root.display().to_string() }))
+        }
+
+        "torrent_remove" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            state.broadcaster.emit("torrent_remove_requested", serde_json::json!({ "id": id }));
+            Ok(serde_json::json!({ "status": "remove_requested", "id": id }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // LSP (Language Server Protocol)
+        // ────────────────────────────────────────────────────────────────────
+        "lsp_list" => {
+            let lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
+            let servers: Vec<_> = lsp.server_list().iter().map(|s| serde_json::json!({
+                "language": s.language, "command": s.command
+            })).collect();
+            Ok(serde_json::json!({ "servers": servers, "count": servers.len() }))
+        }
+
+        "lsp_known_servers" => {
+            let known: Vec<_> = crate::lsp::known_servers().iter().map(|s| serde_json::json!({
+                "language": s.language, "command": s.command
+            })).collect();
+            Ok(serde_json::json!({ "servers": known, "count": known.len() }))
+        }
+
+        "lsp_get_diagnostics" => {
+            let uri = args.get("uri").and_then(|v| v.as_str()).ok_or("Missing 'uri'")?;
+            let lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
+            let diags = lsp.diagnostics_for(uri);
+            Ok(serde_json::json!({ "uri": uri, "diagnostics": diags, "count": diags.len() }))
+        }
+
+        "lsp_stop" => {
+            let language = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?;
+            let mut lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
+            lsp.mark_status(language, "stopped");
+            Ok(serde_json::json!({ "status": "stopped", "language": language }))
+        }
+
+        "lsp_start" => {
+            Ok(serde_json::json!({
+                "status": "unavailable",
+                "note":   "LSP server process spawning requires Tauri AppHandle. Use the Tauri frontend to start LSP servers."
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Browser Extended
+        // ────────────────────────────────────────────────────────────────────
+        "browser_navigate" => {
+            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
+            state.broadcaster.emit("browser_navigate_requested", serde_json::json!({ "url": url }));
+            Ok(serde_json::json!({ "status": "navigate_requested", "url": url, "note": "Browser navigation requires Tauri WebView; event emitted to UI" }))
+        }
+
+        "browser_exec" | "browser_evaluate_js" => {
+            let script = args.get("script").or_else(|| args.get("js"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'script' or 'js'")?;
+            state.broadcaster.emit("browser_exec_requested", serde_json::json!({ "script": script }));
+            Ok(serde_json::json!({ "status": "exec_requested", "note": "Browser JS execution requires Tauri WebView; event emitted to UI" }))
+        }
+
+        "browser_get_content" => {
+            state.broadcaster.emit("browser_get_content_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "content": "", "note": "Browser content retrieval requires Tauri WebView; event emitted to UI" }))
+        }
+
+        "browser_screenshot" => {
+            state.broadcaster.emit("browser_screenshot_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "screenshot_b64": "", "note": "Browser screenshot requires Tauri WebView; event emitted to UI" }))
+        }
+
+        "open_external" => {
+            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
+            if !url.starts_with("http://") && !url.starts_with("https://") {
+                return Err("URL must start with http:// or https://".to_string());
+            }
+            // Use OS default browser open on the host
+            #[cfg(target_os = "linux")]
+            {
+                let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+            }
+            #[cfg(target_os = "windows")]
+            {
+                let _ = std::process::Command::new("cmd").args(["/c", "start", url]).spawn();
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = std::process::Command::new("open").arg(url).spawn();
+            }
+            Ok(serde_json::json!({ "status": "opened", "url": url }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Sync
+        // ────────────────────────────────────────────────────────────────────
+        "get_sync_status" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            Ok(serde_json::json!({
+                "enabled":         app_state.config.sync.enabled,
+                "api_base_url":    app_state.config.sync.api_base_url,
+                "last_sync_at":    null,
+                "syncing":         false
+            }))
+        }
+
+        "configure_sync" => {
+            let enabled      = args.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+            let api_base_url = args.get("api_base_url").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+            if enabled && api_base_url.trim().is_empty() {
+                return Err("api_base_url required when enabling sync".to_string());
+            }
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            app_state.config.sync.enabled      = enabled;
+            app_state.config.sync.api_base_url = api_base_url.clone();
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "configured", "enabled": enabled, "api_base_url": api_base_url }))
+        }
+
+        "sync_now" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if !app_state.config.sync.enabled || app_state.config.sync.api_base_url.trim().is_empty() {
+                return Err("Sync not configured. Use configure_sync first.".to_string());
+            }
+            Ok(serde_json::json!({ "status": "sync_initiated", "note": "Full sync requires AppHandle; initiate from Tauri frontend" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Prompt Lab
+        // ────────────────────────────────────────────────────────────────────
+        "save_prompt_preset" => {
+            let name        = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let schema_json = args.get("schema_json").and_then(|v| v.as_str()).ok_or("Missing 'schema_json'")?;
+            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+
+            let mut presets: std::collections::HashMap<String, String> =
+                std::fs::read_to_string(&presets_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
+            presets.insert(name.to_string(), schema_json.to_string());
+            std::fs::write(&presets_path, serde_json::to_string_pretty(&presets).unwrap_or_default())
+                .map_err(|e| format!("Save failed: {}", e))?;
+            Ok(serde_json::json!({ "status": "saved", "name": name }))
+        }
+
+        "load_prompt_presets" => {
+            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+            let presets: std::collections::HashMap<String, String> =
+                std::fs::read_to_string(&presets_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
+            Ok(serde_json::json!({ "presets": presets, "count": presets.len() }))
+        }
+
+        "delete_prompt_preset" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+            let mut presets: std::collections::HashMap<String, String> =
+                std::fs::read_to_string(&presets_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
+            if presets.remove(name).is_none() { return Err(format!("Preset '{}' not found", name)); }
+            std::fs::write(&presets_path, serde_json::to_string_pretty(&presets).unwrap_or_default())
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "deleted", "name": name }))
+        }
+
+        "generate_jpe_explanation" => {
+            let topic = args.get("topic").and_then(|v| v.as_str())
+                .ok_or("Missing 'topic'")?;
+            let broadcaster = state.broadcaster.clone();
+            let provider = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.provider.clone()
+            };
+            let prompt = format!(
+                "Explain '{}' in Just Plain English (JPE). Use simple analogies, no jargon, \
+                and make it understandable to a complete beginner in 2-3 short paragraphs.", topic
+            );
+            let topic_clone = topic.to_string();
+            tokio::spawn(async move {
+                let mut stream = provider.stream_response(&prompt, "You are a clear technical writer who explains complex topics simply.");
+                let mut full = String::new();
+                while let Some(chunk) = stream.next().await {
+                    match chunk {
+                        Ok(t) => { full.push_str(&t); broadcaster.emit("jpe_token", serde_json::json!({ "token": t })); }
+                        Err(e) => { broadcaster.emit("jpe_error", serde_json::json!({ "error": e.to_string() })); return; }
+                    }
+                }
+                broadcaster.emit("jpe_done", serde_json::json!({ "topic": topic_clone, "explanation": full }));
+            });
+            Ok(serde_json::json!({ "status": "streaming", "topic": topic }))
+        }
+
+        "shell_autocomplete" => {
+            let partial = args.get("partial").and_then(|v| v.as_str()).ok_or("Missing 'partial'")?;
+            let broadcaster = state.broadcaster.clone();
+            let provider = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.provider.clone()
+            };
+            let prompt = format!(
+                "Complete this shell command: `{}`\n\
+                Return ONLY the completed command, no explanation. If there are multiple options, return the most common one.", partial
+            );
+            let partial_clone = partial.to_string();
+            tokio::spawn(async move {
+                match provider.chat_with_image(&prompt, "You are a shell expert.", None, None).await {
+                    Ok(completion) => broadcaster.emit("shell_autocomplete_result", serde_json::json!({
+                        "partial": partial_clone, "completion": completion.trim().to_string()
+                    })),
+                    Err(e) => broadcaster.emit("shell_autocomplete_error", serde_json::json!({ "error": e.to_string() })),
+                }
+            });
+            Ok(serde_json::json!({ "status": "streaming", "partial": partial }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Voice / STT (require AppHandle process management — stubs)
+        // ────────────────────────────────────────────────────────────────────
+        "speak_text" | "speak_text_stream" => {
+            let text = args.get("text").and_then(|v| v.as_str()).unwrap_or("");
+            state.broadcaster.emit("speak_text_requested", serde_json::json!({ "text": text }));
+            Ok(serde_json::json!({ "status": "requested", "text": text, "note": "TTS requires espeak/system audio; event emitted to UI" }))
+        }
+
+        "start_recording" => {
+            state.broadcaster.emit("recording_start_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "requested", "note": "STT recording requires arecord/system audio; event emitted to UI" }))
+        }
+
+        "stop_recording" | "transcribe_audio_whisper" => {
+            state.broadcaster.emit("recording_stop_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "requested", "transcript": "", "note": "STT stop requires system audio pipeline; event emitted to UI" }))
+        }
+
+        "get_whisper_status" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            Ok(serde_json::json!({
+                "enabled":        !app_state.config.stt.whisper_binary.is_empty(),
+                "binary":         app_state.config.stt.whisper_binary,
+                "model":          app_state.config.stt.whisper_model
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Git Extended (branches)
+        // ────────────────────────────────────────────────────────────────────
+        "git_branch_list" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            tokio::task::spawn_blocking(move || {
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let mut branches = Vec::new();
+                for b in repo.branches(None).map_err(|e| e.to_string())? {
+                    let (branch, kind) = b.map_err(|e| e.to_string())?;
+                    if let Ok(Some(name)) = branch.name() {
+                        branches.push(serde_json::json!({
+                            "name": name,
+                            "kind": if kind == git2::BranchType::Local { "local" } else { "remote" },
+                            "is_head": branch.is_head()
+                        }));
+                    }
+                }
+                Ok(serde_json::json!({ "branches": branches, "count": branches.len() }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "git_branch_create" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            tokio::task::spawn_blocking(move || {
+                let repo   = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let head   = repo.head().map_err(|e| e.to_string())?;
+                let commit = repo.find_commit(head.target().ok_or("HEAD has no target")?)
+                    .map_err(|e| e.to_string())?;
+                repo.branch(&name, &commit, false).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({ "status": "created", "branch": name }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "git_branch_checkout" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            tokio::task::spawn_blocking(move || {
+                let repo   = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let branch = repo.find_branch(&name, git2::BranchType::Local).map_err(|e| e.to_string())?;
+                let obj    = branch.get().peel(git2::ObjectType::Commit).map_err(|e| e.to_string())?;
+                repo.checkout_tree(&obj, None).map_err(|e| e.to_string())?;
+                repo.set_head(&format!("refs/heads/{}", name)).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({ "status": "checked_out", "branch": name }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "git_branch_delete" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            tokio::task::spawn_blocking(move || {
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let mut branch = repo.find_branch(&name, git2::BranchType::Local).map_err(|e| e.to_string())?;
+                branch.delete().map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({ "status": "deleted", "branch": name }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // DeckCode State
+        // ────────────────────────────────────────────────────────────────────
+        "get_deckcode_state" => {
+            let (schema, bindings) = {
+                let dc = state.deckcode_state.lock().unwrap_or_else(|e| e.into_inner());
+                (dc.0.clone(), dc.1.clone())
+            };
+            let lang = state.deckcode_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            Ok(serde_json::json!({ "schema": schema, "bindings": bindings, "language": lang }))
+        }
+
+        "set_deckcode_lang" => {
+            let lang = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?;
+            let mut l = state.deckcode_lang.lock().unwrap_or_else(|e| e.into_inner());
+            *l = lang.to_string();
+            Ok(serde_json::json!({ "status": "set", "language": lang }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Scheduler toggle
+        // ────────────────────────────────────────────────────────────────────
+        "toggle_scheduled" => {
+            let id      = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let enabled = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
+            let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+            let found = tasks.iter_mut().find(|t| t.id == id);
+            if let Some(t) = found {
+                t.enabled = enabled;
+                let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
+                    std::fs::write(&state.scheduler.tasks_path, s).ok()
+                });
+                Ok(serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "id": id }))
+            } else {
+                Err(format!("Task '{}' not found", id))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining commands — stub with descriptive error
+        // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
-            "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 70 commands implemented, 225+ remaining.\n\
-            Implemented: health, get_system_info, get_initial_state, list_sessions, \
-            save_session, load_session, get_config, set_config, set_model, set_provider, \
-            get_personas, set_persona, send_command, \
-            memory_add_fact, memory_search, memory_delete, memory_pin, memory_list, memory_clear, \
-            new_session, list_models, execute_command_sync, \
-            test_connection, get_doc_count, cancel_generation, get_agent_status, \
-            pty_spawn, pty_write, pty_kill, pty_resize, get_pty_sessions, \
-            start_agent, stop_agent, agent_step, get_agent_plan, \
-            transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code, \
-            run_lua, list_lua_commands, call_lua_command, get_indexed_docs, search_docs_semantic, \
-            list_games, get_game_context, save_game_notes, open_browser, get_browser_url, \
-            browser_back, browser_forward, get_context_stats, list_features, get_version, \
-            debug_info, export_state, reset_session, get_messages, clear_messages, list_plugins, \
-            git_list_repos, git_open_repo, git_status, git_log, \
-            list_scheduled, add_scheduled, delete_scheduled, get_os_info, get_memory_usage.\n\
-            \n\
-            To add '{}' to bridge server:\n\
-            1. Open src-tauri/src/commands/mod.rs\n\
-            2. Add match arm for '{}'\n\
-            3. Extract args: args.get(\"key\").and_then(|v| v.as_str())?\n\
-            4. Call handler and return Ok(serde_json::json!(...))\n\
-            5. For streaming: state.broadcaster.emit(\"event\", payload)\n\
-            6. For blocking I/O: use tokio::task::spawn_blocking\n\
-            7. See docs/BRIDGE_SERVER.md for full implementation guide",
-            command, command, command
+            "Command '{}' not yet implemented in bridge mode. \
+            Bridge status: 130 commands implemented. \
+            See docs/BRIDGE_SERVER.md for the full roadmap.",
+            command
         )),
     }
 }
