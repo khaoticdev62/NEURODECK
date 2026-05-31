@@ -770,8 +770,18 @@ jobs:
 
           echo "✓ Pre-build healing complete"
 
-      - name: Set up sccache
-        uses: mozilla-actions/sccache-action@v0.0.4
+      - name: Set up sccache with fallback
+        run: |
+          if command -v sccache >/dev/null 2>&1; then
+            echo "sccache already installed"
+          else
+            # Install sccache
+            cargo install sccache --force 2>/dev/null || {
+              echo "::warning::Could not install sccache, will use direct compilation"
+              echo "RUSTC_WRAPPER=" >> $GITHUB_ENV
+            }
+          fi
+        continue-on-error: true
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
@@ -959,6 +969,12 @@ jobs:
 
               # Reset permissions
               sudo chmod -R u+w ~/.cargo 2>/dev/null || true
+
+              # Disable sccache if it's causing issues (GitHub cache service down)
+              echo "Disabling sccache for retry..."
+              unset RUSTC_WRAPPER
+              unset SCCACHE_GHA_ENABLED
+              export RUSTC_WRAPPER=""
 
               echo "Waiting 30s before retry..."
               sleep 30
