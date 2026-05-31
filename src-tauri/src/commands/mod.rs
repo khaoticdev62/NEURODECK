@@ -649,12 +649,31 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_agent_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+
+            let (running, task_count, tasks) = {
+                if let Some(ref plan) = orch_state.plan {
+                    (
+                        orch_state.running,
+                        plan.tasks.len(),
+                        plan.tasks.iter().map(|t| serde_json::json!({
+                            "id": t.id,
+                            "role": t.role,
+                            "status": t.status,
+                            "result": t.result
+                        })).collect::<Vec<_>>()
+                    )
+                } else {
+                    (orch_state.running, 0, vec![])
+                }
+            };
 
             Ok(serde_json::json!({
                 "agent": {
-                    "running": false,  // TODO: check orchestrator state
-                    "step_count": 0,   // TODO: get from orchestrator
-                    "status": "idle"
+                    "running": running,
+                    "task_count": task_count,
+                    "status": if running { "active" } else { "idle" },
+                    "tasks": tasks
                 },
                 "chat": {
                     "message_count": app_state.messages.len(),
@@ -673,17 +692,163 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // Agent & Orchestration
+        // ────────────────────────────────────────────────────────────────────
+        "start_agent" => {
+            let goal = args.get("goal").and_then(|v| v.as_str())
+                .ok_or("Missing 'goal'")?;
+
+            let mut orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            if orch_state.running {
+                return Err("Agent already running".to_string());
+            }
+
+            // Create initial task from goal
+            let task = crate::orchestrator::AgentTask {
+                id: format!("task-{}", chrono::Utc::now().timestamp()),
+                role: "Main Agent".to_string(),
+                goal: goal.to_string(),
+                depends_on: vec![],
+                status: "running".to_string(),
+                result: None,
+                error: None,
+            };
+
+            let plan = crate::orchestrator::OrchestratorPlan {
+                goal: goal.to_string(),
+                tasks: vec![task.clone()],
+            };
+
+            orch_state.running = true;
+            orch_state.plan = Some(plan);
+
+            let broadcaster = state.broadcaster.clone();
+            broadcaster.emit("agent_started", serde_json::json!({
+                "goal": goal,
+                "task_id": task.id,
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }));
+
+            Ok(serde_json::json!({
+                "status": "started",
+                "goal": goal,
+                "task_id": task.id,
+                "message": "Agent loop initialized"
+            }))
+        }
+
+        "stop_agent" => {
+            let mut orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            if !orch_state.running {
+                return Ok(serde_json::json!({
+                    "status": "idle",
+                    "message": "Agent is not running"
+                }));
+            }
+
+            // If abort_tx exists, send signal to stop
+            if let Some(tx) = orch_state.abort_tx.take() {
+                let _ = tx.send(());
+            }
+
+            orch_state.running = false;
+            let plan_goal = orch_state.plan.as_ref().map(|p| p.goal.clone());
+
+            let broadcaster = state.broadcaster.clone();
+            broadcaster.emit("agent_stopped", serde_json::json!({
+                "goal": plan_goal,
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }));
+
+            Ok(serde_json::json!({
+                "status": "stopped",
+                "goal": plan_goal,
+                "message": "Agent loop terminated"
+            }))
+        }
+
+        "agent_step" => {
+            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+
+            if !orch_state.running {
+                return Ok(serde_json::json!({
+                    "step": 0,
+                    "running": false,
+                    "status": "idle",
+                    "message": "Agent not running"
+                }));
+            }
+
+            // Count completed tasks
+            let (total_tasks, completed_tasks, current_task) = if let Some(ref plan) = orch_state.plan {
+                let total = plan.tasks.len();
+                let completed = plan.tasks.iter().filter(|t| t.status == "done").count();
+                let curr = plan.tasks.iter()
+                    .find(|t| t.status == "running")
+                    .map(|t| (&t.id, &t.role, &t.goal));
+
+                (total, completed, curr)
+            } else {
+                (0, 0, None)
+            };
+
+            Ok(serde_json::json!({
+                "step": completed_tasks,
+                "running": orch_state.running,
+                "status": if orch_state.running { "active" } else { "idle" },
+                "progress": {
+                    "completed": completed_tasks,
+                    "total": total_tasks,
+                    "percent": if total_tasks > 0 { (completed_tasks * 100) / total_tasks } else { 0 }
+                },
+                "current_task": current_task.map(|(id, role, goal)| serde_json::json!({
+                    "id": id,
+                    "role": role,
+                    "goal": goal
+                })),
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+
+        "get_agent_plan" => {
+            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+
+            if let Some(ref plan) = orch_state.plan {
+                Ok(serde_json::json!({
+                    "goal": plan.goal,
+                    "tasks": plan.tasks.iter().map(|t| serde_json::json!({
+                        "id": t.id,
+                        "role": t.role,
+                        "goal": t.goal,
+                        "status": t.status,
+                        "result": t.result,
+                        "error": t.error,
+                        "depends_on": t.depends_on
+                    })).collect::<Vec<_>>(),
+                    "count": plan.tasks.len()
+                }))
+            } else {
+                Ok(serde_json::json!({
+                    "goal": null,
+                    "tasks": [],
+                    "count": 0,
+                    "message": "No active plan"
+                }))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // Remaining 270+ commands (template provided in BRIDGE_SERVER.md)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 24 commands implemented, 271+ remaining.\n\
+            Bridge status: 28 commands implemented, 267+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
             save_session, load_session, get_config, get_personas, set_persona, send_command, \
             memory_add_fact, memory_search, new_session, list_models, execute_command_sync, \
             test_connection, get_doc_count, cancel_generation, get_agent_status, \
-            pty_spawn, pty_write, pty_kill, pty_resize.\n\
+            pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, get_agent_plan.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
