@@ -431,15 +431,146 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 275+ commands (template provided in BRIDGE_SERVER.md)
+        // Utility & Diagnostics
+        // ────────────────────────────────────────────────────────────────────
+        "execute_command_sync" => {
+            let cmd = args.get("command").and_then(|v| v.as_str())
+                .ok_or("Missing 'command'")?;
+
+            tokio::task::spawn_blocking({
+                let cmd_str = cmd.to_string();
+                move || {
+                    let output = if cfg!(target_os = "windows") {
+                        std::process::Command::new("cmd.exe")
+                            .arg("/c")
+                            .arg(&cmd_str)
+                            .output()
+                    } else {
+                        std::process::Command::new("sh")
+                            .arg("-c")
+                            .arg(&cmd_str)
+                            .output()
+                    };
+
+                    match output {
+                        Ok(out) => {
+                            let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
+                            let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
+                            (stdout, stderr, out.status.code().unwrap_or(-1))
+                        }
+                        Err(e) => (String::new(), e.to_string(), -1)
+                    }
+                }
+            })
+            .await
+            .ok()
+            .map(|(stdout, stderr, code)| {
+                serde_json::json!({
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exit_code": code
+                })
+            })
+            .ok_or("Failed to execute command".to_string())
+        }
+
+        "test_connection" => {
+            let (provider, provider_name) = {
+                let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                (app_state.provider.clone(), app_state.config.llm.default_provider.clone())
+            };
+            let broadcaster = state.broadcaster.clone();
+
+            tokio::spawn(async move {
+                match provider.chat_with_image("ping", "You are a helpful assistant. Reply with 'pong'.", None, None).await {
+                    Ok(response) => {
+                        broadcaster.emit("connection_test", serde_json::json!({
+                            "status": "success",
+                            "provider": provider_name,
+                            "response": response
+                        }));
+                    }
+                    Err(e) => {
+                        broadcaster.emit("connection_test", serde_json::json!({
+                            "status": "failed",
+                            "provider": provider_name,
+                            "error": e.to_string()
+                        }));
+                    }
+                }
+            });
+
+            Ok(serde_json::json!({
+                "status": "testing",
+                "message": "Connection test initiated, check WebSocket for result"
+            }))
+        }
+
+        "get_doc_count" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let count = app_state.mem_db.as_ref()
+                .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
+                .unwrap_or(0);
+
+            Ok(serde_json::json!({
+                "count": count,
+                "database": "memory",
+                "last_updated": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+
+        "cancel_generation" => {
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(tx) = app_state.cancel_stream_tx.take() {
+                let _ = tx.send(());
+                Ok(serde_json::json!({
+                    "status": "cancelled",
+                    "message": "LLM generation cancelled"
+                }))
+            } else {
+                Ok(serde_json::json!({
+                    "status": "idle",
+                    "message": "No active generation to cancel"
+                }))
+            }
+        }
+
+        "get_agent_status" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+
+            Ok(serde_json::json!({
+                "agent": {
+                    "running": false,  // TODO: check orchestrator state
+                    "step_count": 0,   // TODO: get from orchestrator
+                    "status": "idle"
+                },
+                "chat": {
+                    "message_count": app_state.messages.len(),
+                    "session_id": app_state.session_id,
+                    "persona": app_state.active_persona
+                },
+                "system": {
+                    "provider": app_state.config.llm.default_provider,
+                    "model": if app_state.config.llm.default_provider == "gemini" {
+                        app_state.config.llm.gemini_model.clone()
+                    } else {
+                        app_state.config.llm.ollama_model.clone()
+                    }
+                }
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 270+ commands (template provided in BRIDGE_SERVER.md)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 15 commands implemented, 280+ remaining.\n\
+            Bridge status: 20 commands implemented, 275+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
             save_session, load_session, get_config, get_personas, set_persona, send_command, \
-            memory_add_fact, memory_search, new_session, list_models.\n\
+            memory_add_fact, memory_search, new_session, list_models, execute_command_sync, \
+            test_connection, get_doc_count, cancel_generation, get_agent_status.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
@@ -447,7 +578,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             3. Extract args: args.get(\"key\").and_then(|v| v.as_str())?\n\
             4. Call handler and return Ok(serde_json::json!(...))\n\
             5. For streaming: state.broadcaster.emit(\"event\", payload)\n\
-            6. See docs/BRIDGE_SERVER.md for full implementation guide",
+            6. For blocking I/O: use tokio::task::spawn_blocking\n\
+            7. See docs/BRIDGE_SERVER.md for full implementation guide",
             command, command, command
         )),
     }
