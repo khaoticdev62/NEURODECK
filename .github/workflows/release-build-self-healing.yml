@@ -877,6 +877,51 @@ jobs:
 
           exit 1
 
+      - name: Diagnose build environment
+        run: |
+          #!/bin/bash
+
+          echo "=== Build Environment Diagnostics ==="
+          echo ""
+          echo "Rust version:"
+          rustc --version
+          cargo --version
+
+          echo ""
+          echo "Cargo config:"
+          cargo config get 2>/dev/null | head -20 || echo "Could not read cargo config"
+
+          echo ""
+          echo "Disk space:"
+          df -h / | head -2
+
+          echo ""
+          echo "Memory:"
+          free -h | head -2
+
+          echo ""
+          echo "sccache status:"
+          if command -v sccache >/dev/null; then
+            sccache --version || echo "sccache binary exists but failed"
+            sccache --show-stats 2>/dev/null | head -10 || echo "Could not get sccache stats"
+          else
+            echo "sccache not in PATH"
+          fi
+
+          echo ""
+          echo "RUSTC_WRAPPER: $RUSTC_WRAPPER"
+          echo "CARGO_INCREMENTAL: $CARGO_INCREMENTAL"
+          echo "CARGO_BUILD_JOBS: $CARGO_BUILD_JOBS"
+          echo "RAYON_NUM_THREADS: $RAYON_NUM_THREADS"
+
+          echo ""
+          echo "Frontend dist present:"
+          ls -lh frontend/dist/ | head -20
+
+          echo ""
+          echo "Target directory size:"
+          du -sh src-tauri/target 2>/dev/null || echo "Target dir not yet created"
+
       - name: Build AppImage with recovery
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
