@@ -1,52 +1,74 @@
 # Bridge Server Implementation Progress
 
-**Status:** 15/295 commands implemented (~5%)  
-**Last Update:** 2026-05-31 18:16 UTC  
-**Commit:** 579a040 (v1.6.0-bastet)
+**Status:** 24/295 commands implemented (8.1%)  
+**Last Update:** 2026-05-31 18:51 UTC  
+**Commit:** 039487f (v1.6.0-bastet)
 
 ---
 
-## Completed Commands
+## Completed Commands (24 Total)
 
-### Tier 1 — System Status (3 commands)
-| Command | Status | Purpose |
-|---------|--------|---------|
-| `health` | ✅ | Server readiness probe for load balancers |
-| `get_system_info` | ✅ | Return session ID, LLM provider, active model |
-| `list_models` | ✅ | Enumerate available Gemini and Ollama models |
+### Tier 1 — System Status (3 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `health` | Server readiness probe for load balancers |
+| `get_system_info` | Return session ID, LLM provider, active model |
+| `list_models` | Enumerate available Gemini and Ollama models |
 
-### Tier 2 — Session Management (5 commands)
-| Command | Status | Purpose |
-|---------|--------|---------|
-| `get_initial_state` | ✅ | Full chat snapshot (messages, persona, memory count) |
-| `list_sessions` | ✅ | Browse saved sessions with file sizes |
-| `save_session` | ✅ | Persist current chat to disk |
-| `load_session` | ✅ | Restore previous session by ID |
-| `new_session` | ✅ | Start fresh chat (clear history, reset persona) |
+### Tier 2 — Session Management (5 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `get_initial_state` | Full chat snapshot (messages, persona, memory count) |
+| `list_sessions` | Browse saved sessions with file sizes |
+| `save_session` | Persist current chat to disk |
+| `load_session` | Restore previous session by ID |
+| `new_session` | Start fresh chat (clear history, reset persona) |
 
-### Tier 3 — Configuration (4 commands)
-| Command | Status | Purpose |
-|---------|--------|---------|
-| `get_config` | ✅ | LLM provider settings, STT config |
-| `get_personas` | ✅ | List built-in + custom personas |
-| `set_persona` | ✅ | Switch active AI personality |
-| (set_config) | ⏳ | Configure LLM/STT settings (not yet) |
+### Tier 3 — Configuration (3 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `get_config` | LLM provider settings, STT config |
+| `get_personas` | List built-in + custom personas |
+| `set_persona` | Switch active AI personality |
 
-### Tier 4 — Chat & LLM (1 command)
-| Command | Status | Purpose |
-|---------|--------|---------|
-| `send_command` | ✅ | Main chat with full LLM streaming |
+### Tier 4 — Chat & LLM (1 command) ✅
+| Command | Purpose |
+|---------|---------|
+| `send_command` | Main chat with full LLM streaming |
 
 **WebSocket Events Emitted:**
 - `command_token` — Each LLM token (for real-time display)
 - `command_error` — Errors during generation
 - `command_done` — Generation complete
 
-### Tier 5 — Memory/RAG (2 commands)
-| Command | Status | Purpose |
-|---------|--------|---------|
-| `memory_add_fact` | ✅ | Store fact for later context injection |
-| `memory_search` | ✅ | Keyword search over memory DB |
+### Tier 5 — Memory/RAG (2 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `memory_add_fact` | Store fact for later context injection |
+| `memory_search` | Keyword search over memory DB |
+
+### Tier 6 — Terminal Control (4 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `pty_spawn` | Create new PTY session with dimensions |
+| `pty_write` | Send input to PTY session |
+| `pty_kill` | Terminate PTY session and close fd |
+| `pty_resize` | Adjust terminal dimensions (placeholder) |
+
+**WebSocket Events Emitted:**
+- `pty_output` — Terminal output from PTY reader thread
+- `pty_exit` — PTY session terminated
+- `pty_session_created` — New session initialized
+- `pty_killed` — Session terminated by request
+
+### Tier 7 — Utilities & Diagnostics (6 commands) ✅
+| Command | Purpose |
+|---------|---------|
+| `execute_command_sync` | Run shell command synchronously |
+| `test_connection` | Validate LLM provider connectivity |
+| `get_doc_count` | Memory database statistics |
+| `cancel_generation` | Stop active LLM stream |
+| `get_agent_status` | Comprehensive system status snapshot |
 
 ---
 
@@ -209,11 +231,13 @@ To enable agent and terminal support:
 
 | Milestone | Commands | Timeline | Status |
 |-----------|----------|----------|--------|
-| **Tier 1–5 Complete** | 15 | ✅ 2026-05-31 | DONE |
-| **Terminal Support** | +4 (pty_*) | 📅 ~2h | ⏳ |
-| **Agent Support** | +3 (agent_*) | 📅 ~2h | ⏳ |
-| **Utility Commands** | +8 | 📅 ~3h | ⏳ |
-| **Core Completeness** | 30 | 📅 ~7h total | ⏳ |
+| **Tier 1–5 Complete** | 15 | ✅ 2026-05-31 18:16 UTC | DONE |
+| **Utility Commands** | +6 | ✅ 2026-05-31 18:37 UTC | DONE |
+| **Terminal Support** | +4 (pty_*) | ✅ 2026-05-31 18:51 UTC | DONE |
+| **Agent Support** | +3 (agent_*) | 📅 ~1h | ⏳ |
+| **File Transfer** | +4–6 | 📅 ~2h | ⏳ |
+| **Advanced Features** | +20–30 | 📅 ~4h | ⏳ |
+| **Core Completeness** | 50–60 | ✅ ~6h total | 📊 |
 | **Full Coverage** | 295 | 📅 ~3–4 weeks | 🔮 |
 
 ---
