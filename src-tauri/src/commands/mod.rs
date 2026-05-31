@@ -2893,7 +2893,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "deleted", "model": model }))
         }
 
-        "ollama_pull_model" => {
+        // ollama_pull_model implemented below with streaming broadcaster
+        "ollama_pull_model_stub_removed" => {
             Ok(serde_json::json!({ "status": "unavailable", "note": "ollama_pull_model requires Tauri AppHandle for streaming progress events; use the Tauri UI" }))
         }
 
@@ -2999,8 +3000,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "saved", "file_name": file_name }))
         }
 
-        "reload_plugins" | "install_plugin" | "uninstall_plugin" | "install_plugin_from_registry" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Plugin reload/install requires Tauri AppHandle; use the Tauri UI" }))
+        "reload_plugins" | "install_plugin_from_registry" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Plugin reload/install from registry requires Tauri AppHandle; use the Tauri UI" }))
         }
 
         "fetch_plugin_registry" => {
@@ -3280,9 +3281,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "forked", "new_session_id": forked_id, "messages": session.messages.len() }))
         }
 
-        "compare_models" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Model comparison requires concurrent LLM calls; use send_command twice with different set_model calls" }))
-        }
+        // compare_models is implemented further below with real parallel LLM calls
 
         // ────────────────────────────────────────────────────────────────────
         // OAuth
@@ -3433,9 +3432,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::to_value(downloads).map_err(|e| e.to_string())?)
         }
 
-        "hf_download_model" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "hf_download_model requires Tauri AppHandle for progress events; use the Tauri UI to download models" }))
-        }
+        // hf_download_model implemented below with streaming broadcaster
 
         // ────────────────────────────────────────────────────────────────────
         // Tunnel Server
@@ -3675,9 +3672,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::to_value(req).map_err(|e| e.to_string())?)
         }
 
-        "api_generate_request" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "api_generate_request requires Tauri AppHandle for streaming; use generate_jpe_explanation with API schema context instead" }))
-        }
+        // api_generate_request implemented below with real LLM call
 
         // ────────────────────────────────────────────────────────────────────
         // Git AI & Credentials
@@ -3748,8 +3743,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "deleted", "host": host }))
         }
 
-        "git_generate_ssh_key" | "git_ssh_public_keys" | "git_init" | "git_clone" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "This git command requires Tauri AppHandle for file-dialog or app-data-dir; use the Tauri UI" }))
+        "git_init" | "git_clone" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "git_init and git_clone require Tauri AppHandle for file-dialog; use the Tauri UI" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
