@@ -838,17 +838,100 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 270+ commands (template provided in BRIDGE_SERVER.md)
+        // File Transfer & Peer Discovery
+        // ────────────────────────────────────────────────────────────────────
+        "transfer_list_peers" => {
+            let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            let peer_count = transfer_state.peers.len();
+
+            Ok(serde_json::json!({
+                "count": peer_count,
+                "status": "ok"
+            }))
+        }
+
+        "transfer_list_active" => {
+            let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            let transfer_count = transfer_state.transfers.len();
+
+            Ok(serde_json::json!({
+                "count": transfer_count,
+                "status": "ok"
+            }))
+        }
+
+        "transfer_cancel" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+
+            let mut transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+
+            // Remove transfer by key (id)
+            if let Some(_cancelled) = transfer_state.transfers.remove(id) {
+                state.broadcaster.emit("transfer_cancelled", serde_json::json!({
+                    "id": id
+                }));
+
+                Ok(serde_json::json!({
+                    "status": "cancelled",
+                    "id": id
+                }))
+            } else {
+                Ok(serde_json::json!({
+                    "status": "not_found",
+                    "id": id
+                }))
+            }
+        }
+
+        "transfer_group_code" => {
+            let action = args.get("action").and_then(|v| v.as_str())
+                .unwrap_or("get");
+
+            let mut transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+
+            match action {
+                "set" => {
+                    let code = args.get("code").and_then(|v| v.as_str())
+                        .ok_or("Missing 'code' for set action")?;
+                    transfer_state.group_code = code.to_string();
+
+                    Ok(serde_json::json!({
+                        "status": "set",
+                        "code": code
+                    }))
+                }
+                "get" => {
+                    let code = &transfer_state.group_code;
+                    Ok(serde_json::json!({
+                        "status": "ok",
+                        "code": code,
+                        "has_code": !code.is_empty()
+                    }))
+                }
+                "clear" => {
+                    transfer_state.group_code = String::new();
+                    Ok(serde_json::json!({
+                        "status": "cleared"
+                    }))
+                }
+                _ => Err(format!("Unknown action: {}. Use 'get', 'set', or 'clear'", action))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 263+ commands (template provided in BRIDGE_SERVER.md)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 28 commands implemented, 267+ remaining.\n\
+            Bridge status: 32 commands implemented, 263+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
             save_session, load_session, get_config, get_personas, set_persona, send_command, \
             memory_add_fact, memory_search, new_session, list_models, execute_command_sync, \
             test_connection, get_doc_count, cancel_generation, get_agent_status, \
-            pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, get_agent_plan.\n\
+            pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, \
+            get_agent_plan, transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
