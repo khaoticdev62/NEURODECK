@@ -20,6 +20,7 @@ pub use system::*;
 
 use crate::bridge::ServerState;
 use serde_json::Value;
+use futures_util::StreamExt;
 
 /// Unified command dispatcher for bridge server (HTTP API).
 /// Routes command names to their handlers and returns JSON results.
@@ -217,26 +218,236 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // LLM & Chat Commands (Streaming)
         // ────────────────────────────────────────────────────────────────────
-        "send_command" | "execute_command_stream" => {
+        "send_command" => {
+            let message = args.get("message").and_then(|v| v.as_str())
+                .ok_or("Missing 'message'")?;
+            let image_base64 = args.get("image_base64").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let image_mime = args.get("image_mime").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+            let broadcaster = state.broadcaster.clone();
+            let app_state_clone = state.app_state.clone();
+            let provider_clone = {
+                let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                app.provider.clone()
+            };
+            let message_clone = message.to_string();
+
+            tokio::spawn(async move {
+                // 1. Add user message to state
+                {
+                    let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                    app.messages.push(format!("User: {}", message_clone));
+                }
+
+                // 2. Get system prompt from active persona
+                let system_prompt = {
+                    let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                    let active_persona = app.active_persona.clone();
+                    let custom_personas = app.custom_personas.clone();
+
+                    crate::PERSONAS
+                        .iter()
+                        .find(|p| p.0 == active_persona)
+                        .map(|p| p.1.clone())
+                        .unwrap_or_else(|| {
+                            custom_personas
+                                .iter()
+                                .find(|p| p.name == active_persona)
+                                .map(|p| p.prompt.clone())
+                                .unwrap_or_else(|| "You are a helpful assistant.".to_string())
+                        })
+                };
+
+                let mut full_response = String::new();
+
+                // 3. Stream response from LLM
+                if let Some(ref b64) = image_base64 {
+                    // Vision path (non-streaming)
+                    let mime_str = image_mime.as_deref().unwrap_or("image/png");
+                    match provider_clone.chat_with_image(
+                        &message_clone,
+                        &system_prompt,
+                        Some(b64),
+                        Some(mime_str),
+                    ).await {
+                        Ok(response) => {
+                            full_response = response.clone();
+                            broadcaster.emit("command_token", serde_json::json!({ "token": response }));
+                        }
+                        Err(e) => {
+                            broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                            return;
+                        }
+                    }
+                } else {
+                    // Normal streaming path
+                    let mut stream = provider_clone.stream_response(&message_clone, &system_prompt);
+                    while let Some(chunk_res) = stream.next().await {
+                        match chunk_res {
+                            Ok(chunk) => {
+                                full_response.push_str(&chunk);
+                                broadcaster.emit("command_token", serde_json::json!({ "token": chunk }));
+                            }
+                            Err(e) => {
+                                broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // 4. Store AI response in state
+                {
+                    let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                    app.messages.push(format!("AI: {}", full_response));
+                }
+
+                // 5. Signal completion
+                broadcaster.emit("command_done", serde_json::json!({ "status": "complete" }));
+            });
+
+            Ok(serde_json::json!({
+                "status": "streaming",
+                "message": "LLM response streaming via WebSocket events"
+            }))
+        }
+
+        "execute_command_stream" => {
             Err("LLM commands require streaming via WebSocket. See GET /ws endpoint.".to_string())
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 280+ commands (template provided)
+        // Memory Management (RAG/Vector DB)
+        // ────────────────────────────────────────────────────────────────────
+        "memory_add_fact" => {
+            let content = args.get("content").and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?;
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                let fact_id = format!("manual-{}", chrono::Utc::now().timestamp());
+                let mut metadata = std::collections::HashMap::new();
+                metadata.insert("source".to_string(), "manual".to_string());
+
+                // Store fact without embedding (will use keyword search)
+                let _ = db.store_message(fact_id.clone(), content.to_string(), vec![], metadata);
+                Ok(serde_json::json!({
+                    "status": "added",
+                    "id": fact_id,
+                    "content": content
+                }))
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        "memory_search" => {
+            let query = args.get("query").and_then(|v| v.as_str())
+                .ok_or("Missing 'query'")?;
+
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref db) = app_state.mem_db {
+                match db.list_all() {
+                    Ok(records) => {
+                        let query_words: Vec<&str> = query
+                            .split_whitespace()
+                            .filter(|w| w.len() > 3)
+                            .collect();
+
+                        let mut results: Vec<(usize, _)> = records
+                            .into_iter()
+                            .filter_map(|rec| {
+                                let lower = rec.content.to_lowercase();
+                                let hits = query_words
+                                    .iter()
+                                    .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                                    .count();
+                                if hits > 0 { Some((hits, rec)) } else { None }
+                            })
+                            .collect();
+
+                        results.sort_by(|a, b| b.0.cmp(&a.0));
+                        let top_3: Vec<_> = results
+                            .into_iter()
+                            .take(3)
+                            .map(|(_, rec)| serde_json::json!({
+                                "id": rec.id,
+                                "content": rec.content,
+                                "metadata": rec.metadata
+                            }))
+                            .collect();
+
+                        Ok(serde_json::json!({
+                            "query": query,
+                            "results": top_3,
+                            "count": top_3.len()
+                        }))
+                    }
+                    Err(e) => Err(format!("Memory search error: {}", e))
+                }
+            } else {
+                Err("Memory database not initialized".to_string())
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Session Management
+        // ────────────────────────────────────────────────────────────────────
+        "new_session" => {
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let session_id = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+            app_state.session_id = session_id.clone();
+            app_state.messages.clear();
+            app_state.active_persona = "Default".to_string();
+
+            Ok(serde_json::json!({
+                "status": "created",
+                "session_id": session_id,
+                "messages": 0,
+                "persona": "Default"
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Model Management
+        // ────────────────────────────────────────────────────────────────────
+        "list_models" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let gemini_models = vec!["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+            let ollama_models = vec!["llama2", "mistral", "neural-chat", "orca-mini"];
+
+            Ok(serde_json::json!({
+                "gemini": gemini_models,
+                "ollama": ollama_models,
+                "current": {
+                    "provider": app_state.config.llm.default_provider,
+                    "model": if app_state.config.llm.default_provider == "gemini" {
+                        app_state.config.llm.gemini_model.clone()
+                    } else {
+                        app_state.config.llm.ollama_model.clone()
+                    }
+                }
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 275+ commands (template provided in BRIDGE_SERVER.md)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 10 commands implemented, 285 remaining.\n\
+            Bridge status: 15 commands implemented, 280+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
-            save_session, load_session, get_config, get_personas, set_persona.\n\
+            save_session, load_session, get_config, get_personas, set_persona, send_command, \
+            memory_add_fact, memory_search, new_session, list_models.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
             2. Add match arm for '{}'\n\
             3. Extract args: args.get(\"key\").and_then(|v| v.as_str())?\n\
             4. Call handler and return Ok(serde_json::json!(...))\n\
-            5. For streaming: state.broadcaster.emit(\"event\", payload)",
+            5. For streaming: state.broadcaster.emit(\"event\", payload)\n\
+            6. See docs/BRIDGE_SERVER.md for full implementation guide",
             command, command, command
         )),
     }

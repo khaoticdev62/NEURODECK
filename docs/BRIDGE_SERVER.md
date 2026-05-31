@@ -82,14 +82,72 @@ const ws = new WebSocket('ws://127.0.0.1:9477/ws');
 ws.onmessage = (event) => {
   const { event: eventName, payload } = JSON.parse(event.data);
   
-  if (eventName === 'pty_output') {
+  // LLM token streaming (from send_command)
+  if (eventName === 'command_token') {
+    console.log('Token:', payload.token);  // Incremental LLM output
+  } 
+  // PTY terminal output
+  else if (eventName === 'pty_output') {
     console.log('Terminal:', payload.data);
-  } else if (eventName === 'command_stdout') {
+  } 
+  // Command execution output
+  else if (eventName === 'command_stdout') {
     console.log('Output:', payload);
-  } else if (eventName === '__lag__') {
+  } 
+  // LLM or command error
+  else if (eventName === 'command_error') {
+    console.error('Error:', payload.error);
+  }
+  // LLM response complete
+  else if (eventName === 'command_done') {
+    console.log('Generation complete');
+  }
+  // Slow client lag warning
+  else if (eventName === '__lag__') {
     console.warn('Missed messages:', payload.dropped);
   }
 };
+```
+
+### Example: LLM Chat via WebSocket
+
+```bash
+# 1. Start LLM response streaming (returns immediately)
+curl -X POST http://127.0.0.1:9477/api/send_command \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is Rust?"}'
+
+# Response:
+# {
+#   "status": "streaming",
+#   "message": "LLM response streaming via WebSocket events"
+# }
+
+# 2. Listen on WebSocket for tokens
+# Each token arrives as: { "event": "command_token", "payload": { "token": "..." } }
+# When done: { "event": "command_done", "payload": { "status": "complete" } }
+```
+
+### Example: Memory Search
+
+```bash
+# Search memory for relevant facts
+curl -X POST http://127.0.0.1:9477/api/memory_search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "rust performance optimization"}'
+
+# Response:
+# {
+#   "query": "rust performance optimization",
+#   "results": [
+#     {
+#       "id": "20260530-001",
+#       "content": "Rust uses zero-cost abstractions...",
+#       "metadata": { "role": "ai" }
+#     }
+#   ],
+#   "count": 1
+# }
 ```
 
 ## Command Dispatch Implementation
@@ -214,34 +272,58 @@ state.broadcaster.emit("event_name", serde_json::json!({
 | **File uploads** | Multipart/form-data not yet supported | POST binary via chunked HTTP or WebSocket |
 | **Lua event callbacks** | Lua emits to Tauri AppHandle | Need bridge-mode Lua event adapter |
 
-## Extending the Bridge
+## Implemented Commands (15/295)
 
-### Add 10 More Commands (1 hour)
+### Tier 1 — System & Status (3 commands) ✅
+- `health` — Server readiness probe
+- `get_system_info` — Session ID, LLM provider, model
+- List models (via `list_models`) — Available models for current provider
 
-Priority list:
+### Tier 2 — Session Management (4 commands) ✅
+- `get_initial_state` — Full chat state snapshot
+- `list_sessions` — Browse saved sessions with metadata
+- `save_session` — Persist current chat to disk
+- `load_session` — Restore previous session
+- `new_session` — Start fresh chat session (NEW)
 
-1. ✅ `health` — Already implemented
-2. ✅ `get_system_info` — Already implemented
-3. ⏳ `get_initial_state` — Chat state snapshot
-4. ⏳ `save_session` / `load_session` — Session persistence
-5. ⏳ `get_config` / `set_config` — Settings
-6. ⏳ `list_personas` / `set_persona` — Persona switching
-7. ⏳ `memory_search` — Vector DB lookup
-8. ⏳ `list_models` — Available LLM models
-9. ⏳ `test_connection` — Network/API validation
-10. ⏳ `execute_command_sync` — Synchronous shell execution
+### Tier 3 — Configuration (4 commands) ✅
+- `get_config` — LLM and STT settings
+- `get_personas` — List available personas
+- `set_persona` — Switch active AI personality
+- `list_models` — List available LLM models (NEW)
 
-Each is 5–10 lines of dispatch code.
+### Tier 4 — Chat & LLM (4 commands) ✅
+- `send_command` — Main chat endpoint with WebSocket streaming (NEW)
+- Streaming events: `command_token` (tokens), `command_error` (errors), `command_done` (completion)
 
-### Full Integration (1 week)
+### Tier 5 — Memory/RAG (2 commands) ✅
+- `memory_add_fact` — Store fact for later RAG search (NEW)
+- `memory_search` — Vector/keyword search memory DB (NEW)
 
-To implement all ~295 commands:
+### Remaining Priority Commands (Next 10–15)
 
-1. Generate dispatch boilerplate from `lib.rs` handler list
-2. Adapt each handler to work with bridge ServerState (no Tauri AppHandle)
-3. For streaming commands, emit events via broadcaster
-4. Test via curl or WebSocket client
-5. Update TypeScript client library
+To enable agent, PTY, and advanced features:
+
+1. ⏳ `pty_spawn` / `pty_write` / `pty_kill` — Terminal control via WebSocket
+2. ⏳ `get_agent_status` / `start_agent` / `stop_agent` — Agent orchestration
+3. ⏳ `execute_command_sync` — Synchronous shell execution
+4. ⏳ `test_connection` — Network/API validation
+5. ⏳ `get_doc_count` — Memory DB statistics
+6. ⏳ `transfer_list` / `transfer_download` — File transfer state
+7. ⏳ `agent_step` — Manual agent iteration
+8. ⏳ `cancel_generation` — Stop active LLM stream
+
+### Full Integration (1–2 weeks)
+
+To implement all ~280 remaining commands:
+
+1. Prioritize streaming commands first (agent, PTY, LLM events)
+2. Generate dispatch boilerplate from `commands/` module handlers
+3. Adapt each handler to use `ServerState` instead of Tauri AppHandle
+4. For streaming: use `state.broadcaster.emit()` for real-time events
+5. For file I/O: use `tokio::task::spawn_blocking` for sync operations
+6. Test each command family via curl/WebSocket before moving to next
+7. Update TypeScript client library with full API coverage
 
 ## Testing
 
