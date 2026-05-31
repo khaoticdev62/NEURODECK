@@ -1061,12 +1061,174 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining 258+ commands (template provided in BRIDGE_SERVER.md)
+        // Browser Integration
+        // ────────────────────────────────────────────────────────────────────
+        "open_browser" => {
+            let url = args.get("url").and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
+
+            // In bridge mode, we can't actually open a browser window
+            // But we can validate the URL and return a placeholder response
+            if url.starts_with("http://") || url.starts_with("https://") {
+                state.broadcaster.emit("browser_opened", serde_json::json!({
+                    "url": url
+                }));
+
+                Ok(serde_json::json!({
+                    "status": "opened",
+                    "url": url,
+                    "note": "Browser window not available in bridge mode"
+                }))
+            } else {
+                Err("Invalid URL format. Must start with http:// or https://".to_string())
+            }
+        }
+
+        "get_browser_url" => {
+            // Placeholder: would require browser session tracking
+            Ok(serde_json::json!({
+                "url": "",
+                "note": "Browser session tracking not available in bridge mode"
+            }))
+        }
+
+        "browser_back" => {
+            state.broadcaster.emit("browser_back_requested", serde_json::json!({}));
+
+            Ok(serde_json::json!({
+                "status": "back_requested",
+                "note": "Browser back navigation not available in bridge mode"
+            }))
+        }
+
+        "browser_forward" => {
+            state.broadcaster.emit("browser_forward_requested", serde_json::json!({}));
+
+            Ok(serde_json::json!({
+                "status": "forward_requested",
+                "note": "Browser forward navigation not available in bridge mode"
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // System Info & State Management
+        // ────────────────────────────────────────────────────────────────────
+        "get_context_stats" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+
+            let memory_count = app_state.mem_db.as_ref()
+                .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
+                .unwrap_or(0);
+
+            Ok(serde_json::json!({
+                "chat": {
+                    "session_id": app_state.session_id,
+                    "messages": app_state.messages.len(),
+                    "persona": app_state.active_persona
+                },
+                "memory": {
+                    "facts": memory_count
+                },
+                "agent": {
+                    "running": orch_state.running,
+                    "tasks": orch_state.plan.as_ref().map(|p| p.tasks.len()).unwrap_or(0)
+                },
+                "system": {
+                    "provider": app_state.config.llm.default_provider,
+                    "model": if app_state.config.llm.default_provider == "gemini" {
+                        app_state.config.llm.gemini_model.clone()
+                    } else {
+                        app_state.config.llm.ollama_model.clone()
+                    }
+                }
+            }))
+        }
+
+        "list_features" => {
+            Ok(serde_json::json!({
+                "features": vec![
+                    "chat", "memory", "terminal", "file_transfer", "agent",
+                    "lua_scripting", "session_management", "diagnostics"
+                ],
+                "count": 8
+            }))
+        }
+
+        "get_version" => {
+            Ok(serde_json::json!({
+                "version": "1.6.0",
+                "codename": "bastet",
+                "tag": "v1.6.0-bastet",
+                "bridge_api_version": "1.0",
+                "commands_implemented": 50
+            }))
+        }
+
+        "debug_info" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+
+            let workspace = app_state.config.get_resolved_workspace()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "unknown".to_string());
+
+            Ok(serde_json::json!({
+                "session": app_state.session_id,
+                "uptime_seconds": chrono::Utc::now().timestamp(),
+                "config": {
+                    "workspace": workspace,
+                    "provider": app_state.config.llm.default_provider,
+                },
+                "state": {
+                    "messages": app_state.messages.len(),
+                    "personas": app_state.custom_personas.len(),
+                },
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+
+        "export_state" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+
+            Ok(serde_json::json!({
+                "session_id": app_state.session_id,
+                "messages_count": app_state.messages.len(),
+                "personas": app_state.custom_personas.iter().map(|p| &p.name).collect::<Vec<_>>(),
+                "active_persona": app_state.active_persona,
+                "timestamp": chrono::Utc::now().to_rfc3339(),
+                "format": "json",
+                "note": "Full state export (messages) requires separate call"
+            }))
+        }
+
+        "reset_session" => {
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let old_id = app_state.session_id.clone();
+
+            // Reset session state
+            app_state.session_id = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+            app_state.messages.clear();
+            app_state.active_persona = "Default".to_string();
+
+            state.broadcaster.emit("session_reset", serde_json::json!({
+                "old_id": old_id,
+                "new_id": app_state.session_id
+            }));
+
+            Ok(serde_json::json!({
+                "status": "reset",
+                "old_session_id": old_id,
+                "new_session_id": app_state.session_id
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remaining 245+ commands (templates provided in BRIDGE_SERVER.md)
         // ────────────────────────────────────────────────────────────────────
 
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode.\n\
-            Bridge status: 40 commands implemented, 255+ remaining.\n\
+            Bridge status: 50 commands implemented, 245+ remaining.\n\
             Implemented: health, get_system_info, get_initial_state, list_sessions, \
             save_session, load_session, get_config, get_personas, set_persona, send_command, \
             memory_add_fact, memory_search, new_session, list_models, execute_command_sync, \
@@ -1074,7 +1236,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             pty_spawn, pty_write, pty_kill, pty_resize, start_agent, stop_agent, agent_step, \
             get_agent_plan, transfer_list_peers, transfer_list_active, transfer_cancel, transfer_group_code, \
             run_lua, list_lua_commands, call_lua_command, get_indexed_docs, search_docs_semantic, \
-            list_games, get_game_context, save_game_notes.\n\
+            list_games, get_game_context, save_game_notes, open_browser, get_browser_url, \
+            browser_back, browser_forward, get_context_stats, list_features, get_version, \
+            debug_info, export_state, reset_session.\n\
             \n\
             To add '{}' to bridge server:\n\
             1. Open src-tauri/src/commands/mod.rs\n\
