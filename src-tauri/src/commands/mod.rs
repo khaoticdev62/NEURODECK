@@ -48,7 +48,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "health" => {
             Ok(serde_json::json!({
                 "status": "ready",
-                "version": "1.6.0-bastet",
+                "version": "1.7.0-sekhmet",
                 "mode": "bridge_server",
                 "endpoint": "http://127.0.0.1:9477",
                 "api_version": "1.0",
@@ -1157,9 +1157,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_version" => {
             Ok(serde_json::json!({
-                "version": "1.6.0",
+                "version": "1.7.0",
                 "codename": "bastet",
-                "tag": "v1.6.0-bastet",
+                "tag": "v1.7.0-sekhmet",
                 "bridge_api_version": "1.0",
                 "commands_implemented": 295
             }))
@@ -4126,7 +4126,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|db| db.export_all_records().ok().map(|r| r.len())).unwrap_or(0);
             let plugins = crate::plugin_mgr::list_local_plugins().unwrap_or_default();
             Ok(serde_json::json!({
-                "version":       "1.6.0-bastet",
+                "version":       "1.7.0-sekhmet",
                 "provider":      app_state.config.llm.default_provider,
                 "model":         if app_state.config.llm.default_provider == "gemini" { &app_state.config.llm.gemini_model } else { &app_state.config.llm.ollama_model },
                 "memory_ready":  app_state.mem_db.is_some(),

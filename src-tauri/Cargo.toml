@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.6.0"
+version = "1.7.0"
 description = "NEURODECK — AI Terminal Interface for Steam Deck"
 authors = ["khaoticdev62"]
 license = "Proprietary"

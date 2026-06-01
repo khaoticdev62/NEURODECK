@@ -7,12 +7,12 @@ Codenames must be unique within a MAJOR release line.
 ## Current Assignment Snapshot
 
 <!-- KFMS:CURRENT_ASSIGNMENT:BEGIN -->
-- Current version: `1.6.0`
-- Current codename: `Bastet`
-- Current tag: `v1.6.0-bastet`
-- Current MINOR line: `6`
+- Current version: `1.7.0`
+- Current codename: `Sekhmet`
+- Current tag: `v1.7.0-sekhmet`
+- Current MINOR line: `7`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-06-01T00:08:30Z`
+- Last stamped build: `2026-06-01T00:35:51Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules
@@ -33,8 +33,8 @@ tag format                →  v{semver}-{codename_lower}
 |     3 | Isis | available | v1.3.x |
 |     4 | Osiris | available | v1.4.x |
 |     5 | Horus | available | v1.5.x |
-|     6 | **Bastet** | **active** | **v1.6.x (current)** |
-|     7 | Sekhmet | available | v1.7.x |
+|     6 | Bastet | available | v1.6.x |
+|     7 | **Sekhmet** | **active** | **v1.7.x (current)** |
 |     8 | Ptah | available | v1.8.x |
 |     9 | Hathor | available | v1.9.x |
 |    10 | Set | available | v1.10.x |
