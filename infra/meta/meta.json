@@ -14,9 +14,9 @@
   },
   "tag": "v1.6.0-bastet",
   "build": {
-    "git_sha": "ff3cbdf48f313743943d5581d839245bcd03f3a5",
+    "git_sha": "ac671063f7242da67ecc1110a09b3899abeca774",
     "git_tag": null,
-    "built_at_utc": "2026-06-01T00:07:41Z",
+    "built_at_utc": "2026-06-01T00:08:30Z",
     "dirty": false
   },
   "studio": {
