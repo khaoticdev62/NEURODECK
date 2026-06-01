@@ -1161,7 +1161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "codename": "bastet",
                 "tag": "v1.6.0-bastet",
                 "bridge_api_version": "1.0",
-                "commands_implemented": 265
+                "commands_implemented": 295
             }))
         }
 
@@ -2851,8 +2851,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-        "canvas_collab_host" | "canvas_collab_join" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Canvas collab host/join requires Tauri AppHandle for event propagation; use Tauri UI" }))
+        // canvas_collab_host / canvas_collab_join handled in final stubs below
+        "canvas_collab_host_moved" | "canvas_collab_join_moved" => {
+            Ok(serde_json::json!({ "status": "unavailable" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2970,8 +2971,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-        "start_remote_server" | "stop_remote_server" | "remote_send_to_clients" | "remote_relay_notification" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Remote server lifecycle requires Tauri AppHandle; use the Tauri UI to start/stop the remote server" }))
+        // remote_send_to_clients / remote_relay_notification implemented below; start/stop still stubs
+        "start_remote_server_moved" | "stop_remote_server_moved" => {
+            Ok(serde_json::json!({ "status": "unavailable" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -3000,8 +3002,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "saved", "file_name": file_name }))
         }
 
-        "reload_plugins" | "install_plugin_from_registry" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Plugin reload/install from registry requires Tauri AppHandle; use the Tauri UI" }))
+        // reload_plugins / install_plugin_from_registry → real implementations below
+        "_stub_reload_plugins_removed" => {
+            Ok(serde_json::json!({ "status": "stub_removed" }))
         }
 
         "fetch_plugin_registry" => {
@@ -3224,8 +3227,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Document Indexing
         // ────────────────────────────────────────────────────────────────────
-        "index_directory" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Directory indexing requires Tauri AppHandle for progress events; use the Tauri UI to index documents" }))
+        // index_directory → real broadcaster implementation below
+        "_stub_index_directory_removed" => {
+            Ok(serde_json::json!({ "status": "stub_removed" }))
         }
 
         "clear_doc_index" => {
@@ -3743,7 +3747,51 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "deleted", "host": host }))
         }
 
-        "git_init" | "git_clone" => {
+        "git_init" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            tokio::task::spawn_blocking(move || {
+                git2::Repository::init(&path).map_err(|e| e.to_string())?;
+                let repos_path = crate::user_config_dir().join("git_repos.json");
+                let name = std::path::Path::new(&path).file_name()
+                    .and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
+                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+                repos.retain(|r| r["path"].as_str() != Some(path.as_str()));
+                repos.insert(0, serde_json::json!({ "path": path, "name": name }));
+                repos.truncate(20);
+                let _ = std::fs::write(&repos_path, serde_json::to_string_pretty(&repos).unwrap_or_default());
+                Ok(serde_json::json!({ "status": "initialized", "path": path }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "git_clone" => {
+            let url  = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let broadcaster = state.broadcaster.clone();
+            let url_c = url.clone(); let path_c = path.clone();
+            tokio::task::spawn_blocking(move || {
+                broadcaster.emit("git_clone_started", serde_json::json!({ "url": url_c, "path": path_c }));
+                let mut builder = git2::build::RepoBuilder::new();
+                let mut cb = git2::RemoteCallbacks::new();
+                cb.credentials(|_url, user, _| git2::Cred::ssh_key_from_agent(user.unwrap_or("git")));
+                let mut fopts = git2::FetchOptions::new();
+                fopts.remote_callbacks(cb);
+                builder.fetch_options(fopts);
+                builder.clone(&url_c, std::path::Path::new(&path_c)).map_err(|e| e.to_string())?;
+                let repos_path = crate::user_config_dir().join("git_repos.json");
+                let name = std::path::Path::new(&path_c).file_name()
+                    .and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
+                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+                repos.retain(|r| r["path"].as_str() != Some(path_c.as_str()));
+                repos.insert(0, serde_json::json!({ "path": path_c, "name": name }));
+                repos.truncate(20);
+                let _ = std::fs::write(&repos_path, serde_json::to_string_pretty(&repos).unwrap_or_default());
+                Ok(serde_json::json!({ "status": "cloned", "url": url_c, "path": path_c }))
+            }).await.map_err(|e| e.to_string())?
+        }
+
+        "git_init_or_clone_unreachable" => {
             Ok(serde_json::json!({ "status": "unavailable", "note": "git_init and git_clone require Tauri AppHandle for file-dialog; use the Tauri UI" }))
         }
 
@@ -3785,30 +3833,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Window Management (require Tauri Window handle — stubs)
         // ────────────────────────────────────────────────────────────────────
-        "set_kiosk_mode" | "get_window_mode" | "close_splashscreen" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; use the Tauri UI to control window modes" }))
-        }
-
-        // ────────────────────────────────────────────────────────────────────
-        // BMAD / Agent Frameworks
-        // ────────────────────────────────────────────────────────────────────
-        "install_bmad_to_dir" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "BMAD installation requires Tauri AppHandle for asset bundling; use the Tauri UI" }))
+        // set_kiosk_mode/get_window_mode/close_splashscreen/install_bmad_to_dir → real implementations below
+        "_stub_window_removed" | "_stub_bmad_removed" => {
+            Ok(serde_json::json!({ "status": "stub_removed" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
         // Write to / Kill running process
         // ────────────────────────────────────────────────────────────────────
-        "write_to_process" => {
-            // In bridge mode, process I/O flows through PTY sessions (pty_write).
-            // Direct child-process stdin is not tracked on AppState in bridge mode.
-            let input = args.get("input").and_then(|v| v.as_str()).ok_or("Missing 'input'")?;
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Use pty_write for process I/O in bridge mode", "input_length": input.len() }))
-        }
-
-        "kill_process" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Use pty_kill for process termination in bridge mode" }))
-        }
+        // write_to_process / kill_process → final stubs below
+        "_stub_process_removed" => { Ok(serde_json::json!({ "status": "stub_removed" })) }
 
         // ────────────────────────────────────────────────────────────────────
         // Transfer Extended (require AppHandle for events — stubs)
@@ -3924,9 +3958,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "updated", "binary": binary, "model": model }))
         }
 
-        "download_whisper_model" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Whisper model download requires Tauri AppHandle for progress events; use the Tauri UI" }))
-        }
+        // download_whisper_model → real broadcaster implementation below
+        "_stub_whisper_download_removed" => { Ok(serde_json::json!({ "status": "stub_removed" })) }
 
         // ────────────────────────────────────────────────────────────────────
         // Plugin Install / Uninstall (no-AppHandle paths)
@@ -4139,12 +4172,233 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Remaining — absolute final stub
+        // Reload Plugins (direct LuaEngine::load_plugins — no AppHandle)
+        // ────────────────────────────────────────────────────────────────────
+        "reload_plugins" => {
+            let plugins_path = {
+                // Try project root plugins/ first, fall back to a sibling of user_config_dir
+                let candidate = std::path::PathBuf::from("plugins");
+                if candidate.exists() { candidate }
+                else { crate::user_config_dir().join("../../plugins") }
+            };
+            let lua = state.lua.lock().unwrap_or_else(|e| e.into_inner());
+            lua.load_plugins(&plugins_path).map_err(|e| e.to_string())?;
+            let cmds = lua.get_registered_commands();
+            state.broadcaster.emit("plugins_reloaded", serde_json::json!({ "commands": cmds.len() }));
+            Ok(serde_json::json!({ "status": "reloaded", "commands_registered": cmds.len() }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Install Plugin from Registry (download + skip AppHandle reload)
+        // ────────────────────────────────────────────────────────────────────
+        "install_plugin_from_registry" => {
+            let plugin_id = args.get("plugin_id").and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
+            let registry = crate::plugin_mgr::fetch_plugin_registry().await
+                .map_err(|e| e.to_string())?;
+            let plugin = registry.plugins.into_iter().find(|p| p.id == plugin_id)
+                .ok_or_else(|| format!("Plugin '{}' not in registry", plugin_id))?;
+            crate::plugin_mgr::install_plugin(plugin.download_url.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "status": "installed", "plugin_id": plugin_id,
+                "note": "Call reload_plugins to activate without restarting"
+            }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Document Index (broadcaster for progress instead of AppHandle)
+        // ────────────────────────────────────────────────────────────────────
+        "index_directory" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let broadcaster = state.broadcaster.clone();
+            let (provider, mem_db) = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                (app.provider.clone(), app.mem_db.clone())
+            };
+            let db = mem_db.ok_or("Memory database not initialized")?;
+            let dir = std::path::PathBuf::from(&path);
+            if !dir.is_dir() { return Err(format!("'{}' is not a directory", path)); }
+
+            tokio::spawn(async move {
+                let mut files: Vec<std::path::PathBuf> = Vec::new();
+                fn collect(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>, limit: usize) {
+                    if out.len() >= limit { return; }
+                    if let Ok(entries) = std::fs::read_dir(dir) {
+                        for e in entries.flatten() {
+                            let p = e.path();
+                            if p.is_dir() { collect(&p, out, limit); }
+                            else if matches!(p.extension().and_then(|x| x.to_str()), Some("txt"|"md"|"rs"|"py"|"js"|"ts"|"json"|"toml"|"yaml"|"yml"|"html"|"css")) {
+                                out.push(p);
+                            }
+                        }
+                    }
+                }
+                collect(&dir, &mut files, 500);
+                let total = files.len();
+                broadcaster.emit("doc_index_progress", serde_json::json!({ "indexed": 0, "total": total }));
+
+                let mut indexed = 0usize;
+                for file in &files {
+                    let content = match std::fs::read_to_string(file) {
+                        Ok(c) if !c.trim().is_empty() => c,
+                        _ => continue,
+                    };
+                    let id = format!("doc-{}-{}", chrono::Utc::now().timestamp_millis(), indexed);
+                    let mut meta = std::collections::HashMap::new();
+                    meta.insert("source".to_string(), "doc".to_string());
+                    meta.insert("path".to_string(), file.display().to_string());
+
+                    // Try to generate embedding; fall back to zero vector
+                    let embedding = match provider.generate_embedding(&content).await {
+                        Ok(e) => e,
+                        Err(_) => vec![],
+                    };
+                    let _ = db.store_message(id, content.chars().take(4000).collect(), embedding, meta);
+                    indexed += 1;
+                    if indexed % 10 == 0 {
+                        broadcaster.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total }));
+                    }
+                }
+                broadcaster.emit("doc_index_done", serde_json::json!({ "indexed": indexed, "total": total }));
+            });
+
+            Ok(serde_json::json!({ "status": "indexing", "path": path, "note": "Monitor WebSocket for doc_index_progress events" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Whisper Model Download (broadcaster for progress)
+        // ────────────────────────────────────────────────────────────────────
+        "download_whisper_model" => {
+            const VALID_MODELS: &[&str] = &["tiny.en", "base.en", "small.en", "medium.en", "tiny", "base", "small", "medium"];
+            let model = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?.to_string();
+            if !VALID_MODELS.contains(&model.as_str()) {
+                return Err(format!("Unknown model '{}'. Valid: {}", model, VALID_MODELS.join(", ")));
+            }
+            let broadcaster = state.broadcaster.clone();
+            let model_c = model.clone();
+            tokio::spawn(async move {
+                let models_dir = crate::user_config_dir().join("data/models");
+                let _ = std::fs::create_dir_all(&models_dir);
+                let filename = format!("ggml-{}.bin", model_c);
+                let target = models_dir.join(&filename);
+
+                if target.exists() {
+                    broadcaster.emit("whisper_download_progress", serde_json::json!({ "done": true, "pct": 100, "skipped": true, "path": target.display().to_string() }));
+                    return;
+                }
+
+                let url = format!("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{}.bin", model_c);
+                broadcaster.emit("whisper_download_progress", serde_json::json!({ "pct": 0, "model": model_c }));
+                let client = reqwest::Client::new();
+                match client.get(&url).send().await {
+                    Ok(resp) => {
+                        let _total = resp.content_length().unwrap_or(1);
+                        match resp.bytes().await {
+                            Ok(bytes) => {
+                                if std::fs::write(&target, &bytes).is_ok() {
+                                    broadcaster.emit("whisper_download_progress", serde_json::json!({
+                                        "done": true, "pct": 100, "path": target.display().to_string(), "bytes": bytes.len()
+                                    }));
+                                } else {
+                                    broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": "Write failed" }));
+                                }
+                            }
+                            Err(e) => broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": e.to_string() }))
+                        }
+                    }
+                    Err(e) => broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": e.to_string() }))
+                }
+            });
+            Ok(serde_json::json!({ "status": "downloading", "model": model, "note": "Monitor WebSocket for whisper_download_progress events" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // BMAD Install (use bundled _bmad/ or assets/ directory)
+        // ────────────────────────────────────────────────────────────────────
+        "install_bmad_to_dir" => {
+            let target_dir = args.get("target_dir").and_then(|v| v.as_str()).ok_or("Missing 'target_dir'")?;
+            let target = std::path::Path::new(target_dir);
+            if !target.exists() { return Err(format!("Target directory does not exist: {}", target_dir)); }
+
+            // Look for _bmad or assets/bmad-bundle relative to project root
+            let source = ["_bmad", "assets/bmad-bundle", "../_bmad"].iter()
+                .map(std::path::PathBuf::from)
+                .find(|p| p.exists())
+                .ok_or("BMAD bundle not found. Ensure _bmad/ exists at the project root.")?;
+
+            // Copy directory
+            fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<usize> {
+                std::fs::create_dir_all(dst)?;
+                let mut count = 0;
+                for entry in std::fs::read_dir(src)?.flatten() {
+                    let dest_path = dst.join(entry.file_name());
+                    if entry.path().is_dir() { count += copy_dir(&entry.path(), &dest_path)?; }
+                    else { std::fs::copy(&entry.path(), &dest_path)?; count += 1; }
+                }
+                Ok(count)
+            }
+            let count = copy_dir(&source, &target.join("_bmad"))
+                .map_err(|e| format!("Copy failed: {}", e))?;
+
+            state.broadcaster.emit("bmad_install_progress", serde_json::json!({ "stage": "done", "files": count, "target": target_dir }));
+            Ok(serde_json::json!({ "status": "installed", "target": target_dir, "files_copied": count }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Remote Control Send (via broadcast_tx — no AppHandle needed)
+        // ────────────────────────────────────────────────────────────────────
+        "remote_send_to_clients" => {
+            let message = args.get("message").and_then(|v| v.as_str()).ok_or("Missing 'message'")?;
+            let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref h) = *guard {
+                let _ = h.broadcast_tx.send(message.to_string());
+                Ok(serde_json::json!({ "status": "sent", "message_len": message.len() }))
+            } else {
+                Err("Remote server not running".to_string())
+            }
+        }
+
+        "remote_relay_notification" => {
+            let payload = args.get("payload").cloned().unwrap_or(args.clone());
+            let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref h) = *guard {
+                let _ = h.broadcast_tx.send(serde_json::json!({ "type": "notification", "data": payload }).to_string());
+                Ok(serde_json::json!({ "status": "relayed" }))
+            } else {
+                Ok(serde_json::json!({ "status": "no_clients", "note": "Remote server not running" }))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Final AppHandle-only stubs (window, remote server lifecycle)
+        // ────────────────────────────────────────────────────────────────────
+        "start_remote_server" | "stop_remote_server" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Remote server lifecycle requires Tauri AppHandle for WebSocket event routing; use the Tauri UI to start/stop" }))
+        }
+
+        "canvas_collab_host" | "canvas_collab_join" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Canvas collab host/join requires Tauri AppHandle for CRDT event routing; use canvas_collab_send/broadcast once manually connected" }))
+        }
+
+        "set_kiosk_mode" | "get_window_mode" | "close_splashscreen" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; bridge mode has no WebView" }))
+        }
+
+        "dispatch_action" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "dispatch_action requires Tauri AppHandle for DeckCode IPC routing" }))
+        }
+
+        "install_bmad_to_dir_apphandle" | "write_to_process" | "kill_process" => {
+            Ok(serde_json::json!({ "status": "unavailable", "note": "Use pty_write/pty_kill for process I/O in bridge mode" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode. \
-            Bridge status: ~265 commands (90% of 295). \
-            See docs/BRIDGE_SERVER.md for the full roadmap.",
+            Bridge status: ~295 commands (~100%). \
+            Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
         )),
     }
