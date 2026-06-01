@@ -1,88 +1,89 @@
 {
-  "status": "healthy",
-  "kfms_version": "1.0",
-  "project": "neurodeck",
-  "version": "1.7.0",
-  "codename": "Sekhmet",
-  "tag": "v1.7.0-sekhmet",
-  "workspace_state": "manual-uncommitted",
-  "dirty_build": false,
-  "stamped_at_utc": "2026-06-01T00:35:51Z",
-  "checks": {
-    "meta_json_present": true,
-    "schema_valid": true,
-    "tag_format_correct": true,
-    "loose_zone_isolated": true,
-    "no_secrets_in_build": true
-  },
-  "release_plan": {
-    "release_decision": "HOLD",
-    "readiness_score": 70,
-    "policy": {
-      "go_threshold": 85,
-      "hold_threshold": 60,
-      "penalties": {
-        "metadata": 35,
-        "diff_hygiene": 20,
-        "workspace_state": 20,
-        "loose_root_files": 10,
-        "hardening_check": 30,
-        "cargo_check": 25,
-        "cargo_test": 25,
-        "frontend_build": 20
-      }
-    },
-    "gate_summary": "hardening_check=fail,cargo_check=pass,cargo_test=pass,frontend_build=pass",
-    "metadata": "aligned",
-    "diff_hygiene": "pass",
-    "workspace_state": "clean",
-    "loose_root_files": 0,
-    "hardening_check": "fail",
-    "cargo_check": "pass",
-    "cargo_test": "pass",
-    "frontend_build": "pass",
-    "gates": [
-      {
-        "name": "security hardening",
-        "status": "fail",
-        "log_path": ".loose/inbox/kfms-release-logs/security-hardening.log",
-        "message": "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
-        "duration_ms": 1282,
-        "started_at_utc": "2026-06-01T00:08:33Z",
-        "finished_at_utc": "2026-06-01T00:08:34Z"
-      },
-      {
-        "name": "cargo check",
-        "status": "pass",
-        "log_path": ".loose/inbox/kfms-release-logs/cargo-check.log",
-        "message": "",
-        "duration_ms": 33151,
-        "started_at_utc": "2026-06-01T00:08:34Z",
-        "finished_at_utc": "2026-06-01T00:09:07Z"
-      },
-      {
-        "name": "cargo test",
-        "status": "pass",
-        "log_path": ".loose/inbox/kfms-release-logs/cargo-test.log",
-        "message": "",
-        "duration_ms": 5473,
-        "started_at_utc": "2026-06-01T00:09:07Z",
-        "finished_at_utc": "2026-06-01T00:09:13Z"
-      },
-      {
-        "name": "frontend build",
-        "status": "pass",
-        "log_path": ".loose/inbox/kfms-release-logs/frontend-build.log",
-        "message": "",
-        "duration_ms": 1225,
-        "started_at_utc": "2026-06-01T00:09:13Z",
-        "finished_at_utc": "2026-06-01T00:09:14Z"
-      }
-    ],
-    "blockers": [
-      "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log"
-    ],
-    "duration_ms": 41165,
-    "checked_at_utc": "2026-06-01T00:09:14Z"
-  }
+    "status":  "healthy",
+    "kfms_version":  "1.0",
+    "project":  "neurodeck",
+    "version":  "1.7.0",
+    "codename":  "Sekhmet",
+    "tag":  "v1.7.0-sekhmet",
+    "workspace_state":  "manual-uncommitted",
+    "dirty_build":  true,
+    "stamped_at_utc":  "2026-06-01T00:36:48Z",
+    "checks":  {
+                   "meta_json_present":  true,
+                   "schema_valid":  true,
+                   "tag_format_correct":  true,
+                   "loose_zone_isolated":  true,
+                   "no_secrets_in_build":  true
+               },
+    "release_plan":  {
+                         "release_decision":  "NO-GO",
+                         "readiness_score":  50,
+                         "policy":  {
+                                        "go_threshold":  85,
+                                        "hold_threshold":  60,
+                                        "penalties":  {
+                                                          "metadata":  35,
+                                                          "diff_hygiene":  20,
+                                                          "workspace_state":  20,
+                                                          "loose_root_files":  10,
+                                                          "hardening_check":  30,
+                                                          "cargo_check":  25,
+                                                          "cargo_test":  25,
+                                                          "frontend_build":  20
+                                                      }
+                                    },
+                         "gate_summary":  "hardening_check=fail,cargo_check=pass,cargo_test=pass,frontend_build=pass",
+                         "metadata":  "aligned",
+                         "diff_hygiene":  "pass",
+                         "workspace_state":  "manual-uncommitted",
+                         "loose_root_files":  0,
+                         "hardening_check":  "fail",
+                         "cargo_check":  "pass",
+                         "cargo_test":  "pass",
+                         "frontend_build":  "pass",
+                         "gates":  [
+                                       {
+                                           "name":  "security hardening",
+                                           "status":  "fail",
+                                           "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
+                                           "message":  "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
+                                           "duration_ms":  933,
+                                           "started_at_utc":  "2026-06-01T00:36:50Z",
+                                           "finished_at_utc":  "2026-06-01T00:36:51Z"
+                                       },
+                                       {
+                                           "name":  "cargo check",
+                                           "status":  "pass",
+                                           "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
+                                           "message":  "",
+                                           "duration_ms":  105816,
+                                           "started_at_utc":  "2026-06-01T00:36:51Z",
+                                           "finished_at_utc":  "2026-06-01T00:38:37Z"
+                                       },
+                                       {
+                                           "name":  "cargo test",
+                                           "status":  "pass",
+                                           "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
+                                           "message":  "",
+                                           "duration_ms":  75398,
+                                           "started_at_utc":  "2026-06-01T00:38:37Z",
+                                           "finished_at_utc":  "2026-06-01T00:39:53Z"
+                                       },
+                                       {
+                                           "name":  "frontend build",
+                                           "status":  "pass",
+                                           "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
+                                           "message":  "",
+                                           "duration_ms":  1214,
+                                           "started_at_utc":  "2026-06-01T00:39:53Z",
+                                           "finished_at_utc":  "2026-06-01T00:39:54Z"
+                                       }
+                                   ],
+                         "blockers":  [
+                                          "Workspace has uncommitted manual changes.",
+                                          "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log"
+                                      ],
+                         "duration_ms":  183388,
+                         "checked_at_utc":  "2026-06-01T00:39:54Z"
+                     }
 }
