@@ -14,9 +14,9 @@
   },
   "tag": "v1.7.1-sekhmet",
   "build": {
-    "git_sha": "fdb4b6d145b634150f4d94d379b00d71b4a223a9",
+    "git_sha": "08f19fedaf57f91894c399b33d448c00beaf3c94",
     "git_tag": null,
-    "built_at_utc": "2026-06-01T01:14:55Z",
+    "built_at_utc": "2026-06-01T01:17:23Z",
     "dirty": true
   },
   "studio": {

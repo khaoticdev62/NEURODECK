@@ -11,7 +11,7 @@
 - Codename: `Sekhmet`
 - Tag: `v1.7.1-sekhmet`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-06-01T01:14:55Z`
+- Last stamped build: `2026-06-01T01:17:23Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
