@@ -1,6 +1,6 @@
 {
   "name": "neurodeck",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "AI-native terminal OS for Steam Deck — Tauri v2 + Rust + Gemini",
   "private": true,
   "license": "UNLICENSED",

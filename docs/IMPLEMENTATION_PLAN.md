@@ -7,11 +7,11 @@
 ## KFMS Snapshot
 
 <!-- KFMS:PLAN_SNAPSHOT:BEGIN -->
-- Version: `1.7.0`
+- Version: `1.7.1`
 - Codename: `Sekhmet`
-- Tag: `v1.7.0-sekhmet`
+- Tag: `v1.7.1-sekhmet`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-06-01T00:36:48Z`
+- Last stamped build: `2026-06-01T01:14:55Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

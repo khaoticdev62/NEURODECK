@@ -7,12 +7,12 @@ Codenames must be unique within a MAJOR release line.
 ## Current Assignment Snapshot
 
 <!-- KFMS:CURRENT_ASSIGNMENT:BEGIN -->
-- Current version: `1.7.0`
+- Current version: `1.7.1`
 - Current codename: `Sekhmet`
-- Current tag: `v1.7.0-sekhmet`
+- Current tag: `v1.7.1-sekhmet`
 - Current MINOR line: `7`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-06-01T00:36:48Z`
+- Last stamped build: `2026-06-01T01:14:55Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules
