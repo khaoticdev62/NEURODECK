@@ -55,8 +55,6 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: short
   WEBKIT_DISABLE_DMABUF_RENDERER: 1
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
 
 jobs:
 
@@ -204,25 +202,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set up sccache (Windows)
-        uses: mozilla-actions/sccache-action@v0.0.4
-        continue-on-error: true
-        id: sccache-win
-
-      - name: Verify sccache health (Windows)
-        if: steps.sccache-win.outcome == 'success'
-        shell: pwsh
-        run: |
-          $env:RUSTC_WRAPPER = "sccache"
-          $test = rustc -vV 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "::warning::sccache health check failed — disabling for this run"
-            echo "RUSTC_WRAPPER=" >> $env:GITHUB_ENV
-            echo "SCCACHE_GHA_ENABLED=" >> $env:GITHUB_ENV
-          } else {
-            Write-Host "sccache healthy"
-          }
-
       - name: Set up Rust (pinned to 1.92.0 per AGENTS.md)
         uses: dtolnay/rust-toolchain@master
         with:
@@ -341,22 +320,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: Set up sccache (Linux)
-        uses: mozilla-actions/sccache-action@v0.0.4
-        continue-on-error: true
-        id: sccache-linux
-
-      - name: Verify sccache health (Linux)
-        if: steps.sccache-linux.outcome == 'success'
-        run: |
-          if ! RUSTC_WRAPPER=sccache rustc -vV >/dev/null 2>&1; then
-            echo "::warning::sccache health check failed — disabling for this run"
-            echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
-            echo "SCCACHE_GHA_ENABLED=" >> "$GITHUB_ENV"
-          else
-            echo "sccache healthy"
-          fi
 
       - name: Set up Rust (pinned to 1.92.0 per AGENTS.md)
         uses: dtolnay/rust-toolchain@master
