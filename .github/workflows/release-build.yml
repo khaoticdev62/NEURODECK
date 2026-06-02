@@ -243,8 +243,8 @@ jobs:
           path: frontend/dist/
 
       - name: Install root dependencies (without frontend rebuild)
+        shell: bash
         run: |
-          #!/bin/bash
           set +e
           for i in 1 2 3; do
             npm ci --prefer-offline --no-audit && exit 0
