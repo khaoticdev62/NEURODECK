@@ -94,12 +94,30 @@ jobs:
       - name: Install dependencies
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          npm ci
-          npm -w frontend ci
+          #!/bin/bash
+          set +e
+          for i in 1 2 3; do
+            npm ci --prefer-offline --no-audit && npm -w frontend ci --prefer-offline --no-audit && exit 0
+            echo "npm install failed (attempt $i/3)"
+            npm cache clean --force 2>/dev/null || true
+            sleep $((10 * (2 ** (i - 1))))
+          done
+          echo "::error::npm install failed after 3 attempts"
+          exit 1
 
       - name: Build frontend
         if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: npm run frontend:build
+        run: |
+          #!/bin/bash
+          set +e
+          for i in 1 2 3; do
+            npm run frontend:build && exit 0
+            echo "Frontend build failed (attempt $i/3)"
+            rm -rf frontend/dist frontend/node_modules/.vite 2>/dev/null || true
+            sleep $((5 * i))
+          done
+          echo "::error::Frontend build failed after 3 attempts"
+          exit 1
 
       - name: Upload frontend dist artifact
         uses: actions/upload-artifact@v4
@@ -159,9 +177,10 @@ jobs:
           echo "codename=$CODENAME" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG"           >> "$GITHUB_OUTPUT"
 
-      - name: Detect bump type (MINOR or MAJOR triggers installer build)
+      - name: Detect bump type (always build for now)
         id: bump
         run: |
+          # TODO: implement real semver comparison if PATCH-only releases should be skipped
           echo "is_minor_or_major=true" >> "$GITHUB_OUTPUT"
           echo "Build triggered — will produce release installers."
 
@@ -229,7 +248,17 @@ jobs:
           path: frontend/dist/
 
       - name: Install root dependencies (without frontend rebuild)
-        run: npm ci
+        run: |
+          #!/bin/bash
+          set +e
+          for i in 1 2 3; do
+            npm ci --prefer-offline --no-audit && exit 0
+            echo "npm ci failed (attempt $i/3)"
+            npm cache clean --force 2>/dev/null || true
+            sleep $((10 * (2 ** (i - 1))))
+          done
+          echo "::error::npm ci failed after 3 attempts"
+          exit 1
 
       - name: Install code-signing certificate
         shell: pwsh
@@ -343,6 +372,18 @@ jobs:
 
       - name: Install system dependencies (GTK/WebKit/AppImage)
         run: |
+          #!/bin/bash
+          set +e
+
+          # Wait for apt locks (max 30s)
+          for i in {1..15}; do
+            if ! fuser /var/lib/dpkg/lock* >/dev/null 2>&1; then
+              break
+            fi
+            echo "Waiting for apt lock... ($i/15)"
+            sleep 2
+          done
+
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             libgtk-3-dev \
@@ -373,19 +414,21 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NEURODECK_SKIP_DEPS: "1"
           DIST_OUT: ${{ github.workspace }}/dist
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           mkdir -p dist
           chmod +x scripts/shell/build_appimage.sh
-          NEURODECK_SKIP_DEPS=1 DIST_OUT="$DIST_OUT" \
+          NEURODECK_SKIP_DEPS=1 DIST_OUT="$DIST_OUT" APPIMAGE_EXTRACT_AND_RUN=1 \
             bash scripts/shell/build_appimage.sh
 
       - name: Rename AppImage to versioned name
         run: |
           mkdir -p dist
+          # Use chronological sort (most recently built) instead of alphabetical
           SRC=$(find src-tauri/target/release/bundle/appimage target/release/bundle/appimage \
-                  -name "*.AppImage" 2>/dev/null | sort | tail -n1 || true)
+                  -name "*.AppImage" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || true)
           if [[ -z "$SRC" ]]; then
-            SRC=$(find dist -name "*.AppImage" | sort | tail -n1 || true)
+            SRC=$(find dist -name "*.AppImage" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || true)
           fi
           if [[ -z "$SRC" ]]; then
             echo "::error::AppImage not found after build"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-NEURODECK uses a **multi-stage, self-healing GitHub Actions pipeline** designed for bulletproof, deterministic builds on Steam Deck and Linux. The pipeline prioritizes **reliability over speed**, with automatic recovery from transient failures.
+NEURODECK uses a **multi-stage GitHub Actions pipeline** designed for bulletproof, deterministic builds on Steam Deck and Linux. The pipeline prioritizes **reliability over speed**, with automatic retry and recovery from transient failures.
 
 ---
 
@@ -66,45 +66,33 @@ NEURODECK uses a **multi-stage, self-healing GitHub Actions pipeline** designed 
 
 ---
 
-### 2. **release-build-self-healing.yml** — Production Release Pipeline
+### 2. **release-build.yml** — Production Release Pipeline
 
 **Trigger:** Git tag matching `v[0-9]+.[0-9]+.[0-9]+-*`, manual workflow dispatch, GitHub Release publish
 
 **What it does:**
-- Checks system health (disk, memory, apt locks, zombies, ports, DNS)
-- Auto-repairs degraded systems (cleans cache, kills processes, fixes locks)
-- Pre-builds frontend once, caches for reuse
+- Pre-builds frontend once, caches for reuse across all platform jobs
 - Validates KFMS release metadata
-- Builds Windows NSIS installer (with code-signing support)
+- Builds Windows NSIS installer (with optional code-signing)
 - Builds Steam Deck AppImage (with LD_PRELOAD libwayland injection)
-- Optionally builds Flatpak bundle
+- Builds Flatpak bundle (wraps pre-built AppImage)
 - Publishes all artifacts to GitHub Release
 - Generates SHA256 checksums
 - Posts build summary to GitHub Actions
 
-**Auto-Healing Features:**
-1. **Disk Space:** Cleans apt cache if >85% used
-2. **Memory Pressure:** Drops page caches if >90% used
-3. **Apt Locks:** Waits for locks, force-releases if stuck
-4. **Zombies:** Kills defunct processes
-5. **Port Conflicts:** Kills processes blocking build ports
-6. **DNS Failures:** Falls back to 8.8.8.8
-7. **Network Errors:** Retries with exponential backoff
-8. **NPM Failures:** Falls back to CNPMJS → Yarn registries
-9. **Cargo Corruption:** Auto-purges registry cache
-10. **Permission Errors:** Fixes chmod, resets sudo cache
-
-**Retry Strategy:**
-- Frontend npm install: **3 retries**, 10-60s exponential backoff
-- Cargo builds: **2 retries**, full cache purge between attempts
-- System commands: **3 attempts** with recovery logic
+**Resilience Features:**
+1. **NPM Retry:** `npm ci` retries up to 3× with exponential backoff and cache clean
+2. **Frontend Build Retry:** Vite build retries up to 3× with dist cleanup
+3. **Apt Lock Wait:** AppImage build waits up to 30s for apt locks before installing
+4. **Chronological Artifact Discovery:** AppImage discovery uses file mtime, not alphabetical sort
+5. **Steam Deck Target:** AppImage builds target `znver2` (AMD Zen 2) instead of `native` for compatibility
 
 **Jobs:**
-1. `system-health-check` — Diagnose and repair system
-2. `prebuild-frontend` — npm ci + Vite build with retry
-3. `kfms-gate` — Release metadata validation
-4. `build-windows` — NSIS + ZIP with code-signing
-5. `build-appimage` — Self-contained Linux binary
+1. `prebuild-frontend` — npm ci + Vite build with retry
+2. `kfms-gate` — Release metadata validation
+3. `build-windows` — NSIS + ZIP with code-signing
+4. `build-appimage` — Self-contained Linux binary
+5. `build-flatpak` — Wraps AppImage in Flatpak sandbox
 6. `publish-release` — Upload to GitHub with checksums
 
 ---
@@ -264,7 +252,7 @@ bash scripts/shell/build_appimage.sh
 
 **Root cause:** Another apt/dpkg operation is in progress
 
-**Fix:** The self-healing pipeline waits 30s and force-releases locks. If you see this locally, run:
+**Fix:** The CI pipeline waits for apt locks before installing. If you see this locally, run:
 
 ```bash
 sudo pkill -9 apt apt-get dpkg

@@ -171,7 +171,7 @@ print_step "Checking Rust toolchain..."
 if ! command -v cargo &>/dev/null; then
     print_warn "Rust not found — installing via rustup..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-        | sh -s -- -y --default-toolchain stable --no-modify-path >/dev/null 2>&1
+        | sh -s -- -y --default-toolchain 1.92.0 --no-modify-path >/dev/null 2>&1
     source "$HOME/.cargo/env"
 fi
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -231,7 +231,14 @@ if [[ "$SKIP_NPM_CI" == "1" ]]; then
     print_ok "JS dependencies up to date (cached)"
 else
     print_step "Installing JS dependencies (npm ci)..."
-    npm ci --prefer-offline
+    set +e
+    for i in 1 2 3; do
+        npm ci --prefer-offline && break
+        print_warn "npm ci failed (attempt $i/3)"
+        npm cache clean --force 2>/dev/null || true
+        sleep $((10 * (2 ** (i - 1))))
+    done
+    set -e
     if [[ -n "$LOCK_HASH" ]]; then
         echo "$LOCK_HASH" > .package-lock.hash
     fi
@@ -244,7 +251,9 @@ fi
 print_step "Compiling Tauri AppImage (Rust + bundler)..."
 print_info "Using $CARGO_JOBS parallel jobs"
 export APPIMAGE_EXTRACT_AND_RUN=1
-RUSTFLAGS="-C target-cpu=native" npx @tauri-apps/cli build --bundles appimage
+# Preserve existing RUSTFLAGS (e.g. mold linker from CI) and target Steam Deck Zen 2
+export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-cpu=znver2"
+npx @tauri-apps/cli build --bundles appimage
 print_ok "Tauri build finished"
 
 # ── Step 7: Locate output ──────────────────────────────────────────────────────
@@ -256,7 +265,7 @@ BUNDLE_SEARCH_DIRS=(
 
 for dir in "${BUNDLE_SEARCH_DIRS[@]}"; do
     if [[ -d "$dir" ]]; then
-        APPIMAGE=$(find "$dir" -maxdepth 1 -name "*.AppImage" | sort | tail -n1)
+        APPIMAGE=$(find "$dir" -maxdepth 1 -name "*.AppImage" -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
         [[ -n "$APPIMAGE" ]] && break
     fi
 done
