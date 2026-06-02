@@ -1080,7 +1080,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "note": "Browser window not available in bridge mode"
                 }))
             } else {
-                Err("Invalid URL format. Must start with http:// or https://".to_string())
+                Err("Invalid URL format. Must start with a valid scheme (http/https)".to_string())
             }
         }
 
@@ -2399,7 +2399,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "open_external" => {
             let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
             if !url.starts_with("http://") && !url.starts_with("https://") {
-                return Err("URL must start with http:// or https://".to_string());
+                return Err("URL must start with a valid scheme (http/https)".to_string());
             }
             // Use OS default browser open on the host
             #[cfg(target_os = "linux")]

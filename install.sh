@@ -7,7 +7,7 @@
 
 set -e
 
-NEURODECK_VERSION="1.6.0"
+NEURODECK_VERSION="1.8.0"
 INSTALL_DIR="$HOME/Applications/neurodeck"
 DESKTOP_FILE="$HOME/.local/share/applications/neurodeck.desktop"
 AUTOSTART_FILE="$HOME/.config/autostart/neurodeck.desktop"

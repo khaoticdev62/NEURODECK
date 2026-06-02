@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "1.7.1",
+  "version": "1.8.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -19,7 +19,7 @@
     "prettier": "^3.8.3",
     "typescript": "^5.8.3",
     "vite": "^8.0.14",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.26",

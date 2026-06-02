@@ -260,7 +260,7 @@ pub async fn start_server(state: ServerState) -> anyhow::Result<()> {
         .route("/api/{command}", post(api_command))
         .with_state(state);
 
-    tracing::info!("NEURODECK bridge server listening on http://{}", addr);
+    tracing::info!("NEURODECK bridge server listening on {}", addr);
     println!("NEURODECK_READY:{}", port);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
