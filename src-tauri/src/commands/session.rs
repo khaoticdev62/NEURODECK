@@ -486,6 +486,7 @@ fn provider_by_name(
             },
             None,
             config.llm.hf_base_url.clone(),
+            config.llm.hf_embed_model.clone(),
         )),
         "kimi" => Arc::new(KimiProvider::new(
             if model.is_empty() {
@@ -502,6 +503,7 @@ fn provider_by_name(
                 model
             },
             config.llm.ollama_base_url.clone(),
+            config.llm.ollama_embed_model.clone(),
         )),
     }
 }

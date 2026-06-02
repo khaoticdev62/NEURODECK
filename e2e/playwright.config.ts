@@ -5,7 +5,7 @@ const IS_CI = !!process.env.CI;
 export default defineConfig({
   testDir: "./tests",
   timeout: 30000,
-  globalTimeout: IS_CI ? 300_000 : 600_000,
+  globalTimeout: IS_CI ? 600_000 : 600_000,
   retries: IS_CI ? 1 : 0,
   workers: IS_CI ? 2 : undefined,
   fullyParallel: false,

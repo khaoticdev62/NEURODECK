@@ -93,7 +93,7 @@ impl DeckCodeResolver {
             rank_b.cmp(&rank_a)
         });
 
-        let mut final_binding = valid_candidates.first().unwrap().1.clone();
+        let mut final_binding = valid_candidates.first()?.1.clone();
 
         // --- MULTILANG OVERRIDE PHASE ---
         if let Some(ml) = &self.multilang {

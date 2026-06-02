@@ -1988,6 +1988,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 provider:    provider_name.to_string(),
                 model:       model.to_string(),
                 base_url,
+                embed_model: String::new(),
                 description: description.to_string(),
             };
             app_state.config.llm.agents.push(agent.clone());
@@ -2237,9 +2238,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             tokio::task::spawn_blocking(move || {
                 use suppaftp::FtpStream;
                 use suppaftp::FtpError;
+                const MAX_DOWNLOAD_SIZE_MB: u64 = 500;
                 let addr = format!("{}:{}", host, port);
                 let mut stream = FtpStream::connect(&addr).map_err(|e| e.to_string())?;
                 stream.login(&user, &password).map_err(|e| e.to_string())?;
+                let total_bytes = stream.size(&remote_path).map_err(|e| e.to_string()).unwrap_or(0);
+                let max_bytes = MAX_DOWNLOAD_SIZE_MB * 1_048_576;
+                if total_bytes > max_bytes as usize {
+                    return Err(format!(
+                        "File size ({:.1} MB) exceeds maximum allowed download size ({} MB).",
+                        total_bytes as f64 / 1_048_576.0,
+                        MAX_DOWNLOAD_SIZE_MB
+                    ));
+                }
                 stream.retr(&remote_path, |reader| {
                     let mut file = std::fs::File::create(&local_path)
                         .map_err(FtpError::ConnectionError)?;
@@ -2349,10 +2360,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "lsp_start" => {
-            Ok(serde_json::json!({
-                "status": "unavailable",
-                "note":   "LSP server process spawning requires Tauri AppHandle. Use the Tauri frontend to start LSP servers."
-            }))
+            let language = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?.to_string();
+            let command  = args.get("command").and_then(|v| v.as_str()).ok_or("Missing 'command'")?.to_string();
+            let args_vec: Vec<String> = args.get("args").and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                .unwrap_or_default();
+            let workspace_root = crate::user_config_dir().join("workspace").to_string_lossy().to_string();
+            crate::lsp::spawn_server(state.lsp.clone(), state.broadcaster.clone(), language, command, args_vec, workspace_root).await?;
+            Ok(serde_json::json!({ "status": "started" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2791,8 +2806,46 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "updated", "whitelist": tools }))
         }
 
-        "start_mcp_server" | "stop_mcp_server" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "MCP server lifecycle requires Tauri AppHandle; use the Tauri UI to start/stop MCP" }))
+        "start_mcp_server" => {
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(13337) as u16;
+            let (provider, whitelist, mem_db) = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if app.mcp_abort.is_some() {
+                    return Err(format!("MCP server is already running on port {}. Stop it first.", app.mcp_port));
+                }
+                (app.provider.clone(), app.mcp_tool_whitelist.clone(), app.mem_db.clone())
+            };
+            let config = crate::mcp::McpServerConfig {
+                provider,
+                tool_whitelist: whitelist,
+                mem_db,
+                port,
+            };
+            let (bound_port, abort_handle, token) = crate::mcp::start(config).await
+                .map_err(|e| e.to_string())?;
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.mcp_abort = Some(abort_handle);
+                app.mcp_port = bound_port;
+                app.mcp_token = Some(token.clone());
+            }
+            Ok(serde_json::json!({
+                "url": format!("http://127.0.0.1:{}", bound_port),
+                "token": token,
+                "discovery": format!("http://127.0.0.1:{}/.well-known/mcp", bound_port)
+            }))
+        }
+
+        "stop_mcp_server" => {
+            let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(handle) = app.mcp_abort.take() {
+                handle.abort();
+                let port = app.mcp_port;
+                app.mcp_port = 13337;
+                Ok(serde_json::json!({ "status": "stopped", "port": port }))
+            } else {
+                Err("MCP server is not running.".to_string())
+            }
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2817,7 +2870,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             app_state.collab_mode = None;
             app_state.collab_addr = None;
             app_state.collab_peer_count = None;
+            if let Some(daemon) = app_state.collab_mdns.take() {
+                let hostname = crate::transfer::get_hostname();
+                let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+            }
             Ok(serde_json::json!({ "status": "stopped" }))
+        }
+
+        "discover_canvas_peers" => {
+            let peers = crate::commands::system::discover_canvas_peers()
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "peers": peers, "count": peers.len() }))
         }
 
         "canvas_collab_send" => {
@@ -3847,8 +3910,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Transfer Extended (require AppHandle for events — stubs)
         // ────────────────────────────────────────────────────────────────────
-        "start_file_transfer" | "respond_to_transfer" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "File transfer initiation requires Tauri AppHandle for peer events; use the Tauri UI" }))
+        "start_file_transfer" => {
+            let peer_ip   = args.get("peer_ip").and_then(|v| v.as_str()).ok_or("Missing 'peer_ip'")?.to_string();
+            let file_path = args.get("file_path").and_then(|v| v.as_str()).ok_or("Missing 'file_path'")?.to_string();
+            let transfer_id = crate::transfer::start_file_transfer_impl(
+                peer_ip, file_path, state.broadcaster.clone(), state.transfer.clone()
+            ).await?;
+            Ok(serde_json::json!({ "status": "started", "transfer_id": transfer_id }))
+        }
+
+        "respond_to_transfer" => {
+            let transfer_id = args.get("transfer_id").and_then(|v| v.as_str()).ok_or("Missing 'transfer_id'")?.to_string();
+            let accept = args.get("accept").and_then(|v| v.as_bool()).unwrap_or(false);
+            let mut s = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(tx) = s.accept_txs.remove(&transfer_id) {
+                let _ = tx.send(accept);
+                Ok(serde_json::json!({ "status": "responded", "transfer_id": transfer_id, "accept": accept }))
+            } else {
+                Err("No pending transfer response channel found".to_string())
+            }
         }
 
         "get_discovered_peers" => {
@@ -4159,7 +4239,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let provider = if provider_name == "gemini" {
                         Box::new(crate::llm::GeminiProvider::new(model_name.clone())) as Box<dyn crate::llm::LlmProvider>
                     } else {
-                        Box::new(crate::llm::OllamaProvider::new(model_name.clone(), "http://localhost:11434".to_string())) as Box<dyn crate::llm::LlmProvider>
+                        Box::new(crate::llm::OllamaProvider::new(model_name.clone(), "http://localhost:11434".to_string(), "".to_string())) as Box<dyn crate::llm::LlmProvider>
                     };
                     match provider.chat_with_image(&prompt_c, "You are a helpful assistant.", None, None).await {
                         Ok(resp) => broadcaster.emit("compare_result", serde_json::json!({ "model": model_name, "label": label, "response": resp })),
@@ -4376,20 +4456,96 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "unavailable", "note": "Remote server lifecycle requires Tauri AppHandle for WebSocket event routing; use the Tauri UI to start/stop" }))
         }
 
-        "canvas_collab_host" | "canvas_collab_join" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Canvas collab host/join requires Tauri AppHandle for CRDT event routing; use canvas_collab_send/broadcast once manually connected" }))
+        "canvas_collab_host" => {
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(9733) as u16;
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(abort) = app.collab_abort.take() { abort.abort(); }
+                app.collab_tx = None;
+                app.collab_mode = None;
+                app.collab_addr = None;
+                app.collab_peer_count = None;
+            }
+            let (bound_port, session) = crate::canvas_collab::host(port, state.broadcaster.clone()).await?;
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.collab_abort = Some(session.abort_handle);
+                app.collab_tx = Some(session.tx);
+                app.collab_mode = Some("host".to_string());
+                app.collab_addr = Some(format!("0.0.0.0:{}", bound_port));
+                app.collab_peer_count = Some(session.peer_count);
+            }
+            Ok(serde_json::json!({ "port": bound_port }))
         }
 
-        "set_kiosk_mode" | "get_window_mode" | "close_splashscreen" => {
+        "canvas_collab_join" => {
+            let addr = args.get("addr").and_then(|v| v.as_str()).ok_or("Missing 'addr'")?.to_string();
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(abort) = app.collab_abort.take() { abort.abort(); }
+                app.collab_tx = None;
+                app.collab_mode = None;
+                app.collab_addr = None;
+                app.collab_peer_count = None;
+            }
+            let session = crate::canvas_collab::join(&addr, state.broadcaster.clone()).await?;
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.collab_abort = Some(session.abort_handle);
+                app.collab_tx = Some(session.tx);
+                app.collab_mode = Some("guest".to_string());
+                app.collab_addr = Some(addr);
+                app.collab_peer_count = Some(session.peer_count);
+            }
+            Ok(serde_json::json!({ "status": "joined" }))
+        }
+
+        "set_kiosk_mode" => {
             Ok(serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; bridge mode has no WebView" }))
         }
 
-        "dispatch_action" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "dispatch_action requires Tauri AppHandle for DeckCode IPC routing" }))
+        "get_window_mode" => {
+            Ok(serde_json::json!({ "fullscreen": false, "decorations": true, "kiosk": false, "note": "Bridge mode has no window" }))
         }
 
-        "install_bmad_to_dir_apphandle" | "write_to_process" | "kill_process" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Use pty_write/pty_kill for process I/O in bridge mode" }))
+        "close_splashscreen" => {
+            Ok(serde_json::json!({ "status": "no_splashscreen", "note": "Bridge mode has no splashscreen" }))
+        }
+
+        "dispatch_action" => {
+            let action_id = args.get("action").and_then(|v| v.as_str()).ok_or("Missing 'action'")?.to_string();
+            state.broadcaster.emit("deckcode-action", action_id);
+            Ok(serde_json::json!({ "status": "dispatched" }))
+        }
+
+        "write_to_process" => {
+            let input = args.get("input").and_then(|v| v.as_str()).ok_or("Missing 'input'")?;
+            if input.len() > 32 * 1024 {
+                return Err("Input exceeds 32KB".to_string());
+            }
+            let tx = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.process_stdin_tx.clone()
+            };
+            if let Some(tx) = tx {
+                tx.send(input.to_string()).await.map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
+                Ok(serde_json::json!({ "status": "written" }))
+            } else {
+                Err("No active process running to write to".to_string())
+            }
+        }
+
+        "kill_process" => {
+            let tx = {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.kill_tx.take()
+            };
+            if let Some(tx) = tx {
+                let _ = tx.send(());
+                Ok(serde_json::json!({ "status": "killed" }))
+            } else {
+                Err("No active process running to kill".to_string())
+            }
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -4397,7 +4553,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode. \
-            Bridge status: ~295 commands (~100%). \
+            Bridge status: ~295 commands (>99%). \
+            Unavailable: set_kiosk_mode, start_remote_server, stop_remote_server. \
             Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
         )),

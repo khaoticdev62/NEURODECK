@@ -11,7 +11,8 @@ use std::sync::{
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter};
+use crate::bridge::EventEmitter;
+use tauri::AppHandle;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::{mpsc, oneshot};
@@ -221,9 +222,9 @@ impl LspManager {
 /// Spawn an LSP server for `language` and run the initialize handshake.
 /// Returns immediately after handshake is dispatched; the "lsp:ready" event
 /// fires when the initialize response arrives.
-pub async fn spawn_server(
+pub async fn spawn_server<E: EventEmitter>(
     manager: Arc<Mutex<LspManager>>,
-    app: AppHandle,
+    app: E,
     language: String,
     command: String,
     args: Vec<String>,
@@ -338,7 +339,7 @@ pub async fn spawn_server(
                                 .unwrap_or_default();
                             diagnostics_r
                                 .lock()
-                                .unwrap()
+                                .unwrap_or_else(|e| e.into_inner())
                                 .insert(uri.clone(), diags.clone());
                             let _ = app_r.emit(
                                 "lsp:diagnostics",

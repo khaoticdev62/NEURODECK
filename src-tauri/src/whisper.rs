@@ -17,6 +17,14 @@ use std::process::Command;
 ///
 /// Returns the transcribed text or an error string.
 pub fn transcribe(wav_path: &str, binary_path: &str, model_path: &str) -> Result<String, String> {
+    // Pre-flight: model must exist for offline transcription
+    if !model_path.is_empty() && !Path::new(model_path).exists() {
+        return Err(format!(
+            "Whisper model not found at '{}'. Download a model in Settings → Voice, or ensure the path is correct.",
+            model_path
+        ));
+    }
+
     let candidates: Vec<&str> = if binary_path.is_empty() {
         vec!["whisper-cli", "whisper", "main"]
     } else {

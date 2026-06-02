@@ -58,12 +58,23 @@ pbkdf2 = "0.12.2"
 sha2 = "0.10.9"
 subtle = "2.6.1"
 tokio-cron-scheduler = "0.13"
+sysinfo = "0.33"
+cpal = "0.15"
+hound = "3.5"
 yrs = "0.21"
 gilrs = "0.11.0"
 tree-sitter = "0.26.9"
 tree-sitter-python = "0.25.0"
 tree-sitter-javascript = "0.25.0"
 tree-sitter-bash = "0.25.1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = "0.24"
+
+[profile.dev]
+# Mitigate Windows PDB limit (LNK1318) by reducing debug info granularity
+# in dev/test builds. Use `debug = 2` only when actively debugging.
+debug = 1               # Line-tables only — sufficient for backtraces, smaller PDB
 
 [profile.release]
 opt-level = "s"         # Optimize for size

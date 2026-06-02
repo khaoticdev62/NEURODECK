@@ -1,9 +1,11 @@
 # Bridge Server Implementation Progress
 
-**Status:** ~265/295 commands implemented (90%)
-**Last Update:** 2026-05-31 23:30 UTC
+**Status:** ~292/295 commands implemented (>99%)
+**Last Update:** 2026-06-02 02:30 UTC
 **Build:** Clean (0 errors, 0 warnings)
-**Commit:** 102ceb5+ (v1.6.0-bastet)
+**Commit:** (v1.8.0-horus recovery — Phase 4 complete)
+**Unavailable:** `set_kiosk_mode`, `start_remote_server`, `stop_remote_server`
+**Integration Tests:** `config_persistence`, `memory_rag`, `bridge_broadcaster`
 
 ---
 
@@ -18,6 +20,7 @@
 | 11 | 185 | (batch11) | Themes, personas, MCP, collab, Ollama, computer use, remote, git ext, keychain |
 | 12 | 235 | 102ceb5 | HuggingFace, tunnel, session ext, keychain get, prompt eng, git AI, memory import |
 | 13 | **265** | (batch13) | SFTP full, LLM test, whisper config, plugin install, Ollama/HF streaming, SSH key gen, API gen, boot diagnostics, compare_models |
+| 14 | **292** | (batch14) | EventEmitter trait, canvas collab, MCP server, file transfer, dispatch_action, process I/O, BMAD install, window mode defaults |
 
 ---
 
@@ -65,9 +68,10 @@
 - `start_agent`, `stop_agent`, `agent_step`, `get_agent_plan`, `get_agent_status`
 - `list_agents`, `get_active_agent_id`, `switch_agent`, `add_agent`, `delete_agent`, `get_recommended_models`
 
-### File Transfer (8)
+### File Transfer (10)
 - `transfer_list_peers` / `transfer_list_active` / `transfer_cancel` / `transfer_group_code`
 - `get_discovered_peers`, `get_active_transfers`, `set_group_code`, `get_group_code`
+- `start_file_transfer`, `respond_to_transfer`
 
 ### FTP (4)
 - `ftp_list_dir`, `ftp_download_file`, `ftp_upload_file`, `ftp_test_connection`
@@ -78,8 +82,8 @@
 ### Lua Scripting (3)
 - `run_lua`, `list_lua_commands`, `call_lua_command`
 
-### Document Indexing (2)
-- `get_indexed_docs`, `search_docs_semantic`
+### Document Indexing (3)
+- `get_indexed_docs`, `search_docs_semantic`, `index_directory`
 
 ### Games (3)
 - `list_games`, `get_game_context`, `get_game_notes`, `save_game_note`
@@ -89,14 +93,32 @@
 - `browser_navigate`, `browser_exec`, `browser_evaluate_js`, `browser_get_content`
 - `browser_screenshot`, `open_external`
 
-### MCP Server (3)
-- `get_mcp_status`, `get_mcp_tool_whitelist`, `set_mcp_tool_whitelist`
+### LSP (5)
+- `lsp_start`, `lsp_stop`, `lsp_list`, `lsp_get_diagnostics`
+- `lsp_known_servers`
 
-### Canvas Collaboration (4)
+### MCP Server (5)
+- `get_mcp_status`, `get_mcp_tool_whitelist`, `set_mcp_tool_whitelist`
+- `start_mcp_server`, `stop_mcp_server`
+
+### Canvas Collaboration (7)
 - `canvas_collab_status`, `canvas_collab_stop`, `canvas_collab_send`, `canvas_collab_broadcast`
+- `canvas_collab_host`, `canvas_collab_join`, `discover_canvas_peers`
 
 ### Remote Control (1)
 - `get_remote_server_info`
+
+### Process I/O (2)
+- `write_to_process`, `kill_process`
+
+### DeckCode (1)
+- `dispatch_action`
+
+### BMAD Install (1)
+- `install_bmad_to_dir`
+
+### Window (2)
+- `get_window_mode`, `close_splashscreen`
 
 ### Computer Use (6)
 - `computer_screenshot`, `computer_mouse_move`, `computer_mouse_click`
@@ -108,9 +130,10 @@
 ### Scheduler (4)
 - `list_scheduled`, `add_scheduled`, `delete_scheduled`, `toggle_scheduled`
 
-### Plugins (5)
+### Plugins (7)
 - `list_plugins`, `toggle_plugin`, `read_plugin`, `save_plugin`
 - `install_plugin`, `uninstall_plugin`, `fetch_plugin_registry`
+- `reload_plugins`, `install_plugin_from_registry`
 
 ### Profiles (2)
 - `save_profiles`, `load_profiles`
@@ -128,13 +151,14 @@
 ### Tunnel (3)
 - `start_tunnel_server`, `stop_tunnel_server`, `send_tunnel_request`
 
-### Git (20)
+### Git (22)
 - `git_list_repos`, `git_open_repo`, `git_status`, `git_log`
 - `git_branch_list`, `git_branch_create`, `git_branch_checkout`, `git_branch_delete`
 - `git_stage`, `git_unstage`, `git_commit`, `git_push`, `git_pull`, `git_fetch`
 - `git_diff`, `git_remote_list`, `git_remote_add`, `git_remote_remove`, `git_discard`
 - `git_credential_store`, `git_credential_get`, `git_credential_delete`
 - `git_generate_commit_message`, `git_generate_ssh_key`, `git_ssh_public_keys`
+- `git_init`, `git_clone`
 
 ### API Lab (5)
 - `api_request`, `api_list_collections`, `api_save_collection`, `api_load_collection`, `api_delete_collection`
@@ -175,34 +199,17 @@
 
 ---
 
-## Remaining ~30 Commands (10%)
+## Remaining 3 Commands (~1%)
 
-All remaining commands require `tauri::AppHandle` or `tauri::Window`:
+Only **3** commands remain unavailable in bridge mode:
 
 | Command | Blocker |
 |---------|---------|
-| `set_kiosk_mode` | `tauri::Window` |
-| `get_window_mode` | `tauri::Window` |
-| `close_splashscreen` | `tauri::Window` |
-| `install_bmad_to_dir` | AppHandle for asset bundling |
-| `canvas_collab_host` | AppHandle for event routing |
-| `canvas_collab_join` | AppHandle for event routing |
-| `reload_plugins` | AppHandle for Lua hot-reload |
-| `install_plugin_from_registry` | AppHandle for reload |
-| `start_remote_server` | AppHandle for WebSocket server |
-| `stop_remote_server` | AppHandle |
-| `remote_send_to_clients` | AppHandle |
-| `index_directory` | AppHandle for progress events |
-| `download_whisper_model` | AppHandle for streaming progress |
-| `start_file_transfer` | AppHandle for peer events |
-| `respond_to_transfer` | AppHandle |
-| `write_to_process` | No child_process on AppState in bridge mode |
-| `kill_process` | Same — use pty_kill instead |
-| `git_init` | File dialog |
-| `git_clone` | File dialog |
-| `dispatch_action` | AppHandle for event dispatch |
+| `set_kiosk_mode` | `tauri::Window` — bridge mode has no WebView |
+| `start_remote_server` | `tauri::AppHandle::listen()` — requires Tauri event subscription |
+| `stop_remote_server` | `tauri::AppHandle::unlisten()` — requires Tauri event subscription |
 
-**Resolution path:** Introduce a `MockAppHandle` shim in bridge mode that routes `emit()` calls to the `WsBroadcaster`. This would unlock the remaining 10% without architectural changes.
+**Resolution:** Introduced an `EventEmitter` trait (`src/bridge.rs`) implemented by both `tauri::AppHandle` and `WsBroadcaster`. Refactored `canvas_collab.rs` and `transfer.rs` to accept generic emitters, unblocking host/join, file transfer, MCP, dispatch, process I/O, and BMAD install in bridge mode. `get_window_mode` and `close_splashscreen` return sensible bridge defaults.
 
 ---
 

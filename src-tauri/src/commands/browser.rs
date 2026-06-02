@@ -378,7 +378,7 @@ pub async fn browser_get_citation(url: String) -> Result<String, String> {
     let title = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
         with_state(|s| {
             ensure_browser(s)?;
-            let browser = s.browser.as_ref().unwrap();
+            let browser = s.browser.as_ref().ok_or("Browser not initialized")?;
             let tab = browser.new_tab().map_err(|e| e.to_string())?;
             tab.navigate_to(&url_clone).map_err(|e| e.to_string())?;
             tab.wait_until_navigated().map_err(|e| e.to_string())?;
@@ -403,7 +403,7 @@ pub async fn browser_save_to_memory(
     let (title, text) = tauri::async_runtime::spawn_blocking(move || -> Result<(String, String), String> {
         with_state(|s| {
             ensure_browser(s)?;
-            let browser = s.browser.as_ref().unwrap();
+            let browser = s.browser.as_ref().ok_or("Browser not initialized")?;
             let tab = browser.new_tab().map_err(|e| e.to_string())?;
             tab.navigate_to(&url_clone).map_err(|e| e.to_string())?;
             tab.wait_until_navigated().map_err(|e| e.to_string())?;

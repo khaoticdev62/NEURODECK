@@ -2415,7 +2415,7 @@ document.querySelector("#app").innerHTML = `
                         <div class="stv-group-label">Keyboard Shortcuts</div>
                         <div class="stv-card" id="shortcut-customization-card">
                             <p style="font-size:0.75rem;opacity:0.5;margin:0 0 10px;line-height:1.4;">Click any shortcut row and press a new key combination to rebind. Reset to restore the default.</p>
-                            <div id="shortcut-customization-table" style="display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;"></div>
+                            <div id="shortcut-customization-table" tabindex="0" style="display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;"></div>
                         </div>
 
                         <div class="stv-group-label">Window Behavior</div>
@@ -3198,6 +3198,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
                             <input type="text" id="collab-addr-input" class="tunnel-text-input" placeholder="192.168.1.5:13338" style="flex: 1; box-sizing: border-box; margin: 0;">
                         </div>
                         <button class="send-prompt-btn" id="collab-join-start-btn" style="width: 100%; margin: 0 0 10px;">Connect</button>
+                        <div id="collab-peer-list-wrap" style="margin-top: 8px;">
+                            <div style="font-size:0.72rem;opacity:0.6;margin-bottom:4px;">Discovered on LAN:</div>
+                            <div id="collab-peer-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+                            <div id="collab-peer-list-empty" style="font-size:0.72rem;opacity:0.4;display:none;">No peers found. Ensure both devices are on the same LAN.</div>
+                        </div>
                     </div>
                     <!-- Status / active session -->
                     <div id="collab-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>

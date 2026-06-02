@@ -771,25 +771,24 @@ pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), Strin
 pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
 
+    let wav_path = user_config_dir().join("temp_record.wav");
+
     if cfg!(target_os = "linux") {
-        let wav_path = user_config_dir().join("temp_record.wav");
-        let wav_str = wav_path.to_string_lossy().to_string();
-        match std::process::Command::new("arecord")
-            .arg("-f")
-            .arg("cd")
-            .arg("-t")
-            .arg("wav")
-            .arg(&wav_str)
-            .spawn()
-        {
+        match crate::audio_recorder::start_arecord(&wav_path) {
             Ok(child) => {
                 app.record_child = Some(child);
                 "Recording started...".to_string()
             }
-            Err(e) => format!("Error starting recording: {}", e),
+            Err(e) => e,
         }
     } else {
-        "Voice recording is only supported on Linux/SteamOS. Use Whisper STT with a pre-recorded WAV, or configure a Gemini API key for cloud transcription.".to_string()
+        match crate::audio_recorder::start_cpal_recording(&wav_path) {
+            Ok(stop_flag) => {
+                app.record_stop_flag = Some(stop_flag);
+                "Recording started...".to_string()
+            }
+            Err(e) => e,
+        }
     }
 }
 
@@ -869,8 +868,14 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
     };
     if model.is_empty() {
         return Err(
-            "Whisper model path not set. Configure it in Settings → Whisper STT.".to_string(),
+            "Whisper model path not set. Go to Settings → Voice to download a model or set an existing one.".to_string(),
         );
+    }
+    if !std::path::Path::new(&model).exists() {
+        return Err(format!(
+            "Whisper model not found at '{}'. Go to Settings → Voice to download it.",
+            model
+        ));
     }
     let wav_str = user_config_dir()
         .join("temp_record.wav")
@@ -883,14 +888,20 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
 
 #[tauri::command]
 pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let record_child = {
+    let (record_child, record_stop_flag) = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.record_child.take()
+        (app.record_child.take(), app.record_stop_flag.take())
     };
 
     if let Some(mut child) = record_child {
         let _ = child.kill();
         let _ = child.wait();
+    }
+
+    if let Some(flag) = record_stop_flag {
+        flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        // Give cpal a moment to flush the WAV file.
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }
 
     let wav_path = user_config_dir().join("temp_record.wav");
@@ -2718,9 +2729,34 @@ pub async fn canvas_collab_host(
         s.collab_mode = None;
         s.collab_addr = None;
         s.collab_peer_count = None;
+        if let Some(daemon) = s.collab_mdns.take() {
+            let hostname = crate::transfer::get_hostname();
+            let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+        }
     }
 
     let (bound_port, session) = canvas_collab::host(port, app).await?;
+
+    // Register mDNS advertisement for peer discovery
+    if let Ok(daemon) = mdns_sd::ServiceDaemon::new() {
+        let hostname = crate::transfer::get_hostname();
+        let instance = format!("neurodeck-{}", hostname.replace(" ", "-"));
+        let host_name = format!("{}.local.", hostname.replace(" ", "-"));
+        let mut props = std::collections::HashMap::new();
+        props.insert("hostname".to_string(), hostname);
+        if let Ok(info) = mdns_sd::ServiceInfo::new(
+            "_neurodeck-canvas._tcp.local.",
+            &instance,
+            &host_name,
+            "0.0.0.0",
+            bound_port,
+            Some(props),
+        ) {
+            let _ = daemon.register(info);
+            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+            s.collab_mdns = Some(daemon);
+        }
+    }
 
     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     s.collab_abort = Some(session.abort_handle);
@@ -2823,6 +2859,56 @@ pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
     s.collab_mode = None;
     s.collab_addr = None;
     s.collab_peer_count = None;
+    if let Some(daemon) = s.collab_mdns.take() {
+        let hostname = crate::transfer::get_hostname();
+        let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+    }
+}
+
+/// Discover canvas collab peers on the local network via mDNS.
+/// Browses for `_neurodeck-canvas._tcp` services for ~2.5 seconds.
+#[tauri::command]
+pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
+    let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
+    let service_type = "_neurodeck-canvas._tcp.local.";
+    let receiver = daemon.browse(service_type).map_err(|e| e.to_string())?;
+
+    let mut peers = Vec::new();
+    let start = std::time::Instant::now();
+    while start.elapsed() < std::time::Duration::from_millis(2500) {
+        match receiver.recv_timeout(std::time::Duration::from_millis(200)) {
+            Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) => {
+                let hostname = info.get_hostname().to_string();
+                let port = info.get_port();
+                let props = info.get_properties();
+                let display_name = props.get_property_val_str("hostname")
+                    .unwrap_or(&hostname)
+                    .to_string();
+                // Extract IP address from hostname or use a heuristic
+                let ip = info.get_addresses().iter().next()
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| {
+                        // Fallback: try to resolve .local hostname
+                        hostname.trim_end_matches(".local.").to_string()
+                    });
+                peers.push(serde_json::json!({
+                    "name": display_name,
+                    "hostname": hostname,
+                    "ip": ip,
+                    "port": port,
+                    "addr": format!("{}:{}", ip, port)
+                }));
+            }
+            Ok(mdns_sd::ServiceEvent::SearchStopped(_)) => break,
+            _ => {}
+        }
+    }
+
+    // Deduplicate by address
+    peers.sort_by(|a, b| a["addr"].as_str().cmp(&b["addr"].as_str()));
+    peers.dedup_by(|a, b| a["addr"].as_str() == b["addr"].as_str());
+
+    Ok(peers)
 }
 
 #[tauri::command]

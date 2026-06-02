@@ -1,10 +1,15 @@
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, State};
 
 const SPAWN_TIMEOUT_SECS: u64 = 15;
+/// Maximum lifetime for a PTY session before it is force-killed (2 hours).
+const MAX_SESSION_LIFETIME_SECS: u64 = 7200;
+/// Watchdog wake interval (60 seconds).
+const WATCHDOG_INTERVAL_SECS: u64 = 60;
 
 #[derive(Clone, serde::Serialize)]
 struct PtyOutputPayload {
@@ -15,13 +20,56 @@ struct PtyOutputPayload {
 pub struct PtySession {
     pub writer: Box<dyn Write + Send>,
     pub master: Box<dyn MasterPty + Send>,
+    pub spawned_at: Instant,
 }
 
 pub struct PtyState {
-    pub sessions: Mutex<HashMap<String, PtySession>>,
+    pub sessions: Arc<Mutex<HashMap<String, PtySession>>>,
     /// Broadcast sender wired to the remote-control WebSocket fan-out.
     /// Set by `start_remote_server`, cleared by `stop_remote_server`.
-    pub remote_tx: Mutex<Option<tokio::sync::broadcast::Sender<String>>>,
+    pub remote_tx: Arc<Mutex<Option<tokio::sync::broadcast::Sender<String>>>>,
+}
+
+impl Default for PtyState {
+    fn default() -> Self {
+        Self {
+            sessions: Arc::new(Mutex::new(HashMap::new())),
+            remote_tx: Arc::new(Mutex::new(None)),
+        }
+    }
+}
+
+impl PtyState {
+    pub fn new() -> Self {
+        let state = Self::default();
+
+        // Spawn session TTL watchdog thread
+        let sessions_weak = Arc::downgrade(&state.sessions);
+        std::thread::spawn(move || {
+            let interval = Duration::from_secs(WATCHDOG_INTERVAL_SECS);
+            let max_lifetime = Duration::from_secs(MAX_SESSION_LIFETIME_SECS);
+            loop {
+                std::thread::sleep(interval);
+                let Some(sessions_arc) = sessions_weak.upgrade() else {
+                    break; // PtyState dropped, exit watchdog
+                };
+                let mut sessions = sessions_arc.lock().unwrap_or_else(|e| e.into_inner());
+                let now = Instant::now();
+                let expired: Vec<String> = sessions
+                    .iter()
+                    .filter(|(_, session)| now.duration_since(session.spawned_at) > max_lifetime)
+                    .map(|(id, _)| id.clone())
+                    .collect();
+                for id in expired {
+                    sessions.remove(&id);
+                    // Dropping the PtySession closes the writer/master FDs,
+                    // causing the reader thread to exit.
+                }
+            }
+        });
+
+        state
+    }
 }
 
 fn to_string_err<E: std::fmt::Display>(e: E) -> String {
@@ -226,7 +274,7 @@ pub fn pty_spawn(
     // PtySession closes the writer and master fd, which causes the old reader
     // thread's read() to return an error and exit — preventing a thread leak.
     sessions.remove(&id);
-    sessions.insert(id, PtySession { writer, master });
+    sessions.insert(id, PtySession { writer, master, spawned_at: Instant::now() });
 
     Ok(())
 }

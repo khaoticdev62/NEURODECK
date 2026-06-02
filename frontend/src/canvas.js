@@ -680,6 +680,52 @@ function initCanvasCollab() {
 
     if (!collabBtn || !collabModal) return;
 
+    // Peer discovery for join tab
+    const peerListEl = document.getElementById("collab-peer-list");
+    const peerListEmptyEl = document.getElementById("collab-peer-list-empty");
+    let peerDiscoveryInterval = null;
+
+    async function refreshPeerList() {
+        if (!peerListEl) return;
+        try {
+            const result = await invoke("discover_canvas_peers");
+            const peers = result.peers || [];
+            if (peers.length === 0) {
+                peerListEl.innerHTML = '';
+                if (peerListEmptyEl) peerListEmptyEl.style.display = '';
+            } else {
+                if (peerListEmptyEl) peerListEmptyEl.style.display = 'none';
+                peerListEl.innerHTML = peers.map((p) => {
+                    const name = p.name || p.hostname || 'Unknown';
+                    const addr = p.addr || `${p.ip}:${p.port}`;
+                    return `<div class="collab-peer-item" data-addr="${addr}" style="padding:6px 8px;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.15);border-radius:4px;cursor:pointer;font-size:0.78rem;display:flex;justify-content:space-between;align-items:center;">
+                        <span>${name}</span>
+                        <span style="opacity:0.6;font-family:var(--font-mono);">${addr}</span>
+                    </div>`;
+                }).join('');
+                peerListEl.querySelectorAll('.collab-peer-item').forEach((item) => {
+                    item.addEventListener('click', () => {
+                        if (addrInput) addrInput.value = item.dataset.addr;
+                    });
+                });
+            }
+        } catch (e) {
+            if (peerListEmptyEl) peerListEmptyEl.style.display = '';
+        }
+    }
+
+    function startPeerDiscovery() {
+        if (peerDiscoveryInterval) clearInterval(peerDiscoveryInterval);
+        refreshPeerList();
+        peerDiscoveryInterval = setInterval(refreshPeerList, 3000);
+    }
+    function stopPeerDiscovery() {
+        if (peerDiscoveryInterval) {
+            clearInterval(peerDiscoveryInterval);
+            peerDiscoveryInterval = null;
+        }
+    }
+
     // Tab switching
     function showTab(tab) {
         const isHost = tab === 'host';
@@ -692,6 +738,11 @@ function initCanvasCollab() {
         if (joinTabBtn) {
             joinTabBtn.style.background = isHost ? '' : 'rgba(0,229,255,0.1)';
             joinTabBtn.style.borderColor = isHost ? '' : 'var(--accent-color)';
+        }
+        if (isHost) {
+            stopPeerDiscovery();
+        } else {
+            startPeerDiscovery();
         }
     }
     if (hostTabBtn) hostTabBtn.addEventListener("click", () => showTab('host'));
@@ -707,11 +758,13 @@ function initCanvasCollab() {
     if (closeX) closeX.addEventListener("click", () => {
         collabModal.classList.remove("active");
         if (collabFocusTrap) collabFocusTrap.deactivate();
+        stopPeerDiscovery();
     });
     collabModal.addEventListener("click", (e) => {
         if (e.target === collabModal) {
             collabModal.classList.remove("active");
             if (collabFocusTrap) collabFocusTrap.deactivate();
+            stopPeerDiscovery();
         }
     });
 

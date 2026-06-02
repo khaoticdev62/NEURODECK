@@ -545,10 +545,11 @@ impl LlmProvider for GeminiProvider {
 pub struct OllamaProvider {
     pub model: String,
     pub base_url: String,
+    pub embed_model: String,
 }
 
 impl OllamaProvider {
-    pub fn new(model: String, base_url: String) -> Self {
+    pub fn new(model: String, base_url: String, embed_model: String) -> Self {
         let m = if model.is_empty() {
             "llama2".to_string()
         } else {
@@ -559,9 +560,15 @@ impl OllamaProvider {
         } else {
             base_url
         };
+        let em = if embed_model.is_empty() {
+            "nomic-embed-text".to_string()
+        } else {
+            embed_model
+        };
         Self {
             model: m,
             base_url: url,
+            embed_model: em,
         }
     }
 }
@@ -579,6 +586,26 @@ struct OllamaRequest {
 struct OllamaResponse {
     response: String,
     done: bool,
+}
+
+#[derive(Serialize)]
+struct OllamaEmbedRequest {
+    model: String,
+    prompt: String,
+}
+
+#[derive(Deserialize)]
+struct OllamaEmbedResponse {
+    embedding: Vec<f32>,
+}
+
+#[derive(Serialize)]
+struct OllamaVisionRequest {
+    model: String,
+    prompt: String,
+    system: String,
+    stream: bool,
+    images: Vec<String>,
 }
 
 impl LlmProvider for OllamaProvider {
@@ -649,29 +676,55 @@ impl LlmProvider for OllamaProvider {
 
     fn generate_embedding(
         &self,
-        _text: &str,
+        text: &str,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
-        Box::pin(async move { Err("Embeddings not supported by Ollama provider yet".to_string()) })
+        let url = format!("{}/api/embeddings", self.base_url.trim_end_matches('/'));
+        let model = self.embed_model.clone();
+        let text = text.to_string();
+        Box::pin(async move {
+            let request_body = OllamaEmbedRequest {
+                model,
+                prompt: text,
+            };
+            let client = reqwest::Client::new();
+            let res = client
+                .post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("Ollama embedding request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("Ollama embedding error ({}): {}", status, err_text));
+            }
+            let response = res
+                .json::<OllamaEmbedResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse embedding response: {}", e))?;
+            Ok(response.embedding)
+        })
     }
 
     fn chat_with_image(
         &self,
         prompt: &str,
         system_prompt: &str,
-        _image_base64: Option<&str>,
+        image_base64: Option<&str>,
         _image_mime: Option<&str>,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
         let prompt_str = prompt.to_string();
         let sys_str = system_prompt.to_string();
         let url = format!("{}/api/generate", self.base_url.trim_end_matches('/'));
         let model = self.model.clone();
+        let images: Vec<String> = image_base64.map(|b| vec![b.to_string()]).unwrap_or_default();
         Box::pin(async move {
-            // Text-only for Ollama (no vision support); system prompt forwarded
-            let request_body = OllamaRequest {
+            let request_body = OllamaVisionRequest {
                 model,
                 prompt: prompt_str,
                 system: sys_str,
                 stream: false,
+                images,
             };
             let client = reqwest::Client::new();
             let res = client
@@ -738,6 +791,7 @@ pub struct HuggingFaceProvider {
     pub model: String,
     api_key: Option<String>,
     base_url: String,
+    pub embed_model: String,
 }
 
 #[derive(Serialize)]
@@ -745,6 +799,14 @@ struct HfRequest {
     inputs: String,
     parameters: HfParameters,
 }
+
+#[derive(Serialize)]
+struct HfEmbedRequest {
+    inputs: String,
+}
+
+#[derive(Deserialize)]
+struct HfEmbedResponse(Vec<Vec<f32>>);
 
 #[derive(Serialize)]
 struct HfParameters {
@@ -761,7 +823,7 @@ struct HfResponse {
 }
 
 impl HuggingFaceProvider {
-    pub fn new(model: String, api_key: Option<String>, base_url: String) -> Self {
+    pub fn new(model: String, api_key: Option<String>, base_url: String, embed_model: String) -> Self {
         let m = if model.is_empty() {
             "meta-llama/Llama-3.2-1B-Instruct".to_string()
         } else {
@@ -772,10 +834,16 @@ impl HuggingFaceProvider {
         } else {
             base_url.trim_end_matches('/').to_string()
         };
+        let em = if embed_model.is_empty() {
+            "sentence-transformers/all-MiniLM-L6-v2".to_string()
+        } else {
+            embed_model
+        };
         Self {
             model: m,
             api_key,
             base_url: url,
+            embed_model: em,
         }
     }
 
@@ -868,18 +936,46 @@ impl LlmProvider for HuggingFaceProvider {
 
     fn generate_embedding(
         &self,
-        _text: &str,
+        text: &str,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
-        Box::pin(
-            async move { Err("Embeddings not supported by Hugging Face provider yet".to_string()) },
-        )
+        let url = format!("{}/models/{}", self.base_url, self.embed_model);
+        let api_key = match self.get_api_key() {
+            Ok(k) => k,
+            Err(e) => return Box::pin(async move { Err(e) }),
+        };
+        let text = text.to_string();
+        Box::pin(async move {
+            let request_body = HfEmbedRequest { inputs: text };
+            let client = reqwest::Client::new();
+            let res = client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| format!("HF embedding request failed: {}", e))?;
+            if !res.status().is_success() {
+                let status = res.status();
+                let err_text = res.text().await.unwrap_or_default();
+                return Err(format!("HF embedding error ({}): {}", status, err_text));
+            }
+            let parsed = res
+                .json::<HfEmbedResponse>()
+                .await
+                .map_err(|e| format!("Failed to parse embedding response: {}", e))?;
+            parsed
+                .0
+                .into_iter()
+                .next()
+                .ok_or_else(|| "Empty embedding response".to_string())
+        })
     }
 
     fn chat_with_image(
         &self,
         prompt: &str,
         system_prompt: &str,
-        _image_base64: Option<&str>,
+        image_base64: Option<&str>,
         _image_mime: Option<&str>,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
         let prompt_str = prompt.to_string();
@@ -889,7 +985,16 @@ impl LlmProvider for HuggingFaceProvider {
             Ok(k) => k,
             Err(e) => return Box::pin(async move { Err(e) }),
         };
+        let has_image = image_base64.is_some();
         Box::pin(async move {
+            if has_image {
+                // HF Inference API vision support is model-specific and not uniformly available.
+                // Return a clear error directing the user to vision-capable providers.
+                return Err(
+                    "Hugging Face Inference API vision support is model-specific and not reliably available. \
+                     Use Gemini or Ollama (llava) for image analysis.".to_string()
+                );
+            }
             let request_body = HfRequest {
                 inputs: if sys_str.is_empty() {
                     prompt_str
@@ -1465,6 +1570,35 @@ struct OAChatRequest {
     max_tokens: Option<u32>,
 }
 
+#[derive(Serialize)]
+struct OAVisionContentItem {
+    #[serde(rename = "type")]
+    item_type: String,
+    text: Option<String>,
+    #[serde(rename = "image_url")]
+    image_url: Option<OAVisionImageUrl>,
+}
+
+#[derive(Serialize)]
+struct OAVisionImageUrl {
+    url: String,
+}
+
+#[derive(Serialize)]
+struct OAVisionMessage {
+    role: String,
+    content: Vec<OAVisionContentItem>,
+}
+
+#[derive(Serialize)]
+struct OAVisionChatRequest {
+    model: String,
+    messages: Vec<OAVisionMessage>,
+    stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+}
+
 #[derive(Deserialize)]
 struct OAStreamDelta {
     content: Option<String>,
@@ -1607,38 +1741,90 @@ impl LlmProvider for OpenAICompatProvider {
         &self,
         prompt: &str,
         system_prompt: &str,
-        _image_base64: Option<&str>,
-        _image_mime: Option<&str>,
+        image_base64: Option<&str>,
+        image_mime: Option<&str>,
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        // Vision support varies across OpenAI-compat endpoints; use text-only path
         let prompt_str = prompt.to_string();
         let sys_str = system_prompt.to_string();
         let url = format!("{}/chat/completions", self.base_url);
         let auth = self.auth_header();
         let model = self.model.clone();
+        let image_base64 = image_base64.map(|s| s.to_string());
+        let image_mime = image_mime.map(|s| s.to_string());
+
         Box::pin(async move {
-            let mut messages = Vec::new();
-            if !sys_str.is_empty() {
-                messages.push(OAMessage { role: "system".to_string(), content: sys_str });
-            }
-            messages.push(OAMessage { role: "user".to_string(), content: prompt_str });
-            let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(2048) };
             let client = reqwest::Client::new();
-            let mut req = client.post(&url).json(&body);
-            if let Some(auth_val) = auth {
+            let mut req = client.post(&url);
+            if let Some(auth_val) = &auth {
                 req = req.header("Authorization", auth_val);
             }
-            let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
-            if !res.status().is_success() {
-                let status = res.status();
-                let err = res.text().await.unwrap_or_default();
-                return Err(format!("OpenAI-compat error ({}): {}", status, err));
-            }
-            let parsed = res.json::<OAChatResponse>().await
-                .map_err(|e| format!("Failed to parse response: {}", e))?;
-            match parsed.choices.and_then(|mut c| c.pop()) {
-                Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
-                None => Err("No choices in response".to_string()),
+
+            if let (Some(b64), Some(mime)) = (image_base64, image_mime) {
+                let mut content = Vec::new();
+                content.push(OAVisionContentItem {
+                    item_type: "text".to_string(),
+                    text: Some(prompt_str),
+                    image_url: None,
+                });
+                content.push(OAVisionContentItem {
+                    item_type: "image_url".to_string(),
+                    text: None,
+                    image_url: Some(OAVisionImageUrl {
+                        url: format!("data:{};base64,{}", mime, b64),
+                    }),
+                });
+                let mut messages = Vec::new();
+                if !sys_str.is_empty() {
+                    messages.push(OAVisionMessage {
+                        role: "system".to_string(),
+                        content: vec![OAVisionContentItem {
+                            item_type: "text".to_string(),
+                            text: Some(sys_str),
+                            image_url: None,
+                        }],
+                    });
+                }
+                messages.push(OAVisionMessage {
+                    role: "user".to_string(),
+                    content,
+                });
+                let body = OAVisionChatRequest {
+                    model,
+                    messages,
+                    stream: false,
+                    max_tokens: Some(2048),
+                };
+                let res = req.json(&body).send().await.map_err(|e| format!("Request failed: {}", e))?;
+                if !res.status().is_success() {
+                    let status = res.status();
+                    let err = res.text().await.unwrap_or_default();
+                    return Err(format!("OpenAI-compat vision error ({}): {}", status, err));
+                }
+                let parsed = res.json::<OAChatResponse>().await
+                    .map_err(|e| format!("Failed to parse response: {}", e))?;
+                match parsed.choices.and_then(|mut c| c.pop()) {
+                    Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
+                    None => Err("No choices in vision response".to_string()),
+                }
+            } else {
+                let mut messages = Vec::new();
+                if !sys_str.is_empty() {
+                    messages.push(OAMessage { role: "system".to_string(), content: sys_str });
+                }
+                messages.push(OAMessage { role: "user".to_string(), content: prompt_str });
+                let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(2048) };
+                let res = req.json(&body).send().await.map_err(|e| format!("Request failed: {}", e))?;
+                if !res.status().is_success() {
+                    let status = res.status();
+                    let err = res.text().await.unwrap_or_default();
+                    return Err(format!("OpenAI-compat error ({}): {}", status, err));
+                }
+                let parsed = res.json::<OAChatResponse>().await
+                    .map_err(|e| format!("Failed to parse response: {}", e))?;
+                match parsed.choices.and_then(|mut c| c.pop()) {
+                    Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
+                    None => Err("No choices in response".to_string()),
+                }
             }
         })
     }
@@ -1694,13 +1880,16 @@ mod tests {
         let provider = OllamaProvider::new(
             "custom-model".to_string(),
             "http://127.0.0.1:11434".to_string(),
+            "custom-embed".to_string(),
         );
         assert_eq!(provider.model, "custom-model");
         assert_eq!(provider.base_url, "http://127.0.0.1:11434");
+        assert_eq!(provider.embed_model, "custom-embed");
 
-        let provider_default = OllamaProvider::new("".to_string(), "".to_string());
+        let provider_default = OllamaProvider::new("".to_string(), "".to_string(), "".to_string());
         assert_eq!(provider_default.model, "llama2");
         assert_eq!(provider_default.base_url, "http://localhost:11434");
+        assert_eq!(provider_default.embed_model, "nomic-embed-text");
     }
 
     #[test]
@@ -1709,16 +1898,19 @@ mod tests {
             "custom-model".to_string(),
             Some("key".to_string()),
             "https://hf.co".to_string(),
+            "custom-embed".to_string(),
         );
         assert_eq!(provider.model, "custom-model");
         assert_eq!(provider.base_url, "https://hf.co");
+        assert_eq!(provider.embed_model, "custom-embed");
 
-        let provider_default = HuggingFaceProvider::new("".to_string(), None, "".to_string());
+        let provider_default = HuggingFaceProvider::new("".to_string(), None, "".to_string(), "".to_string());
         assert_eq!(provider_default.model, "meta-llama/Llama-3.2-1B-Instruct");
         assert_eq!(
             provider_default.base_url,
             "https://api-inference.huggingface.co"
         );
+        assert_eq!(provider_default.embed_model, "sentence-transformers/all-MiniLM-L6-v2");
     }
 
     #[test]

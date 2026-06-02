@@ -37,8 +37,13 @@ const server = http.createServer((req, res) => {
       return;
     }
     res.setHeader("Content-Type", mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream");
+    res.setHeader("Connection", "keep-alive");
     res.end(data);
   });
+});
+
+server.on("error", (err) => {
+  console.error("Static server error:", err.message);
 });
 
 server.listen(port, host, () => {

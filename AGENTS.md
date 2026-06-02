@@ -12,12 +12,17 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
 
 ## Non-Obvious Tooling & Quirks
 
-- **Two config files exist**: `llm-term.toml` at the project root AND `src-tauri/llm-term.toml`. The Rust binary reads `src-tauri/llm-term.toml` during `cargo run` / `tauri dev` (working dir is `src-tauri/`). The root copy is what the installer deploys. Always edit both or let `config.rs` path logic handle it.
+- **Config path resolution (hardened in P3.3)**: `get_config_path()` resolves in this order:
+  1. `$NEURODECK_CONFIG_PATH` env var (highest priority)
+  2. Primary: `~/.config/neurodeck/llm-term.toml` (Linux), `%APPDATA%\neurodeck\llm-term.toml` (Windows), `~/Library/Application Support/neurodeck/llm-term.toml` (macOS)
+  3. Dev fallbacks (only when `CARGO_MANIFEST_DIR` is set): `../llm-term.toml`, `./llm-term.toml`
+  4. Legacy fallbacks (deprecated, logs a warning)
+  The root `llm-term.toml` is no longer read at runtime unless the env var points to it.
 - **`GEMINI_API_KEY` must be set as an env var** before `npm run tauri dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
 - **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the dev-mode mock IPC shim has been removed. To test real commands, use `npm run tauri dev`.
 - **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines.
 - **Rust version is pinned to 1.92.0** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
-- **suppaftp 6.x `retr_as_buffer`** returns `Cursor<Vec<u8>>` and loads the entire file into RAM. Don't use it for files > 100MB.
+- **FTP downloads stream to disk** (P0.3): `ftp_download_file` uses `retr()` + `std::io::copy` instead of `retr_as_buffer`. A `max_download_size_mb` config gate (default 500MB) rejects oversized transfers before they start. Progress events fire every 1MB.
 
 ---
 
@@ -32,14 +37,18 @@ frontend/src/main.js
 All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All request/response goes through `invoke()`.
 
 ### The One Big File Problem
-`lib.rs` (~1600 lines) owns everything: command handlers, app state structs, persona definitions, theme palettes, game detection, voice I/O, and the agent loop. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
+`lib.rs` (~764 lines) owns the app entry point (`run()`), `AppState`, the `generate_handler![]` registry, and the bridge server bootstrap. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
 `main.js` (~4300 lines) is similarly monolithic by design (no framework). Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file.
 
 ### Module Responsibilities
 | Module | What It Owns |
 |---|---|
-| `lib.rs` | All `#[tauri::command]` handlers, `AppState`, themes, personas, game detection, voice I/O, agent loop |
+| `lib.rs` | `AppState`, `generate_handler![]` registry, `run()`, `run_bridge_server()` |
+| `models.rs` | `Theme`, `CustomPersona`, `PERSONAS`, `THEMES` |
+| `game.rs` | Game detection: `detect_game`, `steam_library_paths`, `game_exe_map`, `get_game_details` |
+| `paths.rs` | `get_config_path`, `user_config_dir`, `user_bin_dir`, `get_home_dir`, `load_env_file` |
+| `providers.rs` | `create_provider`, `provider_from_agent`, `default_agents` |
 | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
 | `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
 | `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
@@ -66,10 +75,12 @@ A workspace crate (`neurodeck_infrastructure`) providing platform services. Used
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
-Memory context injection is live in `send_command` (lib.rs ~line 1030): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
+Memory context injection is live in `send_command` (`commands/session.rs`): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. The `LlmProvider` trait now requires `generate_embedding()` and `supports_embedding()`; Ollama, HuggingFace, and OpenAI-compat providers have real implementations. If the active provider does not support embeddings, RAG is skipped with a one-time console warning.
 
-### PTY Session Routing
+### PTY Session Routing + Timeout
 `pty_output` and `pty_exit` events carry a session `id` field. Multiple PTY sessions can coexist in `PtyState.sessions`. The main terminal uses `ptySessionId = "main_pty_session"`. The SSH tab creates sessions named `ssh_session_<timestamp>`. Both are routed in the same `listen("pty_output", ...)` handler by ID.
+
+**PTY spawn timeout** (P0.2): `pty_spawn` wraps `command_builder.spawn()` in a `tokio::time::timeout` (default 30s). On timeout the child is killed, the session is removed from `PtyState`, and `pty_exit` emits `{"reason": "spawn_timeout"}`. A background TTL watchdog kills sessions idle >2 hours.
 
 ### CSS Specificity Trap (was live bug)
 ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active` (specificity 20). **Never add `display: flex` or `display: block` to `#view-*` ID rules** — it will permanently override the `.view-content { display: none }` hide rule and break tab switching. Use `flex-direction`, `overflow`, `background` on ID rules only.
@@ -115,7 +126,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Gotchas / Tribal Knowledge
 
-- **The config path `../llm-term.toml` fallback** was added because the binary's working directory during `tauri dev` is `src-tauri/`, not the project root. Four copies of `llm-term.toml` exist across the project (`root`, `src-tauri/`, `assets/`, `dist/`). Only `src-tauri/llm-term.toml` is read at runtime. This is load-bearing — don't remove the path check.
+- **The config path `../llm-term.toml` fallback** is still present as a dev-only fallback (active only when `CARGO_MANIFEST_DIR` is set). The primary path is now the OS config directory (`~/.config/neurodeck/llm-term.toml` on Linux). All writes go to the primary path. See the updated resolution order in *Non-Obvious Tooling & Quirks* above.
 
 - **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
 
@@ -123,11 +134,11 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
 
-- **Voice STT returns raw audio via `arecord`** — the `stop_recording` command returns transcribed text, but the transcription quality depends on whether `espeak`/`arecord` are installed. On Windows, `start_recording` returns a mock string. The STT path does NOT currently use Whisper or any AI model — it's system-tool-limited.
+- **Voice STT uses cpal on Windows/macOS** (P1.4): `audio_recorder.rs` captures 16kHz mono WAV via `cpal` + `hound`, then feeds it to `whisper.cpp` CLI. Linux still prefers `arecord` but falls back to `cpal` if unavailable. The Whisper model path is configurable in `llm-term.toml` `[stt]` section.
 
 - **The 📊 context drawer** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar.
 
-- **BMAD personas are Lua-registered, not hardcoded** — `/john`, `/sally`, etc. call `setPersona()` via `plugins/bmad.lua`. If the Lua plugin fails to load, those commands silently disappear. The 9 built-in personas (including the BMAD ones) are also hardcoded in `lib.rs`'s `PERSONAS` map as a fallback.
+- **BMAD personas are Lua-registered, not hardcoded** — `/john`, `/sally`, etc. call `setPersona()` via `plugins/bmad.lua`. If the Lua plugin fails to load, those commands silently disappear. The 9 built-in personas (including the BMAD ones) are hardcoded in `models.rs`'s `PERSONAS` lazy_static as a fallback.
 
 - **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The `RADIAL_SEGMENTS` array in `main.js` has **12 entries** covering all tabs — Chat, Canvas, Terminal, SSH, Tunnel, Browser, Agent, Memory, Share, Remote, PromptLab, Docs.
 
@@ -140,6 +151,10 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Onboarding wizard** (`#onboarding-modal`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
 
 - **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
+
+- **`EventEmitter` trait** (P2.1): `bridge.rs` defines an `EventEmitter` trait implemented by both `tauri::AppHandle` and `WsBroadcaster`. All emit-only modules (`canvas_collab.rs`, `transfer.rs`, `lsp.rs`) are now generic over `E: EventEmitter`, enabling seamless bridge/Tauri duality.
+
+- **Disk persistence migration** (P0.4): SSH/FTP/SFTP profiles and custom themes are persisted to `data/profiles/` and `data/themes/` under the OS config directory. On first boot, a frontend migration IIFE moves any legacy `localStorage` data to disk and deletes the old keys.
 
 - **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection, avoiding generic JS evaluations or hardcoded Monaco commands.
 
@@ -200,6 +215,11 @@ npm run --prefix frontend build       # Vite build only
 cd src-tauri && cargo check           # Fast type-check
 cd src-tauri && cargo clippy          # Lint
 cd src-tauri && cargo build           # Debug build (~2min first time due to mlua vendored)
+cd src-tauri && cargo test --lib      # Unit tests (75 tests)
+cd src-tauri && cargo test --tests    # Integration tests (config, memory, bridge)
+# Windows note: `cargo test --workspace --all-targets` may hit PDB limit (LNK1318).
+# Use `cargo test --lib` or individual `--test <name>` instead. Debug info is
+# line-tables-only in dev profile to keep PDB size manageable.
 
 ./install.sh                          # SteamOS deploy → ~/Applications/neurodeck/
 ./launch_gamescope.sh                 # Run in gamescope 1280×800 (Steam Deck Game Mode)

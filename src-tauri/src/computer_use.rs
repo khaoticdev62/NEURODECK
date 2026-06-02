@@ -124,6 +124,79 @@ fn normalize_key(key: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Common error message when macOS Accessibility permission is missing.
+#[cfg(target_os = "macos")]
+const MACOS_ACCESSIBILITY_ERROR: &str = "macOS Accessibility permission is required for computer use. Open System Settings → Privacy & Security → Accessibility and enable NEURODECK.";
+
+/// Pre-flight check for macOS Accessibility permissions.
+/// Mouse automation requires Accessibility; keyboard automation requires it for System Events.
+#[cfg(target_os = "macos")]
+fn require_macos_accessibility() -> Result<(), String> {
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+    // CGEventSource creation fails when Accessibility is denied
+    let _ = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+        .map_err(|_| MACOS_ACCESSIBILITY_ERROR.to_string())?;
+    Ok(())
+}
+
+/// Open macOS System Settings to the Accessibility pane.
+#[cfg(target_os = "macos")]
+fn open_macos_accessibility_settings() {
+    let _ = std::process::Command::new("open")
+        .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+        .spawn();
+}
+
+#[cfg(target_os = "macos")]
+fn run_applescript(script: &str) -> Result<(), String> {
+    let output = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|e| format!("osascript failed: {}", e))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not allowed") || stderr.contains("Accessibility") {
+            open_macos_accessibility_settings();
+            return Err(MACOS_ACCESSIBILITY_ERROR.to_string());
+        }
+        return Err(format!("AppleScript error: {}", stderr.trim()));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn macos_key_applescript(key: &str) -> Result<String, String> {
+    let parts: Vec<&str> = key.split('+').map(|s| s.trim()).collect();
+    if parts.len() > 1 {
+        let modifiers = &parts[..parts.len() - 1];
+        let key_char = parts.last().unwrap();
+        let mut modifier_strs = Vec::new();
+        for m in modifiers {
+            match *m {
+                "ctrl" => modifier_strs.push("control down"),
+                "alt" => modifier_strs.push("option down"),
+                "shift" => modifier_strs.push("shift down"),
+                "cmd" | "command" => modifier_strs.push("command down"),
+                _ => {}
+            }
+        }
+        let escaped = key_char.replace('\\', "\\\\").replace('"', "\\\"");
+        if modifier_strs.is_empty() {
+            Ok(format!("tell application \"System Events\" to keystroke \"{}\"", escaped))
+        } else {
+            Ok(format!(
+                "tell application \"System Events\" to keystroke \"{}\" using {{{}}}",
+                escaped,
+                modifier_strs.join(", ")
+            ))
+        }
+    } else {
+        let escaped = key.replace('\\', "\\\\").replace('"', "\\\"");
+        Ok(format!("tell application \"System Events\" to keystroke \"{}\"", escaped))
+    }
+}
+
 fn capture_screenshot_bytes() -> Result<Vec<u8>, String> {
     let path = temp_png_path("screenshot");
     let result = capture_screenshot_to_path(&path)
@@ -205,7 +278,19 @@ fn platform_mouse_move(x: i32, y: i32) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        return Err("Mouse movement is not implemented on macOS.".to_string());
+        use core_graphics::event::{CGEvent, CGEventType, CGMouseButton};
+        use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+        use core_graphics::geometry::CGPoint;
+
+        require_macos_accessibility()?;
+
+        let point = CGPoint::new(x as f64, y as f64);
+        let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+            .map_err(|_| MACOS_ACCESSIBILITY_ERROR.to_string())?;
+        let event = CGEvent::new_mouse_event(source, CGEventType::MouseMoved, point, CGMouseButton::Left)
+            .map_err(|_| "Failed to create mouse move event".to_string())?;
+        event.post(core_graphics::event::CGEventTapLocation::HID);
+        return Ok(());
     }
 
     #[allow(unreachable_code)]
@@ -240,7 +325,42 @@ fn platform_mouse_click(button: &'static str) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        return Err("Mouse click is not implemented on macOS.".to_string());
+        use core_graphics::event::{CGEvent, CGEventType, CGMouseButton};
+        use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+        require_macos_accessibility()?;
+
+        let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+            .map_err(|_| MACOS_ACCESSIBILITY_ERROR.to_string())?;
+
+        let button = match button {
+            "left" => CGMouseButton::Left,
+            "right" => CGMouseButton::Right,
+            "middle" => CGMouseButton::Center,
+            _ => return Err("Unsupported mouse button.".to_string()),
+        };
+
+        let (down_type, up_type) = match button {
+            CGMouseButton::Left => (CGEventType::LeftMouseDown, CGEventType::LeftMouseUp),
+            CGMouseButton::Right => (CGEventType::RightMouseDown, CGEventType::RightMouseUp),
+            _ => (CGEventType::OtherMouseDown, CGEventType::OtherMouseUp),
+        };
+
+        let event = CGEvent::new(source.clone())
+            .map_err(|_| "Failed to create event".to_string())?;
+        let point = event.location();
+
+        let down = CGEvent::new_mouse_event(source.clone(), down_type, point, button)
+            .map_err(|_| "Failed to create mouse down event".to_string())?;
+        down.post(core_graphics::event::CGEventTapLocation::HID);
+
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        let up = CGEvent::new_mouse_event(source, up_type, point, button)
+            .map_err(|_| "Failed to create mouse up event".to_string())?;
+        up.post(core_graphics::event::CGEventTapLocation::HID);
+
+        return Ok(());
     }
 
     #[allow(unreachable_code)]
@@ -270,7 +390,10 @@ if ($null -ne $previous) { Set-Clipboard -Value $previous }
 
     #[cfg(target_os = "macos")]
     {
-        return Err("Keyboard typing is not implemented on macOS.".to_string());
+        require_macos_accessibility()?;
+        let escaped = text.replace('\\', "\\\\").replace('"', "\\\"");
+        let script = format!("tell application \"System Events\" to keystroke \"{}\"", escaped);
+        return run_applescript(&script);
     }
 
     #[allow(unreachable_code)]
@@ -295,7 +418,9 @@ Add-Type -AssemblyName System.Windows.Forms
 
     #[cfg(target_os = "macos")]
     {
-        return Err("Keyboard key press is not implemented on macOS.".to_string());
+        require_macos_accessibility()?;
+        let script = macos_key_applescript(&key)?;
+        return run_applescript(&script);
     }
 
     #[allow(unreachable_code)]

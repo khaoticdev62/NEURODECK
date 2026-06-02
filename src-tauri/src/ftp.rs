@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use suppaftp::{FtpError, FtpStream};
 use tauri::{AppHandle, Emitter};
 
@@ -20,6 +20,13 @@ struct FtpUploadProgress {
     local_path: String,
     bytes_sent: u64,
     total_bytes: u64,
+}
+
+#[derive(serde::Serialize, Clone)]
+struct FtpDownloadProgress {
+    remote_path: String,
+    bytes_received: usize,
+    total_bytes: usize,
 }
 
 /// Wraps a `Read` source and emits `ftp_upload_progress` events to the
@@ -103,8 +110,14 @@ fn parse_list_line(line: &str) -> Option<FtpFileEntry> {
     Some(FtpFileEntry { name, is_dir, size })
 }
 
+/// Default maximum download size: 500 MB.
+const MAX_DOWNLOAD_SIZE_MB: u64 = 500;
+/// Emit progress every 1 MB.
+const DOWNLOAD_PROGRESS_INTERVAL: usize = 1_048_576;
+
 #[tauri::command]
 pub async fn ftp_download_file(
+    app: AppHandle,
     host: String,
     port: u16,
     user: String,
@@ -117,12 +130,58 @@ pub async fn ftp_download_file(
         let mut stream = FtpStream::connect(&addr).map_err(to_string_err)?;
         stream.login(&user, &password).map_err(to_string_err)?;
 
-        // Stream directly to disk — avoids loading the entire file into RAM.
+        // Check remote file size before downloading.
+        let total_bytes: usize = stream
+            .size(&remote_path)
+            .map_err(to_string_err)
+            .unwrap_or(0);
+        let max_bytes: usize = (MAX_DOWNLOAD_SIZE_MB * 1_048_576) as usize;
+        if total_bytes > max_bytes {
+            return Err(format!(
+                "File size ({:.1} MB) exceeds maximum allowed download size ({} MB).",
+                total_bytes as f64 / 1_048_576.0,
+                MAX_DOWNLOAD_SIZE_MB
+            ));
+        }
+
+        // Stream directly to disk with periodic progress events.
+        let app_clone = app.clone();
+        let remote_path_clone = remote_path.clone();
         stream
             .retr(&remote_path, |reader| {
                 let mut file =
                     std::fs::File::create(&local_path).map_err(FtpError::ConnectionError)?;
-                std::io::copy(reader, &mut file).map_err(FtpError::ConnectionError)?;
+                let mut buf = [0u8; 8192];
+                let mut bytes_received: usize = 0;
+                let mut next_emit: usize = DOWNLOAD_PROGRESS_INTERVAL;
+                loop {
+                    let n = reader.read(&mut buf).map_err(FtpError::ConnectionError)?;
+                    if n == 0 {
+                        break;
+                    }
+                    file.write_all(&buf[..n]).map_err(FtpError::ConnectionError)?;
+                    bytes_received += n;
+                    if bytes_received >= next_emit {
+                        let _ = app_clone.emit(
+                            "ftp_download_progress",
+                            FtpDownloadProgress {
+                                remote_path: remote_path_clone.clone(),
+                                bytes_received,
+                                total_bytes,
+                            },
+                        );
+                        next_emit += DOWNLOAD_PROGRESS_INTERVAL;
+                    }
+                }
+                // Final progress event.
+                let _ = app_clone.emit(
+                    "ftp_download_progress",
+                    FtpDownloadProgress {
+                        remote_path: remote_path_clone.clone(),
+                        bytes_received,
+                        total_bytes,
+                    },
+                );
                 Ok(())
             })
             .map_err(to_string_err)?;

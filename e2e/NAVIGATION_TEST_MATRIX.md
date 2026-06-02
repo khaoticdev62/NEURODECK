@@ -17,6 +17,21 @@
 | Remote | `remote` | `settings-shell.spec.ts` | "all primary nav tabs remain clickable across the full strip" | ✅ |
 | Docs | `docs` | `settings-shell.spec.ts` | "all primary nav tabs remain clickable across the full strip" | ✅ |
 
+## Comprehensive Navigation Validation (New)
+
+All 12 views are now validated by `navigation-validation.spec.ts`:
+
+| Validation | Count | Status |
+|---|---|---|
+| Nav tab click → view activation + chrome visible | 12 | ✅ |
+| Command palette navigation | 12 | ✅ |
+| Quick Switcher cycling | 1 | ✅ |
+| Mutual exclusivity (only one active view/tab) | 1 | ✅ |
+| Navigation persistence through settings modal | 4 | ✅ |
+| Radial menu overlay (12 segments) | 1 | ✅ |
+| Steam Deck 1280×800 viewport (no overflow, all clickable) | 1 | ✅ |
+| Boot overlay detachment | 1 | ✅ |
+
 ## View-Specific Depth Coverage
 
 | View | Deep Test | File | Status |

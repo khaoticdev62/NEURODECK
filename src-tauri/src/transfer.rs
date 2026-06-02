@@ -171,7 +171,7 @@ fn cleanup_outgoing_path(state: &Arc<Mutex<TransferState>>, transfer_id: &str) {
     s.outgoing_paths.remove(transfer_id);
 }
 
-fn get_hostname() -> String {
+pub fn get_hostname() -> String {
     std::env::var("COMPUTERNAME")
         .or_else(|_| std::env::var("HOSTNAME"))
         .unwrap_or_else(|_| {
@@ -186,13 +186,13 @@ fn get_os_name() -> String {
     std::env::consts::OS.to_string()
 }
 
-struct STermWarpinatorCallbacks {
-    app_handle: AppHandle,
+struct STermWarpinatorCallbacks<E> {
+    emitter: E,
     state: Arc<Mutex<TransferState>>,
 }
 
 #[tonic::async_trait]
-impl WarpinatorCallbacks for STermWarpinatorCallbacks {
+impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCallbacks<E> {
     fn get_local_machine_info(&self) -> (String, String) {
         (get_hostname(), "deck".to_string())
     }
@@ -225,7 +225,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
             s.accept_txs.insert(transfer_id.clone(), accept_tx);
         }
 
-        let _ = self.app_handle.emit("transfer_incoming", transfer);
+        let _ = self.emitter.emit("transfer_incoming", transfer);
 
         (accept_rx.await).unwrap_or_default()
     }
@@ -237,11 +237,8 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
         file_type: i32,
         chunk: &[u8],
     ) -> Result<(), String> {
-        let download_dir = self
-            .app_handle
-            .path()
-            .download_dir()
-            .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
+        let download_dir = std::env::current_dir()
+            .unwrap_or_default()
             .join("neurodeck_transfers");
 
         tokio::fs::create_dir_all(&download_dir)
@@ -288,7 +285,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
             }
         }
         let _ = self
-            .app_handle
+            .emitter
             .emit("transfer_progress", (transfer_id.to_string(), progress));
     }
 
@@ -300,7 +297,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
             }
         }
         let _ = self
-            .app_handle
+            .emitter
             .emit("transfer_completed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
@@ -323,7 +320,7 @@ impl WarpinatorCallbacks for STermWarpinatorCallbacks {
             }
         }
         let _ = self
-            .app_handle
+            .emitter
             .emit("transfer_failed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
@@ -621,7 +618,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
 
     // 2c. Start Warpinator gRPC Server
     let callbacks = Arc::new(STermWarpinatorCallbacks {
-        app_handle: app_handle.clone(),
+        emitter: app_handle.clone(),
         state: state.clone(),
     });
 
@@ -728,7 +725,7 @@ async fn handle_incoming_connection(
             }
             s.accept_txs.remove(&transfer_id);
         }
-        let _ = app_handle.emit("transfer_failed", &transfer_id);
+        let _ = app_handle.emit("transfer_failed", transfer_id.clone());
         return Ok(());
     }
 
@@ -891,13 +888,13 @@ async fn handle_incoming_connection(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn run_outgoing_transfer(
+async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
     transfer_id: String,
     peer_ip: String,
     file_path: PathBuf,
     filename: String,
     size: u64,
-    app_handle: AppHandle,
+    emitter: E,
     state: Arc<Mutex<TransferState>>,
     is_temp: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -912,7 +909,7 @@ async fn run_outgoing_transfer(
                     t.status = "Failed".to_string();
                 }
             }
-            let _ = app_handle.emit("transfer_failed", transfer_id.clone());
+            let _ = emitter.emit("transfer_failed", transfer_id.clone());
             if is_temp {
                 let _ = tokio::fs::remove_file(&file_path).await;
             }
@@ -945,7 +942,7 @@ async fn run_outgoing_transfer(
                 t.status = "Rejected".to_string();
             }
         }
-        let _ = app_handle.emit("transfer_failed", &transfer_id);
+        let _ = emitter.emit("transfer_failed", transfer_id.clone());
         if is_temp {
             let _ = tokio::fs::remove_file(&file_path).await;
         }
@@ -962,7 +959,7 @@ async fn run_outgoing_transfer(
         }
         s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
-    let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
+    let _ = emitter.emit("transfer_progress", (transfer_id.clone(), 0u64));
 
     let mut file = File::open(&file_path).await?;
     let mut buffer = [0u8; 16384];
@@ -1005,7 +1002,7 @@ async fn run_outgoing_transfer(
                     t.progress = bytes_sent;
                 }
             }
-            let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), bytes_sent));
+            let _ = emitter.emit("transfer_progress", (transfer_id.clone(), bytes_sent));
             last_emit = Instant::now();
         }
     }
@@ -1031,7 +1028,7 @@ async fn run_outgoing_transfer(
                 }
             }
         }
-        let _ = app_handle.emit("transfer_failed", transfer_id);
+        let _ = emitter.emit("transfer_failed", transfer_id);
         return Ok(());
     }
 
@@ -1042,17 +1039,17 @@ async fn run_outgoing_transfer(
             t.progress = size;
         }
     }
-    let _ = app_handle.emit("transfer_completed", transfer_id);
+    let _ = emitter.emit("transfer_completed", transfer_id);
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn start_file_transfer(
+pub async fn start_file_transfer_impl<E: crate::bridge::EventEmitter>(
     peer_ip: String,
     file_path: String,
-    app_handle: AppHandle,
-    state: State<'_, SharedTransferState>,
+    emitter: E,
+    state: SharedTransferState,
 ) -> Result<String, String> {
     let path = PathBuf::from(&file_path);
     if !path.exists() {
@@ -1147,14 +1144,14 @@ pub async fn start_file_transfer(
 
     if is_warpinator {
         let callbacks = Arc::new(STermWarpinatorCallbacks {
-            app_handle: app_handle.clone(),
+            emitter: emitter.clone(),
             state: state.0.clone(),
         });
         let peer_ip_clone = peer_ip.clone();
         let transfer_id_clone = transfer_id.clone();
         let filename_clone = filename.clone();
 
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             if let Err(e) = neurodeck_infrastructure::warpinator::send_file_to_warpinator_peer(
                 &peer_ip_clone,
                 peer_port,
@@ -1171,17 +1168,17 @@ pub async fn start_file_transfer(
         });
     } else {
         let state_inner = state.0.clone();
-        let app_handle_inner = app_handle.clone();
+        let emitter_inner = emitter.clone();
         let transfer_id_clone = transfer_id.clone();
 
-        tauri::async_runtime::spawn(async move {
+        tokio::spawn(async move {
             if let Err(e) = run_outgoing_transfer(
                 transfer_id_clone,
                 peer_ip,
                 final_path,
                 filename,
                 size,
-                app_handle_inner,
+                emitter_inner,
                 state_inner,
                 is_temp,
             )
@@ -1193,6 +1190,16 @@ pub async fn start_file_transfer(
     }
 
     Ok(transfer_id)
+}
+
+#[tauri::command]
+pub async fn start_file_transfer(
+    peer_ip: String,
+    file_path: String,
+    app_handle: AppHandle,
+    state: State<'_, SharedTransferState>,
+) -> Result<String, String> {
+    start_file_transfer_impl(peer_ip, file_path, app_handle, state.inner().clone()).await
 }
 
 #[tauri::command]

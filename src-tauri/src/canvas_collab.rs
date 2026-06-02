@@ -11,7 +11,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use tauri::{AppHandle, Emitter};
+use crate::bridge::EventEmitter;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex as AsyncMutex};
@@ -72,7 +72,7 @@ pub struct CollabSession {
 
 // ── Host ───────────────────────────────────────────────────────────────────────
 
-pub async fn host(port: u16, app: AppHandle) -> Result<(u16, CollabSession), String> {
+pub async fn host<E: EventEmitter>(port: u16, app: E) -> Result<(u16, CollabSession), String> {
     let addr     = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr)
         .await
@@ -165,7 +165,7 @@ pub async fn host(port: u16, app: AppHandle) -> Result<(u16, CollabSession), Str
 
 // ── Guest ──────────────────────────────────────────────────────────────────────
 
-pub async fn join(addr: &str, app: AppHandle) -> Result<CollabSession, String> {
+pub async fn join<E: EventEmitter>(addr: &str, app: E) -> Result<CollabSession, String> {
     let stream = TcpStream::connect(addr)
         .await
         .map_err(|e| format!("Connect to {} failed: {}", addr, e))?;
@@ -193,9 +193,9 @@ pub async fn join(addr: &str, app: AppHandle) -> Result<CollabSession, String> {
 
 // ── Per-peer I/O ───────────────────────────────────────────────────────────────
 
-async fn run_peer_io(
+async fn run_peer_io<E: EventEmitter>(
     stream:         TcpStream,
-    app:            AppHandle,
+    app:            E,
     mut rx:         mpsc::Receiver<String>,
     inbound_relay:  Option<mpsc::Sender<String>>,
     peer_count:     Option<Arc<AtomicUsize>>,

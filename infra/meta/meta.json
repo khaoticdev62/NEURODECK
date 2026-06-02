@@ -14,10 +14,10 @@
   },
   "tag": "v1.7.1-sekhmet",
   "build": {
-    "git_sha": "dbab6ad4eb164606f97d604a5320a0771e582f27",
+    "git_sha": "836a929b6bb7c06901676744f599a4971e637812",
     "git_tag": null,
-    "built_at_utc": "2026-06-01T01:22:09Z",
-    "dirty": true
+    "built_at_utc": "2026-06-02T17:00:30Z",
+    "dirty": false
   },
   "studio": {
     "name": "Khaotic Labs",

@@ -12,6 +12,8 @@ pub struct AgentConfig {
     #[serde(default = "default_ollama_base_url")]
     pub base_url: String,
     #[serde(default)]
+    pub embed_model: String,
+    #[serde(default)]
     pub description: String,
 }
 
@@ -90,6 +92,12 @@ pub struct LlmConfig {
     /// Register at console.cloud.google.com → APIs & Services → Credentials.
     #[serde(default)]
     pub google_client_id: String,
+    /// Embedding model for Ollama (e.g. nomic-embed-text).
+    #[serde(default = "default_ollama_embed_model")]
+    pub ollama_embed_model: String,
+    /// Embedding model for HuggingFace (e.g. sentence-transformers/all-MiniLM-L6-v2).
+    #[serde(default = "default_hf_embed_model")]
+    pub hf_embed_model: String,
     /// ID of the currently-active named agent profile.
     #[serde(default)]
     pub active_agent_id: String,
@@ -125,6 +133,12 @@ fn default_kimi_base_url() -> String {
 fn default_openai_compat_model() -> String {
     "gpt-4o-mini".to_string()
 }
+fn default_ollama_embed_model() -> String {
+    "nomic-embed-text".to_string()
+}
+fn default_hf_embed_model() -> String {
+    "sentence-transformers/all-MiniLM-L6-v2".to_string()
+}
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -141,6 +155,8 @@ impl Default for LlmConfig {
             openai_compat_base_url: String::new(),
             openai_compat_model: default_openai_compat_model(),
             openai_compat_api_key: String::new(),
+            ollama_embed_model: default_ollama_embed_model(),
+            hf_embed_model: default_hf_embed_model(),
             google_client_id: String::new(),
             active_agent_id: String::new(),
             agents: Vec::new(),

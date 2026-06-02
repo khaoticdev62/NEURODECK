@@ -212,7 +212,7 @@ pub async fn test_llm_connection(
                 Some(ref k) if !k.is_empty() => Some(k.clone()),
                 _ => std::env::var("HF_API_KEY").ok().filter(|k| !k.is_empty()),
             };
-            let test_provider = HuggingFaceProvider::new(model, api_key, url);
+            let test_provider = HuggingFaceProvider::new(model, api_key, url, "".to_string());
             let mut stream =
                 test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
             let first_chunk = stream.next().await;
@@ -257,7 +257,7 @@ pub async fn test_llm_connection(
             }
         }
         _ => {
-            let test_provider = OllamaProvider::new(model, url);
+            let test_provider = OllamaProvider::new(model, url, "".to_string());
             let mut stream =
                 test_provider.stream_response("Say 'success' in 1 word", "Test instruction");
             let first_chunk = stream.next().await;
