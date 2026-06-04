@@ -7,7 +7,8 @@
   "license": "UNLICENSED",
   "author": "Khaotic Labs <dev@khaoticlabs.com>",
   "workspaces": [
-    "frontend"
+    "frontend",
+    "electron"
   ],
   "scripts": {
     "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",

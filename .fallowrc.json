@@ -13,6 +13,8 @@
     "frontend/public/splash.js",
     "frontend/public/splashscreen.html",
     "e2e/support/generate-pdf.cjs",
-    "e2e/support/static-server.cjs"
+    "e2e/support/static-server.cjs",
+    "electron/preload.js",
+    "electron/scripts/dev-launcher.js"
   ]
 }
