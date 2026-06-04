@@ -15,6 +15,8 @@ frontend/dist/
 frontend/.vite/
 
 # --- Build artifacts & binaries ---
+dist-electron/
+electron/dist-electron/
 neurodeck
 neurodeck_rc.zip
 neurodeck_win_release.zip
@@ -37,6 +39,7 @@ e2e/test-results/
 .claude/settings.local.json
 .playwright-mcp/
 .serena/
+scratch/
 
 # --- Python / UV ---
 .venv/

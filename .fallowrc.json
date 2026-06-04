@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "ignoreDependencies": [
+    "@playwright/test",
+    "@axe-core/playwright"
+  ],
+  "ignorePatterns": [
+    "e2e/**",
+    "temp_inspect/**",
+    "scripts/js/test-chat-virtualization.js",
+    "scripts/css/animation_v2.css",
+    "frontend/public/splash.css",
+    "frontend/public/splash.js",
+    "frontend/public/splashscreen.html",
+    "e2e/support/generate-pdf.cjs",
+    "e2e/support/static-server.cjs"
+  ]
+}

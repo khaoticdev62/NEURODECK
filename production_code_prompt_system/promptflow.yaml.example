@@ -1,0 +1,41 @@
+prompt_pack: ./prompts
+target_repo: .
+output_dir: ./promptflow_runs
+
+provider:
+  name: manual
+  model: null
+  timeout_seconds: 120
+  max_retries: 2
+
+workflow:
+  sequence: full
+  stop_on_blocker: true
+  mode: report-only
+  include_orchestration: true
+  require_approval_for_patches: true
+
+context:
+  max_context_files: 80
+  max_file_bytes: 200000
+  include_git_status: true
+  respect_gitignore: true
+  redact_secrets: true
+  exclude:
+    - .git
+    - node_modules
+    - dist
+    - build
+    - target
+    - coverage
+
+commands:
+  allow_verification_commands: true
+  require_confirmation_for_commands: true
+  timeout_seconds: 300
+
+reports:
+  generate_summary: true
+  generate_blockers: true
+  generate_warnings: true
+  generate_next_actions: true
