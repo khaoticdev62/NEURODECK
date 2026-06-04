@@ -136,6 +136,8 @@ PRESERVE=(
   "llm-term.toml"
   "install.sh"
   "launch_gamescope.sh"
+  "electron-builder.yml"
+  ".fallowrc.json"
   "package_release.ps1"
   "epics.md"
   "GEMINI.md"
