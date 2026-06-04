@@ -338,6 +338,15 @@ function normalizeLabel(text) {
     .trim();
 }
 
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function applyButtonIcon(selector, config) {
   const el = document.querySelector(selector);
   if (!el) return;
@@ -361,7 +370,7 @@ function applyButtonIcon(selector, config) {
   const resolvedLabel = label ?? normalizeLabel(el.textContent);
   const iconMarkup = createIcon(icon, { size });
   const labelMarkup = !iconOnly && resolvedLabel
-    ? `<span class="nd-button-label">${resolvedLabel}</span>`
+    ? `<span class="nd-button-label">${escapeHtml(resolvedLabel)}</span>`
     : "";
 
   el.classList.add("nd-icon-button");
@@ -385,7 +394,7 @@ function applyInlineTitleIcon(selector, icon, label) {
   const el = document.querySelector(selector);
   if (!el) return;
   el.classList.add("nd-inline-icon-label");
-  el.innerHTML = `${createIcon(icon, { size: 15 })}<span class="nd-inline-label">${label ?? normalizeLabel(el.textContent)}</span>`;
+  el.innerHTML = `${createIcon(icon, { size: 15 })}<span class="nd-inline-label">${escapeHtml(label ?? normalizeLabel(el.textContent))}</span>`;
 }
 
 export function applyNeurodeckIconography() {

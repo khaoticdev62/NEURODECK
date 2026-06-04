@@ -1,239 +1,98 @@
-# NEURODECK — Full-Scope Development Plan
+# NEURODECK — Master Epics, Stories & Code Hygiene Development Plan
 
-## Project Context
-- **Application name**: NEURODECK
-- **Application purpose**: AI-native terminal OS for Steam Deck — Electron + Rust sidecar + Gemini
-- **Target users**: Steam Deck users, developers, power users, and gamers seeking AI-terminal gamepad-native integration
-- **Primary platforms**: Steam Deck (SteamOS), Windows, Linux
-- **Application type**: DESKTOP_APP
-- **Primary language**: JavaScript (ES2022+) / Rust (1.92.0)
-- **Framework/runtime**: Electron 36 / Axum bridge server (localhost:9477)
-- **Package manager**: npm (workspaces: frontend, electron) / Cargo
-- **Database/storage**: Cosine-similarity vector DB (persists to `data/memory/chat_history.json`)
-- **Authentication**: Google OAuth2 Device Flow (keyring keychain helper integration)
-- **Deployment target**: Steam Deck / SteamOS Desktop mode, local desktop installer
-- **Known constraints**: Zero-Tauri (fully migrated to Electron), Fallow duplicate count must remain at 0, no raw tauri invocations, must fit within 1280x800 window
-- **Business goals**: Deliver a premium, gamepad-native AI terminal console environment with interactive canvas and local system/game integration
-- **Technical goals**: 100% clean static analysis, zero code duplicates, robust IPC bridge security, and structured modular tab controls
-- **Non-negotiables**: Zero-Tauri, Fallow 0 duplication clone groups, premium dark/glassmorphic styling, no raw localStorage credentials
+## 1. Project Context & Current Architecture
+NEURODECK is an Electron desktop app with a Rust sidecar (`axum` bridge server running on `localhost:9477`) that turns a Steam Deck into an AI-powered terminal OS.
+- **Frontend**: Single Page HTML/CSS/JS application (Monolithic `frontend/src/main.js` and sub-modules) communicating via `neurobridge.js` to the Rust bridge sidecar.
+- **Backend**: Rust sidecar managing PTY terminal processes, vector database (RAG), Whisper STT audio captures, and secure keychain integrations.
+- **Verification Gates**: Fallow static analyses (0 code duplicates, 0 dead-code warnings) and Playwright E2E integration tests.
 
 ---
 
-## Verified Stack
+## 2. Epic & User Story Roadmap
 
-| Area | Value | Evidence |
-|---|---|---|
-| Language | JavaScript (ES2022+) & Rust (1.92.0) | `package.json`, `Cargo.toml` |
-| Runtime | Node.js v22 & Rust Executor (Tokio) | `.github/workflows/steam-deck-validation.yml` |
-| Framework | Electron 36.0.0 & Axum (Rust Sidecar) | `electron/package.json`, `src-tauri/Cargo.toml` |
-| Package Manager | npm (Workspaces: frontend, electron) & Cargo | `package.json`, `Cargo.toml` |
-| Build Tool | `electron-builder` & Cargo Compiler | `electron-builder.yml`, `package.json` |
-| Test Framework | Vitest 4.x & Playwright & Cargo test | `frontend/package.json`, `e2e/playwright.config.ts` |
-| Database/Storage | Vector JSON DB (RAG) & Disk File Profiles | `src-tauri/src/memory.rs`, `src-tauri/src/paths.rs` |
-| Auth | Google OAuth2 Device Flow & Keychain Creds | `infrastructure/src/oauth.rs`, `secrets.rs` |
-| CI/CD | GitHub Actions | `.github/workflows/steam-deck-validation.yml` |
-| Deployment | Local NSIS Installer, Linux AppImage, deb | `electron-builder.yml` |
+### EPIC-001: First-Time User Onboarding & Diagnostics
+**Objective**: Guide first-time users through entering API keys, selecting AI personas, choosing UI themes, and running system diagnostic checks.
+- **US-1.1: First-Run Detection & Welcoming UI**
+  - **Acceptance Criteria**: Check if `get_gemini_api_key` is empty. If empty and `neurodeck_onboarding_complete` is not set, block the main workspace and display a cyberpunk-themed typing animation welcome slide.
+  - **Technical Tasks**: Read keychain config state on startup; route to `#onboarding-modal` overlay.
+- **US-1.2: Secure API Key Entry & Handshake**
+  - **Acceptance Criteria**: Provide password-masked text inputs for the Gemini API key. Include a "Verify Connection" button that runs `test_llm_connection` and logs output. Store the verified key in the OS Keychain.
+  - **Technical Tasks**: Hook input to backend `save_gemini_api_key` and verify through Axum endpoint.
+- **US-1.3: Persona & Theme Selection Carousel**
+  - **Acceptance Criteria**: Present a carousel of 9 default personas and 4 core themes. Clicking a theme instantly updates the CSS color variables in the DOM.
+  - **Technical Tasks**: Update `theme` preferences in `localStorage` and trigger global theme redraw.
+- **US-1.4: System Capability Diagnostics Checklist**
+  - **Acceptance Criteria**: Execute a multi-threaded diagnostic pipeline covering: PTY shell access, Gemini API network connectivity, Keychain accessibility, Audio/Microphone devices, SSH binaries, and TTS engines. Display status badges (`SUCCESS` / `ERROR`) for each.
+  - **Technical Tasks**: Invoke backend `run_onboarding_diagnostics` and render outcomes with unique IDs for accessibility tests.
 
----
+### EPIC-002: Repository & Database Restructuring
+**Objective**: Consolidate loose files, clean up legacy directories, and move user data persistence from temporary storage to the proper OS directories.
+- **US-2.1: localStorage to Disk Migration**
+  - **Acceptance Criteria**: Auto-migrate user custom themes, SSH, and FTP/SFTP connection profiles from `localStorage` to `%APPDATA%\neurodeck` (Windows) or `~/.config/neurodeck` (Linux) on startup.
+  - **Technical Tasks**: Write JSON configuration helpers in Rust; run frontend migration script on first boot and purge old keys.
+- **US-2.2: Hardened Config Path Resolution**
+  - **Acceptance Criteria**: Resolve configuration in priority order: (1) `$NEURODECK_CONFIG_PATH` env var, (2) user config folder, (3) dev fallback `../llm-term.toml`.
+  - **Technical Tasks**: Refactor `paths.rs` and audit all file-read calls.
 
-## Product Scope
+### EPIC-003: Tauri-to-Electron Container Migration (Complete & Verified)
+**Objective**: Replace the Tauri runtime with an Electron 36 shell container, routing all IPC commands through fetch POST requests and WebSocket event streams.
+- **US-3.1: Neurobridge Routing Integration**
+  - **Acceptance Criteria**: Intercept and route all `invoke()` and `listen()` commands through `neurobridge.js` using HTTP client fetch loops and WebSocket handlers. Fall back to `window.__TAURI__` when running under Playwright mock environments to support E2E tests.
+  - **Technical Tasks**: Implement conditional mock checks in `neurobridge.js`. Remove Tauri library imports from frontend dependencies.
 
-### In Scope
-- Gamepad-native radial menu navigation (12 views: Chat, Canvas, Terminal, SSH, Tunnel, Browser, Agent, Memory, Share, Remote, PromptLab, Docs).
-- Headless Chrome browser sessions run directly from the Rust sidecar in bridge mode.
-- Local voice STT via `cpal` + Whisper.cpp model downloads.
-- RAG context injection using local vector DB embeddings (Ollama, HF, OpenAI-compat, Gemini).
-- LAN P2P file transfers and Warpinator gRPC local file sharing service.
-- Visual canvas workflow builder and live scripting canvas.
-- Multi-session PTY manager over WebSocket and remote SSH/FTP/SFTP tab integrations.
+### EPIC-004: Fallow Quality & Static Analysis Hygiene (Ongoing Gate)
+**Objective**: Maintain zero code duplicates and clean dependency trees across the JavaScript and Rust modules.
+- **US-4.1: Code Duplication Eradication**
+  - **Acceptance Criteria**: Fallow duplication scan must report exactly `0 duplicate clone groups`.
+  - **Technical Tasks**: Consolidate form getters, settings search tabs, haptic test suites, and PTY manager instantiation loops.
+- **US-4.2: Dependency Cleansing**
+  - **Acceptance Criteria**: `npx fallow dead-code` must return no warnings. Package files must not declare unused dependencies.
 
-### Out of Scope
-- Direct local LLM inference running on the Steam Deck CPU/GPU itself (runs via Ollama api server or cloud Gemini/HF API instead).
-- Full custom Linux distribution (packaged as a desktop application running on SteamOS Desktop Mode / Game Mode).
-- Direct Tauri command binding support (fully migrated to Axum localhost HTTP/WS bridge).
+### EPIC-005: Trust, Provenance & Citations (Bastet v1.6)
+**Objective**: Provide visibility into AI reasoning, factual source citations, and local sandbox boundaries.
+- **US-5.1: RAG Attribution UI**
+  - **Acceptance Criteria**: For every command response generated via RAG, render a collapsible drawer showing exactly which local memory document chunks or web citations influenced the answer.
+  - **Technical Tasks**: Append metadata (document ID, similarity score, chunk snippet) to `send_command` return payloads and render in Chat.
+- **US-5.2: Sandboxed Browser Memory Vectorization**
+  - **Acceptance Criteria**: Add a "Save to Memory" button in the sandboxed browser. Clicking it downloads the page content, generates vector embeddings, and writes it to the local memory database.
+  - **Technical Tasks**: Run page scraper through headless browser commands, call `generate_embedding`, and write to vector JSON.
 
-### Assumptions
-- A local Ollama server is installed if the user requests fully local, offline RAG/inference.
-- Steam Input is configured to translate gamepad inputs to key combos when running in Steam Game Mode.
-- Electron is supported by the target operating systems (Linux/Windows/macOS).
+### EPIC-006: Security Hardening & Rate Limiting
+**Objective**: Mitigate brute-force attacks and prevent injection vulnerabilities.
+- **US-6.1: Rate Limiting & API Throttling**
+  - **Acceptance Criteria**: Enforce token-bucket rate limiting on the bridge server for external/LAN-facing WebSocket and HTTP endpoints (e.g. remote control APIs, MCP servers).
+  - **Technical Tasks**: Integrate rate-limiting middleware in `src-tauri/src/bridge.rs`.
+- **US-6.2: Output Sanitization & Path Redaction**
+  - **Acceptance Criteria**: Redact local filesystem paths from frontend error messages. Escape user-controlled inputs in dynamic HTML preview containers.
+  - **Technical Tasks**: Implement `sanitize_error_for_frontend` in `security.rs`; inject CSP meta tags and strip scripts in the Canvas preview `srcdoc`.
 
-### Constraints
-- All interfaces must fit within a fixed 1280x800 resolution with scrollable sub-panels.
-- Rust sidecar compilation uses `mlua` with the `vendored` feature (requires compiling Lua 5.4 from source).
-- First-time compiles take 2-3 minutes due to Lua vendor compilation.
+### EPIC-007: Hermes Lua Extension Framework
+**Objective**: Enable developers to register custom shell commands and hook into system events.
+- **US-7.1: Pluggable Adapter Pipeline**
+  - **Acceptance Criteria**: Register CLI, Node, and Web adapters dynamically. Load and execute scripts in the Lua sandboxed environment.
+  - **Technical Tasks**: Bundle `plugins/hermes.lua` and support Gopher-Lua bindings.
 
-### Success Metrics
-- **0 code duplicates** detected by Fallow.
-- **0 dead-code or unresolved import warnings** in ES modules.
-- **>95% unit test pass rate** on the frontend Vitest suite.
-- **Fast PTY shell startup** (<200ms connection delay).
-
----
-
-## Architecture Plan
-
-### System Overview
-```
-                     +──────────────────────────────────────────+
-                     |            Electron Container            |
-                     |  +────────────────────────────────────+  |
-                     |  |           Vite Frontend            |  |
-                     |  |  [main.js] [chat.js] [terminal.js] |  |
-                     |  +────────────────────────────────────+  |
-                     +───▲─────────▲────────────────────────────+
-                         │         │
-                         │ HTTP    │ WebSocket
-                         │ POST    │ WS_URL
-                         ▼         ▼
-                     +──────────────────────────────────────────+
-                     |         Axum Bridge Server (Rust)        |
-                     |           (localhost:9477)               |
-                     |  +───────────────────+────────────────+  |
-                     |  |   [bridge.rs]     | [pty_manager]  |  |
-                     |  |   [llm.rs] (RAG)  | [game.rs]      |  |
-                     |  +───────────────────+────────────────+  |
-                     +──────────────────────────────────────────+
-```
-
-### Frontend Architecture
-- **Single Page Monolith**: `frontend/src/main.js` manages view switching using CSS `.view-content.active` class hooks (maintaining `display: none` override boundaries).
-- **Bridge Client**: `frontend/src/neurobridge.js` exports `invoke()`, `listen()`, and `emit()`. All legacy Tauri calls map directly here.
-- **Xterm Instance**: Unified fit add-on configurations for PTY shells and SSH clients.
-
-### Backend Architecture
-- **Supervisor Loop**: Electron main process spawns the Rust sidecar compiler binary and restarts it on exit.
-- **Axum Web Server**: Exposes API endpoints for post requests and a `/ws` WebSocket route for real-time events.
-- **PTY Session Manager**: Session-safe `PtyState` wrapping a portable-pty instance with TTL cleanup watchdogs.
-
-### Data Layer
-- **Vector DB**: Cosine similarity JSON DB stored locally. Regenerates embeddings and queries matches during `send_command` operations.
-- **Profiles**: Persisted on disk under target platform configs (`%APPDATA%` or `~/.config/neurodeck`).
+### EPIC-008: Mobile Companion App & Remote APIs
+**Objective**: Implement native mobile companion views and push notifications for background agent status.
+- **US-8.1: Mobile Approval Interface**
+  - **Acceptance Criteria**: Receive and display permission requests from the desktop Agent for computer use or local command executions.
+  - **Technical Tasks**: Build companion client views using WebSocket notifications and secure pairing PIN exchanges.
 
 ---
 
-## Epic Roadmap
-
-| Epic ID | Epic Name | Goal | Priority | Release Phase |
-|---|---|---|---|---|
-| EPIC-001 | Onboarding & Diagnostics | Guide first-time users and run environment diagnostic scripts | High | v1.0.0 |
-| EPIC-002 | Repo Restructuring | Consolidate directories and clean up duplicate structures | High | v1.1.0 |
-| EPIC-003 | Tauri-to-Electron Migration | Fully transition from Tauri container to Electron 36 shell | Critical | v1.8.0 |
-| EPIC-004 | Fallow Quality Hygiene | Deduplicate codebase and ensure clean dependency hygiene | High | v1.8.0 |
+## 3. Fallow Auditing & Code Review Integration Ledger
+Every code change must pass through the Fallow verification gates:
+1. **Deduplication Check**: Run `npx fallow dupes --format compact` after edits. Any detected clone groups must be refactored before staging.
+2. **Dead-Code Scan**: Run `npx fallow dead-code` to verify all imports resolve and no unreachable variables remain.
+3. **Dependency Check**: Audit `package.json` against `node_modules` to ensure zero unlisted dependencies are imported.
+4. **Code Review Protocol**: Align any modified file with safety conventions. Mutex locks must never use raw `.unwrap()`. Inputs passed to shell commands must be strictly sanitized via regex whitelists.
 
 ---
 
-## Epics and User Stories
-
-### EPIC-003: Tauri-to-Electron Migration
-
-#### Goal
-Replace the Tauri framework wrapper with an Electron container and build a local HTTP/WebSocket sidecar server.
-
-#### User Stories
-- **US-3.1**: As a developer, I want to routing IPC commands through fetch POST and WebSocket streams, so that I can eliminate Tauri library dependencies.
-- **US-3.2**: As a package maintainer, I want to use `electron-builder` configuration, so that I can compile AppImages and executables for Windows and Linux.
-
-#### Technical Tasks
-- Implement Axum HTTP endpoint router in `src-tauri/src/bridge.rs`.
-- Write `electron/main.js` sidecar supervisor logic.
-- Replace Tauri bindings in 19 JavaScript modules with `neurobridge.js` fetch loops.
-
-#### Test Requirements
-- Playwright E2E tests validating tab switching and setting edits work without Tauri APIs.
-
-#### Fallow Quality Gates
-- `unlisted-dependencies` checks must run clean.
-- `unused-files` checks must exclude electron preload scripts.
-
----
-
-### EPIC-004: Fallow Quality Hygiene
-
-#### Goal
-Achieve zero code duplicates and clean dependency boundaries across the JS modules.
-
-#### User Stories
-- **US-4.1**: As a reviewer, I want code duplication clone groups to be eliminated, so that the codebase is highly maintainable.
-- **US-4.2**: As a developer, I want unlisted or unused dependencies removed from package files, so that packaging sizes are minimized.
-
-#### Technical Tasks
-- Extract duplicated form input getters, profile delete/save loops, and haptic test assertion helpers.
-- Purge `@tauri-apps/api` mocks from `frontend/vitest.setup.js`.
-- Ignore build folders (`dist-electron/`) and preload scripts in `.fallowrc.json`.
-
-#### Fallow Quality Gates
-- `npx fallow dupes` must return `0 duplicate clone groups`.
-- `npx fallow dead-code` must return `✓ No issues found`.
-
----
-
-## Development Phases
-
-### Phase 0: Discovery and Safety Baseline
-- Verify compilation of Rust sidecar and JS build targets.
-- Install Fallow CLI tooling and configure `.fallowrc.json` parameters.
-
-### Phase 1: Foundation
-- Align `package.json` workspaces.
-- Remove deprecated libraries and test mocks.
-
-### Phase 2: Refactoring and Deduplication
-- Modularize PTY instantiations and profile controllers.
-- Consolidate settings search operations.
-
-### Phase 3: Verification and Release
-- Rerun Vitest unit tests and Playwright E2E suites.
-- Perform KFMS metadata validation (`khaotic-init.sh validate`).
-- Update release tag `v1.8.0-ptah`.
-
----
-
-## Real Production Test Strategy
-
-### Unit Tests
-- **Frontend**: Vitest tests run against a simulated DOM (`happy-dom`). They validate component behaviors such as state mutations, key shortcut validations, haptic dispatch debounce cycles, and notifications badge state updates.
-- **Backend**: Rust cargo unit tests (`cargo test --lib`) verifying correct memory retrieval similarity computations, path resolution fallbacks, and themes serialization.
-
-### Integration Tests
-- **Bridge Server tests**: Rust integration tests executing local loopback HTTP calls against Axum endpoints to verify deserialization formats and response headers without active UI wrappers.
-
-### E2E Tests
-- **Playwright Test suite**: Executes real UI navigations in emulated viewport profiles. Tests validate modal window open states, input field saving, and mock connection profiles.
-
-### Fallow Quality Gates
-- **Pre-commit and CI Gate**:
-  - `npx fallow dead-code --format human` -> Must yield `0 warnings`.
-  - `npx fallow dupes --format compact` -> Must yield `0 duplicates`.
-
----
-
-## Real Test Data Plan
-
-### Data Sources
-- **Configuration templates**: System tests use `promptflow.yaml.example` and standard fallback setups.
-- **Local environment diagnostics**: Diagnostic suite loads actual system state properties (PTY capability, local folder access, system keychain APIs) to check release integrity.
-
----
-
-## Risk Register
-
-| Risk ID | Description | Impact | Mitigation |
-|---|---|---|---|
-| R-001 | Electron headless Chrome resource utilization | High | Implement strict timeout watchdogs on headless browser workers. |
-| R-002 | Platform PTY terminal variations | Medium | Standardize on `portable-pty` crate abstraction. |
-| R-003 | Vector database memory pressure | Medium | Cap embedding input strings and limit top-K RAG matches to 3. |
-
----
-
-## Definitions
-
-### Definition of Ready
-- Ticket has explicit acceptance criteria.
-- Target files and architecture impacts are documented.
-- No blocker dependencies remain unresolved.
-
-### Definition of Done
-- Code passes Fallow dead-code and duplication checks (0 errors).
-- All Vitest unit tests pass.
-- Playwright integration tests pass.
-- Version is stamped in metadata and pushed to origin.
+## 4. Verification & Testing Strategy
+- **Unit Tests**:
+  - Run frontend test suite: `npm -w frontend run test` (Vitest + happy-dom).
+  - Run backend unit tests: `cargo test --lib`.
+- **E2E Integration Tests**:
+  - Run full suite: `npx playwright test` inside `e2e/` (verify all tabs, command palette, and quick switcher).
+  - Fix any accessibility failures by appending appropriate ARIA tags and focus indicators to interactive divs.

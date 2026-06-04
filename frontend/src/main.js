@@ -669,7 +669,7 @@ document.querySelector("#app").innerHTML = `
                         </div>
                     </div>
                     <!-- Chat Workspace -->
-                    <div class="chat-workspace" id="chat-workspace" tabindex="0" aria-label="Chat history">
+                    <div class="chat-workspace" id="chat-workspace" tabindex="0" role="log" aria-label="Chat history">
                         <div class="chat-viewport" id="chat-viewport">
                             <!-- Welcome state rendered by initChat() -->
                         </div>
@@ -6712,8 +6712,6 @@ function initQuickSwitcher() {
   document.addEventListener(
     "keydown",
     (event) => {
-      if (!window.electronAPI) return;
-
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
         if (quickSwitcherState.open) {

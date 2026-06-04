@@ -11,11 +11,12 @@
 //! Binds to `127.0.0.1:9477` by default.  Override with the `NEURODECK_PORT` env var.
 
 use std::sync::{Arc, Mutex};
+use std::net::SocketAddr;
 
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        Path, State as AxumState,
+        Path, State as AxumState, ConnectInfo,
     },
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -106,6 +107,7 @@ pub struct ServerState {
     pub lua: Arc<Mutex<crate::lua::LuaEngine>>,
     pub deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
     pub deckcode_lang: Arc<Mutex<String>>,
+    pub limiter: Arc<crate::security::IpRateLimiter>,
 }
 
 impl ServerState {
@@ -138,6 +140,7 @@ impl ServerState {
             lua,
             deckcode_state,
             deckcode_lang,
+            limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
         }
     }
 }
@@ -171,9 +174,15 @@ async fn health() -> &'static str {
 /// Response body: JSON value returned by the handler, or an error string.
 async fn api_command(
     AxumState(state): AxumState<ServerState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(command): Path<String>,
     body: axum::body::Bytes,
 ) -> Response {
+    let ip = addr.ip();
+    if !state.limiter.is_allowed(ip) {
+        return (StatusCode::TOO_MANY_REQUESTS, "Too many requests. Please try again later.").into_response();
+    }
+
     // Parse body as JSON args (allow empty body → empty object)
     let args: Value = if body.is_empty() {
         Value::Object(serde_json::Map::new())
@@ -205,8 +214,13 @@ async fn api_command(
 /// Clients do not send messages upward via WS (they use the HTTP API).
 async fn ws_handler(
     ws: WebSocketUpgrade,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     AxumState(state): AxumState<ServerState>,
 ) -> Response {
+    let ip = addr.ip();
+    if !state.limiter.is_allowed(ip) {
+        return (StatusCode::TOO_MANY_REQUESTS, "Too many requests. Please try again later.").into_response();
+    }
     let rx = state.broadcaster.0.subscribe();
     ws.on_upgrade(move |socket| handle_socket(socket, rx))
 }
@@ -497,6 +511,7 @@ pub async fn run_bridge_server(
         lua,
         deckcode_state,
         deckcode_lang,
+        limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
     };
 
     start_server(server_state).await

@@ -19,6 +19,9 @@ const listeners = new Map();
 // ─────────────────────────────────────────────────────────
 
 function getWebSocket() {
+  if (typeof window !== 'undefined' && window.__TAURI__) {
+    return null;
+  }
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return ws;
   }
@@ -87,13 +90,23 @@ function scheduleReconnect() {
 }
 
 // Eager-connect on module load
-getWebSocket();
+if (typeof window === 'undefined' || !window.__TAURI__) {
+  getWebSocket();
+}
 
 // ─────────────────────────────────────────────────────────
 // invoke() — replaces @tauri-apps/api/core invoke
 // ─────────────────────────────────────────────────────────
 
 export async function invoke(command, args = {}) {
+  if (typeof window !== 'undefined') {
+    if (window.__TAURI_INTERNALS__?.invoke) {
+      return window.__TAURI_INTERNALS__.invoke(command, args);
+    }
+    if (window.__TAURI__?.core?.invoke) {
+      return window.__TAURI__.core.invoke(command, args);
+    }
+  }
   const url = `${BRIDGE_URL}/api/${command}`;
   const res = await fetch(url, {
     method: 'POST',
@@ -119,6 +132,9 @@ export async function invoke(command, args = {}) {
 // ─────────────────────────────────────────────────────────
 
 export function listen(event, callback) {
+  if (typeof window !== 'undefined' && window.__TAURI__?.event?.listen) {
+    return window.__TAURI__.event.listen(event, callback);
+  }
   getWebSocket();
 
   if (!listeners.has(event)) {
@@ -141,6 +157,9 @@ export function listen(event, callback) {
 // ─────────────────────────────────────────────────────────
 
 export async function emit(event, payload) {
+  if (typeof window !== 'undefined' && window.__TAURI__?.event?.emit) {
+    return window.__TAURI__.event.emit(event, payload);
+  }
   // The bridge server does not have a dedicated emit endpoint.
   // If needed, commands that accept events from frontend should expose
   // a dedicated command (e.g. emit_event). For now, this is a no-op

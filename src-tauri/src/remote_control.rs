@@ -554,6 +554,7 @@ pub struct WsAppState {
     pub connected: Arc<AtomicUsize>,
     pub emitter: AppEmitter,
     pub ip_attempts: Arc<std::sync::Mutex<std::collections::HashMap<std::net::IpAddr, usize>>>,
+    pub limiter: Arc<crate::security::IpRateLimiter>,
 }
 
 pub struct RemoteServerHandle {
@@ -612,8 +613,19 @@ fn generate_pin() -> String {
 
 // ── Axum route handlers ───────────────────────────────────────────────────────
 
-async fn root_handler() -> impl IntoResponse {
-    Html(WEBAPP_HTML)
+async fn root_handler(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    State(state): State<WsAppState>,
+) -> impl IntoResponse {
+    let ip = addr.ip();
+    if !state.limiter.is_allowed(ip) {
+        return (
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            "Too many requests. Please try again later.",
+        )
+            .into_response();
+    }
+    Html(WEBAPP_HTML).into_response()
 }
 
 async fn ws_handler(
@@ -622,6 +634,14 @@ async fn ws_handler(
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr.ip();
+
+    if !state.limiter.is_allowed(ip) {
+        return (
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            "Too many requests. Please try again later.",
+        )
+            .into_response();
+    }
 
     // SECURITY: Session token is intentionally NOT validated in the URL query
     // parameter. It is exchanged only inside the WebSocket auth message after
@@ -844,6 +864,7 @@ pub async fn start_remote_server(
         connected: connected.clone(),
         emitter: AppEmitter::Tauri(app_handle.clone()),
         ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        limiter: Arc::new(crate::security::IpRateLimiter::new(30.0, 2.0)),
     };
 
     let router = Router::new()
@@ -1001,6 +1022,7 @@ pub async fn start_remote_server_bridge(
         connected: connected.clone(),
         emitter: AppEmitter::Bridge(broadcaster.clone()),
         ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        limiter: Arc::new(crate::security::IpRateLimiter::new(30.0, 2.0)),
     };
 
     let router = Router::new()

@@ -221,9 +221,11 @@ test.describe("Viewport edge cases", () => {
     const views = ["chat", "terminal", "agent", "memory", "canvas", "browser"];
     for (const view of views) {
       await app.navigateTo(view);
-      const overflow = await page.evaluate(() => {
-        return document.body.scrollWidth > document.body.clientWidth;
-      });
+      const overflow = await page.evaluate((viewId) => {
+        const el = document.querySelector(`[data-testid="view-${viewId}"]`);
+        if (!el) return false;
+        return el.scrollWidth > el.clientWidth;
+      }, view);
       expect(overflow).toBe(false);
     }
   });

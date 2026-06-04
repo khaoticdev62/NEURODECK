@@ -386,9 +386,73 @@ pub fn sanitize_error_for_frontend(err: &str) -> String {
     sanitized
 }
 
+use std::collections::HashMap;
+use std::net::IpAddr;
+use std::sync::Mutex;
+use std::time::Instant;
+
+#[derive(Clone, Debug)]
+struct TokenBucket {
+    capacity: f64,
+    tokens: f64,
+    refill_rate: f64,
+    last_refill: Instant,
+}
+
+impl TokenBucket {
+    fn new(capacity: f64, refill_rate: f64) -> Self {
+        Self {
+            capacity,
+            tokens: capacity,
+            refill_rate,
+            last_refill: Instant::now(),
+        }
+    }
+
+    fn check_and_consume(&mut self, now: Instant) -> bool {
+        let elapsed = now.duration_since(self.last_refill).as_secs_f64();
+        self.tokens = (self.tokens + elapsed * self.refill_rate).min(self.capacity);
+        self.last_refill = now;
+
+        if self.tokens >= 1.0 {
+            self.tokens -= 1.0;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub struct IpRateLimiter {
+    buckets: Mutex<HashMap<IpAddr, TokenBucket>>,
+    capacity: f64,
+    refill_rate: f64,
+}
+
+impl IpRateLimiter {
+    pub fn new(capacity: f64, refill_rate: f64) -> Self {
+        Self {
+            buckets: Mutex::new(HashMap::new()),
+            capacity,
+            refill_rate,
+        }
+    }
+
+    pub fn is_allowed(&self, ip: IpAddr) -> bool {
+        let now = Instant::now();
+        let mut guard = self.buckets.lock().unwrap_or_else(|e| e.into_inner());
+        let capacity = self.capacity;
+        let refill_rate = self.refill_rate;
+        let bucket = guard
+            .entry(ip)
+            .or_insert_with(|| TokenBucket::new(capacity, refill_rate));
+        bucket.check_and_consume(now)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{generate_session_token, sanitize_error_for_frontend, validate_script_payload, validate_terminal_command, normalize_command_for_detection};
+    use super::{generate_session_token, sanitize_error_for_frontend, validate_script_payload, validate_terminal_command, normalize_command_for_detection, IpRateLimiter};
 
     #[test]
     fn session_tokens_are_nontrivial() {
@@ -480,5 +544,15 @@ mod tests {
         let raw = "Network unreachable: check your connection";
         let sanitized = sanitize_error_for_frontend(raw);
         assert_eq!(sanitized, raw);
+    }
+
+    #[test]
+    fn ip_rate_limiter_allows_under_limit() {
+        use std::net::IpAddr;
+        let limiter = IpRateLimiter::new(2.0, 1.0);
+        let ip: IpAddr = "127.0.0.1".parse().unwrap();
+        assert!(limiter.is_allowed(ip));
+        assert!(limiter.is_allowed(ip));
+        assert!(!limiter.is_allowed(ip));
     }
 }
