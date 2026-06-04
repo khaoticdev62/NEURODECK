@@ -6,7 +6,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## What This Is
 
-NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 fullscreen window.
+NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 fullscreen window.
 
 ---
 
@@ -18,11 +18,14 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
   3. Dev fallbacks (only when `CARGO_MANIFEST_DIR` is set): `../llm-term.toml`, `./llm-term.toml`
   4. Legacy fallbacks (deprecated, logs a warning)
   The root `llm-term.toml` is no longer read at runtime unless the env var points to it.
-- **`GEMINI_API_KEY` must be set as an env var** before `npm run tauri dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
-- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the dev-mode mock IPC shim has been removed. To test real commands, use `npm run tauri dev`.
+- **`GEMINI_API_KEY` must be set as an env var** before `npm run dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
+- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the bridge server is not running. To test real commands, use `npm run dev` (starts Electron + sidecar).
 - **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines.
 - **Rust version is pinned to 1.92.0** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
 - **FTP downloads stream to disk** (P0.3): `ftp_download_file` uses `retr()` + `std::io::copy` instead of `retr_as_buffer`. A `max_download_size_mb` config gate (default 500MB) rejects oversized transfers before they start. Progress events fire every 1MB.
+- **`ELECTRON_RUN_AS_NODE` env var breaks Electron launch**: Some IDEs (Cursor, Antigravity) set this variable. If present, Electron runs as Node.js and `require('electron').app` is `undefined`. The `electron/scripts/dev-launcher.js` wrapper explicitly removes this variable before spawning Electron. Use `npm run dev` from the project root (it uses the launcher).
+- **`tauri-build` and `tauri.conf.json` must remain for now**: Even though the app runs in bridge/Electron mode, removing `tauri-build` from `[build-dependencies]` or deleting `tauri.conf.json` causes the compiled binary to crash with `STATUS_ENTRYPOINT_NOT_FOUND` (0xC0000139) on Windows. This happens because `lib.rs`'s `run()` function references Tauri symbols that the linker would otherwise dead-strip. Keep `run()` as a `pub fn` (even though `main.rs` no longer calls it) until `tauri` is fully removed from `Cargo.toml`.
+- **DeckCode input daemon works in bridge mode**: `run_bridge_server()` loads `deckcode-controller-profile.schema.json` and starts the `gilrs` gamepad polling loop. Input events are resolved through `DeckCodeResolver` and dispatched via `WsBroadcaster.emit("deckcode-action", action_id)` to the frontend. The daemon only starts if the schema file is present.
 
 ---
 
@@ -31,10 +34,11 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
 ### IPC Flow
 ```
 frontend/src/main.js
-  └─ invoke("command_name", { args })  ──►  src-tauri/src/lib.rs  (Tauri command)
-  └─ listen("event_name", handler)     ◄──  app_handle.emit("event", payload)
+  └─ invoke("command_name", { args })  ──►  neurobridge.js  ──►  POST /api/{cmd}
+  └─ listen("event_name", handler)     ◄──  WebSocket  ◄──  WsBroadcaster.emit()
+                                                          (Rust sidecar localhost:9477)
 ```
-All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All request/response goes through `invoke()`.
+All streaming (LLM tokens, PTY output, agent steps) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
 ### The One Big File Problem
 `lib.rs` (~764 lines) owns the app entry point (`run()`), `AppState`, the `generate_handler![]` registry, and the bridge server bootstrap. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
@@ -89,8 +93,8 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Rules
 
-- **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`. The dev-mode mock IPC shim has been removed — commands are no longer duplicated there.
-- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
+- **Every new backend command** must be: (1) defined in a `src/` module, (2) added to the bridge dispatch table in `commands/mod.rs`. The `#[tauri::command]` macro and `generate_handler![]` are deprecated — the bridge server handles all routing.
+- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
 - **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
@@ -103,9 +107,9 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Do not add `display: flex` to `#view-*` ID rules in app.css** — kills tab switching (see CSS Specificity Trap above).
 - **Do not call `pty_spawn` without a preceding `pty_kill`** for the same session ID.
 - **Do not load the full FTP file into a `Vec<u8>` for files that could be large** — `retr_as_buffer` is for small files only. Stream to disk for anything user-selectable.
-- **Do not use `unwrap()` in Tauri command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
+- **Do not use `unwrap()` in command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
 - **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
-- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and Tauri's JS API (all CDN or vendored). Adding a bundled npm package will bloat the Tauri WebView bundle.
+- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and `qrcode` (all npm ESM imports). Adding a bundled npm package will bloat the Electron renderer bundle.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
 
 ---
@@ -152,7 +156,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 
-- **`EventEmitter` trait** (P2.1): `bridge.rs` defines an `EventEmitter` trait implemented by both `tauri::AppHandle` and `WsBroadcaster`. All emit-only modules (`canvas_collab.rs`, `transfer.rs`, `lsp.rs`) are now generic over `E: EventEmitter`, enabling seamless bridge/Tauri duality.
+- **`EventEmitter` trait** (P2.1): `bridge.rs` defines an `EventEmitter` trait implemented by `WsBroadcaster`. All emit-only modules (`canvas_collab.rs`, `transfer.rs`, `lsp.rs`) are generic over `E: EventEmitter`, enabling the bridge server to emit events via WebSocket.
 
 - **Disk persistence migration** (P0.4): SSH/FTP/SFTP profiles and custom themes are persisted to `data/profiles/` and `data/themes/` under the OS config directory. On first boot, a frontend migration IIFE moves any legacy `localStorage` data to disk and deletes the old keys.
 
@@ -206,10 +210,10 @@ next:    v1.3.x → Set      (MINOR=3, index 3)
 ## Dev Commands
 
 ```bash
-npm run tauri dev                     # Hot-reload (Vite + Rust)
-npm run build                         # Production build
+npm run dev                           # Hot-reload (Vite + Electron + Rust sidecar)
+npm run build                         # Production build (Electron + sidecar)
 
-npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without Tauri)
+npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without sidecar)
 npm run --prefix frontend build       # Vite build only
 
 cd src-tauri && cargo check           # Fast type-check

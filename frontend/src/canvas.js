@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { invoke } from './neurobridge.js';
+import { listen } from './neurobridge.js';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { marked } from 'marked';
 import { addNotification } from './notifications.js';

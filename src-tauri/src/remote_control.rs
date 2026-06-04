@@ -17,6 +17,31 @@ use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Listener, State as TauriState};
+use crate::bridge::WsBroadcaster;
+
+/// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
+#[derive(Clone)]
+pub enum AppEmitter {
+    Tauri(AppHandle),
+    Bridge(WsBroadcaster),
+}
+
+impl AppEmitter {
+    pub fn emit<E: serde::Serialize + Clone>(&self, event: &str, payload: E) {
+        match self {
+            AppEmitter::Tauri(h) => { let _ = Emitter::emit(h, event, payload); }
+            AppEmitter::Bridge(b) => b.emit(event, payload),
+        }
+    }
+}
+
+/// Handle for the background event-listener task.
+/// In Tauri mode we store event IDs for unlisten();
+/// in bridge mode we store an AbortHandle for the subscriber task.
+pub enum EventListenerHandle {
+    Tauri(Vec<tauri::EventId>),
+    Bridge(tokio::task::AbortHandle),
+}
 
 // ── Embedded mobile webapp ────────────────────────────────────────────────────
 
@@ -527,7 +552,7 @@ pub struct WsAppState {
     pub access_token: String,
     pub broadcast_tx: tokio::sync::broadcast::Sender<String>,
     pub connected: Arc<AtomicUsize>,
-    pub app_handle: AppHandle,
+    pub emitter: AppEmitter,
     pub ip_attempts: Arc<std::sync::Mutex<std::collections::HashMap<std::net::IpAddr, usize>>>,
 }
 
@@ -540,8 +565,7 @@ pub struct RemoteServerHandle {
     pub connected: Arc<AtomicUsize>,
     pub shutdown_tx: tokio::sync::oneshot::Sender<()>,
     pub started_at: std::time::Instant,
-    #[allow(dead_code)]
-    pub listener_ids: Vec<tauri::EventId>,
+    pub event_listener: EventListenerHandle,
 }
 
 pub struct RemoteControlState {
@@ -693,10 +717,10 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_add(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state.app_handle.emit("remote_client_connected", count);
+    let _ = ws_state.emitter.emit("remote_client_connected", count);
 
     let mut rx = ws_state.broadcast_tx.subscribe();
-    let app_handle = ws_state.app_handle.clone();
+    let emitter = ws_state.emitter.clone();
 
     // Broadcast → WS forward task
     let mut fwd_task = tokio::spawn(async move {
@@ -713,7 +737,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
             match res {
                 Ok(Message::Text(txt)) => {
                     if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
-                        dispatch_remote_command(&msg, &app_handle).await;
+                        dispatch_remote_command(&msg, &emitter).await;
                     }
                 }
                 Ok(Message::Close(_)) | Err(_) => {
@@ -731,58 +755,56 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_sub(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state
-        .app_handle
-        .emit("remote_client_disconnected", count);
+    let _ = ws_state.emitter.emit("remote_client_disconnected", count);
 }
 
-async fn dispatch_remote_command(msg: &Value, app: &AppHandle) {
+async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
     match msg["type"].as_str() {
         Some("chat") => {
             if let Some(text) = msg["text"].as_str() {
-                let _ = app.emit("remote_chat", text.to_string());
+                emitter.emit("remote_chat", text.to_string());
             }
         }
         Some("pty") => {
             let id = msg["id"].as_str().unwrap_or("main_pty_session").to_string();
             if let Some(data) = msg["data"].as_str() {
-                let _ = app.emit("remote_pty", json!({"id": id, "data": data}).to_string());
+                emitter.emit("remote_pty", json!({"id": id, "data": data}).to_string());
             }
         }
         Some("navigate") => {
             if let Some(view) = msg["view"].as_str() {
-                let _ = app.emit("remote_navigate", view.to_string());
+                emitter.emit("remote_navigate", view.to_string());
             }
         }
         Some("persona") => {
             if let Some(name) = msg["name"].as_str() {
-                let _ = app.emit("remote_set_persona", name.to_string());
+                emitter.emit("remote_set_persona", name.to_string());
             }
         }
         Some("persona_next") => {
-            let _ = app.emit("remote_persona_cycle", 1i32);
+            emitter.emit("remote_persona_cycle", 1i32);
         }
         Some("persona_prev") => {
-            let _ = app.emit("remote_persona_cycle", -1i32);
+            emitter.emit("remote_persona_cycle", -1i32);
         }
         Some("theme_cycle") => {
-            let _ = app.emit("remote_theme_cycle", ());
+            emitter.emit("remote_theme_cycle", ());
         }
         Some("open_settings") => {
-            let _ = app.emit("remote_open_settings", ());
+            emitter.emit("remote_open_settings", ());
         }
         Some("new_session") => {
-            let _ = app.emit("remote_new_session", ());
+            emitter.emit("remote_new_session", ());
         }
         Some("cancel_generation") => {
-            let _ = app.emit("remote_cancel_generation", ());
+            emitter.emit("remote_cancel_generation", ());
         }
         Some("mute_toggle") => {
-            let _ = app.emit("remote_mute_toggle", ());
+            emitter.emit("remote_mute_toggle", ());
         }
         Some("switch_agent") => {
             if let Some(id) = msg["id"].as_str() {
-                let _ = app.emit("remote_switch_agent", id.to_string());
+                emitter.emit("remote_switch_agent", id.to_string());
             }
         }
         Some("ping") => {} // handled client-side
@@ -820,7 +842,7 @@ pub async fn start_remote_server(
         access_token: access_token.clone(),
         broadcast_tx: broadcast_tx.clone(),
         connected: connected.clone(),
-        app_handle: app_handle.clone(),
+        emitter: AppEmitter::Tauri(app_handle.clone()),
         ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
     };
 
@@ -852,7 +874,7 @@ pub async fn start_remote_server(
         *rtx = Some(broadcast_tx.clone());
     }
 
-    // Wire LLM streaming → WebSocket relay
+    // Wire LLM streaming → WebSocket relay (Tauri mode)
     let mut listener_ids: Vec<tauri::EventId> = Vec::new();
 
     let btx_chunk = broadcast_tx.clone();
@@ -886,6 +908,7 @@ pub async fn start_remote_server(
     });
     listener_ids.push(id_notif);
 
+    let event_listener = EventListenerHandle::Tauri(listener_ids);
     let started_at = std::time::Instant::now();
 
     // The session token is safe in the URL fragment: hash fragments are never
@@ -907,7 +930,7 @@ pub async fn start_remote_server(
             connected,
             shutdown_tx,
             started_at,
-            listener_ids,
+            event_listener,
         });
     }
 
@@ -929,8 +952,158 @@ pub async fn stop_remote_server(
     let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
-        for id in handle.listener_ids {
-            app_handle.unlisten(id);
+        if let EventListenerHandle::Tauri(ids) = handle.event_listener {
+            for id in ids {
+                app_handle.unlisten(id);
+            }
+        }
+    }
+    let mut rtx = pty_state
+        .remote_tx
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    *rtx = None;
+    Ok(())
+}
+
+// ── Bridge-compatible commands (Electron sidecar) ─────────────────────────────
+
+/// Start the remote control server in bridge mode (no Tauri runtime).
+/// Subscribes to WsBroadcaster events instead of AppHandle.listen().
+pub async fn start_remote_server_bridge(
+    port: u16,
+    broadcaster: WsBroadcaster,
+    remote_state: Arc<RemoteControlState>,
+    pty_state: Arc<crate::pty_manager::PtyState>,
+) -> Result<serde_json::Value, String> {
+    // Stop any existing server
+    {
+        let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(old) = guard.take() {
+            let _ = old.shutdown_tx.send(());
+            if let EventListenerHandle::Bridge(abort) = old.event_listener {
+                abort.abort();
+            }
+        }
+    }
+
+    let pin = generate_pin();
+    let access_token = crate::security::generate_session_token();
+    let local_ip = get_local_ip();
+    let (broadcast_tx, _) = tokio::sync::broadcast::channel::<String>(256);
+    let connected = Arc::new(AtomicUsize::new(0));
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let ws_state = WsAppState {
+        pin: pin.clone(),
+        access_token: access_token.clone(),
+        broadcast_tx: broadcast_tx.clone(),
+        connected: connected.clone(),
+        emitter: AppEmitter::Bridge(broadcaster.clone()),
+        ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+    };
+
+    let router = Router::new()
+        .route("/", get(root_handler))
+        .route("/ws", get(ws_handler))
+        .with_state(ws_state);
+
+    let bind_addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr)
+        .await
+        .map_err(|e| format!("Failed to bind port {}: {}", port, e))?;
+
+    tokio::spawn(async move {
+        axum::serve(listener, router)
+            .with_graceful_shutdown(async move {
+                let _ = shutdown_rx.await;
+            })
+            .await
+            .ok();
+    });
+
+    // Wire PTY output forwarding
+    {
+        let mut rtx = pty_state
+            .remote_tx
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        *rtx = Some(broadcast_tx.clone());
+    }
+
+    // Wire LLM streaming → WebSocket relay via WsBroadcaster subscription
+    let btx_events = broadcast_tx.clone();
+    let mut rx = broadcaster.0.subscribe();
+    let event_listener_task = tokio::spawn(async move {
+        while let Ok(ev) = rx.recv().await {
+            match ev.event.as_str() {
+                "stream_chunk" => {
+                    if let Ok(text) = serde_json::from_value::<String>(ev.payload) {
+                        let msg = json!({"type":"chat_token","text":text,"done":false}).to_string();
+                        let _ = btx_events.send(msg);
+                    }
+                }
+                "stream_done" => {
+                    let msg = json!({"type":"chat_token","text":"","done":true}).to_string();
+                    let _ = btx_events.send(msg);
+                }
+                "stream_error" => {
+                    if let Ok(text) = serde_json::from_value::<String>(ev.payload) {
+                        let msg = json!({"type":"error","message":text}).to_string();
+                        let _ = btx_events.send(msg);
+                    }
+                }
+                "remote_notification_relay" => {
+                    if let Ok(text) = serde_json::from_value::<String>(ev.payload) {
+                        let _ = btx_events.send(text);
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
+
+    let event_listener = EventListenerHandle::Bridge(event_listener_task.abort_handle());
+    let started_at = std::time::Instant::now();
+
+    let url = format!(
+        "http://{}:{}/#pin={}&session={}",
+        local_ip, port, pin, access_token
+    );
+
+    {
+        let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+        *guard = Some(RemoteServerHandle {
+            port,
+            local_ip: local_ip.clone(),
+            pin: pin.clone(),
+            access_token: access_token.clone(),
+            broadcast_tx,
+            connected,
+            shutdown_tx,
+            started_at,
+            event_listener,
+        });
+    }
+
+    Ok(json!({
+        "port": port,
+        "ip":   local_ip,
+        "pin":  pin,
+        "url":  url,
+    }))
+}
+
+/// Stop the remote control server in bridge mode.
+pub async fn stop_remote_server_bridge(
+    remote_state: Arc<RemoteControlState>,
+    pty_state: Arc<crate::pty_manager::PtyState>,
+) -> Result<(), String> {
+    let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(handle) = guard.take() {
+        let _ = handle.shutdown_tx.send(());
+        if let EventListenerHandle::Bridge(abort) = handle.event_listener {
+            abort.abort();
         }
     }
     let mut rtx = pty_state

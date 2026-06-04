@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { invoke } from './neurobridge.js';
+import { listen } from './neurobridge.js';
 import { marked } from 'marked';
 import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
@@ -390,29 +390,43 @@ export function toggleComparisonMode() {
     }
 }
 
-function appendCompareUserMessage(paneId, text, attachment = null) {
-    const viewport = document.getElementById(`compare-viewport-${paneId}`);
-    if (!viewport) return;
-    const { wrapper, card } = createMessageShell('user');
+function createUserMessageEl(text, attachment = null) {
+    const { wrapper, card } = createMessageShell("user");
 
     if (attachment && attachment.data && attachment.mime) {
-        const imageWrap = document.createElement('div');
-        imageWrap.style.marginBottom = '8px';
-        const image = document.createElement('img');
+        const imageWrap = document.createElement("div");
+        imageWrap.style.marginBottom = "8px";
+        const image = document.createElement("img");
         image.src = `data:${attachment.mime};base64,${attachment.data}`;
-        image.style.maxWidth = '160px';
-        image.style.maxHeight = '100px';
-        image.style.borderRadius = '5px';
-        image.style.border = '1px solid rgba(0,240,255,0.3)';
-        image.style.display = 'block';
-        image.alt = attachment.name || 'Attachment';
+        image.style.maxWidth = "160px";
+        image.style.maxHeight = "100px";
+        image.style.borderRadius = "5px";
+        image.style.border = "1px solid rgba(0,240,255,0.3)";
+        image.style.display = "block";
+        image.alt = attachment.name || "Attachment";
         imageWrap.appendChild(image);
         card.appendChild(imageWrap);
     }
 
-    const textNode = document.createElement('div');
-    textNode.textContent = String(text ?? '');
+    const textNode = document.createElement("div");
+    textNode.textContent = String(text ?? "");
     card.appendChild(textNode);
+    return { wrapper, card };
+}
+
+function createAiThinkingEl() {
+    const { wrapper, card } = createMessageShell("ai", "thinking");
+    const thinking = document.createElement("span");
+    thinking.className = "thinking-dots";
+    thinking.textContent = "AI is thinking";
+    card.appendChild(thinking);
+    return wrapper;
+}
+
+function appendCompareUserMessage(paneId, text, attachment = null) {
+    const viewport = document.getElementById(`compare-viewport-${paneId}`);
+    if (!viewport) return;
+    const { wrapper } = createUserMessageEl(text, attachment);
     viewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
     return wrapper;
@@ -421,11 +435,7 @@ function appendCompareUserMessage(paneId, text, attachment = null) {
 function appendCompareAiThinking(paneId) {
     const viewport = document.getElementById(`compare-viewport-${paneId}`);
     if (!viewport) return null;
-    const { wrapper, card } = createMessageShell('ai', 'thinking');
-    const thinking = document.createElement('span');
-    thinking.className = 'thinking-dots';
-    thinking.textContent = 'AI is thinking';
-    card.appendChild(thinking);
+    const wrapper = createAiThinkingEl();
     viewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
     return wrapper;
@@ -1062,26 +1072,7 @@ function appendUserMessage(text, attachment = null) {
     const viewport = document.getElementById("chat-workspace");
     if (!chatViewport || !viewport) return null;
 
-    const { wrapper, card } = createMessageShell("user");
-
-    if (attachment && attachment.data && attachment.mime) {
-        const imageWrap = document.createElement("div");
-        imageWrap.style.marginBottom = "8px";
-        const image = document.createElement("img");
-        image.src = `data:${attachment.mime};base64,${attachment.data}`;
-        image.style.maxWidth = "160px";
-        image.style.maxHeight = "100px";
-        image.style.borderRadius = "5px";
-        image.style.border = "1px solid rgba(0,240,255,0.3)";
-        image.style.display = "block";
-        image.alt = attachment.name || "Attachment";
-        imageWrap.appendChild(image);
-        card.appendChild(imageWrap);
-    }
-
-    const textNode = document.createElement("div");
-    textNode.textContent = String(text ?? "");
-    card.appendChild(textNode);
+    const { wrapper, card } = createUserMessageEl(text, attachment);
     const msgEntry = registerMessage(wrapper, "user", text, {}, attachment);
     card.appendChild(makeCopyBtn(() => String(text ?? "")));
     card.appendChild(makeActionMenuBtn(msgEntry));
@@ -1096,11 +1087,7 @@ function appendAiThinkingMessage() {
     const viewport = document.getElementById("chat-workspace");
     if (!chatViewport || !viewport) return null;
 
-    const { wrapper, card } = createMessageShell("ai", "thinking");
-    const thinking = document.createElement("span");
-    thinking.className = "thinking-dots";
-    thinking.textContent = "AI is thinking";
-    card.appendChild(thinking);
+    const wrapper = createAiThinkingEl();
     chatViewport.appendChild(wrapper);
     viewport.scrollTop = viewport.scrollHeight;
     registerMessage(wrapper, "ai", "", { thinking: true });
@@ -1789,15 +1776,7 @@ listen("stream_chunk", function (event) {
             document.getElementById("token-speed").innerText = speed + " t/s";
         }
 
-        const msgCard = state.currentAIMessage.querySelector(".message-card");
-        if (msgCard) {
-            const parsed = marked.parse(state.currentAIText);
-            const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
-            if (html !== '') {
-                msgCard.innerHTML = html;
-                formatCodeBlocks(msgCard);
-            }
-        }
+        renderAiMessageText(state.currentAIMessage, state.currentAIText);
         
         let viewport = document.getElementById("chat-workspace");
         let isAtBottom = (viewport.scrollHeight - viewport.clientHeight) - viewport.scrollTop < 100;
@@ -1834,12 +1813,7 @@ listen("stream_done", function () {
     if (state.currentAIMessage) {
         const msgCard = state.currentAIMessage.querySelector(".message-card");
         if (msgCard) {
-            const parsed = marked.parse(state.currentAIText);
-            const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
-            if (html !== '') {
-                msgCard.innerHTML = html;
-                formatCodeBlocks(msgCard);
-            }
+            renderAiMessageText(state.currentAIMessage, state.currentAIText);
             // Capture text before state is cleared
             const capturedText = state.currentAIText;
             const finalTokens = state.totalTokens;
@@ -2185,17 +2159,7 @@ function refreshSessionsList() {
 
 function loadSession(sid) {
     invoke("load_session_by_id", { id: sid }).then((data) => {
-        state.currentSessionId = data.session_id;
-        const sidEl = document.getElementById("session-id");
-        if (sidEl) sidEl.innerText = state.currentSessionId;
-        const stitleEl = document.getElementById("session-title");
-        if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
-        
-        renderSessionMessages(data.messages);
-        
-        appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
-        
-        refreshSessionsList();
+        applyLoadedSessionData(data);
     }).catch((err) => {
         appendChatMessage("system", `Error loading session: ${String(err)}`, { error: true });
     });
@@ -2326,8 +2290,6 @@ window.addEventListener("keydown", function(e) {
             
             refreshSessionsList();
         }).catch((err) => {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
             appendChatMessage("system", `System error saving session: ${String(err)}`, { error: true });
         });
     }
@@ -2335,21 +2297,8 @@ window.addEventListener("keydown", function(e) {
     if (e.ctrlKey && e.key === "l") {
         e.preventDefault();
         invoke("load_latest_session").then((data) => {
-            state.currentSessionId = data.session_id;
-            const sidEl = document.getElementById("session-id");
-            if (sidEl) sidEl.innerText = state.currentSessionId;
-            const stitleEl = document.getElementById("session-title");
-            if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
-            
-            let chatViewport = document.getElementById("chat-viewport");
-            renderSessionMessages(data.messages);
-            
-            appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
-            
-            refreshSessionsList();
+            applyLoadedSessionData(data);
         }).catch((err) => {
-            let chatViewport = document.getElementById("chat-viewport");
-            let viewport = document.getElementById("chat-workspace");
             appendChatMessage("system", `Error loading session: ${String(err)}`, { error: true });
         });
     }
@@ -2518,7 +2467,7 @@ export function initChat() {
                 exportBtn.setAttribute("aria-expanded", "false");
                 const fmt = item.dataset.format;
                 try {
-                    const { invoke } = await import("@tauri-apps/api/core");
+                    const { invoke } = await import("./neurobridge.js");
                     const sessionId = document.getElementById("chat-session-name")?.dataset?.sessionId
                         || window.__currentSessionId
                         || "";
@@ -2652,4 +2601,28 @@ export function initChat() {
             }
         });
     }
+}
+
+function renderAiMessageText(el, text) {
+    const msgCard = el?.querySelector(".message-card");
+    if (msgCard) {
+        const parsed = marked.parse(text);
+        const html = (parsed && typeof parsed.then === 'function') ? '' : window.sanitizeHtml(parsed);
+        if (html !== '') {
+            msgCard.innerHTML = html;
+            formatCodeBlocks(msgCard);
+        }
+    }
+}
+
+function applyLoadedSessionData(data) {
+    state.currentSessionId = data.session_id;
+    const sidEl = document.getElementById("session-id");
+    if (sidEl) sidEl.innerText = state.currentSessionId;
+    const stitleEl = document.getElementById("session-title");
+    if (stitleEl) stitleEl.innerText = "Session: " + state.currentSessionId;
+
+    renderSessionMessages(data.messages);
+    appendChatMessage("system", `System: Loaded session ${state.currentSessionId}`);
+    refreshSessionsList();
 }

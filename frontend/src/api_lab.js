@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./neurobridge.js";
 
 // ── State ──────────────────────────────────────────────────────────────────────
 const HISTORY_KEY    = "nd_api_lab_history";
@@ -303,13 +303,7 @@ async function _generateRequest() {
   btn.disabled = true;
   try {
     const req = await invoke("api_generate_request", { description: input.value.trim() });
-    document.getElementById("api-method-select").value = req.method;
-    document.getElementById("api-url-input").value = req.url;
-    document.getElementById("api-body-input").value = req.body || "";
-    const list = document.getElementById("api-headers-list");
-    list.innerHTML = "";
-    (req.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
-    document.querySelector('.api-lab-tab[data-api-tab="headers"]')?.click();
+    _setFormRequest(req, true);
   } catch (e) {
     addNotification('Generate Failed', String(e), 'error');
   } finally {
@@ -340,13 +334,7 @@ async function _importCurl() {
   if (!curl) { area?.focus(); return; }
   try {
     const req = await invoke("api_curl_import", { curl });
-    document.getElementById("api-method-select").value = req.method || "GET";
-    document.getElementById("api-url-input").value = req.url || "";
-    document.getElementById("api-body-input").value = req.body || "";
-    const list = document.getElementById("api-headers-list");
-    list.innerHTML = "";
-    (req.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
-    document.querySelector('.api-lab-tab[data-api-tab="headers"]')?.click();
+    _setFormRequest(req, true);
   } catch (e) {
     addNotification('Import Failed', String(e), 'error');
   }
@@ -543,16 +531,32 @@ function _renderRequestList() {
       const r = _currentRequests[Number(el.dataset.idx)];
       if (!r) return;
       _currentReqIndex = Number(el.dataset.idx);
-      document.getElementById("api-method-select").value = r.method || "GET";
-      document.getElementById("api-url-input").value = r.url || "";
-      document.getElementById("api-body-input").value = r.body || "";
-      const hdrs = document.getElementById("api-headers-list");
-      hdrs.innerHTML = "";
-      (r.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
+      _setFormRequest(r, false);
     });
   });
 
   listEl.after(reqEl);
+}
+
+function _setFormRequest(req, selectTab = false) {
+  if (!req) return;
+  const methodSelect = document.getElementById("api-method-select");
+  if (methodSelect) methodSelect.value = req.method || "GET";
+
+  const urlInput = document.getElementById("api-url-input");
+  if (urlInput) urlInput.value = req.url || "";
+
+  const bodyInput = document.getElementById("api-body-input");
+  if (bodyInput) bodyInput.value = req.body || "";
+
+  const list = document.getElementById("api-headers-list");
+  if (list) {
+    list.innerHTML = "";
+    (req.headers || []).forEach(([k, v]) => _addKvRow("api-headers-list", k, v));
+  }
+  if (selectTab) {
+    document.querySelector('.api-lab-tab[data-api-tab="headers"]')?.click();
+  }
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

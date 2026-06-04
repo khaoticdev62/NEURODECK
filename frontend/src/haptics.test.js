@@ -30,6 +30,15 @@ describe("triggerHaptic", () => {
     vi.restoreAllMocks();
   });
 
+  function verifySequencedHaptic(preset, intervals) {
+    triggerHaptic(preset);
+    expect(pulseMock).toHaveBeenCalledTimes(0);
+    intervals.forEach((ms, idx) => {
+      vi.advanceTimersByTime(ms);
+      expect(pulseMock).toHaveBeenCalledTimes(idx + 1);
+    });
+  }
+
   it("no-ops when haptics are disabled", () => {
     state.hapticsEnabled = false;
     triggerHaptic("light");
@@ -82,23 +91,11 @@ describe("triggerHaptic", () => {
   });
 
   it("schedules sequenced patterns with setTimeout", () => {
-    triggerHaptic("success");
-    expect(pulseMock).toHaveBeenCalledTimes(0); // setTimeout pending
-    vi.advanceTimersByTime(1);
-    expect(pulseMock).toHaveBeenCalledTimes(1); // first pulse executes
-    vi.advanceTimersByTime(100);
-    expect(pulseMock).toHaveBeenCalledTimes(2); // second pulse executes
+    verifySequencedHaptic("success", [1, 100]);
   });
 
   it("schedules error pattern with three pulses", () => {
-    triggerHaptic("error");
-    expect(pulseMock).toHaveBeenCalledTimes(0); // setTimeout pending
-    vi.advanceTimersByTime(1);
-    expect(pulseMock).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(100);
-    expect(pulseMock).toHaveBeenCalledTimes(2);
-    vi.advanceTimersByTime(100);
-    expect(pulseMock).toHaveBeenCalledTimes(3);
+    verifySequencedHaptic("error", [1, 100, 100]);
   });
 
   it("gracefully ignores pulse rejection", () => {

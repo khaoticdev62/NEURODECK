@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, State};
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
@@ -350,7 +350,11 @@ impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCall
     }
 }
 
-pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferState>>) {
+pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
+    emitter: E,
+    state: Arc<Mutex<TransferState>>,
+    download_dir: std::path::PathBuf,
+) {
     // 1. Initialize mDNS ServiceDaemon
     let mdns = match ServiceDaemon::new() {
         Ok(d) => d,
@@ -401,7 +405,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
     // 2a. mDNS Neurodeck Browser Loop (runs in a separate standard thread)
     let browser_mdns = mdns.clone();
     let state_browser = state.clone();
-    let app_handle_browser = app_handle.clone();
+    let emitter_browser = emitter.clone();
     std::thread::spawn(move || {
         let receiver = match browser_mdns.browse(service_type) {
             Ok(r) => r,
@@ -473,7 +477,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                                 }
                             }
                             if changed {
-                                let _ = app_handle_browser.emit("peers_updated", peer_list);
+                                emitter_browser.emit("peers_updated", peer_list);
                             }
                         }
                     }
@@ -499,7 +503,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                         }
                     }
                     if changed {
-                        let _ = app_handle_browser.emit("peers_updated", peer_list);
+                        emitter_browser.emit("peers_updated", peer_list);
                     }
                 }
                 _ => {}
@@ -510,7 +514,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
     // 2b. mDNS Warpinator Browser Loop (runs in a separate standard thread)
     let browser_mdns_warp = mdns.clone();
     let state_browser_warp = state.clone();
-    let app_handle_browser_warp = app_handle.clone();
+    let emitter_browser_warp = emitter.clone();
     std::thread::spawn(move || {
         let receiver = match browser_mdns_warp.browse("_warpinator._tcp.local.") {
             Ok(r) => r,
@@ -582,7 +586,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                                 }
                             }
                             if changed {
-                                let _ = app_handle_browser_warp.emit("peers_updated", peer_list);
+                                emitter_browser_warp.emit("peers_updated", peer_list);
                             }
                         }
                     }
@@ -608,7 +612,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
                         }
                     }
                     if changed {
-                        let _ = app_handle_browser_warp.emit("peers_updated", peer_list);
+                        emitter_browser_warp.emit("peers_updated", peer_list);
                     }
                 }
                 _ => {}
@@ -618,7 +622,7 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
 
     // 2c. Start Warpinator gRPC Server
     let callbacks = Arc::new(STermWarpinatorCallbacks {
-        emitter: app_handle.clone(),
+        emitter: emitter.clone(),
         state: state.clone(),
     });
 
@@ -633,8 +637,9 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
     });
 
     // 3. TCP Transfer Server
-    let app_handle_server = app_handle.clone();
+    let emitter_server = emitter.clone();
     let state_server = state.clone();
+    let download_dir_server = download_dir.clone();
     tauri::async_runtime::spawn(async move {
         let listener = match TcpListener::bind("0.0.0.0:18338").await {
             Ok(l) => l,
@@ -647,14 +652,16 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
         loop {
             match listener.accept().await {
                 Ok((socket, addr)) => {
-                    let app_handle = app_handle_server.clone();
+                    let emitter = emitter_server.clone();
                     let state = state_server.clone();
+                    let download_dir = download_dir_server.clone();
                     tauri::async_runtime::spawn(async move {
                         if let Err(e) = handle_incoming_connection(
                             socket,
                             addr.ip().to_string(),
-                            app_handle,
+                            emitter,
                             state,
+                            download_dir,
                         )
                         .await
                         {
@@ -670,11 +677,12 @@ pub fn start_transfer_services(app_handle: AppHandle, state: Arc<Mutex<TransferS
     });
 }
 
-async fn handle_incoming_connection(
+async fn handle_incoming_connection<E: crate::bridge::EventEmitter>(
     socket: TcpStream,
     peer_ip: String,
-    app_handle: AppHandle,
+    emitter: E,
     state: Arc<Mutex<TransferState>>,
+    download_dir: std::path::PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (rx, mut tx) = socket.into_split();
     let mut reader = BufReader::new(rx);
@@ -707,7 +715,7 @@ async fn handle_incoming_connection(
         s.accept_txs.insert(transfer_id.clone(), accept_tx);
     }
 
-    let _ = app_handle.emit("transfer_incoming", transfer.clone());
+    emitter.emit("transfer_incoming", transfer.clone());
 
     let accepted: bool = (accept_rx.await).unwrap_or_default();
 
@@ -725,7 +733,7 @@ async fn handle_incoming_connection(
             }
             s.accept_txs.remove(&transfer_id);
         }
-        let _ = app_handle.emit("transfer_failed", transfer_id.clone());
+        emitter.emit("transfer_failed", transfer_id.clone());
         return Ok(());
     }
 
@@ -745,13 +753,7 @@ async fn handle_incoming_connection(
         s.accept_txs.remove(&transfer_id);
         s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
-    let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), 0u64));
-
-    let download_dir = app_handle
-        .path()
-        .download_dir()
-        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
-        .join("neurodeck_transfers");
+    emitter.emit("transfer_progress", (transfer_id.clone(), 0u64));
 
     tokio::fs::create_dir_all(&download_dir).await?;
 
@@ -806,7 +808,7 @@ async fn handle_incoming_connection(
                     t.progress = bytes_written;
                 }
             }
-            let _ = app_handle.emit("transfer_progress", (transfer_id.clone(), bytes_written));
+            emitter.emit("transfer_progress", (transfer_id.clone(), bytes_written));
             last_emit = Instant::now();
         }
     }
@@ -827,7 +829,7 @@ async fn handle_incoming_connection(
                 }
             }
         }
-        let _ = app_handle.emit("transfer_failed", transfer_id.clone());
+        emitter.emit("transfer_failed", transfer_id.clone());
         let _ = tokio::fs::remove_file(&file_path).await;
         return Ok(());
     }
@@ -866,7 +868,7 @@ async fn handle_incoming_connection(
                         t.status = "Failed".to_string();
                     }
                 }
-                let _ = app_handle.emit("transfer_failed", transfer_id);
+                emitter.emit("transfer_failed", transfer_id);
                 return Ok(());
             }
             Err(e) => {
@@ -877,13 +879,13 @@ async fn handle_incoming_connection(
                         t.status = "Failed".to_string();
                     }
                 }
-                let _ = app_handle.emit("transfer_failed", transfer_id);
+                emitter.emit("transfer_failed", transfer_id);
                 return Ok(());
             }
         }
     }
 
-    let _ = app_handle.emit("transfer_completed", transfer_id);
+    emitter.emit("transfer_completed", transfer_id);
     Ok(())
 }
 

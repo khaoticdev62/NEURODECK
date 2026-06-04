@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { invoke } from './neurobridge.js';
+import { listen } from './neurobridge.js';
 import { state } from './state.js';
 import { createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
@@ -72,87 +72,6 @@ export function initAgentView() {
         }
     }
 
-    function renderOrchestratorStatus(status = {}) {
-        const running = Boolean(status.running);
-        const goal = String(status.goal || lastOrchestratorGoal || "");
-        const tasks = Array.isArray(status.tasks) ? status.tasks : [];
-
-        if (orchestratorGoalInput && !orchestratorGoalInput.value.trim() && goal) {
-            orchestratorGoalInput.value = goal;
-        }
-
-        if (codePre) {
-            if (tasks.length || goal || running) {
-                codePre.textContent = [
-                    `Goal: ${goal || "(no goal)"}`,
-                    `State: ${running ? "running" : tasks.length ? "idle" : "empty"}`,
-                    `Tasks: ${tasks.length}`,
-                ].join("\n");
-            } else {
-                codePre.textContent = "No orchestration plan yet.";
-            }
-        }
-
-        if (orchestratorTaskList) {
-            if (!tasks.length) {
-                orchestratorTaskList.innerHTML = '<div class="agent-orchestrator-empty">No orchestration plan yet.</div>';
-            } else {
-                orchestratorTaskList.innerHTML = tasks
-                    .map((task) => {
-                        const dependsOn = Array.isArray(task.depends_on) && task.depends_on.length
-                            ? task.depends_on.join(", ")
-                            : "none";
-                        const goalText = escapeHtml(String(task.goal || ""));
-                        const result = task.result ? escapeHtml(String(task.result).slice(0, 260)) : "";
-                        const error = task.error ? escapeHtml(String(task.error).slice(0, 260)) : "";
-                        return `
-                            <div class="agent-orchestrator-task" data-status="${escapeHtml(String(task.status || "pending"))}">
-                                <span class="agent-orchestrator-task-dot" aria-hidden="true"></span>
-                                <div class="agent-orchestrator-task-body">
-                                    <div class="agent-orchestrator-task-head">
-                                        <span class="agent-orchestrator-task-role">${escapeHtml(String(task.role || task.id || "Task"))}</span>
-                                        <span class="agent-orchestrator-task-status">${escapeHtml(String(task.status || "pending"))}</span>
-                                    </div>
-                                    <div class="agent-orchestrator-task-goal">${goalText}</div>
-                                    <div class="agent-orchestrator-task-meta">ID: ${escapeHtml(String(task.id || ""))} · Depends on: ${escapeHtml(dependsOn)}</div>
-                                    ${result ? `<div class="agent-orchestrator-task-result">${result}</div>` : ""}
-                                    ${error ? `<div class="agent-orchestrator-task-error">${error}</div>` : ""}
-                                </div>
-                            </div>`;
-                    })
-                    .join("");
-            }
-        }
-
-        if (outputEl) {
-            if (running) {
-                outputEl.textContent = `Orchestrator running: ${goal || "awaiting goal"}`;
-            } else if (tasks.length) {
-                outputEl.textContent = `Orchestrator idle. ${tasks.length} task(s) in the current plan.`;
-            } else {
-                outputEl.textContent = "No orchestration status yet.";
-            }
-        }
-    }
-
-    async function refreshOrchestratorStatus() {
-        if (!orchestratorGoalInput) return;
-        try {
-            const status = await invoke("get_orchestration_status");
-            if (status && typeof status === "object") {
-                renderOrchestratorStatus(status);
-                setOrchestratorRunning(Boolean(status.running));
-                if (status.goal) {
-                    lastOrchestratorGoal = status.goal;
-                }
-            }
-        } catch (error) {
-            if (currentMode === "orchestrate") {
-                renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
-                appendLog("error", `Failed to load orchestrator status: ${error}`);
-            }
-        }
-    }
 
     function appendLog(type, content, step) {
         const empty = logEl.querySelector(".agent-empty-state");

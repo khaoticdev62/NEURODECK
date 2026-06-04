@@ -104,7 +104,7 @@ pub struct ServerState {
     pub orchestrator: Arc<crate::orchestrator::OrchestratorManaged>,
     pub lsp: Arc<Mutex<crate::lsp::LspManager>>,
     pub lua: Arc<Mutex<crate::lua::LuaEngine>>,
-    pub deckcode_state: Arc<Mutex<(Option<serde_json::Value>, Option<serde_json::Value>)>>,
+    pub deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
     pub deckcode_lang: Arc<Mutex<String>>,
 }
 
@@ -122,7 +122,7 @@ impl ServerState {
         orchestrator: Arc<crate::orchestrator::OrchestratorManaged>,
         lsp: Arc<Mutex<crate::lsp::LspManager>>,
         lua: Arc<Mutex<crate::lua::LuaEngine>>,
-        deckcode_state: Arc<Mutex<(Option<serde_json::Value>, Option<serde_json::Value>)>>,
+        deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
         deckcode_lang: Arc<Mutex<String>>,
     ) -> Self {
         ServerState {
@@ -274,8 +274,6 @@ pub async fn start_server(state: ServerState) -> anyhow::Result<()> {
 ///
 /// Startup: `neurodeck --bridge`
 /// Port: 9477 (override with NEURODECK_PORT env var)
-///
-/// Status: Foundation implemented. See docs/BRIDGE_SERVER.md for extending command dispatch.
 pub async fn run_bridge_server(
     config_root: &std::path::Path,
     config_path: &std::path::Path,
@@ -283,11 +281,18 @@ pub async fn run_bridge_server(
     use chrono::Utc;
     use std::sync::{Arc, Mutex};
 
-    tracing::info!("Starting NEURODECK bridge server on port 9477");
-    eprintln!("Bridge server mode is ALPHA — only PTY commands are currently dispatched.");
-    eprintln!("To add more commands, extend the dispatch() function in src-tauri/src/commands/mod.rs");
+    // ── Tracing ────────────────────────────────────────────────────────────
+    let log_dir = config_root.join("logs");
+    let _ = std::fs::create_dir_all(&log_dir);
+    let file_appender = tracing_appender::rolling::daily(log_dir, "neurodeck.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_ansi(false)
+        .init();
+    tracing::info!("Starting NEURODECK bridge server...");
 
-    // Minimal setup for bridge mode (without Tauri's WebView)
+    // ── Config & env ───────────────────────────────────────────────────────
     crate::load_env_file();
     let boot_self_heal = crate::self_heal::boot_self_heal(config_root, config_path);
     let mut config = boot_self_heal.config;
@@ -308,12 +313,25 @@ pub async fn run_bridge_server(
             .map(|a| a.id.clone())
             .unwrap_or_else(|| config.llm.agents[0].id.clone());
         let _ = crate::config::save_config(config_path, &config);
+    } else if config.llm.active_agent_id.is_empty() {
+        config.llm.active_agent_id = config
+            .llm
+            .agents
+            .first()
+            .map(|a| a.id.clone())
+            .unwrap_or_default();
+        let _ = crate::config::save_config(config_path, &config);
     }
 
     let provider = crate::create_provider(&config);
-    let torrent_download_root = config_root.join("data/torrents/downloads");
+    let data_dir = config_root.join("data");
+    let torrent_download_root = data_dir.join("torrents/downloads");
     let _ = std::fs::create_dir_all(&torrent_download_root);
 
+    let whisper_binary = config.stt.whisper_binary.clone();
+    let whisper_model = config.stt.whisper_model.clone();
+
+    // ── AppState ───────────────────────────────────────────────────────────
     let app_state = crate::AppState {
         provider,
         config,
@@ -333,8 +351,8 @@ pub async fn run_bridge_server(
         mcp_port: 13337,
         mcp_token: None,
         mcp_tool_whitelist: crate::mcp::default_tool_whitelist(),
-        whisper_binary: String::new(),
-        whisper_model: String::new(),
+        whisper_binary,
+        whisper_model,
         collab_abort: None,
         collab_tx: None,
         collab_mode: None,
@@ -345,7 +363,7 @@ pub async fn run_bridge_server(
         boot_self_heal: boot_self_heal.report,
     };
 
-    // Create server state
+    // ── Server state ───────────────────────────────────────────────────────
     let (broadcaster, _) = WsBroadcaster::new();
     let pty_state = Arc::new(crate::pty_manager::PtyState::new());
     let remote_state = Arc::new(crate::remote_control::RemoteControlState::default());
@@ -354,26 +372,131 @@ pub async fn run_bridge_server(
     let orchestrator = Arc::new(crate::orchestrator::OrchestratorManaged::new());
     let lsp = Arc::new(Mutex::new(crate::lsp::LspManager::new()));
 
-    // TODO: Initialize Lua engine when bridge mode has a proper AppHandle mock
-    // For now, create a placeholder. Full Lua support requires Tauri's event system.
+    // ── Lua engine ─────────────────────────────────────────────────────────
+    let lua_engine = crate::lua::LuaEngine::new_headless()?;
+    let plugins_dir = std::path::PathBuf::from("./plugins");
+    if plugins_dir.exists() {
+        if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
+            tracing::warn!("Failed to load Lua plugins: {}", e);
+        } else {
+            tracing::info!("Lua plugins loaded from {}", plugins_dir.display());
+        }
+    }
+    let lua = Arc::new(Mutex::new(lua_engine));
 
-    // Create server state (minimal for initial bridge server release)
-    // TODO: Add lua engine and full command dispatch table
-    let dummy_transfer = Arc::new(Mutex::new(crate::transfer::TransferState::new()));
+    // ── Scheduler ──────────────────────────────────────────────────────────
+    {
+        let sched = scheduler.clone();
+        let bc = broadcaster.clone();
+        tokio::spawn(async move {
+            if let Err(e) = sched.start(bc).await {
+                tracing::warn!("Failed to start task scheduler: {}", e);
+            } else {
+                tracing::info!("Task scheduler started");
+            }
+        });
+    }
+
+    // ── Runtime layout maintenance ─────────────────────────────────────────
+    {
+        let config_root = config_root.to_path_buf();
+        tokio::spawn(async move {
+            loop {
+                crate::self_heal::maintain_runtime_layout(&config_root);
+                tokio::time::sleep(std::time::Duration::from_secs(45)).await;
+            }
+        });
+    }
+
+    // ── Auto-backup memory ─────────────────────────────────────────────────
+    {
+        let app_state_backup = app_state.mem_db.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            if let Some(db) = app_state_backup {
+                if let Ok(records) = db.export_all_records() {
+                    if !records.is_empty() {
+                        let _ = crate::commands::system::run_memory_backup(&db);
+                    }
+                }
+            }
+        });
+    }
+
+    // ── Transfer services ──────────────────────────────────────────────────
+    let transfer_state = Arc::new(Mutex::new(crate::transfer::TransferState::new()));
+    let download_dir = config_root.join("data/transfers");
+    let _ = std::fs::create_dir_all(&download_dir);
+    crate::transfer::start_transfer_services(
+        broadcaster.clone(),
+        transfer_state.clone(),
+        download_dir,
+    );
+
+    // ── DeckCode input daemon (Linux/Steam Deck) ───────────────────────────
+    let deckcode_schema_path = std::path::PathBuf::from("../deckcode-controller-profile.schema.json");
+    let deckcode_schema_path = if deckcode_schema_path.exists() {
+        deckcode_schema_path
+    } else {
+        std::path::PathBuf::from("deckcode-controller-profile.schema.json")
+    };
+    let deckcode_multilang_path = std::path::PathBuf::from("../deckcode-multilang-code-entry.profile.json");
+    let deckcode_multilang_path = if deckcode_multilang_path.exists() {
+        deckcode_multilang_path
+    } else {
+        std::path::PathBuf::from("deckcode-multilang-code-entry.profile.json")
+    };
+
+    let mut loaded_schema: Option<crate::deckcode::schema::ControllerProfileSchema> = None;
+    let mut loaded_multilang: Option<crate::deckcode::multilang_schema::MultiLangProfileSchema> = None;
+
+    if let Ok(schema) = crate::deckcode::load_schema(deckcode_schema_path.to_str().unwrap_or_default()) {
+        loaded_schema = Some(schema);
+        tracing::info!("Loaded DeckCode Controller Profile");
+    }
+    if let Ok(ml_schema) = crate::deckcode::load_multilang_profile(deckcode_multilang_path.to_str().unwrap_or_default()) {
+        loaded_multilang = Some(ml_schema);
+        tracing::info!("Loaded DeckCode MultiLang Profile");
+    }
+
+    let deckcode_state = Arc::new(Mutex::new((loaded_schema.clone(), loaded_multilang.clone())));
+    let deckcode_lang = Arc::new(Mutex::new("plain_text".to_string()));
+
+    // Start DeckCode input daemon + resolver if schema loaded
+    if let Some(schema) = loaded_schema {
+        let (tx, rx) = std::sync::mpsc::channel();
+        crate::deckcode::input::start_input_daemon(tx);
+
+        let dc_emitter = broadcaster.clone();
+        let dc_lang = deckcode_lang.clone();
+        let dc_multilang = loaded_multilang.clone();
+
+        std::thread::spawn(move || {
+            let resolver = crate::deckcode::resolver::DeckCodeResolver::new(schema, dc_multilang);
+            let mut context = crate::deckcode::resolver::ResolverContext::default();
+
+            while let Ok(event) = rx.recv() {
+                context.active_language_id = dc_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
+                if let Some(binding) = resolver.resolve(&event, &context) {
+                    crate::deckcode::dispatch::dispatch_action(&dc_emitter, &binding);
+                }
+            }
+        });
+    }
 
     let server_state = ServerState {
         app_state: Arc::new(Mutex::new(app_state)),
-        broadcaster,
+        broadcaster: broadcaster.clone(),
         pty: pty_state,
         remote: remote_state,
-        transfer: crate::transfer::SharedTransferState(dummy_transfer),
+        transfer: crate::transfer::SharedTransferState(transfer_state),
         torrent: torrent_state,
         scheduler,
         orchestrator,
         lsp,
-        lua: Arc::new(Mutex::new(crate::lua::LuaEngine::new_headless()?)),
-        deckcode_state: Arc::new(Mutex::new((None, None))),
-        deckcode_lang: Arc::new(Mutex::new("plain_text".to_string())),
+        lua,
+        deckcode_state,
+        deckcode_lang,
     };
 
     start_server(server_state).await

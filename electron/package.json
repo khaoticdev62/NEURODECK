@@ -1,0 +1,21 @@
+{
+  "name": "neurodeck-electron",
+  "version": "1.8.0",
+  "description": "NEURODECK — Electron shell for the Rust sidecar",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/dev-launcher.js",
+    "dev": "node scripts/dev-launcher.js",
+    "build": "npx electron-builder --config ../electron-builder.yml",
+    "build:win": "npx electron-builder --config ../electron-builder.yml --win",
+    "build:linux": "npx electron-builder --config ../electron-builder.yml --linux",
+    "build:mac": "npx electron-builder --config ../electron-builder.yml --mac",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^36.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

@@ -29,6 +29,7 @@ import {
   openSettingsModal,
   activateSettingsPanel,
   performModelSearch,
+  switchToBrowseTabAndSearch,
 } from "./settings.js";
 import {
   initPtyTerminal,
@@ -51,7 +52,7 @@ import {
 import "./style.css";
 import "./app.css";
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./neurobridge.js";
 import QRCode from "qrcode";
 import { applyNeurodeckIconography, createIcon } from "./icons.js";
 import {
@@ -75,7 +76,7 @@ import { initWorkflowView } from "./workflow_view.js";
 import { initIdeView, deactivateIdeView } from "./ide_view.js";
 import { initOrchestrator } from "./orchestrator.js";
 
-import { listen } from "@tauri-apps/api/event";
+import { listen } from "./neurobridge.js";
 import { marked } from "marked";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
@@ -4606,61 +4607,36 @@ function showTpScrollIndicator(active) {
 
 // RADIAL_SEGMENTS imported from ./radial.js
 
+function getActiveModalFocusableElements(modalId, selector = "button") {
+  const modal = document.getElementById(modalId);
+  if (modal && modal.classList.contains("active")) {
+    const els = Array.from(modal.querySelectorAll(selector));
+    return els.filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && !el.disabled;
+    });
+  }
+  return null;
+}
+
 function getGamepadFocusableElements() {
   // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
   if (getCtrlPromptVisible()) return [];
 
-  // If state.notifications modal is open, focus only notif modal elements
-  const notifModal = document.getElementById("notif-modal");
-  if (notifModal && notifModal.classList.contains("active")) {
-    const els = Array.from(notifModal.querySelectorAll("button"));
-    return els.filter((el) => {
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && !el.disabled;
-    });
-  }
+  let activeEls = getActiveModalFocusableElements("notif-modal");
+  if (activeEls) return activeEls;
 
-  // If game context modal is open, focus only its elements
-  const gameModal = document.getElementById("game-context-modal");
-  if (gameModal && gameModal.classList.contains("active")) {
-    const els = Array.from(gameModal.querySelectorAll("button"));
-    return els.filter((el) => {
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && !el.disabled;
-    });
-  }
+  activeEls = getActiveModalFocusableElements("game-context-modal");
+  if (activeEls) return activeEls;
 
-  const computerUseModal = document.getElementById("computer-use-modal");
-  if (computerUseModal && computerUseModal.classList.contains("active")) {
-    const els = Array.from(computerUseModal.querySelectorAll("button"));
-    return els.filter((el) => {
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && !el.disabled;
-    });
-  }
+  activeEls = getActiveModalFocusableElements("computer-use-modal");
+  if (activeEls) return activeEls;
 
-  // If settings overlay is open, focus only settings elements
-  const settingsOverlay = document.getElementById("settings-overlay");
-  if (settingsOverlay && settingsOverlay.classList.contains("active")) {
-    const els = Array.from(
-      settingsOverlay.querySelectorAll("select, input, button"),
-    );
-    // filter out hidden/disabled elements
-    return els.filter((el) => {
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && !el.disabled;
-    });
-  }
+  activeEls = getActiveModalFocusableElements("settings-overlay", "select, input, button");
+  if (activeEls) return activeEls;
 
-  // If transfer confirmation modal is open, focus only its buttons
-  const transferModal = document.getElementById("transfer-modal");
-  if (transferModal && transferModal.classList.contains("active")) {
-    const els = Array.from(transferModal.querySelectorAll("button"));
-    return els.filter((el) => {
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && !el.disabled;
-    });
-  }
+  activeEls = getActiveModalFocusableElements("transfer-modal");
+  if (activeEls) return activeEls;
 
   // Otherwise, build a list of visible elements from active view and layout
   const selectors = [
@@ -5673,6 +5649,30 @@ invoke("get_initial_state")
       .catch((err) => {
         console.error("Error loading personas:", err);
       });
+
+    // ── Origin-change migration (Tauri → Electron) ──
+    // localStorage is origin-scoped. When the app origin changes
+    // (tauri://localhost → file:// → neurodeck://app), stored UI
+    // preferences are lost. This one-time migration seeds defaults
+    // and surfaces a gentle notice.
+    if (!localStorage.getItem("neurodeck_origin_migrated_v2")) {
+      // Seed defaults for keys that were previously in localStorage only
+      if (!localStorage.getItem("selectedTheme")) {
+        localStorage.setItem("selectedTheme", "BLACKSITE");
+      }
+      if (!localStorage.getItem("neurodeckTheme")) {
+        localStorage.setItem("neurodeckTheme", "BLACKSITE");
+      }
+      localStorage.setItem("neurodeck_origin_migrated_v2", "true");
+      // Show a subtle toast if the notification system is ready
+      if (typeof addNotification === "function") {
+        addNotification(
+          "Updated",
+          "App origin changed — UI preferences reset to defaults.",
+          "info",
+        );
+      }
+    }
 
     // Load persisted theme
     let savedTheme = localStorage.getItem("selectedTheme");
@@ -6712,7 +6712,7 @@ function initQuickSwitcher() {
   document.addEventListener(
     "keydown",
     (event) => {
-      if (!window.__TAURI__) return;
+      if (!window.electronAPI) return;
 
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
@@ -6817,6 +6817,22 @@ function checkTunnelServerStatus(silent = false) {
     });
 }
 
+function sendAndLogTunnelRequest(req, successLabel) {
+  invoke("send_tunnel_request", { request: req })
+    .then((resStr) => {
+      const resp = JSON.parse(resStr);
+      if (resp.type === "success") {
+        const out = successLabel ? `${successLabel}\n${resp.output}` : resp.output;
+        logTunnel("received", out);
+      } else {
+        logTunnel("error", `Failed:\n${resp.message}`);
+      }
+    })
+    .catch((err) => {
+      logTunnel("error", `Request failed: ${err}`);
+    });
+}
+
 function initTunnelClient() {
   const checkBtn = document.getElementById("tunnel-check-btn");
   const toggleBtn = document.getElementById("tunnel-toggle-btn");
@@ -6872,19 +6888,7 @@ function initTunnelClient() {
 
       logTunnel("sent", `Execute command: ${command}`);
       const req = JSON.stringify({ type: "run_cmd", command: command });
-
-      invoke("send_tunnel_request", { request: req })
-        .then((resStr) => {
-          const resp = JSON.parse(resStr);
-          if (resp.type === "success") {
-            logTunnel("received", `Stdout:\n${resp.output}`);
-          } else {
-            logTunnel("error", `Failed:\n${resp.message}`);
-          }
-        })
-        .catch((err) => {
-          logTunnel("error", `Request failed: ${err}`);
-        });
+      sendAndLogTunnelRequest(req, "Stdout:");
       input.value = "";
     };
   }
@@ -6904,19 +6908,7 @@ function initTunnelClient() {
         path: path,
         content: content,
       });
-
-      invoke("send_tunnel_request", { request: req })
-        .then((resStr) => {
-          const resp = JSON.parse(resStr);
-          if (resp.type === "success") {
-            logTunnel("received", resp.output);
-          } else {
-            logTunnel("error", `Failed:\n${resp.message}`);
-          }
-        })
-        .catch((err) => {
-          logTunnel("error", `Request failed: ${err}`);
-        });
+      sendAndLogTunnelRequest(req);
       pathInput.value = "";
       contentArea.value = "";
     };
@@ -6930,19 +6922,7 @@ function initTunnelClient() {
 
       logTunnel("sent", `Read dir: ${path}`);
       const req = JSON.stringify({ type: "read_dir", path: path });
-
-      invoke("send_tunnel_request", { request: req })
-        .then((resStr) => {
-          const resp = JSON.parse(resStr);
-          if (resp.type === "success") {
-            logTunnel("received", `Contents:\n${resp.output}`);
-          } else {
-            logTunnel("error", `Failed:\n${resp.message}`);
-          }
-        })
-        .catch((err) => {
-          logTunnel("error", `Request failed: ${err}`);
-        });
+      sendAndLogTunnelRequest(req, "Contents:");
       input.value = "";
     };
   }
@@ -7054,6 +7034,44 @@ window.cancelTransfer = function (transferId) {
     });
 };
 
+function calculateTransferSpeedAndEta(t, progress) {
+  let speedText = "";
+  let etaText = "";
+  if (t.status === "Transferring") {
+    const now = Date.now();
+    let record = window.transferProgressMap.get(t.id);
+    if (!record) {
+      record = { lastProgress: progress, lastTime: now, currentSpeed: 0 };
+      window.transferProgressMap.set(t.id, record);
+    } else {
+      let elapsed = (now - record.lastTime) / 1000;
+      if (elapsed >= 0.5) {
+        let delta = progress - record.lastProgress;
+        if (delta >= 0) {
+          let instantSpeed = delta / elapsed;
+          record.currentSpeed = record.currentSpeed
+            ? record.currentSpeed * 0.7 + instantSpeed * 0.3
+            : instantSpeed;
+        }
+        record.lastProgress = progress;
+        record.lastTime = now;
+      }
+    }
+    if (record.currentSpeed > 0) {
+      speedText = ` | ${formatBytes(record.currentSpeed)}/s`;
+      let remaining = t.size - progress;
+      let eta = remaining / record.currentSpeed;
+      etaText = ` | ETA: ${formatDuration(eta)}`;
+    } else {
+      speedText = ` | 0 B/s`;
+      etaText = ` | ETA: Unknown`;
+    }
+  } else {
+    window.transferProgressMap.delete(t.id);
+  }
+  return { speedText, etaText };
+}
+
 function renderTransfers(transfers) {
   const listEl = document.getElementById("share-transfers-list");
   if (!listEl) return;
@@ -7085,40 +7103,7 @@ function renderTransfers(transfers) {
           ? "failed"
           : "";
 
-    let speedText = "";
-    let etaText = "";
-    if (t.status === "Transferring") {
-      const now = Date.now();
-      let record = window.transferProgressMap.get(t.id);
-      if (!record) {
-        record = { lastProgress: t.progress, lastTime: now, currentSpeed: 0 };
-        window.transferProgressMap.set(t.id, record);
-      } else {
-        let elapsed = (now - record.lastTime) / 1000;
-        if (elapsed >= 0.5) {
-          let delta = t.progress - record.lastProgress;
-          if (delta >= 0) {
-            let instantSpeed = delta / elapsed;
-            record.currentSpeed = record.currentSpeed
-              ? record.currentSpeed * 0.7 + instantSpeed * 0.3
-              : instantSpeed;
-          }
-          record.lastProgress = t.progress;
-          record.lastTime = now;
-        }
-      }
-      if (record.currentSpeed > 0) {
-        speedText = ` | ${formatBytes(record.currentSpeed)}/s`;
-        let remaining = t.size - t.progress;
-        let eta = remaining / record.currentSpeed;
-        etaText = ` | ETA: ${formatDuration(eta)}`;
-      } else {
-        speedText = ` | 0 B/s`;
-        etaText = ` | ETA: Unknown`;
-      }
-    } else {
-      window.transferProgressMap.delete(t.id);
-    }
+    const { speedText, etaText } = calculateTransferSpeedAndEta(t, t.progress);
 
     const isCancelable =
       t.status === "Pending" ||
@@ -7224,38 +7209,7 @@ function updateTransferCardProgress(transferId, progress) {
     pctEl.innerText = `${percent}%`;
   }
 
-  let speedText = "";
-  let etaText = "";
-  if (t.status === "Transferring") {
-    const now = Date.now();
-    let record = window.transferProgressMap.get(t.id);
-    if (!record) {
-      record = { lastProgress: progress, lastTime: now, currentSpeed: 0 };
-      window.transferProgressMap.set(t.id, record);
-    } else {
-      let elapsed = (now - record.lastTime) / 1000;
-      if (elapsed >= 0.5) {
-        let delta = progress - record.lastProgress;
-        if (delta >= 0) {
-          let instantSpeed = delta / elapsed;
-          record.currentSpeed = record.currentSpeed
-            ? record.currentSpeed * 0.7 + instantSpeed * 0.3
-            : instantSpeed;
-        }
-        record.lastProgress = progress;
-        record.lastTime = now;
-      }
-    }
-    if (record.currentSpeed > 0) {
-      speedText = ` | ${formatBytes(record.currentSpeed)}/s`;
-      let remaining = t.size - progress;
-      let eta = remaining / record.currentSpeed;
-      etaText = ` | ETA: ${formatDuration(eta)}`;
-    } else {
-      speedText = ` | 0 B/s`;
-      etaText = ` | ETA: Unknown`;
-    }
-  }
+  const { speedText, etaText } = calculateTransferSpeedAndEta(t, progress);
 
   const statsEl = item.querySelector(".transfer-stats-text");
   if (statsEl) {
@@ -7443,69 +7397,41 @@ function initFileShare() {
   });
 
   // Setup modal button handlers
-  if (acceptBtn) {
-    acceptBtn.onclick = function () {
-      if (state.pendingTransferId) {
-        invoke("respond_to_transfer", {
-          transferId: state.pendingTransferId,
-          accept: true,
-        })
-          .then(() => {
-            const modal = document.getElementById("transfer-modal");
-            if (modal) modal.classList.remove("active");
-            if (transferFocusTrap) transferFocusTrap.deactivate();
-            state.pendingTransferId = null;
-            invoke("get_active_transfers").then(renderTransfers);
-          })
-          .catch((err) => {
-            console.error("Error accepting transfer:", err);
-            alert("Error: " + err);
-          });
-      }
-    };
-  }
-
-  if (rejectBtn) {
-    rejectBtn.onclick = function () {
-      if (state.pendingTransferId) {
-        invoke("respond_to_transfer", {
-          transferId: state.pendingTransferId,
-          accept: false,
-        })
-          .then(() => {
-            const modal = document.getElementById("transfer-modal");
-            if (modal) modal.classList.remove("active");
-            if (transferFocusTrap) transferFocusTrap.deactivate();
-            state.pendingTransferId = null;
-            invoke("get_active_transfers").then(renderTransfers);
-          })
-          .catch((err) => {
-            console.error("Error rejecting transfer:", err);
-            alert("Error: " + err);
-          });
-      }
-    };
-  }
-
-  if (closeXBtn) {
-    closeXBtn.onclick = function () {
-      if (state.pendingTransferId) {
-        invoke("respond_to_transfer", {
-          transferId: state.pendingTransferId,
-          accept: false,
-        }).then(() => {
+  function handleTransferResponse(accept) {
+    if (state.pendingTransferId) {
+      const action = accept ? "accepting" : "rejecting";
+      invoke("respond_to_transfer", {
+        transferId: state.pendingTransferId,
+        accept: accept,
+      })
+        .then(() => {
           const modal = document.getElementById("transfer-modal");
           if (modal) modal.classList.remove("active");
           if (transferFocusTrap) transferFocusTrap.deactivate();
           state.pendingTransferId = null;
           invoke("get_active_transfers").then(renderTransfers);
+        })
+        .catch((err) => {
+          console.error(`Error ${action} transfer:`, err);
+          alert("Error: " + err);
         });
-      } else {
-        const modal = document.getElementById("transfer-modal");
-        if (modal) modal.classList.remove("active");
-        if (transferFocusTrap) transferFocusTrap.deactivate();
-      }
-    };
+    } else {
+      const modal = document.getElementById("transfer-modal");
+      if (modal) modal.classList.remove("active");
+      if (transferFocusTrap) transferFocusTrap.deactivate();
+    }
+  }
+
+  if (acceptBtn) {
+    acceptBtn.onclick = () => handleTransferResponse(true);
+  }
+
+  if (rejectBtn) {
+    rejectBtn.onclick = () => handleTransferResponse(false);
+  }
+
+  if (closeXBtn) {
+    closeXBtn.onclick = () => handleTransferResponse(false);
   }
 
   // Drag & drop file path populate
@@ -7904,6 +7830,20 @@ function initBrowser() {
       const originalText = btnSpan ? btnSpan.textContent : "Download Model";
       if (btnSpan) btnSpan.textContent = "Checking...";
 
+      const proceedToModelSearch = () => {
+        if (browserWindowOpen) {
+          invoke("browser_hide").catch(() => {});
+        }
+        stopSync();
+
+        openSettingsModal();
+        activateSettingsPanel("sp-models", "models");
+        switchToBrowseTabAndSearch(repo);
+
+        if (btnSpan) btnSpan.textContent = originalText;
+        downloadModelBtn.disabled = false;
+      };
+
       invoke("hf_get_model_info", { repoId: repo })
         .then((modelInfo) => {
           if (!modelInfo.steam_deck_compat) {
@@ -7921,26 +7861,7 @@ function initBrowser() {
             }
           }
 
-          // Proceed with opening settings and searching
-          if (browserWindowOpen) {
-            invoke("browser_hide").catch(() => {});
-          }
-          stopSync();
-
-          openSettingsModal();
-          activateSettingsPanel("sp-models", "models");
-
-          const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
-          if (browseTab) browseTab.click();
-
-          const searchInput = document.getElementById("models-search-input");
-          if (searchInput) {
-            searchInput.value = repo;
-            performModelSearch(repo);
-          }
-
-          if (btnSpan) btnSpan.textContent = originalText;
-          downloadModelBtn.disabled = false;
+          proceedToModelSearch();
         })
         .catch((err) => {
           const userConfirmed = window.confirm(
@@ -7954,26 +7875,7 @@ function initBrowser() {
             return;
           }
 
-          // Proceed anyway
-          if (browserWindowOpen) {
-            invoke("browser_hide").catch(() => {});
-          }
-          stopSync();
-
-          openSettingsModal();
-          activateSettingsPanel("sp-models", "models");
-
-          const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
-          if (browseTab) browseTab.click();
-
-          const searchInput = document.getElementById("models-search-input");
-          if (searchInput) {
-            searchInput.value = repo;
-            performModelSearch(repo);
-          }
-
-          if (btnSpan) btnSpan.textContent = originalText;
-          downloadModelBtn.disabled = false;
+          proceedToModelSearch();
         });
     };
   }
@@ -10771,6 +10673,19 @@ function initPromptLab() {
     });
   }
 
+  function getPromptLabSchema() {
+    return {
+      persona: personaInput.value.trim(),
+      task: taskInput.value.trim(),
+      context: contextInput.value.trim(),
+      tone: toneInput.value.trim(),
+      constraints: constraintsInput.value.trim(),
+      format: formatInput.value.trim(),
+      examples: examplesInput.value.trim(),
+      formula: formulaHidden.value,
+    };
+  }
+
   if (savePresetBtn) {
     savePresetBtn.addEventListener("click", () => {
       const name = presetNameInput.value.trim();
@@ -10778,16 +10693,7 @@ function initPromptLab() {
         addNotification("Prompt Lab", "Enter a preset name.", "error");
         return;
       }
-      const schema = {
-        persona: personaInput.value.trim(),
-        task: taskInput.value.trim(),
-        context: contextInput.value.trim(),
-        tone: toneInput.value.trim(),
-        constraints: constraintsInput.value.trim(),
-        format: formatInput.value.trim(),
-        examples: examplesInput.value.trim(),
-        formula: formulaHidden.value,
-      };
+      const schema = getPromptLabSchema();
       invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(schema) })
         .then(() => {
           addNotification("Prompt Lab", `Preset "${name}" saved!`, "success");
@@ -10970,14 +10876,7 @@ function initPromptLab() {
         return;
       }
       const schema = {
-        persona: personaInput.value.trim(),
-        task: taskInput.value.trim(),
-        context: contextInput.value.trim(),
-        tone: toneInput.value.trim(),
-        constraints: constraintsInput.value.trim(),
-        format: formatInput.value.trim(),
-        examples: examplesInput.value.trim(),
-        formula: formulaHidden.value,
+        ...getPromptLabSchema(),
         assembled_prompt: resultPrompt.value,
       };
       navigator.clipboard.writeText(JSON.stringify(schema, null, 2));

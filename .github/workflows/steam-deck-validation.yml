@@ -67,7 +67,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*": "\(.*\)".*/\1/')
+          VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*": "\(.*\)".*/\1/')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up Rust
@@ -95,16 +95,13 @@ jobs:
           npm ci
           npm -w frontend ci
 
-      - name: Build frontend
-        run: npm run frontend:build
-
       - name: Build AppImage
         id: build
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
-          npx @tauri-apps/cli build --bundles appimage
-          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | sort | tail -n1)
+          npm run build
+          APPIMAGE=$(find dist-electron -name "*.AppImage" | sort | tail -n1)
           echo "appimage=$APPIMAGE" >> "$GITHUB_OUTPUT"
           echo "Built: $APPIMAGE"
 
@@ -112,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-appimage-${{ steps.version.outputs.version }}
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          path: dist-electron/*.AppImage
           retention-days: 1
 
   # ── Job 2: AppImage Runtime Compatibility ──────────────────────────────
@@ -160,7 +157,10 @@ jobs:
       - name: Validate glibc compatibility
         run: |
           APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "app" -type f -executable 2>/dev/null | head -1)
+          # Electron AppImage main binary
+          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
+          # Fallback: Rust sidecar binary
+          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
 
           if [[ -z "$EXTRACTED_BIN" ]]; then
             EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
@@ -173,6 +173,12 @@ jobs:
 
           echo "=== Binary Info ==="
           file "$EXTRACTED_BIN"
+
+          if [[ -n "$SIDECAR_BIN" ]]; then
+            echo ""
+            echo "=== Sidecar Binary Info ==="
+            file "$SIDECAR_BIN"
+          fi
 
           echo ""
           echo "=== glibc Requirements ==="
@@ -187,7 +193,8 @@ jobs:
       - name: Validate Vulkan/OpenGL availability
         run: |
           APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "app" -type f -executable 2>/dev/null | head -1)
+          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
+          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
 
           if [[ -z "$EXTRACTED_BIN" ]]; then
             EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
@@ -200,7 +207,7 @@ jobs:
 
           echo "=== Checking for Graphics Libraries ==="
 
-          # Check for Vulkan symbols
+          # Check for Vulkan symbols (Electron/Chromium bundles ANGLE/Vulkan)
           if nm "$EXTRACTED_BIN" 2>/dev/null | grep -q "vk"; then
             echo "✓ Vulkan support detected"
           else
@@ -212,15 +219,16 @@ jobs:
             echo "✓ OpenGL/EGL support detected"
           fi
 
-          # Check for SDL2 (audio/input)
-          if nm "$EXTRACTED_BIN" 2>/dev/null | grep -q "SDL"; then
+          # Check Rust sidecar for SDL2/gilrs (audio/input)
+          CHECK_BIN="${SIDECAR_BIN:-$EXTRACTED_BIN}"
+          if nm "$CHECK_BIN" 2>/dev/null | grep -q "SDL"; then
             echo "✓ SDL2 linked (audio/gamepad support)"
           fi
 
       - name: Validate binary architecture
         run: |
           APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "app" -type f -executable 2>/dev/null | head -1)
+          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
 
           if [[ -z "$EXTRACTED_BIN" ]]; then
             EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
@@ -246,22 +254,24 @@ jobs:
       - name: Validate game controller support
         run: |
           APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "app" -type f -executable 2>/dev/null | head -1)
+          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
+          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
 
           if [[ -z "$EXTRACTED_BIN" ]]; then
             EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
           fi
 
-          if [[ -z "$EXTRACTED_BIN" ]]; then
+          CHECK_BIN="${SIDECAR_BIN:-$EXTRACTED_BIN}"
+          if [[ -z "$CHECK_BIN" ]]; then
             echo "::warning::Could not find binary for gamepad validation"
             exit 0
           fi
 
           echo "=== Input Device Support ==="
 
-          if nm "$EXTRACTED_BIN" 2>/dev/null | grep -q "gilrs"; then
+          if nm "$CHECK_BIN" 2>/dev/null | grep -q "gilrs"; then
             echo "✓ Gamepad support (gilrs) detected"
-          elif nm "$EXTRACTED_BIN" 2>/dev/null | grep -q "evdev"; then
+          elif nm "$CHECK_BIN" 2>/dev/null | grep -q "evdev"; then
             echo "✓ Evdev input support detected"
           else
             echo "⚠ No explicit gamepad library detected (check if needed)"

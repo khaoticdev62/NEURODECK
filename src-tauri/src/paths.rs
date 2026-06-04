@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-pub(crate) fn get_home_dir() -> Option<PathBuf> {
+pub fn get_home_dir() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         std::env::var("USERPROFILE").map(PathBuf::from).ok()
@@ -11,7 +11,7 @@ pub(crate) fn get_home_dir() -> Option<PathBuf> {
     }
 }
 
-pub(crate) fn load_env_file() {
+pub fn load_env_file() {
     if let Some(home) = get_home_dir() {
         let env_path = home.join(".config").join("neurodeck").join("env");
         if env_path.exists() {
@@ -32,7 +32,7 @@ pub(crate) fn load_env_file() {
     }
 }
 
-pub(crate) fn get_config_path() -> PathBuf {
+pub fn get_config_path() -> PathBuf {
     // 1. Env override (highest priority — for dev/testing)
     if let Ok(env_path) = std::env::var("NEURODECK_CONFIG_PATH") {
         return PathBuf::from(env_path);
@@ -76,7 +76,7 @@ pub(crate) fn get_config_path() -> PathBuf {
     primary
 }
 
-pub(crate) fn user_config_dir() -> PathBuf {
+pub fn user_config_dir() -> PathBuf {
     // Use the OS-conventional config directory so the path works correctly
     // on Windows (%APPDATA%), macOS (~/Library/Application Support), and
     // Linux/SteamOS (~/.config — XDG standard).

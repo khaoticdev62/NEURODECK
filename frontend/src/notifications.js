@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './neurobridge.js';
 
 export function updateNotifBadge() {
     const badge = document.getElementById("notif-badge");

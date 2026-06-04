@@ -2,8 +2,8 @@
 // Visual pipeline builder: drag-and-drop agent nodes connected by SVG bezier
 // arrows. Pipelines saved to data/orchestrator/pipelines.json.
 
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "./neurobridge.js";
+import { listen } from "./neurobridge.js";
 import { createIcon } from "./icons.js";
 import { addNotification } from "./notifications.js";
 
