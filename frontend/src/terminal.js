@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { invoke } from './neurobridge.js';
+import { listen } from './neurobridge.js';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { createIcon } from './icons.js';
@@ -43,6 +43,32 @@ function syncShellPillsForSession(shell) {
     });
 }
 
+function createXtermInstance(containerEl, fontSize, scrollback = 2000) {
+    const term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'var(--font-mono)',
+        fontSize: fontSize,
+        scrollback: scrollback,
+        theme: {
+            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
+            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
+            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
+            selectionBackground: 'rgba(255, 255, 255, 0.15)'
+        }
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(containerEl);
+
+    try {
+        fitAddon.fit();
+    } catch (e) {
+        console.warn("Could not fit xterm immediately:", e);
+    }
+    return { term, fitAddon };
+}
+
 function createTerminalSession(shellPath) {
     if (state.terminalSessions.length >= MAX_TERMINAL_SESSIONS) {
         addNotification('Tab Limit Reached', `Maximum of ${MAX_TERMINAL_SESSIONS} active terminal tabs allowed.`, 'warning');
@@ -68,28 +94,7 @@ function createTerminalSession(shellPath) {
     const savedScrollbackStr = localStorage.getItem("terminalScrollback");
     const scrollback = savedScrollbackStr !== null ? parseInt(savedScrollbackStr, 10) : 2000;
 
-    const term = new Terminal({
-        cursorBlink: true,
-        fontFamily: 'var(--font-mono)',
-        fontSize: fontSize,
-        scrollback: scrollback,
-        theme: {
-            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
-            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
-            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
-            selectionBackground: 'rgba(255, 255, 255, 0.15)'
-        }
-    });
-
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(containerEl);
-
-    try {
-        fitAddon.fit();
-    } catch (e) {
-        console.warn("Could not fit xterm immediately:", e);
-    }
+    const { term, fitAddon } = createXtermInstance(containerEl, fontSize, scrollback);
 
     // Spawn Backend PTY
     const dims = fitAddon.proposeDimensions() || { cols: 80, rows: 24 };
@@ -692,6 +697,15 @@ function triggerAutocomplete(sessionId, buffer) {
     }, 100);
 }
 
+function handleTerminalCtrlH(e) {
+    if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
+        e.preventDefault();
+        if (typeof openHistorySearch === "function") openHistorySearch();
+        return false;
+    }
+    return true;
+}
+
 // Hook into xterm onKey to intercept Ctrl+Space and RightArrow when ghost text is visible.
 // We patch createTerminalSession to add the key handler after session creation.
 const _origCreateTerminalSession = window.createTerminalSession;
@@ -735,12 +749,7 @@ function patchTerminalSessionWithAutocomplete(session) {
 
     // Override Ctrl+Space using the custom keyEventHandler
     term.attachCustomKeyEventHandler((e) => {
-        // Ctrl+H: open AI history search — intercept before xterm sends 0x08 backspace to PTY
-        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
-            e.preventDefault();
-            if (typeof openHistorySearch === "function") openHistorySearch();
-            return false;
-        }
+        if (!handleTerminalCtrlH(e)) return false;
 
         // Tab: trigger autocomplete (if not already active)
         if (e.code === "Tab" && !autocompleteActive && e.type === "keydown") {
@@ -782,32 +791,12 @@ function initSshTerminal() {
     container.innerHTML = "";
 
     const savedFontSize = parseInt(localStorage.getItem("terminalFontSize") || "14", 10);
-    const term = new Terminal({
-        cursorBlink: true,
-        fontFamily: 'var(--font-mono)',
-        fontSize: savedFontSize,
-        scrollback: 2000,
-        theme: {
-            background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#000000',
-            foreground: getComputedStyle(document.documentElement).getPropertyValue('--fg-color').trim() || '#e2e8f0',
-            cursor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#00F0FF',
-            selectionBackground: 'rgba(255, 255, 255, 0.15)'
-        }
-    });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(container);
+    const { term, fitAddon } = createXtermInstance(container, savedFontSize, 2000);
     window.sshTerminal = term;
     window.sshTerminalFitAddon = fitAddon;
-    try { fitAddon.fit(); } catch (e) {}
 
     term.attachCustomKeyEventHandler((e) => {
-        // Ctrl+H: open AI history search from SSH terminal too
-        if (e.ctrlKey && e.key === "h" && e.type === "keydown") {
-            e.preventDefault();
-            if (typeof openHistorySearch === "function") openHistorySearch();
-            return false;
-        }
+        if (!handleTerminalCtrlH(e)) return false;
         return true;
     });
 
@@ -916,105 +905,35 @@ async function initSshProfilesFromDisk() {
 }
 
 function renderSshProfiles() {
-    const list = document.getElementById("ssh-profiles-list");
-    if (!list) return;
-    const profiles = getSshProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                ${profileActionButton("ssh-profile-load-btn", i, "upload", "Load")}
-                ${profileActionButton("ssh-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".ssh-profile-load-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const p = getSshProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("ssh-host-input").value = p.host || "";
-            document.getElementById("ssh-port-input").value = p.port || "22";
-            document.getElementById("ssh-user-input").value = p.user || "";
-            document.getElementById("ssh-auth-type").value = p.auth_type || "password";
-            document.getElementById("ssh-key-path-input").value = p.key_path || "";
-            document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("ssh-pass-input").value = "";
-            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-                try {
-                    const pwd = await invoke("get_ssh_credential", { profileName: p.name });
-                    if (pwd) {
-                        document.getElementById("ssh-pass-input").value = pwd;
-                    }
-                } catch (err) {
-                    console.error("Failed to load SSH credential from keychain:", err);
-                }
-            }
-        };
-    });
-
-    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const index = parseInt(btn.getAttribute("data-index"));
-            const profiles = getSshProfiles();
-            const p = profiles[index];
-            if (p && window.__TAURI_INTERNALS__) {
-                try {
-                    await invoke("delete_ssh_credential", { profileName: p.name });
-                } catch (err) {
-                    console.error("Failed to delete SSH credential from keychain:", err);
-                }
-            }
-            profiles.splice(index, 1);
-            saveSshProfiles(profiles);
-            renderSshProfiles();
-            renderSshProfilesSettings();
-        };
-    });
+    renderConnectionProfiles("ssh");
 }
 
 function renderSshProfilesSettings() {
-    const list = document.getElementById("settings-ssh-profiles-list");
-    if (!list) return;
-    const profiles = getSshProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SSH tab to add profiles.</div>`;
-        return;
+    renderConnectionProfilesSettings("ssh");
+}
+
+async function saveKeychainCredential(type, profileName, password) {
+    if (password && window.__TAURI_INTERNALS__) {
+        try {
+            await invoke(`save_${type}_credential`, { profileName, password });
+        } catch (err) {
+            console.error(`Failed to save ${type.toUpperCase()} credential to keychain:`, err);
+        }
     }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            ${profileActionButton("ssh-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-        </div>
-    `).join("");
-    list.querySelectorAll(".ssh-profile-del-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const index = parseInt(btn.getAttribute("data-index"));
-            const profiles = getSshProfiles();
-            const p = profiles[index];
-            if (p && window.__TAURI_INTERNALS__) {
-                try {
-                    await invoke("delete_ssh_credential", { profileName: p.name });
-                } catch (err) {
-                    console.error("Failed to delete SSH credential from keychain:", err);
-                }
-            }
-            profiles.splice(index, 1);
-            saveSshProfiles(profiles);
-            renderSshProfilesSettings();
-            renderSshProfiles();
-        };
-    });
+}
+
+async function promptAndSaveProfileName(type, host, user, auth_type, password) {
+    if (!host || !user) {
+        addNotification("SSH Config Missing", "Enter host and username first.", "warning");
+        return null;
+    }
+    const name = prompt("Profile name:", `${user}@${host}`);
+    if (!name) return null;
+
+    if (auth_type === "password") {
+        await saveKeychainCredential(type, name, password);
+    }
+    return name;
 }
 
 function initSshProfileListeners() {
@@ -1025,17 +944,8 @@ function initSshProfileListeners() {
         const auth_type = document.getElementById("ssh-auth-type")?.value || "password";
         const key_path = document.getElementById("ssh-key-path-input")?.value.trim();
         const password = document.getElementById("ssh-pass-input")?.value || "";
-        if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
-        const name = prompt("Profile name:", `${user}@${host}`);
+        const name = await promptAndSaveProfileName("ssh", host, user, auth_type, password);
         if (!name) return;
-
-        if (auth_type === "password" && password && window.__TAURI_INTERNALS__) {
-            try {
-                await invoke("save_ssh_credential", { profileName: name, password: password });
-            } catch (err) {
-                console.error("Failed to save SSH credential to keychain:", err);
-            }
-        }
 
         const profiles = getSshProfiles();
         profiles.push({ name, host, port, user, auth_type, key_path });
@@ -1093,75 +1003,11 @@ async function initFtpProfilesFromDisk() {
 }
 
 function renderFtpProfiles() {
-    const list = document.getElementById("ftp-profiles-list");
-    if (!list) return;
-    const profiles = getFtpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                ${profileActionButton("ftp-profile-load-btn", i, "upload", "Load")}
-                ${profileActionButton("ftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".ftp-profile-load-btn").forEach(btn => {
-        btn.onclick = () => {
-            const p = getFtpProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("ftp-host-input").value = p.host || "";
-            document.getElementById("ftp-port-input").value = p.port || "21";
-            document.getElementById("ftp-user-input").value = p.user || "";
-            document.getElementById("ftp-pass-input").value = "";
-            document.getElementById("ftp-path-input").value = p.path || "/";
-        };
-    });
-
-    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getFtpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveFtpProfiles(profiles);
-            renderFtpProfiles();
-            renderFtpProfilesSettings();
-        };
-    });
+    renderConnectionProfiles("ftp");
 }
 
 function renderFtpProfilesSettings() {
-    const list = document.getElementById("settings-ftp-profiles-list");
-    if (!list) return;
-    const profiles = getFtpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the FTP tab to add profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            ${profileActionButton("ftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-        </div>
-    `).join("");
-    list.querySelectorAll(".ftp-profile-del-btn").forEach(btn => {
-        btn.onclick = () => {
-            const profiles = getFtpProfiles();
-            profiles.splice(parseInt(btn.getAttribute("data-index")), 1);
-            saveFtpProfiles(profiles);
-            renderFtpProfilesSettings();
-            renderFtpProfiles();
-        };
-    });
+    renderConnectionProfilesSettings("ftp");
 }
 
 function initFtpProfileListeners() {
@@ -1191,10 +1037,32 @@ function initFtpProfileListeners() {
 // FTP CLIENT SYSTEM
 // ==========================================================================
 
-// let ftpCurrentPath = "/"; (Moved to state.js)
+function getFtpInputValues() {
+    return {
+        host: document.getElementById("ftp-host-input")?.value.trim(),
+        port: parseInt(document.getElementById("ftp-port-input")?.value || "21", 10),
+        user: document.getElementById("ftp-user-input")?.value.trim(),
+        password: document.getElementById("ftp-pass-input")?.value || "",
+        path: document.getElementById("ftp-path-input")?.value.trim() || "/"
+    };
+}
 
-function renderFtpFiles(entries) {
-    const list = document.getElementById("ftp-file-list");
+function getSftpInputValues() {
+    return {
+        host: document.getElementById("sftp-host-input")?.value.trim(),
+        port: parseInt(document.getElementById("sftp-port-input")?.value || "22", 10),
+        user: document.getElementById("sftp-user-input")?.value.trim(),
+        auth_type: document.getElementById("sftp-auth-type")?.value || "password",
+        password: document.getElementById("sftp-pass-input")?.value || "",
+        key_path: document.getElementById("sftp-key-path-input")?.value.trim(),
+        path: document.getElementById("sftp-path-input")?.value.trim() || "/"
+    };
+}
+
+function renderRemoteFiles(type, entries) {
+    const isSftp = type === "sftp";
+    const prefix = isSftp ? "sftp" : "ftp";
+    const list = document.getElementById(`${prefix}-file-list`);
     if (!list) return;
     if (!entries || entries.length === 0) {
         list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
@@ -1225,7 +1093,7 @@ function renderFtpFiles(entries) {
 
         if (!e.is_dir) {
             const btn = document.createElement("button");
-            btn.className = "canvas-btn ftp-download-btn";
+            btn.className = `canvas-btn ${prefix}-download-btn`;
             btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
             btn.setAttribute("data-name", e.name);
             btn.title = "Download";
@@ -1241,38 +1109,248 @@ function renderFtpFiles(entries) {
         item.style.cursor = "pointer";
         item.onclick = () => {
             const name = item.getAttribute("data-name");
-            state.ftpCurrentPath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            loadFtpDir(state.ftpCurrentPath);
+            if (isSftp) {
+                state.sftpCurrentPath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
+                loadSftpDir(state.sftpCurrentPath);
+            } else {
+                state.ftpCurrentPath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
+                loadFtpDir(state.ftpCurrentPath);
+            }
         };
     });
 
     // Download buttons
-    list.querySelectorAll(".ftp-download-btn").forEach(btn => {
+    list.querySelectorAll(`.${prefix}-download-btn`).forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const name = btn.getAttribute("data-name");
-            const remotePath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-            const host = document.getElementById("ftp-host-input")?.value.trim();
-            const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-            const user = document.getElementById("ftp-user-input")?.value.trim();
-            const pass = document.getElementById("ftp-pass-input")?.value;
-            setFtpStatus(`Downloading ${name}...`);
-            invoke("ftp_download_file", { host, port, user, password: pass, remotePath, localPath })
-                .then(() => {
-                    setFtpStatus(`Downloaded to ${localPath}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                    }
-                })
-                .catch(err => {
-                    setFtpStatus(`Download error: ${err}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                    }
-                });
+            if (isSftp) {
+                const { host, port, user, auth_type, password, key_path } = getSftpInputValues();
+                const remotePath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
+                const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+                setSftpStatus(`Downloading ${name}...`);
+                invoke("sftp_download_file", { host, port, user, authType: auth_type, password, keyPath: key_path, remotePath, localPath })
+                    .then(() => {
+                        setSftpStatus(`Downloaded to ${localPath}`);
+                        if (typeof addNotification === "function") {
+                            addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
+                        }
+                    })
+                    .catch(err => {
+                        setSftpStatus(`Download error: ${err}`);
+                        if (typeof addNotification === "function") {
+                            addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
+                        }
+                    });
+            } else {
+                const { host, port, user, password } = getFtpInputValues();
+                const remotePath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
+                const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+                setFtpStatus(`Downloading ${name}...`);
+                invoke("ftp_download_file", { host, port, user, password, remotePath, localPath })
+                    .then(() => {
+                        setFtpStatus(`Downloaded to ${localPath}`);
+                        if (typeof addNotification === "function") {
+                            addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
+                        }
+                    })
+                    .catch(err => {
+                        setFtpStatus(`Download error: ${err}`);
+                        if (typeof addNotification === "function") {
+                            addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
+                        }
+                    });
+            }
         };
     });
+}
+
+function getConnectionTypeMappers(type) {
+    if (type === "ssh") {
+        return {
+            getProfilesFn: getSshProfiles,
+            saveProfilesFn: saveSshProfiles,
+            delCredentialFnName: "delete_ssh_credential",
+            updateFn1: renderSshProfilesSettings,
+            updateFn2: renderSshProfiles
+        };
+    }
+    if (type === "ftp") {
+        return {
+            getProfilesFn: getFtpProfiles,
+            saveProfilesFn: saveFtpProfiles,
+            delCredentialFnName: null,
+            updateFn1: renderFtpProfilesSettings,
+            updateFn2: renderFtpProfiles
+        };
+    }
+    if (type === "sftp") {
+        return {
+            getProfilesFn: getSftpProfiles,
+            saveProfilesFn: fn_sftp_save_profiles,
+            delCredentialFnName: "delete_sftp_credential",
+            updateFn1: renderSftpProfilesSettings,
+            updateFn2: renderSftpProfiles
+        };
+    }
+    return {};
+}
+
+async function deleteProfile(type, index) {
+    const { getProfilesFn, saveProfilesFn, delCredentialFnName, updateFn1, updateFn2 } = getConnectionTypeMappers(type);
+    if (!getProfilesFn) return;
+    
+    const currentProfiles = getProfilesFn();
+    const p = currentProfiles[index];
+    if (p && delCredentialFnName && window.__TAURI_INTERNALS__) {
+        try {
+            await invoke(delCredentialFnName, { profileName: p.name });
+        } catch (err) {
+            console.error(`Failed to delete credential from keychain:`, err);
+        }
+    }
+    currentProfiles.splice(index, 1);
+    saveProfilesFn(currentProfiles);
+    updateFn1();
+    updateFn2();
+}
+
+function renderConnectionProfiles(type) {
+    const list = document.getElementById(`${type}-profiles-list`);
+    if (!list) return;
+    
+    let getProfilesFn, loadBtnClass, delBtnClass, loadHandler;
+    
+    if (type === "ssh") {
+        getProfilesFn = getSshProfiles;
+        loadBtnClass = "ssh-profile-load-btn";
+        delBtnClass = "ssh-profile-del-btn";
+        loadHandler = async (p) => {
+            document.getElementById("ssh-host-input").value = p.host || "";
+            document.getElementById("ssh-port-input").value = p.port || "22";
+            document.getElementById("ssh-user-input").value = p.user || "";
+            document.getElementById("ssh-auth-type").value = p.auth_type || "password";
+            document.getElementById("ssh-key-path-input").value = p.key_path || "";
+            document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
+            document.getElementById("ssh-pass-input").value = "";
+            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+                try {
+                    const pwd = await invoke("get_ssh_credential", { profileName: p.name });
+                    if (pwd) {
+                        document.getElementById("ssh-pass-input").value = pwd;
+                    }
+                } catch (err) {
+                    console.error("Failed to load SSH credential from keychain:", err);
+                }
+            }
+        };
+    } else if (type === "ftp") {
+        getProfilesFn = getFtpProfiles;
+        loadBtnClass = "ftp-profile-load-btn";
+        delBtnClass = "ftp-profile-del-btn";
+        loadHandler = (p) => {
+            document.getElementById("ftp-host-input").value = p.host || "";
+            document.getElementById("ftp-port-input").value = p.port || "21";
+            document.getElementById("ftp-user-input").value = p.user || "";
+            document.getElementById("ftp-pass-input").value = "";
+            document.getElementById("ftp-path-input").value = p.path || "/";
+        };
+    } else if (type === "sftp") {
+        getProfilesFn = getSftpProfiles;
+        loadBtnClass = "sftp-profile-load-btn";
+        delBtnClass = "sftp-profile-del-btn";
+        loadHandler = async (p) => {
+            document.getElementById("sftp-host-input").value = p.host || "";
+            document.getElementById("sftp-port-input").value = p.port || "22";
+            document.getElementById("sftp-user-input").value = p.user || "";
+            document.getElementById("sftp-auth-type").value = p.auth_type || "password";
+            document.getElementById("sftp-key-path-input").value = p.key_path || "";
+            document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
+            document.getElementById("sftp-pass-input").value = "";
+            document.getElementById("sftp-path-input").value = p.path || "/";
+            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+                try {
+                    const pwd = await invoke("get_sftp_credential", { profileName: p.name });
+                    if (pwd) {
+                        document.getElementById("sftp-pass-input").value = pwd;
+                    }
+                } catch (err) {
+                    console.error("Failed to load SFTP credential from keychain:", err);
+                }
+            }
+        };
+    }
+    
+    const profiles = getProfilesFn();
+    const emptyClass = type === "ssh" ? "ssh-no-profiles" : "ftp-no-profiles";
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="${emptyClass}">No saved profiles.</div>`;
+        return;
+    }
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item" data-index="${i}">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
+            </div>
+            <div class="ssh-profile-actions">
+                ${profileActionButton(loadBtnClass, i, "upload", "Load")}
+                ${profileActionButton(delBtnClass, i, "trash2", "Delete", { danger: true, iconOnly: true })}
+            </div>
+        </div>
+    `).join("");
+    
+    list.querySelectorAll(`.${loadBtnClass}`).forEach(btn => {
+        btn.onclick = async () => {
+            const p = getProfilesFn()[parseInt(btn.getAttribute("data-index"))];
+            if (!p) return;
+            await loadHandler(p);
+        };
+    });
+    
+    list.querySelectorAll(`.${delBtnClass}`).forEach(btn => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
+            await deleteProfile(type, index);
+        };
+    });
+}
+
+function renderConnectionProfilesSettings(type) {
+    const list = document.getElementById(`settings-${type}-profiles-list`);
+    if (!list) return;
+    
+    const tabName = type.toUpperCase();
+    const { getProfilesFn, saveProfilesFn, delCredentialFnName, updateFn1, updateFn2 } = getConnectionTypeMappers(type);
+    if (!getProfilesFn) return;
+    
+    const profiles = getProfilesFn();
+    if (profiles.length === 0) {
+        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the ${tabName} tab to add profiles.</div>`;
+        return;
+    }
+    
+    const delBtnClass = `${type}-profile-del-btn`;
+    list.innerHTML = profiles.map((p, i) => `
+        <div class="ssh-profile-item">
+            <div class="ssh-profile-info">
+                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
+                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
+            </div>
+            ${profileActionButton(delBtnClass, i, "trash2", "Delete", { danger: true, iconOnly: true })}
+        </div>
+    `).join("");
+    
+    list.querySelectorAll(`.${delBtnClass}`).forEach(btn => {
+        btn.onclick = async () => {
+            const index = parseInt(btn.getAttribute("data-index"));
+            await deleteProfile(type, index);
+        };
+    });
+}
+
+function renderFtpFiles(entries) {
+    renderRemoteFiles("ftp", entries);
 }
 
 function setFtpStatus(msg) {
@@ -1281,17 +1359,14 @@ function setFtpStatus(msg) {
 }
 
 function loadFtpDir(path) {
-    const host = document.getElementById("ftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-    const user = document.getElementById("ftp-user-input")?.value.trim();
-    const pass = document.getElementById("ftp-pass-input")?.value;
+    const { host, port, user, password } = getFtpInputValues();
     if (!host) return;
 
     setFtpStatus("Loading...");
     const cwdLabel = document.getElementById("ftp-cwd-label");
     if (cwdLabel) cwdLabel.innerHTML = `${createIcon("folder", { size: 14 })}<span>${window.sanitizeHtml(path)}</span>`;
 
-    invoke("ftp_list_dir", { host, port, user, password: pass, path })
+    invoke("ftp_list_dir", { host, port, user, password, path })
         .then(entries => {
             state.ftpCurrentPath = path;
             renderFtpFiles(entries);
@@ -1311,10 +1386,7 @@ function initFtpClientListeners() {
     });
 
     document.getElementById("ftp-upload-btn")?.addEventListener("click", () => {
-        const host = document.getElementById("ftp-host-input")?.value.trim();
-        const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
-        const user = document.getElementById("ftp-user-input")?.value.trim();
-        const pass = document.getElementById("ftp-pass-input")?.value;
+        const { host, port, user, password } = getFtpInputValues();
         const localPath = document.getElementById("ftp-local-path-input")?.value.trim();
         const remotePath = document.getElementById("ftp-remote-dest-input")?.value.trim();
         if (!host || !localPath || !remotePath) {
@@ -1329,7 +1401,7 @@ function initFtpClientListeners() {
         if (progressFill) { progressFill.style.width = "0%"; }
         if (progressLabel) { progressLabel.textContent = ""; }
 
-        invoke("ftp_upload_file", { host, port, user, password: pass, localPath, remotePath })
+        invoke("ftp_upload_file", { host, port, user, password, localPath, remotePath })
             .then(() => {
                 setFtpStatus("Upload complete.");
                 if (progressFill) progressFill.style.width = "100%";
@@ -1365,94 +1437,8 @@ function initFtpClientListeners() {
     });
 }
 
-// ==========================================================================
-// SFTP CLIENT SYSTEM
-// ==========================================================================
-
-// let sftpCurrentPath = "/"; (Moved to state.js)
-
 function renderSftpFiles(entries) {
-    const list = document.getElementById("sftp-file-list");
-    if (!list) return;
-    if (!entries || entries.length === 0) {
-        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
-        return;
-    }
-    list.innerHTML = "";
-    entries.forEach(e => {
-        const item = document.createElement("div");
-        item.className = "ftp-file-item" + (e.is_dir ? " is-dir" : "");
-        item.setAttribute("data-name", e.name);
-        item.setAttribute("data-is-dir", e.is_dir ? "true" : "false");
-
-        const icon = document.createElement("span");
-        icon.className = "ftp-file-icon";
-        icon.innerHTML = createIcon(e.is_dir ? "folder" : "file", { size: 16 });
-
-        const name = document.createElement("span");
-        name.className = "ftp-file-name";
-        name.textContent = e.name;
-
-        const size = document.createElement("span");
-        size.className = "ftp-file-size";
-        size.textContent = e.is_dir ? "—" : formatBytes(e.size);
-
-        item.appendChild(icon);
-        item.appendChild(name);
-        item.appendChild(size);
-
-        if (!e.is_dir) {
-            const btn = document.createElement("button");
-            btn.className = "canvas-btn sftp-download-btn";
-            btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
-            btn.setAttribute("data-name", e.name);
-            btn.title = "Download";
-            btn.setAttribute("aria-label", `Download ${e.name}`);
-            btn.innerHTML = iconButtonMarkup("download", "Download");
-            item.appendChild(btn);
-        }
-        list.appendChild(item);
-    });
-
-    // Directory navigation
-    list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
-        item.style.cursor = "pointer";
-        item.onclick = () => {
-            const name = item.getAttribute("data-name");
-            state.sftpCurrentPath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            loadSftpDir(state.sftpCurrentPath);
-        };
-    });
-
-    // Download buttons
-    list.querySelectorAll(".sftp-download-btn").forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const name = btn.getAttribute("data-name");
-            const remotePath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-            const host = document.getElementById("sftp-host-input")?.value.trim();
-            const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-            const user = document.getElementById("sftp-user-input")?.value.trim();
-            const authType = document.getElementById("sftp-auth-type")?.value || "password";
-            const pass = document.getElementById("sftp-pass-input")?.value;
-            const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
-            setSftpStatus(`Downloading ${name}...`);
-            invoke("sftp_download_file", { host, port, user, authType, password: pass, keyPath, remotePath, localPath })
-                .then(() => {
-                    setSftpStatus(`Downloaded to ${localPath}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                    }
-                })
-                .catch(err => {
-                    setSftpStatus(`Download error: ${err}`);
-                    if (typeof addNotification === "function") {
-                        addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                    }
-                });
-        };
-    });
+    renderRemoteFiles("sftp", entries);
 }
 
 function setSftpStatus(msg) {
@@ -1461,19 +1447,14 @@ function setSftpStatus(msg) {
 }
 
 function loadSftpDir(path) {
-    const host = document.getElementById("sftp-host-input")?.value.trim();
-    const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-    const user = document.getElementById("sftp-user-input")?.value.trim();
-    const authType = document.getElementById("sftp-auth-type")?.value || "password";
-    const pass = document.getElementById("sftp-pass-input")?.value;
-    const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+    const { host, port, user, auth_type, password, key_path } = getSftpInputValues();
     if (!host) return;
 
     setSftpStatus("Loading...");
     const cwdLabel = document.getElementById("sftp-cwd-label");
     if (cwdLabel) cwdLabel.innerHTML = `${createIcon("folder", { size: 14 })}<span>${window.sanitizeHtml(path)}</span>`;
 
-    invoke("sftp_list_dir", { host, port, user, authType, password: pass, keyPath, path })
+    invoke("sftp_list_dir", { host, port, user, authType: auth_type, password, keyPath: key_path, path })
         .then(entries => {
             state.sftpCurrentPath = path;
             renderSftpFiles(entries);
@@ -1493,12 +1474,7 @@ function initSftpClientListeners() {
     });
 
     document.getElementById("sftp-upload-btn")?.addEventListener("click", () => {
-        const host = document.getElementById("sftp-host-input")?.value.trim();
-        const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-        const user = document.getElementById("sftp-user-input")?.value.trim();
-        const authType = document.getElementById("sftp-auth-type")?.value || "password";
-        const pass = document.getElementById("sftp-pass-input")?.value;
-        const keyPath = document.getElementById("sftp-key-path-input")?.value.trim();
+        const { host, port, user, auth_type, password, key_path } = getSftpInputValues();
         const localPath = document.getElementById("sftp-local-path-input")?.value.trim();
         const remotePath = document.getElementById("sftp-remote-dest-input")?.value.trim();
         if (!host || !localPath || !remotePath) {
@@ -1506,7 +1482,7 @@ function initSftpClientListeners() {
             return;
         }
         setSftpStatus("Uploading...");
-        invoke("sftp_upload_file", { host, port, user, authType, password: pass, keyPath, localPath, remotePath })
+        invoke("sftp_upload_file", { host, port, user, authType: auth_type, password, keyPath: key_path, localPath, remotePath })
             .then(() => {
                 setSftpStatus("Upload complete.");
                 if (typeof addNotification === "function") {
@@ -1547,128 +1523,18 @@ async function initSftpProfilesFromDisk() {
 }
 
 function renderSftpProfiles() {
-    const list = document.getElementById("sftp-profiles-list");
-    if (!list) return;
-    const profiles = getSftpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ftp-no-profiles">No saved profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item" data-index="${i}">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            <div class="ssh-profile-actions">
-                ${profileActionButton("sftp-profile-load-btn", i, "upload", "Load")}
-                ${profileActionButton("sftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-            </div>
-        </div>
-    `).join("");
-
-    list.querySelectorAll(".sftp-profile-load-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const p = getSftpProfiles()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            document.getElementById("sftp-host-input").value = p.host || "";
-            document.getElementById("sftp-port-input").value = p.port || "22";
-            document.getElementById("sftp-user-input").value = p.user || "";
-            document.getElementById("sftp-auth-type").value = p.auth_type || "password";
-            document.getElementById("sftp-key-path-input").value = p.key_path || "";
-            document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("sftp-pass-input").value = "";
-            document.getElementById("sftp-path-input").value = p.path || "/";
-            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-                try {
-                    const pwd = await invoke("get_sftp_credential", { profileName: p.name });
-                    if (pwd) {
-                        document.getElementById("sftp-pass-input").value = pwd;
-                    }
-                } catch (err) {
-                    console.error("Failed to load SFTP credential from keychain:", err);
-                }
-            }
-        };
-    });
-
-    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const index = parseInt(btn.getAttribute("data-index"));
-            const profiles = getSftpProfiles();
-            const p = profiles[index];
-            if (p && window.__TAURI_INTERNALS__) {
-                try {
-                    await invoke("delete_sftp_credential", { profileName: p.name });
-                } catch (err) {
-                    console.error("Failed to delete SFTP credential from keychain:", err);
-                }
-            }
-            profiles.splice(index, 1);
-            fn_sftp_save_profiles(profiles);
-            renderSftpProfiles();
-            renderSftpProfilesSettings();
-        };
-    });
+    renderConnectionProfiles("sftp");
 }
 
 function renderSftpProfilesSettings() {
-    const list = document.getElementById("settings-sftp-profiles-list");
-    if (!list) return;
-    const profiles = getSftpProfiles();
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="ssh-no-profiles">No saved profiles. Use the SFTP tab to add profiles.</div>`;
-        return;
-    }
-    list.innerHTML = profiles.map((p, i) => `
-        <div class="ssh-profile-item">
-            <div class="ssh-profile-info">
-                <span class="ssh-profile-name">${window.sanitizeHtml(p.name)}</span>
-                <span class="ssh-profile-host">${window.sanitizeHtml(p.user)}@${window.sanitizeHtml(p.host)}:${window.sanitizeHtml(String(p.port))}</span>
-            </div>
-            ${profileActionButton("sftp-profile-del-btn", i, "trash2", "Delete", { danger: true, iconOnly: true })}
-        </div>
-    `).join("");
-    list.querySelectorAll(".sftp-profile-del-btn").forEach(btn => {
-        btn.onclick = async () => {
-            const index = parseInt(btn.getAttribute("data-index"));
-            const profiles = getSftpProfiles();
-            const p = profiles[index];
-            if (p && window.__TAURI_INTERNALS__) {
-                try {
-                    await invoke("delete_sftp_credential", { profileName: p.name });
-                } catch (err) {
-                    console.error("Failed to delete SFTP credential from keychain:", err);
-                }
-            }
-            profiles.splice(index, 1);
-            fn_sftp_save_profiles(profiles);
-            renderSftpProfilesSettings();
-            renderSftpProfiles();
-        };
-    });
+    renderConnectionProfilesSettings("sftp");
 }
 
 function initSftpProfileListeners() {
     document.getElementById("sftp-save-profile-btn")?.addEventListener("click", async () => {
-        const host = document.getElementById("sftp-host-input")?.value.trim();
-        const port = parseInt(document.getElementById("sftp-port-input")?.value || "22", 10);
-        const user = document.getElementById("sftp-user-input")?.value.trim();
-        const auth_type = document.getElementById("sftp-auth-type")?.value || "password";
-        const key_path = document.getElementById("sftp-key-path-input")?.value.trim();
-        const path = document.getElementById("sftp-path-input")?.value.trim() || "/";
-        const password = document.getElementById("sftp-pass-input")?.value || "";
-        if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
-        const name = prompt("Profile name:", `${user}@${host}`);
+        const { host, port, user, auth_type, key_path, path, password } = getSftpInputValues();
+        const name = await promptAndSaveProfileName("sftp", host, user, auth_type, password);
         if (!name) return;
-
-        if (auth_type === "password" && password && window.__TAURI_INTERNALS__) {
-            try {
-                await invoke("save_sftp_credential", { profileName: name, password: password });
-            } catch (err) {
-                console.error("Failed to save SFTP credential to keychain:", err);
-            }
-        }
 
         const profiles = getSftpProfiles();
         profiles.push({ name, host, port, user, auth_type, key_path, path });
@@ -1701,8 +1567,6 @@ function initSftpProfileListeners() {
         if (keyPathGroup) keyPathGroup.style.display = isKey ? "block" : "none";
     });
 }
-
-
 
 // --- FTP/SFTP DRAG AND DROP UPLOADS ---
 function initFtpSftpDragDrop() {

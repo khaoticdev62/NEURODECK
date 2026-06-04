@@ -1,7 +1,7 @@
 // remote_control_view.js – Remote Control View
 // Extracted ES module.
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { invoke } from './neurobridge.js';
+import { listen } from './neurobridge.js';
 import QRCode from 'qrcode';
 import { state } from './state.js';
 

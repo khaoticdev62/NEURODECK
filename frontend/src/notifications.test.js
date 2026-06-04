@@ -90,13 +90,15 @@ function makeState() {
 }
 
 function updateNotifBadge(state, doc) {
-  const badge = doc.getElementById("notif-badge");
-  if (!badge) return;
-  if (state.unreadNotifCount > 0) {
-    badge.textContent = String(state.unreadNotifCount);
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
+  const elBadge = doc.getElementById("notif-badge");
+  if (elBadge) {
+    const unread = state.unreadNotifCount;
+    if (unread > 0) {
+      elBadge.textContent = String(unread);
+      elBadge.classList.remove("hidden");
+    } else {
+      elBadge.classList.add("hidden");
+    }
   }
 }
 
@@ -133,32 +135,36 @@ function renderNotificationsList(state, doc) {
 }
 
 function addNotification(state, doc, title, text, type = "info", navigateTo = null) {
-  const timestamp = "12:00:00";
-  const notif = {
-    id: "notif_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
-    title,
-    text,
-    type,
-    time: timestamp,
-    navigateTo,
-  };
-  state.notifications.unshift(notif);
-  if (state.notifications.length > 100) {
-    state.notifications = state.notifications.slice(0, 100);
+  const timeStr = "12:00:00";
+  const randSuffix = Math.random().toString(36).substring(2, 7);
+  const idStr = `notif_${Date.now()}_${randSuffix}`;
+
+  state.notifications.unshift({
+    id: idStr,
+    title: title,
+    text: text,
+    type: type,
+    time: timeStr,
+    navigateTo: navigateTo
+  });
+
+  while (state.notifications.length > 100) {
+    state.notifications.pop();
   }
-  state.unreadNotifCount++;
+
+  state.unreadNotifCount += 1;
   updateNotifBadge(state, doc);
-  // Toast creation (simplified)
-  const toastContainer = doc.getElementById("toast-container");
-  if (toastContainer) {
-    const toast = doc.createElement("div");
-    toast.className = `toast-notif ${type}`;
-    const titleEl = doc.createElement("span");
-    titleEl.textContent = String(title);
-    const bodyEl = doc.createElement("div");
-    bodyEl.textContent = String(text);
-    toast.append(titleEl, bodyEl);
-    toastContainer.appendChild(toast);
+  
+  const container = doc.getElementById("toast-container");
+  if (container) {
+    const toastEl = doc.createElement("div");
+    toastEl.className = `toast-notif ${type}`;
+    const tSpan = doc.createElement("span");
+    tSpan.textContent = String(title);
+    const bDiv = doc.createElement("div");
+    bDiv.textContent = String(text);
+    toastEl.append(tSpan, bDiv);
+    container.appendChild(toastEl);
   }
   renderNotificationsList(state, doc);
 }

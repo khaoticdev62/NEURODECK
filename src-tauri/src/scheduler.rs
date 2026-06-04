@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tokio_cron_scheduler::{Job, JobScheduler};
+
+use crate::bridge::EventEmitter;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,13 +44,13 @@ impl SchedulerManaged {
         }
     }
 
-    pub async fn start(&self, app_handle: AppHandle) -> Result<(), String> {
+    pub async fn start<E: EventEmitter>(&self, emitter: E) -> Result<(), String> {
         let sched = JobScheduler::new().await.map_err(|e| e.to_string())?;
         let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
         for task in tasks {
             if task.enabled {
                 let _ =
-                    register_task(&sched, &task, self.job_map.clone(), app_handle.clone()).await;
+                    register_task(&sched, &task, self.job_map.clone(), emitter.clone()).await;
             }
         }
         sched.start().await.map_err(|e| e.to_string())?;
@@ -90,11 +92,11 @@ fn to_six_field(cron: &str) -> String {
 
 /// Add a cron job for `task` to the scheduler. Emits `scheduled_task_started`
 /// on each fire. Returns the scheduler-assigned job UUID.
-pub async fn register_task(
+pub async fn register_task<E: EventEmitter>(
     scheduler: &JobScheduler,
     task: &ScheduledTask,
     job_map: JobMap,
-    app_handle: AppHandle,
+    emitter: E,
 ) -> Result<uuid::Uuid, String> {
     let cron_str = to_six_field(&task.cron);
     let task_id = task.id.clone();
@@ -102,12 +104,12 @@ pub async fn register_task(
     let task_goal = task.goal.clone();
 
     let job = Job::new_async(cron_str.as_str(), move |_uuid, _lock| {
-        let app = app_handle.clone();
+        let app = emitter.clone();
         let id = task_id.clone();
         let name = task_name.clone();
         let goal = task_goal.clone();
         Box::pin(async move {
-            let _ = app.emit(
+            app.emit(
                 "scheduled_task_started",
                 serde_json::json!({
                     "id": id,
@@ -253,7 +255,8 @@ pub fn run_task_now(
     };
 
     if let Some(task) = task {
-        let _ = app_handle.emit(
+        let _ = tauri::Emitter::emit(
+            &app_handle,
             "scheduled_task_started",
             serde_json::json!({
                 "id": task.id,

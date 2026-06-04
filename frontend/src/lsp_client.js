@@ -2,8 +2,8 @@
 // Handles: server lifecycle, document sync, completions popup, hover tooltip,
 // and diagnostic display in the IDE output panel.
 
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "./neurobridge.js";
+import { listen } from "./neurobridge.js";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 

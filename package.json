@@ -1,17 +1,19 @@
 {
   "name": "neurodeck",
   "version": "1.8.0",
-  "description": "AI-native terminal OS for Steam Deck — Tauri v2 + Rust + Gemini",
+  "description": "AI-native terminal OS for Steam Deck — Electron + Rust + Gemini",
+  "main": "electron/main.js",
   "private": true,
   "license": "UNLICENSED",
+  "author": "Khaotic Labs <dev@khaoticlabs.com>",
   "workspaces": [
     "frontend"
   ],
   "scripts": {
     "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",
-    "dev": "npm run dev:autokill && tauri dev",
-    "build": "tauri build",
-    "tauri": "tauri",
+    "dev": "npm run dev:autokill && npm run sidecar:build && cd electron && npm run dev",
+    "build": "npm run frontend:build && npm run sidecar:build && npx electron-builder --config electron-builder.yml --projectDir .",
+    "sidecar:build": "cd src-tauri && cargo build --release",
     "frontend:dev": "npm -w frontend run dev",
     "frontend:build": "npm -w frontend run build",
     "frontend:preview": "npm -w frontend run preview",
@@ -33,7 +35,8 @@
     "setup": "npm install && echo \"\\nAll JS/Node deps installed. Next: uv sync (Python tooling) — then set GEMINI_API_KEY and run: npm run dev\""
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.0",
+    "electron": "^36.0.0",
+    "electron-builder": "^25.0.0",
     "vitest": "^4.1.7"
   },
   "engines": {

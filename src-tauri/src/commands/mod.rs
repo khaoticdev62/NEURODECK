@@ -4452,8 +4452,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Final AppHandle-only stubs (window, remote server lifecycle)
         // ────────────────────────────────────────────────────────────────────
-        "start_remote_server" | "stop_remote_server" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Remote server lifecycle requires Tauri AppHandle for WebSocket event routing; use the Tauri UI to start/stop" }))
+        "start_remote_server" => {
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(9333) as u16;
+            let result = crate::remote_control::start_remote_server_bridge(
+                port,
+                state.broadcaster.clone(),
+                state.remote.clone(),
+                state.pty.clone(),
+            ).await?;
+            Ok(result)
+        }
+
+        "stop_remote_server" => {
+            crate::remote_control::stop_remote_server_bridge(
+                state.remote.clone(),
+                state.pty.clone(),
+            ).await?;
+            Ok(serde_json::json!({ "status": "stopped" }))
         }
 
         "canvas_collab_host" => {

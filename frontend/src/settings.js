@@ -1,6 +1,6 @@
 import { state } from "./state.js";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "./neurobridge.js";
+import { listen } from "./neurobridge.js";
 import {
   restartTerminalSession,
   renderSshProfilesSettings,
@@ -259,26 +259,39 @@ function handleLlmProviderChange() {
   toggleSettingsLlmGroups(this.value);
 }
 
+function getLlmSettingsFromDom() {
+  return {
+    provider: document.getElementById("llm-provider-select")?.value,
+    geminiKey: document.getElementById("settings-gemini-key")?.value.trim(),
+    geminiModel: document.getElementById("settings-gemini-model")?.value.trim(),
+    ollamaUrl: document.getElementById("settings-ollama-url")?.value.trim(),
+    ollamaModel: document.getElementById("settings-ollama-model")?.value.trim(),
+    kimiKey: document.getElementById("settings-kimi-key")?.value.trim(),
+    kimiModel: document.getElementById("settings-kimi-model")?.value.trim(),
+    kimiUrl: document.getElementById("settings-kimi-url")?.value.trim(),
+    hfKey: document.getElementById("settings-hf-key")?.value.trim(),
+    hfModel: document.getElementById("settings-hf-model")?.value.trim(),
+    hfUrl: document.getElementById("settings-hf-url")?.value.trim(),
+    oaKey: document.getElementById("settings-openai-compat-key")?.value.trim(),
+    oaModel: document.getElementById("settings-openai-compat-model")?.value.trim(),
+    oaUrl: document.getElementById("settings-openai-compat-url")?.value.trim(),
+  };
+}
+
 function handleTestConnectionClick() {
-  const provider = document.getElementById("llm-provider-select")?.value;
-  const geminiKey = document
-    .getElementById("settings-gemini-key")
-    ?.value.trim();
-  const geminiModel = document
-    .getElementById("settings-gemini-model")
-    ?.value.trim();
-  const ollamaUrl = document
-    .getElementById("settings-ollama-url")
-    ?.value.trim();
-  const ollamaModel = document
-    .getElementById("settings-ollama-model")
-    ?.value.trim();
-  const hfKey = document.getElementById("settings-hf-key")?.value.trim();
-  const hfModel = document.getElementById("settings-hf-model")?.value.trim();
-  const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
-  const oaKey = document.getElementById("settings-openai-compat-key")?.value.trim();
-  const oaModel = document.getElementById("settings-openai-compat-model")?.value.trim();
-  const oaUrl = document.getElementById("settings-openai-compat-url")?.value.trim();
+  const {
+    provider,
+    geminiKey,
+    geminiModel,
+    ollamaUrl,
+    ollamaModel,
+    hfKey,
+    hfModel,
+    hfUrl,
+    oaKey,
+    oaModel,
+    oaUrl,
+  } = getLlmSettingsFromDom();
 
   const statusEl = document.getElementById("settings-llm-status");
   const testBtn = document.getElementById("settings-test-connection-btn");
@@ -327,28 +340,22 @@ function handleTestConnectionClick() {
 }
 
 function handleSaveLlmClick() {
-  const provider = document.getElementById("llm-provider-select")?.value;
-  const geminiKey = document
-    .getElementById("settings-gemini-key")
-    ?.value.trim();
-  const geminiModel = document
-    .getElementById("settings-gemini-model")
-    ?.value.trim();
-  const ollamaUrl = document
-    .getElementById("settings-ollama-url")
-    ?.value.trim();
-  const ollamaModel = document
-    .getElementById("settings-ollama-model")
-    ?.value.trim();
-  const kimiKey = document.getElementById("settings-kimi-key")?.value.trim();
-  const kimiModel = document.getElementById("settings-kimi-model")?.value.trim();
-  const kimiUrl = document.getElementById("settings-kimi-url")?.value.trim();
-  const hfKey = document.getElementById("settings-hf-key")?.value.trim();
-  const hfModel = document.getElementById("settings-hf-model")?.value.trim();
-  const hfUrl = document.getElementById("settings-hf-url")?.value.trim();
-  const oaKey = document.getElementById("settings-openai-compat-key")?.value.trim();
-  const oaModel = document.getElementById("settings-openai-compat-model")?.value.trim();
-  const oaUrl = document.getElementById("settings-openai-compat-url")?.value.trim();
+  const {
+    provider,
+    geminiKey,
+    geminiModel,
+    ollamaUrl,
+    ollamaModel,
+    kimiKey,
+    kimiModel,
+    kimiUrl,
+    hfKey,
+    hfModel,
+    hfUrl,
+    oaKey,
+    oaModel,
+    oaUrl,
+  } = getLlmSettingsFromDom();
 
   const statusEl = document.getElementById("settings-llm-status");
   if (statusEl) {
@@ -2365,16 +2372,7 @@ function initHfBrowser() {
     const repo = downloadBtn.dataset.repo;
     if (!repo) return;
 
-    // Switch to Browse tab and search for this model
-    const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
-    if (browseTab) browseTab.click();
-
-    // Trigger search
-    const searchInput = document.getElementById("models-search-input");
-    if (searchInput) {
-      searchInput.value = repo;
-      performModelSearch(repo);
-    }
+    switchToBrowseTabAndSearch(repo);
 
     if (statusEl) {
       statusEl.innerHTML = `<span>Switched to Browse tab — search results for <strong>${repo}</strong> loading…</span>`;
@@ -2427,6 +2425,17 @@ export function performModelSearch(query) {
       if (grid)
         grid.innerHTML = `<div class="models-empty-state"><p>Search error: ${escapeHtml(String(err))}</p></div>`;
     });
+}
+
+export function switchToBrowseTabAndSearch(repo) {
+  const browseTab = document.querySelector('.stv-sub-tab[data-models-tab="browse"]');
+  if (browseTab) browseTab.click();
+
+  const searchInput = document.getElementById("models-search-input");
+  if (searchInput) {
+    searchInput.value = repo;
+    performModelSearch(repo);
+  }
 }
 
 function applyModelFilter(filter) {

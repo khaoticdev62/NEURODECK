@@ -2,7 +2,7 @@
 
 # =============================================================================
 # NEURODECK Installation Script for SteamOS / Linux
-# Version: 1.6.0
+# Version: 1.8.0 (Electron Edition)
 # =============================================================================
 
 set -e
@@ -108,17 +108,29 @@ if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
     if command -v cargo &> /dev/null && command -v npm &> /dev/null; then
         print_step "No binary found — building from source (this takes ~5 minutes)..."
         cd "$SCRIPT_DIR"
-        npm install --prefix frontend
-        npx @tauri-apps/cli build
+        npm install
+        npm run build
         for candidate in \
-            "$SCRIPT_DIR/src-tauri/target/release/neurodeck" \
-            "$SCRIPT_DIR/src-tauri/target/release/app"
+            "$SCRIPT_DIR/dist-electron/neurodeck_"*"_steamdeck_amd64.AppImage" \
+            "$SCRIPT_DIR/dist-electron/"*.AppImage
         do
             if [ -f "$candidate" ]; then
-                BINARY_SRC="$candidate"
+                APPIMAGE_SRC="$candidate"
                 break
             fi
         done
+        # Fallback to raw binary if no AppImage was produced
+        if [ -z "$APPIMAGE_SRC" ]; then
+            for candidate in \
+                "$SCRIPT_DIR/target/release/neurodeck" \
+                "$SCRIPT_DIR/target/release/app"
+            do
+                if [ -f "$candidate" ]; then
+                    BINARY_SRC="$candidate"
+                    break
+                fi
+            done
+        fi
     fi
 fi
 
@@ -149,7 +161,7 @@ if [ -z "$APPIMAGE_SRC" ] && [ -z "$BINARY_SRC" ]; then
     print_err "  1. Download neurodeck_${NEURODECK_VERSION}_steamdeck_amd64.AppImage from"
     print_err "     https://github.com/khaoticdev62/NEURODECK/releases/latest"
     print_err "     and place it in the same folder as install.sh"
-    print_err "  2. Build from source manually: npm run tauri build"
+    print_err "  2. Build from source manually: npm run build"
     exit 1
 fi
 
@@ -163,36 +175,17 @@ if [ -n "$APPIMAGE_SRC" ]; then
     chmod +x "$INSTALL_DIR/neurodeck.AppImage"
 
     # On SteamOS, always use extract-and-run for maximum compatibility.
-    # FUSE is unreliable, and the bundled WebKit works fine via extract mode.
+    # FUSE is unreliable in the SteamOS sandbox.
     echo '#!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
 
-# WebKit & Tauri runtime optimizations for Steam Deck
-export WEBKIT_DISABLE_DMABUF_RENDERER=1
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
+# Steam Deck / Gamescope runtime optimizations
 export APPIMAGE_EXTRACT_AND_RUN=1
-export GDK_SCALE=1
+export ELECTRON_DISABLE_GPU=0
+export ELECTRON_ENABLE_LOGGING=0
 
-# Detect system libwayland-client to bypass AppImage'"'"'s bundled version
-# (prevents EGL_BAD_PARAMETER crash on Arch/SteamOS/Fedora)
-LIBWAYLAND=""
-for path in \
-    /usr/lib/libwayland-client.so.0 \
-    /usr/lib/x86_64-linux-gnu/libwayland-client.so.0 \
-    /usr/lib64/libwayland-client.so.0 \
-    /usr/lib/libwayland-client.so; do
-    if [ -f "$path" ]; then
-        LIBWAYLAND="$path"
-        break
-    fi
-done
-
-if [ -n "$LIBWAYLAND" ]; then
-    export LD_PRELOAD="${LIBWAYLAND}${LD_PRELOAD:+:$LD_PRELOAD}"
-fi
-
-# Fallback to X11 if no Wayland display (Gamescope without --expose-wayland)
+# Gamescope Wayland support — fallback to X11 if no Wayland display
 if [ -z "$WAYLAND_DISPLAY" ]; then
     export GDK_BACKEND=x11
 fi
@@ -257,8 +250,8 @@ fi
 find "$INSTALL_DIR/scripts" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 print_ok "Config files copied"
 
-# Note: AppImage bundles its own WebKit runtime — no system install needed
-# SteamOS has read-only root filesystem, so sudo pacman -S would fail anyway
+# Note: Electron AppImage bundles Chromium — no system WebKit/GTK install needed.
+# SteamOS has read-only root filesystem, so sudo pacman -S would fail anyway.
 
 # --- Run Local LLM Setup (SteamOS/Linux specific) ---
 if $IS_STEAMOS; then
@@ -309,10 +302,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 [ -f "$HOME/.config/neurodeck/env" ] && source "$HOME/.config/neurodeck/env"
 
-# WebKit & Tauri runtime optimizations for Steam Deck
-export WEBKIT_DISABLE_DMABUF_RENDERER=1
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
-export GDK_SCALE=1
+# Steam Deck / Electron runtime settings
+export ELECTRON_DISABLE_GPU=0
+export ELECTRON_ENABLE_LOGGING=0
 
 cd "$SCRIPT_DIR"
 
@@ -383,7 +375,7 @@ echo "    If NEURODECK doesn't launch, open a terminal and run:"
 echo "      bash $INSTALL_DIR/neurodeck-launch.sh"
 echo ""
 echo "    This will show any error messages. Common fixes:"
-echo "    • Missing WebKit: sudo pacman -S webkit2gtk"
-echo "    • Missing FUSE: sudo pacman -S fuse2"
+echo "    • Missing FUSE (for AppImage): sudo pacman -S fuse2"
+echo "    • Or use extract-and-run mode: APPIMAGE_EXTRACT_AND_RUN=1 ./neurodeck.AppImage"
 echo "    • Permissions: chmod +x $INSTALL_DIR/neurodeck.AppImage"
 echo ""

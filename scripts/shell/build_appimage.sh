@@ -15,12 +15,11 @@
 #
 # Requirements (Linux / WSL2):
 #   curl, nodejs 20+, npm, rustup
-#   libgtk-3-dev, libwebkit2gtk-4.1-dev, libappindicator3-dev,
-#   librsvg2-dev, patchelf, pkg-config, libssl-dev, libasound2-dev,
-#   protobuf-compiler
+#   libgtk-3-dev, libnss3, libasound2-dev, libudev-dev, protobuf-compiler
 #
 # Output:
-#   src-tauri/target/release/bundle/appimage/<name>_<ver>_amd64.AppImage
+#   dist-electron/neurodeck_${ver}_steamdeck_amd64.AppImage
+#   dist-electron/neurodeck_${ver}_amd64.deb
 #   $DIST_OUT/<name>_<ver>_steamdeck_amd64.AppImage  (if DIST_OUT is set)
 # =============================================================================
 
@@ -62,7 +61,7 @@ echo ""
 print_info "Project root : $PROJECT_ROOT"
 print_info "Cargo jobs   : $CARGO_JOBS"
 print_info "Skip deps    : $SKIP_DEPS"
-print_info "Dist output  : ${DIST_OUT:-<not set, artifact stays in bundle dir>}"
+print_info "Dist output  : ${DIST_OUT:-<not set, artifact stays in dist-electron/>}"
 echo ""
 
 # ── OS guard ───────────────────────────────────────────────────────────────────
@@ -177,12 +176,12 @@ fi
 export PATH="$HOME/.cargo/bin:$PATH"
 print_ok "Cargo $(cargo --version | awk '{print $2}')"
 
-# ── Step 4: GTK / WebKit system deps ──────────────────────────────────────────
+# ── Step 4: GTK / Electron system deps ─────────────────────────────────────────
 if [[ "$SKIP_DEPS" != "1" ]]; then
-    print_step "Checking GTK/WebKit system dependencies..."
+    print_step "Checking GTK/Electron system dependencies..."
     REQUIRED_PKGS=(
         libgtk-3-dev
-        libwebkit2gtk-4.1-dev
+        libnss3
         librsvg2-dev
         patchelf
         pkg-config
@@ -245,22 +244,19 @@ else
     print_ok "npm ci done"
 fi
 
-# ── Step 6: Compiling Tauri AppImage ──────────────────────────────────────────
-# Note: We skip the manual "npm run frontend build" step here because Tauri's
-# beforeBuildCommand in tauri.conf.json already triggers the Vite build!
-print_step "Compiling Tauri AppImage (Rust + bundler)..."
-print_info "Using $CARGO_JOBS parallel jobs"
+# ── Step 6: Build Electron AppImage ────────────────────────────────────────────
+print_step "Building Electron AppImage (frontend + Rust + electron-builder)..."
+print_info "Using $CARGO_JOBS parallel cargo jobs"
 export APPIMAGE_EXTRACT_AND_RUN=1
-# Preserve existing RUSTFLAGS (e.g. mold linker from CI) and target Steam Deck Zen 2
+# Preserve existing RUSTFLAGS and target Steam Deck Zen 2
 export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-cpu=znver2"
-npx @tauri-apps/cli build --bundles appimage
-print_ok "Tauri build finished"
+npm run build
+print_ok "Electron build finished"
 
 # ── Step 7: Locate output ──────────────────────────────────────────────────────
 APPIMAGE=""
 BUNDLE_SEARCH_DIRS=(
-    "$PROJECT_ROOT/src-tauri/target/release/bundle/appimage"
-    "$PROJECT_ROOT/target/release/bundle/appimage"
+    "$PROJECT_ROOT/dist-electron"
 )
 
 for dir in "${BUNDLE_SEARCH_DIRS[@]}"; do
@@ -271,7 +267,7 @@ for dir in "${BUNDLE_SEARCH_DIRS[@]}"; do
 done
 
 if [[ -z "$APPIMAGE" ]]; then
-    print_err "AppImage not found in bundle directories."
+    print_err "AppImage not found in dist-electron/."
 fi
 
 SIZE_MB=$(du -m "$APPIMAGE" | cut -f1)
@@ -287,13 +283,13 @@ if [[ -n "$DIST_OUT" ]]; then
     print_ok "Copied → $DEST"
 fi
 
-# If we ran natively in WSL redirected path, we must copy the generated AppImage
-# back to the Windows host's bundle folder so that build.ps1 can find it there.
+# If we ran natively in WSL redirected path, copy the generated AppImage
+# back to the Windows host's dist folder so that build.ps1 can find it.
 if [[ "${ND_WSL_NATIVE:-0}" == "1" && -n "${ORIGINAL_PROJECT_ROOT:-}" ]]; then
-    HOST_BUNDLE_DIR="$ORIGINAL_PROJECT_ROOT/src-tauri/target/release/bundle/appimage"
-    mkdir -p "$HOST_BUNDLE_DIR"
-    cp "$APPIMAGE" "$HOST_BUNDLE_DIR/$(basename "$APPIMAGE")"
-    print_ok "Copied back to host bundle path → $HOST_BUNDLE_DIR"
+    HOST_DIST_DIR="$ORIGINAL_PROJECT_ROOT/dist-electron"
+    mkdir -p "$HOST_DIST_DIR"
+    cp "$APPIMAGE" "$HOST_DIST_DIR/$(basename "$APPIMAGE")"
+    print_ok "Copied back to host path → $HOST_DIST_DIR"
 fi
 
 # ── Done ───────────────────────────────────────────────────────────────────────

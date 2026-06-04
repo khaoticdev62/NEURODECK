@@ -52,7 +52,7 @@ use crate::memory::MemoryDB;
 // Re-exports so existing callers (crate::PERSONAS, crate::user_config_dir, etc.) keep working.
 pub(crate) use models::{CustomPersona, PERSONAS, THEMES};
 pub(crate) use game::*;
-pub(crate) use paths::*;
+pub use paths::*;
 pub(crate) use providers::*;
 
 
@@ -94,7 +94,6 @@ pub struct AppState {
 }
 
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
     {
@@ -243,7 +242,11 @@ pub fn run() {
         .setup(|app| {
             // Start file transfer services
             let transfer_state = app.state::<transfer::SharedTransferState>().0.clone();
-            transfer::start_transfer_services(app.handle().clone(), transfer_state);
+            let download_dir = app.path()
+                .download_dir()
+                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
+                .join("neurodeck_transfers");
+            transfer::start_transfer_services(app.handle().clone(), transfer_state, download_dir);
 
             // Load DeckCode schema if available
             let schema_path =

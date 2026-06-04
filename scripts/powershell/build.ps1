@@ -331,10 +331,10 @@ function Invoke-Preflight {
     if ($TargetMode -in "win", "all") {
         Assert-Command "npm"     "Install Node.js 20+: https://nodejs.org"
 
-        # npx @tauri-apps/cli must resolve
-        $r = Invoke-Process -Exe "npx" -ExeArgs @("@tauri-apps/cli", "--version") -WorkDir $Script:ROOT
-        if ($r.ExitCode -ne 0) { throw "tauri CLI not available via npx. Run: npm install" }
-        Write-Ok "Tauri CLI: $($r.Output.Trim())"
+        # Verify electron-builder is available
+        $r = Invoke-Process -Exe "npx" -ExeArgs @("electron-builder", "--version") -WorkDir $Script:ROOT
+        if ($r.ExitCode -ne 0) { throw "electron-builder not available via npx. Run: npm install" }
+        Write-Ok "electron-builder: $($r.Output.Trim())"
     }
 
     if ($TargetMode -in "appimage", "all") {
@@ -416,7 +416,7 @@ function Invoke-FrontendBuild {
         Write-Ok "npm ci complete"
     }
 
-    Write-Ok "Vite compilation skipped (handled automatically by Tauri build command)"
+    Write-Ok "Vite compilation skipped (handled automatically by electron-builder)"
 }
 
 # ── Phase: Clean (optional) ────────────────────────────────────────────────────
@@ -450,31 +450,24 @@ function Invoke-WindowsBuild {
     }
 
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    $r = Invoke-Process -Exe "npx" -ExeArgs @("@tauri-apps/cli", "build", "--bundles", "nsis") `
+    $r = Invoke-Process -Exe "npm" -ExeArgs @("run", "build") `
         -WorkDir $Script:ROOT `
-        -LogFile (Join-Path $Script:LOG_DIR "tauri-build-win.log") `
+        -LogFile (Join-Path $Script:LOG_DIR "electron-build-win.log") `
         -Env $buildEnv
     $watch.Stop()
 
-    if ($r.ExitCode -ne 0) { throw "Tauri Windows build failed`n$($r.Output)" }
-    Write-Ok "Cargo+Tauri compile done ($([int]($watch.ElapsedMilliseconds/1000))s)"
+    if ($r.ExitCode -ne 0) { throw "Electron Windows build failed`n$($r.Output)" }
+    Write-Ok "Electron build done ($([int]($watch.ElapsedMilliseconds/1000))s)"
 
     # ── Locate outputs ──
-    $nsisSearch = @(
-        "src-tauri/target/release/bundle/nsis",
-        "target/release/bundle/nsis"
-    )
-    $nsisDir   = $nsisSearch | Where-Object { Test-Path (Join-Path $Script:ROOT $_) } | Select-Object -First 1
-    if (-not $nsisDir) { throw "NSIS output directory not found. Check tauri build logs." }
-    $nsisDir   = Join-Path $Script:ROOT $nsisDir
+    $distElectron = Join-Path $Script:ROOT "dist-electron"
+    if (-not (Test-Path $distElectron)) { throw "dist-electron/ not found after build." }
 
-    $installer = Get-ChildItem $nsisDir -Filter "*x64-setup.exe" -ErrorAction Stop |
+    $installer = Get-ChildItem $distElectron -Filter "NEURODECK_*_windows_x64.exe" -ErrorAction Stop |
                     Select-Object -First 1
-    if (-not $installer) { throw "NSIS installer exe not found in $nsisDir" }
+    if (-not $installer) { throw "NSIS installer exe not found in $distElectron" }
 
     $exeSearch = @(
-        "src-tauri/target/release/app.exe",
-        "src-tauri/target/release/neurodeck.exe",
         "target/release/app.exe",
         "target/release/neurodeck.exe"
     )
@@ -601,10 +594,9 @@ function Invoke-AppImageBuild {
     }
     Write-Ok "WSL build complete ($([int]($watch.ElapsedMilliseconds/1000))s)"
 
-    # Locate the AppImage — tauri puts it in src-tauri/target/release/bundle/appimage/
+    # Locate the AppImage — electron-builder puts it in dist-electron/
     $bundleDirs = @(
-        "src-tauri/target/release/bundle/appimage",
-        "target/release/bundle/appimage"
+        "dist-electron"
     )
     $appimage = $null
     foreach ($d in $bundleDirs) {

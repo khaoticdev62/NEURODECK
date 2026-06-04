@@ -8,11 +8,11 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
   },
-  envPrefix: ["VITE_", "TAURI_"],
+  envPrefix: ["VITE_"],
   build: {
     target: ["es2022", "chrome110", "safari15"],
-    minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
-    sourcemap: !!process.env.TAURI_DEBUG,
+    minify: process.env.NODE_ENV === "production" ? "esbuild" : false,
+    sourcemap: process.env.NODE_ENV !== "production",
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -22,8 +22,6 @@ export default defineConfig({
           if (id.includes("marked")) return "marked";
           // qrcode — infrequently used
           if (id.includes("qrcode")) return "qrcode";
-          // Tauri JS API
-          if (id.includes("@tauri-apps")) return "tauri-api";
         },
       },
     },

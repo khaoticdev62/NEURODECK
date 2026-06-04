@@ -1,0 +1,78 @@
+appId: com.neurodeck.app
+productName: NEURODECK
+copyright: Copyright © 2026 Khaotic Labs
+directories:
+  output: dist-electron
+  buildResources: build
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+extraResources:
+  - from: plugins
+    to: plugins
+    filter:
+      - "**/*.lua"
+  - from: assets
+    to: assets
+    filter:
+      - "**/*"
+  - from: llm-term.toml
+    to: llm-term.toml
+  - from: install.sh
+    to: install.sh
+  - from: launch_gamescope.sh
+    to: launch_gamescope.sh
+
+win:
+  target:
+    - nsis
+    - zip
+  icon: src-tauri/icons/icon.ico
+  artifactName: ${productName}_${version}_windows_x64.${ext}
+  extraResources:
+    - from: target/release/app.exe
+      to: neurodeck.exe
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: src-tauri/icons
+  category: Development
+  maintainer: Khaotic Labs
+  artifactName: ${productName}_${version}_steamdeck_${arch}.${ext}
+  executableName: neurodeck
+  extraResources:
+    - from: target/release/app
+      to: neurodeck
+  desktop:
+    Name: NEURODECK
+    Comment: AI Terminal OS for Steam Deck
+    Categories: Development;Utility;Game;
+    Keywords: AI;terminal;LLM;chatbot;SteamDeck;
+    StartupWMClass: NEURODECK
+    MimeType: text/plain;text/x-lua;
+mac:
+  target:
+    - dmg
+    - zip
+  icon: src-tauri/icons/icon.icns
+  artifactName: ${productName}_${version}_${arch}.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  extraResources:
+    - from: target/release/app
+      to: neurodeck
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NEURODECK
+  uninstallDisplayName: NEURODECK
+dmg:
+  window:
+    width: 540
+    height: 380
+publish:
+  provider: generic
+  url: https://releases.neurodeck.app

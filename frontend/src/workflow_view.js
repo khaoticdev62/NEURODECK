@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from './neurobridge.js';
 
 // ── Node type registry ────────────────────────────────────────────────────────
 
@@ -18,6 +18,16 @@ const NODE_W  = 220;
 const NODE_H  = 90;
 const PORT_R  = 7;
 const SNAP    = 20;
+
+function setupDragListeners(onMove, onUpCleanup) {
+    const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        if (onUpCleanup) onUpCleanup();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+}
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -228,12 +238,7 @@ function _wireCanvas() {
             _s.pan.y = ev.clientY - startY;
             _applyTransform();
         };
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        setupDragListeners(onMove);
     });
 
     // Mouse position for live edge
@@ -431,12 +436,7 @@ function _renderNodes() {
                 div.style.top  = `${node.y}px`;
                 _renderEdges();
             };
-            const onUp = () => {
-                window.removeEventListener('mousemove', onMove);
-                window.removeEventListener('mouseup', onUp);
-            };
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
+            setupDragListeners(onMove);
         });
 
         // Output port — start edge
