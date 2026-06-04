@@ -7,7 +7,7 @@
   "tag": "v1.8.0-ptah",
   "workspace_state": "manual-uncommitted",
   "dirty_build": true,
-  "stamped_at_utc": "2026-06-04T19:16:31Z",
+  "stamped_at_utc": "2026-06-04T19:17:48Z",
   "checks": {
     "meta_json_present": true,
     "schema_valid": true,
