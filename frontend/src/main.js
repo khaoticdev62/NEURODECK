@@ -10922,8 +10922,17 @@ async function checkOnboarding() {
 
   try {
     const completed = localStorage.getItem("neurodeck_onboarding_complete");
-    if (completed === "true") return; // Already done — skip
-    showOnboardingWizard();
+    let geminiKey = "";
+    try {
+      geminiKey = await invoke("get_gemini_api_key");
+    } catch (e) {
+      console.warn("Failed to check gemini api key status on boot:", e);
+    }
+    const hasKey = geminiKey && geminiKey.trim().length > 0;
+
+    if (!hasKey && completed !== "true") {
+      showOnboardingWizard();
+    }
   } catch (e) {
     console.error("Failed to check onboarding state:", e);
   }
@@ -10934,13 +10943,16 @@ async function showOnboardingWizard() {
   const overlay = document.createElement("div");
   overlay.id = "onboarding-overlay";
   overlay.className = "onboarding-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "onboarding-title");
 
   // 2. Set up HTML content — 5-step enhanced wizard
   overlay.innerHTML = `
         <div class="onboarding-container">
             <header class="onboarding-header">
-                <h2 class="onboarding-title">NEURODECK // INITIAL_BOOT_SETUP</h2>
-                <div class="onboarding-steps-indicator">
+                <h2 class="onboarding-title" id="onboarding-title">NEURODECK // INITIAL_BOOT_SETUP</h2>
+                <div class="onboarding-steps-indicator" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="11" aria-valuetext="Step 1 of 11" id="onboarding-progress">
                     <span class="onboarding-step-dot active" data-step="1"></span>
                     <span class="onboarding-step-dot" data-step="2"></span>
                     <span class="onboarding-step-dot" data-step="3"></span>
@@ -11066,22 +11078,22 @@ async function showOnboardingWizard() {
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 10px;">Choose your LLM backend — powers Chat, Agent, RAG memory, and AI autocomplete.</p>
 
                     <div class="onboarding-choice-container" style="margin-bottom: 12px;">
-                        <div class="onboarding-choice-card active" data-provider="gemini-key">
+                        <div class="onboarding-choice-card active" data-provider="gemini-key" role="button" tabindex="0" aria-pressed="true">
                             <span class="onboarding-choice-icon">${createIcon("shieldCheck", { size: 16 })}</span>
                             <span class="onboarding-choice-title">Gemini API Key</span>
                             <span class="onboarding-choice-desc">Manual entry of Google Gemini API key. Saved to secure OS keychain.</span>
                         </div>
-                        <div class="onboarding-choice-card" data-provider="gemini-oauth">
+                        <div class="onboarding-choice-card" data-provider="gemini-oauth" role="button" tabindex="0" aria-pressed="false">
                             <span class="onboarding-choice-icon">${createIcon("panelRightOpen", { size: 16 })}</span>
                             <span class="onboarding-choice-title">Google Login (QR)</span>
                             <span class="onboarding-choice-desc">Authenticate via device code grant. Scan QR code with your phone.</span>
                         </div>
-                        <div class="onboarding-choice-card" data-provider="kimi">
+                        <div class="onboarding-choice-card" data-provider="kimi" role="button" tabindex="0" aria-pressed="false">
                             <span class="onboarding-choice-icon">${createIcon("moon", { size: 16 })}</span>
                             <span class="onboarding-choice-title">Kimi (Moonshot)</span>
                             <span class="onboarding-choice-desc">Moonshot AI cloud models. Strong reasoning and ultra-long context.</span>
                         </div>
-                        <div class="onboarding-choice-card" data-provider="ollama">
+                        <div class="onboarding-choice-card" data-provider="ollama" role="button" tabindex="0" aria-pressed="false">
                             <span class="onboarding-choice-icon">${createIcon("server", { size: 16 })}</span>
                             <span class="onboarding-choice-title">Ollama (Offline)</span>
                             <span class="onboarding-choice-desc">Local Ollama server on Steam Deck. Completely offline operation.</span>
@@ -11510,6 +11522,13 @@ async function showOnboardingWizard() {
   let isDiagnosticsPassed = false;
   let oauthPollAbortController = null;
 
+  const resetActiveState = (selector) => {
+    document.querySelectorAll(selector).forEach((c) => {
+      c.classList.remove("active");
+      c.setAttribute("aria-pressed", "false");
+    });
+  };
+
   // Welcome screen typing animation
   const welcomeText =
     "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
@@ -11560,6 +11579,12 @@ async function showOnboardingWizard() {
       dot.classList.toggle("active", stepNum === currentStep);
       dot.classList.toggle("completed", stepNum < currentStep);
     });
+
+    const progressEl = document.getElementById("onboarding-progress");
+    if (progressEl) {
+      progressEl.setAttribute("aria-valuenow", currentStep);
+      progressEl.setAttribute("aria-valuetext", `Step ${currentStep} of 11`);
+    }
 
     // Update footer buttons
     btnPrev.disabled = currentStep === 1;
@@ -11625,9 +11650,10 @@ async function showOnboardingWizard() {
 
   // Provider card selections
   choiceCards.forEach((card) => {
-    card.onclick = () => {
-      choiceCards.forEach((c) => c.classList.remove("active"));
+    const selectProvider = () => {
+      resetActiveState(".onboarding-choice-card");
       card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       selectedProvider = card.dataset.provider;
 
       // Toggle provider config DOM displays
@@ -11654,6 +11680,14 @@ async function showOnboardingWizard() {
 
       // Auto-detect Ollama when that card is selected
       if (selectedProvider === "ollama") checkOllamaInstalled();
+    };
+
+    card.onclick = selectProvider;
+    card.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectProvider();
+      }
     };
   });
 
@@ -12102,7 +12136,7 @@ async function showOnboardingWizard() {
   personaCarousel.innerHTML = allPersonas
     .map(
       (name) => `
-        <div class="onboarding-persona-card ${name === selectedPersona ? "active" : ""}" data-name="${name}">
+        <div class="onboarding-persona-card ${name === selectedPersona ? "active" : ""}" data-name="${name}" role="button" tabindex="0" aria-pressed="${name === selectedPersona ? "true" : "false"}">
             <span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>
             <span class="onboarding-persona-name">${name}</span>
             <span class="onboarding-persona-desc">${personaDescMap[name] || "Custom persona."}</span>
@@ -12114,16 +12148,23 @@ async function showOnboardingWizard() {
   personaCarousel
     .querySelectorAll(".onboarding-persona-card")
     .forEach((card) => {
-      card.onclick = async () => {
-        personaCarousel
-          .querySelectorAll(".onboarding-persona-card")
-          .forEach((c) => c.classList.remove("active"));
+      const selectPersona = async () => {
+        resetActiveState(".onboarding-persona-card");
         card.classList.add("active");
+        card.setAttribute("aria-pressed", "true");
         selectedPersona = card.dataset.name;
         try {
           await invoke("set_persona", { name: selectedPersona });
         } catch (e) {
           console.error("Failed to set persona", e);
+        }
+      };
+
+      card.onclick = selectPersona;
+      card.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectPersona();
         }
       };
     });
@@ -12158,7 +12199,7 @@ async function showOnboardingWizard() {
       const bg = tc.Background || "#050505";
       const fg = tc.Foreground || "#d9f7ff";
       return `
-        <div class="onboarding-theme-card ${tname === selectedThemeName ? "active" : ""}" data-name="${tname}">
+        <div class="onboarding-theme-card ${tname === selectedThemeName ? "active" : ""}" data-name="${tname}" role="button" tabindex="0" aria-pressed="${tname === selectedThemeName ? "true" : "false"}">
             <div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>
             <div class="onboarding-theme-swatch">
                 <span style="background:${accent}"></span>
@@ -12170,20 +12211,27 @@ async function showOnboardingWizard() {
     .join("");
 
   themeGrid.querySelectorAll(".onboarding-theme-card").forEach((card) => {
-    card.onclick = async () => {
-      themeGrid
-        .querySelectorAll(".onboarding-theme-card")
-        .forEach((c) => c.classList.remove("active"));
+    const selectTheme = async () => {
+      resetActiveState(".onboarding-theme-card");
       card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       selectedThemeName = card.dataset.name;
       localStorage.setItem("selectedTheme", selectedThemeName);
       try {
         const theme = await invoke("set_theme", { name: selectedThemeName });
         if (theme) {
-          applyThemeColors(theme);
+          window.applyThemeColors(theme);
         }
       } catch (e) {
         console.error("Failed to apply theme live", e);
+      }
+    };
+
+    card.onclick = selectTheme;
+    card.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectTheme();
       }
     };
   });

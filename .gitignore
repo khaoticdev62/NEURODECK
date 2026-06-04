@@ -62,3 +62,4 @@ Thumbs.db
 !.loose/inbox/.gitkeep
 scripts/.loose/
 .ruff_cache/
+test-results/
