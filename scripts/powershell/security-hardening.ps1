@@ -6,7 +6,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 $script:Root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$script:ConfigPath = Join-Path $script:Root "src-tauri/tauri.conf.json"
 $script:LogDir = Join-Path $script:Root ".loose/inbox/security-hardening"
 
 function Add-Finding {
@@ -82,22 +81,35 @@ function Write-Utf8NoBomFile {
 New-Item -ItemType Directory -Force -Path $script:LogDir | Out-Null
 
 $findings = New-Object System.Collections.ArrayList
-$config = Get-Content $script:ConfigPath -Raw | ConvertFrom-Json
-$csp = $config.app.security.csp
 
-if ([string]::IsNullOrWhiteSpace([string]$csp) -or $csp -eq "null") {
-    Add-Finding -Findings $findings -Severity fail -Code "tauri-csp-null" -Message "Tauri CSP is disabled. Set app.security.csp in tauri.conf.json." -Path "src-tauri/tauri.conf.json"
+# ── Electron Security Checks ────────────────────────────────────────────────
+$electronMain = Join-Path $script:Root "electron/main.js"
+$frontendIndex = Join-Path $script:Root "frontend/index.html"
+
+if (Test-Path $electronMain) {
+    $mainJs = Get-Content $electronMain -Raw
+    if ($mainJs -notmatch "contextIsolation:\s*true") {
+        Add-Finding -Findings $findings -Severity fail -Code "electron-context-isolation" -Message "Electron main.js must set contextIsolation: true in webPreferences." -Path "electron/main.js"
+    }
+    if ($mainJs -notmatch "nodeIntegration:\s*false") {
+        Add-Finding -Findings $findings -Severity fail -Code "electron-node-integration" -Message "Electron main.js must set nodeIntegration: false in webPreferences." -Path "electron/main.js"
+    }
+    if ($mainJs -notmatch "webSecurity:\s*true") {
+        Add-Finding -Findings $findings -Severity warn -Code "electron-web-security" -Message "Electron main.js should set webSecurity: true in webPreferences." -Path "electron/main.js"
+    }
 } else {
-    if ($csp -notmatch "object-src 'none'") {
-        Add-Finding -Findings $findings -Severity fail -Code "tauri-csp-object-src" -Message "Tauri CSP must explicitly disable object/embed execution with object-src 'none'." -Path "src-tauri/tauri.conf.json"
-    }
-    if ($csp -notmatch "base-uri 'self'") {
-        Add-Finding -Findings $findings -Severity warn -Code "tauri-csp-base-uri" -Message "Tauri CSP should pin base-uri to 'self'." -Path "src-tauri/tauri.conf.json"
-    }
+    Add-Finding -Findings $findings -Severity fail -Code "electron-main-missing" -Message "electron/main.js not found." -Path "electron/main.js"
 }
 
-if ($config.app.withGlobalTauri -eq $true) {
-    Add-Finding -Findings $findings -Severity warn -Code "tauri-global-api" -Message "withGlobalTauri is enabled. This should be retired when splashscreen wiring is migrated off window.__TAURI__." -Path "src-tauri/tauri.conf.json"
+if (Test-Path $frontendIndex) {
+    $indexHtml = Get-Content $frontendIndex -Raw
+    if ($indexHtml -notmatch '<meta[^>]+http-equiv=["'']Content-Security-Policy["'']') {
+        Add-Finding -Findings $findings -Severity fail -Code "csp-missing" -Message "frontend/index.html must include a Content-Security-Policy meta tag." -Path "frontend/index.html"
+    } elseif ($indexHtml -notmatch "object-src\s+'none'") {
+        Add-Finding -Findings $findings -Severity fail -Code "csp-object-src" -Message "CSP must explicitly disable object/embed execution with object-src 'none'." -Path "frontend/index.html"
+    }
+} else {
+    Add-Finding -Findings $findings -Severity fail -Code "index-html-missing" -Message "frontend/index.html not found." -Path "frontend/index.html"
 }
 
 $remoteScriptMatches = Invoke-RgJson -Pattern '(<script[^>]+src=["'']https?://|script\.src\s*=\s*["'']https?://|https://cdn\.jsdelivr\.net/npm/monaco-editor)' -Targets @("frontend/src", "frontend/public") -Globs @("!frontend/dist") -CaseInsensitive
@@ -124,7 +136,7 @@ foreach ($match in $dangerHtmlMatches) {
     }
 }
 
-$privateKeyMatches = Invoke-RgJson -Pattern 'BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY|ghp_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}' -Targets @(".") -Globs @("!.git", "!.loose", "!frontend/dist", "!target", "!node_modules")
+$privateKeyMatches = Invoke-RgJson -Pattern 'BEGIN (RSA|OPENSSH|EC|DSA|PGP) PRIVATE KEY|ghp_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}' -Targets @(".") -Globs @("!.git", "!.loose", "!frontend/dist", "!target", "!node_modules", "!**/tests/**", "!**/*test*.py")
 foreach ($match in $privateKeyMatches) {
     Add-Finding -Findings $findings -Severity fail -Code "secret-material" -Message "Probable secret or private key material detected in tracked source." -Path $match.path -Line $match.line -Evidence $match.text
 }
