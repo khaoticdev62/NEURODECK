@@ -5583,7 +5583,7 @@ setInterval(() => {
 
 // Initial state initialization
 invoke("get_initial_state")
-  .then((initialState) => {
+  .then(async (initialState) => {
     const modelNameEl = document.getElementById("model-name");
     if (modelNameEl)
       modelNameEl.innerText = `[ MODEL: ${initialState.model.toUpperCase()} ]`;
