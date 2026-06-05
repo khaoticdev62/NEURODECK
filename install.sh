@@ -52,6 +52,35 @@ if [ -f /etc/os-release ]; then
     fi
 fi
 
+# --- Dependency Check ---
+print_step "Checking system dependencies (arecord, espeak-ng)..."
+MISSING_DEPS=""
+if ! command -v arecord >/dev/null 2>&1; then MISSING_DEPS="$MISSING_DEPS alsa-utils"; fi
+if ! command -v espeak-ng >/dev/null 2>&1; then MISSING_DEPS="$MISSING_DEPS espeak-ng"; fi
+
+if [ -n "$MISSING_DEPS" ]; then
+    print_warn "Missing required audio dependencies:$MISSING_DEPS"
+    if [ "$IS_STEAMOS" = true ]; then
+        echo -ne "${YELLOW}SteamOS detected. Do you want to temporarily disable read-only mode and install them? [y/N] ${NC}"
+        read -r response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+            print_step "Disabling read-only filesystem..."
+            sudo steamos-readonly disable
+            print_step "Installing dependencies via pacman..."
+            sudo pacman -Sy --noconfirm $MISSING_DEPS
+            print_step "Re-enabling read-only filesystem..."
+            sudo steamos-readonly enable
+            print_ok "Dependencies installed."
+        else
+            print_warn "Skipping dependency installation. Voice/Audio features may not work."
+        fi
+    else
+        print_warn "Please install$MISSING_DEPS using your package manager for Voice/Audio features to work."
+    fi
+else
+    print_ok "Audio dependencies found."
+fi
+
 # --- Create directories ---
 print_step "Creating NEURODECK directories..."
 mkdir -p "$INSTALL_DIR"

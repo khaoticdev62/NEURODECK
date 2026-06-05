@@ -2554,11 +2554,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "start_recording" => {
-            state.broadcaster.emit("recording_start_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "requested", "note": "STT recording requires arecord/system audio; event emitted to UI" }))
+            match system::start_recording(state.app_state.clone()) {
+                Ok(msg) => Ok(serde_json::Value::String(msg)),
+                Err(e) => Err(e),
+            }
         }
 
-        "stop_recording" | "transcribe_audio_whisper" => {
+        "stop_recording" => {
+            match system::stop_recording(state.app_state.clone()).await {
+                Ok(text) => Ok(serde_json::Value::String(text)),
+                Err(e) => Err(e),
+            }
+        }
+
+        "transcribe_audio_whisper" => {
             state.broadcaster.emit("recording_stop_requested", serde_json::json!({}));
             Ok(serde_json::json!({ "status": "requested", "transcript": "", "note": "STT stop requires system audio pipeline; event emitted to UI" }))
         }
@@ -2771,8 +2780,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "key": key, "profiles": data }))
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // MCP Server
         // ────────────────────────────────────────────────────────────────────
         "get_mcp_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());

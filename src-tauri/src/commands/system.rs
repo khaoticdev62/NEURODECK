@@ -767,9 +767,8 @@ pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), Strin
     }
 }
 
-#[tauri::command]
-pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+pub fn start_recording(state: Arc<Mutex<AppState>>) -> Result<String, String> {
+    let mut app = state.lock().map_err(|e| e.to_string())?;
 
     let wav_path = user_config_dir().join("temp_record.wav");
 
@@ -777,17 +776,17 @@ pub fn start_recording(state: State<'_, Mutex<AppState>>) -> String {
         match crate::audio_recorder::start_arecord(&wav_path) {
             Ok(child) => {
                 app.record_child = Some(child);
-                "Recording started...".to_string()
+                Ok("Recording started...".to_string())
             }
-            Err(e) => e,
+            Err(e) => Err(e),
         }
     } else {
         match crate::audio_recorder::start_cpal_recording(&wav_path) {
             Ok(stop_flag) => {
                 app.record_stop_flag = Some(stop_flag);
-                "Recording started...".to_string()
+                Ok("Recording started...".to_string())
             }
-            Err(e) => e,
+            Err(e) => Err(e),
         }
     }
 }
@@ -886,10 +885,9 @@ pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Resu
         .map_err(|e| format!("Thread error: {}", e))?
 }
 
-#[tauri::command]
-pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn stop_recording(state: Arc<Mutex<AppState>>) -> Result<String, String> {
     let (record_child, record_stop_flag) = {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+        let mut app = state.lock().map_err(|e| e.to_string())?;
         (app.record_child.take(), app.record_stop_flag.take())
     };
 
@@ -909,7 +907,7 @@ pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String,
     if let Ok(data) = audio_data {
         // Try whisper.cpp first if model is configured and file exists
         let (whisper_binary, whisper_model) = {
-            let app = state.lock().unwrap_or_else(|e| e.into_inner());
+            let app = state.lock().map_err(|e| e.to_string())?;
             (app.whisper_binary.clone(), app.whisper_model.clone())
         };
         if !whisper_model.is_empty() && std::path::Path::new(&whisper_model).exists() {
@@ -926,7 +924,7 @@ pub async fn stop_recording(state: State<'_, Mutex<AppState>>) -> Result<String,
         }
 
         let provider = {
-            let app = state.lock().unwrap_or_else(|e| e.into_inner());
+            let app = state.lock().map_err(|e| e.to_string())?;
             app.provider.clone()
         };
         match provider.transcribe_audio(&data).await {

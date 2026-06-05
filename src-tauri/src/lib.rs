@@ -467,8 +467,6 @@ pub fn run() {
             execute_command_stream,
             write_to_process,
             kill_process,
-            start_recording,
-            stop_recording,
             get_personas,
             get_themes,
             set_persona,

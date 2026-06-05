@@ -437,6 +437,11 @@ function initScreenshotVision() {
 
             if (typeof addNotification === "function") {
                 addNotification("Screenshot attached", "Vision context added to next message.", "success");
+                if (typeof state !== 'undefined' && state.activeProvider === 'ollama') {
+                    setTimeout(() => {
+                        addNotification("Provider Warning", "Vision requires the Gemini provider. Switch in Settings -> LLM.", "warning");
+                    }, 500);
+                }
             }
         } catch (err) {
             console.error("[Screenshot] Error:", err);
