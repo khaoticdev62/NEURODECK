@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
+const os = require('os');
 
 // Register neurodeck:// as a privileged scheme before app ready.
 // This gives us a stable origin for localStorage/sessionStorage
@@ -81,7 +82,10 @@ function spawnSidecar(port) {
 
   const bin = getSidecarPath();
   if (!fs.existsSync(bin)) {
-    dialog.showErrorBox('Sidecar Not Found', `Could not find Rust sidecar at:\n${bin}\n\nBuild it first with: cd src-tauri && cargo build --release`);
+    dialog.showErrorBox('Sidecar Not Found', `Could not find Rust sidecar at:
+${bin}
+
+Build it first with: cd src-tauri && cargo build --release`);
     app.quit();
     return;
   }
@@ -91,10 +95,18 @@ function spawnSidecar(port) {
     NEURODECK_PORT: String(port),
   };
 
-  // Set working directory to resources dir so llm-term.toml and plugins/ resolve
   const cwd = getResourcesDir();
-
   console.log(`[sidecar] Spawning ${bin} --bridge on port ${port} (cwd: ${cwd})`);
+
+  // Windows MSYS2/bash workaround: GUI-subsystem Rust binaries crash with
+  // STATUS_DLL_NOT_FOUND (0xC0000135) when spawned with redirected stdio
+  // under MSYS2. Use PowerShell Start-Process without redirection.
+  const isMsys = process.platform === 'win32' && (process.env.MSYSTEM || process.env.MSYS);
+  if (isMsys && !app.isPackaged) {
+    spawnSidecarMsys(bin, port, cwd, env);
+    return;
+  }
+
   sidecar = spawn(bin, ['--bridge'], { env, cwd, stdio: ['pipe', 'pipe', 'pipe'] });
 
   sidecar.stdout.on('data', (data) => {
@@ -123,6 +135,84 @@ function spawnSidecar(port) {
   sidecar.on('error', (err) => {
     console.error('[sidecar] Spawn error:', err);
   });
+}
+
+// MSYS2-specific sidecar spawn using PowerShell Start-Process.
+// Output redirection is omitted because it triggers STATUS_DLL_NOT_FOUND
+// (0xC0000135) when combined with Start-Process under MSYS2.
+// We detect readiness by polling the HTTP bridge port instead.
+function spawnSidecarMsys(bin, port, cwd, env) {
+  const psCmd = [
+    `$env:NEURODECK_PORT = '${port}';`,
+    `$env:PATH = '${(env.PATH || '').replace(/'/g, "''")}';`,
+    `Set-Location '${cwd.replace(/'/g, "''")}';`,
+    `$p = Start-Process -FilePath '${bin.replace(/'/g, "''")}' -ArgumentList '--bridge' -WindowStyle Hidden -PassThru;`,
+    `Write-Output $p.Id;`,
+  ].join(' ');
+
+  const ps = spawn('powershell.exe', ['-NoProfile', '-Command', psCmd], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+
+  let sidecarPid = null;
+  ps.stdout.on('data', (data) => {
+    const text = data.toString().trim();
+    if (/^\d+$/.test(text)) {
+      sidecarPid = parseInt(text, 10);
+      console.log(`[sidecar] MSYS2 mode — PID ${sidecarPid}`);
+    }
+  });
+
+  ps.stderr.on('data', (data) => {
+    console.error('[sidecar stderr]', data.toString().trimEnd());
+  });
+
+  ps.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`[sidecar] PowerShell spawn failed with code ${code}`);
+    }
+  });
+
+  // Poll the bridge HTTP port to detect readiness and crashes.
+  // We can't use stdout/stderr because redirection triggers the MSYS2 crash.
+  let readyLogged = false;
+  const pollInterval = setInterval(() => {
+    if (!sidecarPid || isQuitting) {
+      clearInterval(pollInterval);
+      return;
+    }
+    const client = net.connect({ port: parseInt(port, 10), host: '127.0.0.1' }, () => {
+      if (!readyLogged) {
+        console.log('[sidecar] Ready (HTTP port up)');
+        readyLogged = true;
+      }
+      client.end();
+    });
+    client.on('error', () => {
+      // Port not up yet — check if process is still alive
+      const check = spawn('powershell.exe', ['-NoProfile', '-Command', `try { Get-Process -Id ${sidecarPid} -ErrorAction Stop | Out-Null; Write-Output 'alive' } catch { Write-Output 'dead' }`], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+      let result = '';
+      check.stdout.on('data', (d) => { result += d.toString(); });
+      check.on('exit', () => {
+        if (result.trim() !== 'alive' && !isQuitting) {
+          console.log(`[sidecar] PID ${sidecarPid} not found — crashed or exited`);
+          clearInterval(pollInterval);
+          sidecar = null;
+          const delay = 2000;
+          console.log(`[sidecar] Auto-restarting in ${delay}ms...`);
+          sidecarRestartTimer = setTimeout(() => spawnSidecar(port), delay);
+        }
+      });
+    });
+  }, 2000);
+
+  ps.kill = () => {
+    clearInterval(pollInterval);
+    if (sidecarPid) {
+      spawn('powershell.exe', ['-NoProfile', '-Command', `Stop-Process -Id ${sidecarPid} -Force -ErrorAction SilentlyContinue`], { stdio: 'ignore', windowsHide: true });
+    }
+    try { ps.kill(); } catch {}
+  };
+
+  sidecar = ps;
 }
 
 function killSidecar() {

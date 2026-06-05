@@ -33,7 +33,12 @@
     "ci:watch": "bash scripts/kfms/kfms-ci.sh watch",
     "ci:status": "bash scripts/kfms/kfms-ci.sh status",
     "assets": "python assets/brand/generate_assets.py",
-    "setup": "npm install && echo \"\\nAll JS/Node deps installed. Next: uv sync (Python tooling) — then set GEMINI_API_KEY and run: npm run dev\""
+    "setup": "npm install && echo \"\\nAll JS/Node deps installed. Next: uv sync (Python tooling) — then set GEMINI_API_KEY and run: npm run dev\"",
+    "quality:fallow:audit": "fallow audit",
+    "quality:fallow:json": "fallow audit --format json",
+    "quality:fallow:health": "fallow health --score --hotspots --targets",
+    "quality:fallow:dead-code": "fallow dead-code",
+    "quality:fallow:dupes": "fallow dupes"
   },
   "devDependencies": {
     "electron": "^36.0.0",
