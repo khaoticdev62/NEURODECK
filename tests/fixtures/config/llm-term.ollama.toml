@@ -1,0 +1,23 @@
+# Ollama-only config fixture (offline mode)
+# Used for: offline mode tests, provider fallback tests
+
+[llm]
+provider = "ollama"
+model = "llama3.2"
+max_tokens = 2048
+temperature = 0.5
+ollama_host = "http://localhost:11434"
+
+[stt]
+enabled = false
+
+[theme]
+accent_color = "#ff8800"
+background = "#0a0a0f"
+
+[pty]
+shell = "bash"
+
+[memory]
+max_records = 5000
+embedding_model = "nomic-embed-text"

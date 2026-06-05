@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "id": "ssh-001",
+      "name": "Steam Deck (Local)",
+      "host": "192.168.1.50",
+      "port": 22,
+      "username": "deck",
+      "auth_type": "key",
+      "private_key_path": "~/.ssh/id_ed25519",
+      "tags": ["steam-deck", "local"]
+    },
+    {
+      "id": "ssh-002",
+      "name": "Home Server",
+      "host": "home-server.local",
+      "port": 2222,
+      "username": "admin",
+      "auth_type": "password",
+      "tags": ["homelab"]
+    },
+    {
+      "id": "ssh-003",
+      "name": "Edge Case — Long Hostname",
+      "host": "a-very-long-hostname-that-exceeds-normal-limits-for-testing-purposes.example.com",
+      "port": 22,
+      "username": "root",
+      "auth_type": "key",
+      "private_key_path": "",
+      "tags": []
+    }
+  ]
+}

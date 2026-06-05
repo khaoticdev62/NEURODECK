@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "id": "msg-001",
+      "role": "user",
+      "content": "How do I set up SSH on my Steam Deck?",
+      "timestamp": "2026-05-01T10:00:00Z",
+      "embedding": [0.012, -0.034, 0.056, -0.078, 0.091, -0.011, 0.023, -0.045],
+      "metadata": { "session": "session-abc", "tags": ["steam-deck", "ssh"] }
+    },
+    {
+      "id": "msg-002",
+      "role": "assistant",
+      "content": "To set up SSH on Steam Deck: 1) Switch to Desktop Mode, 2) Open Konsole, 3) Run `systemctl enable --now sshd`, 4) Set password with `passwd`.",
+      "timestamp": "2026-05-01T10:00:05Z",
+      "embedding": [0.015, -0.031, 0.052, -0.072, 0.095, -0.015, 0.021, -0.042],
+      "metadata": { "session": "session-abc", "tags": ["steam-deck", "ssh", "tutorial"] }
+    },
+    {
+      "id": "msg-003",
+      "role": "user",
+      "content": "What is the best Python library for data visualization?",
+      "timestamp": "2026-05-02T14:30:00Z",
+      "embedding": [-0.022, 0.044, -0.066, 0.088, -0.011, 0.033, -0.055, 0.077],
+      "metadata": { "session": "session-def", "tags": ["python", "data-viz"] }
+    },
+    {
+      "id": "msg-004",
+      "role": "user",
+      "content": "",
+      "timestamp": "2026-05-03T09:00:00Z",
+      "embedding": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+      "metadata": { "session": "session-ghi", "tags": [] }
+    }
+  ]
+}

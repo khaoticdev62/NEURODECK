@@ -1,0 +1,28 @@
+# Default NEURODECK config fixture
+# Used for: config persistence tests, onboarding defaults, validation tests
+
+[llm]
+provider = "gemini"
+model = "gemini-2.5-flash"
+max_tokens = 4096
+temperature = 0.7
+google_client_id = ""
+
+[stt]
+whisper_model_path = ""
+enabled = false
+
+[theme]
+accent_color = "#00ff88"
+background = "#0a0a0f"
+
+[pty]
+shell = "powershell.exe"
+
+[memory]
+max_records = 10000
+embedding_model = "gemini-embedding-exp"
+
+[security]
+rate_limit_requests = 60
+rate_limit_window = 60
