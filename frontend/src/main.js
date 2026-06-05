@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+﻿import { state } from "./state.js";
 import { triggerHaptic } from "./haptics.js";
 import {
   updateMuteButtonUI,
@@ -2155,11 +2155,19 @@ document.querySelector("#app").innerHTML = `
                                 <div class="ide-tab-bar" id="ide-tab-bar"></div>
                                 <div class="ide-editor-wrap" style="position:relative;">
                                     <div class="ide-line-numbers" id="ide-line-numbers"><div class="ide-line-num">1</div></div>
+                                    <div class="ide-editor-mirror" id="ide-editor-mirror" aria-hidden="true"></div>
                                     <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…" aria-describedby="ide-lsp-hover-tooltip"></textarea>
                                     <div class="lsp-completions" id="ide-lsp-completions" role="listbox" aria-label="Code completions"></div>
                                     <div class="lsp-hover" id="ide-lsp-hover-tooltip" role="tooltip"></div>
                                 </div>
                                 <div class="ide-lsp-status" id="ide-lsp-status" aria-live="polite" aria-atomic="false"></div>
+                                <div class="ide-lsp-diag-panel collapsed" id="ide-lsp-diagnostics-panel">
+                                    <div class="ide-lsp-diag-panel-header" id="ide-lsp-diag-panel-header">
+                                        <span class="ide-lsp-diag-panel-title">Diagnostics (0)</span>
+                                        <span class="ide-lsp-diag-panel-toggle">▲</span>
+                                    </div>
+                                    <div class="ide-lsp-diag-panel-content" id="ide-lsp-diag-panel-content"></div>
+                                </div>
                             </div>
                         </div>
                         <!-- Output panel -->
@@ -3946,382 +3954,235 @@ class LiveBackgroundManager {
     this.animationFrameId = requestAnimationFrame(this.loop);
   }
 
+  /** Dispatcher — delegates to a type-specific renderer. */
   draw(w, h) {
-    const type = this.currentType;
     const ctx = this.ctx;
+    const cs = getComputedStyle(document.documentElement);
+    const ac = cs.getPropertyValue("--accent-color").trim()   || "#00F0FF";
+    const rc = cs.getPropertyValue("--response-color").trim() || "#00FF88";
+    if      (this.currentType === "matrix")    this._drawMatrix(ctx, w, h, ac);
+    else if (this.currentType === "starfield") this._drawStarfield(ctx, w, h, ac, rc);
+    else if (this.currentType === "particles") this._drawParticles(ctx, w, h, ac);
+    else if (this.currentType === "grid")      this._drawGrid(ctx, w, h, ac, rc);
+    else if (this.currentType === "radar")     this._drawRadar(ctx, w, h, ac, rc);
+    else if (this.currentType === "circuit")   this._drawCircuit(ctx, w, h, ac, rc);
+    else if (this.currentType === "wave")      this._drawWave(ctx, w, h, ac, rc);
+    else if (this.currentType === "ascii")     this._drawAscii(ctx, w, h, ac);
+  }
 
-    const accentColor =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--accent-color")
-        .trim() || "#00F0FF";
-    const responseColor =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--response-color")
-        .trim() || "#00FF88";
-
-    if (type === "matrix") {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
-      ctx.fillRect(0, 0, w, h);
-      ctx.font = "14px monospace";
-
-      for (let i = 0; i < this.particles.length; i++) {
-        const char = String.fromCharCode(33 + Math.floor(Math.random() * 93));
-        const x = i * 16;
-        const y = this.particles[i];
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(char, x, y);
-
-        ctx.fillStyle = accentColor;
-        ctx.fillText(char, x, y - 14);
-
-        this.particles[i] += 14;
-        if (this.particles[i] > h && Math.random() > 0.98) {
-          this.particles[i] = 0;
-        }
-      }
-    } else if (type === "starfield") {
-      ctx.fillStyle = "#050505";
-      ctx.fillRect(0, 0, w, h);
-
-      const cx = w / 2;
-      const cy = h / 2;
-      const speed = 4;
-
-      for (let i = 0; i < this.particles.length; i++) {
-        let star = this.particles[i];
-
-        const px = (star.x / star.z) * cx + cx;
-        const py = (star.y / star.z) * cy + cy;
-
-        star.z -= speed;
-        if (star.z <= 0) {
-          star.x = Math.random() * w - cx;
-          star.y = Math.random() * h - cy;
-          star.z = w;
-          continue;
-        }
-
-        const nx = (star.x / star.z) * cx + cx;
-        const ny = (star.y / star.z) * cy + cy;
-
-        if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
-          const alpha = 1 - star.z / w;
-          ctx.strokeStyle = star.color.startsWith("var")
-            ? star.color.includes("accent")
-              ? accentColor
-              : responseColor
-            : star.color;
-          ctx.lineWidth = alpha * 2;
-          ctx.globalAlpha = alpha;
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(nx, ny);
-          ctx.stroke();
-        }
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "particles") {
-      ctx.clearRect(0, 0, w, h);
-
-      for (let i = 0; i < this.particles.length; i++) {
-        let p = this.particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0 || p.x > w) p.vx *= -1;
-        if (p.y < 0 || p.y > h) p.vy *= -1;
-
-        if (this.mouseX > 0 && this.mouseY > 0) {
-          const dx = p.x - this.mouseX;
-          const dy = p.y - this.mouseY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            const force = (120 - dist) / 120;
-            p.x += (dx / dist) * force * 2;
-            p.y += (dy / dist) * force * 2;
-          }
-        }
-
-        ctx.fillStyle = accentColor;
-        ctx.globalAlpha = 0.4;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.strokeStyle = accentColor;
-      for (let i = 0; i < this.particles.length; i++) {
-        let p1 = this.particles[i];
-        for (let j = i + 1; j < this.particles.length; j++) {
-          let p2 = this.particles[j];
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
-            ctx.globalAlpha = ((100 - dist) / 100) * 0.15;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-          }
-        }
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "grid") {
-      ctx.clearRect(0, 0, w, h);
-
-      const horizon = h * 0.45;
-      const gridHeight = h - horizon;
-
-      this.angle = (this.angle + 0.8) % 40;
-
-      const glowGrad = ctx.createLinearGradient(
-        0,
-        horizon - 50,
-        0,
-        horizon + 50,
-      );
-      glowGrad.addColorStop(0, "transparent");
-      glowGrad.addColorStop(0.5, responseColor + "1a");
-      glowGrad.addColorStop(1, "transparent");
-      ctx.fillStyle = glowGrad;
-      ctx.fillRect(0, horizon - 50, w, 100);
-
-      ctx.strokeStyle = responseColor;
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, horizon);
-      ctx.lineTo(w, horizon);
-      ctx.stroke();
-
-      const numVerts = 30;
-      for (let i = 0; i <= numVerts; i++) {
-        const xTop = (w / numVerts) * i;
-        const xBottom = w / 2 + (xTop - w / 2) * 3;
-        ctx.strokeStyle = accentColor;
-        ctx.globalAlpha = 0.12;
-        ctx.beginPath();
-        ctx.moveTo(xTop, horizon);
-        ctx.lineTo(xBottom, h);
-        ctx.stroke();
-      }
-
-      const speedRatio = this.angle / 40;
-      const numHoriz = 12;
-      for (let i = 0; i < numHoriz; i++) {
-        const ratio = (i + speedRatio) / numHoriz;
-        const y = horizon + Math.pow(ratio, 2.5) * gridHeight;
-        const alpha = Math.pow(ratio, 1.5) * 0.25;
-        ctx.strokeStyle = accentColor;
-        ctx.globalAlpha = alpha;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "radar") {
-      ctx.clearRect(0, 0, w, h);
-
-      const cx = w * 0.75;
-      const cy = h * 0.6;
-      const maxRadius = Math.min(w, h) * 0.45;
-
-      this.angle = (this.angle + 0.005) % (Math.PI * 2);
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(this.angle);
-      const radarSweep = ctx.createRadialGradient(0, 0, 10, 0, 0, maxRadius);
-      radarSweep.addColorStop(0, responseColor + "33");
-      radarSweep.addColorStop(1, "transparent");
-      ctx.fillStyle = radarSweep;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, maxRadius, -0.4, 0);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = accentColor;
-      ctx.lineWidth = 1;
-      for (let r = 50; r <= maxRadius; r += 80) {
-        ctx.globalAlpha = 0.08;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.globalAlpha = 0.2;
-        ctx.fillStyle = accentColor;
-        ctx.font = "8px monospace";
-        ctx.fillText(`R_${r}KM`, cx + r + 3, cy - 3);
-      }
-
-      ctx.strokeStyle = accentColor;
-      ctx.globalAlpha = 0.06;
-      ctx.beginPath();
-      ctx.moveTo(cx - maxRadius, cy);
-      ctx.lineTo(cx + maxRadius, cy);
-      ctx.moveTo(cx, cy - maxRadius);
-      ctx.lineTo(cx, cy + maxRadius);
-      ctx.stroke();
-
-      ctx.font = "8px monospace";
-      for (let i = 0; i < this.particles.length; i++) {
-        let node = this.particles[i];
-        node.alpha += node.speed;
-        if (node.alpha > 1 || node.alpha < 0) {
-          node.speed *= -1;
-        }
-
-        ctx.fillStyle = responseColor;
-        ctx.globalAlpha = node.alpha * 0.3;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = accentColor;
-        ctx.globalAlpha = node.alpha * 0.2;
-        ctx.fillText(node.label, node.x + 6, node.y + 3);
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "circuit") {
-      ctx.clearRect(0, 0, w, h);
-      ctx.lineWidth = 1.2;
-
-      for (let i = 0; i < this.particles.length; i++) {
-        let line = this.particles[i];
-
-        if (line.points.length > 0 && line.stepsRemaining > 0) {
-          let lastPt = line.points[line.points.length - 1];
-          line.stepsRemaining--;
-          const nextX = lastPt.x + line.dirX * line.growSpeed;
-          const nextY = lastPt.y + line.dirY * line.growSpeed;
-          line.points.push({ x: nextX, y: nextY });
-
-          if (
-            line.stepsRemaining <= 0 &&
-            Math.random() > 0.3 &&
-            line.points.length < 80
-          ) {
-            line.stepsRemaining = Math.floor(Math.random() * 15) + 10;
-            const angle = (Math.floor(Math.random() * 8) * Math.PI) / 4;
-            line.dirX = Math.cos(angle);
-            line.dirY = Math.sin(angle);
-          }
-        }
-
-        if (line.points.length > 1) {
-          ctx.strokeStyle = line.color.startsWith("var")
-            ? line.color.includes("accent")
-              ? accentColor
-              : responseColor
-            : line.color;
-          ctx.globalAlpha = line.alpha * 0.15;
-          ctx.beginPath();
-          ctx.moveTo(line.points[0].x, line.points[0].y);
-          for (let j = 1; j < line.points.length; j++) {
-            ctx.lineTo(line.points[j].x, line.points[j].y);
-          }
-          ctx.stroke();
-
-          const head = line.points[line.points.length - 1];
-          ctx.fillStyle = line.color.startsWith("var")
-            ? line.color.includes("accent")
-              ? accentColor
-              : responseColor
-            : line.color;
-          ctx.globalAlpha = line.alpha * 0.4;
-          ctx.beginPath();
-          ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        line.alpha -= 0.001;
-        if (
-          line.alpha <= 0 ||
-          (line.points.length >= 80 && line.stepsRemaining <= 0)
-        ) {
-          this.particles[i] = this.createCircuitLine(w, h);
-        }
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "wave") {
-      ctx.clearRect(0, 0, w, h);
-      this.angle += 0.02;
-
-      const waveConfigs = [
-        {
-          amp: 40,
-          freq: 0.003,
-          phase: this.angle,
-          color: accentColor,
-          opacity: 0.1,
-        },
-        {
-          amp: 25,
-          freq: 0.005,
-          phase: this.angle * 1.5,
-          color: responseColor,
-          opacity: 0.08,
-        },
-        {
-          amp: 15,
-          freq: 0.008,
-          phase: this.angle * 0.8,
-          color: "#A855F7",
-          opacity: 0.06,
-        },
-      ];
-
-      for (let c = 0; c < waveConfigs.length; c++) {
-        const config = waveConfigs[c];
-        ctx.strokeStyle = config.color;
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = config.opacity;
-
-        ctx.beginPath();
-        const midY = h / 2 + Math.sin(config.phase * 0.2) * 50;
-        ctx.moveTo(0, midY);
-
-        for (let x = 0; x < w; x += 10) {
-          const y =
-            midY +
-            Math.sin(x * config.freq + config.phase) *
-              config.amp *
-              Math.sin((x / w) * Math.PI);
-          ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1.0;
-    } else if (type === "ascii") {
-      ctx.fillStyle = "#020305";
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.font = "12px monospace";
-      ctx.fillStyle = accentColor;
-
-      for (let i = 0; i < this.particles.length; i++) {
-        const line = this.particles[i];
-
-        ctx.globalAlpha = line.alpha;
-        ctx.fillText(line.text, 15, line.y);
-
-        line.y -= line.speed;
-        if (line.y < -20) {
-          line.y = h + 20;
-          line.text = this.getRandomLogText();
-          line.speed = 0.5 + Math.random() * 1.5;
-          line.alpha = 0.15 + Math.random() * 0.35;
-        }
-      }
-      ctx.globalAlpha = 1.0;
+  _drawMatrix(ctx, w, h, ac) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = "14px monospace";
+    for (let i = 0; i < this.particles.length; i++) {
+      const char = String.fromCharCode(33 + Math.floor(Math.random() * 93));
+      const x = i * 16;
+      const y = this.particles[i];
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(char, x, y);
+      ctx.fillStyle = ac;
+      ctx.fillText(char, x, y - 14);
+      this.particles[i] += 14;
+      if (this.particles[i] > h && Math.random() > 0.98) this.particles[i] = 0;
     }
+  }
+
+  _drawStarfield(ctx, w, h, ac, rc) {
+    ctx.fillStyle = "#050505";
+    ctx.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, speed = 4;
+    for (let i = 0; i < this.particles.length; i++) {
+      const star = this.particles[i];
+      const px = (star.x / star.z) * cx + cx;
+      const py = (star.y / star.z) * cy + cy;
+      star.z -= speed;
+      if (star.z <= 0) {
+        star.x = Math.random() * w - cx;
+        star.y = Math.random() * h - cy;
+        star.z = w;
+        continue;
+      }
+      const nx = (star.x / star.z) * cx + cx;
+      const ny = (star.y / star.z) * cy + cy;
+      if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
+        const alpha = 1 - star.z / w;
+        ctx.strokeStyle = star.color.startsWith("var")
+          ? star.color.includes("accent") ? ac : rc
+          : star.color;
+        ctx.lineWidth = alpha * 2;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(nx, ny); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawParticles(ctx, w, h, ac) {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      if (this.mouseX > 0 && this.mouseY > 0) {
+        const dx = p.x - this.mouseX, dy = p.y - this.mouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          const force = (120 - dist) / 120;
+          p.x += (dx / dist) * force * 2;
+          p.y += (dy / dist) * force * 2;
+        }
+      }
+      ctx.fillStyle = ac; ctx.globalAlpha = 0.4;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = ac;
+    for (let i = 0; i < this.particles.length; i++) {
+      const p1 = this.particles[i];
+      for (let j = i + 1; j < this.particles.length; j++) {
+        const p2 = this.particles[j];
+        const dx = p1.x - p2.x, dy = p1.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          ctx.globalAlpha = ((100 - dist) / 100) * 0.15;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawGrid(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h);
+    const horizon = h * 0.45, gridHeight = h - horizon;
+    this.angle = (this.angle + 0.8) % 40;
+    const glowGrad = ctx.createLinearGradient(0, horizon - 50, 0, horizon + 50);
+    glowGrad.addColorStop(0, "transparent");
+    glowGrad.addColorStop(0.5, rc + "1a");
+    glowGrad.addColorStop(1, "transparent");
+    ctx.fillStyle = glowGrad; ctx.fillRect(0, horizon - 50, w, 100);
+    ctx.strokeStyle = rc; ctx.globalAlpha = 0.3; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(w, horizon); ctx.stroke();
+    const numVerts = 30;
+    for (let i = 0; i <= numVerts; i++) {
+      const xTop = (w / numVerts) * i;
+      const xBottom = w / 2 + (xTop - w / 2) * 3;
+      ctx.strokeStyle = ac; ctx.globalAlpha = 0.12;
+      ctx.beginPath(); ctx.moveTo(xTop, horizon); ctx.lineTo(xBottom, h); ctx.stroke();
+    }
+    const speedRatio = this.angle / 40, numHoriz = 12;
+    for (let i = 0; i < numHoriz; i++) {
+      const ratio = (i + speedRatio) / numHoriz;
+      const y = horizon + Math.pow(ratio, 2.5) * gridHeight;
+      ctx.strokeStyle = ac; ctx.globalAlpha = Math.pow(ratio, 1.5) * 0.25; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawRadar(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h);
+    const cx = w * 0.75, cy = h * 0.6, maxRadius = Math.min(w, h) * 0.45;
+    this.angle = (this.angle + 0.005) % (Math.PI * 2);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(this.angle);
+    const radarSweep = ctx.createRadialGradient(0, 0, 10, 0, 0, maxRadius);
+    radarSweep.addColorStop(0, rc + "33"); radarSweep.addColorStop(1, "transparent");
+    ctx.fillStyle = radarSweep;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, maxRadius, -0.4, 0); ctx.lineTo(0, 0); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = ac; ctx.lineWidth = 1;
+    for (let r = 50; r <= maxRadius; r += 80) {
+      ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 0.2; ctx.fillStyle = ac; ctx.font = "8px monospace";
+      ctx.fillText(`R_${r}KM`, cx + r + 3, cy - 3);
+    }
+    ctx.strokeStyle = ac; ctx.globalAlpha = 0.06;
+    ctx.beginPath();
+    ctx.moveTo(cx - maxRadius, cy); ctx.lineTo(cx + maxRadius, cy);
+    ctx.moveTo(cx, cy - maxRadius); ctx.lineTo(cx, cy + maxRadius);
+    ctx.stroke();
+    ctx.font = "8px monospace";
+    for (let i = 0; i < this.particles.length; i++) {
+      const node = this.particles[i];
+      node.alpha += node.speed;
+      if (node.alpha > 1 || node.alpha < 0) node.speed *= -1;
+      ctx.fillStyle = rc; ctx.globalAlpha = node.alpha * 0.3;
+      ctx.beginPath(); ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ac; ctx.globalAlpha = node.alpha * 0.2;
+      ctx.fillText(node.label, node.x + 6, node.y + 3);
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawCircuit(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h); ctx.lineWidth = 1.2;
+    const resolveColor = (c) => c.startsWith("var") ? (c.includes("accent") ? ac : rc) : c;
+    for (let i = 0; i < this.particles.length; i++) {
+      const line = this.particles[i];
+      if (line.points.length > 0 && line.stepsRemaining > 0) {
+        const lastPt = line.points[line.points.length - 1];
+        line.stepsRemaining--;
+        line.points.push({ x: lastPt.x + line.dirX * line.growSpeed, y: lastPt.y + line.dirY * line.growSpeed });
+        if (line.stepsRemaining <= 0 && Math.random() > 0.3 && line.points.length < 80) {
+          line.stepsRemaining = Math.floor(Math.random() * 15) + 10;
+          const angle = (Math.floor(Math.random() * 8) * Math.PI) / 4;
+          line.dirX = Math.cos(angle); line.dirY = Math.sin(angle);
+        }
+      }
+      if (line.points.length > 1) {
+        ctx.strokeStyle = resolveColor(line.color); ctx.globalAlpha = line.alpha * 0.15;
+        ctx.beginPath(); ctx.moveTo(line.points[0].x, line.points[0].y);
+        for (let j = 1; j < line.points.length; j++) ctx.lineTo(line.points[j].x, line.points[j].y);
+        ctx.stroke();
+        const head = line.points[line.points.length - 1];
+        ctx.fillStyle = resolveColor(line.color); ctx.globalAlpha = line.alpha * 0.4;
+        ctx.beginPath(); ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+      line.alpha -= 0.001;
+      if (line.alpha <= 0 || (line.points.length >= 80 && line.stepsRemaining <= 0))
+        this.particles[i] = this.createCircuitLine(w, h);
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawWave(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h);
+    this.angle += 0.02;
+    const configs = [
+      { amp: 40, freq: 0.003, phase: this.angle,       color: ac,        opacity: 0.1  },
+      { amp: 25, freq: 0.005, phase: this.angle * 1.5,  color: rc,        opacity: 0.08 },
+      { amp: 15, freq: 0.008, phase: this.angle * 0.8,  color: "#A855F7", opacity: 0.06 },
+    ];
+    for (const cfg of configs) {
+      ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5; ctx.globalAlpha = cfg.opacity;
+      ctx.beginPath();
+      const midY = h / 2 + Math.sin(cfg.phase * 0.2) * 50;
+      ctx.moveTo(0, midY);
+      for (let x = 0; x < w; x += 10) {
+        ctx.lineTo(x, midY + Math.sin(x * cfg.freq + cfg.phase) * cfg.amp * Math.sin((x / w) * Math.PI));
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawAscii(ctx, w, h, ac) {
+    ctx.fillStyle = "#020305"; ctx.fillRect(0, 0, w, h);
+    ctx.font = "12px monospace"; ctx.fillStyle = ac;
+    for (let i = 0; i < this.particles.length; i++) {
+      const line = this.particles[i];
+      ctx.globalAlpha = line.alpha;
+      ctx.fillText(line.text, 15, line.y);
+      line.y -= line.speed;
+      if (line.y < -20) {
+        line.y = h + 20;
+        line.text = this.getRandomLogText();
+        line.speed = 0.5 + Math.random() * 1.5;
+        line.alpha = 0.15 + Math.random() * 0.35;
+      }
+    }
+    ctx.globalAlpha = 1.0;
   }
 }
 
@@ -4902,18 +4763,13 @@ function pollGamepads() {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   let gp = null;
   for (let i = 0; i < gamepads.length; i++) {
-    if (gamepads[i]) {
-      gp = gamepads[i];
-      break;
-    }
+    if (gamepads[i]) { gp = gamepads[i]; break; }
   }
 
   if (!gp) {
     if (state.gamepadActive) {
       state.gamepadActive = false;
-      document
-        .querySelectorAll(".gamepad-focused")
-        .forEach((el) => el.classList.remove("gamepad-focused"));
+      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
       state.gamepadFocusIndex = -1;
     }
     requestAnimationFrame(pollGamepads);
@@ -4924,456 +4780,303 @@ function pollGamepads() {
 
   function buttonPressed(index) {
     const isPressed = gp.buttons[index] && gp.buttons[index].pressed;
-    const wasPressed = state.previousGamepadState.buttons[index];
-    return isPressed && !wasPressed;
+    return isPressed && !state.previousGamepadState.buttons[index];
   }
 
-  // A Button (0) - Click active element / confirm prompt picker
-  if (buttonPressed(0)) {
-    triggerHaptic("medium");
-    if (getCtrlPromptVisible()) {
-      if (getCtrlPromptTemplateMode()) {
-        confirmTemplateAndSend();
+  // ── Face buttons: A(0) B(1) X(2) Y(3) ──────────────────────────────────
+  function handleFaceButtons() {
+    // A — confirm / click focused element
+    if (buttonPressed(0)) {
+      triggerHaptic("medium");
+      if (getCtrlPromptVisible()) {
+        getCtrlPromptTemplateMode() ? confirmTemplateAndSend() : confirmCtrlPrompt();
       } else {
-        confirmCtrlPrompt();
+        const els = getGamepadFocusableElements();
+        const activeEl = els[state.gamepadFocusIndex];
+        if (activeEl) {
+          activeEl.click();
+          if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") activeEl.focus();
+        } else {
+          updateGamepadFocus(0);
+        }
       }
-    } else {
+    }
+    // B — close overlays / back
+    if (buttonPressed(1)) {
+      triggerHaptic("medium");
+      if (getCtrlPromptVisible()) {
+        getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
+      } else {
+        closeTopmostOverlay();
+      }
+    }
+    // X — copy focused message or jump to chat input
+    if (buttonPressed(2) && !getCtrlPromptVisible()) {
+      const focused = document.querySelector(".gamepad-focused");
+      if (focused && focused.classList.contains("message")) {
+        triggerHaptic("doubleTick");
+        const text = getMessageText(focused);
+        if (text) {
+          navigator.clipboard.writeText(text).catch(() => {});
+          focused.style.transition = "background 0.2s";
+          const oldBg = focused.style.background;
+          focused.style.background = "rgba(94, 235, 255, 0.15)";
+          setTimeout(() => { focused.style.background = oldBg; }, 400);
+        }
+      } else {
+        triggerHaptic("light");
+        const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+        if (chatTab) chatTab.click();
+        setTimeout(() => {
+          const userInput = document.getElementById("user-input");
+          if (userInput) {
+            userInput.focus();
+            const els = getGamepadFocusableElements();
+            const uidx = els.indexOf(userInput);
+            if (uidx !== -1) updateGamepadFocus(uidx);
+          }
+        }, 50);
+      }
+    }
+    // Y — regenerate last message or cycle persona
+    if (buttonPressed(3) && !getCtrlPromptVisible()) {
+      triggerHaptic("medium");
+      const chatView = document.getElementById("view-chat");
+      if (chatView && chatView.classList.contains("active")) {
+        const msgs = getMessageElements();
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].classList.contains("user")) {
+            const text = getMessageText(msgs[i]);
+            if (text) {
+              const input = document.getElementById("user-input");
+              if (input) {
+                input.value = text;
+                input.style.height = "auto";
+                input.style.height = Math.min(input.scrollHeight, 300) + "px";
+                input.focus();
+              }
+              setTimeout(() => { const s = document.getElementById("send-btn"); if (s) s.click(); }, 300);
+            }
+            break;
+          }
+        }
+      } else if (state.availablePersonas && state.availablePersonas.length > 0) {
+        const nextPersona = state.availablePersonas[(state.availablePersonas.indexOf(state.activePersona) + 1) % state.availablePersonas.length];
+        invoke("set_persona", { name: nextPersona })
+          .then(() => {
+            state.activePersona = nextPersona;
+            const sel = document.getElementById("persona-select");
+            if (sel) sel.value = nextPersona;
+          })
+          .catch((err) => console.error("Error setting persona via Gamepad:", err));
+      }
+    }
+  }
+
+  // ── Shoulder buttons: L1(4) R1(5) L2(6) R2(7) ──────────────────────────
+  function handleShoulderButtons() {
+    // L2/R2 in share view — cycle inner tabs
+    if (buttonPressed(6) || buttonPressed(7)) {
+      const shareView = document.getElementById("view-share");
+      if (shareView && shareView.classList.contains("active")) {
+        const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+        const idx = subtabs.findIndex((t) => t.classList.contains("active"));
+        if (idx !== -1) {
+          subtabs[buttonPressed(6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+          triggerHaptic("light");
+        }
+      }
+    }
+    // R2 outside share view — toggle ctrl-prompt
+    if (buttonPressed(7)) {
+      const shareView = document.getElementById("view-share");
+      if (!(shareView && shareView.classList.contains("active"))) {
+        if (getCtrlPromptVisible()) {
+          triggerHaptic("light");
+          getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
+        } else {
+          openCtrlPromptOverlay();
+          triggerHaptic("medium");
+          if (state.gamepadActive && window.showVirtualKeyboard) {
+            setTimeout(() => {
+              const searchEl = document.getElementById("ctrl-prompt-search");
+              if (searchEl) { searchEl.focus(); window.showVirtualKeyboard(searchEl); }
+            }, 120);
+          }
+        }
+      }
+    }
+    // L1/R1 in ctrl-prompt — navigate categories
+    if ((buttonPressed(4) || buttonPressed(5)) && getCtrlPromptVisible()) {
+      triggerHaptic("light");
+      navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
+    }
+    // L1/R1 outside ctrl-prompt — scroll chat or cycle tabs
+    if ((buttonPressed(4) || buttonPressed(5)) && !getCtrlPromptVisible()) {
+      const chatView = document.getElementById("view-chat");
+      if (chatView && chatView.classList.contains("active")) {
+        const workspace = document.getElementById("chat-workspace");
+        if (workspace) workspace.scrollTop += buttonPressed(4) ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
+      }
+      const sshView = document.getElementById("view-ssh");
+      if (sshView && sshView.classList.contains("active")) {
+        const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
+        if (focused) focused.click();
+      }
+      const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+      const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
+      if (activeTabIdx !== -1) {
+        const nextIdx = buttonPressed(4) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
+        if (nextIdx !== activeTabIdx) {
+          tabs[nextIdx].click();
+          triggerHaptic("light");
+          state.gamepadFocusIndex = -1;
+          document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+        }
+      }
+    }
+  }
+
+  // ── Menu buttons: Select(8) Start(9) ────────────────────────────────────
+  function handleMenuButtons() {
+    if (buttonPressed(8) && !getCtrlPromptVisible()) {
+      triggerHaptic("medium");
+      const runBtn = document.getElementById("canvas-run-btn");
+      if (runBtn) runBtn.click();
+    }
+    if (buttonPressed(9) && !getCtrlPromptVisible()) {
+      triggerHaptic("medium");
+      const settingsOverlay = document.getElementById("settings-overlay");
+      if (settingsOverlay) {
+        if (settingsOverlay.classList.contains("active")) document.getElementById("close-settings").click();
+        else document.getElementById("settings-btn").click();
+      }
+    }
+  }
+
+  // ── D-pad: Up(12) Down(13) Left(14) Right(15) ───────────────────────────
+  function handleDpad() {
+    if (buttonPressed(12) || buttonPressed(13)) {
+      const goUp = buttonPressed(12);
+      if (getCtrlPromptVisible()) {
+        if (getCtrlPromptTemplateMode()) navigateTemplatePlaceholder(goUp ? -1 : 1);
+        else navigateCtrlPromptList(goUp ? -1 : 1);
+      } else {
+        const shareView = document.getElementById("view-share");
+        const sshView   = document.getElementById("view-ssh");
+        if (shareView && shareView.classList.contains("active")) {
+          const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+          const idx = subtabs.findIndex((t) => t.classList.contains("active"));
+          if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+        } else if (sshView && sshView.classList.contains("active")) {
+          const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
+          if (items.length > 0) {
+            const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
+            const nextIdx = goUp
+              ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1)
+              : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
+            items.forEach((el) => el.classList.remove("gamepad-focused"));
+            items[nextIdx].classList.add("gamepad-focused");
+            items[nextIdx].scrollIntoView({ block: "nearest" });
+          } else {
+            updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
+          }
+        } else {
+          updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
+        }
+      }
+    }
+    if ((buttonPressed(14) || buttonPressed(15)) && getCtrlPromptVisible()) {
+      const goLeft = buttonPressed(14);
+      if (getCtrlPromptTemplateMode()) cycleTemplatePlaceholder(goLeft ? -1 : 1);
+      else navigateCtrlPromptCat(goLeft ? -1 : 1);
+    }
+    if ((buttonPressed(14) || buttonPressed(15)) && !getCtrlPromptVisible()) {
       const els = getGamepadFocusableElements();
       const activeEl = els[state.gamepadFocusIndex];
-      if (activeEl) {
-        activeEl.click();
-        if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") {
-          activeEl.focus();
-        }
-      } else {
-        updateGamepadFocus(0);
-      }
-    }
-  }
-
-  // B Button (1) - Close overlays / back / cancel
-  if (buttonPressed(1)) {
-    triggerHaptic("medium");
-    if (getCtrlPromptVisible()) {
-      getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
-    } else {
-      closeTopmostOverlay();
-    }
-  }
-
-  // L2 (6) / R2 (7) - Cycle inner tabs (e.g. Share LAN/SFTP/FTP)
-  if (buttonPressed(6) || buttonPressed(7)) {
-    const shareView = document.getElementById("view-share");
-    if (shareView && shareView.classList.contains("active")) {
-      const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
-      const activeSubtabIdx = subtabs.findIndex((t) =>
-        t.classList.contains("active"),
-      );
-      if (activeSubtabIdx !== -1) {
-        const nextSubtabIdx = buttonPressed(6) // L2
-          ? (activeSubtabIdx - 1 + subtabs.length) % subtabs.length
-          : (activeSubtabIdx + 1) % subtabs.length;
-        subtabs[nextSubtabIdx].click();
-        triggerHaptic("light");
-      }
-    }
-  }
-
-  // R2 (7) when NOT in share view → toggle Controller Prompt Picker
-  if (buttonPressed(7)) {
-    const shareView = document.getElementById("view-share");
-    if (!(shareView && shareView.classList.contains("active"))) {
-      if (getCtrlPromptVisible()) {
-        triggerHaptic("light");
-        getCtrlPromptTemplateMode()
-          ? exitTemplateMode()
-          : closeCtrlPromptOverlay();
-      } else {
-        openCtrlPromptOverlay();
-        triggerHaptic("medium");
-        // Auto-show VK in gamepad mode so search field is immediately typeable
-        if (state.gamepadActive && window.showVirtualKeyboard) {
-          setTimeout(() => {
-            const searchEl = document.getElementById("ctrl-prompt-search");
-            if (searchEl) {
-              searchEl.focus();
-              window.showVirtualKeyboard(searchEl);
-            }
-          }, 120);
-        }
-      }
-    }
-  }
-
-  // X Button (2) - Copy focused message text, or go to Chat tab & focus input
-  if (buttonPressed(2) && !getCtrlPromptVisible()) {
-    const focused = document.querySelector(".gamepad-focused");
-    if (focused && focused.classList.contains("message")) {
-      triggerHaptic("doubleTick");
-      // Copy message text to clipboard
-      const text = getMessageText(focused);
-      if (text) {
-        navigator.clipboard.writeText(text).catch(() => {});
-        // Brief visual feedback
-        focused.style.transition = "background 0.2s";
-        const oldBg = focused.style.background;
-        focused.style.background = "rgba(94, 235, 255, 0.15)";
-        setTimeout(() => { focused.style.background = oldBg; }, 400);
-      }
-    } else {
-      triggerHaptic("light");
-      const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
-      if (chatTab) {
-        chatTab.click();
-      }
-      setTimeout(() => {
-        const userInput = document.getElementById("user-input");
-        if (userInput) {
-          userInput.focus();
-          const els = getGamepadFocusableElements();
-          const uidx = els.indexOf(userInput);
-          if (uidx !== -1) {
-            updateGamepadFocus(uidx);
-          }
-        }
-      }, 50);
-    }
-  }
-
-  // Y Button (3) - Regenerate last AI response in chat, or cycle persona
-  if (buttonPressed(3) && !getCtrlPromptVisible()) {
-    triggerHaptic("medium");
-    const chatView = document.getElementById("view-chat");
-    if (chatView && chatView.classList.contains("active")) {
-      // Try to regenerate: find last user message and re-send it
-      const msgs = getMessageElements();
-      for (let i = msgs.length - 1; i >= 0; i--) {
-        if (msgs[i].classList.contains("user")) {
-          const text = getMessageText(msgs[i]);
-          if (text) {
-            const input = document.getElementById("user-input");
-            if (input) {
-              input.value = text;
-              input.style.height = "auto";
-              input.style.height = Math.min(input.scrollHeight, 300) + "px";
-              input.focus();
-            }
-            // Auto-send after brief delay
-            setTimeout(() => {
-              const sendBtn = document.getElementById("send-btn");
-              if (sendBtn) sendBtn.click();
-            }, 300);
-          }
-          break;
-        }
-      }
-    } else if (state.availablePersonas && state.availablePersonas.length > 0) {
-      const currentIdx = state.availablePersonas.indexOf(state.activePersona);
-      const nextIdx = (currentIdx + 1) % state.availablePersonas.length;
-      const nextPersona = state.availablePersonas[nextIdx];
-      invoke("set_persona", { name: nextPersona })
-        .then((msg) => {
-          state.activePersona = nextPersona;
-          const select = document.getElementById("persona-select");
-          if (select) select.value = nextPersona;
-        })
-        .catch((err) =>
-          console.error("Error setting persona via Gamepad:", err),
-        );
-    }
-  }
-
-  // L1 (4) / R1 (5) - When prompt overlay: switch categories; else cycle app tabs
-  if ((buttonPressed(4) || buttonPressed(5)) && getCtrlPromptVisible()) {
-    triggerHaptic("light");
-    navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
-  }
-
-  // L1 (4) / R1 (5) - Cycle tabs; when Chat active, page scroll; when SSH active, load profile
-  if ((buttonPressed(4) || buttonPressed(5)) && !getCtrlPromptVisible()) {
-    const chatView = document.getElementById("view-chat");
-    if (chatView && chatView.classList.contains("active")) {
-      const workspace = document.getElementById("chat-workspace");
-      if (workspace) {
-        const scrollAmount = workspace.clientHeight * 0.8;
-        workspace.scrollTop += buttonPressed(4) ? -scrollAmount : scrollAmount;
-      }
-    }
-    const sshView = document.getElementById("view-ssh");
-    if (sshView && sshView.classList.contains("active")) {
-      const focused = document.querySelector(
-        "#ssh-profiles-list .ssh-profile-item.gamepad-focused",
-      );
-      if (focused) {
-        focused.click();
-      }
-    }
-    const tabs = Array.from(document.querySelectorAll(".nav-tab"));
-    const activeTabIdx = tabs.findIndex((tab) =>
-      tab.classList.contains("active"),
-    );
-    if (activeTabIdx !== -1) {
-      let nextIdx = activeTabIdx;
-      if (buttonPressed(4)) {
-        nextIdx = (activeTabIdx - 1 + tabs.length) % tabs.length;
-      } else {
-        nextIdx = (activeTabIdx + 1) % tabs.length;
-      }
-      if (nextIdx !== activeTabIdx) {
-        tabs[nextIdx].click();
-        triggerHaptic("light");
-        state.gamepadFocusIndex = -1;
-        document
-          .querySelectorAll(".gamepad-focused")
-          .forEach((el) => el.classList.remove("gamepad-focused"));
-      }
-    }
-  }
-
-  // Select Button (8) - Run Canvas Code (blocked when prompt picker open)
-  if (buttonPressed(8) && !getCtrlPromptVisible()) {
-    triggerHaptic("medium");
-    const runBtn = document.getElementById("canvas-run-btn");
-    if (runBtn) {
-      runBtn.click();
-    }
-  }
-
-  // Start Button (9) - Toggle settings modal (blocked when prompt picker open)
-  if (buttonPressed(9) && !getCtrlPromptVisible()) {
-    triggerHaptic("medium");
-    const settingsOverlay = document.getElementById("settings-overlay");
-    if (settingsOverlay) {
-      if (settingsOverlay.classList.contains("active")) {
-        document.getElementById("close-settings").click();
-      } else {
-        document.getElementById("settings-btn").click();
-      }
-    }
-  }
-
-  // D-pad Up (12) / Down (13)
-  // When ctrl prompt visible: navigate list or template placeholders
-  // When Share tab is active: cycle inner tabs (LAN / SFTP / FTP)
-  // When SSH tab is active: cycle saved profile list items
-  // Otherwise: move gamepad focus index
-  if (buttonPressed(12) || buttonPressed(13)) {
-    const goUp = buttonPressed(12);
-    if (getCtrlPromptVisible()) {
-      if (getCtrlPromptTemplateMode()) {
-        navigateTemplatePlaceholder(goUp ? -1 : 1);
-      } else {
-        navigateCtrlPromptList(goUp ? -1 : 1);
-      }
-    }
-  }
-  if ((buttonPressed(12) || buttonPressed(13)) && !getCtrlPromptVisible()) {
-    const shareView = document.getElementById("view-share");
-    const sshView = document.getElementById("view-ssh");
-    const goUp = buttonPressed(12);
-    if (shareView && shareView.classList.contains("active")) {
-      const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
-      const activeIdx = subtabs.findIndex((t) =>
-        t.classList.contains("active"),
-      );
-      if (activeIdx !== -1) {
-        const nextIdx = goUp
-          ? (activeIdx - 1 + subtabs.length) % subtabs.length
-          : (activeIdx + 1) % subtabs.length;
-        subtabs[nextIdx].click();
-      }
-    } else if (sshView && sshView.classList.contains("active")) {
-      const profileItems = Array.from(
-        document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"),
-      );
-      if (profileItems.length > 0) {
-        const selectedIdx = profileItems.findIndex((el) =>
-          el.classList.contains("gamepad-focused"),
-        );
-        const nextIdx = goUp
-          ? Math.max(
-              0,
-              selectedIdx === -1 ? profileItems.length - 1 : selectedIdx - 1,
-            )
-          : Math.min(
-              profileItems.length - 1,
-              selectedIdx === -1 ? 0 : selectedIdx + 1,
-            );
-        profileItems.forEach((el) => el.classList.remove("gamepad-focused"));
-        profileItems[nextIdx].classList.add("gamepad-focused");
-        profileItems[nextIdx].scrollIntoView({ block: "nearest" });
-      } else {
-        updateGamepadFocus(
-          goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1,
-        );
-      }
-    } else {
-      updateGamepadFocus(
-        goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1,
-      );
-    }
-  }
-
-  // D-pad Left (14) / Right (15) - when prompt overlay: cycle category or placeholder; else normal
-  if ((buttonPressed(14) || buttonPressed(15)) && getCtrlPromptVisible()) {
-    const goLeft = buttonPressed(14);
-    if (getCtrlPromptTemplateMode()) {
-      cycleTemplatePlaceholder(goLeft ? -1 : 1);
-    } else {
-      navigateCtrlPromptCat(goLeft ? -1 : 1);
-    }
-  }
-
-  // D-pad Left (14) / Right (15) - adjust sliders/selects OR cycle tabs
-  if ((buttonPressed(14) || buttonPressed(15)) && !getCtrlPromptVisible()) {
-    const els = getGamepadFocusableElements();
-    const activeEl = els[state.gamepadFocusIndex];
-    const handled =
-      activeEl &&
-      (() => {
+      const handled = activeEl && (() => {
         if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
-          let val = parseInt(activeEl.value, 10);
           const step = parseInt(activeEl.step, 10) || 5;
           activeEl.value = buttonPressed(14)
-            ? Math.max(parseInt(activeEl.min, 10) || 0, val - step)
-            : Math.min(parseInt(activeEl.max, 10) || 100, val + step);
+            ? Math.max(parseInt(activeEl.min, 10) || 0, parseInt(activeEl.value, 10) - step)
+            : Math.min(parseInt(activeEl.max, 10) || 100, parseInt(activeEl.value, 10) + step);
           activeEl.dispatchEvent(new Event("input", { bubbles: true }));
           return true;
         }
         if (activeEl.tagName === "SELECT") {
-          let idx = activeEl.selectedIndex;
-          idx = buttonPressed(14)
-            ? Math.max(0, idx - 1)
-            : Math.min(activeEl.options.length - 1, idx + 1);
-          if (idx !== activeEl.selectedIndex) {
-            activeEl.selectedIndex = idx;
-            activeEl.dispatchEvent(new Event("change", { bubbles: true }));
-          }
+          let idx = buttonPressed(14) ? Math.max(0, activeEl.selectedIndex - 1) : Math.min(activeEl.options.length - 1, activeEl.selectedIndex + 1);
+          if (idx !== activeEl.selectedIndex) { activeEl.selectedIndex = idx; activeEl.dispatchEvent(new Event("change", { bubbles: true })); }
           return true;
         }
         return false;
       })();
-
-    // Fallback: cycle tabs when no slider/select is focused
-    if (!handled) {
-      const tabs = Array.from(document.querySelectorAll(".nav-tab"));
-      const activeTabIdx = tabs.findIndex((t) =>
-        t.classList.contains("active"),
-      );
-      if (activeTabIdx !== -1) {
-        const nextIdx = buttonPressed(14)
-          ? (activeTabIdx - 1 + tabs.length) % tabs.length
-          : (activeTabIdx + 1) % tabs.length;
-        tabs[nextIdx].click();
-        state.gamepadFocusIndex = -1;
-        document
-          .querySelectorAll(".gamepad-focused")
-          .forEach((el) => el.classList.remove("gamepad-focused"));
+      if (!handled) {
+        const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+        const activeTabIdx = tabs.findIndex((t) => t.classList.contains("active"));
+        if (activeTabIdx !== -1) {
+          const nextIdx = buttonPressed(14) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
+          tabs[nextIdx].click();
+          state.gamepadFocusIndex = -1;
+          document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+        }
       }
     }
   }
 
-  // Steam Deck Grip Buttons Polling (indices 17-20)
-  // Grip buttons are suppressed while the ctrl-prompt overlay is open
-  if (!getCtrlPromptVisible()) {
-    // L4 (17) -> Toggle Left Sidebar
-    if (buttonPressed(17)) {
-      triggerHaptic("light");
-      const sidebar = document.getElementById("sidebar");
-      if (sidebar) sidebar.classList.toggle("collapsed");
-    }
+  // ── Grip buttons: L4(17) R4(18) L5(19) R5(20) ──────────────────────────
+  function handleGripButtons() {
+    if (getCtrlPromptVisible()) return;
+    if (buttonPressed(17)) { triggerHaptic("light"); const s = document.getElementById("sidebar"); if (s) s.classList.toggle("collapsed"); }
+    if (buttonPressed(18)) { triggerHaptic("light"); const d = document.getElementById("inspect-drawer"); if (d) d.classList.toggle("collapsed"); }
+    if (buttonPressed(19)) { triggerHaptic("heavy"); const c = document.getElementById("canvas-clear-btn"); if (c) c.click(); }
+    if (buttonPressed(20)) { triggerHaptic("light"); cycleTheme(); }
+  }
 
-    // R4 (18) -> Toggle Right Context Drawer
-    if (buttonPressed(18)) {
-      triggerHaptic("light");
-      const inspectDrawer = document.getElementById("inspect-drawer");
-      if (inspectDrawer) inspectDrawer.classList.toggle("collapsed");
-    }
-
-    // L5 (19) -> Clear Visual Canvas
-    if (buttonPressed(19)) {
-      triggerHaptic("heavy");
-      const clearBtn = document.getElementById("canvas-clear-btn");
-      if (clearBtn) clearBtn.click();
-    }
-
-    // R5 (20) -> Cycle Theme
-    if (buttonPressed(20)) {
-      triggerHaptic("light");
-      cycleTheme();
+  // ── Radial menu: L2 trigger (button 6 / axis 5) ─────────────────────────
+  function handleRadialMenu(l2Held, l2WasHeld) {
+    if (l2Held && !l2WasHeld) {
+      showRadialMenu();
+    } else if (l2Held) {
+      const seg = getRadialSegmentFromStick(gp.axes[0] || 0, gp.axes[1] || 0);
+      if (seg !== state.radialSelectedSegment) { updateRadialDisplay(seg); triggerHaptic("tick"); }
+    } else if (!l2Held && l2WasHeld) {
+      activateRadialSegment(state.radialSelectedSegment);
+      hideRadialMenu();
     }
   }
 
-  // === RADIAL MENU — L2 Trigger (button 6 / axis 5) ===
-  const l2Raw = gp.buttons[6] ? gp.buttons[6].value : 0;
-  const l2Held = l2Raw > 0.5;
+  // ── Touchpad cursor + left-stick scroll ─────────────────────────────────
+  function handleTouchpadAndScroll(l2Held) {
+    const rtX = gp.axes[2] || 0, rtY = gp.axes[3] || 0;
+    if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held) moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
+    if (buttonPressed(11) && state.tpCursorVisible) { triggerHaptic("medium"); tpClick(0); }
+    if (!l2Held && Math.abs(gp.axes[1] || 0) > 0.2) {
+      const scrollEl = getActiveScrollContainer();
+      if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
+    }
+    if (buttonPressed(1) && state.tpCursorVisible) {
+      const c = document.getElementById("tp-cursor");
+      if (c) c.classList.remove("tp-visible");
+      state.tpCursorVisible = false;
+    }
+    if (buttonPressed(1) && !getCtrlPromptVisible()) {
+      const vkEl = document.getElementById("vk-overlay");
+      if (vkEl && vkEl.classList.contains("vk-visible") && window.hideVirtualKeyboard) window.hideVirtualKeyboard();
+    }
+  }
+
+  // ── Compute L2 state once — used by radial and touchpad handlers ────────
+  const l2Held    = (gp.buttons[6] ? gp.buttons[6].value : 0) > 0.5;
   const l2WasHeld = state.previousGamepadState.l2Held;
 
-  if (l2Held && !l2WasHeld) {
-    // L2 just pressed — show radial
-    showRadialMenu();
-  } else if (l2Held) {
-    // L2 held — update selected segment from left stick
-    const stickX = gp.axes[0] || 0;
-    const stickY = gp.axes[1] || 0;
-    const seg = getRadialSegmentFromStick(stickX, stickY);
-    if (seg !== state.radialSelectedSegment) {
-      updateRadialDisplay(seg);
-      triggerHaptic("tick");
-    }
-  } else if (!l2Held && l2WasHeld) {
-    // L2 just released — activate selected and close
-    activateRadialSegment(state.radialSelectedSegment);
-    hideRadialMenu();
-  }
-
-  // === SPRINT C — RIGHT TOUCHPAD CURSOR (axes 2/3 = right stick / right touchpad) ===
-  // When Steam Input maps right touchpad as "Joystick", axes[2]/[3] carry relative deltas.
-  // When Steam Input maps as "Mouse", Steam handles it natively — these will be ~0 and
-  // the OS cursor is used instead. Either path is correct.
-  const rtX = gp.axes[2] || 0;
-  const rtY = gp.axes[3] || 0;
-  const rtMag = Math.sqrt(rtX * rtX + rtY * rtY);
-
-  if (rtMag > TP_DEADZONE && !l2Held) {
-    moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
-  }
-
-  // Right stick click (button[11] on Steam Deck) = click at cursor position
-  if (buttonPressed(11) && state.tpCursorVisible) {
-    triggerHaptic("medium");
-    tpClick(0);
-  }
-
-  // === SPRINT C — LEFT STICK SCROLL (axes 0/1 when NOT holding L2 for radial) ===
-  // L2 radial already consumes left stick when held, so only scroll when L2 is up.
-  const lsScrollX = gp.axes[0] || 0;
-  const lsScrollY = gp.axes[1] || 0;
-  const lsMag = Math.abs(lsScrollY);
-
-  if (!l2Held && lsMag > 0.2) {
-    const scrollEl = getActiveScrollContainer();
-    if (scrollEl) {
-      scrollEl.scrollTop += lsScrollY * TP_SCROLL_SPEED;
-      showTpScrollIndicator(true);
-    }
-  }
-
-  // B button (1) — also hides VK and cursor if visible (already handled above for overlays,
-  // but additionally dismiss cursor mode here)
-  if (buttonPressed(1) && state.tpCursorVisible) {
-    const c = document.getElementById("tp-cursor");
-    if (c) c.classList.remove("tp-visible");
-    state.tpCursorVisible = false;
-  }
-
-  // B button — toggle virtual keyboard (when nothing else consumed B)
-  if (buttonPressed(1) && !getCtrlPromptVisible()) {
-    const vkEl = document.getElementById("vk-overlay");
-    if (vkEl && vkEl.classList.contains("vk-visible")) {
-      if (window.hideVirtualKeyboard) window.hideVirtualKeyboard();
-    }
-  }
+  // ── Dispatch to named handlers ───────────────────────────────────────────
+  handleFaceButtons();
+  handleShoulderButtons();
+  handleMenuButtons();
+  handleDpad();
+  handleGripButtons();
+  handleRadialMenu(l2Held, l2WasHeld);
+  handleTouchpadAndScroll(l2Held);
 
   // Sync button state for next frame
   for (let i = 0; i < gp.buttons.length; i++) {
