@@ -5650,6 +5650,37 @@ invoke("get_initial_state")
         console.error("Error loading personas:", err);
       });
 
+    // ── Profile & theme disk migration (localStorage → OS config dir) ──
+    // In Electron mode the disk-persistence guards previously checked
+    // window.__TAURI_INTERNALS__, which is never set. This one-time pass
+    // reads any data already stored in localStorage and writes it to disk
+    // so it survives WebView cache wipes and cross-origin resets.
+    if (!localStorage.getItem("neurodeck_disk_migrated_v1")) {
+      const migrateProfiles = async (lsKey, profileKey) => {
+        try {
+          const raw = localStorage.getItem(lsKey);
+          if (raw && raw !== "[]") {
+            await invoke("save_profiles", { key: profileKey, data: raw });
+          }
+        } catch (_) {}
+      };
+      const migrateThemes = async () => {
+        try {
+          const raw = localStorage.getItem("neurodeck_custom_themes");
+          if (raw && raw !== "[]") {
+            await invoke("save_custom_themes", { data: raw });
+          }
+        } catch (_) {}
+      };
+      await Promise.all([
+        migrateProfiles("sshProfiles", "ssh"),
+        migrateProfiles("ftpProfiles", "ftp"),
+        migrateProfiles("sftpProfiles", "sftp"),
+        migrateThemes(),
+      ]);
+      localStorage.setItem("neurodeck_disk_migrated_v1", "true");
+    }
+
     // ── Origin-change migration (Tauri → Electron) ──
     // localStorage is origin-scoped. When the app origin changes
     // (tauri://localhost → file:// → neurodeck://app), stored UI
@@ -10947,6 +10978,9 @@ async function showOnboardingWizard() {
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "onboarding-title");
 
+  // Focus trap for accessibility
+  const onboardingFocusTrap = new FocusTrap(overlay);
+
   // 2. Set up HTML content — 5-step enhanced wizard
   overlay.innerHTML = `
         <div class="onboarding-container">
@@ -11459,42 +11493,42 @@ async function showOnboardingWizard() {
                                 <span class="onboarding-diagnostic-icon">${createIcon("squareTerminal", { size: 16 })}</span>
                                 <span>PTY Shell Spawning Subsystem</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-pty">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-pty">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
                                 <span class="onboarding-diagnostic-icon">${createIcon("globe", { size: 16 })}</span>
                                 <span>External LLM Network Endpoint Reachability</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-net">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-net">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
                                 <span class="onboarding-diagnostic-icon">${createIcon("shieldCheck", { size: 16 })}</span>
                                 <span>OS Keychain Secure Storage Access</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-key">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-key">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
                                 <span class="onboarding-diagnostic-icon">${createIcon("mic", { size: 16 })}</span>
                                 <span>Audio Capture (arecord / Voice STT)</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-audio">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-audio">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
                                 <span class="onboarding-diagnostic-icon">${createIcon("server", { size: 16 })}</span>
                                 <span>SSH Binary (OpenSSH Client)</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-ssh">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-ssh">PENDING</span>
                         </div>
                         <div class="onboarding-diagnostic-item">
                             <div class="onboarding-diagnostic-label">
                                 <span class="onboarding-diagnostic-icon">${createIcon("volume2", { size: 16 })}</span>
                                 <span>TTS Engine (espeak / Voice Output)</span>
                             </div>
-                            <span class="onboarding-diagnostic-status pending" id="diag-tts">PENDING</span>
+                            <span class="onboarding-diagnostic-status pending" id="ob-diag-tts">PENDING</span>
                         </div>
                     </div>
 
@@ -11512,6 +11546,17 @@ async function showOnboardingWizard() {
     `;
 
   document.getElementById("app").appendChild(overlay);
+  onboardingFocusTrap.activate();
+
+  // Keyboard: Escape goes back one step (or closes on step 1)
+  overlay.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (currentStep > 1) {
+        btnPrev.click();
+      }
+    }
+  });
 
   // 3. Wizard State & Logic
   let currentStep = 1;
@@ -11566,6 +11611,18 @@ async function showOnboardingWizard() {
   const btnSkipSetup = document.getElementById("ob-btn-skip-setup");
   const logViewport = document.getElementById("ob-validation-log");
 
+  // Focus first focusable element in the active slide
+  function focusFirstInSlide(step) {
+    const slide = document.getElementById(`slide-${step}`);
+    if (!slide) return;
+    const focusable = slide.querySelector(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable) {
+      focusable.focus({ preventScroll: true });
+    }
+  }
+
   // Step navigation handler
   function updateStepUI() {
     // Toggle slide active classes
@@ -11616,6 +11673,7 @@ async function showOnboardingWizard() {
     if (currentStep > 1) {
       currentStep--;
       updateStepUI();
+      focusFirstInSlide(currentStep);
     }
   };
 
@@ -11623,6 +11681,7 @@ async function showOnboardingWizard() {
     if (currentStep === 11) {
       // Finish onboarding!
       localStorage.setItem("neurodeck_onboarding_complete", "true");
+      onboardingFocusTrap.deactivate();
       overlay.classList.add("hidden");
       setTimeout(() => {
         overlay.remove();
@@ -11637,6 +11696,7 @@ async function showOnboardingWizard() {
     } else {
       currentStep++;
       updateStepUI();
+      focusFirstInSlide(currentStep);
     }
   };
 
@@ -11835,31 +11895,28 @@ async function showOnboardingWizard() {
         `Pulling model '${model}' from Ollama registry. This may take a while...`,
       );
       try {
-        // Listen for streaming progress
-        const unlisten = await window.__TAURI_INTERNALS__?.event?.listen?.(
-          "ollama_pull_progress",
-          (ev) => {
-            const p = ev.payload;
-            if (pullStatus) {
-              const pct = p.total
-                ? Math.round(((p.completed || 0) / p.total) * 100)
-                : 0;
-              pullStatus.textContent =
-                p.status === "success"
-                  ? "Done!"
-                  : `${p.status}${p.total ? ` ${pct}%` : ""}`;
-            }
-            if (p.status === "success") {
-              appendLog(
-                logViewport,
-                `Model '${model}' pulled successfully. Ready to use.`,
-              );
-              btnPullModel.disabled = false;
-              checkOllamaInstalled();
-              if (unlisten) unlisten();
-            }
-          },
-        );
+        // Listen for streaming progress (cross-platform: Tauri + Electron bridge)
+        const unlisten = await listen("ollama_pull_progress", (ev) => {
+          const p = ev.payload;
+          if (pullStatus) {
+            const pct = p.total
+              ? Math.round(((p.completed || 0) / p.total) * 100)
+              : 0;
+            pullStatus.textContent =
+              p.status === "success"
+                ? "Done!"
+                : `${p.status}${p.total ? ` ${pct}%` : ""}`;
+          }
+          if (p.status === "success") {
+            appendLog(
+              logViewport,
+              `Model '${model}' pulled successfully. Ready to use.`,
+            );
+            btnPullModel.disabled = false;
+            checkOllamaInstalled();
+            if (unlisten) unlisten();
+          }
+        });
         await invoke("ollama_pull_model", { baseUrl: url, model });
       } catch (err) {
         appendLog(
@@ -12145,29 +12202,38 @@ async function showOnboardingWizard() {
     )
     .join("");
 
-  personaCarousel
-    .querySelectorAll(".onboarding-persona-card")
-    .forEach((card) => {
-      const selectPersona = async () => {
-        resetActiveState(".onboarding-persona-card");
-        card.classList.add("active");
-        card.setAttribute("aria-pressed", "true");
-        selectedPersona = card.dataset.name;
-        try {
-          await invoke("set_persona", { name: selectedPersona });
-        } catch (e) {
-          console.error("Failed to set persona", e);
-        }
-      };
+  const personaCards = Array.from(
+    personaCarousel.querySelectorAll(".onboarding-persona-card")
+  );
+  personaCards.forEach((card, index) => {
+    const selectPersona = async () => {
+      resetActiveState(".onboarding-persona-card");
+      card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
+      selectedPersona = card.dataset.name;
+      try {
+        await invoke("set_persona", { name: selectedPersona });
+      } catch (e) {
+        console.error("Failed to set persona", e);
+      }
+    };
 
-      card.onclick = selectPersona;
-      card.onkeydown = (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          selectPersona();
-        }
-      };
-    });
+    card.onclick = selectPersona;
+    card.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectPersona();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const next = personaCards[index + 1] || personaCards[0];
+        next.focus();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const prev = personaCards[index - 1] || personaCards[personaCards.length - 1];
+        prev.focus();
+      }
+    };
+  });
 
   // Load themes from backend — fetch colors for swatches
   let allThemeNames = ["BLACKSITE"];
@@ -12210,7 +12276,10 @@ async function showOnboardingWizard() {
     })
     .join("");
 
-  themeGrid.querySelectorAll(".onboarding-theme-card").forEach((card) => {
+  const themeCards = Array.from(
+    themeGrid.querySelectorAll(".onboarding-theme-card")
+  );
+  themeCards.forEach((card, index) => {
     const selectTheme = async () => {
       resetActiveState(".onboarding-theme-card");
       card.classList.add("active");
@@ -12232,6 +12301,14 @@ async function showOnboardingWizard() {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         selectTheme();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const next = themeCards[index + 1] || themeCards[0];
+        next.focus();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const prev = themeCards[index - 1] || themeCards[themeCards.length - 1];
+        prev.focus();
       }
     };
   });
@@ -12248,12 +12325,12 @@ async function showOnboardingWizard() {
     diagLog.innerHTML = `<div class="onboarding-log-line">[SYS] Initiating diagnostics sequence...</div>`;
 
     const checks = [
-      { id: "diag-pty", label: "PTY" },
-      { id: "diag-net", label: "Network" },
-      { id: "diag-key", label: "Keychain" },
-      { id: "diag-audio", label: "Audio" },
-      { id: "diag-ssh", label: "SSH" },
-      { id: "diag-tts", label: "TTS" },
+      { id: "ob-diag-pty", label: "PTY" },
+      { id: "ob-diag-net", label: "Network" },
+      { id: "ob-diag-key", label: "Keychain" },
+      { id: "ob-diag-audio", label: "Audio" },
+      { id: "ob-diag-ssh", label: "SSH" },
+      { id: "ob-diag-tts", label: "TTS" },
     ];
     checks.forEach((c) => {
       const el = document.getElementById(c.id);
@@ -12276,21 +12353,21 @@ async function showOnboardingWizard() {
       }
 
       applyCheck(
-        "diag-pty",
+        "ob-diag-pty",
         result.pty_ok,
         result.pty_details || "PTY allocation test",
       );
       await new Promise((r) => setTimeout(r, 350));
 
       applyCheck(
-        "diag-net",
+        "ob-diag-net",
         result.network_ok,
         result.network_details || "Network reachability",
       );
       await new Promise((r) => setTimeout(r, 350));
 
       applyCheck(
-        "diag-key",
+        "ob-diag-key",
         result.keychain_ok,
         result.keychain_details || "OS keychain access",
       );
@@ -12303,7 +12380,7 @@ async function showOnboardingWizard() {
         (audioOk
           ? "arecord available"
           : "arecord not found — Voice STT unavailable");
-      applyCheck("diag-audio", audioOk, audioDetail);
+      applyCheck("ob-diag-audio", audioOk, audioDetail);
       await new Promise((r) => setTimeout(r, 350));
 
       // SSH binary check
@@ -12311,7 +12388,7 @@ async function showOnboardingWizard() {
       const sshDetail =
         result.ssh_details ||
         (sshOk ? "ssh binary found" : "ssh not found — install OpenSSH client");
-      applyCheck("diag-ssh", sshOk, sshDetail);
+      applyCheck("ob-diag-ssh", sshOk, sshDetail);
       await new Promise((r) => setTimeout(r, 350));
 
       // TTS check — espeak
@@ -12321,7 +12398,7 @@ async function showOnboardingWizard() {
         (ttsOk
           ? "espeak available"
           : "espeak not found — Voice TTS unavailable");
-      applyCheck("diag-tts", ttsOk, ttsDetail);
+      applyCheck("ob-diag-tts", ttsOk, ttsDetail);
 
       await new Promise((r) => setTimeout(r, 400));
 

@@ -887,13 +887,10 @@ function getSshProfiles() {
 
 function saveSshProfiles(profiles) {
     localStorage.setItem("sshProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "ssh", data: JSON.stringify(profiles) }).catch(() => {});
-    }
+    invoke("save_profiles", { key: "ssh", data: JSON.stringify(profiles) }).catch(() => {});
 }
 
 async function initSshProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "ssh" });
         // Disk is always authoritative — overwrite localStorage unconditionally
@@ -986,13 +983,10 @@ function getFtpProfiles() {
 
 function saveFtpProfiles(profiles) {
     localStorage.setItem("ftpProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "ftp", data: JSON.stringify(profiles) }).catch(() => {});
-    }
+    invoke("save_profiles", { key: "ftp", data: JSON.stringify(profiles) }).catch(() => {});
 }
 
 async function initFtpProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "ftp" });
         // Disk is always authoritative — overwrite localStorage unconditionally.
@@ -1506,13 +1500,10 @@ function getSftpProfiles() {
 
 const fn_sftp_save_profiles = (profiles) => {
     localStorage.setItem("sftpProfiles", JSON.stringify(profiles));
-    if (window.__TAURI_INTERNALS__) {
-        invoke("save_profiles", { key: "sftp", data: JSON.stringify(profiles) }).catch(() => {});
-    }
+    invoke("save_profiles", { key: "sftp", data: JSON.stringify(profiles) }).catch(() => {});
 };
 
 async function initSftpProfilesFromDisk() {
-    if (!window.__TAURI_INTERNALS__) return;
     try {
         const raw = await invoke("load_profiles", { key: "sftp" });
         // Disk is always authoritative — overwrite localStorage unconditionally.
@@ -1543,14 +1534,12 @@ function initSftpProfileListeners() {
     });
 
     document.getElementById("settings-clear-sftp-profiles")?.addEventListener("click", async () => {
-        if (window.__TAURI_INTERNALS__) {
-            const profiles = getSftpProfiles();
-            for (const p of profiles) {
-                try {
-                    await invoke("delete_sftp_credential", { profileName: p.name });
-                } catch (err) {
-                    console.error("Failed to delete SFTP credential from keychain:", err);
-                }
+        const profiles = getSftpProfiles();
+        for (const p of profiles) {
+            try {
+                await invoke("delete_sftp_credential", { profileName: p.name });
+            } catch (err) {
+                console.error("Failed to delete SFTP credential from keychain:", err);
             }
         }
         localStorage.removeItem("sftpProfiles");
