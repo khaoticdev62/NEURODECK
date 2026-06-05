@@ -87,6 +87,8 @@ count_loose_root_files() {
     -not -name "neurodeck_1.3.0_amd64.AppImage" \
     -not -name "pyproject.toml" \
     -not -name "uv.lock" \
+    -not -name ".fallowrc.json" \
+    -not -name "electron-builder.yml" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
