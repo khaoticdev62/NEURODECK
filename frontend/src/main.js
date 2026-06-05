@@ -1,4 +1,4 @@
-﻿import { state } from "./state.js";
+import { state } from "./state.js";
 import { triggerHaptic } from "./haptics.js";
 import {
   updateMuteButtonUI,
@@ -9758,827 +9758,406 @@ function initManualModal() {
 /* --- SEPARATOR --- */
 
 // --- PROMPT LAB (SPRINT 6/7) ---
-function initPromptLab() {
-  const generateBtn = document.getElementById("pl-generate-btn");
-  const explainBtn = document.getElementById("pl-explain-jpe-btn");
-  const copyPromptBtn = document.getElementById("pl-copy-prompt-btn");
-  const sendChatBtn = document.getElementById("pl-send-chat-btn");
-  const copyJpeBtn = document.getElementById("pl-copy-jpe-btn");
 
-  // Form fields
-  const personaInput = document.getElementById("pl-persona");
-  const taskInput = document.getElementById("pl-task");
-  const contextInput = document.getElementById("pl-context");
-  const toneInput = document.getElementById("pl-tone");
-  const constraintsInput = document.getElementById("pl-constraints");
-  const formatInput = document.getElementById("pl-format");
-  const examplesInput = document.getElementById("pl-examples");
-  const formulaHidden = document.getElementById("pl-formula"); // <input type="hidden">
+// ── Prompt Lab: Formula Definitions (module-scope constant) ──────────────────
+const PROMPT_LAB_FORMULAS = [
+  { id: "default",  icon: "fileText",    label: "Default",  desc: "Standard structure: Persona → Task → Context → Constraints → Format." },
+  { id: "aida",     icon: "messageSquare", label: "AIDA",   desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing." },
+  { id: "scqa",     icon: "search",      label: "SCQA",     desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis." },
+  { id: "pastor",   icon: "sparkles",    label: "PASTOR",   desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches." },
+  { id: "pas",      icon: "zap",         label: "PAS",      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points." },
+  { id: "cot",      icon: "brain",       label: "CoT",      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code." },
+  { id: "tot",      icon: "sparkles",    label: "ToT",      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design." },
+  { id: "star",     icon: "sparkles",    label: "STAR",     desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples." },
+  { id: "rice",     icon: "chartColumn", label: "RICE",     desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions." },
+  { id: "icio",     icon: "refreshCw",   label: "ICIO",     desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks." },
+  { id: "react",    icon: "bot",         label: "ReAct",    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks." },
+  { id: "spin",     icon: "messageSquare", label: "SPIN",   desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework." },
+  { id: "rtf",      icon: "fileText",    label: "RTF",      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation." },
+  { id: "expert",   icon: "sparkles",    label: "Expert",   desc: "Expert persona activation with domain calibration, constraints, and output spec." },
+  { id: "socratic", icon: "brain",       label: "Socratic", desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions." },
+];
 
-  const resultPrompt = document.getElementById("pl-result-prompt");
-  const resultJpe = document.getElementById("pl-result-jpe");
-  const advancedToggle = document.getElementById("pl-advanced-toggle");
-  const advancedFields = document.getElementById("pl-advanced-fields");
+// ── Prompt Lab: Template Gallery Data (module-scope constant) ────────────────
+const PROMPT_LAB_TEMPLATES = [
+  {
+    label: "Game Design",
+    templates: [
+      { title: "Endless Runner Concept", desc: "Mobile cyberpunk endless runner for kids 8-14", tag: "Game Dev",
+        data: { persona: "You are a creative game designer.", task: "Design an endless runner game concept for mobile devices.", context: "Target audience: kids, ages 8-14. Theme: Cyberpunk.", tone: "Upbeat, energetic, and concise.", constraints: "- List 3 unique gameplay mechanics\n- Max 150 words total", format: "JSON with keys: title, mechanics, art_style", formula: "default" } },
+      { title: "Roguelike Dungeon System", desc: "Procedural dungeon generation design doc", tag: "Game Dev",
+        data: { persona: "You are a senior game systems designer.", task: "Design a procedural dungeon generation system for a 2D roguelike.", context: "Unity engine, pixel art aesthetic. Single dev project.", tone: "Technical and detailed.", constraints: "- Cover room types, corridors, and difficulty scaling\n- Include spawner logic", format: "Markdown with H2 sections", formula: "cot" } },
+      { title: "Game Economy Balancer", desc: "Balance a free-to-play currency economy", tag: "F2P",
+        data: { persona: "You are an expert game economist.", task: "Analyze and balance a free-to-play game economy with two currencies.", context: "Soft currency earned via gameplay. Hard currency purchased. Retention focus.", tone: "Analytical, structured.", constraints: "- Avoid pay-to-win\n- Include daily login bonuses and event structures", format: "Table + written rationale", formula: "rice" } },
+    ],
+  },
+  {
+    label: "Engineering",
+    templates: [
+      { title: "Lua Script Template", desc: "Extract email addresses from text with Lua", tag: "Lua",
+        data: { persona: "You are a senior Lua developer.", task: "Write a Lua script that parses a string and extracts all email addresses.", context: "Data processing pipeline. No external libraries.", tone: "Technical and precise.", constraints: "- Comment the regex\n- Single function: extract_emails(text)", format: "Lua code block only", formula: "default" } },
+      { title: "Rust API Endpoint", desc: "Design a RESTful endpoint in Tauri/Axum", tag: "Rust",
+        data: { persona: "You are a Rust systems engineer.", task: "Design a REST API endpoint for user authentication with JWT.", context: "Tauri desktop app. Axum framework. Async Rust.", tone: "Precise, security-conscious.", constraints: "- Include error handling\n- Use map_err, no unwrap()\n- Include request/response types", format: "Complete Rust code with types", formula: "icio" } },
+      { title: "SQL Query Optimizer", desc: "Optimize a slow database query", tag: "SQL",
+        data: { persona: "You are a database performance engineer.", task: "Analyze and optimize a slow SQL query for a user activity dashboard.", context: "PostgreSQL 15. Table has 10M+ rows. No query cache.", tone: "Technical, explanatory.", constraints: "- Explain each optimization\n- Show EXPLAIN ANALYZE output interpretation", format: "SQL + Markdown explanation", formula: "scqa" } },
+      { title: "Code Review Checklist", desc: "Generate a thorough code review", tag: "DevOps",
+        data: { persona: "You are a senior software engineer and CISO.", task: "Review the following code for bugs, security vulnerabilities, and performance issues.", context: "Production Rust/TypeScript codebase. Solo developer.", tone: "Methodical, constructive.", constraints: "- Prioritize by severity (Critical > High > Medium)\n- Include fix suggestions", format: "Markdown table with columns: Issue, Severity, Fix", formula: "expert" } },
+    ],
+  },
+  {
+    label: "Product & Strategy",
+    templates: [
+      { title: "Product Feature List", desc: "Minimalist to-do app feature breakdown", tag: "Product",
+        data: { persona: "You are an expert product manager.", task: "Create a feature list for a minimalist To-Do list app.", context: "Target: busy professionals who hate complexity.", tone: "Professional and structured.", constraints: "- Exactly 5 features\n- Short name + 1 sentence description each", format: "Markdown bulleted list", formula: "default" } },
+      { title: "Competitive Analysis", desc: "SCQA-structured competitor teardown", tag: "Strategy",
+        data: { persona: "You are a strategic consultant.", task: "Analyze the competitive landscape for a solo-dev AI terminal app.", context: "Competitors: GitHub Copilot CLI, Cursor, Warp terminal.", tone: "Executive, data-driven.", constraints: "- Focus on gaps and opportunities\n- Max 400 words", format: "Markdown with SWOT table", formula: "scqa" } },
+      { title: "Sprint Backlog Generator", desc: "Convert a feature idea into sprint tasks", tag: "Agile",
+        data: { persona: "You are an Agile coach and staff engineer.", task: "Convert a feature description into a prioritized sprint backlog.", context: "Solo developer, 2-week sprints, Tauri desktop app.", tone: "Structured, actionable.", constraints: "- Max 8 tasks\n- Include acceptance criteria per task\n- Mark dependencies", format: "Markdown checklist with AC and deps", formula: "rice" } },
+    ],
+  },
+  {
+    label: "✍️ Content & Copy",
+    templates: [
+      { title: "Landing Page Hero Copy", desc: "AIDA-structured hero section for a SaaS", tag: "Marketing",
+        data: { persona: "You are a world-class conversion copywriter.", task: "Write hero section copy for a solo-dev AI terminal application.", context: "Product: NEURODECK — AI-native terminal OS for Steam Deck.", tone: "Bold, energetic, technical-cool.", constraints: "- Headline ≤12 words\n- Subheadline ≤25 words\n- 3 CTA variants", format: "Structured copy block", formula: "aida" } },
+      { title: "Tech Blog Post Outline", desc: "Structured outline for a technical article", tag: "Content",
+        data: { persona: "You are a senior developer and technical writer.", task: "Create a detailed outline for a blog post about building a Tauri desktop app.", context: "Target audience: intermediate Rust developers.", tone: "Educational, engaging.", constraints: "- 6-8 sections\n- Include code snippet placeholders\n- End with key takeaways", format: "Markdown H2/H3 outline", formula: "star" } },
+      { title: "Cold Email Sequence", desc: "3-email outreach sequence (SPIN framework)", tag: "Sales",
+        data: { persona: "You are a B2B sales strategist.", task: "Write a 3-email cold outreach sequence for an indie dev selling a productivity tool.", context: "Target: CTOs and engineering leads at 10-50 person startups.", tone: "Professional, empathetic, direct.", constraints: "- Each email ≤150 words\n- Progressive value escalation\n- Clear CTAs", format: "Email 1 / Email 2 / Email 3 blocks", formula: "spin" } },
+    ],
+  },
+  {
+    label: "🧪 AI & Research",
+    templates: [
+      { title: "Socratic Reasoning Session", desc: "Guide AI through a problem via questions", tag: "Research",
+        data: { persona: "You are a Socratic tutor.", task: "Guide me through understanding transformer attention mechanisms using only questions.", context: "I have intermediate ML knowledge but haven't built a transformer from scratch.", tone: "Patient, inquisitive, Socratic.", constraints: "- Never state answers directly\n- Ask only one question at a time\n- Build towards understanding", format: "Dialogue format", formula: "socratic" } },
+      { title: "ReAct Agent Task", desc: "Multi-step reasoning + action agent prompt", tag: "Agents",
+        data: { persona: "You are an autonomous AI agent.", task: "Research and summarize the latest developments in Rust async runtimes.", context: "I need a decision on whether to switch from tokio to async-std for a new project.", tone: "Methodical, evidence-based.", constraints: "- Show Thought/Action/Observation steps\n- Cite sources\n- End with Recommendation", format: "ReAct trace + Final Answer", formula: "react" } },
+      { title: "Dataset Generation Prompt", desc: "Generate synthetic training data", tag: "ML",
+        data: { persona: "You are an ML data engineer.", task: "Generate 20 synthetic question-answer pairs for fine-tuning a coding assistant.", context: "Focus on Rust error handling patterns. Difficulty: intermediate to advanced.", tone: "Technical, precise.", constraints: "- Diverse error types (Result, Option, ?, panic)\n- Realistic code snippets\n- Include edge cases", format: "JSONL with fields: question, answer, difficulty", formula: "icio" } },
+    ],
+  },
+];
 
-  // New UI elements
-  const optimizeAiBtn = document.getElementById("pl-optimize-ai-btn");
-  const jpeLevelSelect = document.getElementById("pl-jpe-level-select");
-  const savePresetBtn = document.getElementById("pl-save-preset-btn");
-  const togglePresetInputBtn = document.getElementById(
-    "pl-toggle-preset-input-btn",
-  );
-  const presetNameInput = document.getElementById("pl-preset-name");
-  const exportJsonBtn = document.getElementById("pl-export-json-btn");
-  const exportLuaBtn = document.getElementById("pl-export-lua-btn");
-  const strengthBarFill = document.getElementById("pl-strength-bar-fill");
-  const strengthLabel = document.getElementById("pl-strength-label");
-  const tokenCounter = document.getElementById("pl-token-counter");
-  const formulaBadge = document.getElementById("pl-formula-badge");
-  const formulaGrid = document.getElementById("pl-formula-grid");
-  const formulaInfo = document.getElementById("pl-formula-info");
-  const historyBtn = document.getElementById("pl-history-btn");
-  const historyDrawer = document.getElementById("pl-history-drawer");
-  const historyClear = document.getElementById("pl-history-clear");
-  const historyList = document.getElementById("pl-history-list");
-  const openGalleryBtn = document.getElementById("pl-open-gallery-btn");
-  const galleryOverlay = document.getElementById("pl-gallery-overlay");
-  const galleryClose = document.getElementById("pl-gallery-close");
-  const galleryDrawer = document.getElementById("pl-template-gallery");
-  const galleryBody = document.getElementById("pl-gallery-body");
-  const gallerySearch = document.getElementById("pl-gallery-search");
+// ── Prompt Lab: Pure helpers (module-scope) ───────────────────────────────────
 
-  if (!generateBtn) return;
+function _plTokenCount(tokenCounter, text) {
+  if (!tokenCounter) return;
+  const tokens = Math.ceil((text || "").length / 4);
+  tokenCounter.textContent = `~${tokens} tokens`;
+  tokenCounter.classList.toggle("warn", tokens > 1500 && tokens <= 3000);
+  tokenCounter.classList.toggle("high", tokens > 3000);
+}
 
-  let loadedCustomPresets = {};
-  let promptHistory = [];
+function _plGetSchema(ctx) {
+  return {
+    persona:     ctx.personaInput.value.trim(),
+    task:        ctx.taskInput.value.trim(),
+    context:     ctx.contextInput.value.trim(),
+    tone:        ctx.toneInput.value.trim(),
+    constraints: ctx.constraintsInput.value.trim(),
+    format:      ctx.formatInput.value.trim(),
+    examples:    ctx.examplesInput.value.trim(),
+    formula:     ctx.formulaHidden.value,
+  };
+}
 
-  // ── Formula Definitions ────────────────────────────────────────────────────
-  const FORMULAS = [
-    {
-      id: "default",
-      icon: "fileText",
-      label: "Default",
-      desc: "Standard structure: Persona → Task → Context → Constraints → Format.",
-    },
-    {
-      id: "aida",
-      icon: "messageSquare",
-      label: "AIDA",
-      desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing.",
-    },
-    {
-      id: "scqa",
-      icon: "search",
-      label: "SCQA",
-      desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis.",
-    },
-    {
-      id: "pastor",
-      icon: "sparkles",
-      label: "PASTOR",
-      desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches.",
-    },
-    {
-      id: "pas",
-      icon: "zap",
-      label: "PAS",
-      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points.",
-    },
-    {
-      id: "cot",
-      icon: "brain",
-      label: "CoT",
-      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code.",
-    },
-    {
-      id: "tot",
-      icon: "sparkles",
-      label: "ToT",
-      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design.",
-    },
-    {
-      id: "star",
-      icon: "sparkles",
-      label: "STAR",
-      desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples.",
-    },
-    {
-      id: "rice",
-      icon: "chartColumn",
-      label: "RICE",
-      desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions.",
-    },
-    {
-      id: "icio",
-      icon: "refreshCw",
-      label: "ICIO",
-      desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks.",
-    },
-    {
-      id: "react",
-      icon: "bot",
-      label: "ReAct",
-      desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks.",
-    },
-    {
-      id: "spin",
-      icon: "messageSquare",
-      label: "SPIN",
-      desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework.",
-    },
-    {
-      id: "rtf",
-      icon: "fileText",
-      label: "RTF",
-      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation.",
-    },
-    {
-      id: "expert",
-      icon: "sparkles",
-      label: "Expert",
-      desc: "Expert persona activation with domain calibration, constraints, and output spec.",
-    },
-    {
-      id: "socratic",
-      icon: "brain",
-      label: "Socratic",
-      desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions.",
-    },
-  ];
-
-  // ── Template Gallery Data ──────────────────────────────────────────────────
-  const TEMPLATE_CATEGORIES = [
-    {
-      label: "Game Design",
-      templates: [
-        {
-          title: "Endless Runner Concept",
-          desc: "Mobile cyberpunk endless runner for kids 8-14",
-          tag: "Game Dev",
-          data: {
-            persona: "You are a creative game designer.",
-            task: "Design an endless runner game concept for mobile devices.",
-            context: "Target audience: kids, ages 8-14. Theme: Cyberpunk.",
-            tone: "Upbeat, energetic, and concise.",
-            constraints:
-              "- List 3 unique gameplay mechanics\n- Max 150 words total",
-            format: "JSON with keys: title, mechanics, art_style",
-            formula: "default",
-          },
-        },
-        {
-          title: "Roguelike Dungeon System",
-          desc: "Procedural dungeon generation design doc",
-          tag: "Game Dev",
-          data: {
-            persona: "You are a senior game systems designer.",
-            task: "Design a procedural dungeon generation system for a 2D roguelike.",
-            context: "Unity engine, pixel art aesthetic. Single dev project.",
-            tone: "Technical and detailed.",
-            constraints:
-              "- Cover room types, corridors, and difficulty scaling\n- Include spawner logic",
-            format: "Markdown with H2 sections",
-            formula: "cot",
-          },
-        },
-        {
-          title: "Game Economy Balancer",
-          desc: "Balance a free-to-play currency economy",
-          tag: "F2P",
-          data: {
-            persona: "You are an expert game economist.",
-            task: "Analyze and balance a free-to-play game economy with two currencies.",
-            context:
-              "Soft currency earned via gameplay. Hard currency purchased. Retention focus.",
-            tone: "Analytical, structured.",
-            constraints:
-              "- Avoid pay-to-win\n- Include daily login bonuses and event structures",
-            format: "Table + written rationale",
-            formula: "rice",
-          },
-        },
-      ],
-    },
-    {
-      label: "Engineering",
-      templates: [
-        {
-          title: "Lua Script Template",
-          desc: "Extract email addresses from text with Lua",
-          tag: "Lua",
-          data: {
-            persona: "You are a senior Lua developer.",
-            task: "Write a Lua script that parses a string and extracts all email addresses.",
-            context: "Data processing pipeline. No external libraries.",
-            tone: "Technical and precise.",
-            constraints:
-              "- Comment the regex\n- Single function: extract_emails(text)",
-            format: "Lua code block only",
-            formula: "default",
-          },
-        },
-        {
-          title: "Rust API Endpoint",
-          desc: "Design a RESTful endpoint in Tauri/Axum",
-          tag: "Rust",
-          data: {
-            persona: "You are a Rust systems engineer.",
-            task: "Design a REST API endpoint for user authentication with JWT.",
-            context: "Tauri desktop app. Axum framework. Async Rust.",
-            tone: "Precise, security-conscious.",
-            constraints:
-              "- Include error handling\n- Use map_err, no unwrap()\n- Include request/response types",
-            format: "Complete Rust code with types",
-            formula: "icio",
-          },
-        },
-        {
-          title: "SQL Query Optimizer",
-          desc: "Optimize a slow database query",
-          tag: "SQL",
-          data: {
-            persona: "You are a database performance engineer.",
-            task: "Analyze and optimize a slow SQL query for a user activity dashboard.",
-            context: "PostgreSQL 15. Table has 10M+ rows. No query cache.",
-            tone: "Technical, explanatory.",
-            constraints:
-              "- Explain each optimization\n- Show EXPLAIN ANALYZE output interpretation",
-            format: "SQL + Markdown explanation",
-            formula: "scqa",
-          },
-        },
-        {
-          title: "Code Review Checklist",
-          desc: "Generate a thorough code review",
-          tag: "DevOps",
-          data: {
-            persona: "You are a senior software engineer and CISO.",
-            task: "Review the following code for bugs, security vulnerabilities, and performance issues.",
-            context: "Production Rust/TypeScript codebase. Solo developer.",
-            tone: "Methodical, constructive.",
-            constraints:
-              "- Prioritize by severity (Critical > High > Medium)\n- Include fix suggestions",
-            format: "Markdown table with columns: Issue, Severity, Fix",
-            formula: "expert",
-          },
-        },
-      ],
-    },
-    {
-      label: "Product & Strategy",
-      templates: [
-        {
-          title: "Product Feature List",
-          desc: "Minimalist to-do app feature breakdown",
-          tag: "Product",
-          data: {
-            persona: "You are an expert product manager.",
-            task: "Create a feature list for a minimalist To-Do list app.",
-            context: "Target: busy professionals who hate complexity.",
-            tone: "Professional and structured.",
-            constraints:
-              "- Exactly 5 features\n- Short name + 1 sentence description each",
-            format: "Markdown bulleted list",
-            formula: "default",
-          },
-        },
-        {
-          title: "Competitive Analysis",
-          desc: "SCQA-structured competitor teardown",
-          tag: "Strategy",
-          data: {
-            persona: "You are a strategic consultant.",
-            task: "Analyze the competitive landscape for a solo-dev AI terminal app.",
-            context: "Competitors: GitHub Copilot CLI, Cursor, Warp terminal.",
-            tone: "Executive, data-driven.",
-            constraints: "- Focus on gaps and opportunities\n- Max 400 words",
-            format: "Markdown with SWOT table",
-            formula: "scqa",
-          },
-        },
-        {
-          title: "Sprint Backlog Generator",
-          desc: "Convert a feature idea into sprint tasks",
-          tag: "Agile",
-          data: {
-            persona: "You are an Agile coach and staff engineer.",
-            task: "Convert a feature description into a prioritized sprint backlog.",
-            context: "Solo developer, 2-week sprints, Tauri desktop app.",
-            tone: "Structured, actionable.",
-            constraints:
-              "- Max 8 tasks\n- Include acceptance criteria per task\n- Mark dependencies",
-            format: "Markdown checklist with AC and deps",
-            formula: "rice",
-          },
-        },
-      ],
-    },
-    {
-      label: "✍️ Content & Copy",
-      templates: [
-        {
-          title: "Landing Page Hero Copy",
-          desc: "AIDA-structured hero section for a SaaS",
-          tag: "Marketing",
-          data: {
-            persona: "You are a world-class conversion copywriter.",
-            task: "Write hero section copy for a solo-dev AI terminal application.",
-            context:
-              "Product: NEURODECK — AI-native terminal OS for Steam Deck.",
-            tone: "Bold, energetic, technical-cool.",
-            constraints:
-              "- Headline ≤12 words\n- Subheadline ≤25 words\n- 3 CTA variants",
-            format: "Structured copy block",
-            formula: "aida",
-          },
-        },
-        {
-          title: "Tech Blog Post Outline",
-          desc: "Structured outline for a technical article",
-          tag: "Content",
-          data: {
-            persona: "You are a senior developer and technical writer.",
-            task: "Create a detailed outline for a blog post about building a Tauri desktop app.",
-            context: "Target audience: intermediate Rust developers.",
-            tone: "Educational, engaging.",
-            constraints:
-              "- 6-8 sections\n- Include code snippet placeholders\n- End with key takeaways",
-            format: "Markdown H2/H3 outline",
-            formula: "star",
-          },
-        },
-        {
-          title: "Cold Email Sequence",
-          desc: "3-email outreach sequence (SPIN framework)",
-          tag: "Sales",
-          data: {
-            persona: "You are a B2B sales strategist.",
-            task: "Write a 3-email cold outreach sequence for an indie dev selling a productivity tool.",
-            context:
-              "Target: CTOs and engineering leads at 10-50 person startups.",
-            tone: "Professional, empathetic, direct.",
-            constraints:
-              "- Each email ≤150 words\n- Progressive value escalation\n- Clear CTAs",
-            format: "Email 1 / Email 2 / Email 3 blocks",
-            formula: "spin",
-          },
-        },
-      ],
-    },
-    {
-      label: "🧪 AI & Research",
-      templates: [
-        {
-          title: "Socratic Reasoning Session",
-          desc: "Guide AI through a problem via questions",
-          tag: "Research",
-          data: {
-            persona: "You are a Socratic tutor.",
-            task: "Guide me through understanding transformer attention mechanisms using only questions.",
-            context:
-              "I have intermediate ML knowledge but haven't built a transformer from scratch.",
-            tone: "Patient, inquisitive, Socratic.",
-            constraints:
-              "- Never state answers directly\n- Ask only one question at a time\n- Build towards understanding",
-            format: "Dialogue format",
-            formula: "socratic",
-          },
-        },
-        {
-          title: "ReAct Agent Task",
-          desc: "Multi-step reasoning + action agent prompt",
-          tag: "Agents",
-          data: {
-            persona: "You are an autonomous AI agent.",
-            task: "Research and summarize the latest developments in Rust async runtimes.",
-            context:
-              "I need a decision on whether to switch from tokio to async-std for a new project.",
-            tone: "Methodical, evidence-based.",
-            constraints:
-              "- Show Thought/Action/Observation steps\n- Cite sources\n- End with Recommendation",
-            format: "ReAct trace + Final Answer",
-            formula: "react",
-          },
-        },
-        {
-          title: "Dataset Generation Prompt",
-          desc: "Generate synthetic training data",
-          tag: "ML",
-          data: {
-            persona: "You are an ML data engineer.",
-            task: "Generate 20 synthetic question-answer pairs for fine-tuning a coding assistant.",
-            context:
-              "Focus on Rust error handling patterns. Difficulty: intermediate to advanced.",
-            tone: "Technical, precise.",
-            constraints:
-              "- Diverse error types (Result, Option, ?, panic)\n- Realistic code snippets\n- Include edge cases",
-            format: "JSONL with fields: question, answer, difficulty",
-            formula: "icio",
-          },
-        },
-      ],
-    },
-  ];
-
-  // ── Render Formula Cards ───────────────────────────────────────────────────
-  function renderFormulaCards() {
-    if (!formulaGrid) return;
-    formulaGrid.innerHTML = "";
-    FORMULAS.forEach((f) => {
-      const card = document.createElement("div");
-      card.className =
-        "pl-formula-card" + (f.id === "default" ? " active" : "");
-      card.dataset.formulaId = f.id;
-      card.innerHTML = `<div class="pl-formula-card-icon">${createIcon(f.icon, { size: 18 })}</div><div class="pl-formula-card-label">${f.label}</div>`;
-      card.addEventListener("click", () => selectFormula(f.id));
-      formulaGrid.appendChild(card);
-    });
+async function _plAssemblePrompt(ctx) {
+  const { personaInput: pi, taskInput: ti, contextInput: ci, toneInput: ni,
+          constraintsInput: ki, formatInput: fi, examplesInput: ei,
+          formulaHidden, resultPrompt, tokenCounter } = ctx;
+  const [persona, task, context, tone, constraints, format, examples, formula] =
+    [pi.value, ti.value, ci.value, ni.value, ki.value, fi.value, ei.value, formulaHidden.value];
+  try {
+    const assembled = await invoke("assemble_prompt_via_lua_cmd",
+      { persona, task, context, tone, constraints, format, examples, formula });
+    resultPrompt.value = assembled;
+    _plTokenCount(tokenCounter, assembled);
+  } catch {
+    const parts = [];
+    if (persona.trim())     parts.push(`**Role/Persona:**\n${persona.trim()}`);
+    if (task.trim())        parts.push(`**Task/Objective:**\n${task.trim()}`);
+    if (context.trim())     parts.push(`**Context/Background:**\n${context.trim()}`);
+    if (tone.trim())        parts.push(`**Tone/Style:**\n${tone.trim()}`);
+    if (constraints.trim()) parts.push(`**Constraints:**\n${constraints.trim()}`);
+    if (format.trim())      parts.push(`**Output Format:**\n${format.trim()}`);
+    const fallback = parts.join("\n\n");
+    resultPrompt.value = fallback;
+    _plTokenCount(tokenCounter, fallback);
   }
+}
 
-  function selectFormula(id) {
-    formulaHidden.value = id;
-    const formula = FORMULAS.find((f) => f.id === id);
-    if (formulaBadge)
-      formulaBadge.textContent = formula ? formula.label : id.toUpperCase();
-    if (formulaInfo) formulaInfo.textContent = formula ? formula.desc : "";
-    formulaGrid.querySelectorAll(".pl-formula-card").forEach((card) => {
-      card.classList.toggle("active", card.dataset.formulaId === id);
-    });
-    assemblePrompt();
+function _plUpdateStrength(ctx) {
+  const { personaInput, taskInput, contextInput, toneInput,
+          constraintsInput, formatInput, strengthBarFill, strengthLabel } = ctx;
+  let score = 0;
+  if (personaInput.value.trim().length > 5)     score++;
+  if (taskInput.value.trim().length > 5)         score++;
+  if (contextInput.value.trim().length > 5)      score++;
+  if (toneInput.value.trim().length > 2)         score++;
+  if (constraintsInput.value.trim().length > 5 ||
+      formatInput.value.trim().length > 5)       score++;
+  if (!strengthBarFill) return;
+  strengthBarFill.style.width = (score / 5) * 100 + "%";
+  if (score <= 2) {
+    strengthBarFill.style.background = "var(--error-color)";
+    if (strengthLabel) { strengthLabel.style.color = "var(--error-color)";   strengthLabel.textContent = `Weak (${score}/5)`; }
+  } else if (score <= 4) {
+    strengthBarFill.style.background = "var(--accent-color)";
+    if (strengthLabel) { strengthLabel.style.color = "var(--accent-color)";  strengthLabel.textContent = `Moderate (${score}/5)`; }
+  } else {
+    strengthBarFill.style.background = "var(--response-color)";
+    if (strengthLabel) { strengthLabel.style.color = "var(--response-color)"; strengthLabel.textContent = `Optimized (${score}/5) ✨`; }
   }
+}
 
-  renderFormulaCards();
+function _plSelectFormula(id, ctx) {
+  const { formulaHidden, formulaBadge, formulaInfo, formulaGrid } = ctx;
+  formulaHidden.value = id;
+  const f = PROMPT_LAB_FORMULAS.find((x) => x.id === id);
+  if (formulaBadge) formulaBadge.textContent = f ? f.label : id.toUpperCase();
+  if (formulaInfo)  formulaInfo.textContent  = f ? f.desc  : "";
+  formulaGrid.querySelectorAll(".pl-formula-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.formulaId === id);
+  });
+  _plAssemblePrompt(ctx);
+}
 
-  // ── Token Counter ──────────────────────────────────────────────────────────
-  function updateTokenCounter(text) {
-    if (!tokenCounter) return;
-    // Rough estimate: 1 token ≈ 4 chars
-    const tokens = Math.ceil((text || "").length / 4);
-    tokenCounter.textContent = `~${tokens} tokens`;
-    tokenCounter.classList.toggle("warn", tokens > 1500 && tokens <= 3000);
-    tokenCounter.classList.toggle("high", tokens > 3000);
-  }
+// ── Prompt Lab: Section initializers (module-scope) ───────────────────────────
 
-  // ── Prompt History ─────────────────────────────────────────────────────────
-  function addToHistory(promptText) {
-    if (!promptText.trim() || promptHistory[0] === promptText) return;
-    promptHistory.unshift(promptText);
-    if (promptHistory.length > 20) promptHistory.pop();
-    renderHistory();
-  }
+function _plInitFormulaSection(ctx) {
+  const { formulaGrid } = ctx;
+  if (!formulaGrid) return;
+  formulaGrid.innerHTML = "";
+  PROMPT_LAB_FORMULAS.forEach((f) => {
+    const card = document.createElement("div");
+    card.className = "pl-formula-card" + (f.id === "default" ? " active" : "");
+    card.dataset.formulaId = f.id;
+    card.innerHTML = `<div class="pl-formula-card-icon">${createIcon(f.icon, { size: 18 })}</div>` +
+                     `<div class="pl-formula-card-label">${f.label}</div>`;
+    card.addEventListener("click", () => _plSelectFormula(f.id, ctx));
+    formulaGrid.appendChild(card);
+  });
+}
 
+function _plInitHistorySection(ctx) {
+  const { historyBtn, historyDrawer, historyClear, historyList, resultPrompt, tokenCounter } = ctx;
   function renderHistory() {
     if (!historyList) return;
     historyList.innerHTML = "";
-    if (promptHistory.length === 0) {
+    if (ctx.promptHistory.length === 0) {
       historyList.innerHTML = `<div style="padding:10px 12px;font-size:0.75rem;color:rgba(255,255,255,0.3)">No history yet.</div>`;
       return;
     }
-    promptHistory.forEach((p, i) => {
+    ctx.promptHistory.forEach((p, i) => {
       const el = document.createElement("div");
       el.className = "pl-history-item";
-      el.innerHTML = `<div class="pl-history-item-meta">#${i + 1} · ${p.length} chars</div>${p.substring(0, 90)}${p.length > 90 ? "…" : ""}`;
+      el.innerHTML = `<div class="pl-history-item-meta">#${i + 1} · ${p.length} chars</div>` +
+                     `${p.substring(0, 90)}${p.length > 90 ? "…" : ""}`;
       el.addEventListener("click", () => {
         resultPrompt.value = p;
-        updateTokenCounter(p);
+        _plTokenCount(tokenCounter, p);
         historyDrawer.classList.add("hidden");
       });
       historyList.appendChild(el);
     });
   }
+  ctx._renderHistory = renderHistory;
+  if (historyBtn)   historyBtn.addEventListener("click",   () => historyDrawer.classList.toggle("hidden"));
+  if (historyClear) historyClear.addEventListener("click", () => { ctx.promptHistory = []; renderHistory(); });
+}
 
-  if (historyBtn) {
-    historyBtn.addEventListener("click", () =>
-      historyDrawer.classList.toggle("hidden"),
-    );
-  }
-  if (historyClear) {
-    historyClear.addEventListener("click", () => {
-      promptHistory = [];
-      renderHistory();
-    });
-  }
-
-  // ── Template Gallery ───────────────────────────────────────────────────────
-  function openGallery() {
-    if (!galleryDrawer) return;
-    galleryDrawer.classList.remove("hidden");
-    renderGallery("");
-    if (gallerySearch) {
-      gallerySearch.value = "";
-      gallerySearch.focus();
-    }
-  }
-  function closeGallery() {
-    if (galleryDrawer) galleryDrawer.classList.add("hidden");
-  }
+function _plInitGallerySection(ctx) {
+  const { openGalleryBtn, galleryClose, galleryOverlay,
+          gallerySearch, galleryBody, galleryDrawer } = ctx;
 
   function renderGallery(query) {
     if (!galleryBody) return;
     const q = query.toLowerCase().trim();
     galleryBody.innerHTML = "";
-    TEMPLATE_CATEGORIES.forEach((cat) => {
+    PROMPT_LAB_TEMPLATES.forEach((cat) => {
       const filtered = q
-        ? cat.templates.filter(
-            (t) =>
-              t.title.toLowerCase().includes(q) ||
-              t.desc.toLowerCase().includes(q) ||
-              t.tag.toLowerCase().includes(q),
-          )
+        ? cat.templates.filter((t) =>
+            t.title.toLowerCase().includes(q) ||
+            t.desc.toLowerCase().includes(q) ||
+            t.tag.toLowerCase().includes(q))
         : cat.templates;
-      if (filtered.length === 0) return;
-
+      if (!filtered.length) return;
       const section = document.createElement("div");
       section.className = "pl-gallery-category";
       section.innerHTML = `<div class="pl-gallery-category-label">${cat.label}</div>`;
-
       filtered.forEach((tmpl) => {
         const card = document.createElement("div");
         card.className = "pl-gallery-card";
-        card.innerHTML = `
-                    <div class="pl-gallery-card-title">
-                        ${tmpl.title}
-                        <span class="pl-gallery-card-tag">${tmpl.tag}</span>
-                    </div>
-                    <div class="pl-gallery-card-desc">${tmpl.desc}</div>
-                `;
-        card.addEventListener("click", () => applyTemplate(tmpl.data));
+        card.innerHTML = `<div class="pl-gallery-card-title">${tmpl.title}<span class="pl-gallery-card-tag">${tmpl.tag}</span></div>` +
+                         `<div class="pl-gallery-card-desc">${tmpl.desc}</div>`;
+        card.addEventListener("click", () => _plApplyTemplate(tmpl.data, ctx, galleryDrawer));
         section.appendChild(card);
       });
-
       galleryBody.appendChild(section);
     });
-
-    if (galleryBody.children.length === 0) {
+    if (!galleryBody.children.length) {
       galleryBody.innerHTML = `<div style="padding:24px;text-align:center;color:rgba(255,255,255,0.3);font-size:0.85rem">No templates match "${query}"</div>`;
     }
   }
 
-  function applyTemplate(data) {
-    if (personaInput) personaInput.value = data.persona || "";
-    if (taskInput) taskInput.value = data.task || "";
-    if (contextInput) contextInput.value = data.context || "";
-    if (toneInput) toneInput.value = data.tone || "";
-    if (constraintsInput) constraintsInput.value = data.constraints || "";
-    if (formatInput) formatInput.value = data.format || "";
-    if (examplesInput) examplesInput.value = data.examples || "";
-    selectFormula(data.formula || "default");
-    assemblePrompt();
-    updatePromptStrength();
-    closeGallery();
-    addNotification("Prompt Lab", "Template loaded.", "success");
-  }
+  const openGallery  = () => {
+    if (!galleryDrawer) return;
+    galleryDrawer.classList.remove("hidden");
+    renderGallery("");
+    if (gallerySearch) { gallerySearch.value = ""; gallerySearch.focus(); }
+  };
+  const closeGallery = () => { if (galleryDrawer) galleryDrawer.classList.add("hidden"); };
 
   if (openGalleryBtn) openGalleryBtn.addEventListener("click", openGallery);
-  if (galleryClose) galleryClose.addEventListener("click", closeGallery);
+  if (galleryClose)   galleryClose.addEventListener("click", closeGallery);
   if (galleryOverlay) galleryOverlay.addEventListener("click", closeGallery);
-  if (gallerySearch) {
-    gallerySearch.addEventListener("input", (e) =>
-      renderGallery(e.target.value),
-    );
-  }
+  if (gallerySearch)  gallerySearch.addEventListener("input", (e) => renderGallery(e.target.value));
+}
 
-  // ── Quick-fill Chips ───────────────────────────────────────────────────────
+function _plApplyTemplate(data, ctx, galleryDrawer) {
+  const { personaInput, taskInput, contextInput, toneInput,
+          constraintsInput, formatInput, examplesInput } = ctx;
+  if (personaInput)     personaInput.value     = data.persona     || "";
+  if (taskInput)        taskInput.value        = data.task        || "";
+  if (contextInput)     contextInput.value     = data.context     || "";
+  if (toneInput)        toneInput.value        = data.tone        || "";
+  if (constraintsInput) constraintsInput.value = data.constraints || "";
+  if (formatInput)      formatInput.value      = data.format      || "";
+  if (examplesInput)    examplesInput.value    = data.examples    || "";
+  _plSelectFormula(data.formula || "default", ctx);
+  _plAssemblePrompt(ctx);
+  _plUpdateStrength(ctx);
+  if (galleryDrawer) galleryDrawer.classList.add("hidden");
+  addNotification("Prompt Lab", "Template loaded.", "success");
+}
+
+function _plInitChipsAndStrength(ctx) {
   document.querySelectorAll(".pl-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
-      const targetId = chip.dataset.target;
-      const target = document.getElementById(targetId);
+      const target = document.getElementById(chip.dataset.target);
       if (!target) return;
       const val = chip.textContent.trim();
-      if (target.value) {
-        target.value = target.value.trimEnd() + ", " + val;
-      } else {
-        target.value = val;
-      }
-      assemblePrompt();
-      updatePromptStrength();
+      target.value = target.value ? target.value.trimEnd() + ", " + val : val;
+      _plAssemblePrompt(ctx);
+      _plUpdateStrength(ctx);
     });
   });
+}
 
-  // ── Strength Meter ─────────────────────────────────────────────────────────
-  function updatePromptStrength() {
-    let score = 0;
-    if (personaInput.value.trim().length > 5) score++;
-    if (taskInput.value.trim().length > 5) score++;
-    if (contextInput.value.trim().length > 5) score++;
-    if (toneInput.value.trim().length > 2) score++;
-    if (
-      constraintsInput.value.trim().length > 5 ||
-      formatInput.value.trim().length > 5
-    )
-      score++;
-
-    const percentage = (score / 5) * 100;
-    if (strengthBarFill) {
-      strengthBarFill.style.width = percentage + "%";
-      if (score <= 2) {
-        strengthBarFill.style.background = "var(--error-color)";
-        if (strengthLabel) {
-          strengthLabel.style.color = "var(--error-color)";
-          strengthLabel.textContent = `Weak (${score}/5)`;
-        }
-      } else if (score <= 4) {
-        strengthBarFill.style.background = "var(--accent-color)";
-        if (strengthLabel) {
-          strengthLabel.style.color = "var(--accent-color)";
-          strengthLabel.textContent = `Moderate (${score}/5)`;
-        }
-      } else {
-        strengthBarFill.style.background = "var(--response-color)";
-        if (strengthLabel) {
-          strengthLabel.style.color = "var(--response-color)";
-          strengthLabel.textContent = `Optimized (${score}/5) ✨`;
-        }
-      }
-    }
-  }
-
-  // ── Custom Presets ─────────────────────────────────────────────────────────
-  function refreshCustomPresets() {
+function _plInitPresetSection(ctx) {
+  const { togglePresetInputBtn, presetNameInput, savePresetBtn } = ctx;
+  function refreshPresets() {
     invoke("load_prompt_presets")
-      .then((presets) => {
-        loadedCustomPresets = presets;
-      })
+      .then((p) => { ctx.loadedCustomPresets = p; })
       .catch((err) => console.error("Error loading presets:", err));
   }
-  refreshCustomPresets();
-
+  refreshPresets();
   if (togglePresetInputBtn) {
     togglePresetInputBtn.addEventListener("click", () => {
       if (presetNameInput.style.display === "none") {
         presetNameInput.style.display = "block";
-        savePresetBtn.style.display = "block";
+        savePresetBtn.style.display   = "block";
         togglePresetInputBtn.textContent = "Cancel";
       } else {
         presetNameInput.style.display = "none";
-        savePresetBtn.style.display = "none";
+        savePresetBtn.style.display   = "none";
         presetNameInput.value = "";
         togglePresetInputBtn.innerHTML = `${createIcon("upload", { size: 13 })}`;
       }
     });
   }
-
-  function getPromptLabSchema() {
-    return {
-      persona: personaInput.value.trim(),
-      task: taskInput.value.trim(),
-      context: contextInput.value.trim(),
-      tone: toneInput.value.trim(),
-      constraints: constraintsInput.value.trim(),
-      format: formatInput.value.trim(),
-      examples: examplesInput.value.trim(),
-      formula: formulaHidden.value,
-    };
-  }
-
   if (savePresetBtn) {
     savePresetBtn.addEventListener("click", () => {
       const name = presetNameInput.value.trim();
-      if (!name) {
-        addNotification("Prompt Lab", "Enter a preset name.", "error");
-        return;
-      }
-      const schema = getPromptLabSchema();
-      invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(schema) })
+      if (!name) { addNotification("Prompt Lab", "Enter a preset name.", "error"); return; }
+      invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(_plGetSchema(ctx)) })
         .then(() => {
           addNotification("Prompt Lab", `Preset "${name}" saved!`, "success");
           presetNameInput.style.display = "none";
-          savePresetBtn.style.display = "none";
+          savePresetBtn.style.display   = "none";
           presetNameInput.value = "";
           togglePresetInputBtn.innerHTML = `${createIcon("upload", { size: 13 })}`;
-          refreshCustomPresets();
+          refreshPresets();
         })
-        .catch((err) =>
-          addNotification("Prompt Lab", "Failed: " + err, "error"),
-        );
+        .catch((err) => addNotification("Prompt Lab", "Failed: " + err, "error"));
     });
   }
+}
 
-  // ── AI Optimize ────────────────────────────────────────────────────────────
-  if (optimizeAiBtn) {
-    optimizeAiBtn.addEventListener("click", async () => {
-      const currentTask = taskInput.value.trim();
-      if (!currentTask) {
-        addNotification("Prompt Lab", "Add a task first.", "error");
-        return;
-      }
-      optimizeAiBtn.disabled = true;
-      const orig = optimizeAiBtn.innerHTML;
-      optimizeAiBtn.innerHTML = `${createIcon("zap", { size: 13 })}<span>Working...</span>`;
-      try {
-        const schema = await invoke("optimize_raw_prompt", {
-          rawText: currentTask,
-        });
-        personaInput.value = schema.persona;
-        taskInput.value = schema.task;
-        contextInput.value = schema.context;
-        toneInput.value = schema.tone;
-        constraintsInput.value = schema.constraints;
-        formatInput.value = schema.format;
-        addNotification("Prompt Lab", "AI Optimization done!", "success");
-        assemblePrompt();
-        updatePromptStrength();
-      } catch (err) {
-        addNotification("Prompt Lab", "Optimization failed: " + err, "error");
-      } finally {
-        optimizeAiBtn.disabled = false;
-        optimizeAiBtn.innerHTML = orig;
-      }
-    });
-  }
+function _plInitAiOptimize(ctx) {
+  const { optimizeAiBtn, personaInput, taskInput, contextInput,
+          toneInput, constraintsInput, formatInput } = ctx;
+  if (!optimizeAiBtn) return;
+  optimizeAiBtn.addEventListener("click", async () => {
+    if (!taskInput.value.trim()) { addNotification("Prompt Lab", "Add a task first.", "error"); return; }
+    optimizeAiBtn.disabled = true;
+    const orig = optimizeAiBtn.innerHTML;
+    optimizeAiBtn.innerHTML = `${createIcon("zap", { size: 13 })}<span>Working...</span>`;
+    try {
+      const schema = await invoke("optimize_raw_prompt", { rawText: taskInput.value.trim() });
+      personaInput.value     = schema.persona;
+      taskInput.value        = schema.task;
+      contextInput.value     = schema.context;
+      toneInput.value        = schema.tone;
+      constraintsInput.value = schema.constraints;
+      formatInput.value      = schema.format;
+      addNotification("Prompt Lab", "AI Optimization done!", "success");
+      _plAssemblePrompt(ctx);
+      _plUpdateStrength(ctx);
+    } catch (err) {
+      addNotification("Prompt Lab", "Optimization failed: " + err, "error");
+    } finally {
+      optimizeAiBtn.disabled  = false;
+      optimizeAiBtn.innerHTML = orig;
+    }
+  });
+}
 
-  // ── Advanced Toggle ────────────────────────────────────────────────────────
+function _plInitAssemblySection(ctx) {
+  const { advancedToggle, advancedFields, generateBtn, resultPrompt,
+          personaInput, taskInput, contextInput, toneInput,
+          constraintsInput, formatInput, examplesInput } = ctx;
   if (advancedToggle) {
     advancedToggle.addEventListener("click", () => {
       advancedFields.classList.toggle("hidden");
-      advancedToggle.innerHTML = advancedFields.classList.contains("hidden")
+      const hidden = advancedFields.classList.contains("hidden");
+      advancedToggle.innerHTML = hidden
         ? `${createIcon("settings2", { size: 14 })}<span>Few-Shot Examples</span>`
         : `${createIcon("settings2", { size: 14 })}<span>Hide Examples</span>`;
     });
   }
-
-  // ── Prompt Assembly ────────────────────────────────────────────────────────
-  async function assemblePrompt() {
-    const persona = personaInput.value;
-    const task = taskInput.value;
-    const context = contextInput.value;
-    const tone = toneInput.value;
-    const constraints = constraintsInput.value;
-    const format = formatInput.value;
-    const examples = examplesInput.value;
-    const formula = formulaHidden.value;
-
-    try {
-      const assembled = await invoke("assemble_prompt_via_lua_cmd", {
-        persona,
-        task,
-        context,
-        tone,
-        constraints,
-        format,
-        examples,
-        formula,
-      });
-      resultPrompt.value = assembled;
-      updateTokenCounter(assembled);
-    } catch {
-      let parts = [];
-      if (persona.trim()) parts.push(`**Role/Persona:**\n${persona.trim()}`);
-      if (task.trim()) parts.push(`**Task/Objective:**\n${task.trim()}`);
-      if (context.trim())
-        parts.push(`**Context/Background:**\n${context.trim()}`);
-      if (tone.trim()) parts.push(`**Tone/Style:**\n${tone.trim()}`);
-      if (constraints.trim())
-        parts.push(`**Constraints:**\n${constraints.trim()}`);
-      if (format.trim()) parts.push(`**Output Format:**\n${format.trim()}`);
-      const fallback = parts.join("\n\n");
-      resultPrompt.value = fallback;
-      updateTokenCounter(fallback);
-    }
-  }
-
   generateBtn.addEventListener("click", () => {
-    assemblePrompt().then(() => {
-      addToHistory(resultPrompt.value);
+    _plAssemblePrompt(ctx).then(() => {
+      const txt = resultPrompt.value;
+      if (txt.trim() && ctx.promptHistory[0] !== txt) {
+        ctx.promptHistory.unshift(txt);
+        if (ctx.promptHistory.length > 20) ctx.promptHistory.pop();
+        if (ctx._renderHistory) ctx._renderHistory();
+      }
       addNotification("Prompt Lab", "Prompt generated.", "success");
     });
   });
-
-  // Auto-update on any field change
-  [
-    personaInput,
-    taskInput,
-    contextInput,
-    toneInput,
-    constraintsInput,
-    formatInput,
-    examplesInput,
-  ].forEach((el) => {
-    el.addEventListener("input", () => {
-      assemblePrompt();
-      updatePromptStrength();
-    });
+  [personaInput, taskInput, contextInput, toneInput,
+   constraintsInput, formatInput, examplesInput].forEach((el) => {
+    el.addEventListener("input", () => { _plAssemblePrompt(ctx); _plUpdateStrength(ctx); });
   });
+}
 
-  // ── JPE Explanation ────────────────────────────────────────────────────────
+function _plInitJpeSection(ctx) {
+  const { explainBtn, jpeLevelSelect, resultPrompt, resultJpe } = ctx;
   explainBtn.addEventListener("click", async () => {
     const text = resultPrompt.value.trim();
-    if (!text) {
-      addNotification("Prompt Lab", "Generate a prompt first.", "error");
-      return;
-    }
+    if (!text) { addNotification("Prompt Lab", "Generate a prompt first.", "error"); return; }
     resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation…</span>`;
     explainBtn.disabled = true;
     const level = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
     try {
-      const explanation = await invoke("generate_jpe_explanation_with_level", {
-        promptText: text,
-        readingLevel: level,
-      });
+      const explanation = await invoke("generate_jpe_explanation_with_level",
+        { promptText: text, readingLevel: level });
       resultJpe.innerHTML = `<div class="jpe-content"></div>`;
-      resultJpe.querySelector(".jpe-content").innerHTML = window
-        .sanitizeHtml(explanation)
-        .replace(/\n/g, "<br>");
+      resultJpe.querySelector(".jpe-content").innerHTML =
+        window.sanitizeHtml(explanation).replace(/\n/g, "<br>");
     } catch (err) {
       resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)"></span>`;
       resultJpe.querySelector(".pl-empty-text").textContent = `Error: ${err}`;
@@ -10587,7 +10166,11 @@ function initPromptLab() {
       explainBtn.disabled = false;
     }
   });
+}
 
+function _plInitOutputSection(ctx) {
+  const { copyPromptBtn, copyJpeBtn, sendChatBtn,
+          exportJsonBtn, exportLuaBtn, resultPrompt, resultJpe } = ctx;
   copyPromptBtn.addEventListener("click", () => {
     if (resultPrompt.value) {
       navigator.clipboard.writeText(resultPrompt.value);
@@ -10612,41 +10195,97 @@ function initPromptLab() {
       addNotification("Prompt Lab", "Prompt sent to Chat.", "info");
     }
   });
-
-  // ── Export handlers ────────────────────────────────────────────────────────
   if (exportJsonBtn) {
     exportJsonBtn.addEventListener("click", () => {
-      if (!resultPrompt.value.trim()) {
-        addNotification("Prompt Lab", "Generate first.", "error");
-        return;
-      }
-      const schema = {
-        ...getPromptLabSchema(),
-        assembled_prompt: resultPrompt.value,
-      };
-      navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
+      if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
+      navigator.clipboard.writeText(JSON.stringify({ ..._plGetSchema(ctx), assembled_prompt: resultPrompt.value }, null, 2));
       addNotification("Prompt Lab", "JSON Schema copied.", "success");
     });
   }
   if (exportLuaBtn) {
     exportLuaBtn.addEventListener("click", () => {
-      if (!resultPrompt.value.trim()) {
-        addNotification("Prompt Lab", "Generate first.", "error");
-        return;
-      }
+      if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
       const esc = resultPrompt.value
-        .replace(/\\/g, "\\\\")
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, "\\n");
-      const lua = `-- S-Term Prompt Lab Macro\n-- ${new Date().toISOString()}\nlocal prompt = "${esc}"\nprint("[Macro] Sending prompt...")\nlocal response = sendPrompt(prompt)\nprint("[Macro] Response:")\nprint(response)\n`;
+        .replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+      const lua = `-- S-Term Prompt Lab Macro\n-- ${new Date().toISOString()}\n` +
+                  `local prompt = "${esc}"\nprint("[Macro] Sending prompt...")\n` +
+                  `local response = sendPrompt(prompt)\nprint("[Macro] Response:")\nprint(response)\n`;
       navigator.clipboard.writeText(lua);
       addNotification("Prompt Lab", "Lua macro copied.", "success");
     });
   }
-
-  updatePromptStrength();
 }
-initPromptLab();
+
+function initPromptLab() {
+  const generateBtn          = document.getElementById("pl-generate-btn");
+  const explainBtn           = document.getElementById("pl-explain-jpe-btn");
+  const copyPromptBtn        = document.getElementById("pl-copy-prompt-btn");
+  const sendChatBtn          = document.getElementById("pl-send-chat-btn");
+  const copyJpeBtn           = document.getElementById("pl-copy-jpe-btn");
+  const personaInput         = document.getElementById("pl-persona");
+  const taskInput            = document.getElementById("pl-task");
+  const contextInput         = document.getElementById("pl-context");
+  const toneInput            = document.getElementById("pl-tone");
+  const constraintsInput     = document.getElementById("pl-constraints");
+  const formatInput          = document.getElementById("pl-format");
+  const examplesInput        = document.getElementById("pl-examples");
+  const formulaHidden        = document.getElementById("pl-formula");
+  const resultPrompt         = document.getElementById("pl-result-prompt");
+  const resultJpe            = document.getElementById("pl-result-jpe");
+  const advancedToggle       = document.getElementById("pl-advanced-toggle");
+  const advancedFields       = document.getElementById("pl-advanced-fields");
+  const optimizeAiBtn        = document.getElementById("pl-optimize-ai-btn");
+  const jpeLevelSelect       = document.getElementById("pl-jpe-level-select");
+  const savePresetBtn        = document.getElementById("pl-save-preset-btn");
+  const togglePresetInputBtn = document.getElementById("pl-toggle-preset-input-btn");
+  const presetNameInput      = document.getElementById("pl-preset-name");
+  const exportJsonBtn        = document.getElementById("pl-export-json-btn");
+  const exportLuaBtn         = document.getElementById("pl-export-lua-btn");
+  const strengthBarFill      = document.getElementById("pl-strength-bar-fill");
+  const strengthLabel        = document.getElementById("pl-strength-label");
+  const tokenCounter         = document.getElementById("pl-token-counter");
+  const formulaBadge         = document.getElementById("pl-formula-badge");
+  const formulaGrid          = document.getElementById("pl-formula-grid");
+  const formulaInfo          = document.getElementById("pl-formula-info");
+  const historyBtn           = document.getElementById("pl-history-btn");
+  const historyDrawer        = document.getElementById("pl-history-drawer");
+  const historyClear         = document.getElementById("pl-history-clear");
+  const historyList          = document.getElementById("pl-history-list");
+  const openGalleryBtn       = document.getElementById("pl-open-gallery-btn");
+  const galleryOverlay       = document.getElementById("pl-gallery-overlay");
+  const galleryClose         = document.getElementById("pl-gallery-close");
+  const galleryDrawer        = document.getElementById("pl-template-gallery");
+  const galleryBody          = document.getElementById("pl-gallery-body");
+  const gallerySearch        = document.getElementById("pl-gallery-search");
+
+  if (!generateBtn) return;
+
+  const ctx = {
+    generateBtn, explainBtn, copyPromptBtn, sendChatBtn, copyJpeBtn,
+    personaInput, taskInput, contextInput, toneInput, constraintsInput,
+    formatInput, examplesInput, formulaHidden, resultPrompt, resultJpe,
+    advancedToggle, advancedFields, optimizeAiBtn, jpeLevelSelect,
+    savePresetBtn, togglePresetInputBtn, presetNameInput,
+    exportJsonBtn, exportLuaBtn, strengthBarFill, strengthLabel, tokenCounter,
+    formulaBadge, formulaGrid, formulaInfo, historyBtn, historyDrawer,
+    historyClear, historyList, openGalleryBtn, galleryOverlay, galleryClose,
+    galleryDrawer, galleryBody, gallerySearch,
+    promptHistory: [],
+    loadedCustomPresets: {},
+    _renderHistory: null,
+  };
+
+  _plInitFormulaSection(ctx);
+  _plInitHistorySection(ctx);
+  _plInitGallerySection(ctx);
+  _plInitChipsAndStrength(ctx);
+  _plInitPresetSection(ctx);
+  _plInitAiOptimize(ctx);
+  _plInitAssemblySection(ctx);
+  _plInitJpeSection(ctx);
+  _plInitOutputSection(ctx);
+  _plUpdateStrength(ctx);
+}
 
 // Onboarding Wizard Implementation
 async function checkOnboarding() {
@@ -10686,19 +10325,49 @@ async function checkOnboarding() {
 }
 
 async function showOnboardingWizard() {
-  // 1. Create onboarding overlay element
   const overlay = document.createElement("div");
   overlay.id = "onboarding-overlay";
   overlay.className = "onboarding-overlay";
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "onboarding-title");
-
-  // Focus trap for accessibility
   const onboardingFocusTrap = new FocusTrap(overlay);
+  overlay.innerHTML = _obBuildHtml();
+  document.getElementById("app").appendChild(overlay);
+  onboardingFocusTrap.activate();
 
-  // 2. Set up HTML content — 5-step enhanced wizard
-  overlay.innerHTML = `
+  const obs = {
+    currentStep: 1, selectedProvider: "gemini-key", selectedPersona: "Default",
+    selectedThemeName: "BLACKSITE", isProviderVerified: false,
+    isDiagnosticsPassed: false, oauthPollAbortController: null,
+    diagRunning: false, overlay, onboardingFocusTrap,
+    btnPrev:     document.getElementById("ob-btn-prev"),
+    btnNext:     document.getElementById("ob-btn-next"),
+    logViewport: document.getElementById("ob-validation-log"),
+  };
+  obs.resetActiveState = (selector) => {
+    document.querySelectorAll(selector).forEach((c) => {
+      c.classList.remove("active");
+      c.setAttribute("aria-pressed", "false");
+    });
+  };
+
+  overlay.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); if (obs.currentStep > 1) obs.btnPrev.click(); }
+  });
+
+  _obInitSlide1Animations();
+  _obInitNavigation(obs);
+  _obInitProviders(obs);
+  _obInitVoice();
+  await _obInitPersonaTheme(obs);
+  _obUpdateStepUI(obs);
+}
+
+// ── Onboarding: HTML builder (module-scope) ───────────────────────────────────
+
+function _obBuildHtml() {
+  return `
         <div class="onboarding-container">
             <header class="onboarding-header">
                 <h2 class="onboarding-title" id="onboarding-title">NEURODECK // INITIAL_BOOT_SETUP</h2>
@@ -10716,117 +10385,80 @@ async function showOnboardingWizard() {
                     <span class="onboarding-step-dot" data-step="11"></span>
                 </div>
             </header>
-
             <div class="onboarding-content">
-                <!-- Slide 1: Welcome -->
+                ${_obSlide1()}
+                ${_obSlide2()}
+                ${_obSlide3()}
+                ${_obSlide4()}
+                ${_obSlide5()}
+                ${_obSlide6()}
+                ${_obSlide7()}
+                ${_obSlide8()}
+                ${_obSlide9()}
+                ${_obSlide10()}
+                ${_obSlide11()}
+            </div>
+            <footer class="onboarding-footer">
+                <button class="onboarding-btn secondary" id="ob-btn-prev" disabled>Back</button>
+                <button class="onboarding-btn" id="ob-btn-next">Next</button>
+            </footer>
+        </div>
+    `;
+}
+
+function _obSlide1() {
+  return `
                 <div class="onboarding-slide active" id="slide-1">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 8px;">WELCOME TO NEURODECK OS</h3>
                     <p class="onboarding-welcome-text" id="onboarding-welcome-typing" style="min-height: 2.5rem;"></p>
-
                     <div class="ob-stats-row">
-                        <div class="ob-stat">
-                            <span class="ob-stat-number" id="ob-stat-features">0</span>
-                            <span class="ob-stat-label">Features</span>
-                        </div>
-                        <div class="ob-stat">
-                            <span class="ob-stat-number" id="ob-stat-views">0</span>
-                            <span class="ob-stat-label">Views</span>
-                        </div>
-                        <div class="ob-stat">
-                            <span class="ob-stat-number" id="ob-stat-deck">1</span>
-                            <span class="ob-stat-label">Deck</span>
-                        </div>
+                        <div class="ob-stat"><span class="ob-stat-number" id="ob-stat-features">0</span><span class="ob-stat-label">Features</span></div>
+                        <div class="ob-stat"><span class="ob-stat-number" id="ob-stat-views">0</span><span class="ob-stat-label">Views</span></div>
+                        <div class="ob-stat"><span class="ob-stat-number" id="ob-stat-deck">1</span><span class="ob-stat-label">Deck</span></div>
                     </div>
-
                     <div class="ob-tags">
-                        <span class="ob-tag">AI Chat</span>
-                        <span class="ob-tag">RAG Memory</span>
-                        <span class="ob-tag">Live Canvas</span>
-                        <span class="ob-tag">PTY Shell</span>
-                        <span class="ob-tag">SSH Client</span>
-                        <span class="ob-tag">Gamepad Native</span>
-                        <span class="ob-tag">Gemini / Ollama</span>
-                        <span class="ob-tag">Warpinator gRPC</span>
-                        <span class="ob-tag">Lua Plugins</span>
-                        <span class="ob-tag">Knowledge Base</span>
-                        <span class="ob-tag">Prompt Lab</span>
-                        <span class="ob-tag">1280×800</span>
+                        <span class="ob-tag">AI Chat</span><span class="ob-tag">RAG Memory</span>
+                        <span class="ob-tag">Live Canvas</span><span class="ob-tag">PTY Shell</span>
+                        <span class="ob-tag">SSH Client</span><span class="ob-tag">Gamepad Native</span>
+                        <span class="ob-tag">Gemini / Ollama</span><span class="ob-tag">Warpinator gRPC</span>
+                        <span class="ob-tag">Lua Plugins</span><span class="ob-tag">Knowledge Base</span>
+                        <span class="ob-tag">Prompt Lab</span><span class="ob-tag">1280×800</span>
                     </div>
-                </div>
+                </div>`;
+}
 
-                <!-- Slide 2: Feature Tour -->
+function _obSlide2() {
+  const cards = [
+    ["messageSquare","Chat","LLM streaming chat with RAG memory injection and game context awareness."],
+    ["sparkles","Canvas","Live HTML/JS preview. Run Python, Bash, Lua. LAN collaboration mode."],
+    ["squareTerminal","Terminal","Multi-session real shell. AI autocomplete Ctrl+Space. History search Ctrl+H."],
+    ["server","SSH","Full SSH client. Password + key auth. Saved profiles. Session tab per connection."],
+    ["route","Tunnel","TCP bridge between SteamOS Desktop Mode and Game Mode."],
+    ["globe","Browser","Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search."],
+    ["bot","Agent","5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode."],
+    ["brain","Memory","Vector DB with cosine similarity. RAG search + local doc indexing."],
+    ["share2","Share","LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server."],
+    ["sparkles","Prompt Lab","Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode."],
+    ["panelRightOpen","Remote","iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN."],
+    ["fileText","Docs","Knowledge Base with semantic search. Index local folders and query documents via RAG embeddings."],
+  ].map(([ic, name, desc], i) =>
+    `<div class="ob-feature-card" style="animation-delay:${0.02 + i * 0.05}s">` +
+    `<span class="ob-feature-icon">${createIcon(ic, { size: 18 })}</span>` +
+    `<span class="ob-feature-name">${name}</span><span class="ob-feature-desc">${desc}</span></div>`
+  ).join("");
+  return `
                 <div class="onboarding-slide" id="slide-2">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">SYSTEM_FEATURE_MANIFEST</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">12 integrated views. One fullscreen command center.</p>
-                    <div class="ob-feature-grid">
-                        <div class="ob-feature-card" style="animation-delay: 0.02s">
-                            <span class="ob-feature-icon">${createIcon("messageSquare", { size: 18 })}</span>
-                            <span class="ob-feature-name">Chat</span>
-                            <span class="ob-feature-desc">LLM streaming chat with RAG memory injection and game context awareness.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.07s">
-                            <span class="ob-feature-icon">${createIcon("sparkles", { size: 18 })}</span>
-                            <span class="ob-feature-name">Canvas</span>
-                            <span class="ob-feature-desc">Live HTML/JS preview. Run Python, Bash, Lua. LAN collaboration mode.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.12s">
-                            <span class="ob-feature-icon">${createIcon("squareTerminal", { size: 18 })}</span>
-                            <span class="ob-feature-name">Terminal</span>
-                            <span class="ob-feature-desc">Multi-session real shell. AI autocomplete Ctrl+Space. History search Ctrl+H.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.17s">
-                            <span class="ob-feature-icon">${createIcon("server", { size: 18 })}</span>
-                            <span class="ob-feature-name">SSH</span>
-                            <span class="ob-feature-desc">Full SSH client. Password + key auth. Saved profiles. Session tab per connection.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.22s">
-                            <span class="ob-feature-icon">${createIcon("route", { size: 18 })}</span>
-                            <span class="ob-feature-name">Tunnel</span>
-                            <span class="ob-feature-desc">TCP bridge between SteamOS Desktop Mode and Game Mode.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.27s">
-                            <span class="ob-feature-icon">${createIcon("globe", { size: 18 })}</span>
-                            <span class="ob-feature-name">Browser</span>
-                            <span class="ob-feature-desc">Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.32s">
-                            <span class="ob-feature-icon">${createIcon("bot", { size: 18 })}</span>
-                            <span class="ob-feature-name">Agent</span>
-                            <span class="ob-feature-desc">5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.37s">
-                            <span class="ob-feature-icon">${createIcon("brain", { size: 18 })}</span>
-                            <span class="ob-feature-name">Memory</span>
-                            <span class="ob-feature-desc">Vector DB with cosine similarity. RAG search + local doc indexing.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.42s">
-                            <span class="ob-feature-icon">${createIcon("share2", { size: 18 })}</span>
-                            <span class="ob-feature-name">Share</span>
-                            <span class="ob-feature-desc">LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.47s">
-                            <span class="ob-feature-icon">${createIcon("sparkles", { size: 18 })}</span>
-                            <span class="ob-feature-name">Prompt Lab</span>
-                            <span class="ob-feature-desc">Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.52s">
-                            <span class="ob-feature-icon">${createIcon("panelRightOpen", { size: 18 })}</span>
-                            <span class="ob-feature-name">Remote</span>
-                            <span class="ob-feature-desc">iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.</span>
-                        </div>
-                        <div class="ob-feature-card" style="animation-delay: 0.57s">
-                            <span class="ob-feature-icon">${createIcon("fileText", { size: 18 })}</span>
-                            <span class="ob-feature-name">Docs</span>
-                            <span class="ob-feature-desc">Knowledge Base with semantic search. Index local folders and query documents via RAG embeddings.</span>
-                        </div>
-                    </div>
-                </div>
+                    <div class="ob-feature-grid">${cards}</div>
+                </div>`;
+}
 
-                <!-- Slide 3: API Key Configuration -->
+function _obSlide3() {
+  return `
                 <div class="onboarding-slide" id="slide-3">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">PROVIDER_AUTHENTICATION</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 10px;">Choose your LLM backend — powers Chat, Agent, RAG memory, and AI autocomplete.</p>
-
                     <div class="onboarding-choice-container" style="margin-bottom: 12px;">
                         <div class="onboarding-choice-card active" data-provider="gemini-key" role="button" tabindex="0" aria-pressed="true">
                             <span class="onboarding-choice-icon">${createIcon("shieldCheck", { size: 16 })}</span>
@@ -10849,39 +10481,23 @@ async function showOnboardingWizard() {
                             <span class="onboarding-choice-desc">Local Ollama server on Steam Deck. Completely offline operation.</span>
                         </div>
                     </div>
-
-                    <!-- Manual Gemini Key Container -->
                     <div id="container-gemini-key" class="provider-setup-container">
                         <div class="onboarding-input-wrapper">
                             <label for="ob-gemini-key">GEMINI API KEY</label>
                             <input type="password" id="ob-gemini-key" class="onboarding-input" placeholder="AIzaSy..." autocomplete="off">
                         </div>
                     </div>
-
-                    <!-- Gemini OAuth Container -->
-                    <div id="container-gemini-oauth" class="provider-setup-container" style="display: none; text-align: center;">
-                        <p style="font-size: 0.8rem; margin-bottom: 10px;">Scan the QR code or visit the link to log in:</p>
-                        <div id="ob-oauth-qr-wrapper" style="background: white; padding: 10px; display: inline-block; border-radius: 6px; margin-bottom: 10px;">
-                            <canvas id="ob-oauth-qr"></canvas>
-                        </div>
-                        <p id="ob-oauth-link-text" style="font-size: 0.75rem; margin: 5px 0;">Visit: <a href="#" id="ob-oauth-url" target="_blank" style="color: var(--accent-color);">Requesting...</a></p>
-                        <div style="font-size: 0.8rem; font-weight: bold; background: rgba(0,240,255,0.1); padding: 8px; display: inline-block; border-radius: 4px;" id="ob-oauth-code-box">CODE: ----</div>
+                    <div id="container-gemini-oauth" class="provider-setup-container" style="display:none;text-align:center;">
+                        <p style="font-size:0.8rem;margin-bottom:10px;">Scan the QR code or visit the link to log in:</p>
+                        <div id="ob-oauth-qr-wrapper" style="background:white;padding:10px;display:inline-block;border-radius:6px;margin-bottom:10px;"><canvas id="ob-oauth-qr"></canvas></div>
+                        <p id="ob-oauth-link-text" style="font-size:0.75rem;margin:5px 0;">Visit: <a href="#" id="ob-oauth-url" target="_blank" style="color:var(--accent-color);">Requesting...</a></p>
+                        <div style="font-size:0.8rem;font-weight:bold;background:rgba(0,240,255,0.1);padding:8px;display:inline-block;border-radius:4px;" id="ob-oauth-code-box">CODE: ----</div>
                     </div>
-
-                    <!-- Kimi Container -->
-                    <div id="container-kimi" class="provider-setup-container" style="display: none;">
-                        <div class="onboarding-input-wrapper">
-                            <label for="ob-kimi-key">KIMI API KEY</label>
-                            <input type="password" id="ob-kimi-key" class="onboarding-input" placeholder="sk-..." autocomplete="off">
-                        </div>
-                        <div class="onboarding-input-wrapper">
-                            <label for="ob-kimi-model">KIMI MODEL</label>
-                            <input type="text" id="ob-kimi-model" class="onboarding-input" value="kimi-k2.5" placeholder="e.g. kimi-k2.5, kimi-k2-turbo-preview">
-                        </div>
+                    <div id="container-kimi" class="provider-setup-container" style="display:none;">
+                        <div class="onboarding-input-wrapper"><label for="ob-kimi-key">KIMI API KEY</label><input type="password" id="ob-kimi-key" class="onboarding-input" placeholder="sk-..." autocomplete="off"></div>
+                        <div class="onboarding-input-wrapper"><label for="ob-kimi-model">KIMI MODEL</label><input type="text" id="ob-kimi-model" class="onboarding-input" value="kimi-k2.5" placeholder="e.g. kimi-k2.5, kimi-k2-turbo-preview"></div>
                     </div>
-
-                    <!-- Ollama Container -->
-                    <div id="container-ollama" class="provider-setup-container" style="display: none;">
+                    <div id="container-ollama" class="provider-setup-container" style="display:none;">
                         <div id="ob-ollama-install-banner" style="display:none;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.4);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:0.75rem;">
                             <strong style="color:#ffaa00">Ollama not detected</strong><br>
                             <span style="opacity:0.85">Ollama must be installed and running before NEURODECK can use it locally.</span><br>
@@ -10890,51 +10506,38 @@ async function showOnboardingWizard() {
                                 <button class="onboarding-btn secondary" id="ob-btn-recheck-ollama" style="font-size:0.72rem;padding:5px 12px;">Re-check</button>
                             </div>
                         </div>
-                        <div class="onboarding-input-wrapper">
-                            <label for="ob-ollama-url">OLLAMA BASE URL</label>
-                            <input type="text" id="ob-ollama-url" class="onboarding-input" value="http://localhost:11434">
-                        </div>
-                        <div class="onboarding-input-wrapper">
-                            <label for="ob-ollama-model">OLLAMA MODEL NAME</label>
-                            <input type="text" id="ob-ollama-model" class="onboarding-input" value="hermes3:8b" placeholder="e.g. hermes3:8b, llama3.2:1b, mistral">
-                        </div>
+                        <div class="onboarding-input-wrapper"><label for="ob-ollama-url">OLLAMA BASE URL</label><input type="text" id="ob-ollama-url" class="onboarding-input" value="http://localhost:11434"></div>
+                        <div class="onboarding-input-wrapper"><label for="ob-ollama-model">OLLAMA MODEL NAME</label><input type="text" id="ob-ollama-model" class="onboarding-input" value="hermes3:8b" placeholder="e.g. hermes3:8b, llama3.2:1b, mistral"></div>
                         <div style="display:flex;gap:8px;margin-top:4px;align-items:center;flex-wrap:wrap;">
                             <button class="onboarding-btn secondary" id="ob-btn-pull-model" style="font-size:0.72rem;padding:5px 12px;">Pull Model Now</button>
                             <span id="ob-pull-status" style="font-size:0.7rem;opacity:0.75;"></span>
                         </div>
                     </div>
-
-                    <div class="onboarding-log-viewport" id="ob-validation-log">
-                        <div class="onboarding-log-line">[SYS] Awaiting input credentials...</div>
-                    </div>
-
+                    <div class="onboarding-log-viewport" id="ob-validation-log"><div class="onboarding-log-line">[SYS] Awaiting input credentials...</div></div>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
                         <button class="onboarding-btn secondary" id="ob-btn-skip-setup" style="opacity:0.7;font-size:0.72rem;">Skip — Configure Later</button>
                         <button class="onboarding-btn primary" id="ob-btn-verify">Verify & Save</button>
                     </div>
-                </div>
+                </div>`;
+}
 
-                <!-- Slide 4: Persona & Theme Selection -->
+function _obSlide4() {
+  return `
                 <div class="onboarding-slide" id="slide-4">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 5px;">PERSONA & THEME SELECT</h3>
                     <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 12px;">Choose your default AI guide and look. Applies live in the background.</p>
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin-bottom:4px;display:block;">SELECT PERSONA</label>
+                    <div class="onboarding-carousel" id="ob-persona-carousel"></div>
+                    <label style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin-bottom:6px;display:block;">SELECT THEME</label>
+                    <div class="onboarding-theme-grid" id="ob-theme-grid"></div>
+                </div>`;
+}
 
-                    <label style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 4px; display: block;">SELECT PERSONA</label>
-                    <div class="onboarding-carousel" id="ob-persona-carousel">
-                        <!-- Loaded dynamically -->
-                    </div>
-
-                    <label style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 6px; display: block;">SELECT THEME</label>
-                    <div class="onboarding-theme-grid" id="ob-theme-grid">
-                        <!-- Loaded dynamically -->
-                    </div>
-                </div>
-
-                <!-- Slide 5: Controller / Gamepad Guide -->
+function _obSlide5() {
+  return `
                 <div class="onboarding-slide" id="slide-5">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 8px;">CONTROLLER & GAMEPAD GUIDE</h3>
-                    <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 12px;">Full Steam Deck & gamepad support is built-in. No configuration needed.</p>
-
+                    <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 12px;">Full Steam Deck &amp; gamepad support is built-in. No configuration needed.</p>
                     <div class="ob-controller-grid">
                         <div class="ob-ctrl-section">
                             <div class="ob-ctrl-header">NAVIGATION</div>
@@ -10954,357 +10557,191 @@ async function showOnboardingWizard() {
                         </div>
                         <div class="ob-ctrl-section">
                             <div class="ob-ctrl-header">RADIAL MENU <span style="opacity:0.5;font-size:0.65rem;">(L2 or backtick)</span></div>
-                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">12 quick-access views: Chat, Canvas, Terminal, SSH, Tunnel, Share, Browser, Agent, Memory, Prompt Lab, Remote, Docs</span></div>
-                            <div class="ob-ctrl-header" style="margin-top: 8px;">PROMPT PICKER <span style="opacity:0.5;font-size:0.65rem;">(X button)</span></div>
-                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color: var(--accent-color);">Browse &amp; send AI prompts without typing. D-Pad to navigate, A to send, L1/R1 to switch categories.</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color:var(--accent-color);">12 quick-access views: Chat, Canvas, Terminal, SSH, Tunnel, Share, Browser, Agent, Memory, Prompt Lab, Remote, Docs</span></div>
+                            <div class="ob-ctrl-header" style="margin-top:8px;">PROMPT PICKER <span style="opacity:0.5;font-size:0.65rem;">(X button)</span></div>
+                            <div class="ob-ctrl-row"><span class="ob-ctrl-desc" style="color:var(--accent-color);">Browse &amp; send AI prompts without typing. D-Pad to navigate, A to send, L1/R1 to switch categories.</span></div>
                         </div>
                     </div>
-
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.15); border-radius: 6px; font-size: 0.72rem; color: rgba(255,255,255,0.7);">
-                        <strong style="color: var(--accent-color);">STEAM INPUT:</strong> For best gamepad experience activate the NEURODECK Steam Input profile via Steam → Controller Settings. This enables haptic feedback and precise trigger zones.
+                    <div style="margin-top:10px;padding:8px;background:rgba(0,240,255,0.05);border:1px solid rgba(0,240,255,0.15);border-radius:6px;font-size:0.72rem;color:rgba(255,255,255,0.7);">
+                        <strong style="color:var(--accent-color);">STEAM INPUT:</strong> For best gamepad experience activate the NEURODECK Steam Input profile via Steam → Controller Settings.
                     </div>
-                </div>
+                </div>`;
+}
 
-                <!-- Slide 6: Touch & Gesture Controls -->
+function _obSlide6() {
+  return `
                 <div class="onboarding-slide" id="slide-6">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">TOUCH & GESTURE CONTROLS</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Built for Steam Deck's 1280×800 touchscreen. No configuration needed.</p>
-
                     <div class="ob-touch-grid">
-                        <div class="ob-touch-card">
-                            <div class="ob-touch-demo">
-                                <div class="ob-touch-tap-ring"></div>
-                            </div>
-                            <span class="ob-touch-name">Tap</span>
-                            <span class="ob-touch-desc">Select buttons, tabs, and list items.</span>
-                        </div>
-                        <div class="ob-touch-card">
-                            <div class="ob-touch-demo">
-                                <div class="ob-touch-swipe-arrow"></div>
-                            </div>
-                            <span class="ob-touch-name">Swipe / Fling</span>
-                            <span class="ob-touch-desc">Momentum scroll in chat, terminal, and lists.</span>
-                        </div>
-                        <div class="ob-touch-card">
-                            <div class="ob-touch-demo">
-                                <div class="ob-touch-kb-keys">ABC</div>
-                            </div>
-                            <span class="ob-touch-name">Virtual Keyboard</span>
-                            <span class="ob-touch-desc">Tap any text field to open the QWERTY panel.</span>
-                        </div>
-                        <div class="ob-touch-card">
-                            <div class="ob-touch-demo">
-                                <div class="ob-touch-radial-seg"></div>
-                            </div>
-                            <span class="ob-touch-name">Radial Menu</span>
-                            <span class="ob-touch-desc">Tap a segment to jump directly to a view.</span>
-                        </div>
+                        <div class="ob-touch-card"><div class="ob-touch-demo"><div class="ob-touch-tap-ring"></div></div><span class="ob-touch-name">Tap</span><span class="ob-touch-desc">Select buttons, tabs, and list items.</span></div>
+                        <div class="ob-touch-card"><div class="ob-touch-demo"><div class="ob-touch-swipe-arrow"></div></div><span class="ob-touch-name">Swipe / Fling</span><span class="ob-touch-desc">Momentum scroll in chat, terminal, and lists.</span></div>
+                        <div class="ob-touch-card"><div class="ob-touch-demo"><div class="ob-touch-kb-keys">ABC</div></div><span class="ob-touch-name">Virtual Keyboard</span><span class="ob-touch-desc">Tap any text field to open the QWERTY panel.</span></div>
+                        <div class="ob-touch-card"><div class="ob-touch-demo"><div class="ob-touch-radial-seg"></div></div><span class="ob-touch-name">Radial Menu</span><span class="ob-touch-desc">Tap a segment to jump directly to a view.</span></div>
                     </div>
-
                     <div class="ob-touch-practice">
                         <button class="onboarding-btn primary" id="ob-btn-try-radial">
                             ${createIcon("gamepad2", { size: 16 })} Try the Radial Menu
                         </button>
-                        <p style="font-size: 0.7rem; opacity: 0.6; margin: 8px 0 0;">
-                            Press <kbd style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:3px;font-family:inherit;">\`</kbd>
-                            or tap the button above
+                        <p style="font-size:0.7rem;opacity:0.6;margin:8px 0 0;">
+                            Press <kbd style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:3px;font-family:inherit;">\`</kbd> or tap the button above
                         </p>
                     </div>
-                </div>
+                </div>`;
+}
 
-                <!-- Slide 7: Voice I/O Calibration -->
+function _obSlide7() {
+  return `
                 <div class="onboarding-slide" id="slide-7">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">VOICE I/O CALIBRATION</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Test your microphone and text-to-speech engine. Both are optional.</p>
-
                     <div class="ob-voice-grid">
                         <div class="ob-voice-card">
-                            <div class="ob-voice-demo">
-                                <div class="ob-voice-waveform" id="ob-mic-waveform">
-                                    <span></span><span></span><span></span><span></span><span></span>
-                                </div>
-                            </div>
+                            <div class="ob-voice-demo"><div class="ob-voice-waveform" id="ob-mic-waveform"><span></span><span></span><span></span><span></span><span></span></div></div>
                             <span class="ob-voice-name">Microphone</span>
                             <span class="ob-voice-desc" id="ob-mic-status">Tap record and speak for 3 seconds.</span>
-                            <button class="onboarding-btn secondary" id="ob-btn-test-mic" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">
-                                ${createIcon("mic", { size: 14 })} Test Mic
-                            </button>
+                            <button class="onboarding-btn secondary" id="ob-btn-test-mic" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">${createIcon("mic", { size: 14 })} Test Mic</button>
                             <div class="ob-voice-result" id="ob-mic-result"></div>
                         </div>
                         <div class="ob-voice-card">
-                            <div class="ob-voice-demo">
-                                <div class="ob-voice-speaker" id="ob-tts-speaker">
-                                    <div class="ob-voice-speaker-cone"></div>
-                                </div>
-                            </div>
+                            <div class="ob-voice-demo"><div class="ob-voice-speaker" id="ob-tts-speaker"><div class="ob-voice-speaker-cone"></div></div></div>
                             <span class="ob-voice-name">Text-to-Speech</span>
                             <span class="ob-voice-desc" id="ob-tts-status">Tap to hear a sample phrase.</span>
-                            <button class="onboarding-btn secondary" id="ob-btn-test-tts" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">
-                                ${createIcon("volume2", { size: 14 })} Test TTS
-                            </button>
+                            <button class="onboarding-btn secondary" id="ob-btn-test-tts" style="margin-top:8px;font-size:0.72rem;padding:6px 14px;">${createIcon("volume2", { size: 14 })} Test TTS</button>
                             <div class="ob-voice-result" id="ob-tts-result"></div>
                         </div>
                     </div>
-                </div>
+                </div>`;
+}
 
-                <!-- Slide 8: Security & Privacy At-a-Glance -->
+function _obSlide8() {
+  const cards = [
+    ["shieldCheck","OS Keychain","API keys live in your OS secure store — never on disk as plain text."],
+    ["globe","Offline Ready","Ollama runs entirely on-device with zero network access."],
+    ["x","No Telemetry","No analytics, crash reporters, or remote logging. Ever."],
+    ["server","MCP Auth","Tool-server connections require a Bearer token with constant-time validation."],
+    ["brain","Local RAG","Embeddings and chat history persist only on your local disk."],
+    ["zap","CSP Hardened","Content Security Policy blocks inline scripts and restricts network origins."],
+  ].map(([ic, name, desc]) =>
+    `<div class="ob-sec-card"><div class="ob-sec-icon">${createIcon(ic, { size: 20 })}</div>` +
+    `<span class="ob-sec-name">${name}</span><span class="ob-sec-desc">${desc}</span></div>`
+  ).join("");
+  return `
                 <div class="onboarding-slide" id="slide-8">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">TRUST & PRIVACY</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Your data stays local. No telemetry. No cloud lock-in.</p>
+                    <div class="ob-sec-grid">${cards}</div>
+                    <div class="ob-sec-footer"><strong style="color:var(--accent-color);">NEURODECK is local-first by design.</strong><br>Your conversations, documents, and credentials never leave this device unless you explicitly choose a cloud LLM provider.</div>
+                </div>`;
+}
 
-                    <div class="ob-sec-grid">
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("shieldCheck", { size: 20 })}</div>
-                            <span class="ob-sec-name">OS Keychain</span>
-                            <span class="ob-sec-desc">API keys live in your OS secure store — never on disk as plain text.</span>
-                        </div>
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("globe", { size: 20 })}</div>
-                            <span class="ob-sec-name">Offline Ready</span>
-                            <span class="ob-sec-desc">Ollama runs entirely on-device with zero network access.</span>
-                        </div>
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("x", { size: 20 })}</div>
-                            <span class="ob-sec-name">No Telemetry</span>
-                            <span class="ob-sec-desc">No analytics, crash reporters, or remote logging. Ever.</span>
-                        </div>
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("server", { size: 20 })}</div>
-                            <span class="ob-sec-name">MCP Auth</span>
-                            <span class="ob-sec-desc">Tool-server connections require a Bearer token with constant-time validation.</span>
-                        </div>
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("brain", { size: 20 })}</div>
-                            <span class="ob-sec-name">Local RAG</span>
-                            <span class="ob-sec-desc">Embeddings and chat history persist only on your local disk.</span>
-                        </div>
-                        <div class="ob-sec-card">
-                            <div class="ob-sec-icon">${createIcon("zap", { size: 20 })}</div>
-                            <span class="ob-sec-name">CSP Hardened</span>
-                            <span class="ob-sec-desc">Content Security Policy blocks inline scripts and restricts network origins.</span>
-                        </div>
-                    </div>
-
-                    <div class="ob-sec-footer">
-                        <strong style="color: var(--accent-color);">NEURODECK is local-first by design.</strong><br>
-                        Your conversations, documents, and credentials never leave this device unless you explicitly choose a cloud LLM provider.
-                    </div>
-                </div>
-
-                <!-- Slide 9: Sandboxing & Boundaries -->
+function _obSlide9() {
+  return `
                 <div class="onboarding-slide" id="slide-9">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">LOCAL SANDBOXING & BOUNDARIES</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Understand what the Agent and Terminal can access on your system.</p>
-
                     <div class="ob-sandbox-grid">
-                        <div class="ob-sandbox-card">
-                            <div class="ob-sandbox-icon">${createIcon("folderTree", { size: 24 })}</div>
-                            <span class="ob-sandbox-name">Workspace Sandboxing</span>
-                            <span class="ob-sandbox-desc">By default, the AI Agent operates strictly within the current workspace directory. It cannot read or modify files outside this boundary without explicit user elevation.</span>
-                        </div>
-                        <div class="ob-sandbox-card">
-                            <div class="ob-sandbox-icon">${createIcon("squareTerminal", { size: 24 })}</div>
-                            <span class="ob-sandbox-name">PTY Terminal Access</span>
-                            <span class="ob-sandbox-desc">The Terminal view is a real PTY shell. Commands you execute here run with your user account privileges. The AI can propose commands, but you must approve them.</span>
-                        </div>
-                        <div class="ob-sandbox-card">
-                            <div class="ob-sandbox-icon">${createIcon("shieldAlert", { size: 24 })}</div>
-                            <span class="ob-sandbox-name">Execution Pauses</span>
-                            <span class="ob-sandbox-desc">When the autonomous Agent attempts to run a potentially destructive command (e.g. deletion, global installs), it will pause and request human-in-the-loop approval.</span>
-                        </div>
+                        <div class="ob-sandbox-card"><div class="ob-sandbox-icon">${createIcon("folderTree", { size: 24 })}</div><span class="ob-sandbox-name">Workspace Sandboxing</span><span class="ob-sandbox-desc">By default, the AI Agent operates strictly within the current workspace directory. It cannot read or modify files outside this boundary without explicit user elevation.</span></div>
+                        <div class="ob-sandbox-card"><div class="ob-sandbox-icon">${createIcon("squareTerminal", { size: 24 })}</div><span class="ob-sandbox-name">PTY Terminal Access</span><span class="ob-sandbox-desc">The Terminal view is a real PTY shell. Commands you execute here run with your user account privileges. The AI can propose commands, but you must approve them.</span></div>
+                        <div class="ob-sandbox-card"><div class="ob-sandbox-icon">${createIcon("shieldAlert", { size: 24 })}</div><span class="ob-sandbox-name">Execution Pauses</span><span class="ob-sandbox-desc">When the autonomous Agent attempts to run a potentially destructive command (e.g. deletion, global installs), it will pause and request human-in-the-loop approval.</span></div>
                     </div>
+                    <div class="ob-sec-footer" style="margin-top:16px;"><strong style="color:var(--accent-color);">Your system, your rules.</strong><br>Review the Trust &amp; Safety center in Settings anytime to audit data handling and permissions.</div>
+                </div>`;
+}
 
-                    <div class="ob-sec-footer" style="margin-top: 16px;">
-                        <strong style="color: var(--accent-color);">Your system, your rules.</strong><br>
-                        Review the Trust & Safety center in Settings anytime to audit data handling and permissions.
-                    </div>
-                </div>
-
-                <!-- Slide 10: Additional Features -->
+function _obSlide10() {
+  const rows = [
+    ["plusCircle","Plugin Marketplace","One-click install Lua plugins from the community registry."],
+    ["users","Canvas Collaboration","Host or join a live coding session over your LAN."],
+    ["zap","AI Terminal Autocomplete","Ctrl+Space ghost-text completion in any PTY session."],
+    ["clock3","AI History Search","Ctrl+H semantic search across bash/zsh/fish history."],
+    ["gamepad2","Game-Aware Mode","Auto-detects your Steam game and injects optimization context."],
+    ["columns","Model Switcher","Compare Gemini vs Ollama outputs side-by-side in chat."],
+    ["search","Command Palette","Ctrl+K for instant navigation to any tab or settings panel."],
+    ["folderOpen","Document Indexing","Point at a folder — embeddings generate in one click."],
+    ["bot","Cinematic Boot","Animated startup sequence showing real system state."],
+    ["squareTerminal","Virtual Keyboard","Full QWERTY overlay with sticky modifiers for touch."],
+  ].map(([ic, name, desc]) =>
+    `<div class="ob-deep-row"><div class="ob-deep-icon">${createIcon(ic, { size: 14 })}</div>` +
+    `<div class="ob-deep-text"><span class="ob-deep-name">${name}</span><span class="ob-deep-desc">${desc}</span></div></div>`
+  ).join("");
+  return `
                 <div class="onboarding-slide" id="slide-10">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">POWER USER TOOLKIT</h3>
                     <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 12px;">Capabilities that make NEURODECK more than a chat app.</p>
+                    <div class="ob-deep-grid">${rows}</div>
+                </div>`;
+}
 
-                    <div class="ob-deep-grid">
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("plusCircle", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Plugin Marketplace</span>
-                                <span class="ob-deep-desc">One-click install Lua plugins from the community registry.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("users", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Canvas Collaboration</span>
-                                <span class="ob-deep-desc">Host or join a live coding session over your LAN.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("zap", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">AI Terminal Autocomplete</span>
-                                <span class="ob-deep-desc">Ctrl+Space ghost-text completion in any PTY session.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("clock3", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">AI History Search</span>
-                                <span class="ob-deep-desc">Ctrl+H semantic search across bash/zsh/fish history.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("gamepad2", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Game-Aware Mode</span>
-                                <span class="ob-deep-desc">Auto-detects your Steam game and injects optimization context.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("columns", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Model Switcher</span>
-                                <span class="ob-deep-desc">Compare Gemini vs Ollama outputs side-by-side in chat.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("search", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Command Palette</span>
-                                <span class="ob-deep-desc">Ctrl+K for instant navigation to any tab or settings panel.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("folderOpen", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Document Indexing</span>
-                                <span class="ob-deep-desc">Point at a folder — embeddings generate in one click.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("bot", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Cinematic Boot</span>
-                                <span class="ob-deep-desc">Animated startup sequence showing real system state.</span>
-                            </div>
-                        </div>
-                        <div class="ob-deep-row">
-                            <div class="ob-deep-icon">${createIcon("squareTerminal", { size: 14 })}</div>
-                            <div class="ob-deep-text">
-                                <span class="ob-deep-name">Virtual Keyboard</span>
-                                <span class="ob-deep-desc">Full QWERTY overlay with sticky modifiers for touch.</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Slide 11: System Integration Diagnostics (6-check) -->
+function _obSlide11() {
+  return `
                 <div class="onboarding-slide" id="slide-11">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 10px;">FINAL SYSTEM CHECK</h3>
-
                     <div class="onboarding-diagnostic-list">
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("squareTerminal", { size: 16 })}</span>
-                                <span>PTY Shell Spawning Subsystem</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-pty">PENDING</span>
-                        </div>
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("globe", { size: 16 })}</span>
-                                <span>External LLM Network Endpoint Reachability</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-net">PENDING</span>
-                        </div>
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("shieldCheck", { size: 16 })}</span>
-                                <span>OS Keychain Secure Storage Access</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-key">PENDING</span>
-                        </div>
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("mic", { size: 16 })}</span>
-                                <span>Audio Capture (arecord / Voice STT)</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-audio">PENDING</span>
-                        </div>
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("server", { size: 16 })}</span>
-                                <span>SSH Binary (OpenSSH Client)</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-ssh">PENDING</span>
-                        </div>
-                        <div class="onboarding-diagnostic-item">
-                            <div class="onboarding-diagnostic-label">
-                                <span class="onboarding-diagnostic-icon">${createIcon("volume2", { size: 16 })}</span>
-                                <span>TTS Engine (espeak / Voice Output)</span>
-                            </div>
-                            <span class="onboarding-diagnostic-status pending" id="ob-diag-tts">PENDING</span>
-                        </div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("squareTerminal", { size: 16 })}</span><span>PTY Shell Spawning Subsystem</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-pty">PENDING</span></div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("globe", { size: 16 })}</span><span>External LLM Network Endpoint Reachability</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-net">PENDING</span></div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("shieldCheck", { size: 16 })}</span><span>OS Keychain Secure Storage Access</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-key">PENDING</span></div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("mic", { size: 16 })}</span><span>Audio Capture (arecord / Voice STT)</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-audio">PENDING</span></div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("server", { size: 16 })}</span><span>SSH Binary (OpenSSH Client)</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-ssh">PENDING</span></div>
+                        <div class="onboarding-diagnostic-item"><div class="onboarding-diagnostic-label"><span class="onboarding-diagnostic-icon">${createIcon("volume2", { size: 16 })}</span><span>TTS Engine (espeak / Voice Output)</span></div><span class="onboarding-diagnostic-status pending" id="ob-diag-tts">PENDING</span></div>
                     </div>
-
-                    <div class="onboarding-log-viewport" id="ob-diagnostic-log" style="height: 100px; max-height: 100px; margin-top: 8px;">
+                    <div class="onboarding-log-viewport" id="ob-diagnostic-log" style="height:100px;max-height:100px;margin-top:8px;">
                         <div class="onboarding-log-line">[SYS] Initializing diagnostic scans...</div>
                     </div>
-                </div>
-            </div>
+                </div>`;
+}
 
-            <footer class="onboarding-footer">
-                <button class="onboarding-btn secondary" id="ob-btn-prev" disabled>Back</button>
-                <button class="onboarding-btn" id="ob-btn-next">Next</button>
-            </footer>
-        </div>
-    `;
+// ── Onboarding: Logic helpers (module-scope) ──────────────────────────────────
 
-  document.getElementById("app").appendChild(overlay);
-  onboardingFocusTrap.activate();
+function _obAppendLog(viewport, text, isError = false) {
+  const line = document.createElement("div");
+  line.className = "onboarding-log-line";
+  line.style.color = isError ? "var(--error-color)" : "var(--response-color)";
+  line.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+  viewport.appendChild(line);
+  viewport.scrollTop = viewport.scrollHeight;
+}
 
-  // Keyboard: Escape goes back one step (or closes on step 1)
-  overlay.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      if (currentStep > 1) {
-        btnPrev.click();
-      }
-    }
+function _obUpdateStepUI(obs) {
+  const { btnPrev, btnNext } = obs;
+  document.querySelectorAll(".onboarding-slide").forEach((slide, idx) => {
+    slide.classList.toggle("active", idx + 1 === obs.currentStep);
   });
+  document.querySelectorAll(".onboarding-step-dot").forEach((dot, idx) => {
+    const n = idx + 1;
+    dot.classList.toggle("active",    n === obs.currentStep);
+    dot.classList.toggle("completed", n < obs.currentStep);
+  });
+  const progressEl = document.getElementById("onboarding-progress");
+  if (progressEl) {
+    progressEl.setAttribute("aria-valuenow",   obs.currentStep);
+    progressEl.setAttribute("aria-valuetext", `Step ${obs.currentStep} of 11`);
+  }
+  btnPrev.disabled = obs.currentStep === 1;
+  if (obs.currentStep === 11) {
+    btnNext.innerText = "Launch NEURODECK";
+    btnNext.classList.add("primary");
+    btnNext.disabled = !obs.isDiagnosticsPassed;
+    _obRunDiagnostics(obs);
+  } else {
+    btnNext.innerText = "Next";
+    btnNext.classList.remove("primary");
+    const needsVerify = obs.currentStep === 3 && !obs.isProviderVerified && obs.selectedProvider !== "ollama";
+    btnNext.disabled = needsVerify;
+  }
+}
 
-  // 3. Wizard State & Logic
-  let currentStep = 1;
-  let selectedProvider = "gemini-key"; // Default
-  let selectedPersona = "Default";
-  let selectedThemeName = "BLACKSITE";
-  let isProviderVerified = false;
-  let isDiagnosticsPassed = false;
-  let oauthPollAbortController = null;
-
-  const resetActiveState = (selector) => {
-    document.querySelectorAll(selector).forEach((c) => {
-      c.classList.remove("active");
-      c.setAttribute("aria-pressed", "false");
-    });
-  };
-
-  // Welcome screen typing animation
-  const welcomeText =
-    "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
+function _obInitSlide1Animations() {
+  const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
   const typingEl = document.getElementById("onboarding-welcome-typing");
   let charIdx = 0;
   function typeChar() {
     if (charIdx < welcomeText.length) {
-      typingEl.textContent += welcomeText.charAt(charIdx);
-      charIdx++;
+      typingEl.textContent += welcomeText.charAt(charIdx++);
       setTimeout(typeChar, 22);
     }
   }
   typeChar();
-
-  // Animated stat counters on slide 1
   function animateCounter(el, target, duration) {
     let start = 0;
     const step = Math.ceil(target / (duration / 40));
@@ -11318,84 +10755,25 @@ async function showOnboardingWizard() {
     animateCounter(document.getElementById("ob-stat-features"), 56, 900);
     animateCounter(document.getElementById("ob-stat-views"), 12, 600);
   }, 300);
+}
 
-  // DOM selectors
-  const btnPrev = document.getElementById("ob-btn-prev");
-  const btnNext = document.getElementById("ob-btn-next");
-  const choiceCards = document.querySelectorAll(".onboarding-choice-card");
-  const btnVerify = document.getElementById("ob-btn-verify");
-  const btnSkipSetup = document.getElementById("ob-btn-skip-setup");
-  const logViewport = document.getElementById("ob-validation-log");
+function _obFocusFirstInSlide(step) {
+  const slide = document.getElementById(`slide-${step}`);
+  if (!slide) return;
+  const focusable = slide.querySelector(
+    'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+  );
+  if (focusable) focusable.focus({ preventScroll: true });
+}
 
-  // Focus first focusable element in the active slide
-  function focusFirstInSlide(step) {
-    const slide = document.getElementById(`slide-${step}`);
-    if (!slide) return;
-    const focusable = slide.querySelector(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable) {
-      focusable.focus({ preventScroll: true });
-    }
-  }
-
-  // Step navigation handler
-  function updateStepUI() {
-    // Toggle slide active classes
-    document.querySelectorAll(".onboarding-slide").forEach((slide, idx) => {
-      slide.classList.toggle("active", idx + 1 === currentStep);
-    });
-
-    // Toggle step dot active/completed classes
-    document.querySelectorAll(".onboarding-step-dot").forEach((dot, idx) => {
-      const stepNum = idx + 1;
-      dot.classList.toggle("active", stepNum === currentStep);
-      dot.classList.toggle("completed", stepNum < currentStep);
-    });
-
-    const progressEl = document.getElementById("onboarding-progress");
-    if (progressEl) {
-      progressEl.setAttribute("aria-valuenow", currentStep);
-      progressEl.setAttribute("aria-valuetext", `Step ${currentStep} of 11`);
-    }
-
-    // Update footer buttons
-    btnPrev.disabled = currentStep === 1;
-
-    if (currentStep === 11) {
-      btnNext.innerText = "Launch NEURODECK";
-      btnNext.classList.add("primary");
-      btnNext.disabled = !isDiagnosticsPassed;
-      // Auto-trigger diagnostics on step 11
-      runDiagnostics();
-    } else {
-      btnNext.innerText = "Next";
-      btnNext.classList.remove("primary");
-      // Provider step (3): Ollama & skip don't require live verification to advance
-      const needsVerify =
-        currentStep === 3 &&
-        !isProviderVerified &&
-        selectedProvider !== "ollama";
-      btnNext.disabled = needsVerify;
-    }
-  }
-
+function _obInitNavigation(obs) {
+  const { btnPrev, btnNext, overlay, onboardingFocusTrap } = obs;
   btnPrev.onclick = () => {
-    // Cancel any pending OAuth polling if backing out
-    if (oauthPollAbortController) {
-      oauthPollAbortController.abort();
-      oauthPollAbortController = null;
-    }
-    if (currentStep > 1) {
-      currentStep--;
-      updateStepUI();
-      focusFirstInSlide(currentStep);
-    }
+    if (obs.oauthPollAbortController) { obs.oauthPollAbortController.abort(); obs.oauthPollAbortController = null; }
+    if (obs.currentStep > 1) { obs.currentStep--; _obUpdateStepUI(obs); _obFocusFirstInSlide(obs.currentStep); }
   };
-
   btnNext.onclick = () => {
-    if (currentStep === 11) {
-      // Finish onboarding!
+    if (obs.currentStep === 11) {
       localStorage.setItem("neurodeck_onboarding_complete", "true");
       onboardingFocusTrap.deactivate();
       overlay.classList.add("hidden");
@@ -11404,742 +10782,359 @@ async function showOnboardingWizard() {
         const termInput = document.getElementById("user-input");
         if (termInput) termInput.focus();
       }, 500);
-      addNotification(
-        "System Initialized",
-        "Welcome to NEURODECK OS.",
-        "success",
-      );
+      addNotification("System Initialized", "Welcome to NEURODECK OS.", "success");
     } else {
-      currentStep++;
-      updateStepUI();
-      focusFirstInSlide(currentStep);
+      obs.currentStep++;
+      _obUpdateStepUI(obs);
+      _obFocusFirstInSlide(obs.currentStep);
     }
   };
-
-  // Skip-setup button — bypass step 3 (provider auth) entirely
-  btnSkipSetup.onclick = () => {
-    logViewport.innerHTML = `<div class="onboarding-log-line" style="color:var(--warning-color)">[SYS] Provider setup skipped. Configure via Settings → LLM Config later.</div>`;
-    isProviderVerified = true;
+  document.getElementById("ob-btn-skip-setup").onclick = () => {
+    obs.logViewport.innerHTML = `<div class="onboarding-log-line" style="color:var(--warning-color)">[SYS] Provider setup skipped. Configure via Settings → LLM Config later.</div>`;
+    obs.isProviderVerified = true;
     btnNext.disabled = false;
     btnNext.click();
   };
+}
 
-  // Provider card selections
+function _obInitProviderCards(obs) {
+  const choiceCards = document.querySelectorAll(".onboarding-choice-card");
   choiceCards.forEach((card) => {
-    const selectProvider = () => {
-      resetActiveState(".onboarding-choice-card");
-      card.classList.add("active");
-      card.setAttribute("aria-pressed", "true");
-      selectedProvider = card.dataset.provider;
-
-      // Toggle provider config DOM displays
-      document.getElementById("container-gemini-key").style.display =
-        selectedProvider === "gemini-key" ? "block" : "none";
-      document.getElementById("container-gemini-oauth").style.display =
-        selectedProvider === "gemini-oauth" ? "block" : "none";
-      document.getElementById("container-kimi").style.display =
-        selectedProvider === "kimi" ? "block" : "none";
-      document.getElementById("container-ollama").style.display =
-        selectedProvider === "ollama" ? "block" : "none";
-
-      // Ollama doesn't need live verification — unlock Next immediately
-      if (selectedProvider === "ollama") {
-        isProviderVerified = false; // will be unlocked by verify or via save-anyway path
-        btnNext.disabled = false; // allow skip directly for Ollama
-      } else {
-        isProviderVerified = false;
-        btnNext.disabled = true;
-      }
-
-      // Reset verification log
-      logViewport.innerHTML = `<div class="onboarding-log-line">[SYS] Awaiting input credentials for ${selectedProvider.toUpperCase()}...</div>`;
-
-      // Auto-detect Ollama when that card is selected
-      if (selectedProvider === "ollama") checkOllamaInstalled();
+    const select = () => {
+      obs.resetActiveState(".onboarding-choice-card");
+      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      obs.selectedProvider = card.dataset.provider;
+      document.getElementById("container-gemini-key").style.display   = obs.selectedProvider === "gemini-key"   ? "block" : "none";
+      document.getElementById("container-gemini-oauth").style.display = obs.selectedProvider === "gemini-oauth" ? "block" : "none";
+      document.getElementById("container-kimi").style.display         = obs.selectedProvider === "kimi"         ? "block" : "none";
+      document.getElementById("container-ollama").style.display       = obs.selectedProvider === "ollama"       ? "block" : "none";
+      obs.isProviderVerified = false;
+      obs.btnNext.disabled = obs.selectedProvider !== "ollama";
+      obs.logViewport.innerHTML = `<div class="onboarding-log-line">[SYS] Awaiting input credentials for ${obs.selectedProvider.toUpperCase()}...</div>`;
+      if (obs.selectedProvider === "ollama") _obCheckOllama(obs);
     };
-
-    card.onclick = selectProvider;
-    card.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        selectProvider();
-      }
-    };
+    card.onclick = select;
+    card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); } };
   });
+}
 
-  // Touch tutorial — Try Radial Menu button
-  const btnTryRadial = document.getElementById("ob-btn-try-radial");
-  if (btnTryRadial) {
-    btnTryRadial.onclick = () => {
-      if (window.showRadialMenu) {
-        window.showRadialMenu();
-        // Auto-hide after 3 seconds so they don't get stuck
-        setTimeout(() => {
-          if (window.hideRadialMenu) window.hideRadialMenu();
-        }, 3000);
-      }
-    };
-  }
+function _obCheckOllama(obs) {
+  const banner = document.getElementById("ob-ollama-install-banner");
+  if (!banner) return;
+  banner.style.display = "none";
+  invoke("test_llm_connection", {
+    provider: "ollama",
+    model: document.getElementById("ob-ollama-model").value.trim() || "hermes3:8b",
+    url:   document.getElementById("ob-ollama-url").value.trim()   || "http://localhost:11434",
+    key: null,
+  }).catch(() => { banner.style.display = "block"; });
+}
 
-  // Voice I/O Calibration — Mic & TTS test buttons
-  const btnTestMic = document.getElementById("ob-btn-test-mic");
-  const micStatus = document.getElementById("ob-mic-status");
-  const micResult = document.getElementById("ob-mic-result");
-  const micWaveform = document.getElementById("ob-mic-waveform");
-
-  if (btnTestMic) {
-    btnTestMic.onclick = async () => {
-      btnTestMic.disabled = true;
-      if (micResult) micResult.textContent = "";
-      if (micWaveform) micWaveform.classList.add("active");
-
-      try {
-        const startMsg = await invoke("start_recording");
-        if (startMsg.includes("only supported on Linux")) {
-          if (micStatus) micStatus.textContent = "Voice recording requires Linux / SteamOS.";
-          if (micWaveform) micWaveform.classList.remove("active");
-          btnTestMic.disabled = false;
-          return;
+function _obInitOllamaButtons(obs) {
+  const btnInstall = document.getElementById("ob-btn-install-ollama");
+  const btnRecheck = document.getElementById("ob-btn-recheck-ollama");
+  const btnPull    = document.getElementById("ob-btn-pull-model");
+  const pullStatus = document.getElementById("ob-pull-status");
+  if (btnInstall) btnInstall.onclick = () => {
+    try { invoke("open_external", { url: "https://ollama.com/download" }); } catch (_) {}
+    _obAppendLog(obs.logViewport, "Opening Ollama download page... Install it, run 'ollama serve', then click Re-check.");
+  };
+  if (btnRecheck) btnRecheck.onclick = () => _obCheckOllama(obs);
+  if (btnPull) btnPull.onclick = async () => {
+    const url   = document.getElementById("ob-ollama-url").value.trim()   || "http://localhost:11434";
+    const model = document.getElementById("ob-ollama-model").value.trim() || "hermes3:8b";
+    btnPull.disabled = true;
+    if (pullStatus) pullStatus.textContent = "Starting pull...";
+    _obAppendLog(obs.logViewport, `Pulling model '${model}' from Ollama registry. This may take a while...`);
+    try {
+      const unlisten = await listen("ollama_pull_progress", (ev) => {
+        const p = ev.payload;
+        if (pullStatus) {
+          const pct = p.total ? Math.round(((p.completed || 0) / p.total) * 100) : 0;
+          pullStatus.textContent = p.status === "success" ? "Done!" : `${p.status}${p.total ? ` ${pct}%` : ""}`;
         }
+        if (p.status === "success") {
+          _obAppendLog(obs.logViewport, `Model '${model}' pulled successfully. Ready to use.`);
+          btnPull.disabled = false; _obCheckOllama(obs); if (unlisten) unlisten();
+        }
+      });
+      await invoke("ollama_pull_model", { baseUrl: url, model });
+    } catch (err) {
+      _obAppendLog(obs.logViewport, `Pull failed: ${err}. Ensure Ollama is running ('ollama serve').`, true);
+      btnPull.disabled = false;
+      if (pullStatus) pullStatus.textContent = "Failed";
+    }
+  };
+}
 
-        if (micStatus) micStatus.textContent = "Recording... speak now!";
-        await new Promise((r) => setTimeout(r, 3000));
+async function _obVerifyGeminiKey(obs) {
+  const keyInput = document.getElementById("ob-gemini-key").value.trim();
+  if (!keyInput) { _obAppendLog(obs.logViewport, "Error: Please enter a Gemini API Key.", true); return; }
+  _obAppendLog(obs.logViewport, "Initiating live validation request...");
+  try {
+    const status = await invoke("test_llm_connection", { provider: "gemini", model: "gemini-1.5-flash", url: "", key: keyInput });
+    _obAppendLog(obs.logViewport, status);
+    _obAppendLog(obs.logViewport, "Saving Gemini API Key to secure OS Keychain...");
+    await invoke("save_gemini_api_key", { key: keyInput });
+    await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
+    _obAppendLog(obs.logViewport, "Success! Configuration finalized.");
+    obs.isProviderVerified = true; obs.btnNext.disabled = false;
+  } catch (err) { _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true); }
+}
 
-        if (micStatus) micStatus.textContent = "Transcribing...";
-        const text = await invoke("stop_recording");
+async function _obVerifyKimiKey(obs) {
+  const keyInput   = document.getElementById("ob-kimi-key").value.trim();
+  const modelInput = document.getElementById("ob-kimi-model").value.trim();
+  if (!keyInput) { _obAppendLog(obs.logViewport, "Error: Please enter a Kimi API Key.", true); return; }
+  _obAppendLog(obs.logViewport, "Initiating live validation request...");
+  try {
+    const status = await invoke("test_llm_connection", { provider: "kimi", model: modelInput || "kimi-k2.5", url: "", key: keyInput });
+    _obAppendLog(obs.logViewport, status);
+    _obAppendLog(obs.logViewport, "Saving Kimi API Key to secure OS Keychain...");
+    await invoke("save_kimi_api_key", { key: keyInput });
+    await invoke("set_config", { key: "llm.default_provider", value: "kimi" });
+    await invoke("set_config", { key: "llm.kimi_model", value: modelInput || "kimi-k2.5" });
+    _obAppendLog(obs.logViewport, "Success! Configuration finalized.");
+    obs.isProviderVerified = true; obs.btnNext.disabled = false;
+  } catch (err) { _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true); }
+}
 
-        if (micWaveform) micWaveform.classList.remove("active");
-        if (micStatus) micStatus.textContent = "Microphone working!";
-        if (micResult)
-          micResult.innerHTML = `<span style="color:var(--response-color)">"${text}"</span>`;
-      } catch (err) {
-        if (micWaveform) micWaveform.classList.remove("active");
-        if (micStatus) micStatus.textContent = "Mic test failed.";
-        if (micResult)
-          micResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
-      }
+async function _obVerifyOAuth(obs) {
+  _obAppendLog(obs.logViewport, "Initializing OAuth 2.0 Device Authorization flow...");
+  try {
+    const data = await invoke("start_oauth_flow");
+    document.getElementById("ob-oauth-url").href      = data.verification_uri;
+    document.getElementById("ob-oauth-url").innerText = data.verification_uri;
+    document.getElementById("ob-oauth-code-box").innerText = `CODE: ${data.user_code}`;
+    await QRCode.toCanvas(document.getElementById("ob-oauth-qr"),
+      data.verification_uri_complete || data.verification_uri, { width: 140, margin: 1 });
+    _obAppendLog(obs.logViewport, "OAuth device flow active. Awaiting user authorization...");
+    obs.oauthPollAbortController = new AbortController();
+    invoke("poll_oauth_token", { deviceCode: data.device_code, interval: data.interval })
+      .then(async () => {
+        _obAppendLog(obs.logViewport, "OAuth code approved! Retrieving access token...");
+        _obAppendLog(obs.logViewport, "Retrieved token successfully validated and saved to OS Keychain!");
+        await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
+        obs.isProviderVerified = true; obs.btnNext.disabled = false;
+      })
+      .catch((err) => { if (obs.oauthPollAbortController) _obAppendLog(obs.logViewport, `OAuth failed or canceled: ${err}`, true); });
+  } catch (err) { _obAppendLog(obs.logViewport, `Failed to initialize OAuth: ${err}`, true); }
+}
 
-      btnTestMic.disabled = false;
-    };
+async function _obVerifyOllama(obs) {
+  const urlInput   = document.getElementById("ob-ollama-url").value.trim();
+  const modelInput = document.getElementById("ob-ollama-model").value.trim();
+  if (!urlInput || !modelInput) { _obAppendLog(obs.logViewport, "Error: Both url and model name are required.", true); return; }
+  _obAppendLog(obs.logViewport, `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`);
+  try {
+    await invoke("set_config", { key: "llm.default_provider", value: "ollama" });
+    await invoke("set_config", { key: "llm.ollama_base_url", value: urlInput });
+    await invoke("set_config", { key: "llm.ollama_model",    value: modelInput });
+    _obAppendLog(obs.logViewport, "Ollama configuration saved.");
+  } catch (saveErr) { _obAppendLog(obs.logViewport, `Config save error: ${saveErr}`, true); }
+  try {
+    const status = await invoke("test_llm_connection", { provider: "ollama", model: modelInput, url: urlInput, key: null });
+    _obAppendLog(obs.logViewport, `Connection test: ${status}`);
+  } catch (_) {
+    _obAppendLog(obs.logViewport, "WARNING: Ollama not reachable right now. Start it before chatting.");
+    _obAppendLog(obs.logViewport, "Config saved. You can start Ollama after launch.");
   }
+  obs.isProviderVerified = true; obs.btnNext.disabled = false;
+}
+
+function _obInitProviders(obs) {
+  _obInitProviderCards(obs);
+  _obInitOllamaButtons(obs);
+  document.getElementById("ob-btn-verify").onclick = async () => {
+    obs.isProviderVerified = false; obs.btnNext.disabled = true;
+    if      (obs.selectedProvider === "gemini-key")   await _obVerifyGeminiKey(obs);
+    else if (obs.selectedProvider === "kimi")         await _obVerifyKimiKey(obs);
+    else if (obs.selectedProvider === "gemini-oauth") await _obVerifyOAuth(obs);
+    else if (obs.selectedProvider === "ollama")       await _obVerifyOllama(obs);
+    const tryRadial = document.getElementById("ob-btn-try-radial");
+    if (tryRadial) tryRadial.onclick = () => {
+      if (window.showRadialMenu) { window.showRadialMenu(); setTimeout(() => { if (window.hideRadialMenu) window.hideRadialMenu(); }, 3000); }
+    };
+  };
+}
+
+function _obInitVoice() {
+  const btnTestMic  = document.getElementById("ob-btn-test-mic");
+  const micStatus   = document.getElementById("ob-mic-status");
+  const micResult   = document.getElementById("ob-mic-result");
+  const micWaveform = document.getElementById("ob-mic-waveform");
+  if (btnTestMic) btnTestMic.onclick = async () => {
+    btnTestMic.disabled = true;
+    if (micResult)   micResult.textContent = "";
+    if (micWaveform) micWaveform.classList.add("active");
+    try {
+      const startMsg = await invoke("start_recording");
+      if (startMsg.includes("only supported on Linux")) {
+        if (micStatus)   micStatus.textContent = "Voice recording requires Linux / SteamOS.";
+        if (micWaveform) micWaveform.classList.remove("active");
+        btnTestMic.disabled = false; return;
+      }
+      if (micStatus) micStatus.textContent = "Recording... speak now!";
+      await new Promise((r) => setTimeout(r, 3000));
+      if (micStatus) micStatus.textContent = "Transcribing...";
+      const text = await invoke("stop_recording");
+      if (micWaveform) micWaveform.classList.remove("active");
+      if (micStatus)   micStatus.textContent = "Microphone working!";
+      if (micResult)   micResult.innerHTML = `<span style="color:var(--response-color)">"${text}"</span>`;
+    } catch (err) {
+      if (micWaveform) micWaveform.classList.remove("active");
+      if (micStatus)   micStatus.textContent = "Mic test failed.";
+      if (micResult)   micResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
+    }
+    btnTestMic.disabled = false;
+  };
 
   const btnTestTts = document.getElementById("ob-btn-test-tts");
-  const ttsStatus = document.getElementById("ob-tts-status");
-  const ttsResult = document.getElementById("ob-tts-result");
+  const ttsStatus  = document.getElementById("ob-tts-status");
+  const ttsResult  = document.getElementById("ob-tts-result");
   const ttsSpeaker = document.getElementById("ob-tts-speaker");
-
-  if (btnTestTts) {
-    btnTestTts.onclick = async () => {
-      btnTestTts.disabled = true;
-      if (ttsResult) ttsResult.textContent = "";
-      if (ttsSpeaker) ttsSpeaker.classList.add("active");
-      if (ttsStatus) ttsStatus.textContent = "Speaking...";
-
-      try {
-        await invoke("speak_text", {
-          text: "NEURODECK voice output test. Your TTS engine is working.",
-        });
-        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
-        if (ttsStatus) ttsStatus.textContent = "TTS engine ready!";
-        if (ttsResult)
-          ttsResult.innerHTML = `<span style="color:var(--response-color);font-size:0.7rem;">✓ Audio played successfully</span>`;
-      } catch (err) {
-        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
-        if (ttsStatus) ttsStatus.textContent = "TTS test failed.";
-        if (ttsResult)
-          ttsResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
-      }
-
-      btnTestTts.disabled = false;
-    };
-  }
-
-  async function checkOllamaInstalled() {
-    const banner = document.getElementById("ob-ollama-install-banner");
-    if (!banner) return;
-    banner.style.display = "none";
+  if (btnTestTts) btnTestTts.onclick = async () => {
+    btnTestTts.disabled = true;
+    if (ttsResult)  ttsResult.textContent = "";
+    if (ttsSpeaker) ttsSpeaker.classList.add("active");
+    if (ttsStatus)  ttsStatus.textContent = "Speaking...";
     try {
-      await invoke("test_llm_connection", {
-        provider: "ollama",
-        model:
-          document.getElementById("ob-ollama-model").value.trim() ||
-          "hermes3:8b",
-        url:
-          document.getElementById("ob-ollama-url").value.trim() ||
-          "http://localhost:11434",
-        key: null,
-      });
-      // Reachable — hide banner
-    } catch (_) {
-      banner.style.display = "block";
+      await invoke("speak_text", { text: "NEURODECK voice output test. Your TTS engine is working." });
+      if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+      if (ttsStatus)  ttsStatus.textContent = "TTS engine ready!";
+      if (ttsResult)  ttsResult.innerHTML = `<span style="color:var(--response-color);font-size:0.7rem;">✓ Audio played successfully</span>`;
+    } catch (err) {
+      if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+      if (ttsStatus)  ttsStatus.textContent = "TTS test failed.";
+      if (ttsResult)  ttsResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
     }
-  }
-
-  // Ollama install + recheck buttons
-  const btnInstallOllama = document.getElementById("ob-btn-install-ollama");
-  const btnRecheckOllama = document.getElementById("ob-btn-recheck-ollama");
-  if (btnInstallOllama) {
-    btnInstallOllama.onclick = () => {
-      try {
-        invoke("open_external", { url: "https://ollama.com/download" });
-      } catch (_) {}
-      appendLog(
-        logViewport,
-        "Opening Ollama download page... Install it, run 'ollama serve', then click Re-check.",
-      );
-    };
-  }
-  if (btnRecheckOllama) {
-    btnRecheckOllama.onclick = () => checkOllamaInstalled();
-  }
-
-  // Pull model button — streams progress via ollama_pull_progress event
-  const btnPullModel = document.getElementById("ob-btn-pull-model");
-  const pullStatus = document.getElementById("ob-pull-status");
-  if (btnPullModel) {
-    btnPullModel.onclick = async () => {
-      const url =
-        document.getElementById("ob-ollama-url").value.trim() ||
-        "http://localhost:11434";
-      const model =
-        document.getElementById("ob-ollama-model").value.trim() ||
-        "hermes3:8b";
-      btnPullModel.disabled = true;
-      if (pullStatus) pullStatus.textContent = "Starting pull...";
-      appendLog(
-        logViewport,
-        `Pulling model '${model}' from Ollama registry. This may take a while...`,
-      );
-      try {
-        // Listen for streaming progress (cross-platform: Tauri + Electron bridge)
-        const unlisten = await listen("ollama_pull_progress", (ev) => {
-          const p = ev.payload;
-          if (pullStatus) {
-            const pct = p.total
-              ? Math.round(((p.completed || 0) / p.total) * 100)
-              : 0;
-            pullStatus.textContent =
-              p.status === "success"
-                ? "Done!"
-                : `${p.status}${p.total ? ` ${pct}%` : ""}`;
-          }
-          if (p.status === "success") {
-            appendLog(
-              logViewport,
-              `Model '${model}' pulled successfully. Ready to use.`,
-            );
-            btnPullModel.disabled = false;
-            checkOllamaInstalled();
-            if (unlisten) unlisten();
-          }
-        });
-        await invoke("ollama_pull_model", { baseUrl: url, model });
-      } catch (err) {
-        appendLog(
-          logViewport,
-          `Pull failed: ${err}. Ensure Ollama is running ('ollama serve').`,
-          true,
-        );
-        btnPullModel.disabled = false;
-        if (pullStatus) pullStatus.textContent = "Failed";
-      }
-    };
-  }
-
-  // Logging helpers
-  function appendLog(viewport, text, isError = false) {
-    const line = document.createElement("div");
-    line.className = "onboarding-log-line";
-    line.style.color = isError ? "var(--error-color)" : "var(--response-color)";
-    line.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
-    viewport.appendChild(line);
-    viewport.scrollTop = viewport.scrollHeight;
-  }
-
-  // Verify & Save Button logic (Step 2)
-  btnVerify.onclick = async () => {
-    isProviderVerified = false;
-    btnNext.disabled = true;
-
-    if (selectedProvider === "gemini-key") {
-      const keyInput = document.getElementById("ob-gemini-key").value.trim();
-      if (!keyInput) {
-        appendLog(logViewport, "Error: Please enter a Gemini API Key.", true);
-        return;
-      }
-
-      appendLog(logViewport, "Initiating live validation request...");
-
-      try {
-        // Ping connection to LLM using standard test
-        const status = await invoke("test_llm_connection", {
-          provider: "gemini",
-          model: "gemini-1.5-flash",
-          url: "",
-          key: keyInput,
-        });
-
-        appendLog(logViewport, status);
-        appendLog(
-          logViewport,
-          "Saving Gemini API Key to secure OS Keychain...",
-        );
-
-        // Save it to backend
-        await invoke("save_gemini_api_key", { key: keyInput });
-
-        // Save default provider config to Gemini
-        await invoke("set_config", {
-          key: "llm.default_provider",
-          value: "gemini",
-        });
-
-        appendLog(logViewport, "Success! Configuration finalized.");
-        isProviderVerified = true;
-        btnNext.disabled = false;
-      } catch (err) {
-        appendLog(logViewport, `Failed to verify key: ${err}`, true);
-      }
-    } else if (selectedProvider === "kimi") {
-      const keyInput = document.getElementById("ob-kimi-key").value.trim();
-      const modelInput = document.getElementById("ob-kimi-model").value.trim();
-      if (!keyInput) {
-        appendLog(logViewport, "Error: Please enter a Kimi API Key.", true);
-        return;
-      }
-
-      appendLog(logViewport, "Initiating live validation request...");
-
-      try {
-        const status = await invoke("test_llm_connection", {
-          provider: "kimi",
-          model: modelInput || "kimi-k2.5",
-          url: "",
-          key: keyInput,
-        });
-
-        appendLog(logViewport, status);
-        appendLog(
-          logViewport,
-          "Saving Kimi API Key to secure OS Keychain...",
-        );
-
-        await invoke("save_kimi_api_key", { key: keyInput });
-        await invoke("set_config", {
-          key: "llm.default_provider",
-          value: "kimi",
-        });
-        await invoke("set_config", {
-          key: "llm.kimi_model",
-          value: modelInput || "kimi-k2.5",
-        });
-
-        appendLog(logViewport, "Success! Configuration finalized.");
-        isProviderVerified = true;
-        btnNext.disabled = false;
-      } catch (err) {
-        appendLog(logViewport, `Failed to verify key: ${err}`, true);
-      }
-    } else if (selectedProvider === "gemini-oauth") {
-      appendLog(
-        logViewport,
-        "Initializing OAuth 2.0 Device Authorization flow...",
-      );
-
-      try {
-        const data = await invoke("start_oauth_flow");
-
-        // Show QR code elements and URLs
-        document.getElementById("ob-oauth-url").href = data.verification_uri;
-        document.getElementById("ob-oauth-url").innerText =
-          data.verification_uri;
-        document.getElementById("ob-oauth-code-box").innerText =
-          `CODE: ${data.user_code}`;
-
-        // Generate QR Code
-        await QRCode.toCanvas(
-          document.getElementById("ob-oauth-qr"),
-          data.verification_uri_complete || data.verification_uri,
-          {
-            width: 140,
-            margin: 1,
-          },
-        );
-
-        appendLog(
-          logViewport,
-          "OAuth device flow active. Awaiting user authorization...",
-        );
-
-        // Setup abort controller for polling in case they click Back
-        oauthPollAbortController = new AbortController();
-
-        // Run polling in background
-        invoke("poll_oauth_token", {
-          deviceCode: data.device_code,
-          interval: data.interval,
-        })
-          .then(async () => {
-            appendLog(
-              logViewport,
-              "OAuth code approved! Retrieving access token...",
-            );
-
-            // Since it has saved the token in the backend via OS Keychain
-            appendLog(
-              logViewport,
-              "Retrieved token successfully validated and saved to OS Keychain!",
-            );
-
-            // Save default provider config to Gemini
-            await invoke("set_config", {
-              key: "llm.default_provider",
-              value: "gemini",
-            });
-
-            isProviderVerified = true;
-            btnNext.disabled = false;
-          })
-          .catch((err) => {
-            if (oauthPollAbortController) {
-              appendLog(logViewport, `OAuth failed or canceled: ${err}`, true);
-            }
-          });
-      } catch (err) {
-        appendLog(logViewport, `Failed to initialize OAuth: ${err}`, true);
-      }
-    } else if (selectedProvider === "ollama") {
-      const urlInput = document.getElementById("ob-ollama-url").value.trim();
-      const modelInput = document
-        .getElementById("ob-ollama-model")
-        .value.trim();
-
-      if (!urlInput || !modelInput) {
-        appendLog(
-          logViewport,
-          "Error: Both url and model name are required.",
-          true,
-        );
-        return;
-      }
-
-      appendLog(
-        logViewport,
-        `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`,
-      );
-
-      // Always save config — Ollama may not be running yet (that's OK)
-      try {
-        await invoke("set_config", {
-          key: "llm.default_provider",
-          value: "ollama",
-        });
-        await invoke("set_config", {
-          key: "llm.ollama_base_url",
-          value: urlInput,
-        });
-        await invoke("set_config", {
-          key: "llm.ollama_model",
-          value: modelInput,
-        });
-        appendLog(logViewport, "Ollama configuration saved.");
-      } catch (saveErr) {
-        appendLog(logViewport, `Config save error: ${saveErr}`, true);
-      }
-
-      // Soft connectivity test — warn but don't block
-      try {
-        const status = await invoke("test_llm_connection", {
-          provider: "ollama",
-          model: modelInput,
-          url: urlInput,
-          key: null,
-        });
-        appendLog(logViewport, `Connection test: ${status}`);
-      } catch (_) {
-        appendLog(
-          logViewport,
-          "WARNING: Ollama not reachable right now. Start it before chatting.",
-          false,
-        );
-        appendLog(
-          logViewport,
-          "Config saved. You can start Ollama after launch.",
-          false,
-        );
-      }
-
-      isProviderVerified = true;
-      btnNext.disabled = false;
-    }
+    btnTestTts.disabled = false;
   };
+}
 
-  // Load Personas & Themes (Step 3) — real data from backend
+async function _obInitPersonaTheme(obs) {
   const personaCarousel = document.getElementById("ob-persona-carousel");
-  const themeGrid = document.getElementById("ob-theme-grid");
+  const themeGrid       = document.getElementById("ob-theme-grid");
+  const personaIconMap = { Default:"bot", Developer:"squareTerminal", Cyberpunk:"zap", John:"fileText", Sally:"sparkles", Winston:"panelRightOpen", Amelia:"server", Paige:"fileText", Mary:"chartColumn" };
+  const personaDescMap = { Default:"Helpful, balanced assistant.", Developer:"Clean code, engineering precision.", Cyberpunk:"Terminal lingo, edgy AI construct.", John:"Product Manager — PRDs & user stories.", Sally:"UX Designer — elegant interfaces.", Winston:"System Architect — modular design.", Amelia:"Senior Dev — Rust & JS expert.", Paige:"Technical Writer — docs & wikis.", Mary:"Business Analyst — epics & acceptance criteria." };
 
-  const personaIconMap = {
-    Default: "bot",
-    Developer: "squareTerminal",
-    Cyberpunk: "zap",
-    John: "fileText",
-    Sally: "sparkles",
-    Winston: "panelRightOpen",
-    Amelia: "server",
-    Paige: "fileText",
-    Mary: "chartColumn",
-  };
-  const personaDescMap = {
-    Default: "Helpful, balanced assistant.",
-    Developer: "Clean code, engineering precision.",
-    Cyberpunk: "Terminal lingo, edgy AI construct.",
-    John: "Product Manager — PRDs & user stories.",
-    Sally: "UX Designer — elegant interfaces.",
-    Winston: "System Architect — modular design.",
-    Amelia: "Senior Dev — Rust & JS expert.",
-    Paige: "Technical Writer — docs & wikis.",
-    Mary: "Business Analyst — epics & acceptance criteria.",
-  };
-
-  // Load personas from backend
   let allPersonas = ["Default"];
-  try {
-    allPersonas = await invoke("get_personas");
-  } catch (_) {}
-  personaCarousel.innerHTML = allPersonas
-    .map(
-      (name) => `
-        <div class="onboarding-persona-card ${name === selectedPersona ? "active" : ""}" data-name="${name}" role="button" tabindex="0" aria-pressed="${name === selectedPersona ? "true" : "false"}">
-            <span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>
-            <span class="onboarding-persona-name">${name}</span>
-            <span class="onboarding-persona-desc">${personaDescMap[name] || "Custom persona."}</span>
-        </div>
-    `,
-    )
-    .join("");
+  try { allPersonas = await invoke("get_personas"); } catch (_) {}
+  personaCarousel.innerHTML = allPersonas.map((name) =>
+    `<div class="onboarding-persona-card ${name === obs.selectedPersona ? "active" : ""}" data-name="${name}" role="button" tabindex="0" aria-pressed="${name === obs.selectedPersona ? "true" : "false"}">` +
+    `<span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>` +
+    `<span class="onboarding-persona-name">${name}</span>` +
+    `<span class="onboarding-persona-desc">${personaDescMap[name] || "Custom persona."}</span></div>`
+  ).join("");
+  _obBindPersonaCards(obs);
 
-  const personaCards = Array.from(
-    personaCarousel.querySelectorAll(".onboarding-persona-card")
-  );
-  personaCards.forEach((card, index) => {
-    const selectPersona = async () => {
-      resetActiveState(".onboarding-persona-card");
-      card.classList.add("active");
-      card.setAttribute("aria-pressed", "true");
-      selectedPersona = card.dataset.name;
-      try {
-        await invoke("set_persona", { name: selectedPersona });
-      } catch (e) {
-        console.error("Failed to set persona", e);
-      }
-    };
-
-    card.onclick = selectPersona;
-    card.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        selectPersona();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        const next = personaCards[index + 1] || personaCards[0];
-        next.focus();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        const prev = personaCards[index - 1] || personaCards[personaCards.length - 1];
-        prev.focus();
-      }
-    };
-  });
-
-  // Load themes from backend — fetch colors for swatches
   let allThemeNames = ["BLACKSITE"];
-  try {
-    allThemeNames = await invoke("get_themes");
-  } catch (_) {}
-
-  // Build theme color map by invoking set_theme for each (non-destructive read)
+  try { allThemeNames = await invoke("get_themes"); } catch (_) {}
   const themeColorCache = {};
   for (const tname of allThemeNames) {
-    try {
-      const colors = await invoke("set_theme", { name: tname });
-      if (colors) themeColorCache[tname] = colors;
-    } catch (_) {}
+    try { const colors = await invoke("set_theme", { name: tname }); if (colors) themeColorCache[tname] = colors; } catch (_) {}
   }
-  // Restore the user's previously selected theme after the loop
   const currentTheme = localStorage.getItem("selectedTheme") || "BLACKSITE";
   if (themeColorCache[currentTheme]) {
     const tc = themeColorCache[currentTheme];
-    document.documentElement.style.setProperty("--bg-color", tc.Background);
-    document.documentElement.style.setProperty("--accent-color", tc.Accent);
+    document.documentElement.style.setProperty("--bg-color",       tc.Background);
+    document.documentElement.style.setProperty("--accent-color",   tc.Accent);
     document.documentElement.style.setProperty("--response-color", tc.Response);
   }
+  themeGrid.innerHTML = allThemeNames.map((tname) => {
+    const tc = themeColorCache[tname] || {};
+    return `<div class="onboarding-theme-card ${tname === obs.selectedThemeName ? "active" : ""}" data-name="${tname}" role="button" tabindex="0" aria-pressed="${tname === obs.selectedThemeName ? "true" : "false"}">` +
+           `<div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>` +
+           `<div class="onboarding-theme-swatch"><span style="background:${tc.Accent||"#00f0ff"}"></span><span style="background:${tc.Background||"#050505"}"></span><span style="background:${tc.Foreground||"#d9f7ff"}"></span></div></div>`;
+  }).join("");
+  _obBindThemeCards(obs);
+}
 
-  themeGrid.innerHTML = allThemeNames
-    .map((tname) => {
-      const tc = themeColorCache[tname] || {};
-      const accent = tc.Accent || "#00f0ff";
-      const bg = tc.Background || "#050505";
-      const fg = tc.Foreground || "#d9f7ff";
-      return `
-        <div class="onboarding-theme-card ${tname === selectedThemeName ? "active" : ""}" data-name="${tname}" role="button" tabindex="0" aria-pressed="${tname === selectedThemeName ? "true" : "false"}">
-            <div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>
-            <div class="onboarding-theme-swatch">
-                <span style="background:${accent}"></span>
-                <span style="background:${bg}"></span>
-                <span style="background:${fg}"></span>
-            </div>
-        </div>`;
-    })
-    .join("");
-
-  const themeCards = Array.from(
-    themeGrid.querySelectorAll(".onboarding-theme-card")
-  );
-  themeCards.forEach((card, index) => {
-    const selectTheme = async () => {
-      resetActiveState(".onboarding-theme-card");
-      card.classList.add("active");
-      card.setAttribute("aria-pressed", "true");
-      selectedThemeName = card.dataset.name;
-      localStorage.setItem("selectedTheme", selectedThemeName);
-      try {
-        const theme = await invoke("set_theme", { name: selectedThemeName });
-        if (theme) {
-          window.applyThemeColors(theme);
-        }
-      } catch (e) {
-        console.error("Failed to apply theme live", e);
-      }
+function _obBindPersonaCards(obs) {
+  const cards = Array.from(document.querySelectorAll(".onboarding-persona-card"));
+  cards.forEach((card, index) => {
+    const select = async () => {
+      obs.resetActiveState(".onboarding-persona-card");
+      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      obs.selectedPersona = card.dataset.name;
+      try { await invoke("set_persona", { name: obs.selectedPersona }); } catch (e) { console.error("Failed to set persona", e); }
     };
-
-    card.onclick = selectTheme;
+    card.onclick = select;
     card.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        selectTheme();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        const next = themeCards[index + 1] || themeCards[0];
-        next.focus();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        const prev = themeCards[index - 1] || themeCards[themeCards.length - 1];
-        prev.focus();
-      }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
+      else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
     };
   });
+}
 
-  // Diagnostics Handler (Step 5) — 6 checks
-  let diagRunning = false;
-  async function runDiagnostics() {
-    if (diagRunning) return;
-    diagRunning = true;
-    isDiagnosticsPassed = false;
-    btnNext.disabled = true;
+function _obBindThemeCards(obs) {
+  const cards = Array.from(document.querySelectorAll(".onboarding-theme-card"));
+  cards.forEach((card, index) => {
+    const select = async () => {
+      obs.resetActiveState(".onboarding-theme-card");
+      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      obs.selectedThemeName = card.dataset.name;
+      localStorage.setItem("selectedTheme", obs.selectedThemeName);
+      try { const theme = await invoke("set_theme", { name: obs.selectedThemeName }); if (theme) window.applyThemeColors(theme); }
+      catch (e) { console.error("Failed to apply theme live", e); }
+    };
+    card.onclick = select;
+    card.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
+      else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
+    };
+  });
+}
 
-    const diagLog = document.getElementById("ob-diagnostic-log");
-    diagLog.innerHTML = `<div class="onboarding-log-line">[SYS] Initiating diagnostics sequence...</div>`;
-
-    const checks = [
-      { id: "ob-diag-pty", label: "PTY" },
-      { id: "ob-diag-net", label: "Network" },
-      { id: "ob-diag-key", label: "Keychain" },
-      { id: "ob-diag-audio", label: "Audio" },
-      { id: "ob-diag-ssh", label: "SSH" },
-      { id: "ob-diag-tts", label: "TTS" },
-    ];
-    checks.forEach((c) => {
-      const el = document.getElementById(c.id);
-      el.className = "onboarding-diagnostic-status pending";
-      el.innerText = "RUNNING";
-    });
-
-    await new Promise((r) => setTimeout(r, 700));
-
-    try {
-      const result = await invoke("run_onboarding_diagnostics");
-
-      // Helper: update a check row
-      function applyCheck(id, ok, detail) {
-        const el = document.getElementById(id);
-        el.className =
-          "onboarding-diagnostic-status " + (ok ? "success" : "error");
-        el.innerText = ok ? "OK" : "WARN";
-        appendLog(diagLog, `${ok ? "✓" : "!"} ${detail}`);
-      }
-
-      applyCheck(
-        "ob-diag-pty",
-        result.pty_ok,
-        result.pty_details || "PTY allocation test",
-      );
-      await new Promise((r) => setTimeout(r, 350));
-
-      applyCheck(
-        "ob-diag-net",
-        result.network_ok,
-        result.network_details || "Network reachability",
-      );
-      await new Promise((r) => setTimeout(r, 350));
-
-      applyCheck(
-        "ob-diag-key",
-        result.keychain_ok,
-        result.keychain_details || "OS keychain access",
-      );
-      await new Promise((r) => setTimeout(r, 350));
-
-      // Audio check — look for arecord in PATH via a shell check
-      const audioOk = result.audio_ok !== undefined ? result.audio_ok : true;
-      const audioDetail =
-        result.audio_details ||
-        (audioOk
-          ? "arecord available"
-          : "arecord not found — Voice STT unavailable");
-      applyCheck("ob-diag-audio", audioOk, audioDetail);
-      await new Promise((r) => setTimeout(r, 350));
-
-      // SSH binary check
-      const sshOk = result.ssh_ok !== undefined ? result.ssh_ok : true;
-      const sshDetail =
-        result.ssh_details ||
-        (sshOk ? "ssh binary found" : "ssh not found — install OpenSSH client");
-      applyCheck("ob-diag-ssh", sshOk, sshDetail);
-      await new Promise((r) => setTimeout(r, 350));
-
-      // TTS check — espeak
-      const ttsOk = result.tts_ok !== undefined ? result.tts_ok : true;
-      const ttsDetail =
-        result.tts_details ||
-        (ttsOk
-          ? "espeak available"
-          : "espeak not found — Voice TTS unavailable");
-      applyCheck("ob-diag-tts", ttsOk, ttsDetail);
-
-      await new Promise((r) => setTimeout(r, 400));
-
-      // Pass if core systems (PTY + Keychain) are OK — network and audio are soft
-      if (result.pty_ok && result.keychain_ok) {
-        isDiagnosticsPassed = true;
-        btnNext.disabled = false;
-        const warn = !result.network_ok || !audioOk || !sshOk || !ttsOk;
-        appendLog(
-          diagLog,
-          warn
-            ? "CORE SYSTEMS OK. Some optional features have warnings — see above."
-            : "ALL SYSTEMS NOMINAL. READY TO LAUNCH.",
-        );
-      } else {
-        appendLog(diagLog, "CRITICAL CHECK FAILED. Review errors above.", true);
-      }
-    } catch (e) {
-      appendLog(diagLog, `Diagnostics engine error: ${e}`, true);
-      // Don't hard-block on crash — allow user to proceed
-      isDiagnosticsPassed = true;
-      btnNext.disabled = false;
-    } finally {
-      diagRunning = false;
+async function _obRunDiagnostics(obs) {
+  if (obs.diagRunning) return;
+  obs.diagRunning = true;
+  obs.isDiagnosticsPassed = false;
+  obs.btnNext.disabled = true;
+  const diagLog = document.getElementById("ob-diagnostic-log");
+  diagLog.innerHTML = `<div class="onboarding-log-line">[SYS] Initiating diagnostics sequence...</div>`;
+  ["ob-diag-pty","ob-diag-net","ob-diag-key","ob-diag-audio","ob-diag-ssh","ob-diag-tts"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.className = "onboarding-diagnostic-status pending"; el.innerText = "RUNNING";
+  });
+  await new Promise((r) => setTimeout(r, 700));
+  try {
+    const result = await invoke("run_onboarding_diagnostics");
+    function applyCheck(id, ok, detail) {
+      const el = document.getElementById(id);
+      el.className = "onboarding-diagnostic-status " + (ok ? "success" : "error");
+      el.innerText = ok ? "OK" : "WARN";
+      _obAppendLog(diagLog, `${ok ? "✓" : "!"} ${detail}`);
     }
+    applyCheck("ob-diag-pty",   result.pty_ok,      result.pty_details      || "PTY allocation test");
+    await new Promise((r) => setTimeout(r, 350));
+    applyCheck("ob-diag-net",   result.network_ok,  result.network_details  || "Network reachability");
+    await new Promise((r) => setTimeout(r, 350));
+    applyCheck("ob-diag-key",   result.keychain_ok, result.keychain_details || "OS keychain access");
+    await new Promise((r) => setTimeout(r, 350));
+    const audioOk  = result.audio_ok  !== undefined ? result.audio_ok  : true;
+    const sshOk    = result.ssh_ok    !== undefined ? result.ssh_ok    : true;
+    const ttsOk    = result.tts_ok    !== undefined ? result.tts_ok    : true;
+    applyCheck("ob-diag-audio", audioOk, result.audio_details || (audioOk ? "arecord available"  : "arecord not found — Voice STT unavailable"));
+    await new Promise((r) => setTimeout(r, 350));
+    applyCheck("ob-diag-ssh",   sshOk,   result.ssh_details   || (sshOk   ? "ssh binary found"   : "ssh not found — install OpenSSH client"));
+    await new Promise((r) => setTimeout(r, 350));
+    applyCheck("ob-diag-tts",   ttsOk,   result.tts_details   || (ttsOk   ? "espeak available"   : "espeak not found — Voice TTS unavailable"));
+    await new Promise((r) => setTimeout(r, 400));
+    if (result.pty_ok && result.keychain_ok) {
+      obs.isDiagnosticsPassed = true; obs.btnNext.disabled = false;
+      const warn = !result.network_ok || !audioOk || !sshOk || !ttsOk;
+      _obAppendLog(diagLog, warn ? "CORE SYSTEMS OK. Some optional features have warnings — see above." : "ALL SYSTEMS NOMINAL. READY TO LAUNCH.");
+    } else {
+      _obAppendLog(diagLog, "CRITICAL CHECK FAILED. Review errors above.", true);
+    }
+  } catch (e) {
+    _obAppendLog(diagLog, `Diagnostics engine error: ${e}`, true);
+    obs.isDiagnosticsPassed = true; obs.btnNext.disabled = false;
+  } finally {
+    obs.diagRunning = false;
   }
 }
 
