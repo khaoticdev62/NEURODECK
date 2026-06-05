@@ -234,6 +234,53 @@ export function initRemoteControl() {
         invoke('switch_agent', { id: id }).catch(function() {});
     });
 
+    // ── Agent approval response from mobile companion ──
+    // When the mobile companion approves or denies a queued action, resolve the
+    // waiting Promise so the agent loop can continue.
+    var pendingApprovalCallbacks = {};
+
+    listen('remote_approval_response', function(ev) {
+        try {
+            var msg = typeof ev.payload === 'string' ? JSON.parse(ev.payload) : ev.payload;
+            var reqId = msg.request_id;
+            var approved = msg.approved;
+            remoteLog(
+                'Approval ' + (approved ? 'GRANTED' : 'DENIED') + ' for request ' + reqId,
+                approved ? 'success' : 'warn'
+            );
+            invoke('resolve_agent_approval', { request_id: reqId }).catch(function() {});
+            if (pendingApprovalCallbacks[reqId]) {
+                pendingApprovalCallbacks[reqId](approved);
+                delete pendingApprovalCallbacks[reqId];
+            }
+        } catch (_) {}
+    });
+
+    // Exposed so agent.js / other modules can request mobile approval.
+    // Returns a Promise<boolean> that resolves when the mobile companion responds.
+    window.requestMobileApproval = function(actionType, description) {
+        return invoke('queue_agent_approval_request', {
+            action_type: actionType,
+            description: description,
+        }).then(function(res) {
+            var reqId = res && res.request_id;
+            if (!reqId) return Promise.resolve(false);
+            remoteLog('Awaiting mobile approval for: ' + description, 'warn');
+            return new Promise(function(resolve) {
+                pendingApprovalCallbacks[reqId] = resolve;
+                // Auto-deny after 5 minutes if no response
+                setTimeout(function() {
+                    if (pendingApprovalCallbacks[reqId]) {
+                        delete pendingApprovalCallbacks[reqId];
+                        invoke('resolve_agent_approval', { request_id: reqId }).catch(function() {});
+                        remoteLog('Approval request timed out: ' + reqId, 'error');
+                        resolve(false);
+                    }
+                }, 300000);
+            });
+        });
+    };
+
     document.addEventListener('click', async function(e) {
         var tab = e.target.closest('.nav-tab[data-view="remote"]');
         if (!tab) return;

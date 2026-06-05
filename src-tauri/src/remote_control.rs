@@ -159,6 +159,19 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
 .notif-card-text { font-size: .74rem; color: var(--mu); line-height: 1.4; }
 .notif-empty { font-size: .78rem; color: var(--mu); text-align: center; padding: 40px 20px; font-family: ui-monospace, monospace; }
 
+/* ── Approvals panel ── */
+.appr-list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+.appr-empty { font-size: .78rem; color: var(--mu); text-align: center; padding: 40px 20px; font-family: ui-monospace, monospace; }
+.appr-card { background: var(--sf2); border: 1px solid var(--warn); border-radius: 10px; padding: 12px 14px; }
+.appr-card-header { font-size: .7rem; font-weight: 700; color: var(--warn); letter-spacing: .1em; font-family: ui-monospace, monospace; margin-bottom: 4px; text-transform: uppercase; }
+.appr-card-desc { font-size: .8rem; color: var(--tx); line-height: 1.45; margin-bottom: 10px; }
+.appr-card-time { font-size: .58rem; color: var(--mu); font-family: ui-monospace, monospace; margin-bottom: 8px; }
+.appr-actions { display: flex; gap: 8px; }
+.appr-btn { flex: 1; border: none; border-radius: 8px; padding: 9px 0; font-weight: 700; font-size: .76rem; cursor: pointer; font-family: ui-monospace, monospace; transition: opacity .15s; }
+.appr-btn.allow { background: var(--green); color: #000; }
+.appr-btn.deny { background: var(--red); color: #fff; }
+.appr-btn:active { opacity: .8; }
+
 /* ── Status bar ── */
 .statusbar { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--sf); border-top: 1px solid var(--br); flex-shrink: 0; font-size: .62rem; color: var(--mu); font-family: ui-monospace, monospace; }
 .statusbar-ping { margin-left: auto; }
@@ -192,6 +205,7 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <button class="tab"     onclick="showTab('terminal',this)">💻 TERM</button>
     <button class="tab"     onclick="showTab('actions',this)">⚡ ACTIONS</button>
     <button class="tab"     onclick="showTab('prompts',this)">🎯 PROMPTS</button>
+    <button class="tab" id="appr-tab" onclick="showTab('approvals',this)">🔐 <span id="appr-badge-tab" style="display:none;background:var(--warn);color:#000;border-radius:8px;padding:0 5px;font-size:.6rem;font-weight:700;">0</span></button>
     <button class="tab" id="notif-tab" onclick="showTab('notif',this)">🔔 <span id="notif-badge-tab" style="display:none;background:var(--red);color:#fff;border-radius:8px;padding:0 5px;font-size:.6rem;">0</span></button>
   </div>
 
@@ -321,6 +335,13 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <div class="qprompt" onclick="qp('How do I do this in a SteamOS/Linux terminal?')">How to do this on SteamOS</div>
   </div>
 
+  <!-- APPROVALS -->
+  <div class="pnl" id="p-approvals">
+    <div class="appr-list" id="appr-list">
+      <div class="appr-empty" id="appr-empty">No pending approvals.<br>Agent permission requests will appear here.</div>
+    </div>
+  </div>
+
   <!-- NOTIFICATIONS -->
   <div class="pnl" id="p-notif">
     <div class="notif-list" id="notif-list">
@@ -388,6 +409,8 @@ function doConnect(){
       appendMsg('a','⚠ '+m.message);
     } else if(m.type==='notification'){
       appendNotif(m);
+    } else if(m.type==='agent_approval_request'){
+      appendApproval(m);
     }
   };
   ws.onerror=function(){showErr('Connection error. Make sure your phone and NEURODECK are on the same Wi-Fi. In-app browsers (QR scanners) may block local connections — tap "Open in Safari" below.',true);};
@@ -518,13 +541,54 @@ function appendNotif(n){
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+var apprCount=0;
+function appendApproval(m){
+  var list=document.getElementById('appr-list');
+  var empty=document.getElementById('appr-empty');
+  if(empty) empty.style.display='none';
+  var now=new Date();
+  var time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  var card=document.createElement('div');
+  card.id='appr-'+m.request_id;
+  card.className='appr-card';
+  card.innerHTML=
+    '<div class="appr-card-header">'+esc(m.action_type||'ACTION')+'</div>'+
+    '<div class="appr-card-desc">'+esc(m.description||'')+'</div>'+
+    '<div class="appr-card-time">'+time+'</div>'+
+    '<div class="appr-actions">'+
+      '<button class="appr-btn allow" onclick="sendApproval(\''+esc(m.request_id)+'\',true)">✓ ALLOW</button>'+
+      '<button class="appr-btn deny"  onclick="sendApproval(\''+esc(m.request_id)+'\',false)">✕ DENY</button>'+
+    '</div>';
+  list.insertBefore(card,list.firstChild);
+  apprCount++;
+  var badge=document.getElementById('appr-badge-tab');
+  if(badge){badge.textContent=apprCount;badge.style.display='';}
+}
+
+function sendApproval(req_id,approved){
+  s({type:'approve',request_id:req_id,approved:approved});
+  var card=document.getElementById('appr-'+req_id);
+  if(card){
+    var lbl=approved?'<span style="color:var(--green)">✓ Allowed</span>':'<span style="color:var(--red)">✕ Denied</span>';
+    card.innerHTML='<div class="appr-card-header" style="color:var(--mu)">RESOLVED</div>'+
+      '<div class="appr-card-desc">'+lbl+'</div>';
+    setTimeout(function(){if(card.parentNode)card.parentNode.removeChild(card);},2000);
+  }
+  apprCount=Math.max(0,apprCount-1);
+  var badge=document.getElementById('appr-badge-tab');
+  if(badge){
+    if(apprCount===0) badge.style.display='none';
+    else badge.textContent=apprCount;
+  }
+}
+
 function showTab(id,btn){
   document.querySelectorAll('.pnl').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   document.getElementById('p-'+id).classList.add('on');
   btn.classList.add('on');
-  // Reset notification badge when notif tab opened
   if(id==='notif'){notifCount=0;var b=document.getElementById('notif-badge-tab');if(b)b.style.display='none';}
+  if(id==='approvals'){apprCount=0;var ab=document.getElementById('appr-badge-tab');if(ab)ab.style.display='none';}
 }
 
 // ── Keyboard ──
@@ -569,14 +633,25 @@ pub struct RemoteServerHandle {
     pub event_listener: EventListenerHandle,
 }
 
+/// An agent action queued for mobile-companion approval.
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+pub struct PendingApproval {
+    pub request_id: String,
+    pub action_type: String,
+    pub description: String,
+    pub timestamp: u64,
+}
+
 pub struct RemoteControlState {
     pub handle: std::sync::Mutex<Option<RemoteServerHandle>>,
+    pub pending_approvals: std::sync::Mutex<Vec<PendingApproval>>,
 }
 
 impl Default for RemoteControlState {
     fn default() -> Self {
         Self {
             handle: std::sync::Mutex::new(None),
+            pending_approvals: std::sync::Mutex::new(Vec::new()),
         }
     }
 }
@@ -825,6 +900,17 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
         Some("switch_agent") => {
             if let Some(id) = msg["id"].as_str() {
                 emitter.emit("remote_switch_agent", id.to_string());
+            }
+        }
+        Some("approve") => {
+            if let (Some(req_id), Some(approved)) = (
+                msg["request_id"].as_str(),
+                msg["approved"].as_bool(),
+            ) {
+                emitter.emit(
+                    "remote_approval_response",
+                    json!({"request_id": req_id, "approved": approved}).to_string(),
+                );
             }
         }
         Some("ping") => {} // handled client-side

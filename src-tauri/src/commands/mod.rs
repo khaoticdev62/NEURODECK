@@ -4471,6 +4471,52 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "stopped" }))
         }
 
+        "queue_agent_approval_request" => {
+            let action_type = args.get("action_type").and_then(|v| v.as_str()).unwrap_or("action").to_string();
+            let description = args.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let request_id = format!("{:016x}", rand::random::<u64>());
+            let timestamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            let approval = crate::remote_control::PendingApproval {
+                request_id: request_id.clone(),
+                action_type: action_type.clone(),
+                description: description.clone(),
+                timestamp,
+            };
+            {
+                let mut guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+                guard.push(approval);
+            }
+            {
+                let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(ref h) = *guard {
+                    let msg = serde_json::json!({
+                        "type": "agent_approval_request",
+                        "request_id": request_id,
+                        "action_type": action_type,
+                        "description": description,
+                        "timestamp": timestamp,
+                    }).to_string();
+                    let _ = h.broadcast_tx.send(msg);
+                }
+            }
+            Ok(serde_json::json!({"request_id": request_id}))
+        }
+
+        "get_pending_approvals" => {
+            let guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+            Ok(serde_json::json!({"approvals": *guard}))
+        }
+
+        "resolve_agent_approval" => {
+            let request_id = args.get("request_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let mut guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+            guard.retain(|a| a.request_id != request_id);
+            Ok(serde_json::json!({"ok": true}))
+        }
+
         "canvas_collab_host" => {
             let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(9733) as u16;
             {
