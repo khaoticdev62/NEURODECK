@@ -2344,6 +2344,14 @@ document.querySelector("#app").innerHTML = `
                         <span class="inspect-stat-value" id="drawer-active-persona">Default</span>
                     </div>
                 </div>
+
+                <div class="inspect-card">
+                    <h4>AGENT</h4>
+                    <div class="inspect-stat-row">
+                        <span class="inspect-stat-label">Status:</span>
+                        <span class="inspect-stat-value" id="drawer-agent-status">Idle</span>
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -5503,28 +5511,33 @@ const inspectCloseBtn = document.getElementById("inspect-close-btn");
 function updateContextDrawer() {
   invoke("get_context_stats")
     .then((stats) => {
-      const providerEl = document.getElementById("drawer-active-provider");
-      const modelEl = document.getElementById("drawer-active-model");
-      const ramEl = document.getElementById("drawer-ram-val");
-      const recordsEl = document.getElementById("drawer-memory-records");
-      const pinnedEl = document.getElementById("drawer-memory-pinned");
-      const sessionIdEl = document.getElementById("drawer-session-id");
-      const sessionCreatedEl = document.getElementById(
-        "drawer-session-created",
-      );
-      const messagesEl = document.getElementById("drawer-session-messages");
-      const personaEl = document.getElementById("drawer-active-persona");
+      // get_context_stats returns { chat, memory, agent, system }
+      const sys  = stats.system  || {};
+      const chat = stats.chat    || {};
+      const mem  = stats.memory  || {};
+      const agt  = stats.agent   || {};
 
-      if (providerEl)
-        providerEl.innerText = stats.active_provider.toUpperCase();
-      if (modelEl) modelEl.innerText = stats.active_model;
-      if (ramEl) ramEl.innerText = stats.ram_available;
-      if (recordsEl) recordsEl.innerText = stats.memory_records_count;
-      if (pinnedEl) pinnedEl.innerText = stats.memory_pinned_count;
-      if (sessionIdEl) sessionIdEl.innerText = stats.session_id;
-      if (sessionCreatedEl) sessionCreatedEl.innerText = stats.session_created;
-      if (messagesEl) messagesEl.innerText = stats.session_messages_count;
-      if (personaEl) personaEl.innerText = stats.active_persona;
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val != null) el.innerText = val;
+      };
+
+      set("drawer-active-provider", (sys.provider || "--").toUpperCase());
+      set("drawer-active-model",    sys.model     || "--");
+      set("drawer-ram-val",         sys.ram_mb != null ? sys.ram_mb + " MB" : "--");
+      set("drawer-memory-records",  mem.facts     ?? 0);
+      set("drawer-memory-pinned",   mem.pinned    ?? 0);
+      set("drawer-session-id",      chat.session_id ? chat.session_id.slice(0, 8) + "…" : "--");
+      set("drawer-session-created", chat.created_at || "--");
+      set("drawer-session-messages",chat.messages   ?? 0);
+      set("drawer-active-persona",  chat.persona    || "Default");
+
+      // Agent status indicator
+      const agentStatusEl = document.getElementById("drawer-agent-status");
+      if (agentStatusEl) {
+        agentStatusEl.innerText = agt.running ? `Running (${agt.tasks ?? 0} tasks)` : "Idle";
+        agentStatusEl.style.color = agt.running ? "var(--accent-color)" : "";
+      }
     })
     .catch((err) => console.error("Error updating context drawer stats:", err));
 }

@@ -4610,11 +4610,144 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // Canvas Code Execution (bridge-native, streams via WebSocket)
+        // ────────────────────────────────────────────────────────────────────
+        "exec_code_stream" => {
+            let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?.to_string();
+            let lang = args.get("lang").and_then(|v| v.as_str()).ok_or("Missing 'lang'")?.to_string();
+
+            let workspace_path = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.config.get_resolved_workspace()
+            };
+
+            crate::security::validate_script_payload(&code, &lang, "canvas-exec", workspace_path.as_deref())?;
+
+            let (program, args_vec): (String, Vec<String>) = match lang.to_lowercase().as_str() {
+                "python" | "python3" => {
+                    if cfg!(target_os = "windows") {
+                        ("python".to_string(), vec!["-c".to_string(), code.clone()])
+                    } else {
+                        ("python3".to_string(), vec!["-c".to_string(), code.clone()])
+                    }
+                }
+                "bash" | "sh" | "shell" => {
+                    if cfg!(target_os = "windows") {
+                        ("powershell".to_string(), vec!["-Command".to_string(), code.clone()])
+                    } else {
+                        ("bash".to_string(), vec!["-c".to_string(), code.clone()])
+                    }
+                }
+                "powershell" => ("powershell".to_string(), vec!["-Command".to_string(), code.clone()]),
+                "javascript" | "js" | "node" => ("node".to_string(), vec!["-e".to_string(), code.clone()]),
+                _ => return Err(format!("Unsupported language: {lang}")),
+            };
+
+            // Cancel any previous exec
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
+                    let _ = cancel_tx.send(());
+                }
+            }
+
+            let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.canvas_exec_cancel_tx = Some(cancel_tx);
+            }
+
+            let broadcaster = state.broadcaster.clone();
+            tokio::spawn(async move {
+                use std::process::Stdio;
+                use tokio::io::{AsyncBufReadExt, BufReader};
+
+                let start = std::time::Instant::now();
+
+                let mut cmd = tokio::process::Command::new(&program);
+                cmd.args(&args_vec).stdout(Stdio::piped()).stderr(Stdio::piped());
+                if let Some(ref wp) = workspace_path {
+                    cmd.current_dir(wp);
+                }
+
+                let mut child = match cmd.spawn() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        broadcaster.emit("canvas_exec_line", serde_json::json!({ "stream": "stderr", "line": format!("[error] Failed to spawn '{}': {}", program, e) }));
+                        broadcaster.emit("canvas_exec_done", serde_json::json!({ "exit_code": -1, "duration_ms": start.elapsed().as_millis() as u64 }));
+                        return;
+                    }
+                };
+
+                let Some(stdout) = child.stdout.take() else {
+                    let _ = child.kill().await;
+                    broadcaster.emit("canvas_exec_done", serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }));
+                    return;
+                };
+                let Some(stderr) = child.stderr.take() else {
+                    let _ = child.kill().await;
+                    broadcaster.emit("canvas_exec_done", serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }));
+                    return;
+                };
+
+                let b1 = broadcaster.clone();
+                let b2 = broadcaster.clone();
+                let stdout_task = tokio::spawn(async move {
+                    let mut lines = BufReader::new(stdout).lines();
+                    while let Ok(Some(line)) = lines.next_line().await {
+                        b1.emit("canvas_exec_line", serde_json::json!({ "stream": "stdout", "line": line }));
+                    }
+                });
+                let stderr_task = tokio::spawn(async move {
+                    let mut lines = BufReader::new(stderr).lines();
+                    while let Ok(Some(line)) = lines.next_line().await {
+                        b2.emit("canvas_exec_line", serde_json::json!({ "stream": "stderr", "line": line }));
+                    }
+                });
+
+                let exit_code = tokio::select! {
+                    status = child.wait() => status.ok().and_then(|s| s.code()).unwrap_or(-1),
+                    _ = &mut cancel_rx => {
+                        let _ = child.kill().await;
+                        broadcaster.emit("canvas_exec_line", serde_json::json!({ "stream": "stderr", "line": "[cancelled] Execution cancelled by user." }));
+                        -3
+                    }
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(120)) => {
+                        let _ = child.kill().await;
+                        broadcaster.emit("canvas_exec_line", serde_json::json!({ "stream": "stderr", "line": "[error] Execution timed out (120s limit)." }));
+                        -2
+                    }
+                };
+
+                let _ = tokio::join!(stdout_task, stderr_task);
+                broadcaster.emit("canvas_exec_done", serde_json::json!({
+                    "exit_code": exit_code,
+                    "duration_ms": start.elapsed().as_millis() as u64
+                }));
+            });
+
+            Ok(serde_json::json!({ "status": "started" }))
+        }
+
+        "cancel_exec" => {
+            let tx = {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.canvas_exec_cancel_tx.take()
+            };
+            if let Some(tx) = tx {
+                let _ = tx.send(());
+                Ok(serde_json::json!({ "status": "cancelled" }))
+            } else {
+                Ok(serde_json::json!({ "status": "no_active_exec" }))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
             "Command '{}' not yet implemented in bridge mode. \
-            Bridge status: ~295 commands (>99%). \
+            Bridge status: ~297 commands (>99%). \
             Unavailable: set_kiosk_mode, start_remote_server, stop_remote_server. \
             Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
