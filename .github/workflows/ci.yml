@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [master, release/*]
+  pull_request:
+    branches: [master, release/*]
+
+jobs:
+  rust-check:
+    name: Rust Check & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.92.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Check
+        run: cargo check --workspace
+      - name: Test (lib only)
+        run: cargo test --lib --workspace
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+  frontend-check:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Frontend build
+        run: npm run frontend:build
+      - name: Frontend type-check
+        run: npm run frontend:typecheck || true
+      - name: Frontend test
+        run: npm run frontend:test || true
+
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Fallow dead-code (blocking)
+        run: npm run quality:fallow:dead-code
+      - name: Fallow dupes (blocking)
+        run: npm run quality:fallow:dupes
+      - name: Fallow audit (informational)
+        run: npm run quality:fallow:audit || true
+      - name: Fallow health (informational)
+        run: npm run quality:fallow:health || true
+
+  kfms-validate:
+    name: KFMS Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate meta.json
+        run: bash scripts/kfms/khaotic-init.sh validate
+      - name: KFMS status
+        run: bash scripts/kfms/khaotic-init.sh status

@@ -16,14 +16,19 @@ frontend/src/        — Frontend unit tests (Vitest)
 cd src-tauri && cargo test
 ```
 
-Currently **34 tests** cover:
+Currently **76 tests** cover:
 - Security policy (token generation, script blocklist, path redaction)
-- Memory DB operations
-- Storage save/load/export
+- Memory DB operations (cosine similarity, search, persistence)
+- Storage save/load/export (JSON vector DB)
 - Sync encryption/decryption
 - Transfer path sanitization
 - Plugin filename validation
 - Self-healing config repair
+- LLM provider factory and embedding support
+- OAuth device flow token exchange
+- PTY session routing and timeout handling
+- FTP stream download with size gating
+- Canvas collaboration protocol
 
 ### Frontend Unit Tests
 
