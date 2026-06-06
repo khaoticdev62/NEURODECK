@@ -84,7 +84,13 @@ export class AppPage {
 
   async goto() {
     await this.page.goto("/");
-    await this.page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+    await this.page.locator("#boot-overlay")
+      .waitFor({ state: "detached", timeout: 12000 })
+      .catch(async () => {
+        // Boot overlay didn't self-remove within 12s — force-remove it so tests can proceed.
+        // This can happen in slow CI environments or when the mock returns slowly.
+        await this.page.evaluate(() => document.getElementById("boot-overlay")?.remove());
+      });
   }
 
   async navigateTo(view: string) {

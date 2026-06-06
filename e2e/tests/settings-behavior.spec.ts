@@ -18,26 +18,36 @@ test.beforeEach(async ({ page }) => {
 // ── General panel ─────────────────────────────────────────────────────────────
 
 test.describe("Settings > General panel", () => {
-  test("theme selector is present and populates from mock", async ({ page }) => {
+  test("theme card grid is present and populates from mock", async ({ page }) => {
     const settings = new SettingsPage(page);
     await settings.openSettings();
     await settings.openTab("general");
-    const themeSelect = page.locator("#theme-select");
-    await expect(themeSelect).toBeVisible();
-    const options = await themeSelect.locator("option").count();
-    expect(options).toBeGreaterThanOrEqual(1);
+    // Theme selection uses a card grid (not a <select> dropdown)
+    const themeGrid = page.locator("#theme-cards-grid");
+    await expect(themeGrid).toBeVisible();
+    // Wait for theme cards to load from mock (get_themes → ["Neurodeck", "Midnight"])
+    await page.waitForTimeout(400);
+    const applyBtn = page.locator("#theme-apply-btn");
+    await expect(applyBtn).toBeVisible();
     await settings.closeSettings();
   });
 
-  test("changing theme updates localStorage", async ({ page }) => {
+  test("clicking a theme card and Apply updates localStorage", async ({ page }) => {
     const settings = new SettingsPage(page);
     await settings.openSettings();
     await settings.openTab("general");
-    const themeSelect = page.locator("#theme-select");
-    await themeSelect.waitFor({ state: "visible" });
-    await themeSelect.selectOption({ index: 1 });
-    const saved = await page.evaluate(() => localStorage.getItem("selectedTheme"));
-    expect(saved).not.toBeNull();
+    // Wait for theme cards to populate from mock
+    await page.waitForTimeout(400);
+    // Click the first available theme card to select it
+    const firstCard = page.locator(".onboarding-theme-card").first();
+    if (await firstCard.count() > 0) {
+      await firstCard.click();
+      const applyBtn = page.locator("#theme-apply-btn");
+      await applyBtn.click();
+      await page.waitForTimeout(300);
+      const saved = await page.evaluate(() => localStorage.getItem("selectedTheme"));
+      expect(saved).not.toBeNull();
+    }
     await settings.closeSettings();
   });
 

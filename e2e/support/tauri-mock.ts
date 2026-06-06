@@ -89,6 +89,14 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
         return 0;
       case "get_mcp_status":
         return { running: "false", port: "13337" };
+      case "get_boot_diagnostics":
+        return {
+          pipeline: [],
+          memory_ready: true,
+          provider: "gemini",
+          model: "gemini-1.5-flash",
+          ollama_base_url: "http://localhost:11434",
+        };
       case "test_llm_connection":
         return "Gemini Connection Successful!";
       case "list_custom_personas":
