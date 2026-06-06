@@ -1479,82 +1479,77 @@ async function _execCodeBlock(execBtn, pre, code, lang) {
 }
 
 // Custom Premium Markdown Code Header / Action Injection
+function _chatCodeCopyBtn(code) {
+    const btn = document.createElement('button');
+    btn.className = 'code-header-btn copy-btn';
+    btn.innerText = 'Copy';
+    btn.onclick = function() {
+        navigator.clipboard.writeText(code.innerText).then(() => {
+            triggerHaptic('doubleTick');
+            btn.innerText = 'Copied!';
+            setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+        });
+    };
+    return btn;
+}
+
+function _chatCodeCanvasBtn(lang, code) {
+    const btn = document.createElement('button');
+    btn.className = 'code-header-btn canvas-export-btn';
+    btn.innerText = '→ Canvas';
+    btn.onclick = function() {
+        window.neurodeckCanvas.loadCode(lang, code.innerText);
+        const canvasTab = document.querySelector('[data-view="canvas"]');
+        if (canvasTab) canvasTab.click();
+        btn.innerText = 'Sent!';
+        setTimeout(() => { btn.innerText = '→ Canvas'; }, 2000);
+    };
+    return btn;
+}
+
+function _chatCodeAddExecBtns(actions, pre, code, lang) {
+    const executableLangs = ['bash', 'sh', 'powershell', 'cmd', 'zsh', 'shell'];
+    if (executableLangs.includes(lang.toLowerCase())) {
+        const execBtn = document.createElement('button');
+        execBtn.className = 'code-header-btn execute-btn';
+        execBtn.innerText = 'Execute';
+        execBtn.onclick = () => _execCodeBlock(execBtn, pre, code, lang);
+        actions.appendChild(execBtn);
+    }
+    if (lang.toLowerCase() === 'lua') {
+        state.pendingLuaScript = code.innerText;
+        const execBtn = document.createElement('button');
+        execBtn.className = 'code-header-btn execute-btn';
+        execBtn.innerText = 'Execute';
+        execBtn.onclick = function() { runLuaScript(code.innerText, pre, execBtn); };
+        actions.appendChild(execBtn);
+    }
+}
+
+function _chatBuildCodeHeaderBar(pre) {
+    if (pre.querySelector('.code-header-bar')) return;
+    const code = pre.querySelector('code');
+    if (!code) return;
+    let lang = 'text';
+    code.classList.forEach(cls => { if (cls.startsWith('language-')) lang = cls.replace('language-', ''); });
+    const header = document.createElement('div');
+    header.className = 'code-header-bar';
+    const label = document.createElement('span');
+    label.className = 'code-lang-label';
+    label.innerText = lang;
+    header.appendChild(label);
+    const actions = document.createElement('div');
+    actions.className = 'code-header-actions';
+    actions.appendChild(_chatCodeCopyBtn(code));
+    actions.appendChild(_chatCodeCanvasBtn(lang, code));
+    _chatCodeAddExecBtns(actions, pre, code, lang);
+    header.appendChild(actions);
+    pre.insertBefore(header, pre.firstChild);
+}
+
 function formatCodeBlocks(container) {
     const pres = container.querySelectorAll("pre");
-    pres.forEach(pre => {
-        if (pre.querySelector(".code-header-bar")) return;
-
-        const code = pre.querySelector("code");
-        if (!code) return;
-
-        let lang = "text";
-        code.classList.forEach(cls => {
-            if (cls.startsWith("language-")) {
-                lang = cls.replace("language-", "");
-            }
-        });
-
-        const header = document.createElement("div");
-        header.className = "code-header-bar";
-        
-        const label = document.createElement("span");
-        label.className = "code-lang-label";
-        label.innerText = lang;
-        header.appendChild(label);
-
-        const actions = document.createElement("div");
-        actions.className = "code-header-actions";
-
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "code-header-btn copy-btn";
-        copyBtn.innerText = "Copy";
-        copyBtn.onclick = function() {
-            navigator.clipboard.writeText(code.innerText).then(() => {
-                triggerHaptic("doubleTick");
-                copyBtn.innerText = "Copied!";
-                setTimeout(() => { copyBtn.innerText = "Copy"; }, 2000);
-            });
-        };
-        actions.appendChild(copyBtn);
-
-        // Send to Canvas button
-        const sendToCanvasBtn = document.createElement("button");
-        sendToCanvasBtn.className = "code-header-btn canvas-export-btn";
-        sendToCanvasBtn.innerText = "→ Canvas";
-        sendToCanvasBtn.onclick = function() {
-            const codeText = code.innerText;
-            window.neurodeckCanvas.loadCode(lang, codeText);
-            // Switch to canvas view
-            const canvasTab = document.querySelector('[data-view="canvas"]');
-            if (canvasTab) canvasTab.click();
-            sendToCanvasBtn.innerText = "Sent!";
-            setTimeout(() => { sendToCanvasBtn.innerText = "→ Canvas"; }, 2000);
-        };
-        actions.appendChild(sendToCanvasBtn);
-
-        const executableLangs = ["bash", "sh", "powershell", "cmd", "zsh", "shell"];
-        if (executableLangs.includes(lang.toLowerCase())) {
-            const execBtn = document.createElement("button");
-            execBtn.className = "code-header-btn execute-btn";
-            execBtn.innerText = "Execute";
-            execBtn.onclick = () => _execCodeBlock(execBtn, pre, code, lang);
-            actions.appendChild(execBtn);
-        }
-
-        if (lang.toLowerCase() === "lua") {
-            state.pendingLuaScript = code.innerText;
-            const execBtn = document.createElement("button");
-            execBtn.className = "code-header-btn execute-btn";
-            execBtn.innerText = "Execute";
-            execBtn.onclick = function() {
-                runLuaScript(code.innerText, pre, execBtn);
-            };
-            actions.appendChild(execBtn);
-        }
-
-        header.appendChild(actions);
-        pre.insertBefore(header, pre.firstChild);
-    });
+    pres.forEach(pre => _chatBuildCodeHeaderBar(pre));
 }
 
 function _findLuaPreElement() {

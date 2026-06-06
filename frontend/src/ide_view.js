@@ -567,8 +567,9 @@ function _scrollEditorToLine(lineNo) {
   _s.editorEl.scrollTop = Math.max(0, lineNo * lineHeight - _s.editorEl.clientHeight / 2);
 }
 
-// ── Init ────────────────────────────────────────────────────────────────────
-export async function initIdeView() {
+// ── Init helpers ────────────────────────────────────────────────────────────
+
+function _ideWireDomRefs() {
   _s.fileTreeEl = $("ide-file-tree");
   _s.tabBarEl = $("ide-tab-bar");
   _s.editorEl = $("ide-editor");
@@ -577,82 +578,65 @@ export async function initIdeView() {
   _s.lspCompletionEl = $("ide-lsp-completions");
   _s.lspHoverEl = $("ide-lsp-hover-tooltip");
   _s.lspStatusBarEl = $("ide-lsp-status");
-
   _s.mirrorEl = $("ide-editor-mirror");
   _s.diagPanelEl = $("ide-lsp-diagnostics-panel");
   _s.diagContentEl = $("ide-lsp-diag-panel-content");
   _s.diagHeaderTitle = document.querySelector(".ide-lsp-diag-panel-title");
   _s.diagToggle = document.querySelector(".ide-lsp-diag-panel-toggle");
+}
 
+async function _ideWireEditorListeners() {
+  _s.editorEl.addEventListener("input", onEditorInput);
+  _s.editorEl.addEventListener("scroll", onEditorScroll);
+  _s.editorEl.addEventListener("keydown", onEditorKeydown);
+  _s.editorEl.addEventListener("mousemove", e => scheduleHover(_s.editorEl, _s.lspHoverEl, e));
+  _s.editorEl.addEventListener("mouseleave", () => hideHover(_s.lspHoverEl));
+  document.addEventListener("click", e => {
+    if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) hideCompletions(_s.lspCompletionEl);
+    if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) hideHover(_s.lspHoverEl);
+  });
+  $("ide-btn-new-file")?.addEventListener("click", newFile);
+  $("ide-btn-new-folder")?.addEventListener("click", newFolder);
+  $("ide-btn-save")?.addEventListener("click", saveActiveFile);
+  $("ide-btn-delete")?.addEventListener("click", deleteSelected);
+  $("ide-btn-refresh")?.addEventListener("click", () => loadFileTree(_s.currentPath));
+  $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
+  $("ide-btn-run")?.addEventListener("click", runActiveFile);
+  $("ide-lsp-diag-panel-header")?.addEventListener("click", () => {
+    if (_s.diagPanelEl && _s.diagToggle) {
+      _s.diagPanelEl.classList.toggle("collapsed");
+      _s.diagToggle.textContent = _s.diagPanelEl.classList.contains("collapsed") ? "▲" : "▼";
+    }
+  });
+  await _initLspToolbar();
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      const view = $("view-ide");
+      if (view && view.classList.contains("active")) { e.preventDefault(); saveActiveFile(); }
+    }
+  });
+}
+
+async function _ideWireLsp() {
+  await initLspClient({
+    onStatusChange: statusMap => { _renderLspStatusBar(statusMap); _updateLspToggleLabel(); },
+    onDiagnostics: (language, uri, diagnostics) => _renderDiagnostics(language, uri, diagnostics),
+    onLog: (msg, tone) => logOutput(msg, tone),
+  });
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+export async function initIdeView() {
+  _ideWireDomRefs();
   if (!_s.editorEl) return;
-
-  // DOM event listeners are wired once — guard prevents duplicate handlers on
-  // repeated calls to initIdeView() when the user re-activates the IDE tab.
   if (!_s.viewInitialized) {
     _s.viewInitialized = true;
-
-    _s.editorEl.addEventListener("input", onEditorInput);
-    _s.editorEl.addEventListener("scroll", onEditorScroll);
-    _s.editorEl.addEventListener("keydown", onEditorKeydown);
-
-    _s.editorEl.addEventListener("mousemove", (e) => {
-      scheduleHover(_s.editorEl, _s.lspHoverEl, e);
-    });
-    _s.editorEl.addEventListener("mouseleave", () => {
-      hideHover(_s.lspHoverEl);
-    });
-
-    document.addEventListener("click", (e) => {
-      if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) {
-        hideCompletions(_s.lspCompletionEl);
-      }
-      if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) {
-        hideHover(_s.lspHoverEl);
-      }
-    });
-
-    $("ide-btn-new-file")?.addEventListener("click", newFile);
-    $("ide-btn-new-folder")?.addEventListener("click", newFolder);
-    $("ide-btn-save")?.addEventListener("click", saveActiveFile);
-    $("ide-btn-delete")?.addEventListener("click", deleteSelected);
-    $("ide-btn-refresh")?.addEventListener("click", () => loadFileTree(_s.currentPath));
-    $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
-    $("ide-btn-run")?.addEventListener("click", runActiveFile);
-
-    $("ide-lsp-diag-panel-header")?.addEventListener("click", () => {
-      if (_s.diagPanelEl && _s.diagToggle) {
-        _s.diagPanelEl.classList.toggle("collapsed");
-        _s.diagToggle.textContent = _s.diagPanelEl.classList.contains("collapsed") ? "▲" : "▼";
-      }
-    });
-
-    await _initLspToolbar();
-
-    document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        const view = $("view-ide");
-        if (view && view.classList.contains("active")) {
-          e.preventDefault();
-          saveActiveFile();
-        }
-      }
-    });
+    await _ideWireEditorListeners();
   }
-
-  // ── LSP init ──────────────────────────────────────────────────────────────
   if (!_s.lspInitialized) {
     _s.lspInitialized = true;
-    await initLspClient({
-      onStatusChange: (statusMap) => {
-        _renderLspStatusBar(statusMap);
-        _updateLspToggleLabel();
-      },
-      onDiagnostics: (language, uri, diagnostics) =>
-        _renderDiagnostics(language, uri, diagnostics),
-      onLog: (msg, tone) => logOutput(msg, tone),
-    });
+    await _ideWireLsp();
   }
-
   await loadFileTree("");
   logOutput("Mini IDE ready. Workspace loaded.", "ok");
   logOutput("Tip: Ctrl+Space for completions — configure LSP servers in ⚙ Settings → LSP.", "info");

@@ -450,6 +450,27 @@ function renderCtrlPromptCats() {
 }
 
 // Render prompt list for current category + search
+function _buildCtrlPromptRow(p, i, uses, usePct, isFocused) {
+    const color = getCatColor(p.cat);
+    const hasTemplate = p.text.includes("[");
+    const borderStyle = isFocused ? `border-left-color:${color};` : "";
+    const iconBg = `background:${color}1a;`;
+    const preview = p.text.replace(/\n/g, " ").slice(0, 90) + (p.text.length > 90 ? "…" : "");
+    const templateBadge = hasTemplate ? ` <span class="ctrl-prompt-template-badge" style="background:${color}22;color:${color};">template</span>` : "";
+    return `<div class="ctrl-prompt-row${isFocused ? " focused" : ""}" data-idx="${i}" style="${borderStyle}">
+        <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${createIcon(resolveCtrlPromptIcon(p.icon), { size: 18 })}</div>
+        <div class="ctrl-prompt-row-content">
+            <div class="ctrl-prompt-row-title" style="${isFocused ? `color:${color};` : ""}">${p.title}${templateBadge}</div>
+            <div class="ctrl-prompt-row-text">${preview}</div>
+        </div>
+        <div class="ctrl-prompt-row-meta">
+            ${uses > 0 ? `<div class="ctrl-prompt-row-uses">${uses}x</div>` : ""}
+            ${uses > 0 ? `<div class="ctrl-prompt-usage-bar"><div class="ctrl-prompt-usage-fill" style="width:${usePct}%;background:${color};"></div></div>` : ""}
+            <div class="ctrl-prompt-cat-dot" style="background:${color};" title="${p.cat}"></div>
+        </div>
+    </div>`;
+}
+
 function renderCtrlPromptList() {
     const searchEl = document.getElementById("ctrl-prompt-search");
     const query = searchEl ? searchEl.value : "";
@@ -474,23 +495,7 @@ function renderCtrlPromptList() {
     container.innerHTML = ctrlPromptFiltered.map((p, i) => {
         const uses = (usage[p.id] && usage[p.id].uses) || 0;
         const usePct = Math.round((uses / maxUses) * 100);
-        const hasTemplate = p.text.includes("[");
-        const color = getCatColor(p.cat);
-        const isFocused = i === ctrlPromptListIdx;
-        const borderStyle = isFocused ? `border-left-color:${color};` : "";
-        const iconBg = `background:${color}1a;`;
-        return `<div class="ctrl-prompt-row${isFocused ? " focused" : ""}" data-idx="${i}" style="${borderStyle}">
-            <div class="ctrl-prompt-row-icon" style="${iconBg}color:${color};">${createIcon(resolveCtrlPromptIcon(p.icon), { size: 18 })}</div>
-            <div class="ctrl-prompt-row-content">
-                <div class="ctrl-prompt-row-title" style="${isFocused ? `color:${color};` : ""}">${p.title}${hasTemplate ? ` <span class="ctrl-prompt-template-badge" style="background:${color}22;color:${color};">template</span>` : ""}</div>
-                <div class="ctrl-prompt-row-text">${p.text.replace(/\n/g, " ").slice(0, 90)}${p.text.length > 90 ? "…" : ""}</div>
-            </div>
-            <div class="ctrl-prompt-row-meta">
-                ${uses > 0 ? `<div class="ctrl-prompt-row-uses">${uses}x</div>` : ""}
-                ${uses > 0 ? `<div class="ctrl-prompt-usage-bar"><div class="ctrl-prompt-usage-fill" style="width:${usePct}%;background:${color};"></div></div>` : ""}
-                <div class="ctrl-prompt-cat-dot" style="background:${color};" title="${p.cat}"></div>
-            </div>
-        </div>`;
+        return _buildCtrlPromptRow(p, i, uses, usePct, i === ctrlPromptListIdx);
     }).join("");
 
     container.querySelectorAll(".ctrl-prompt-row").forEach(row => {

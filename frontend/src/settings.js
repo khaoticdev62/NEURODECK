@@ -1037,6 +1037,73 @@ function initDocRag() {
   });
 }
 
+async function _memDbExport(exportBtn, statusLine) {
+  if (statusLine) {
+    statusLine.innerHTML = `<span style="opacity:0.6;">Exporting memory database...</span>`;
+  }
+  exportBtn.disabled = true;
+  try {
+    const path = await window.electronAPI?.showSaveDialog({
+      title: "Export Vector Database",
+      defaultPath: "memory_export.ndmem",
+      filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
+    });
+    if (!path) {
+      if (statusLine) statusLine.innerHTML = "";
+      return;
+    }
+    
+    await invoke("memory_export", { path });
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Exported successfully.</span>`;
+    }
+    if (typeof addNotification === "function") {
+      addNotification("Memory Exported", `Database exported to ${path}`, "success");
+    }
+  } catch (err) {
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
+    }
+  } finally {
+    exportBtn.disabled = false;
+  }
+}
+
+async function _memDbImport(importBtn, statusLine) {
+  importBtn.disabled = true;
+  try {
+    const paths = await window.electronAPI?.showOpenDialog({
+      title: "Import Vector Database",
+      properties: ["openFile"],
+      filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
+    });
+    if (!paths || paths.length === 0) {
+      return;
+    }
+    
+    const merge = await showConfirm("Do you want to merge the imported data with your existing memory, or overwrite it completely?", { confirmText: "Merge", cancelText: "Overwrite" });
+    
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="opacity:0.6;">Importing database...</span>`;
+    }
+    
+    await invoke("memory_import", { path: paths[0], merge: merge !== false });
+    
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Imported successfully.</span>`;
+    }
+    if (typeof addNotification === "function") {
+      addNotification("Memory Imported", `Database imported from ${paths[0]}`, "success");
+    }
+  } catch (err) {
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
+    }
+  } finally {
+    importBtn.disabled = false;
+  }
+}
+
 function initMemoryDb() {
   const exportBtn = document.getElementById("memory-export-btn");
   const importBtn = document.getElementById("memory-import-btn");
@@ -1044,72 +1111,8 @@ function initMemoryDb() {
 
   if (!exportBtn || !importBtn) return;
 
-  exportBtn.addEventListener("click", async () => {
-    if (statusLine) {
-      statusLine.innerHTML = `<span style="opacity:0.6;">Exporting memory database...</span>`;
-    }
-    exportBtn.disabled = true;
-    try {
-      const path = await window.electronAPI?.showSaveDialog({
-        title: "Export Vector Database",
-        defaultPath: "memory_export.ndmem",
-        filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
-      });
-      if (!path) {
-        if (statusLine) statusLine.innerHTML = "";
-        return;
-      }
-      
-      await invoke("memory_export", { path });
-      if (statusLine) {
-        statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Exported successfully.</span>`;
-      }
-      if (typeof addNotification === "function") {
-        addNotification("Memory Exported", `Database exported to ${path}`, "success");
-      }
-    } catch (err) {
-      if (statusLine) {
-        statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
-      }
-    } finally {
-      exportBtn.disabled = false;
-    }
-  });
-
-  importBtn.addEventListener("click", async () => {
-    importBtn.disabled = true;
-    try {
-      const paths = await window.electronAPI?.showOpenDialog({
-        title: "Import Vector Database",
-        properties: ["openFile"],
-        filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
-      });
-      if (!paths || paths.length === 0) {
-        return;
-      }
-      
-      const merge = await showConfirm("Do you want to merge the imported data with your existing memory, or overwrite it completely?", { confirmText: "Merge", cancelText: "Overwrite" });
-      
-      if (statusLine) {
-        statusLine.innerHTML = `<span style="opacity:0.6;">Importing database...</span>`;
-      }
-      
-      await invoke("memory_import", { path: paths[0], merge: merge !== false });
-      
-      if (statusLine) {
-        statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Imported successfully.</span>`;
-      }
-      if (typeof addNotification === "function") {
-        addNotification("Memory Imported", `Database imported from ${paths[0]}`, "success");
-      }
-    } catch (err) {
-      if (statusLine) {
-        statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
-      }
-    } finally {
-      importBtn.disabled = false;
-    }
-  });
+  exportBtn.addEventListener("click", () => _memDbExport(exportBtn, statusLine));
+  importBtn.addEventListener("click", () => _memDbImport(importBtn, statusLine));
 }
 
 // ==========================================================================

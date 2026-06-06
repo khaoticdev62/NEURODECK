@@ -52,6 +52,36 @@ export function renderNotificationsList() {
     container.replaceChildren(fragment);
 }
 
+function _buildToast(notif, title, text, timestamp, type, navigateTo) {
+    const toast = document.createElement("div");
+    toast.className = `toast-notif ${type}`;
+    const titleRow = document.createElement("div");
+    titleRow.className = "toast-notif-title";
+    const titleText = document.createElement("span");
+    titleText.textContent = String(title);
+    const timeText = document.createElement("span");
+    timeText.style.fontSize = "0.65rem";
+    timeText.style.opacity = "0.5";
+    timeText.textContent = timestamp;
+    const body = document.createElement("div");
+    body.className = "toast-notif-text";
+    body.textContent = String(text);
+    titleRow.append(titleText, timeText);
+    toast.append(titleRow, body);
+    if (navigateTo) {
+        toast.style.cursor = 'pointer';
+        toast.title = 'Click to navigate';
+        toast.addEventListener('click', () => {
+            if (typeof window.activateViewByName === 'function') window.activateViewByName(navigateTo);
+        });
+    }
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => { toast.remove(); state.notifications = state.notifications.filter(n => n.id !== notif.id); }, 300);
+    }, 4000);
+    return toast;
+}
+
 export function addNotification(title, text, type = 'info', navigateTo = null) {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const notif = {
@@ -75,50 +105,7 @@ export function addNotification(title, text, type = 'info', navigateTo = null) {
     }
 
     const toastContainer = document.getElementById("toast-container");
-    if (toastContainer) {
-        const toast = document.createElement("div");
-        toast.className = `toast-notif ${type}`;
-        const titleRow = document.createElement("div");
-        titleRow.className = "toast-notif-title";
-
-        const titleText = document.createElement("span");
-        titleText.textContent = String(title);
-
-        const timeText = document.createElement("span");
-        timeText.style.fontSize = "0.65rem";
-        timeText.style.opacity = "0.5";
-        timeText.textContent = timestamp;
-
-        const body = document.createElement("div");
-        body.className = "toast-notif-text";
-        body.textContent = String(text);
-
-        titleRow.append(titleText, timeText);
-        toast.append(titleRow, body);
-
-        // Click-to-navigate support
-        if (navigateTo) {
-            toast.style.cursor = 'pointer';
-            toast.title = 'Click to navigate';
-            toast.addEventListener('click', () => {
-                if (typeof window.activateViewByName === 'function') {
-                    window.activateViewByName(navigateTo);
-                }
-            });
-        }
-
-        toastContainer.appendChild(toast);
-
-        const toastId = notif.id;
-        setTimeout(() => {
-            toast.classList.add('hiding');
-            setTimeout(() => {
-                toast.remove();
-                // Auto-prune dismissed toast from state array
-                state.notifications = state.notifications.filter(n => n.id !== toastId);
-            }, 300);
-        }, 4000);
-    }
+    if (toastContainer) toastContainer.appendChild(_buildToast(notif, title, text, timestamp, type, navigateTo));
 
     renderNotificationsList();
 

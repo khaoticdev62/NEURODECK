@@ -104,121 +104,88 @@ export async function loadGraphData() {
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
-function _renderGraph(data) {
-    const d3 = _d3;
-    const svgEl = document.getElementById('graph-svg');
-    if (!svgEl) return;
-
-    // Clear previous render
-    d3.select(svgEl).selectAll('*').remove();
-    _pinnedNodes.clear();
-
+function _grSetupSvg(svgEl, d3) {
     const W = svgEl.clientWidth  || 900;
     const H = svgEl.clientHeight || 600;
-
-    _svg = d3.select(svgEl)
-        .attr('viewBox', `0 0 ${W} ${H}`)
-        .style('background', 'transparent');
-
-    // Zoom
-    const zoom = d3.zoom()
-        .scaleExtent([0.15, 4])
-        .on('zoom', (event) => {
-            _zoomGroup.attr('transform', event.transform);
-        });
+    _svg = d3.select(svgEl).attr('viewBox', `0 0 ${W} ${H}`).style('background', 'transparent');
+    const zoom = d3.zoom().scaleExtent([0.15, 4])
+        .on('zoom', event => { _zoomGroup.attr('transform', event.transform); });
     _svg.call(zoom);
-
     _zoomGroup = _svg.append('g').attr('class', 'graph-zoom-group');
-
-    // Arrow marker for directed edges (optional visual)
     _svg.append('defs').append('marker')
-        .attr('id', 'graph-arrow')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 18).attr('refY', 0)
-        .attr('markerWidth', 6).attr('markerHeight', 6)
+        .attr('id', 'graph-arrow').attr('viewBox', '0 -5 10 10')
+        .attr('refX', 18).attr('refY', 0).attr('markerWidth', 6).attr('markerHeight', 6)
         .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', 'rgba(255,255,255,0.15)');
+        .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'rgba(255,255,255,0.15)');
+    return { W, H };
+}
 
-    // Build node/edge arrays for D3 (deep clone so sim can mutate x/y)
-    const nodes = data.nodes.map(n => ({ ...n }));
-    const nodeById = new Map(nodes.map(n => [n.id, n]));
-    const links = data.edges
-        .map(e => ({ source: nodeById.get(e.source), target: nodeById.get(e.target), similarity: e.similarity }))
-        .filter(e => e.source && e.target);
-
-    // Force simulation
-    _simulation = d3.forceSimulation(nodes)
+function _grCreateSimulation(nodes, links, W, H, d3) {
+    return d3.forceSimulation(nodes)
         .force('link', d3.forceLink(links).id(d => d.id).distance(d => 120 - d.similarity * 60).strength(0.6))
         .force('charge', d3.forceManyBody().strength(-180))
         .force('center', d3.forceCenter(W / 2, H / 2))
         .force('collision', d3.forceCollide().radius(d => (NODE_RADIUS[d.node_type] || 8) + 6));
+}
 
-    // Edges
-    const link = _zoomGroup.append('g')
-        .attr('class', 'graph-links')
-        .selectAll('line')
-        .data(links)
-        .enter().append('line')
+function _grRenderLinks(zoomGroup, links, d3) {
+    return zoomGroup.append('g').attr('class', 'graph-links')
+        .selectAll('line').data(links).enter().append('line')
         .attr('class', 'graph-edge')
         .attr('stroke-width', d => Math.max(0.5, d.similarity * 3))
         .attr('stroke-opacity', d => 0.3 + d.similarity * 0.5)
         .attr('stroke', 'rgba(255,255,255,0.4)');
+}
 
-    // Nodes
-    const node = _zoomGroup.append('g')
-        .attr('class', 'graph-nodes')
-        .selectAll('g')
-        .data(nodes)
-        .enter().append('g')
-        .attr('class', 'graph-node-group')
-        .call(
-            d3.drag()
-                .on('start', (event, d) => {
-                    if (!event.active) _simulation.alphaTarget(0.3).restart();
-                    d.fx = d.x; d.fy = d.y;
-                })
-                .on('drag', (event, d) => {
-                    d.fx = event.x; d.fy = event.y;
-                })
-                .on('end', (event, d) => {
-                    if (!event.active) _simulation.alphaTarget(0);
-                    _pinnedNodes.add(d.id); // keep pinned after drag
-                })
+function _grRenderNodeGroup(zoomGroup, nodes, d3) {
+    const node = zoomGroup.append('g').attr('class', 'graph-nodes')
+        .selectAll('g').data(nodes).enter().append('g').attr('class', 'graph-node-group')
+        .call(d3.drag()
+            .on('start', (event, d) => {
+                if (!event.active) _simulation.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            })
+            .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+            .on('end', (event, d) => {
+                if (!event.active) _simulation.alphaTarget(0);
+                _pinnedNodes.add(d.id);
+            })
         );
-
-    // Circle
     node.append('circle')
         .attr('r', d => NODE_RADIUS[d.node_type] || 8)
         .attr('fill', d => NODE_COLORS[d.node_type] || '#00f0ff')
         .attr('fill-opacity', 0.85)
         .attr('stroke', d => NODE_COLORS[d.node_type] || '#00f0ff')
-        .attr('stroke-width', 1.5)
-        .attr('stroke-opacity', 0.6)
-        .style('cursor', 'pointer');
-
-    // Label
+        .attr('stroke-width', 1.5).attr('stroke-opacity', 0.6).style('cursor', 'pointer');
     node.append('text')
         .attr('dy', d => (NODE_RADIUS[d.node_type] || 8) + 12)
-        .attr('text-anchor', 'middle')
-        .attr('class', 'graph-node-label')
+        .attr('text-anchor', 'middle').attr('class', 'graph-node-label')
         .text(d => d.label.length > 28 ? d.label.slice(0, 28) + '…' : d.label)
-        .attr('fill', '#a0aec0')
-        .attr('font-size', '9px')
-        .style('pointer-events', 'none');
-
-    // Interactions
-    node
-        .on('mouseenter', (event, d) => _showTooltip(event, d))
-        .on('mousemove', (event) => _moveTooltip(event))
+        .attr('fill', '#a0aec0').attr('font-size', '9px').style('pointer-events', 'none');
+    node.on('mouseenter', (event, d) => _showTooltip(event, d))
+        .on('mousemove', event => _moveTooltip(event))
         .on('mouseleave', () => _hideTooltip())
         .on('click', (event, d) => _handleNodeClick(d));
+    return node;
+}
 
-    // Tick
+function _renderGraph(data) {
+    const d3 = _d3;
+    const svgEl = document.getElementById('graph-svg');
+    if (!svgEl) return;
+    d3.select(svgEl).selectAll('*').remove();
+    _pinnedNodes.clear();
+    const { W, H } = _grSetupSvg(svgEl, d3);
+    const nodes = data.nodes.map(n => ({ ...n }));
+    const nodeById = new Map(nodes.map(n => [n.id, n]));
+    const links = data.edges
+        .map(e => ({ source: nodeById.get(e.source), target: nodeById.get(e.target), similarity: e.similarity }))
+        .filter(e => e.source && e.target);
+    _simulation = _grCreateSimulation(nodes, links, W, H, d3);
+    const link = _grRenderLinks(_zoomGroup, links, d3);
+    const node = _grRenderNodeGroup(_zoomGroup, nodes, d3);
     _simulation.on('tick', () => {
-        link
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
         node.attr('transform', d => `translate(${d.x},${d.y})`);
     });

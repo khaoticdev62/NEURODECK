@@ -397,7 +397,7 @@ function applyInlineTitleIcon(selector, icon, label) {
   el.innerHTML = `${createIcon(icon, { size: 15 })}<span class="nd-inline-label">${escapeHtml(label ?? normalizeLabel(el.textContent))}</span>`;
 }
 
-export function applyNeurodeckIconography() {
+function _applyShellButtonIcons() {
   [
     ["#sidebar-close-btn", { icon: "panelLeftClose", iconOnly: true }],
     ["#sidebar-toggle-btn", { icon: "menu", iconOnly: true }],
@@ -429,6 +429,11 @@ export function applyNeurodeckIconography() {
     ["#pty-reconnect-btn", { icon: "refreshCw", iconOnly: true }],
     ["#term-font-dec-btn", { icon: "minus", label: "A-" }],
     ["#term-font-inc-btn", { icon: "plus", label: "A+" }],
+  ].forEach(([selector, config]) => applyButtonIcon(selector, config));
+}
+
+function _applyViewButtonIcons() {
+  [
     ["#ssh-save-profile-btn", { icon: "plus", label: "Save Profile" }],
     ["#share-send-btn", { icon: "sendHorizontal", label: "Send File", trailingIcon: true }],
     ["#ftp-save-profile-btn", { icon: "plus", label: "Save Profile" }],
@@ -466,6 +471,11 @@ export function applyNeurodeckIconography() {
     ["#pl-gallery-close", { icon: "x", iconOnly: true }],
     ["#pl-advanced-toggle", { icon: "settings2", label: "Few-Shot Examples" }],
   ].forEach(([selector, config]) => applyButtonIcon(selector, config));
+}
+
+export function applyNeurodeckIconography() {
+  _applyShellButtonIcons();
+  _applyViewButtonIcons();
 
   [
     ["chat", "messageSquare", "Chat"],

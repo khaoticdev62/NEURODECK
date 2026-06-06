@@ -103,13 +103,13 @@ function _wireFilters() {
       const json = await invoke("cli_import_lua", { path: filePath });
       const imported = JSON.parse(json || "[]");
       if (imported.length === 0) {
-        addNotification('No Commands Found', 'No registerCommand(...) blocks found.', 'info');
+        window.addNotification?.('No Commands Found', 'No registerCommand(...) blocks found.', 'info');
         return;
       }
       await _loadCommands();
-      addNotification('Import Successful', `Imported ${imported.length} command(s) from Lua.`, 'success');
+      window.addNotification?.('Import Successful', `Imported ${imported.length} command(s) from Lua.`, 'success');
     } catch (e) {
-      addNotification('Import Failed', String(e), 'error');
+      window.addNotification?.('Import Failed', String(e), 'error');
     } finally {
       importInput.value = "";
     }
@@ -168,6 +168,37 @@ function _wireEditor() {
 }
 
 // ── Dynamic action fields ─────────────────────────────────────────────────────
+function _renderChainCategory(container) {
+  container.innerHTML = `
+    <div class="cli-chain-list" id="cli-chain-list"></div>
+    <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-chain-step" aria-label="Add step">+ Add Step</button>
+  `;
+  document.getElementById("cli-add-chain-step")?.addEventListener("click", () => {
+    const list = document.getElementById("cli-chain-list");
+    if (!list) return;
+    const wrap = document.createElement("div");
+    wrap.className = "cli-chain-step";
+    const select = document.createElement("select");
+    select.className = "cli-select";
+    select.setAttribute("aria-label", "Chain step");
+    _cmds.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    });
+    const del = document.createElement("button");
+    del.className = "cli-btn-small";
+    del.textContent = "×";
+    del.setAttribute("aria-label", "Remove step");
+    del.addEventListener("click", () => wrap.remove());
+    wrap.appendChild(select);
+    wrap.appendChild(del);
+    list.appendChild(wrap);
+    _updateHelpPreview();
+  });
+}
+
 function _renderDynamicFields(category) {
   const container = document.getElementById("cli-dynamic-fields");
   if (!container) return;
@@ -210,34 +241,7 @@ function _renderDynamicFields(category) {
       break;
 
     case "chain":
-      container.innerHTML = `
-        <div class="cli-chain-list" id="cli-chain-list"></div>
-        <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-chain-step" aria-label="Add step">+ Add Step</button>
-      `;
-      document.getElementById("cli-add-chain-step")?.addEventListener("click", () => {
-        const list = document.getElementById("cli-chain-list");
-        if (!list) return;
-        const wrap = document.createElement("div");
-        wrap.className = "cli-chain-step";
-        const select = document.createElement("select");
-        select.className = "cli-select";
-        select.setAttribute("aria-label", "Chain step");
-        _cmds.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = c.id;
-          opt.textContent = c.name;
-          select.appendChild(opt);
-        });
-        const del = document.createElement("button");
-        del.className = "cli-btn-small";
-        del.textContent = "×";
-        del.setAttribute("aria-label", "Remove step");
-        del.addEventListener("click", () => wrap.remove());
-        wrap.appendChild(select);
-        wrap.appendChild(del);
-        list.appendChild(wrap);
-        _updateHelpPreview();
-      });
+      _renderChainCategory(container);
       break;
 
     case "plugin":

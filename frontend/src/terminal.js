@@ -715,73 +715,40 @@ function handleTerminalCtrlH(e) {
 // We patch createTerminalSession to add the key handler after session creation.
 const _origCreateTerminalSession = window.createTerminalSession;
 
-function patchTerminalSessionWithAutocomplete(session) {
-    if (!session || !session.term) return;
-    const term = session.term;
+function _termAutoOnData(data, buf) {
+    if (data === "\r" || data === "\n") { buf.line = ""; clearAutocompleteGhost(); return; }
+    if (data === "\x7f" || data === "\b") { buf.line = buf.line.slice(0, -1); clearAutocompleteGhost(); return; }
+    if (data === "\x03" || data === "\x1b") { buf.line = ""; clearAutocompleteGhost(); return; }
+    if (data === "\x00" || (data === " " && autocompleteActive)) { /* Ctrl+Space / space-while-active placeholder */ }
+    if (data.length === 1 && data.charCodeAt(0) >= 32) { buf.line += data; clearAutocompleteGhost(); }
+}
 
-    let currentLineBuffer = "";
-
-    // Track what's typed to maintain a local line buffer
-    term.onData((data) => {
-        // Handle special sequences
-        if (data === "\r" || data === "\n") {
-            currentLineBuffer = "";
-            clearAutocompleteGhost();
-            return;
-        }
-        if (data === "\x7f" || data === "\b") {
-            // Backspace
-            currentLineBuffer = currentLineBuffer.slice(0, -1);
-            clearAutocompleteGhost();
-            return;
-        }
-        if (data === "\x03" || data === "\x1b") {
-            // Ctrl+C or Escape
-            currentLineBuffer = "";
-            clearAutocompleteGhost();
-            return;
-        }
-        // Ctrl+Space (0x00 or \x00 in xterm key events)
-        if (data === "\x00" || data === " " && autocompleteActive) {
-            // Accept ghost text if active and space is pressed
-        }
-        // Printable chars
-        if (data.length === 1 && data.charCodeAt(0) >= 32) {
-            currentLineBuffer += data;
-            clearAutocompleteGhost();
-        }
-    });
-
-    // Override Ctrl+Space using the custom keyEventHandler
-    term.attachCustomKeyEventHandler((e) => {
-        if (!handleTerminalCtrlH(e)) return false;
-
-        // Tab: trigger autocomplete (if not already active)
-        if (e.code === "Tab" && !autocompleteActive && e.type === "keydown") {
+function _termAutoKeyHandler(e, session, buf) {
+    if (!handleTerminalCtrlH(e)) return false;
+    if (e.code === "Tab" && !autocompleteActive && e.type === "keydown") {
+        e.preventDefault();
+        triggerAutocomplete(session.id, buf.line);
+        return false;
+    }
+    if (autocompleteActive && autocompleteGhostText && e.type === "keydown") {
+        if (e.code === "ArrowRight" || e.code === "Tab" || (e.ctrlKey && e.key === "y")) {
             e.preventDefault();
-            triggerAutocomplete(session.id, currentLineBuffer);
+            const ghost = autocompleteGhostText;
+            clearAutocompleteGhost();
+            buf.line += ghost;
+            invoke("pty_write", { id: session.id, data: ghost }).catch(console.error);
             return false;
         }
+        if (e.code === "Escape") { clearAutocompleteGhost(); return true; }
+    }
+    return true;
+}
 
-        // Right Arrow or Tab or Ctrl+Y: accept ghost completion
-        if (autocompleteActive && autocompleteGhostText && e.type === "keydown") {
-            if (e.code === "ArrowRight" || e.code === "Tab" || (e.ctrlKey && e.key === "y")) {
-                e.preventDefault();
-                const ghost = autocompleteGhostText;
-                clearAutocompleteGhost();
-                currentLineBuffer += ghost;
-                // Write the ghost text to the PTY
-                invoke("pty_write", { id: session.id, data: ghost }).catch(console.error);
-                return false;
-            }
-            // Escape: dismiss
-            if (e.code === "Escape") {
-                clearAutocompleteGhost();
-                return true; // Let xterm handle normally
-            }
-        }
-        return true; // Allow normal key processing
-    });
+function patchTerminalSessionWithAutocomplete(session) {
+    if (!session || !session.term) return;
+    const buf = { line: "" };
+    session.term.onData(data => _termAutoOnData(data, buf));
+    session.term.attachCustomKeyEventHandler(e => _termAutoKeyHandler(e, session, buf));
 }
 
 // ==========================================================================
@@ -1058,110 +1025,75 @@ function getSftpInputValues() {
     };
 }
 
+function _buildRemoteFileItem(e, prefix) {
+    const item = document.createElement("div");
+    item.className = "ftp-file-item" + (e.is_dir ? " is-dir" : "");
+    item.setAttribute("data-name", e.name);
+    item.setAttribute("data-is-dir", e.is_dir ? "true" : "false");
+    const icon = document.createElement("span");
+    icon.className = "ftp-file-icon";
+    icon.innerHTML = createIcon(e.is_dir ? "folder" : "file", { size: 16 });
+    const nameEl = document.createElement("span");
+    nameEl.className = "ftp-file-name";
+    nameEl.textContent = e.name;
+    const sizeEl = document.createElement("span");
+    sizeEl.className = "ftp-file-size";
+    sizeEl.textContent = e.is_dir ? "—" : formatBytes(e.size);
+    item.append(icon, nameEl, sizeEl);
+    if (!e.is_dir) {
+        const btn = document.createElement("button");
+        btn.className = `canvas-btn ${prefix}-download-btn`;
+        btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
+        btn.setAttribute("data-name", e.name);
+        btn.title = "Download";
+        btn.setAttribute("aria-label", `Download ${e.name}`);
+        btn.innerHTML = iconButtonMarkup("download", "Download");
+        item.appendChild(btn);
+    }
+    return item;
+}
+
+function _wireRemoteDownloadBtn(btn, isSftp) {
+    btn.onclick = ev => {
+        ev.stopPropagation();
+        const name = btn.getAttribute("data-name");
+        if (isSftp) {
+            const { host, port, user, auth_type, password, key_path } = getSftpInputValues();
+            const remotePath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+            setSftpStatus(`Downloading ${name}...`);
+            invoke("sftp_download_file", { host, port, user, authType: auth_type, password, keyPath: key_path, remotePath, localPath })
+                .then(() => { setSftpStatus(`Downloaded to ${localPath}`); if (typeof addNotification === "function") addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success"); })
+                .catch(err => { setSftpStatus(`Download error: ${err}`); if (typeof addNotification === "function") addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error"); });
+        } else {
+            const { host, port, user, password } = getFtpInputValues();
+            const remotePath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
+            const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
+            setFtpStatus(`Downloading ${name}...`);
+            invoke("ftp_download_file", { host, port, user, password, remotePath, localPath })
+                .then(() => { setFtpStatus(`Downloaded to ${localPath}`); if (typeof addNotification === "function") addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success"); })
+                .catch(err => { setFtpStatus(`Download error: ${err}`); if (typeof addNotification === "function") addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error"); });
+        }
+    };
+}
+
 function renderRemoteFiles(type, entries) {
     const isSftp = type === "sftp";
     const prefix = isSftp ? "sftp" : "ftp";
     const list = document.getElementById(`${prefix}-file-list`);
     if (!list) return;
-    if (!entries || entries.length === 0) {
-        list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`;
-        return;
-    }
+    if (!entries || entries.length === 0) { list.innerHTML = `<div class="ftp-empty-state">Directory is empty.</div>`; return; }
     list.innerHTML = "";
-    entries.forEach(e => {
-        const item = document.createElement("div");
-        item.className = "ftp-file-item" + (e.is_dir ? " is-dir" : "");
-        item.setAttribute("data-name", e.name);
-        item.setAttribute("data-is-dir", e.is_dir ? "true" : "false");
-
-        const icon = document.createElement("span");
-        icon.className = "ftp-file-icon";
-        icon.innerHTML = createIcon(e.is_dir ? "folder" : "file", { size: 16 });
-
-        const name = document.createElement("span");
-        name.className = "ftp-file-name";
-        name.textContent = e.name;
-
-        const size = document.createElement("span");
-        size.className = "ftp-file-size";
-        size.textContent = e.is_dir ? "—" : formatBytes(e.size);
-
-        item.appendChild(icon);
-        item.appendChild(name);
-        item.appendChild(size);
-
-        if (!e.is_dir) {
-            const btn = document.createElement("button");
-            btn.className = `canvas-btn ${prefix}-download-btn`;
-            btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
-            btn.setAttribute("data-name", e.name);
-            btn.title = "Download";
-            btn.setAttribute("aria-label", `Download ${e.name}`);
-            btn.innerHTML = iconButtonMarkup("download", "Download");
-            item.appendChild(btn);
-        }
-        list.appendChild(item);
-    });
-
-    // Directory navigation
+    entries.forEach(e => list.appendChild(_buildRemoteFileItem(e, prefix)));
     list.querySelectorAll(".ftp-file-item.is-dir").forEach(item => {
         item.style.cursor = "pointer";
         item.onclick = () => {
             const name = item.getAttribute("data-name");
-            if (isSftp) {
-                state.sftpCurrentPath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-                loadSftpDir(state.sftpCurrentPath);
-            } else {
-                state.ftpCurrentPath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-                loadFtpDir(state.ftpCurrentPath);
-            }
+            if (isSftp) { state.sftpCurrentPath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name; loadSftpDir(state.sftpCurrentPath); }
+            else { state.ftpCurrentPath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name; loadFtpDir(state.ftpCurrentPath); }
         };
     });
-
-    // Download buttons
-    list.querySelectorAll(`.${prefix}-download-btn`).forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const name = btn.getAttribute("data-name");
-            if (isSftp) {
-                const { host, port, user, auth_type, password, key_path } = getSftpInputValues();
-                const remotePath = state.sftpCurrentPath.replace(/\/$/, "") + "/" + name;
-                const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-                setSftpStatus(`Downloading ${name}...`);
-                invoke("sftp_download_file", { host, port, user, authType: auth_type, password, keyPath: key_path, remotePath, localPath })
-                    .then(() => {
-                        setSftpStatus(`Downloaded to ${localPath}`);
-                        if (typeof addNotification === "function") {
-                            addNotification("SFTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                        }
-                    })
-                    .catch(err => {
-                        setSftpStatus(`Download error: ${err}`);
-                        if (typeof addNotification === "function") {
-                            addNotification("SFTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                        }
-                    });
-            } else {
-                const { host, port, user, password } = getFtpInputValues();
-                const remotePath = state.ftpCurrentPath.replace(/\/$/, "") + "/" + name;
-                const localPath = (localStorage.getItem("downloadDir") || "/tmp") + "/" + name;
-                setFtpStatus(`Downloading ${name}...`);
-                invoke("ftp_download_file", { host, port, user, password, remotePath, localPath })
-                    .then(() => {
-                        setFtpStatus(`Downloaded to ${localPath}`);
-                        if (typeof addNotification === "function") {
-                            addNotification("FTP Download Complete", `Downloaded file '${name}' to: ${localPath}`, "success");
-                        }
-                    })
-                    .catch(err => {
-                        setFtpStatus(`Download error: ${err}`);
-                        if (typeof addNotification === "function") {
-                            addNotification("FTP Download Failed", `Failed to download file '${name}': ${err}`, "error");
-                        }
-                    });
-            }
-        };
-    });
+    list.querySelectorAll(`.${prefix}-download-btn`).forEach(btn => _wireRemoteDownloadBtn(btn, isSftp));
 }
 
 function getConnectionTypeMappers(type) {
@@ -1214,78 +1146,58 @@ async function deleteProfile(type, index) {
     updateFn2();
 }
 
+async function _sshLoadProfile(p) {
+    const $ = id => document.getElementById(id);
+    $("ssh-host-input").value = p.host || "";
+    $("ssh-port-input").value = p.port || "22";
+    $("ssh-user-input").value = p.user || "";
+    $("ssh-auth-type").value = p.auth_type || "password";
+    $("ssh-key-path-input").value = p.key_path || "";
+    $("ssh-auth-type").dispatchEvent(new Event("change"));
+    $("ssh-pass-input").value = "";
+    if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+        try { const pwd = await invoke("get_ssh_credential", { profileName: p.name }); if (pwd) $("ssh-pass-input").value = pwd; }
+        catch (err) { console.error("Failed to load SSH credential from keychain:", err); }
+    }
+}
+
+function _ftpLoadProfile(p) {
+    const $ = id => document.getElementById(id);
+    $("ftp-host-input").value = p.host || ""; $("ftp-port-input").value = p.port || "21";
+    $("ftp-user-input").value = p.user || ""; $("ftp-pass-input").value = ""; $("ftp-path-input").value = p.path || "/";
+}
+
+async function _sftpLoadProfile(p) {
+    const $ = id => document.getElementById(id);
+    $("sftp-host-input").value = p.host || "";
+    $("sftp-port-input").value = p.port || "22";
+    $("sftp-user-input").value = p.user || "";
+    $("sftp-auth-type").value = p.auth_type || "password";
+    $("sftp-key-path-input").value = p.key_path || "";
+    $("sftp-auth-type").dispatchEvent(new Event("change"));
+    $("sftp-pass-input").value = ""; $("sftp-path-input").value = p.path || "/";
+    if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
+        try { const pwd = await invoke("get_sftp_credential", { profileName: p.name }); if (pwd) $("sftp-pass-input").value = pwd; }
+        catch (err) { console.error("Failed to load SFTP credential from keychain:", err); }
+    }
+}
+
+function _rcpGetMappers(type) {
+    if (type === "ssh") return { getProfilesFn: getSshProfiles, loadBtnClass: "ssh-profile-load-btn", delBtnClass: "ssh-profile-del-btn", loadHandler: _sshLoadProfile };
+    if (type === "ftp") return { getProfilesFn: getFtpProfiles, loadBtnClass: "ftp-profile-load-btn", delBtnClass: "ftp-profile-del-btn", loadHandler: _ftpLoadProfile };
+    if (type === "sftp") return { getProfilesFn: getSftpProfiles, loadBtnClass: "sftp-profile-load-btn", delBtnClass: "sftp-profile-del-btn", loadHandler: _sftpLoadProfile };
+    return null;
+}
+
 function renderConnectionProfiles(type) {
     const list = document.getElementById(`${type}-profiles-list`);
     if (!list) return;
-    
-    let getProfilesFn, loadBtnClass, delBtnClass, loadHandler;
-    
-    if (type === "ssh") {
-        getProfilesFn = getSshProfiles;
-        loadBtnClass = "ssh-profile-load-btn";
-        delBtnClass = "ssh-profile-del-btn";
-        loadHandler = async (p) => {
-            document.getElementById("ssh-host-input").value = p.host || "";
-            document.getElementById("ssh-port-input").value = p.port || "22";
-            document.getElementById("ssh-user-input").value = p.user || "";
-            document.getElementById("ssh-auth-type").value = p.auth_type || "password";
-            document.getElementById("ssh-key-path-input").value = p.key_path || "";
-            document.getElementById("ssh-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("ssh-pass-input").value = "";
-            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-                try {
-                    const pwd = await invoke("get_ssh_credential", { profileName: p.name });
-                    if (pwd) {
-                        document.getElementById("ssh-pass-input").value = pwd;
-                    }
-                } catch (err) {
-                    console.error("Failed to load SSH credential from keychain:", err);
-                }
-            }
-        };
-    } else if (type === "ftp") {
-        getProfilesFn = getFtpProfiles;
-        loadBtnClass = "ftp-profile-load-btn";
-        delBtnClass = "ftp-profile-del-btn";
-        loadHandler = (p) => {
-            document.getElementById("ftp-host-input").value = p.host || "";
-            document.getElementById("ftp-port-input").value = p.port || "21";
-            document.getElementById("ftp-user-input").value = p.user || "";
-            document.getElementById("ftp-pass-input").value = "";
-            document.getElementById("ftp-path-input").value = p.path || "/";
-        };
-    } else if (type === "sftp") {
-        getProfilesFn = getSftpProfiles;
-        loadBtnClass = "sftp-profile-load-btn";
-        delBtnClass = "sftp-profile-del-btn";
-        loadHandler = async (p) => {
-            document.getElementById("sftp-host-input").value = p.host || "";
-            document.getElementById("sftp-port-input").value = p.port || "22";
-            document.getElementById("sftp-user-input").value = p.user || "";
-            document.getElementById("sftp-auth-type").value = p.auth_type || "password";
-            document.getElementById("sftp-key-path-input").value = p.key_path || "";
-            document.getElementById("sftp-auth-type").dispatchEvent(new Event("change"));
-            document.getElementById("sftp-pass-input").value = "";
-            document.getElementById("sftp-path-input").value = p.path || "/";
-            if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-                try {
-                    const pwd = await invoke("get_sftp_credential", { profileName: p.name });
-                    if (pwd) {
-                        document.getElementById("sftp-pass-input").value = pwd;
-                    }
-                } catch (err) {
-                    console.error("Failed to load SFTP credential from keychain:", err);
-                }
-            }
-        };
-    }
-    
+    const mappers = _rcpGetMappers(type);
+    if (!mappers) return;
+    const { getProfilesFn, loadBtnClass, delBtnClass, loadHandler } = mappers;
     const profiles = getProfilesFn();
     const emptyClass = type === "ssh" ? "ssh-no-profiles" : "ftp-no-profiles";
-    if (profiles.length === 0) {
-        list.innerHTML = `<div class="${emptyClass}">No saved profiles.</div>`;
-        return;
-    }
+    if (profiles.length === 0) { list.innerHTML = `<div class="${emptyClass}">No saved profiles.</div>`; return; }
     list.innerHTML = profiles.map((p, i) => `
         <div class="ssh-profile-item" data-index="${i}">
             <div class="ssh-profile-info">
@@ -1298,20 +1210,11 @@ function renderConnectionProfiles(type) {
             </div>
         </div>
     `).join("");
-    
     list.querySelectorAll(`.${loadBtnClass}`).forEach(btn => {
-        btn.onclick = async () => {
-            const p = getProfilesFn()[parseInt(btn.getAttribute("data-index"))];
-            if (!p) return;
-            await loadHandler(p);
-        };
+        btn.onclick = async () => { const p = getProfilesFn()[parseInt(btn.getAttribute("data-index"))]; if (p) await loadHandler(p); };
     });
-    
     list.querySelectorAll(`.${delBtnClass}`).forEach(btn => {
-        btn.onclick = async () => {
-            const index = parseInt(btn.getAttribute("data-index"));
-            await deleteProfile(type, index);
-        };
+        btn.onclick = async () => { await deleteProfile(type, parseInt(btn.getAttribute("data-index"))); };
     });
 }
 
@@ -1563,76 +1466,26 @@ function initSftpProfileListeners() {
 }
 
 // --- FTP/SFTP DRAG AND DROP UPLOADS ---
-function initFtpSftpDragDrop() {
-    const ftpDropzone = document.getElementById("ftp-dropzone");
-    const ftpPathInput = document.getElementById("ftp-local-path-input");
-    const ftpRemoteDest = document.getElementById("ftp-remote-dest-input");
-    
-    if (ftpDropzone && ftpPathInput) {
-        ftpDropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.add("dragover");
-        });
-        
-        ftpDropzone.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.remove("dragover");
-        });
-        
-        ftpDropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ftpDropzone.classList.remove("dragover");
-            
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                const path = file.path || file.name;
-                ftpPathInput.value = path;
-                
-                if (ftpRemoteDest && !ftpRemoteDest.value.trim()) {
-                    ftpRemoteDest.value = "/" + file.name;
-                }
-                addNotification("FTP File Drop", `File local path set to: ${file.name}`, "info");
-            }
-        });
-    }
+function _wireDropzone(dropzone, pathInput, remoteDest, label) {
+    if (!dropzone || !pathInput) return;
+    dropzone.addEventListener("dragover", e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add("dragover"); });
+    dropzone.addEventListener("dragleave", e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover"); });
+    dropzone.addEventListener("drop", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            pathInput.value = file.path || file.name;
+            if (remoteDest && !remoteDest.value.trim()) remoteDest.value = "/" + file.name;
+            addNotification(`${label} File Drop`, `File local path set to: ${file.name}`, "info");
+        }
+    });
+}
 
-    const sftpDropzone = document.getElementById("sftp-dropzone");
-    const sftpPathInput = document.getElementById("sftp-local-path-input");
-    const sftpRemoteDest = document.getElementById("sftp-remote-dest-input");
-    
-    if (sftpDropzone && sftpPathInput) {
-        sftpDropzone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.add("dragover");
-        });
-        
-        sftpDropzone.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.remove("dragover");
-        });
-        
-        sftpDropzone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sftpDropzone.classList.remove("dragover");
-            
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                const path = file.path || file.name;
-                sftpPathInput.value = path;
-                
-                if (sftpRemoteDest && !sftpRemoteDest.value.trim()) {
-                    sftpRemoteDest.value = "/" + file.name;
-                }
-                addNotification("SFTP File Drop", `File local path set to: ${file.name}`, "info");
-            }
-        });
-    }
+function initFtpSftpDragDrop() {
+    _wireDropzone(document.getElementById("ftp-dropzone"), document.getElementById("ftp-local-path-input"), document.getElementById("ftp-remote-dest-input"), "FTP");
+    _wireDropzone(document.getElementById("sftp-dropzone"), document.getElementById("sftp-local-path-input"), document.getElementById("sftp-remote-dest-input"), "SFTP");
 }
 
 // Initialize modules in main.js after DOM load

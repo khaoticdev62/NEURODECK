@@ -4,6 +4,461 @@ import { state } from './state.js';
 import { createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
 
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function _agEscHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function _agParseStep(raw) {
+    let text = raw.trim();
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) text = fence[1].trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) { try { return JSON.parse(jsonMatch[0]); } catch (_) {} }
+    return { thought: raw, code: "", lang: "python", action: "error", summary: "Failed to parse agent response" };
+}
+
+function _agAppendLog(logEl, type, content, step) {
+    const empty = logEl.querySelector(".agent-empty-state");
+    if (empty) empty.remove();
+    const entry = document.createElement("div");
+    entry.className = `agent-log-entry agent-log-${type}`;
+    const icons   = { thought:"brain", code:"fileText", exec:"zap", output:"squareTerminal", done:"shieldCheck", error:"x", info:"bell" };
+    const labels  = { thought:"Thinking", code:"Code Written", exec:"Executing", output:"Output", done:"Done", error:"Error", info:"Info" };
+    entry.innerHTML = `<span class="agent-log-icon">${createIcon(icons[type]||"fileText",{size:16})}</span>
+        <div class="agent-log-body">
+            <div class="agent-log-label">${step!==undefined?`Step ${step} — `:""}${labels[type]||type}</div>
+            <div class="agent-log-text">${_agEscHtml(String(content))}</div>
+        </div>`;
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function _agAppendRtEntry(logEl, speaker) {
+    const empty = logEl.querySelector(".agent-empty-state");
+    if (empty) empty.remove();
+    const entry = document.createElement("div");
+    entry.className = "agent-log-entry agent-log-info agent-log-rt-msg";
+    entry.innerHTML = `<span class="agent-log-icon">${createIcon("messageSquare",{size:16})}</span>
+        <div class="agent-log-body">
+            <div class="agent-log-label">${_agEscHtml(speaker)}</div>
+            <div class="agent-log-text rt-msg-text"></div>
+        </div>`;
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+    return entry.querySelector(".rt-msg-text");
+}
+
+// ── Tool dispatchers ───────────────────────────────────────────────────────────
+
+async function _agRunComputerTool(tool, args = {}) {
+    const computer = window.neurodeckComputerUse;
+    if (!computer) throw new Error("Computer use tools are not initialized.");
+    switch (tool) {
+        case "computer_screenshot": {
+            const shot = await computer.captureScreenshot({ showInAgentLog: true });
+            return `Screenshot captured (${shot.mime}, ${shot.base64.length} base64 chars).`;
+        }
+        case "computer_find_text": {
+            const text = String(args.text || "");
+            if (!text.trim()) throw new Error("computer_find_text requires args.text.");
+            const match = await computer.findText(text);
+            return `Found "${match.text}" at x=${match.x}, y=${match.y}, width=${match.width}, height=${match.height}, confidence=${Math.round(match.confidence)}.`;
+        }
+        case "computer_mouse_move": {
+            const x = Number(args.x), y = Number(args.y);
+            if (!Number.isFinite(x)||!Number.isFinite(y)) throw new Error("computer_mouse_move requires numeric args.x and args.y.");
+            await computer.mouseMove(Math.round(x), Math.round(y));
+            return `Mouse moved to ${Math.round(x)}, ${Math.round(y)}.`;
+        }
+        case "computer_mouse_click": { await computer.click(String(args.button||"left")); return `${args.button||"left"} mouse click sent.`; }
+        case "computer_type": {
+            const text = String(args.text||"");
+            if (!text) throw new Error("computer_type requires args.text.");
+            await computer.type(text);
+            return `Typed ${text.length} character${text.length===1?"":"s"}.`;
+        }
+        case "computer_key": {
+            const key = String(args.key||"");
+            if (!key) throw new Error("computer_key requires args.key.");
+            await computer.key(key);
+            return `Key sent: ${key}.`;
+        }
+        default: throw new Error(`Unsupported computer tool: ${tool}`);
+    }
+}
+
+async function _agRunBrowserTool(tool, args = {}) {
+    switch (tool) {
+        case "browser_open_session": {
+            const url = String(args.url||"");
+            if (!url) throw new Error("browser_open_session requires args.url.");
+            return `Browser session opened: ${await invoke("browser_open_session",{url})}`;
+        }
+        case "browser_navigate_session": {
+            const sessionId = String(args.session_id||args.sessionId||""), url = String(args.url||"");
+            if (!sessionId||!url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
+            await invoke("browser_navigate_session",{sessionId,url}); return `Navigated session ${sessionId} to ${url}.`;
+        }
+        case "browser_get_content": {
+            const sessionId = String(args.session_id||args.sessionId||"");
+            if (!sessionId) throw new Error("browser_get_content requires args.session_id.");
+            const content = await invoke("browser_get_content",{sessionId});
+            return typeof content==="string"?content.slice(0,6000):String(content);
+        }
+        case "browser_click": {
+            const sessionId=String(args.session_id||args.sessionId||""), selector=String(args.selector||"");
+            if (!sessionId||!selector) throw new Error("browser_click requires args.session_id and args.selector.");
+            await invoke("browser_click",{sessionId,selector}); return `Clicked ${selector} in session ${sessionId}.`;
+        }
+        case "browser_fill": {
+            const sessionId=String(args.session_id||args.sessionId||""), selector=String(args.selector||""), value=String(args.value||"");
+            if (!sessionId||!selector) throw new Error("browser_fill requires args.session_id and args.selector.");
+            await invoke("browser_fill",{sessionId,selector,value}); return `Filled ${selector} in session ${sessionId}.`;
+        }
+        case "browser_screenshot": {
+            const sessionId=String(args.session_id||args.sessionId||"");
+            if (!sessionId) throw new Error("browser_screenshot requires args.session_id.");
+            const b64 = await invoke("browser_screenshot",{sessionId});
+            return `Screenshot captured (base64 bytes: ${String(b64||"").length}).`;
+        }
+        case "browser_evaluate_js": {
+            const sessionId=String(args.session_id||args.sessionId||""), script=String(args.script||"");
+            if (!sessionId||!script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
+            const result = await invoke("browser_evaluate_js",{sessionId,script});
+            return typeof result==="string"?result:JSON.stringify(result);
+        }
+        case "browser_close_session": {
+            const sessionId=String(args.session_id||args.sessionId||"");
+            if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
+            await invoke("browser_close_session",{sessionId}); return `Closed browser session ${sessionId}.`;
+        }
+        default: throw new Error(`Unsupported browser tool: ${tool}`);
+    }
+}
+
+// ── State helpers ─────────────────────────────────────────────────────────────
+
+function _agSetRunning(on, ag) {
+    ag.agentRunning = on;
+    ag.runBtn.classList.toggle("hidden", on);
+    ag.stopBtn.classList.toggle("hidden", !on);
+    ag.iterLabel.classList.toggle("hidden", !on);
+    ag.taskInput.disabled = on;
+}
+
+function _agSetOrchestratorRunning(on, ag) {
+    ag.orchestratorRunning = on;
+    ag.orchestratorStartBtn.classList.toggle("hidden", on);
+    ag.orchestratorStopBtn.classList.toggle("hidden", !on);
+    ag.orchestratorGoalInput.disabled = on;
+}
+
+function _agSetRtRunning(on, ag) {
+    ag.rtRunning = on;
+    ag.rtStartBtn.classList.toggle("hidden", on);
+    ag.rtStopBtn.classList.toggle("hidden", !on);
+    ag.rtPersonaA.disabled = on;
+    ag.rtPersonaB.disabled = on;
+    ag.rtTopicInput.disabled = on;
+    ag.rtRounds.disabled = on;
+}
+
+function _agCleanupRtListeners(ag) {
+    if (ag.rtUnlistenChunk)  { ag.rtUnlistenChunk();  ag.rtUnlistenChunk  = null; }
+    if (ag.rtUnlistenDone)   { ag.rtUnlistenDone();   ag.rtUnlistenDone   = null; }
+}
+
+function _agCleanupOrchestratorListeners(ag) {
+    if (ag.orchUnlistenPlan)       { ag.orchUnlistenPlan();       ag.orchUnlistenPlan       = null; }
+    if (ag.orchUnlistenTaskStart)  { ag.orchUnlistenTaskStart();  ag.orchUnlistenTaskStart  = null; }
+    if (ag.orchUnlistenTaskDone)   { ag.orchUnlistenTaskDone();   ag.orchUnlistenTaskDone   = null; }
+    if (ag.orchUnlistenComplete)   { ag.orchUnlistenComplete();   ag.orchUnlistenComplete   = null; }
+    if (ag.orchestratorPollTimer)  { clearInterval(ag.orchestratorPollTimer); ag.orchestratorPollTimer = null; }
+}
+
+function _agPopulateRtPersonas(ag) {
+    const personas = state.availablePersonas || [];
+    [ag.rtPersonaA, ag.rtPersonaB].forEach(sel => {
+        const saved = sel.value;
+        sel.innerHTML = '<option value="">Choose persona…</option>' +
+            personas.map(p => `<option value="${_agEscHtml(p)}">${_agEscHtml(p)}</option>`).join("");
+        if (saved && personas.includes(saved)) sel.value = saved;
+    });
+}
+
+function _agSetMode(mode, ag) {
+    ag.currentMode = mode;
+    document.querySelectorAll(".agent-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.mode === mode));
+    document.getElementById("agent-toolbar-task")?.classList.toggle("hidden", mode !== "task");
+    document.getElementById("agent-toolbar-roundtable")?.classList.toggle("hidden", mode !== "roundtable");
+    ag.orchestratorToolbar?.classList.toggle("hidden", mode !== "orchestrate");
+    ag.orchestratorPanel?.classList.toggle("hidden", mode !== "orchestrate");
+    ag.sendCanvasBtn.classList.toggle("hidden", mode !== "task");
+    if (ag.codePaneTitle) ag.codePaneTitle.textContent = mode === "orchestrate" ? "Orchestration Plan" : "Current Code";
+    if (ag.outputTitle)   ag.outputTitle.textContent   = mode === "orchestrate" ? "Orchestration Status" : "Output";
+    if (mode === "orchestrate")      { _agRefreshOrchestratorStatus(ag).catch(() => {}); }
+    else if (ag.codePre)             { ag.codePre.textContent = ag.lastCode || ""; }
+}
+
+function _agSyncModeUI(mode, ag) {
+    _agSetMode(mode, ag);
+    if (mode === "roundtable") {
+        invoke("get_personas").then(p => { state.availablePersonas = p; _agPopulateRtPersonas(ag); }).catch(() => _agPopulateRtPersonas(ag));
+    }
+    if (mode === "orchestrate") { _agRefreshOrchestratorStatus(ag).catch(() => {}); }
+}
+
+// ── Orchestrator ──────────────────────────────────────────────────────────────
+
+function _agRenderOrchestratorStatus(status = {}, ag) {
+    const running = Boolean(status.running);
+    const goal    = String(status.goal || ag.lastOrchestratorGoal || "");
+    const tasks   = Array.isArray(status.tasks) ? status.tasks : [];
+    if (ag.orchestratorGoalInput && !ag.orchestratorGoalInput.value.trim() && goal) {
+        ag.orchestratorGoalInput.value = goal;
+    }
+    if (ag.codePre) {
+        if (tasks.length || goal || running) {
+            ag.codePre.textContent = JSON.stringify({
+                running,
+                goal: goal || "(no goal)",
+                tasks: tasks.map(task => ({
+                    id: task.id, role: task.role, status: task.status, depends_on: task.depends_on,
+                    result: task.result ? String(task.result).slice(0, 220) : null, error: task.error || null,
+                })),
+            }, null, 2);
+        } else {
+            ag.codePre.textContent = "No orchestration plan yet.";
+        }
+    }
+    if (running)           ag.outputEl.textContent = `Orchestrator running: ${goal||"awaiting goal"}`;
+    else if (tasks.length) ag.outputEl.textContent = `Orchestrator idle. ${tasks.length} task(s) in the current plan.`;
+    else                   ag.outputEl.textContent = "No orchestration status yet.";
+}
+
+async function _agRefreshOrchestratorStatus(ag) {
+    try {
+        const status = await invoke("get_orchestration_status");
+        if (status && typeof status === "object") {
+            _agRenderOrchestratorStatus(status, ag);
+            _agSetOrchestratorRunning(Boolean(status.running), ag);
+            if (status.goal) ag.lastOrchestratorGoal = status.goal;
+        }
+    } catch (error) {
+        if (ag.currentMode === "orchestrate") {
+            _agRenderOrchestratorStatus({ running: false, goal: ag.lastOrchestratorGoal, tasks: [] }, ag);
+            _agAppendLog(ag.logEl, "error", `Failed to load orchestrator status: ${error}`);
+        }
+    }
+}
+
+async function _agWireOrchestratorListeners(goal, ag) {
+    ag.orchUnlistenPlan = await listen("orchestrator_plan_ready", event => {
+        const plan = event.payload || {};
+        _agRenderOrchestratorStatus({ running: true, goal: plan.goal || goal, tasks: plan.tasks || [] }, ag);
+        _agAppendLog(ag.logEl, "info", `Plan ready with ${(plan.tasks||[]).length} task(s).`);
+    });
+    ag.orchUnlistenTaskStart = await listen("agent_task_started", event => {
+        const p = event.payload || {};
+        _agAppendLog(ag.logEl, "info", `${p.role||"Agent"} started: ${p.id||"task"}`);
+        if (ag.orchestratorGoalInput.value.trim()) _agRefreshOrchestratorStatus(ag).catch(() => {});
+    });
+    ag.orchUnlistenTaskDone = await listen("agent_task_done", event => {
+        const p = event.payload || {};
+        if (p.error) { _agAppendLog(ag.logEl, "error", `${p.role||"Agent"} failed: ${p.error}`); }
+        else { _agAppendLog(ag.logEl, "done", `${p.role||"Agent"} completed: ${p.result?String(p.result).slice(0,180):"done"}`); }
+        _agRefreshOrchestratorStatus(ag).catch(() => {});
+    });
+    ag.orchUnlistenComplete = await listen("orchestration_complete", event => {
+        const p = event.payload || {};
+        _agCleanupOrchestratorListeners(ag);
+        _agSetOrchestratorRunning(false, ag);
+        _agRenderOrchestratorStatus({ running: false, goal: p.goal || goal, tasks: [] }, ag);
+        _agAppendLog(ag.logEl, "done", p.summary || "Orchestration complete.");
+        addNotification("Orchestration Complete", p.summary || "Multi-agent task finished.", "success");
+    });
+}
+
+async function _agStartOrchestration(ag) {
+    const goal = ag.orchestratorGoalInput.value.trim();
+    if (!goal) { ag.orchestratorGoalInput.focus(); return; }
+    _agCleanupOrchestratorListeners(ag);
+    ag.lastOrchestratorGoal = goal;
+    _agSetMode("orchestrate", ag);
+    _agSetOrchestratorRunning(true, ag);
+    ag.logEl.innerHTML = "";
+    _agAppendLog(ag.logEl, "info", `Starting orchestration: ${goal}`);
+    ag.outputEl.textContent = "Starting orchestration...";
+    await _agWireOrchestratorListeners(goal, ag);
+    try {
+        await invoke("start_orchestrated_task", { goal });
+        ag.orchestratorPollTimer = window.setInterval(() => {
+            if (ag.currentMode === "orchestrate") _agRefreshOrchestratorStatus(ag).catch(() => {});
+        }, 1500);
+        _agRefreshOrchestratorStatus(ag).catch(() => {});
+    } catch (error) {
+        _agCleanupOrchestratorListeners(ag);
+        _agSetOrchestratorRunning(false, ag);
+        _agAppendLog(ag.logEl, "error", `Orchestration failed to start: ${error}`);
+        addNotification("Orchestration Error", String(error), "error");
+    }
+}
+
+async function _agStopOrchestration(ag) {
+    try { await invoke("stop_orchestration"); } catch (_) {}
+    _agCleanupOrchestratorListeners(ag);
+    _agSetOrchestratorRunning(false, ag);
+    _agRenderOrchestratorStatus({ running: false, goal: ag.lastOrchestratorGoal, tasks: [] }, ag);
+    _agAppendLog(ag.logEl, "info", "Orchestration stopped by user.");
+}
+
+// ── Roundtable ────────────────────────────────────────────────────────────────
+
+async function _agWireRtListeners(ag) {
+    let currentTextEl = null, currentSpeaker = "Roundtable", pendingChunks = "";
+    ag.rtUnlistenChunk = await listen("stream_chunk", event => {
+        pendingChunks += String(event.payload);
+        const pat = /\*\*([^*]{1,40}):\*\*/g;
+        let lastIdx = 0, match;
+        while ((match = pat.exec(pendingChunks)) !== null) {
+            const before = pendingChunks.slice(lastIdx, match.index).trim();
+            if (before && currentTextEl) currentTextEl.textContent += before;
+            currentSpeaker = match[1];
+            currentTextEl = _agAppendRtEntry(ag.logEl, currentSpeaker);
+            lastIdx = match.index + match[0].length;
+        }
+        const remaining = pendingChunks.slice(lastIdx);
+        if (remaining) {
+            if (!currentTextEl) currentTextEl = _agAppendRtEntry(ag.logEl, currentSpeaker);
+            currentTextEl.textContent += remaining;
+        }
+        pendingChunks = "";
+        ag.logEl.scrollTop = ag.logEl.scrollHeight;
+    });
+    ag.rtUnlistenDone = await listen("stream_done", () => {
+        _agCleanupRtListeners(ag);
+        _agSetRtRunning(false, ag);
+        addNotification("Roundtable", "Discussion complete.", "success");
+    });
+}
+
+async function _agStartRoundtable(ag) {
+    const pA = ag.rtPersonaA.value.trim(), pB = ag.rtPersonaB.value.trim();
+    const topic = ag.rtTopicInput.value.trim();
+    const rounds = parseInt(ag.rtRounds.value, 10) || 4;
+    if (!pA || !pB) { addNotification("Roundtable", "Select both personas before starting.", "error"); return; }
+    if (!topic) { ag.rtTopicInput.focus(); return; }
+    _agCleanupRtListeners(ag);
+    _agSetRtRunning(true, ag);
+    ag.logEl.innerHTML = "";
+    await _agWireRtListeners(ag);
+    invoke("send_command", { prompt: `/discuss ${pA} ${pB} ${topic} rounds:${rounds}` }).catch(error => {
+        _agAppendLog(ag.logEl, "error", `Roundtable failed: ${error}`);
+        _agCleanupRtListeners(ag);
+        _agSetRtRunning(false, ag);
+    });
+}
+
+// ── Agent loop ────────────────────────────────────────────────────────────────
+
+async function _agHandleToolStep(parsed, step, ag, history) {
+    const isBrowser = parsed.action === "browser";
+    const tool      = parsed.tool || (isBrowser ? parsed.browser_tool : parsed.computer_tool) || "";
+    const prefix    = isBrowser ? "[Browser Tool Error]" : "[Computer Use Error]";
+    _agAppendLog(ag.logEl, "exec", `Requesting ${isBrowser?"browser":"computer"} tool: ${tool}`, step);
+    let toolOut;
+    try { toolOut = isBrowser ? await _agRunBrowserTool(tool, parsed.args||{}) : await _agRunComputerTool(tool, parsed.args||{}); }
+    catch (e) { toolOut = `${prefix} ${e}`; }
+    ag.outputEl.textContent = toolOut;
+    _agAppendLog(ag.logEl, toolOut.startsWith(prefix) ? "error" : "output", toolOut, step);
+    history.push({ role: "step", content: JSON.stringify(parsed) });
+    history.push({ role: "output", content: toolOut });
+    return true;
+}
+
+async function _agHandleCodeStep(parsed, step, ag, history) {
+    ag.lastCode = parsed.code;
+    ag.lastLang = parsed.lang || "python";
+    ag.codePre.textContent = parsed.code;
+    _agAppendLog(ag.logEl, "code", `[${(parsed.lang||"?").toUpperCase()}] ${parsed.summary||""}`, step);
+    if (ag.agentShouldStop) return;
+    _agAppendLog(ag.logEl, "exec", `Running ${parsed.lang} code…`, step);
+    ag.outputEl.innerHTML = '<span class="agent-output-spinner">⟳ Executing…</span>';
+    let execOut;
+    try { execOut = await invoke("agent_exec_code", { code: parsed.code, lang: parsed.lang }); }
+    catch (e) { execOut = `[Error] ${e}`; }
+    ag.outputEl.textContent = execOut;
+    _agAppendLog(ag.logEl, "output", execOut.length > 300 ? execOut.slice(0, 300) + "…" : execOut, step);
+    history.push({ role: "step", content: JSON.stringify(parsed) });
+    history.push({ role: "output", content: execOut });
+}
+
+async function _agRunLoop(task, ag) {
+    const history = [], MAX_STEPS = 5;
+    _agSetRunning(true, ag);
+    ag.agentShouldStop = false;
+    ag.logEl.innerHTML = "";
+    ag.outputEl.innerHTML = '<span class="agent-output-empty">Waiting…</span>';
+    ag.codePre.textContent = "";
+
+    for (let step = 1; step <= MAX_STEPS; step++) {
+        if (ag.agentShouldStop) { _agAppendLog(ag.logEl, "info", "Agent stopped by user.", step); break; }
+        ag.iterLabel.textContent = `Step ${step} / ${MAX_STEPS}`;
+        _agAppendLog(ag.logEl, "info", "Calling LLM…", step);
+        let raw;
+        try { raw = await invoke("agent_step", { task, history }); }
+        catch (e) { _agAppendLog(ag.logEl, "error", `LLM call failed: ${e}`, step); break; }
+        if (ag.agentShouldStop) break;
+        const parsed = _agParseStep(raw);
+        _agAppendLog(ag.logEl, "thought", parsed.thought || "(no thought)", step);
+        if (parsed.action === "done")  { _agAppendLog(ag.logEl, "done",  parsed.summary || "Task complete.", step); break; }
+        if (parsed.action === "error") { _agAppendLog(ag.logEl, "error", parsed.summary || "Agent reported an error.", step); break; }
+        if (parsed.action === "computer" || parsed.action === "browser") {
+            await _agHandleToolStep(parsed, step, ag, history); continue;
+        }
+        if (!parsed.code) { _agAppendLog(ag.logEl, "error", "Agent returned no code and action is not done.", step); break; }
+        if (ag.agentShouldStop) break;
+        await _agHandleCodeStep(parsed, step, ag, history);
+    }
+
+    _agSetRunning(false, ag);
+    addNotification("Agent Complete", "Agent loop finished all execution steps.", "success");
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────────
+
+function _agWireAllEvents(ag) {
+    ag.runBtn.onclick = () => {
+        const task = ag.taskInput.value.trim();
+        if (!task) { ag.taskInput.focus(); return; }
+        _agRunLoop(task, ag);
+    };
+    ag.taskInput.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey && !ag.agentRunning) { e.preventDefault(); ag.runBtn.click(); }
+    });
+    ag.stopBtn.onclick = () => { ag.agentShouldStop = true; };
+    ag.sendCanvasBtn.onclick = () => {
+        if (!ag.lastCode) return;
+        window.neurodeckCanvas.loadCode(ag.lastLang, ag.lastCode);
+        document.querySelector('[data-view="canvas"]')?.click();
+    };
+    ag.modeBtns.forEach(btn => btn.addEventListener("click", () => _agSyncModeUI(btn.dataset.mode, ag)));
+    ag.rtStartBtn.addEventListener("click", () => { if (!ag.rtRunning) _agStartRoundtable(ag); });
+    ag.rtStopBtn.addEventListener("click", () => {
+        invoke("cancel_generation").catch(() => {});
+        _agCleanupRtListeners(ag);
+        _agSetRtRunning(false, ag);
+        _agAppendLog(ag.logEl, "info", "Roundtable stopped by user.");
+    });
+    ag.orchestratorStartBtn.addEventListener("click",  () => { if (!ag.orchestratorRunning) _agStartOrchestration(ag); });
+    ag.orchestratorStatusBtn.addEventListener("click", () => { _agRefreshOrchestratorStatus(ag).catch(() => {}); });
+    ag.orchestratorStopBtn.addEventListener("click",   () => { _agStopOrchestration(ag).catch(() => {}); });
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
 export function initAgentView() {
     const taskInput = document.getElementById("agent-task-input");
     const runBtn = document.getElementById("agent-run-btn");
@@ -22,328 +477,6 @@ export function initAgentView() {
     const outputTitle = document.getElementById("agent-output-title");
     const orchestratorPanel = document.getElementById("agent-orchestrator-panel");
     const orchestratorTaskList = document.getElementById("orchestrator-task-list");
-
-    if (!taskInput || !runBtn || !sendCanvasBtn) return;
-
-    let agentRunning = false;
-    let agentShouldStop = false;
-    let orchestratorRunning = false;
-    let orchestratorPollTimer = null;
-    let currentMode = "task";
-    let lastCode = "";
-    let lastLang = "python";
-    let lastOrchestratorGoal = "";
-
-    function setRunning(on) {
-        agentRunning = on;
-        runBtn.classList.toggle("hidden", on);
-        stopBtn.classList.toggle("hidden", !on);
-        iterLabel.classList.toggle("hidden", !on);
-        taskInput.disabled = on;
-    }
-
-    function setOrchestratorRunning(on) {
-        orchestratorRunning = on;
-        orchestratorStartBtn.classList.toggle("hidden", on);
-        orchestratorStopBtn.classList.toggle("hidden", !on);
-        orchestratorGoalInput.disabled = on;
-    }
-
-    function setMode(mode) {
-        currentMode = mode;
-        document.querySelectorAll(".agent-mode-btn").forEach((btn) => {
-            btn.classList.toggle("active", btn.dataset.mode === mode);
-        });
-        document.getElementById("agent-toolbar-task")?.classList.toggle("hidden", mode !== "task");
-        document.getElementById("agent-toolbar-roundtable")?.classList.toggle("hidden", mode !== "roundtable");
-        orchestratorToolbar?.classList.toggle("hidden", mode !== "orchestrate");
-        orchestratorPanel?.classList.toggle("hidden", mode !== "orchestrate");
-        sendCanvasBtn.classList.toggle("hidden", mode !== "task");
-        if (codePaneTitle) {
-            codePaneTitle.textContent = mode === "orchestrate" ? "Orchestration Plan" : "Current Code";
-        }
-        if (outputTitle) {
-            outputTitle.textContent = mode === "orchestrate" ? "Orchestration Status" : "Output";
-        }
-        if (mode === "orchestrate") {
-            refreshOrchestratorStatus().catch(() => {});
-        } else if (codePre) {
-            codePre.textContent = lastCode || "";
-        }
-    }
-
-
-    function appendLog(type, content, step) {
-        const empty = logEl.querySelector(".agent-empty-state");
-        if (empty) empty.remove();
-
-        const entry = document.createElement("div");
-        entry.className = `agent-log-entry agent-log-${type}`;
-
-        const icons = { thought: "brain", code: "fileText", exec: "zap", output: "squareTerminal", done: "shieldCheck", error: "x", info: "bell" };
-        const labels = { thought: "Thinking", code: "Code Written", exec: "Executing", output: "Output", done: "Done", error: "Error", info: "Info" };
-
-        entry.innerHTML = `<span class="agent-log-icon">${createIcon(icons[type] || "fileText", { size: 16 })}</span>
-            <div class="agent-log-body">
-                <div class="agent-log-label">${step !== undefined ? `Step ${step} — ` : ""}${labels[type] || type}</div>
-                <div class="agent-log-text">${escapeHtml(String(content))}</div>
-            </div>`;
-
-        logEl.appendChild(entry);
-        logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function escapeHtml(s) {
-        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    function parseAgentStep(raw) {
-        let text = raw.trim();
-        const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (fence) text = fence[1].trim();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            try { return JSON.parse(jsonMatch[0]); } catch (_) {}
-        }
-        return { thought: raw, code: "", lang: "python", action: "error", summary: "Failed to parse agent response" };
-    }
-
-    async function runComputerTool(tool, args = {}) {
-        const computer = window.neurodeckComputerUse;
-        if (!computer) {
-            throw new Error("Computer use tools are not initialized.");
-        }
-
-        switch (tool) {
-            case "computer_screenshot": {
-                const shot = await computer.captureScreenshot({ showInAgentLog: true });
-                return `Screenshot captured (${shot.mime}, ${shot.base64.length} base64 chars).`;
-            }
-            case "computer_find_text": {
-                const text = String(args.text || "");
-                if (!text.trim()) throw new Error("computer_find_text requires args.text.");
-                const match = await computer.findText(text);
-                return `Found "${match.text}" at x=${match.x}, y=${match.y}, width=${match.width}, height=${match.height}, confidence=${Math.round(match.confidence)}.`;
-            }
-            case "computer_mouse_move": {
-                const x = Number(args.x);
-                const y = Number(args.y);
-                if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error("computer_mouse_move requires numeric args.x and args.y.");
-                await computer.mouseMove(Math.round(x), Math.round(y));
-                return `Mouse moved to ${Math.round(x)}, ${Math.round(y)}.`;
-            }
-            case "computer_mouse_click": {
-                const button = String(args.button || "left");
-                await computer.click(button);
-                return `${button} mouse click sent.`;
-            }
-            case "computer_type": {
-                const text = String(args.text || "");
-                if (!text) throw new Error("computer_type requires args.text.");
-                await computer.type(text);
-                return `Typed ${text.length} character${text.length === 1 ? "" : "s"}.`;
-            }
-            case "computer_key": {
-                const key = String(args.key || "");
-                if (!key) throw new Error("computer_key requires args.key.");
-                await computer.key(key);
-                return `Key sent: ${key}.`;
-            }
-            default:
-                throw new Error(`Unsupported computer tool: ${tool}`);
-        }
-    }
-
-    async function runBrowserTool(tool, args = {}) {
-        switch (tool) {
-            case "browser_open_session": {
-                const url = String(args.url || "");
-                if (!url) throw new Error("browser_open_session requires args.url.");
-                const sessionId = await invoke("browser_open_session", { url });
-                return `Browser session opened: ${sessionId}`;
-            }
-            case "browser_navigate_session": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                const url = String(args.url || "");
-                if (!sessionId || !url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
-                await invoke("browser_navigate_session", { sessionId, url });
-                return `Navigated session ${sessionId} to ${url}.`;
-            }
-            case "browser_get_content": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                if (!sessionId) throw new Error("browser_get_content requires args.session_id.");
-                const content = await invoke("browser_get_content", { sessionId });
-                return typeof content === "string" ? content.slice(0, 6000) : String(content);
-            }
-            case "browser_click": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                const selector = String(args.selector || "");
-                if (!sessionId || !selector) throw new Error("browser_click requires args.session_id and args.selector.");
-                await invoke("browser_click", { sessionId, selector });
-                return `Clicked ${selector} in session ${sessionId}.`;
-            }
-            case "browser_fill": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                const selector = String(args.selector || "");
-                const value = String(args.value || "");
-                if (!sessionId || !selector) throw new Error("browser_fill requires args.session_id and args.selector.");
-                await invoke("browser_fill", { sessionId, selector, value });
-                return `Filled ${selector} in session ${sessionId}.`;
-            }
-            case "browser_screenshot": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                if (!sessionId) throw new Error("browser_screenshot requires args.session_id.");
-                const base64 = await invoke("browser_screenshot", { sessionId });
-                return `Screenshot captured (base64 bytes: ${String(base64 || "").length}).`;
-            }
-            case "browser_evaluate_js": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                const script = String(args.script || "");
-                if (!sessionId || !script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
-                const result = await invoke("browser_evaluate_js", { sessionId, script });
-                return typeof result === "string" ? result : JSON.stringify(result);
-            }
-            case "browser_close_session": {
-                const sessionId = String(args.session_id || args.sessionId || "");
-                if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
-                await invoke("browser_close_session", { sessionId });
-                return `Closed browser session ${sessionId}.`;
-            }
-            default:
-                throw new Error(`Unsupported browser tool: ${tool}`);
-        }
-    }
-
-    async function runAgentLoop(task) {
-        const history = [];
-        const MAX_STEPS = 5;
-        setRunning(true);
-        agentShouldStop = false;
-
-        logEl.innerHTML = "";
-        outputEl.innerHTML = '<span class="agent-output-empty">Waiting…</span>';
-        codePre.textContent = "";
-
-        for (let step = 1; step <= MAX_STEPS; step++) {
-            if (agentShouldStop) {
-                appendLog("info", "Agent stopped by user.", step);
-                break;
-            }
-
-            iterLabel.textContent = `Step ${step} / ${MAX_STEPS}`;
-
-            appendLog("info", "Calling LLM…", step);
-            let raw;
-            try {
-                raw = await invoke("agent_step", { task, history });
-            } catch (e) {
-                appendLog("error", `LLM call failed: ${e}`, step);
-                break;
-            }
-
-            if (agentShouldStop) break;
-
-            const parsed = parseAgentStep(raw);
-            appendLog("thought", parsed.thought || "(no thought)", step);
-
-            if (parsed.action === "done") {
-                appendLog("done", parsed.summary || "Task complete.", step);
-                break;
-            }
-
-            if (parsed.action === "error") {
-                appendLog("error", parsed.summary || "Agent reported an error.", step);
-                break;
-            }
-
-            if (parsed.action === "computer") {
-                const tool = parsed.tool || parsed.computer_tool || "";
-                appendLog("exec", `Requesting computer tool: ${tool}`, step);
-                let toolOut;
-                try {
-                    toolOut = await runComputerTool(tool, parsed.args || {});
-                } catch (e) {
-                    toolOut = `[Computer Use Error] ${e}`;
-                }
-                outputEl.textContent = toolOut;
-                appendLog(toolOut.startsWith("[Computer Use Error]") ? "error" : "output", toolOut, step);
-                history.push({ role: "step", content: JSON.stringify(parsed) });
-                history.push({ role: "output", content: toolOut });
-                continue;
-            }
-
-            if (parsed.action === "browser") {
-                const tool = parsed.tool || parsed.browser_tool || "";
-                appendLog("exec", `Requesting browser tool: ${tool}`, step);
-                let toolOut;
-                try {
-                    toolOut = await runBrowserTool(tool, parsed.args || {});
-                } catch (e) {
-                    toolOut = `[Browser Tool Error] ${e}`;
-                }
-                outputEl.textContent = toolOut;
-                appendLog(toolOut.startsWith("[Browser Tool Error]") ? "error" : "output", toolOut, step);
-                history.push({ role: "step", content: JSON.stringify(parsed) });
-                history.push({ role: "output", content: toolOut });
-                continue;
-            }
-
-            if (!parsed.code) {
-                appendLog("error", "Agent returned no code and action is not done.", step);
-                break;
-            }
-
-            lastCode = parsed.code;
-            lastLang = parsed.lang || "python";
-            codePre.textContent = parsed.code;
-            appendLog("code", `[${(parsed.lang || "?").toUpperCase()}] ${parsed.summary || ""}`, step);
-
-            if (agentShouldStop) break;
-
-            appendLog("exec", `Running ${parsed.lang} code…`, step);
-            outputEl.innerHTML = '<span class="agent-output-spinner">⟳ Executing…</span>';
-
-            let execOut;
-            try {
-                execOut = await invoke("agent_exec_code", { code: parsed.code, lang: parsed.lang });
-            } catch (e) {
-                execOut = `[Error] ${e}`;
-            }
-
-            outputEl.textContent = execOut;
-            appendLog("output", execOut.length > 300 ? execOut.slice(0, 300) + "…" : execOut, step);
-
-            history.push({ role: "step", content: JSON.stringify(parsed) });
-            history.push({ role: "output", content: execOut });
-        }
-
-        setRunning(false);
-        addNotification("Agent Complete", "Agent loop finished all execution steps.", "success");
-    }
-
-    runBtn.onclick = () => {
-        const task = taskInput.value.trim();
-        if (!task) { taskInput.focus(); return; }
-        runAgentLoop(task);
-    };
-
-    taskInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey && !agentRunning) {
-            e.preventDefault();
-            runBtn.click();
-        }
-    });
-
-    stopBtn.onclick = () => { agentShouldStop = true; };
-
-    sendCanvasBtn.onclick = () => {
-        if (!lastCode) return;
-        window.neurodeckCanvas.loadCode(lastLang, lastCode);
-        const canvasTab = document.querySelector('[data-view="canvas"]');
-        if (canvasTab) canvasTab.click();
-    };
-
-    // === ROUNDTABLE / ORCHESTRATION MODE ===
     const modeBtns = document.querySelectorAll(".agent-mode-btn");
     const toolbarTask = document.getElementById("agent-toolbar-task");
     const toolbarRt = document.getElementById("agent-toolbar-roundtable");
@@ -354,328 +487,20 @@ export function initAgentView() {
     const rtStartBtn = document.getElementById("rt-start-btn");
     const rtStopBtn = document.getElementById("rt-stop-btn");
 
-    if (
-        !rtStartBtn ||
-        !toolbarTask ||
-        !toolbarRt ||
-        !rtPersonaA ||
-        !rtPersonaB ||
-        !orchestratorGoalInput ||
-        !orchestratorStartBtn ||
-        !orchestratorStatusBtn ||
-        !orchestratorStopBtn
-    ) {
-        return;
-    }
+    if (!taskInput || !runBtn || !sendCanvasBtn || !rtStartBtn || !toolbarTask || !toolbarRt ||
+        !rtPersonaA || !rtPersonaB || !orchestratorGoalInput || !orchestratorStartBtn ||
+        !orchestratorStatusBtn || !orchestratorStopBtn) return;
 
-    let rtRunning = false;
-    let rtUnlistenChunk = null;
-    let rtUnlistenDone = null;
-    let orchUnlistenPlan = null;
-    let orchUnlistenTaskStart = null;
-    let orchUnlistenTaskDone = null;
-    let orchUnlistenComplete = null;
-
-    function populateRtPersonas() {
-        const personas = state.availablePersonas || [];
-        [rtPersonaA, rtPersonaB].forEach((sel) => {
-            const saved = sel.value;
-            sel.innerHTML =
-                '<option value="">Choose persona…</option>' +
-                personas.map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-            if (saved && personas.includes(saved)) sel.value = saved;
-        });
-    }
-
-    function cleanupRtListeners() {
-        if (rtUnlistenChunk) { rtUnlistenChunk(); rtUnlistenChunk = null; }
-        if (rtUnlistenDone) { rtUnlistenDone(); rtUnlistenDone = null; }
-    }
-
-    function cleanupOrchestratorListeners() {
-        if (orchUnlistenPlan) { orchUnlistenPlan(); orchUnlistenPlan = null; }
-        if (orchUnlistenTaskStart) { orchUnlistenTaskStart(); orchUnlistenTaskStart = null; }
-        if (orchUnlistenTaskDone) { orchUnlistenTaskDone(); orchUnlistenTaskDone = null; }
-        if (orchUnlistenComplete) { orchUnlistenComplete(); orchUnlistenComplete = null; }
-        if (orchestratorPollTimer) {
-            clearInterval(orchestratorPollTimer);
-            orchestratorPollTimer = null;
-        }
-    }
-
-    function syncModeUI(mode) {
-        setMode(mode);
-        if (mode === "roundtable") {
-            invoke("get_personas")
-                .then((p) => {
-                    state.availablePersonas = p;
-                    populateRtPersonas();
-                })
-                .catch(() => populateRtPersonas());
-        }
-        if (mode === "orchestrate") {
-            refreshOrchestratorStatus().catch(() => {});
-        }
-    }
-
-    modeBtns.forEach((btn) => {
-        btn.addEventListener("click", () => syncModeUI(btn.dataset.mode));
-    });
-
-    syncModeUI("task");
-
-    function setRtRunning(on) {
-        rtRunning = on;
-        rtStartBtn.classList.toggle("hidden", on);
-        rtStopBtn.classList.toggle("hidden", !on);
-        rtPersonaA.disabled = on;
-        rtPersonaB.disabled = on;
-        rtTopicInput.disabled = on;
-        rtRounds.disabled = on;
-    }
-
-    function appendRtEntry(speaker) {
-        const empty = logEl.querySelector(".agent-empty-state");
-        if (empty) empty.remove();
-        const entry = document.createElement("div");
-        entry.className = "agent-log-entry agent-log-info agent-log-rt-msg";
-        entry.innerHTML = `<span class="agent-log-icon">${createIcon("messageSquare", { size: 16 })}</span>
-            <div class="agent-log-body">
-                <div class="agent-log-label">${escapeHtml(speaker)}</div>
-                <div class="agent-log-text rt-msg-text"></div>
-            </div>`;
-        logEl.appendChild(entry);
-        logEl.scrollTop = logEl.scrollHeight;
-        return entry.querySelector(".rt-msg-text");
-    }
-
-    function setOrchestratorLogText(text) {
-        outputEl.textContent = text;
-    }
-
-    function renderOrchestratorStatus(status = {}) {
-        const running = Boolean(status.running);
-        const goal = String(status.goal || lastOrchestratorGoal || "");
-        const tasks = Array.isArray(status.tasks) ? status.tasks : [];
-
-        if (orchestratorGoalInput && !orchestratorGoalInput.value.trim() && goal) {
-            orchestratorGoalInput.value = goal;
-        }
-
-        if (codePre) {
-            if (tasks.length || goal || running) {
-                codePre.textContent = JSON.stringify(
-                    {
-                        running,
-                        goal: goal || "(no goal)",
-                        tasks: tasks.map((task) => ({
-                            id: task.id,
-                            role: task.role,
-                            status: task.status,
-                            depends_on: task.depends_on,
-                            result: task.result ? String(task.result).slice(0, 220) : null,
-                            error: task.error || null,
-                        })),
-                    },
-                    null,
-                    2,
-                );
-            } else {
-                codePre.textContent = "No orchestration plan yet.";
-            }
-        }
-
-        if (running) {
-            setOrchestratorLogText(`Orchestrator running: ${goal || "awaiting goal"}`);
-        } else if (tasks.length) {
-            setOrchestratorLogText(`Orchestrator idle. ${tasks.length} task(s) in the current plan.`);
-        } else {
-            setOrchestratorLogText("No orchestration status yet.");
-        }
-    }
-
-    async function refreshOrchestratorStatus() {
-        try {
-            const status = await invoke("get_orchestration_status");
-            if (status && typeof status === "object") {
-                renderOrchestratorStatus(status);
-                setOrchestratorRunning(Boolean(status.running));
-                if (status.goal) {
-                    lastOrchestratorGoal = status.goal;
-                }
-            }
-        } catch (error) {
-            if (currentMode === "orchestrate") {
-                renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
-                appendLog("error", `Failed to load orchestrator status: ${error}`);
-            }
-        }
-    }
-
-    async function startOrchestration() {
-        const goal = orchestratorGoalInput.value.trim();
-        if (!goal) {
-            orchestratorGoalInput.focus();
-            return;
-        }
-
-        cleanupOrchestratorListeners();
-        lastOrchestratorGoal = goal;
-        setMode("orchestrate");
-        setOrchestratorRunning(true);
-        logEl.innerHTML = "";
-        appendLog("info", `Starting orchestration: ${goal}`);
-        setOrchestratorLogText("Starting orchestration...");
-
-        orchUnlistenPlan = await listen("orchestrator_plan_ready", (event) => {
-            const plan = event.payload || {};
-            renderOrchestratorStatus({ running: true, goal: plan.goal || goal, tasks: plan.tasks || [] });
-            appendLog("info", `Plan ready with ${(plan.tasks || []).length} task(s).`);
-        });
-
-        orchUnlistenTaskStart = await listen("agent_task_started", (event) => {
-            const payload = event.payload || {};
-            appendLog("info", `${payload.role || "Agent"} started: ${payload.id || "task"}`);
-            if (orchestratorGoalInput.value.trim()) {
-                refreshOrchestratorStatus().catch(() => {});
-            }
-        });
-
-        orchUnlistenTaskDone = await listen("agent_task_done", (event) => {
-            const payload = event.payload || {};
-            if (payload.error) {
-                appendLog("error", `${payload.role || "Agent"} failed: ${payload.error}`);
-            } else {
-                const snippet = payload.result ? String(payload.result).slice(0, 180) : "done";
-                appendLog("done", `${payload.role || "Agent"} completed: ${snippet}`);
-            }
-            refreshOrchestratorStatus().catch(() => {});
-        });
-
-        orchUnlistenComplete = await listen("orchestration_complete", (event) => {
-            const payload = event.payload || {};
-            cleanupOrchestratorListeners();
-            setOrchestratorRunning(false);
-            renderOrchestratorStatus({ running: false, goal: payload.goal || goal, tasks: [] });
-            appendLog("done", payload.summary || "Orchestration complete.");
-            addNotification("Orchestration Complete", payload.summary || "Multi-agent task finished.", "success");
-        });
-
-        try {
-            await invoke("start_orchestrated_task", { goal });
-            orchestratorPollTimer = window.setInterval(() => {
-                if (currentMode === "orchestrate") {
-                    refreshOrchestratorStatus().catch(() => {});
-                }
-            }, 1500);
-            refreshOrchestratorStatus().catch(() => {});
-        } catch (error) {
-            cleanupOrchestratorListeners();
-            setOrchestratorRunning(false);
-            appendLog("error", `Orchestration failed to start: ${error}`);
-            addNotification("Orchestration Error", String(error), "error");
-        }
-    }
-
-    async function startRoundtable() {
-        const pA = rtPersonaA.value.trim();
-        const pB = rtPersonaB.value.trim();
-        const topic = rtTopicInput.value.trim();
-        const rounds = parseInt(rtRounds.value, 10) || 4;
-
-        if (!pA || !pB) {
-            addNotification("Roundtable", "Select both personas before starting.", "error");
-            return;
-        }
-        if (!topic) {
-            rtTopicInput.focus();
-            return;
-        }
-
-        cleanupRtListeners();
-        setRtRunning(true);
-        logEl.innerHTML = "";
-
-        const cmd = `/discuss ${pA} ${pB} ${topic} rounds:${rounds}`;
-
-        let currentTextEl = null;
-        let currentSpeaker = "Roundtable";
-        let pendingChunks = "";
-
-        rtUnlistenChunk = await listen("stream_chunk", (event) => {
-            const chunk = String(event.payload);
-            pendingChunks += chunk;
-
-            const speakerPattern = /\*\*([^*]{1,40}):\*\*/g;
-            let lastIdx = 0;
-            let match;
-            while ((match = speakerPattern.exec(pendingChunks)) !== null) {
-                const before = pendingChunks.slice(lastIdx, match.index).trim();
-                if (before && currentTextEl) {
-                    currentTextEl.textContent += before;
-                }
-                currentSpeaker = match[1];
-                currentTextEl = appendRtEntry(currentSpeaker);
-                lastIdx = match.index + match[0].length;
-            }
-
-            const remaining = pendingChunks.slice(lastIdx);
-            if (remaining) {
-                if (!currentTextEl) {
-                    currentTextEl = appendRtEntry(currentSpeaker);
-                }
-                currentTextEl.textContent += remaining;
-                pendingChunks = "";
-            } else {
-                pendingChunks = "";
-            }
-
-            logEl.scrollTop = logEl.scrollHeight;
-        });
-
-        rtUnlistenDone = await listen("stream_done", () => {
-            cleanupRtListeners();
-            setRtRunning(false);
-            addNotification("Roundtable", "Discussion complete.", "success");
-        });
-
-        invoke("send_command", { prompt: cmd }).catch((error) => {
-            appendLog("error", `Roundtable failed: ${error}`);
-            cleanupRtListeners();
-            setRtRunning(false);
-        });
-    }
-
-    async function stopOrchestration() {
-        try {
-            await invoke("stop_orchestration");
-        } catch (_) {}
-        cleanupOrchestratorListeners();
-        setOrchestratorRunning(false);
-        renderOrchestratorStatus({ running: false, goal: lastOrchestratorGoal, tasks: [] });
-        appendLog("info", "Orchestration stopped by user.");
-    }
-
-    rtStartBtn.addEventListener("click", () => {
-        if (!rtRunning) startRoundtable();
-    });
-
-    rtStopBtn.addEventListener("click", () => {
-        invoke("cancel_generation").catch(() => {});
-        cleanupRtListeners();
-        setRtRunning(false);
-        appendLog("info", "Roundtable stopped by user.");
-    });
-
-    orchestratorStartBtn.addEventListener("click", () => {
-        if (!orchestratorRunning) startOrchestration();
-    });
-
-    orchestratorStatusBtn.addEventListener("click", () => {
-        refreshOrchestratorStatus().catch(() => {});
-    });
-
-    orchestratorStopBtn.addEventListener("click", () => {
-        stopOrchestration().catch(() => {});
-    });
+    const ag = {
+        taskInput, runBtn, stopBtn, iterLabel, logEl, codePre, outputEl, sendCanvasBtn,
+        orchestratorGoalInput, orchestratorStartBtn, orchestratorStatusBtn, orchestratorStopBtn,
+        orchestratorToolbar, codePaneTitle, outputTitle, orchestratorPanel, orchestratorTaskList,
+        toolbarTask, toolbarRt, modeBtns, rtPersonaA, rtPersonaB, rtTopicInput, rtRounds, rtStartBtn, rtStopBtn,
+        agentRunning: false, agentShouldStop: false, orchestratorRunning: false, orchestratorPollTimer: null,
+        currentMode: "task", lastCode: "", lastLang: "python", lastOrchestratorGoal: "", rtRunning: false,
+        rtUnlistenChunk: null, rtUnlistenDone: null,
+        orchUnlistenPlan: null, orchUnlistenTaskStart: null, orchUnlistenTaskDone: null, orchUnlistenComplete: null,
+    };
+    _agWireAllEvents(ag);
+    _agSyncModeUI("task", ag);
 }

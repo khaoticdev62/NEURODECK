@@ -66,96 +66,88 @@ export function initWorkflowView() {
 
 // ── Shell builder ─────────────────────────────────────────────────────────────
 
-function _buildShell() {
-    _container.innerHTML = `
-        <div class="wf-layout">
-            <!-- Palette sidebar -->
-            <aside class="wf-palette">
-                <div class="wf-palette-title">Node Types</div>
-                ${Object.entries(NODE_TYPES).map(([type, def]) => `
-                    <div class="wf-palette-item" data-type="${type}" draggable="true" title="${def.desc}"
-                         role="button" tabindex="0" aria-label="Add ${def.label} node">
-                        <span class="wf-palette-icon" style="color:${def.color}">${def.icon}</span>
-                        <span class="wf-palette-label">${def.label}</span>
-                    </div>
-                `).join('')}
-                <div class="wf-palette-divider"></div>
-                <div class="wf-palette-title">Saved Workflows</div>
-                <div class="wf-saved-list" id="wf-saved-list"></div>
-            </aside>
+function _wfToolbarHtml() {
+    return `<div class="wf-toolbar">
+        <input id="wf-name-input" class="wf-name-input" value="${_esc(_s.workflowName)}" placeholder="Workflow name…" aria-label="Workflow name">
+        <button id="wf-save-btn"   class="wf-btn">💾 Save</button>
+        <button id="wf-export-btn" class="wf-btn" title="Export as .ndwf">⬇ Export</button>
+        <button id="wf-import-btn" class="wf-btn" title="Import .ndwf file">⬆ Import</button>
+        <input id="wf-import-file" type="file" accept=".ndwf,.json" style="display:none" aria-label="Import workflow file">
+        <button id="wf-clear-btn"  class="wf-btn">🗑 Clear</button>
+        <div class="wf-toolbar-sep"></div>
+        <button id="wf-run-btn"  class="wf-btn wf-btn-run" aria-label="Run workflow">▶ Run</button>
+        <button id="wf-stop-btn" class="wf-btn wf-btn-stop" style="display:none" aria-label="Stop workflow">■ Stop</button>
+        <div class="wf-run-status" id="wf-run-status" aria-live="polite"></div>
+        <div class="wf-zoom-controls">
+            <button class="wf-btn wf-zoom-btn" id="wf-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+            <span class="wf-zoom-label" id="wf-zoom-label">100%</span>
+            <button class="wf-btn wf-zoom-btn" id="wf-zoom-in"  title="Zoom in"  aria-label="Zoom in">+</button>
+            <button class="wf-btn wf-zoom-btn" id="wf-zoom-fit" title="Fit view" aria-label="Fit to view">⤢</button>
+        </div>
+    </div>`;
+}
 
-            <!-- Main area -->
-            <div class="wf-main">
-                <!-- Toolbar -->
-                <div class="wf-toolbar">
-                    <input id="wf-name-input" class="wf-name-input" value="${_esc(_s.workflowName)}"
-                           placeholder="Workflow name…" aria-label="Workflow name">
-                    <button id="wf-save-btn"   class="wf-btn">💾 Save</button>
-                    <button id="wf-export-btn" class="wf-btn" title="Export as .ndwf">⬇ Export</button>
-                    <button id="wf-import-btn" class="wf-btn" title="Import .ndwf file">⬆ Import</button>
-                    <input id="wf-import-file" type="file" accept=".ndwf,.json" style="display:none"
-                           aria-label="Import workflow file">
-                    <button id="wf-clear-btn"  class="wf-btn">🗑 Clear</button>
-                    <div class="wf-toolbar-sep"></div>
-                    <button id="wf-run-btn"    class="wf-btn wf-btn-run" aria-label="Run workflow">▶ Run</button>
-                    <button id="wf-stop-btn"   class="wf-btn wf-btn-stop" style="display:none"
-                            aria-label="Stop workflow">■ Stop</button>
-                    <div class="wf-run-status" id="wf-run-status" aria-live="polite"></div>
-                    <div class="wf-zoom-controls">
-                        <button class="wf-btn wf-zoom-btn" id="wf-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
-                        <span class="wf-zoom-label" id="wf-zoom-label">100%</span>
-                        <button class="wf-btn wf-zoom-btn" id="wf-zoom-in"  title="Zoom in"  aria-label="Zoom in">+</button>
-                        <button class="wf-btn wf-zoom-btn" id="wf-zoom-fit" title="Fit view" aria-label="Fit to view">⤢</button>
-                    </div>
-                </div>
-
-                <!-- Canvas + SVG overlay -->
-                <div class="wf-canvas-wrap" id="wf-canvas-wrap" role="region" aria-label="Workflow canvas">
-                    <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <marker id="wf-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                <polygon points="0 0, 8 3, 0 6" fill="rgba(0,240,255,0.55)"/>
-                            </marker>
-                            <marker id="wf-arrow-true" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                <polygon points="0 0, 8 3, 0 6" fill="rgba(34,197,94,0.7)"/>
-                            </marker>
-                            <marker id="wf-arrow-false" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-                                <polygon points="0 0, 8 3, 0 6" fill="rgba(239,68,68,0.7)"/>
-                            </marker>
-                        </defs>
-                        <g id="wf-edges-g"></g>
-                        <path id="wf-live-edge" class="wf-live-edge" style="display:none" fill="none"/>
-                    </svg>
-                    <div class="wf-nodes" id="wf-nodes"></div>
-                    <div class="wf-canvas-hint" id="wf-canvas-hint">
-                        Drag node types from the sidebar · Connect: drag output port → input port ·
-                        Pan: drag canvas background · Zoom: Ctrl+scroll or buttons above
-                    </div>
-                </div>
-
-                <!-- Run log -->
-                <div class="wf-log" id="wf-log">
-                    <div class="wf-log-title">Run Log</div>
-                    <div class="wf-log-body" id="wf-log-body">
-                        <span class="wf-log-empty">No runs yet. Click ▶ Run to execute your workflow.</span>
-                    </div>
+function _wfBuildHtml() {
+    const paletteItems = Object.entries(NODE_TYPES).map(([type, def]) =>
+        `<div class="wf-palette-item" data-type="${type}" draggable="true" title="${def.desc}"
+             role="button" tabindex="0" aria-label="Add ${def.label} node">
+            <span class="wf-palette-icon" style="color:${def.color}">${def.icon}</span>
+            <span class="wf-palette-label">${def.label}</span>
+        </div>`
+    ).join('');
+    return `<div class="wf-layout">
+        <aside class="wf-palette">
+            <div class="wf-palette-title">Node Types</div>
+            ${paletteItems}
+            <div class="wf-palette-divider"></div>
+            <div class="wf-palette-title">Saved Workflows</div>
+            <div class="wf-saved-list" id="wf-saved-list"></div>
+        </aside>
+        <div class="wf-main">
+            ${_wfToolbarHtml()}
+            <div class="wf-canvas-wrap" id="wf-canvas-wrap" role="region" aria-label="Workflow canvas">
+                <svg class="wf-svg" id="wf-svg" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="wf-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="rgba(0,240,255,0.55)"/>
+                        </marker>
+                        <marker id="wf-arrow-true" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="rgba(34,197,94,0.7)"/>
+                        </marker>
+                        <marker id="wf-arrow-false" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="rgba(239,68,68,0.7)"/>
+                        </marker>
+                    </defs>
+                    <g id="wf-edges-g"></g>
+                    <path id="wf-live-edge" class="wf-live-edge" style="display:none" fill="none"/>
+                </svg>
+                <div class="wf-nodes" id="wf-nodes"></div>
+                <div class="wf-canvas-hint" id="wf-canvas-hint">
+                    Drag node types from the sidebar · Connect: drag output port → input port ·
+                    Pan: drag canvas background · Zoom: Ctrl+scroll or buttons above
                 </div>
             </div>
-
-            <!-- Property panel -->
-            <div class="wf-props" id="wf-props" aria-label="Node properties">
-                <div class="wf-props-empty">Select a node to edit its properties.</div>
+            <div class="wf-log" id="wf-log">
+                <div class="wf-log-title">Run Log</div>
+                <div class="wf-log-body" id="wf-log-body">
+                    <span class="wf-log-empty">No runs yet. Click ▶ Run to execute your workflow.</span>
+                </div>
             </div>
         </div>
-    `;
+        <div class="wf-props" id="wf-props" aria-label="Node properties">
+            <div class="wf-props-empty">Select a node to edit its properties.</div>
+        </div>
+    </div>`;
+}
 
+function _buildShell() {
+    _container.innerHTML = _wfBuildHtml();
     _svgEl    = document.getElementById('wf-svg');
     _canvasEl = document.getElementById('wf-canvas-wrap');
     _nodesEl  = document.getElementById('wf-nodes');
     _propEl   = document.getElementById('wf-props');
     _logEl    = document.getElementById('wf-log-body');
     _nameEl   = document.getElementById('wf-name-input');
-
     _wireToolbar();
     _wirePalette();
     _wireCanvas();
@@ -364,6 +356,63 @@ function _render() {
     _renderEdges();
 }
 
+function _wfBuildPorts(node, def) {
+    const inPort = def.ports.in
+        ? `<div class="wf-port wf-port-in" data-id="${node.id}" data-port="in" title="Input" aria-label="Input port"></div>` : '';
+    let outPorts = '';
+    if (def.ports.out) {
+        outPorts = `<div class="wf-port wf-port-out" data-id="${node.id}" data-port="out" title="Output" aria-label="Output port"></div>`;
+    }
+    if (def.ports.outTrue) {
+        outPorts += `<div class="wf-port wf-port-out wf-port-true"  data-id="${node.id}" data-port="out-true"  title="True branch"  aria-label="True output port"></div>`;
+        outPorts += `<div class="wf-port wf-port-out wf-port-false" data-id="${node.id}" data-port="out-false" title="False branch" aria-label="False output port"></div>`;
+    }
+    return { inPort, outPorts };
+}
+
+function _wfWireNodeDragMove(div, node) {
+    div.querySelector('.wf-node-header').addEventListener('mousedown', e => {
+        if (e.target.classList.contains('wf-node-del')) return;
+        e.stopPropagation();
+        const startX = e.clientX, startY = e.clientY;
+        const origX = node.x, origY = node.y;
+        const onMove = ev => {
+            const dx = (ev.clientX - startX) / _s.zoom;
+            const dy = (ev.clientY - startY) / _s.zoom;
+            node.x = Math.round((origX + dx) / SNAP) * SNAP;
+            node.y = Math.round((origY + dy) / SNAP) * SNAP;
+            div.style.left = `${node.x}px`;
+            div.style.top  = `${node.y}px`;
+            _renderEdges();
+        };
+        setupDragListeners(onMove);
+    });
+}
+
+function _wfWireNodeEdgePorts(div, node) {
+    div.querySelectorAll('.wf-port-out').forEach(port => {
+        port.addEventListener('mousedown', e => {
+            e.stopPropagation();
+            _s.connecting = { fromId: node.id, fromPort: port.dataset.port };
+            _renderLiveEdge();
+        });
+    });
+    div.querySelector('.wf-port-in')?.addEventListener('mouseup', e => {
+        e.stopPropagation();
+        if (!_s.connecting) return;
+        const { fromId, fromPort } = _s.connecting;
+        _s.connecting = null;
+        _hideLiveEdge();
+        if (fromId === node.id) return;
+        const portKey = fromPort || 'out';
+        const dupOut = _s.edges.some(e => e.from === fromId && e.fromPort === portKey);
+        const dupIn  = _s.edges.some(e => e.to   === node.id);
+        if (dupOut || dupIn) return;
+        _s.edges.push({ id: `e${_uid++}`, from: fromId, fromPort: portKey, to: node.id, toPort: 'in' });
+        _render();
+    });
+}
+
 function _renderNodes() {
     if (!_nodesEl) return;
     _nodesEl.innerHTML = '';
@@ -373,28 +422,13 @@ function _renderNodes() {
         const run = node._running;
         const ok  = !run && node._out !== null && node._err === null;
         const err = !run && node._err !== null;
-
+        const { inPort, outPorts } = _wfBuildPorts(node, def);
         const div = document.createElement('div');
         div.className  = `wf-node wf-node-${node.type}${sel ? ' wf-selected' : ''}${run ? ' wf-running' : ''}${ok ? ' wf-done' : ''}${err ? ' wf-error' : ''}`;
         div.dataset.id = node.id;
         div.style.cssText = `left:${node.x}px;top:${node.y}px;width:${NODE_W}px;--nc:${def.color}`;
         div.setAttribute('role', 'article');
         div.setAttribute('aria-label', `${def.label} node`);
-
-        // Input port
-        const inPort = def.ports.in
-            ? `<div class="wf-port wf-port-in" data-id="${node.id}" data-port="in" title="Input" aria-label="Input port"></div>` : '';
-
-        // Output port(s)
-        let outPorts = '';
-        if (def.ports.out) {
-            outPorts = `<div class="wf-port wf-port-out" data-id="${node.id}" data-port="out" title="Output" aria-label="Output port"></div>`;
-        }
-        if (def.ports.outTrue) {
-            outPorts += `<div class="wf-port wf-port-out wf-port-true"  data-id="${node.id}" data-port="out-true"  title="True branch"  aria-label="True output port"></div>`;
-            outPorts += `<div class="wf-port wf-port-out wf-port-false" data-id="${node.id}" data-port="out-false" title="False branch" aria-label="False output port"></div>`;
-        }
-
         div.innerHTML = `
             <div class="wf-node-header" style="border-top:2px solid ${def.color}">
                 <span class="wf-node-icon">${def.icon}</span>
@@ -407,12 +441,7 @@ function _renderNodes() {
             ${ok  ? `<div class="wf-node-out-preview" title="${_esc(String(node._out))}">${_esc(String(node._out).slice(0,80))}${String(node._out).length > 80 ? '…' : ''}</div>` : ''}
             ${err ? `<div class="wf-node-err-preview" role="alert">${_esc(String(node._err).slice(0,60))}</div>` : ''}
         `;
-
-        div.querySelector('.wf-node-del').addEventListener('click', e => {
-            e.stopPropagation();
-            _deleteNode(node.id);
-        });
-
+        div.querySelector('.wf-node-del').addEventListener('click', e => { e.stopPropagation(); _deleteNode(node.id); });
         div.addEventListener('mousedown', e => {
             if (e.target.classList.contains('wf-port') || e.target.classList.contains('wf-node-del')) return;
             e.stopPropagation();
@@ -420,51 +449,8 @@ function _renderNodes() {
             _render();
             _updatePropPanel(node);
         });
-
-        // Drag to move via header
-        div.querySelector('.wf-node-header').addEventListener('mousedown', e => {
-            if (e.target.classList.contains('wf-node-del')) return;
-            e.stopPropagation();
-            const startX = e.clientX, startY = e.clientY;
-            const origX = node.x, origY = node.y;
-            const onMove = ev => {
-                const dx = (ev.clientX - startX) / _s.zoom;
-                const dy = (ev.clientY - startY) / _s.zoom;
-                node.x = Math.round((origX + dx) / SNAP) * SNAP;
-                node.y = Math.round((origY + dy) / SNAP) * SNAP;
-                div.style.left = `${node.x}px`;
-                div.style.top  = `${node.y}px`;
-                _renderEdges();
-            };
-            setupDragListeners(onMove);
-        });
-
-        // Output port — start edge
-        div.querySelectorAll('.wf-port-out').forEach(port => {
-            port.addEventListener('mousedown', e => {
-                e.stopPropagation();
-                _s.connecting = { fromId: node.id, fromPort: port.dataset.port };
-                _renderLiveEdge();
-            });
-        });
-
-        // Input port — complete edge
-        div.querySelector('.wf-port-in')?.addEventListener('mouseup', e => {
-            e.stopPropagation();
-            if (!_s.connecting) return;
-            const { fromId, fromPort } = _s.connecting;
-            _s.connecting = null;
-            _hideLiveEdge();
-            if (fromId === node.id) return;
-            // For non-condition nodes: only one output edge per port; one input per node
-            const portKey = fromPort || 'out';
-            const dupOut = _s.edges.some(e => e.from === fromId && e.fromPort === portKey);
-            const dupIn  = _s.edges.some(e => e.to   === node.id);
-            if (dupOut || dupIn) return;
-            _s.edges.push({ id: `e${_uid++}`, from: fromId, fromPort: portKey, to: node.id, toPort: 'in' });
-            _render();
-        });
-
+        _wfWireNodeDragMove(div, node);
+        _wfWireNodeEdgePorts(div, node);
         _nodesEl.appendChild(div);
     }
     _nodesEl.style.transform = `translate(${_s.pan.x}px,${_s.pan.y}px) scale(${_s.zoom})`;
@@ -580,125 +566,106 @@ function _hideLiveEdge() {
 
 // ── Property panel ────────────────────────────────────────────────────────────
 
-function _updatePropPanel(node) {
-    if (!_propEl) return;
-    if (!node) { _propEl.innerHTML = '<div class="wf-props-empty">Select a node to edit its properties.</div>'; return; }
-    const def = NODE_TYPES[node.type];
+function _wfPropTrigger(c) {
+    return `<label class="wf-prop-label">Trigger type</label>
+        <select class="wf-prop-select" data-key="trigger_type">
+            ${['manual','cron','event'].map(t => `<option value="${t}" ${c.trigger_type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <label class="wf-prop-label wf-prop-show-cron" style="margin-top:8px">Cron expression</label>
+        <input class="wf-prop-input wf-prop-show-cron" data-key="cron" value="${_esc(c.cron||'0 * * * *')}" placeholder="0 * * * *">
+        <label class="wf-prop-label wf-prop-show-event" style="margin-top:8px">Event name</label>
+        <input class="wf-prop-input wf-prop-show-event" data-key="event" value="${_esc(c.event||'')}" placeholder="e.g. game_detected">
+        <label class="wf-prop-label" style="margin-top:8px">Seed text</label>
+        <textarea class="wf-prop-input" data-key="seed" rows="3">${_esc(c.seed||'')}</textarea>
+        <p class="wf-prop-hint">Initial text passed into the first connected node.</p>`;
+}
 
-    let fields = '';
+function _wfPropPrompt(c) {
+    return `<label class="wf-prop-label">Prompt template</label>
+        <textarea class="wf-prop-input" data-key="prompt" rows="5">${_esc(c.prompt||'')}</textarea>
+        <p class="wf-prop-hint">Use {{input}} for upstream output.</p>`;
+}
+
+function _wfPropShell(c) {
+    return `<label class="wf-prop-label">Command</label>
+        <input class="wf-prop-input" data-key="command" value="${_esc(c.command||'')}">
+        <label class="wf-prop-label" style="margin-top:8px">Language</label>
+        <select class="wf-prop-select" data-key="lang">
+            ${['bash','powershell','python'].map(l => `<option value="${l}" ${c.lang===l?'selected':''}>${l}</option>`).join('')}
+        </select>
+        <p class="wf-prop-hint">{{input}} is injected as $INPUT env variable.</p>`;
+}
+
+function _wfPropFileOp(c) {
+    return `<label class="wf-prop-label">Mode</label>
+        <select class="wf-prop-select" data-key="mode">
+            ${['read','write','append'].map(m => `<option value="${m}" ${c.mode===m?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <label class="wf-prop-label" style="margin-top:8px">File path</label>
+        <input class="wf-prop-input" data-key="path" value="${_esc(c.path||'')}" placeholder="/path/to/file.txt">
+        <label class="wf-prop-label wf-prop-show-write" style="margin-top:8px">Content to write</label>
+        <textarea class="wf-prop-input wf-prop-show-write" data-key="content" rows="3">${_esc(c.content||'{{input}}')}</textarea>
+        <p class="wf-prop-hint">Read: returns file contents. Write/Append: use {{input}} in content.</p>`;
+}
+
+function _wfPropPtyCmd(c) {
+    return `<label class="wf-prop-label">Command</label>
+        <input class="wf-prop-input" data-key="command" value="${_esc(c.command||'')}" placeholder="ls -la">
+        <label class="wf-prop-label" style="margin-top:8px">PTY session ID</label>
+        <input class="wf-prop-input" data-key="session" value="${_esc(c.session||'main_pty_session')}">
+        <p class="wf-prop-hint">Sends the command to the active terminal session. {{input}} is replaced with upstream output.</p>`;
+}
+
+function _wfPropMemory(c) {
+    return `<label class="wf-prop-label">Query template</label>
+        <input class="wf-prop-input" data-key="query" value="${_esc(c.query||'')}">
+        <label class="wf-prop-label" style="margin-top:8px">Max results</label>
+        <input class="wf-prop-input" type="number" data-key="limit" min="1" max="10" value="${c.limit||3}">
+        <p class="wf-prop-hint">Returns top matches joined with newlines.</p>`;
+}
+
+function _wfPropCondition(c) {
+    return `<label class="wf-prop-label">Expression <span style="opacity:.5;font-size:0.65rem">(JS, "input" = upstream)</span></label>
+        <input class="wf-prop-input" data-key="expression" value="${_esc(c.expression||'input.length > 0')}" placeholder="e.g. input.includes('error')">
+        <p class="wf-prop-hint">Returns true → takes the green (true) port. Returns false → takes the red (false) port.</p>
+        <label class="wf-prop-label" style="margin-top:8px">True branch override <span style="opacity:.5">(optional)</span></label>
+        <input class="wf-prop-input" data-key="trueSeed" value="${_esc(c.trueSeed||'')}" placeholder="Replace input on true branch">
+        <label class="wf-prop-label" style="margin-top:8px">False branch override <span style="opacity:.5">(optional)</span></label>
+        <input class="wf-prop-input" data-key="falseSeed" value="${_esc(c.falseSeed||'')}" placeholder="Replace input on false branch">`;
+}
+
+function _wfPropTransform(c) {
+    return `<label class="wf-prop-label">Mode</label>
+        <select class="wf-prop-select" data-key="mode">
+            ${['trim','uppercase','lowercase','title_case','reverse','template','extract_json','count_words'].map(m =>
+                `<option value="${m}" ${c.mode===m?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <label class="wf-prop-label" style="margin-top:8px">Template <span style="opacity:.5">(mode=template only)</span></label>
+        <textarea class="wf-prop-input" data-key="template" rows="2">${_esc(c.template||'')}</textarea>
+        <p class="wf-prop-hint">template: use {{input}}. extract_json: parses JSON and stringifies. count_words: returns word count.</p>`;
+}
+
+function _wfPropOutput() {
+    return `<p class="wf-prop-hint" style="margin-top:12px">Displays the final result in the run log. No configuration needed.</p>`;
+}
+
+function _wfPropFields(node) {
+    const c = node.config;
     switch (node.type) {
-        case 'trigger':
-            fields = `
-                <label class="wf-prop-label">Trigger type</label>
-                <select class="wf-prop-select" data-key="trigger_type">
-                    ${['manual','cron','event'].map(t =>
-                        `<option value="${t}" ${node.config.trigger_type === t ? 'selected' : ''}>${t}</option>`).join('')}
-                </select>
-                <label class="wf-prop-label wf-prop-show-cron" style="margin-top:8px">Cron expression</label>
-                <input  class="wf-prop-input wf-prop-show-cron" data-key="cron" value="${_esc(node.config.cron || '0 * * * *')}" placeholder="0 * * * *">
-                <label class="wf-prop-label wf-prop-show-event" style="margin-top:8px">Event name</label>
-                <input  class="wf-prop-input wf-prop-show-event" data-key="event" value="${_esc(node.config.event || '')}" placeholder="e.g. game_detected">
-                <label class="wf-prop-label" style="margin-top:8px">Seed text</label>
-                <textarea class="wf-prop-input" data-key="seed" rows="3">${_esc(node.config.seed || '')}</textarea>
-                <p class="wf-prop-hint">Initial text passed into the first connected node.</p>
-            `;
-            break;
-        case 'prompt':
-            fields = `
-                <label class="wf-prop-label">Prompt template</label>
-                <textarea class="wf-prop-input" data-key="prompt" rows="5">${_esc(node.config.prompt || '')}</textarea>
-                <p class="wf-prop-hint">Use {{input}} for upstream output.</p>
-            `;
-            break;
-        case 'shell':
-            fields = `
-                <label class="wf-prop-label">Command</label>
-                <input  class="wf-prop-input" data-key="command" value="${_esc(node.config.command || '')}">
-                <label class="wf-prop-label" style="margin-top:8px">Language</label>
-                <select class="wf-prop-select" data-key="lang">
-                    ${['bash','powershell','python'].map(l =>
-                        `<option value="${l}" ${node.config.lang === l ? 'selected' : ''}>${l}</option>`).join('')}
-                </select>
-                <p class="wf-prop-hint">{{input}} is injected as $INPUT env variable.</p>
-            `;
-            break;
-        case 'file_op':
-            fields = `
-                <label class="wf-prop-label">Mode</label>
-                <select class="wf-prop-select" data-key="mode">
-                    ${['read','write','append'].map(m =>
-                        `<option value="${m}" ${node.config.mode === m ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-                <label class="wf-prop-label" style="margin-top:8px">File path</label>
-                <input  class="wf-prop-input" data-key="path" value="${_esc(node.config.path || '')}" placeholder="/path/to/file.txt">
-                <label class="wf-prop-label wf-prop-show-write" style="margin-top:8px">Content to write</label>
-                <textarea class="wf-prop-input wf-prop-show-write" data-key="content" rows="3">${_esc(node.config.content || '{{input}}')}</textarea>
-                <p class="wf-prop-hint">Read: returns file contents. Write/Append: use {{input}} in content.</p>
-            `;
-            break;
-        case 'pty_cmd':
-            fields = `
-                <label class="wf-prop-label">Command</label>
-                <input  class="wf-prop-input" data-key="command" value="${_esc(node.config.command || '')}" placeholder="ls -la">
-                <label class="wf-prop-label" style="margin-top:8px">PTY session ID</label>
-                <input  class="wf-prop-input" data-key="session" value="${_esc(node.config.session || 'main_pty_session')}">
-                <p class="wf-prop-hint">Sends the command to the active terminal session. {{input}} is replaced with upstream output.</p>
-            `;
-            break;
-        case 'memory':
-            fields = `
-                <label class="wf-prop-label">Query template</label>
-                <input  class="wf-prop-input" data-key="query" value="${_esc(node.config.query || '')}">
-                <label class="wf-prop-label" style="margin-top:8px">Max results</label>
-                <input  class="wf-prop-input" type="number" data-key="limit" min="1" max="10" value="${node.config.limit || 3}">
-                <p class="wf-prop-hint">Returns top matches joined with newlines.</p>
-            `;
-            break;
-        case 'condition':
-            fields = `
-                <label class="wf-prop-label">Expression <span style="opacity:.5;font-size:0.65rem">(JS, "input" = upstream)</span></label>
-                <input  class="wf-prop-input" data-key="expression" value="${_esc(node.config.expression || 'input.length > 0')}"
-                        placeholder="e.g. input.includes('error')">
-                <p class="wf-prop-hint">Returns true → takes the green (true) port. Returns false → takes the red (false) port.</p>
-                <label class="wf-prop-label" style="margin-top:8px">True branch override <span style="opacity:.5">(optional)</span></label>
-                <input  class="wf-prop-input" data-key="trueSeed" value="${_esc(node.config.trueSeed || '')}" placeholder="Replace input on true branch">
-                <label class="wf-prop-label" style="margin-top:8px">False branch override <span style="opacity:.5">(optional)</span></label>
-                <input  class="wf-prop-input" data-key="falseSeed" value="${_esc(node.config.falseSeed || '')}" placeholder="Replace input on false branch">
-            `;
-            break;
-        case 'transform':
-            fields = `
-                <label class="wf-prop-label">Mode</label>
-                <select class="wf-prop-select" data-key="mode">
-                    ${['trim','uppercase','lowercase','title_case','reverse','template','extract_json','count_words'].map(m =>
-                        `<option value="${m}" ${node.config.mode === m ? 'selected' : ''}>${m}</option>`).join('')}
-                </select>
-                <label class="wf-prop-label" style="margin-top:8px">Template <span style="opacity:.5">(mode=template only)</span></label>
-                <textarea class="wf-prop-input" data-key="template" rows="2">${_esc(node.config.template || '')}</textarea>
-                <p class="wf-prop-hint">template: use {{input}}. extract_json: parses JSON and stringifies. count_words: returns word count.</p>
-            `;
-            break;
-        case 'output':
-            fields = `<p class="wf-prop-hint" style="margin-top:12px">Displays the final result in the run log. No configuration needed.</p>`;
-            break;
+        case 'trigger':   return _wfPropTrigger(c);
+        case 'prompt':    return _wfPropPrompt(c);
+        case 'shell':     return _wfPropShell(c);
+        case 'file_op':   return _wfPropFileOp(c);
+        case 'pty_cmd':   return _wfPropPtyCmd(c);
+        case 'memory':    return _wfPropMemory(c);
+        case 'condition': return _wfPropCondition(c);
+        case 'transform': return _wfPropTransform(c);
+        case 'output':    return _wfPropOutput();
+        default: return '';
     }
+}
 
-    _propEl.innerHTML = `
-        <div class="wf-props-header">
-            <span class="wf-props-icon" style="color:${def.color}">${def.icon}</span>
-            <span class="wf-props-title">${def.label}</span>
-        </div>
-        <div class="wf-props-body">${fields}</div>
-        <div class="wf-props-actions">
-            <button class="wf-btn wf-btn-danger" id="wf-prop-del-btn" aria-label="Delete node">🗑 Delete node</button>
-        </div>
-    `;
-
-    // Show/hide trigger type fields
-    _syncTriggerFields(node);
-
-    document.getElementById('wf-prop-del-btn')?.addEventListener('click', () => _deleteNode(node.id));
-
+function _wfWirePropInputs(node) {
     _propEl.querySelectorAll('.wf-prop-input, .wf-prop-select').forEach(el => {
         el.addEventListener('input', () => {
             node.config[el.dataset.key] = el.tagName === 'INPUT' && el.type === 'number'
@@ -708,6 +675,25 @@ function _updatePropPanel(node) {
             if (previewEl) previewEl.innerHTML = _nodePreview(node);
         });
     });
+}
+
+function _updatePropPanel(node) {
+    if (!_propEl) return;
+    if (!node) { _propEl.innerHTML = '<div class="wf-props-empty">Select a node to edit its properties.</div>'; return; }
+    const def = NODE_TYPES[node.type];
+    _propEl.innerHTML = `
+        <div class="wf-props-header">
+            <span class="wf-props-icon" style="color:${def.color}">${def.icon}</span>
+            <span class="wf-props-title">${def.label}</span>
+        </div>
+        <div class="wf-props-body">${_wfPropFields(node)}</div>
+        <div class="wf-props-actions">
+            <button class="wf-btn wf-btn-danger" id="wf-prop-del-btn" aria-label="Delete node">🗑 Delete node</button>
+        </div>
+    `;
+    _syncTriggerFields(node);
+    document.getElementById('wf-prop-del-btn')?.addEventListener('click', () => _deleteNode(node.id));
+    _wfWirePropInputs(node);
 }
 
 function _syncTriggerFields(node) {
@@ -799,84 +785,61 @@ function _nextNode(fromId, fromPort) {
     return _s.nodes.find(n => n.id === edge.to) || null;
 }
 
+async function _runFileOpNode(c, resolved) {
+    const path = resolved(c.path);
+    if (!path) throw new Error('File path is required');
+    if (c.mode === 'read') {
+        return invoke('ide_read_workspace_file', { path }).catch(() => invoke('read_workspace_file', { path }));
+    }
+    const content = resolved(c.content || '{{input}}');
+    const mode = c.mode === 'append' ? 'append' : 'write';
+    await invoke('ide_write_workspace_file', { path, content, mode }).catch(() =>
+        invoke('write_workspace_file', { path, content })
+    );
+    return content;
+}
+
+async function _runMemoryNode(c, resolved) {
+    const query = resolved(c.query);
+    const records = await invoke('memory_list_all');
+    const words = query.toLowerCase().split(/\s+/);
+    return records
+        .filter(r => words.some(w => (r.content || '').toLowerCase().includes(w)))
+        .slice(0, c.limit || 3).map(r => r.content).join('\n---\n') || '(no matching memory records)';
+}
+
+function _runTransformNode(c, input, resolved) {
+    switch (c.mode) {
+        case 'trim':         return input.trim();
+        case 'uppercase':    return input.toUpperCase();
+        case 'lowercase':    return input.toLowerCase();
+        case 'title_case':   return input.replace(/\b\w/g, ch => ch.toUpperCase());
+        case 'reverse':      return input.split('').reverse().join('');
+        case 'template':     return resolved(c.template || '{{input}}');
+        case 'extract_json': try { return JSON.stringify(JSON.parse(input), null, 2); } catch { return input; }
+        case 'count_words':  return String(input.trim().split(/\s+/).filter(Boolean).length);
+        default:             return input;
+    }
+}
+
 async function _runNode(node, input) {
     const c = node.config;
     const resolved = text => (text || '').replace(/\{\{input\}\}/g, input);
-
     switch (node.type) {
-        case 'trigger':
-            return c.seed || '';
-
-        case 'prompt': {
-            const prompt = resolved(c.prompt);
-            return invoke('llm_oneshot', { prompt, maxTokens: 800 });
-        }
-
-        case 'shell': {
-            const command = resolved(c.command);
-            const lang = c.lang || 'bash';
-            return invoke('agent_exec_code', { code: command, lang });
-        }
-
-        case 'file_op': {
-            const path = resolved(c.path);
-            if (!path) throw new Error('File path is required');
-            if (c.mode === 'read') {
-                return invoke('ide_read_workspace_file', { path }).catch(() =>
-                    invoke('read_workspace_file', { path })
-                );
-            } else {
-                const content = resolved(c.content || '{{input}}');
-                const mode = c.mode === 'append' ? 'append' : 'write';
-                await invoke('ide_write_workspace_file', { path, content, mode }).catch(() =>
-                    invoke('write_workspace_file', { path, content })
-                );
-                return content;
-            }
-        }
-
+        case 'trigger':   return c.seed || '';
+        case 'prompt':    return invoke('llm_oneshot', { prompt: resolved(c.prompt), maxTokens: 800 });
+        case 'shell':     return invoke('agent_exec_code', { code: resolved(c.command), lang: c.lang || 'bash' });
+        case 'file_op':   return _runFileOpNode(c, resolved);
         case 'pty_cmd': {
-            const command = resolved(c.command);
-            const sessionId = c.session || 'main_pty_session';
-            await invoke('pty_write', { id: sessionId, data: command + '\n' });
-            return `Sent to PTY [${sessionId}]: ${command}`;
+            const cmd = resolved(c.command); const sid = c.session || 'main_pty_session';
+            await invoke('pty_write', { id: sid, data: cmd + '\n' });
+            return `Sent to PTY [${sid}]: ${cmd}`;
         }
-
-        case 'memory': {
-            const query = resolved(c.query);
-            const records = await invoke('memory_list_all');
-            const words = query.toLowerCase().split(/\s+/);
-            const matched = records
-                .filter(r => words.some(w => (r.content || '').toLowerCase().includes(w)))
-                .slice(0, c.limit || 3)
-                .map(r => r.content)
-                .join('\n---\n');
-            return matched || '(no matching memory records)';
-        }
-
-        case 'condition':
-            return input;
-
-        case 'transform': {
-            switch (c.mode) {
-                case 'trim':         return input.trim();
-                case 'uppercase':    return input.toUpperCase();
-                case 'lowercase':    return input.toLowerCase();
-                case 'title_case':   return input.replace(/\b\w/g, ch => ch.toUpperCase());
-                case 'reverse':      return input.split('').reverse().join('');
-                case 'template':     return resolved(c.template || '{{input}}');
-                case 'extract_json': try { return JSON.stringify(JSON.parse(input), null, 2); } catch { return input; }
-                case 'count_words':  return String(input.trim().split(/\s+/).filter(Boolean).length);
-                default:             return input;
-            }
-        }
-
-        case 'output':
-            _logLine(`📤 Output: ${input}`, 'ok');
-            return input;
-
-        default:
-            return input;
+        case 'memory':    return _runMemoryNode(c, resolved);
+        case 'condition': return input;
+        case 'transform': return _runTransformNode(c, input, resolved);
+        case 'output':    _logLine(`📤 Output: ${input}`, 'ok'); return input;
+        default:          return input;
     }
 }
 

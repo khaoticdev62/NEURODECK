@@ -18,14 +18,18 @@ const listeners = new Map();
 // WebSocket Lifecycle
 // ─────────────────────────────────────────────────────────
 
-function getWebSocket() {
-  if (typeof window !== 'undefined' && window.__TAURI__) {
-    return null;
-  }
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-    return ws;
-  }
+function _wsDispatchMessage(msg) {
+  let data;
+  try { data = JSON.parse(msg.data); } catch (err) { console.error('[neurobridge] Invalid WS message:', err); return; }
+  const { event, payload } = data;
+  if (event === '__lag__') { console.warn('[neurobridge] WS lag — dropped messages:', payload?.dropped); return; }
+  const handlers = listeners.get(event);
+  if (handlers) handlers.forEach(fn => { try { fn({ payload }); } catch (err) { console.error('[neurobridge] Listener error for event', event, ':', err); } });
+}
 
+function getWebSocket() {
+  if (typeof window !== 'undefined' && window.__TAURI__) return null;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return ws;
   try {
     ws = new WebSocket(WS_URL);
     wsConnectState = 'connecting';
@@ -34,50 +38,10 @@ function getWebSocket() {
     scheduleReconnect();
     return null;
   }
-
-  ws.onopen = () => {
-    wsConnectState = 'open';
-    console.log('[neurobridge] WS connected');
-  };
-
-  ws.onmessage = (msg) => {
-    let data;
-    try {
-      data = JSON.parse(msg.data);
-    } catch (err) {
-      console.error('[neurobridge] Invalid WS message:', err);
-      return;
-    }
-
-    const { event, payload } = data;
-    if (event === '__lag__') {
-      console.warn('[neurobridge] WS lag — dropped messages:', payload?.dropped);
-      return;
-    }
-
-    const handlers = listeners.get(event);
-    if (handlers) {
-      handlers.forEach((fn) => {
-        try {
-          fn({ payload });
-        } catch (err) {
-          console.error('[neurobridge] Listener error for event', event, ':', err);
-        }
-      });
-    }
-  };
-
-  ws.onclose = () => {
-    wsConnectState = 'closed';
-    ws = null;
-    console.log('[neurobridge] WS closed');
-    scheduleReconnect();
-  };
-
-  ws.onerror = (err) => {
-    console.error('[neurobridge] WS error:', err);
-  };
-
+  ws.onopen = () => { wsConnectState = 'open'; console.log('[neurobridge] WS connected'); };
+  ws.onmessage = msg => _wsDispatchMessage(msg);
+  ws.onclose = () => { wsConnectState = 'closed'; ws = null; console.log('[neurobridge] WS closed'); scheduleReconnect(); };
+  ws.onerror = err => { console.error('[neurobridge] WS error:', err); };
   return ws;
 }
 

@@ -7,6 +7,8 @@
   "ignorePatterns": [
     "scripts/**",
     "e2e/**",
+    "frontend/src/**/*.test.js",
+    "tests/**",
     "temp_inspect/**",
     "scripts/js/test-chat-virtualization.js",
     "scripts/css/animation_v2.css",

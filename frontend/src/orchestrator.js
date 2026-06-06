@@ -314,83 +314,74 @@ function _syncTaskStatuses(tasks, defaultStatus = "pending") {
 }
 
 // ── Run pipeline ─────────────────────────────────────────────────────────────
-async function _runPipeline() {
-  if (_nodes.length === 0) {
-    addNotification("No nodes", "Add at least one agent node before running.", "warning");
-    return;
-  }
-  if (_running && !_paused) return;
-
-  _running = true;
-  _paused = false;
-  for (const n of _nodes) n._status = "pending";
-  _updateRunControls();
+async function _runPipelineNode(node, completed) {
+  node._status = "running";
   _renderCanvas();
-
-  const log = document.getElementById("orch-log");
-  if (log) log.innerHTML = "";
-  const output = document.getElementById("orch-output");
-  if (output) output.innerHTML = `<div class="orch-running">Pipeline running…</div>`;
-
-  _appendLog("Pipeline started", "info");
-
-  // Execute nodes in topological order
-  const completed = new Map(); // id → result string
-  const ordered = _topoSort(_nodes, _connections);
-
-  for (const node of ordered) {
-    if (!_running) break;
-    // Wait while paused
-    while (_paused && _running) {
-      await _sleep(200);
-    }
-    if (!_running) break;
-
-    node._status = "running";
-    _renderCanvas();
-    _appendLog(`▶ ${node.label} starting…`, "info");
-
-    const contextParts = (node.inputs || [])
-      .map((fromId) => completed.get(fromId))
-      .filter(Boolean)
-      .map((r, i) => `[Input ${i + 1}]:\n${r}`)
-      .join("\n\n");
-
-    const fullPrompt = contextParts
-      ? `${node.prompt}\n\nContext from upstream agents:\n${contextParts}`
-      : node.prompt;
-
-    try {
-      const result = await invoke("llm_oneshot", { prompt: fullPrompt, max_tokens: 800 });
-      completed.set(node.id, result);
-      node._status = "done";
-      node._result = result;
-      _appendLog(`✓ ${node.label}: ${result.slice(0, 100)}…`, "done");
-    } catch (err) {
-      node._status = "error";
-      node._error = String(err);
-      _appendLog(`✗ ${node.label}: ${String(err)}`, "error");
-    }
-    _renderCanvas();
+  _appendLog(`▶ ${node.label} starting…`, "info");
+  const contextParts = (node.inputs || [])
+    .map(fromId => completed.get(fromId))
+    .filter(Boolean)
+    .map((r, i) => `[Input ${i + 1}]:\n${r}`)
+    .join("\n\n");
+  const fullPrompt = contextParts
+    ? `${node.prompt}\n\nContext from upstream agents:\n${contextParts}`
+    : node.prompt;
+  try {
+    const result = await invoke("llm_oneshot", { prompt: fullPrompt, max_tokens: 800 });
+    completed.set(node.id, result);
+    node._status = "done";
+    node._result = result;
+    _appendLog(`✓ ${node.label}: ${result.slice(0, 100)}…`, "done");
+  } catch (err) {
+    node._status = "error";
+    node._error = String(err);
+    _appendLog(`✗ ${node.label}: ${String(err)}`, "error");
   }
+}
 
-  _running = false;
-  _paused = false;
-  _updateRunControls();
-  _renderCanvas();
-
-  // Build final summary
+function _renderPipelineSummary(ordered, output) {
   const outputs = ordered
-    .filter((n) => n._status === "done")
-    .map((n) => `**${n.label}**:\n${n._result || ""}`)
+    .filter(n => n._status === "done")
+    .map(n => `**${n.label}**:\n${n._result || ""}`)
     .join("\n\n---\n\n");
-
   if (output) {
     output.innerHTML = `<div class="orch-summary">
       <div class="orch-summary-title">✅ Pipeline complete — ${ordered.length} node${ordered.length !== 1 ? "s" : ""}</div>
       <div class="orch-summary-body">${_esc(outputs)}</div>
     </div>`;
   }
+}
+
+async function _runPipeline() {
+  if (_nodes.length === 0) {
+    addNotification("No nodes", "Add at least one agent node before running.", "warning");
+    return;
+  }
+  if (_running && !_paused) return;
+  _running = true;
+  _paused = false;
+  for (const n of _nodes) n._status = "pending";
+  _updateRunControls();
+  _renderCanvas();
+  const log = document.getElementById("orch-log");
+  if (log) log.innerHTML = "";
+  const output = document.getElementById("orch-output");
+  if (output) output.innerHTML = `<div class="orch-running">Pipeline running…</div>`;
+  _appendLog("Pipeline started", "info");
+  const completed = new Map();
+  const ordered = _topoSort(_nodes, _connections);
+  for (const node of ordered) {
+    if (!_running) break;
+    while (_paused && _running) { await _sleep(200); }
+    if (!_running) break;
+    await _runPipelineNode(node, completed);
+    _renderCanvas();
+  }
+  _running = false;
+  _paused = false;
+  _updateRunControls();
+  _renderCanvas();
+  _renderPipelineSummary(ordered, output);
   addNotification("Pipeline complete", `${ordered.length} nodes finished.`, "success");
 }
 

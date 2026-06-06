@@ -2,7 +2,7 @@ import { invoke } from './neurobridge.js';
 import { addNotification } from './notifications.js';
 import { createIcon } from './icons.js';
 
-const TORRENT_REFRESH_INTERVAL_MS = 4000;
+const TORRENT_REFRESH_INTERVAL_MS = 2000;
 
 const torrentUi = {
   initialized: false,
@@ -363,15 +363,87 @@ function buildInspectorGrid(rows) {
   return grid;
 }
 
+function _buildInspectorHero(entry) {
+  const hero = document.createElement('div');
+  hero.className = 'torrent-inspector-hero';
+  const heroText = document.createElement('div');
+  heroText.className = 'torrent-inspector-hero-copy';
+  const nameEl = document.createElement('strong');
+  nameEl.className = 'torrent-inspector-name';
+  nameEl.textContent = entry.name || entry.id;
+  const sourceMeta = document.createElement('div');
+  sourceMeta.className = 'torrent-inspector-meta';
+  sourceMeta.textContent = torrentSourceLabel(entry);
+  heroText.append(nameEl, sourceMeta);
+  const heroStatus = document.createElement('div');
+  heroStatus.className = 'torrent-inspector-status-stack';
+  const statusEl = document.createElement('span');
+  statusEl.className = `transfer-status torrent-status ${torrentStatusClass(entry)}`;
+  statusEl.textContent = torrentStatusLabel(entry);
+  const pct = document.createElement('strong');
+  pct.className = 'torrent-inspector-progress';
+  pct.textContent = `${clampPercent(entry.progress_pct).toFixed(1)}%`;
+  heroStatus.append(statusEl, pct);
+  hero.append(heroText, heroStatus);
+  return hero;
+}
+
+function _buildInspectorSections(entry) {
+  const overview = buildInspectorSection('Overview');
+  overview.appendChild(buildInspectorGrid([
+    ['Progress', `${clampPercent(entry.progress_pct).toFixed(1)}%`], ['Pieces', formatTorrentPieces(entry)],
+    ['Queue State', torrentStatusLabel(entry)], ['Added', entry.added_at_utc || 'Unknown'],
+    ['Remaining', formatBytes(entry.bytes_remaining)], ['ETA', formatEta(entry.eta_seconds)],
+  ]));
+  const swarm = buildInspectorSection('Swarm');
+  swarm.appendChild(buildInspectorGrid([
+    ['Peers', queueMetric(entry.peers)], ['Trackers', queueMetric(entry.trackers)],
+    ['Down Rate', formatRate(entry.download_rate_bps)], ['Up Rate', formatRate(entry.upload_rate_bps)],
+    ['Downloaded', formatBytes(entry.downloaded_bytes)], ['Uploaded', formatBytes(entry.uploaded_bytes)],
+    ['Ratio', entry.ratio == null ? '—' : `${entry.ratio.toFixed(2)}x`],
+    ['Metadata', entry.metadata_known ? 'Resolved' : 'Pending'], ['Completed', entry.completed ? 'Yes' : 'No'],
+  ]));
+  const source = buildInspectorSection('Source');
+  source.appendChild(buildInspectorGrid([
+    ['Info Hash', entry.info_hash || 'Unavailable'], ['Source Kind', (entry.source_kind || 'unknown').toUpperCase()],
+    ['Root', entry.download_root || torrentUi.rootPath || 'Unavailable'], ['Save Path', entry.save_path || 'Pending metadata'],
+    ['Record ID', entry.id],
+  ]));
+  const sourceBlock = document.createElement('div');
+  sourceBlock.className = 'torrent-inspector-source';
+  sourceBlock.textContent = entry.source_value || entry.source_display || 'No source string available.';
+  source.appendChild(sourceBlock);
+  return [overview, swarm, source];
+}
+
+function _buildInspectorActions(entry) {
+  const section = buildInspectorSection('Actions');
+  const actionGrid = document.createElement('div');
+  actionGrid.className = 'torrent-inspector-actions';
+  const primary = entry.paused
+    ? torrentActionButton('Resume', 'play', () => runTorrentAction('torrent_resume', { id: entry.id }, 'Torrent resumed.'))
+    : torrentActionButton('Pause', 'pause', () => runTorrentAction('torrent_pause', { id: entry.id }, 'Torrent paused.'));
+  actionGrid.append(
+    primary,
+    torrentActionButton('Copy Hash', 'copy', () => writeToClipboard(entry.info_hash || '', 'Info hash')),
+    torrentActionButton('Copy Source', 'clipboard', () => writeToClipboard(entry.source_value || '', 'Source')),
+    torrentActionButton('Open Root', 'folderOpen', openTorrentRoot, 'ghost'),
+    torrentActionButton('Reveal Payload', 'arrowUpRight', async () => { await runTorrentAction('torrent_open_save_path', { id: entry.id }, ''); }, 'ghost'),
+    torrentActionButton('Send to LAN', 'share2', () => handoffTorrentToLan(entry), 'ghost'),
+    torrentActionButton('Remove', 'trash2', async () => { if (!confirmTorrentRemoval(entry, false)) return; await runTorrentAction('torrent_remove', { id: entry.id, deleteData: false }, 'Torrent removed from the session.'); }, 'danger'),
+    torrentActionButton('Purge Data', 'trash2', async () => { if (!confirmTorrentRemoval(entry, true)) return; await runTorrentAction('torrent_remove', { id: entry.id, deleteData: true }, 'Torrent removed and payload deleted.'); }, 'danger'),
+  );
+  section.appendChild(actionGrid);
+  return section;
+}
+
 function renderInspector(entry) {
   if (!torrentUi.inspectorEl) return;
   clearNode(torrentUi.inspectorEl);
-
   const title = document.createElement('div');
   title.className = 'torrent-inspector-title';
   title.textContent = 'Torrent Inspector';
   torrentUi.inspectorEl.appendChild(title);
-
   if (!entry) {
     const empty = document.createElement('div');
     empty.className = 'torrent-inspector-empty';
@@ -379,126 +451,13 @@ function renderInspector(entry) {
     torrentUi.inspectorEl.appendChild(empty);
     return;
   }
-
-  const hero = document.createElement('div');
-  hero.className = 'torrent-inspector-hero';
-
-  const heroText = document.createElement('div');
-  heroText.className = 'torrent-inspector-hero-copy';
-
-  const name = document.createElement('strong');
-  name.className = 'torrent-inspector-name';
-  name.textContent = entry.name || entry.id;
-
-  const sourceMeta = document.createElement('div');
-  sourceMeta.className = 'torrent-inspector-meta';
-  sourceMeta.textContent = torrentSourceLabel(entry);
-
-  heroText.appendChild(name);
-  heroText.appendChild(sourceMeta);
-
-  const heroStatus = document.createElement('div');
-  heroStatus.className = 'torrent-inspector-status-stack';
-
-  const status = document.createElement('span');
-  status.className = `transfer-status torrent-status ${torrentStatusClass(entry)}`;
-  status.textContent = torrentStatusLabel(entry);
-
-  const percent = document.createElement('strong');
-  percent.className = 'torrent-inspector-progress';
-  percent.textContent = `${clampPercent(entry.progress_pct).toFixed(1)}%`;
-
-  heroStatus.appendChild(status);
-  heroStatus.appendChild(percent);
-
-  hero.appendChild(heroText);
-  hero.appendChild(heroStatus);
-  torrentUi.inspectorEl.appendChild(hero);
-
+  torrentUi.inspectorEl.appendChild(_buildInspectorHero(entry));
   const insight = document.createElement('div');
   insight.className = 'torrent-inspector-insight';
   insight.textContent = torrentInsight(entry);
   torrentUi.inspectorEl.appendChild(insight);
-
-  const overview = buildInspectorSection('Overview');
-  overview.appendChild(
-    buildInspectorGrid([
-      ['Progress', `${clampPercent(entry.progress_pct).toFixed(1)}%`],
-      ['Pieces', formatTorrentPieces(entry)],
-      ['Queue State', torrentStatusLabel(entry)],
-      ['Added', entry.added_at_utc || 'Unknown'],
-      ['Remaining', formatBytes(entry.bytes_remaining)],
-      ['ETA', formatEta(entry.eta_seconds)],
-    ]),
-  );
-  torrentUi.inspectorEl.appendChild(overview);
-
-  const swarm = buildInspectorSection('Swarm');
-  swarm.appendChild(
-    buildInspectorGrid([
-      ['Peers', queueMetric(entry.peers)],
-      ['Trackers', queueMetric(entry.trackers)],
-      ['Down Rate', formatRate(entry.download_rate_bps)],
-      ['Up Rate', formatRate(entry.upload_rate_bps)],
-      ['Downloaded', formatBytes(entry.downloaded_bytes)],
-      ['Uploaded', formatBytes(entry.uploaded_bytes)],
-      ['Ratio', entry.ratio == null ? '—' : `${entry.ratio.toFixed(2)}x`],
-      ['Metadata', entry.metadata_known ? 'Resolved' : 'Pending'],
-      ['Completed', entry.completed ? 'Yes' : 'No'],
-    ]),
-  );
-  torrentUi.inspectorEl.appendChild(swarm);
-
-  const source = buildInspectorSection('Source');
-  source.appendChild(
-    buildInspectorGrid([
-      ['Info Hash', entry.info_hash || 'Unavailable'],
-      ['Source Kind', (entry.source_kind || 'unknown').toUpperCase()],
-      ['Root', entry.download_root || torrentUi.rootPath || 'Unavailable'],
-      ['Save Path', entry.save_path || 'Pending metadata'],
-      ['Record ID', entry.id],
-    ]),
-  );
-
-  const sourceBlock = document.createElement('div');
-  sourceBlock.className = 'torrent-inspector-source';
-  sourceBlock.textContent = entry.source_value || entry.source_display || 'No source string available.';
-  source.appendChild(sourceBlock);
-  torrentUi.inspectorEl.appendChild(source);
-
-  const actions = buildInspectorSection('Actions');
-  const actionGrid = document.createElement('div');
-  actionGrid.className = 'torrent-inspector-actions';
-
-  const primary = entry.paused
-    ? torrentActionButton('Resume', 'play', () => runTorrentAction('torrent_resume', { id: entry.id }, 'Torrent resumed.'))
-    : torrentActionButton('Pause', 'pause', () => runTorrentAction('torrent_pause', { id: entry.id }, 'Torrent paused.'));
-  const copyHash = torrentActionButton('Copy Hash', 'copy', () => writeToClipboard(entry.info_hash || '', 'Info hash'));
-  const copySource = torrentActionButton('Copy Source', 'clipboard', () => writeToClipboard(entry.source_value || '', 'Source'));
-  const openRoot = torrentActionButton('Open Root', 'folderOpen', openTorrentRoot, 'ghost');
-  const openPayload = torrentActionButton('Reveal Payload', 'arrowUpRight', async () => {
-    await runTorrentAction('torrent_open_save_path', { id: entry.id }, '');
-  }, 'ghost');
-  const sendToLan = torrentActionButton('Send to LAN', 'share2', () => handoffTorrentToLan(entry), 'ghost');
-  const remove = torrentActionButton('Remove', 'trash2', async () => {
-    if (!confirmTorrentRemoval(entry, false)) return;
-    await runTorrentAction('torrent_remove', { id: entry.id, deleteData: false }, 'Torrent removed from the session.');
-  }, 'danger');
-  const purge = torrentActionButton('Purge Data', 'trash2', async () => {
-    if (!confirmTorrentRemoval(entry, true)) return;
-    await runTorrentAction('torrent_remove', { id: entry.id, deleteData: true }, 'Torrent removed and payload deleted.');
-  }, 'danger');
-
-  actionGrid.appendChild(primary);
-  actionGrid.appendChild(copyHash);
-  actionGrid.appendChild(copySource);
-  actionGrid.appendChild(openRoot);
-  actionGrid.appendChild(openPayload);
-  actionGrid.appendChild(sendToLan);
-  actionGrid.appendChild(remove);
-  actionGrid.appendChild(purge);
-  actions.appendChild(actionGrid);
-  torrentUi.inspectorEl.appendChild(actions);
+  _buildInspectorSections(entry).forEach(s => torrentUi.inspectorEl.appendChild(s));
+  torrentUi.inspectorEl.appendChild(_buildInspectorActions(entry));
 }
 
 function renderQueueHeader() {
@@ -534,129 +493,92 @@ function renderQueueHeader() {
   return header;
 }
 
-function renderTorrentRow(entry) {
-  const row = document.createElement('div');
-  row.className = 'torrent-row';
-  if (entry.id === torrentUi.selectedId) {
-    row.classList.add('active');
-  }
-  if (torrentUi.selectedIds.has(entry.id)) {
-    row.classList.add('selected');
-  }
-  row.tabIndex = 0;
-  row.addEventListener('click', () => {
-    torrentUi.selectedId = entry.id;
-    renderTorrentList();
-    renderInspector(entry);
-  });
-  row.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      torrentUi.selectedId = entry.id;
-      renderTorrentList();
-      renderInspector(entry);
-    }
-  });
-
+function _trBuildSelectorCell(entry) {
   const selectorCell = document.createElement('div');
   selectorCell.className = 'torrent-row-cell torrent-row-selector';
   const selector = document.createElement('input');
   selector.type = 'checkbox';
   selector.checked = torrentUi.selectedIds.has(entry.id);
   selector.setAttribute('aria-label', `Select ${entry.name || entry.id}`);
-  selector.addEventListener('click', (event) => event.stopPropagation());
+  selector.addEventListener('click', event => event.stopPropagation());
   selector.addEventListener('change', () => {
-    if (selector.checked) {
-      torrentUi.selectedIds.add(entry.id);
-    } else {
-      torrentUi.selectedIds.delete(entry.id);
-    }
+    if (selector.checked) { torrentUi.selectedIds.add(entry.id); }
+    else { torrentUi.selectedIds.delete(entry.id); }
     renderSummary();
     renderTorrentList();
   });
   selectorCell.appendChild(selector);
+  return selectorCell;
+}
 
+function _trBuildQueueCell(entry) {
   const queueCell = document.createElement('div');
   queueCell.className = 'torrent-row-cell torrent-row-queue';
-
   const title = document.createElement('strong');
   title.className = 'torrent-row-title';
   title.textContent = entry.name || entry.id;
-
   const source = document.createElement('span');
   source.className = 'torrent-row-subline';
   source.textContent = torrentSourceLabel(entry);
-
   const insight = document.createElement('span');
   insight.className = 'torrent-row-subline torrent-row-insight';
   insight.textContent = torrentInsight(entry);
-
   queueCell.appendChild(title);
   queueCell.appendChild(source);
   queueCell.appendChild(insight);
+  return queueCell;
+}
 
+function _trBuildStatusCell(entry) {
   const statusCell = document.createElement('div');
   statusCell.className = 'torrent-row-cell';
   const status = document.createElement('span');
   status.className = `transfer-status torrent-status ${torrentStatusClass(entry)}`;
   status.textContent = torrentStatusLabel(entry);
   statusCell.appendChild(status);
+  return statusCell;
+}
 
+function _trBuildProgressCell(entry) {
   const progressCell = document.createElement('div');
   progressCell.className = 'torrent-row-cell torrent-row-progress';
-
   const progressWrap = document.createElement('div');
   progressWrap.className = 'torrent-row-progress-wrap';
-
   const barBg = document.createElement('div');
   barBg.className = 'transfer-progress-bar-bg';
   const barFill = document.createElement('div');
   barFill.className = `transfer-progress-bar-fill ${entry.completed ? 'completed' : ''}`;
   barFill.style.width = `${clampPercent(entry.progress_pct)}%`;
   barBg.appendChild(barFill);
-
   const progressLabel = document.createElement('span');
   progressLabel.className = 'torrent-row-progress-label';
   progressLabel.textContent = `${clampPercent(entry.progress_pct).toFixed(1)}% · ${formatRate(entry.download_rate_bps)} · ETA ${formatEta(entry.eta_seconds)}`;
-
-  progressWrap.appendChild(barBg);
-  progressWrap.appendChild(progressLabel);
   const progressMeta = document.createElement('span');
   progressMeta.className = 'torrent-row-subline';
   progressMeta.textContent = `${formatBytes(entry.downloaded_bytes)} down · ${formatBytes(entry.uploaded_bytes)} up · ${formatBytes(entry.bytes_remaining)} left`;
+  progressWrap.appendChild(barBg);
+  progressWrap.appendChild(progressLabel);
   progressWrap.appendChild(progressMeta);
   progressCell.appendChild(progressWrap);
+  return progressCell;
+}
 
-  const peersCell = document.createElement('div');
-  peersCell.className = 'torrent-row-cell torrent-row-metric';
-  peersCell.textContent = queueMetric(entry.peers);
-
-  const trackersCell = document.createElement('div');
-  trackersCell.className = 'torrent-row-cell torrent-row-metric';
-  trackersCell.textContent = queueMetric(entry.trackers);
-
-  const piecesCell = document.createElement('div');
-  piecesCell.className = 'torrent-row-cell torrent-row-pieces';
-  piecesCell.textContent = formatTorrentPieces(entry);
-
+function _trBuildActionsCell(entry) {
   const actionsCell = document.createElement('div');
   actionsCell.className = 'torrent-row-cell torrent-row-actions';
-
   const primary = entry.paused
     ? torrentActionButton('Resume', 'play', async (event) => {
-      event.stopPropagation();
-      await runTorrentAction('torrent_resume', { id: entry.id }, 'Torrent resumed.');
-    })
+        event.stopPropagation();
+        await runTorrentAction('torrent_resume', { id: entry.id }, 'Torrent resumed.');
+      })
     : torrentActionButton('Pause', 'pause', async (event) => {
-      event.stopPropagation();
-      await runTorrentAction('torrent_pause', { id: entry.id }, 'Torrent paused.');
-    });
-
+        event.stopPropagation();
+        await runTorrentAction('torrent_pause', { id: entry.id }, 'Torrent paused.');
+      });
   const copyHash = torrentActionButton('Hash', 'copy', async (event) => {
     event.stopPropagation();
     await writeToClipboard(entry.info_hash || '', 'Info hash');
   }, 'ghost');
-
   const inspect = torrentActionButton('Inspect', 'info', (event) => {
     event.stopPropagation();
     torrentUi.selectedId = entry.id;
@@ -672,22 +594,50 @@ function renderTorrentRow(entry) {
     if (!confirmTorrentRemoval(entry, false)) return;
     await runTorrentAction('torrent_remove', { id: entry.id, deleteData: false }, 'Torrent removed from the session.');
   }, 'danger');
-
   actionsCell.appendChild(primary);
   actionsCell.appendChild(copyHash);
   actionsCell.appendChild(inspect);
   actionsCell.appendChild(reveal);
   actionsCell.appendChild(remove);
+  return actionsCell;
+}
 
-  row.appendChild(selectorCell);
-  row.appendChild(queueCell);
-  row.appendChild(statusCell);
-  row.appendChild(progressCell);
+function renderTorrentRow(entry) {
+  const row = document.createElement('div');
+  row.className = 'torrent-row';
+  if (entry.id === torrentUi.selectedId) row.classList.add('active');
+  if (torrentUi.selectedIds.has(entry.id)) row.classList.add('selected');
+  row.tabIndex = 0;
+  row.addEventListener('click', () => {
+    torrentUi.selectedId = entry.id;
+    renderTorrentList();
+    renderInspector(entry);
+  });
+  row.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      torrentUi.selectedId = entry.id;
+      renderTorrentList();
+      renderInspector(entry);
+    }
+  });
+  row.appendChild(_trBuildSelectorCell(entry));
+  row.appendChild(_trBuildQueueCell(entry));
+  row.appendChild(_trBuildStatusCell(entry));
+  row.appendChild(_trBuildProgressCell(entry));
+  const peersCell = document.createElement('div');
+  peersCell.className = 'torrent-row-cell torrent-row-metric';
+  peersCell.textContent = queueMetric(entry.peers);
+  const trackersCell = document.createElement('div');
+  trackersCell.className = 'torrent-row-cell torrent-row-metric';
+  trackersCell.textContent = queueMetric(entry.trackers);
+  const piecesCell = document.createElement('div');
+  piecesCell.className = 'torrent-row-cell torrent-row-pieces';
+  piecesCell.textContent = formatTorrentPieces(entry);
   row.appendChild(peersCell);
   row.appendChild(trackersCell);
   row.appendChild(piecesCell);
-  row.appendChild(actionsCell);
-
+  row.appendChild(_trBuildActionsCell(entry));
   return row;
 }
 
@@ -880,85 +830,57 @@ async function runSelectedBatch(action) {
   }
 }
 
+function _tcInitDomRefs() {
+  const $ = id => document.getElementById(id);
+  torrentUi.addBtn = $('torrent-add-btn'); torrentUi.refreshBtn = $('torrent-refresh-btn');
+  torrentUi.pauseAllBtn = $('torrent-pause-all-btn'); torrentUi.resumeAllBtn = $('torrent-resume-all-btn');
+  torrentUi.openRootBtn = $('torrent-open-root-btn'); torrentUi.sourceInput = $('torrent-source-input');
+  torrentUi.dropzone = $('torrent-dropzone'); torrentUi.searchInput = $('torrent-search-input');
+  torrentUi.filterSelect = $('torrent-filter-select'); torrentUi.sortSelect = $('torrent-sort-select');
+  torrentUi.listEl = $('torrent-list'); torrentUi.rootEl = $('torrent-root-label');
+  torrentUi.countEl = $('torrent-count-label'); torrentUi.inspectorEl = $('torrent-inspector');
+  torrentUi.totalCountEl = $('torrent-total-count'); torrentUi.runningCountEl = $('torrent-running-count');
+  torrentUi.pausedCountEl = $('torrent-paused-count'); torrentUi.completeCountEl = $('torrent-complete-count');
+  torrentUi.batchCopyEl = $('torrent-batch-copy'); torrentUi.selectVisibleBtn = $('torrent-select-visible-btn');
+  torrentUi.clearSelectionBtn = $('torrent-clear-selection-btn'); torrentUi.pauseSelectedBtn = $('torrent-pause-selected-btn');
+  torrentUi.resumeSelectedBtn = $('torrent-resume-selected-btn'); torrentUi.removeSelectedBtn = $('torrent-remove-selected-btn');
+}
+
+function _tcWireBatchBtns() {
+  torrentUi.selectVisibleBtn?.addEventListener('click', () => {
+    getFilteredItems().forEach(entry => torrentUi.selectedIds.add(entry.id));
+    renderSummary(); renderTorrentList();
+  });
+  torrentUi.clearSelectionBtn?.addEventListener('click', () => {
+    torrentUi.selectedIds.clear(); renderSummary(); renderTorrentList();
+  });
+  torrentUi.pauseSelectedBtn?.addEventListener('click', () => runSelectedBatch({
+    command: 'torrent_pause', payload: entry => ({ id: entry.id }),
+    successMessage: entries => `${entries.length} torrent${entries.length === 1 ? '' : 's'} paused.`, keepSelection: true,
+  }));
+  torrentUi.resumeSelectedBtn?.addEventListener('click', () => runSelectedBatch({
+    command: 'torrent_resume', payload: entry => ({ id: entry.id }),
+    successMessage: entries => `${entries.length} torrent${entries.length === 1 ? '' : 's'} resumed.`, keepSelection: true,
+  }));
+  torrentUi.removeSelectedBtn?.addEventListener('click', () => runSelectedBatch({
+    command: 'torrent_remove', payload: entry => ({ id: entry.id, deleteData: false }),
+    confirmMessage: entries => `Do you want to remove ${entries.length} selected torrent${entries.length === 1 ? '' : 's'} from the session?`,
+    successMessage: entries => `${entries.length} torrent${entries.length === 1 ? '' : 's'} removed from the session.`, keepSelection: false,
+  }));
+}
+
 export function initTorrentClient() {
   if (torrentUi.initialized) return;
   torrentUi.initialized = true;
-
-  torrentUi.addBtn = document.getElementById('torrent-add-btn');
-  torrentUi.refreshBtn = document.getElementById('torrent-refresh-btn');
-  torrentUi.pauseAllBtn = document.getElementById('torrent-pause-all-btn');
-  torrentUi.resumeAllBtn = document.getElementById('torrent-resume-all-btn');
-  torrentUi.openRootBtn = document.getElementById('torrent-open-root-btn');
-  torrentUi.sourceInput = document.getElementById('torrent-source-input');
-  torrentUi.dropzone = document.getElementById('torrent-dropzone');
-  torrentUi.searchInput = document.getElementById('torrent-search-input');
-  torrentUi.filterSelect = document.getElementById('torrent-filter-select');
-  torrentUi.sortSelect = document.getElementById('torrent-sort-select');
-  torrentUi.listEl = document.getElementById('torrent-list');
-  torrentUi.rootEl = document.getElementById('torrent-root-label');
-  torrentUi.countEl = document.getElementById('torrent-count-label');
-  torrentUi.inspectorEl = document.getElementById('torrent-inspector');
-  torrentUi.totalCountEl = document.getElementById('torrent-total-count');
-  torrentUi.runningCountEl = document.getElementById('torrent-running-count');
-  torrentUi.pausedCountEl = document.getElementById('torrent-paused-count');
-  torrentUi.completeCountEl = document.getElementById('torrent-complete-count');
-  torrentUi.batchCopyEl = document.getElementById('torrent-batch-copy');
-  torrentUi.selectVisibleBtn = document.getElementById('torrent-select-visible-btn');
-  torrentUi.clearSelectionBtn = document.getElementById('torrent-clear-selection-btn');
-  torrentUi.pauseSelectedBtn = document.getElementById('torrent-pause-selected-btn');
-  torrentUi.resumeSelectedBtn = document.getElementById('torrent-resume-selected-btn');
-  torrentUi.removeSelectedBtn = document.getElementById('torrent-remove-selected-btn');
-
-  if (!torrentUi.addBtn || !torrentUi.refreshBtn || !torrentUi.sourceInput || !torrentUi.listEl) {
-    return;
-  }
-
+  _tcInitDomRefs();
+  if (!torrentUi.addBtn || !torrentUi.refreshBtn || !torrentUi.sourceInput || !torrentUi.listEl) return;
   torrentUi.addBtn.addEventListener('click', addTorrentFromInput);
   torrentUi.refreshBtn.addEventListener('click', () => refreshTorrentPanel());
   torrentUi.pauseAllBtn?.addEventListener('click', () => runTorrentAction('torrent_pause_all', {}, 'All torrents paused.'));
   torrentUi.resumeAllBtn?.addEventListener('click', () => runTorrentAction('torrent_resume_all', {}, 'All torrents resumed.'));
   torrentUi.openRootBtn?.addEventListener('click', openTorrentRoot);
-  torrentUi.selectVisibleBtn?.addEventListener('click', () => {
-    getFilteredItems().forEach((entry) => torrentUi.selectedIds.add(entry.id));
-    renderSummary();
-    renderTorrentList();
-  });
-  torrentUi.clearSelectionBtn?.addEventListener('click', () => {
-    torrentUi.selectedIds.clear();
-    renderSummary();
-    renderTorrentList();
-  });
-  torrentUi.pauseSelectedBtn?.addEventListener('click', () =>
-    runSelectedBatch({
-      command: 'torrent_pause',
-      payload: (entry) => ({ id: entry.id }),
-      successMessage: (entries) => `${entries.length} torrent${entries.length === 1 ? '' : 's'} paused.`,
-      keepSelection: true,
-    })
-  );
-  torrentUi.resumeSelectedBtn?.addEventListener('click', () =>
-    runSelectedBatch({
-      command: 'torrent_resume',
-      payload: (entry) => ({ id: entry.id }),
-      successMessage: (entries) => `${entries.length} torrent${entries.length === 1 ? '' : 's'} resumed.`,
-      keepSelection: true,
-    })
-  );
-  torrentUi.removeSelectedBtn?.addEventListener('click', () =>
-    runSelectedBatch({
-      command: 'torrent_remove',
-      payload: (entry) => ({ id: entry.id, deleteData: false }),
-      confirmMessage: (entries) => `Do you want to remove ${entries.length} selected torrent${entries.length === 1 ? '' : 's'} from the session?`,
-      successMessage: (entries) => `${entries.length} torrent${entries.length === 1 ? '' : 's'} removed from the session.`,
-      keepSelection: false,
-    })
-  );
-  torrentUi.sourceInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      addTorrentFromInput();
-    }
-  });
+  _tcWireBatchBtns();
+  torrentUi.sourceInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); addTorrentFromInput(); } });
   torrentUi.sourceInput.addEventListener('paste', () => {
     window.setTimeout(() => {
       if (!torrentUi.sourceInput) return;
@@ -966,23 +888,17 @@ export function initTorrentClient() {
       if (!source.toLowerCase().startsWith('magnet:')) return;
       torrentUi.sourceInput.value = source;
       const duplicate = findDuplicateTorrent(source);
-      if (duplicate) {
-        addNotification?.('Duplicate Torrent Detected', `${duplicate.name || duplicate.id} already carries that magnet or info hash.`, 'warn');
-      }
+      if (duplicate) addNotification?.('Duplicate Torrent Detected', `${duplicate.name || duplicate.id} already carries that magnet or info hash.`, 'warn');
     }, 0);
   });
   attachDropzone();
-
-  [torrentUi.searchInput, torrentUi.filterSelect, torrentUi.sortSelect].forEach((node) => {
+  [torrentUi.searchInput, torrentUi.filterSelect, torrentUi.sortSelect].forEach(node => {
     node?.addEventListener('input', renderTorrentList);
     node?.addEventListener('change', renderTorrentList);
   });
-
   refreshTorrentPanel(true);
   torrentUi.refreshTimer = window.setInterval(() => {
     const shareView = document.getElementById('view-share');
-    if (shareView && shareView.classList.contains('active')) {
-      refreshTorrentPanel(true);
-    }
+    if (shareView && shareView.classList.contains('active')) refreshTorrentPanel(true);
   }, TORRENT_REFRESH_INTERVAL_MS);
 }

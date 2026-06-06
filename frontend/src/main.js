@@ -62,7 +62,6 @@ import {
 } from "./notifications.js";
 import { initAgentView } from "./agent.js";
 import { initMemoryView } from "./memory.js";
-import { initTorrentClient } from "./torrent.js";
 import { FocusTrap } from "./focus-trap.js";
 import { renderShortcutsOverlay, KEYBOARD_SHORTCUTS, getShortcutOverrides, saveShortcutOverride, resetShortcutOverride, getEffectiveKeys } from "./shortcuts.js";
 import { RADIAL_SEGMENTS } from "./radial.js";
@@ -72,9 +71,6 @@ import { initApiLabView } from "./api_lab.js";
 import { initCliMakerView } from "./cli_maker.js";
 import { initGraphView } from "./graph_view.js";
 import { initSchedulerView } from "./scheduler_view.js";
-import { initWorkflowView } from "./workflow_view.js";
-import { initIdeView, deactivateIdeView } from "./ide_view.js";
-import { initOrchestrator } from "./orchestrator.js";
 
 import { listen } from "./neurobridge.js";
 import { marked } from "marked";
@@ -114,11 +110,8 @@ window.announceToScreenReader = announceToScreenReader;
 
 let oauthFocusTrap = null;
 
-async function triggerOAuthLogin() {
-  let chatViewport = document.getElementById("chat-viewport");
-
-  // Add pending message to viewport
-  let msg = document.createElement("div");
+function _oauthCreateCard(chatViewport) {
+  const msg = document.createElement("div");
   msg.className = "message ai";
   msg.id = "oauth-message-card";
   msg.tabIndex = -1;
@@ -137,58 +130,40 @@ async function triggerOAuthLogin() {
   chatViewport.appendChild(msg);
   chatViewport.scrollTop = chatViewport.scrollHeight;
   msg.focus({ preventScroll: true });
+  return msg;
+}
+
+async function _oauthShowDeviceInfo(data, chatViewport) {
+  document.getElementById("oauth-status").innerText = "Waiting for mobile approval...";
+  document.getElementById("oauth-qr-container").style.display = "inline-block";
+  document.getElementById("oauth-url-text").style.display = "block";
+  document.getElementById("oauth-code-text").style.display = "block";
+  document.getElementById("oauth-code").style.display = "inline-block";
+  document.getElementById("oauth-url").href = data.verification_uri;
+  document.getElementById("oauth-url").innerText = data.verification_uri;
+  document.getElementById("oauth-code").innerText = data.user_code;
+  await QRCode.toCanvas(document.getElementById("oauth-qr"), data.verification_uri_complete || data.verification_uri, { width: 200, margin: 1 });
+  chatViewport.scrollTop = chatViewport.scrollHeight;
+}
+
+async function triggerOAuthLogin() {
+  const chatViewport = document.getElementById("chat-viewport");
+  const msg = _oauthCreateCard(chatViewport);
   if (oauthFocusTrap) oauthFocusTrap.deactivate(false);
   oauthFocusTrap = new FocusTrap(msg);
   oauthFocusTrap.activate();
-
   try {
     const data = await invoke("start_oauth_flow");
-
-    document.getElementById("oauth-status").innerText =
-      "Waiting for mobile approval...";
-
-    // Show QR Code and URLs
-    document.getElementById("oauth-qr-container").style.display =
-      "inline-block";
-    document.getElementById("oauth-url-text").style.display = "block";
-    document.getElementById("oauth-code-text").style.display = "block";
-    document.getElementById("oauth-code").style.display = "inline-block";
-
-    document.getElementById("oauth-url").href = data.verification_uri;
-    document.getElementById("oauth-url").innerText = data.verification_uri;
-    document.getElementById("oauth-code").innerText = data.user_code;
-
-    await QRCode.toCanvas(
-      document.getElementById("oauth-qr"),
-      data.verification_uri_complete || data.verification_uri,
-      {
-        width: 200,
-        margin: 1,
-      },
-    );
-
-    chatViewport.scrollTop = chatViewport.scrollHeight;
-
-    await invoke("poll_oauth_token", {
-      deviceCode: data.device_code,
-      interval: data.interval,
-    });
-
-    document.getElementById("oauth-status").innerText =
-      "Authentication successful! Token saved to OS Keychain.";
+    await _oauthShowDeviceInfo(data, chatViewport);
+    await invoke("poll_oauth_token", { deviceCode: data.device_code, interval: data.interval });
+    document.getElementById("oauth-status").innerText = "Authentication successful! Token saved to OS Keychain.";
     document.getElementById("oauth-status").style.color = "#00ff41";
   } catch (err) {
     console.error(err);
-    let statusEl = document.getElementById("oauth-status");
-    if (statusEl) {
-      statusEl.innerText = "Authentication failed: " + String(err);
-      statusEl.style.color = "red";
-    }
+    const statusEl = document.getElementById("oauth-status");
+    if (statusEl) { statusEl.innerText = "Authentication failed: " + String(err); statusEl.style.color = "red"; }
   } finally {
-    if (oauthFocusTrap) {
-      oauthFocusTrap.deactivate(false);
-      oauthFocusTrap = null;
-    }
+    if (oauthFocusTrap) { oauthFocusTrap.deactivate(false); oauthFocusTrap = null; }
   }
 }
 
@@ -382,3167 +357,7 @@ window.applyThemeColors = function (theme) {
   }
 };
 
-document.querySelector("#app").innerHTML = `
-    <!-- ═══════════════════════════════════════════════════════════
-         CTRL+P PROMPT SIDEBAR — view-aware sliding panel
-         ═══════════════════════════════════════════════════════════ -->
-    <aside class="ctrl-prompt-panel" id="ctrl-prompt-panel" aria-hidden="true" inert aria-label="Contextual prompt templates">
-        <div class="ctrl-prompt-panel-header">
-            <span class="ctrl-prompt-panel-title">Prompt Templates</span>
-            <button class="ctrl-prompt-panel-close" id="ctrl-prompt-panel-close" aria-label="Close panel">✕</button>
-        </div>
-        <div class="ctrl-prompt-panel-view-label" id="ctrl-prompt-panel-view-label">Chat</div>
-        <div class="ctrl-prompt-panel-list" id="ctrl-prompt-panel-list"></div>
-    </aside>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         CINEMATIC BOOT SCREEN — removed from DOM after init
-         ═══════════════════════════════════════════════════════════ -->
-    <div id="boot-overlay">
-        <div class="boot-main">
-            <div class="boot-ascii-panel">
-                <pre class="boot-ascii-art">███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗
-████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗
-██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║
-██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║
-██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝
-╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
-██████╗ ███████╗ ██████╗██╗  ██╗
-██╔══██╗██╔════╝██╔════╝██║ ██╔╝
-██║  ██║█████╗  ██║     █████╔╝
-██║  ██║██╔══╝  ██║     ██╔═██╗
-██████╔╝███████╗╚██████╗██║  ██╗
-╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝</pre>
-                <div class="boot-subtitle">AI TERMINAL OS · LIVE STARTUP DIAGNOSTICS</div>
-                <div class="boot-build-tag">BUILD 20260525 · SELF-HEAL ACTIVE · KFMS RA</div>
-                <div class="boot-status-dot" id="boot-status-dot"></div>
-            </div>
-            <div class="boot-log-panel">
-                <div class="boot-log-header">SYSTEM BOOT LOG — KERNEL INIT SEQUENCE</div>
-                <div class="boot-log-scroll" id="boot-log-scroll"></div>
-            </div>
-        </div>
-        <div class="boot-progress-bar-wrap">
-            <div class="boot-progress-label">
-                <span id="boot-progress-label-text">INITIALIZING...</span>
-                <span id="boot-progress-pct">0%</span>
-            </div>
-            <div class="boot-progress-track">
-                <div class="boot-progress-fill" id="boot-progress-fill"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Visually-hidden page title for screen-reader navigation -->
-    <h1 class="sr-only">NEURODECK OS — AI Terminal Interface</h1>
-
-    <div class="app-layout">
-        <!-- Collapsible Sidebar (Left) -->
-        <aside class="sidebar collapsed" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-brand">
-                    <span>NEURODECK</span>
-                    <span class="sidebar-brand-version">v1.6.0</span>
-                </div>
-                <button class="sidebar-toggle-btn" id="sidebar-close-btn" title="Collapse Sidebar" aria-label="Collapse Sidebar">◀</button>
-            </div>
-            <button class="new-chat-btn" id="new-chat-btn">
-                <span>+ New Chat</span>
-            </button>
-            <div class="sidebar-history" id="sidebar-history" tabindex="0">
-                <div class="history-group-label">Recent Sessions</div>
-                <!-- Sessions will be loaded here -->
-            </div>
-            <!-- ═══════ SESSION BROWSER ═══════ -->
-            <div class="session-browser" id="session-browser">
-                <button class="session-browser-toggle" id="session-browser-toggle" aria-expanded="false">
-                    ${createIcon("clock", { size: 13 })}
-                    <span>Saved Sessions</span>
-                    <span class="session-browser-chevron" id="session-browser-chevron">${createIcon("chevronRight", { size: 12 })}</span>
-                </button>
-                <div class="session-browser-list hidden" id="session-browser-list" aria-label="Saved sessions list">
-                    <!-- Populated by initSessionBrowser() -->
-                </div>
-            </div>
-
-            <div class="sidebar-diagnostics" id="sidebar-diagnostics">
-                <div class="diag-header">SYSTEM DIAGNOSTICS</div>
-                <div class="diag-grid">
-                    <div class="diag-item" id="diag-pty" title="Shell / PTY Status">
-                        <span class="diag-dot offline" id="diag-dot-pty"></span>
-                        <span class="diag-label">PTY</span>
-                    </div>
-                    <div class="diag-item" id="diag-mdns" title="LAN Discovery / mDNS">
-                        <span class="diag-dot offline" id="diag-dot-mdns"></span>
-                        <span class="diag-label">LAN</span>
-                    </div>
-                    <div class="diag-item" id="diag-llm" title="LLM Provider Connectivity">
-                        <span class="diag-dot offline" id="diag-dot-llm"></span>
-                        <span class="diag-label">LLM</span>
-                    </div>
-                    <div class="diag-item" id="diag-collab" title="Collab Server Status">
-                        <span class="diag-dot offline" id="diag-dot-collab"></span>
-                        <span class="diag-label">COLLAB</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Top Nav -->
-            <header class="top-nav">
-                <div class="top-nav-left">
-                    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">${createIcon("menu", { size: 18 })}</button>
-                    <span class="top-nav-title" id="session-title">Active Session</span>
-                </div>
-
-                <div class="top-nav-right">
-                    <button class="model-selector-indicator" id="model-name" title="Switch Agent (Ctrl+Shift+M)" onclick="toggleAgentSwitcher()">[ MODEL: GEMINI ]</button>
-                    <span class="game-context-badge hidden" id="game-badge" title="Steam game detected">
-                        <span class="game-badge-dot" id="game-badge-dot"></span>
-                        <span id="game-badge-name"></span>
-                    </span>
-                    <span class="status-badge">
-                        <span class="status-dot"></span>
-                        <span id="tool-status">Idle</span>
-                    </span>
-                    <button class="input-btn" id="mute-btn" title="Mute Speech (Ctrl+M)" aria-label="Mute Speech">${createIcon("volume2", { size: 18 })}</button>
-                    <button class="input-btn" id="notif-btn" title="Notifications" aria-label="Notifications" style="position: relative;">${createIcon("bell", { size: 18 })}<span class="notif-badge hidden" id="notif-badge">0</span></button>
-                    <button class="input-btn" id="command-palette-btn" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">${createIcon("search", { size: 18 })}</button>
-                    <button class="input-btn" id="manual-btn" title="App Manual (F1)" aria-label="Open App Manual">${createIcon("bookOpen", { size: 18 })}</button>
-                    <button class="input-btn" id="settings-btn" title="Settings" aria-label="Open Settings">${createIcon("settings2", { size: 18 })}</button>
-                </div>
-            </header>
-
-            <!-- Breadcrumb / Location Bar -->
-            <div class="breadcrumb-bar" id="breadcrumb-bar" aria-label="Breadcrumb">
-                <span class="breadcrumb-root">NEURODECK</span>
-                <span class="breadcrumb-sep">/</span>
-                <span class="breadcrumb-view" id="breadcrumb-view">Chat</span>
-            </div>
-
-            <!-- ═══════════════════════════════════════════════════════════
-                 NAVIGATION TAB ROW — full-width row below top-nav
-                 ═══════════════════════════════════════════════════════════ -->
-            <nav class="nav-tab-row">
-                <div class="nav-tab-bar">
-                    <div class="nav-tab-glide" id="nav-tab-glide"></div>
-                    <button class="nav-tab active" data-view="chat" data-testid="nav-tab-chat">💬 Chat</button>
-                    <button class="nav-tab" data-view="canvas" data-testid="nav-tab-canvas">🎨 Canvas</button>
-                    <button class="nav-tab" data-view="terminal" data-testid="nav-tab-terminal">💻 Terminal</button>
-                    <button class="nav-tab" data-view="ssh" data-testid="nav-tab-ssh">🔑 SSH</button>
-                    <button class="nav-tab" data-view="tunnel" data-testid="nav-tab-tunnel">🔗 Tunnel</button>
-                    <button class="nav-tab" data-view="share" data-testid="nav-tab-share">📤 Share</button>
-                    <button class="nav-tab" data-view="browser" data-testid="nav-tab-browser">🌐 Browser</button>
-                    <button class="nav-tab" data-view="agent" data-testid="nav-tab-agent">🤖 Agent</button>
-                    <button class="nav-tab" data-view="memory" data-testid="nav-tab-memory">🧠 Memory</button>
-                    <button class="nav-tab" data-view="prompt-lab" data-testid="nav-tab-prompt-lab">📝 Prompt Lab</button>
-                    <button class="nav-tab" data-view="remote" data-testid="nav-tab-remote">🖥️ Remote</button>
-                    <button class="nav-tab" data-view="docs" data-testid="nav-tab-docs">📚 Docs</button>
-                    <button class="nav-tab" data-view="git" data-testid="nav-tab-git">🌿 Git</button>
-                    <button class="nav-tab" data-view="api-lab" data-testid="nav-tab-api-lab">🧪 API Lab</button>
-                    <button class="nav-tab" data-view="cli-maker" data-testid="nav-tab-cli-maker">⚡ CLI</button>
-                    <button class="nav-tab" data-view="graph" data-testid="nav-tab-graph">🕸️ Graph</button>
-                    <button class="nav-tab" data-view="scheduler" data-testid="nav-tab-scheduler">⏰ Scheduler</button>
-                    <button class="nav-tab" data-view="workflow" data-testid="nav-tab-workflow">🔀 Flow</button>
-                    <button class="nav-tab" data-view="ide" data-testid="nav-tab-ide">💻 IDE</button>
-                    <button class="nav-tab" data-view="orchestrator" data-testid="nav-tab-orchestrator">🧩 Orchestrate</button>
-                </div>
-            </nav>
-
-            <!-- ═══════════════════════════════════════════════════════════
-                 AGENT SWITCHER PANEL — drops down from model-name button
-                 ═══════════════════════════════════════════════════════════ -->
-            <div id="agent-switcher-panel" class="agent-switcher-panel hidden">
-                <div class="agent-switcher-header">
-                    <span class="agent-switcher-title">${createIcon("zap", { size: 14 })}<span>Agent Switch</span></span>
-                    <div class="agent-switcher-tabs">
-                        <button class="agent-tab active" data-atab="agents">Agents</button>
-                        <button class="agent-tab" data-atab="recommended">Steam Deck Best</button>
-                        <button class="agent-tab" data-atab="custom">+ Custom</button>
-                    </div>
-                    <button class="agent-switcher-close" onclick="toggleAgentSwitcher()" aria-label="Close agent switcher">${createIcon("x", { size: 14 })}</button>
-                </div>
-                <div class="agent-tab-body" id="agent-tab-agents">
-                    <div class="agent-card-grid" id="agent-card-grid">
-                        <!-- Populated by renderAgentSwitcher() -->
-                    </div>
-                </div>
-                <div class="agent-tab-body hidden" id="agent-tab-recommended">
-                    <div class="agent-rec-grid" id="agent-rec-grid">
-                        <!-- Populated by renderRecommendedModels() -->
-                    </div>
-                </div>
-                <div class="agent-tab-body hidden" id="agent-tab-custom">
-                    <div class="agent-custom-form">
-                        <div class="agent-form-row">
-                            <label>ID (slug)</label>
-                            <input id="new-agent-id" type="text" placeholder="my-agent" maxlength="40" />
-                        </div>
-                        <div class="agent-form-row">
-                            <label>Name</label>
-                            <input id="new-agent-name" type="text" placeholder="My Agent" maxlength="30" />
-                        </div>
-                        <div class="agent-form-row">
-                            <label>Provider</label>
-                            <select id="new-agent-provider">
-                                <option value="gemini">Gemini (Cloud)</option>
-                                <option value="kimi">Kimi (Cloud)</option>
-                                <option value="ollama">Ollama (Local)</option>
-                            </select>
-                        </div>
-                        <div class="agent-form-row">
-                            <label>Model</label>
-                            <input id="new-agent-model" type="text" placeholder="gemini-2.0-flash" />
-                        </div>
-                        <div class="agent-form-row" id="new-agent-url-row" style="display:none">
-                            <label>Base URL</label>
-                            <input id="new-agent-url" type="text" placeholder="http://localhost:11434" />
-                        </div>
-                        <div class="agent-form-row">
-                            <label>Description</label>
-                            <input id="new-agent-desc" type="text" placeholder="Optional description" maxlength="120" />
-                        </div>
-                        <div class="agent-form-status" id="new-agent-status"></div>
-                        <button class="agent-save-btn" onclick="handleAddAgent()">Save Agent</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="command-palette-overlay hidden" id="command-palette-overlay" aria-hidden="true">
-                <div class="command-palette-card" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
-                    <div class="command-palette-header">
-                        <div class="command-palette-search-shell">
-                            <span class="command-palette-search-icon">${createIcon("search", { size: 16 })}</span>
-                            <input
-                                id="command-palette-input"
-                                type="text"
-                                autocomplete="off"
-                                spellcheck="false"
-                                placeholder="Search commands, tabs, and settings…"
-                                aria-label="Command palette search"
-                            />
-                        </div>
-                        <button class="command-palette-close" id="command-palette-close" aria-label="Close command palette">${createIcon("x", { size: 16 })}</button>
-                    </div>
-                    <div class="command-palette-help" id="command-palette-title">
-                        Use Enter to run the highlighted action. Esc closes. Ctrl+K reopens the palette.
-                    </div>
-                    <div class="command-palette-list" id="command-palette-list"></div>
-                </div>
-            </div>
-
-            <!-- Quick Switcher -->
-            <div class="quick-switcher-overlay hidden" id="quick-switcher-overlay" aria-hidden="true">
-                <div class="quick-switcher-card" role="dialog" aria-modal="true" aria-label="Quick Switcher">
-                    <div class="quick-switcher-list" id="quick-switcher-list"></div>
-                    <div class="quick-switcher-hint">Ctrl+Tab to cycle · Shift+Ctrl+Tab reverse · Enter to switch · Esc to close</div>
-                </div>
-            </div>
-
-            <div class="view-container">
-                <!-- Chat View -->
-                <div class="view-content active" id="view-chat" data-testid="view-chat">
-                    <!-- Session Context Header -->
-                    <div class="chat-session-header" id="chat-session-header">
-                        <div class="chat-session-header-left">
-                            <span class="chat-session-kicker">Conversation Core</span>
-                            <span class="chat-session-status-dot" id="chat-status-dot"></span>
-                            <span class="chat-session-name" id="chat-session-name">New Session</span>
-                        </div>
-                        <div class="chat-session-header-center">
-                            <span class="chat-session-model-chip" id="chat-session-model">GEMINI</span>
-                        </div>
-                        <div class="chat-session-header-right">
-                            <span class="chat-session-tokens" id="chat-session-tokens">0 tokens</span>
-                            <button class="chat-session-compare-btn" id="compare-toggle-btn" title="Toggle Model Comparison" aria-label="Toggle Model Comparison">${createIcon("columns", { size: 14 })}</button>
-                            <div class="chat-export-dropdown" id="chat-export-dropdown">
-                                <button class="chat-session-new-btn" id="chat-export-btn" title="Export session" aria-label="Export session" aria-haspopup="true" aria-expanded="false">${createIcon("download", { size: 13 })}</button>
-                                <div class="chat-export-menu hidden" id="chat-export-menu" role="menu">
-                                    <button class="chat-export-item" data-format="markdown" role="menuitem">${createIcon("fileText", { size: 13 })} Copy as Markdown</button>
-                                    <button class="chat-export-item" data-format="html" role="menuitem">${createIcon("globe", { size: 13 })} Copy as HTML</button>
-                                    <button class="chat-export-item" data-format="json" role="menuitem">${createIcon("code", { size: 13 })} Copy as JSON</button>
-                                </div>
-                            </div>
-                            <button class="chat-session-new-btn" id="new-chat-btn-header" title="New Session (Ctrl+N)">+ New</button>
-                        </div>
-                    </div>
-                    <!-- Chat Workspace -->
-                    <div class="chat-workspace" id="chat-workspace" tabindex="0" role="log" aria-label="Chat history">
-                        <div class="chat-viewport" id="chat-viewport">
-                            <!-- Welcome state rendered by initChat() -->
-                        </div>
-                    </div>
-
-                    <!-- Floating Input Console -->
-                    <div class="floating-input-container">
-                        <!-- Generating Status Bar -->
-                        <div class="chat-gen-bar hidden" id="chat-gen-bar">
-                            <div class="chat-gen-bar-dots"><span></span><span></span><span></span></div>
-                            <span class="chat-gen-bar-text">Generating</span>
-                            <span class="chat-gen-bar-sep">·</span>
-                            <span class="chat-gen-bar-model" id="chat-gen-model">GEMINI</span>
-                            <span class="chat-gen-bar-sep">·</span>
-                            <span class="chat-gen-bar-tokens" id="chat-gen-tokens">0 tokens</span>
-                            <div class="chat-gen-bar-spacer"></div>
-                            <button class="chat-gen-stop-btn" id="chat-gen-stop">Stop</button>
-                        </div>
-                        <div class="input-console-bar">
-                            <div class="chat-input-context" id="chat-input-context"></div>
-                            <div class="input-textarea-wrapper">
-                                <div class="chat-attachment-bar hidden" id="chat-attachment-bar"></div>
-                                <textarea id="user-input" data-testid="chat-input" placeholder="Enter command or type message..." rows="1" autocomplete="off"></textarea>
-                            </div>
-                            <div class="input-actions-bar">
-                                <div class="input-actions-left">
-                                    <button class="input-btn mic-btn" id="mic-btn" title="Voice Input" aria-label="Voice Input">🎙️</button>
-                                    <button class="input-btn" id="toggle-drawer-btn" title="Toggle Context Drawer" aria-label="Toggle Context Drawer">📊</button>
-                                    <button class="input-btn screenshot-btn" id="screenshot-btn" title="Attach Last Screenshot (Vision)" aria-label="Attach Screenshot">📸</button>
-                                    <button class="input-btn attach-btn" id="attach-btn" title="Attach Files (Ctrl+Shift+A)" aria-label="Attach Files">📎</button>
-                                    <input type="file" id="file-input" class="hidden" multiple accept="*/*">
-                                </div>
-                                <div class="input-actions-right">
-                                    <button class="send-prompt-btn" id="send-btn" data-testid="chat-send-btn" title="Send Message" aria-label="Send Message">
-                                        <span>Send</span>
-                                        <span>🚀</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- History Search Overlay (Ctrl+H) -->
-                <div id="history-search-overlay" class="hidden">
-                    <div class="history-search-panel">
-                        <div class="history-search-header">
-                            <div class="history-search-title">${createIcon("zap", { size: 14 })}<span>AI Shell History Search</span></div>
-                            <div class="history-search-input-wrap">
-                                <span class="history-search-icon">${createIcon("search", { size: 16 })}</span>
-                                <input type="text" id="history-search-input" placeholder="Describe the command you're looking for..." autocomplete="off" spellcheck="false">
-                            </div>
-                            <div class="history-search-status" id="history-search-status">Press Enter to search • Esc to close</div>
-                        </div>
-                        <div class="history-search-body" id="history-search-body">
-                            <div class="history-empty-state">
-                                <span class="history-empty-icon">${createIcon("search", { size: 18 })}</span>
-                                <span class="history-empty-copy">Start typing to search your shell history with AI</span>
-                            </div>
-                        </div>
-                        <div class="history-search-footer">
-                            <span><kbd>↑↓</kbd> navigate</span>
-                            <span><kbd>Enter</kbd> insert command</span>
-                            <span><kbd>Esc</kbd> close</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live Code Canvas View -->
-                <div class="view-content view-layout-column" id="view-canvas" data-testid="view-canvas">
-                    <div class="canvas-toolbar">
-                        <select id="canvas-lang-select" class="canvas-lang-select" aria-label="Language">
-                            <option value="html">HTML</option>
-                            <option value="css">CSS</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="markdown">Markdown</option>
-                            <option value="bash">Bash / Shell</option>
-                            <option value="python">Python</option>
-                            <option value="lua">Lua</option>
-                        </select>
-                        <button class="canvas-btn" id="canvas-run-btn">${createIcon("play", { size: 14 })}<span>Run</span></button>
-                        <button class="canvas-btn" id="canvas-copy-btn">${createIcon("copy", { size: 14 })}<span>Copy</span></button>
-                        <button class="canvas-btn" id="canvas-clear-btn">${createIcon("eraser", { size: 14 })}<span>Clear</span></button>
-                        <button class="canvas-btn canvas-btn-ai" id="canvas-ai-edit-btn" title="AI inline edit">${createIcon("wand2", { size: 14 })}<span>AI Edit</span></button>
-                        <button class="canvas-btn" id="canvas-collab-btn" title="Live Collaboration" style="margin-left: auto;">${createIcon("users", { size: 14 })}<span>Collab</span></button>
-                        <span class="canvas-instructions">Ctrl+Enter to run • Live preview updates as you type</span>
-                    </div>
-                    <div id="canvas-collab-status-bar" class="canvas-collab-status-bar" style="display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,255,136,0.06); border-bottom: 1px solid rgba(0,255,136,0.15); font-family: var(--font-mono); font-size: 0.78rem;">
-                        <span style="display:inline-block; width:8px; height:8px; background:var(--response-color); border-radius:50%; box-shadow: 0 0 8px var(--response-color);"></span>
-                        <span id="canvas-collab-status-text" style="color:var(--response-color);">Collab Active: Syncing edits live</span>
-                        <span id="canvas-collab-peer-count" class="canvas-collab-peer-count">0 peers</span>
-                        <button class="canvas-btn canvas-btn-sm" id="canvas-collab-resync-btn" style="margin-left: auto; padding: 2px 8px; font-size: 0.72rem;">${createIcon("refreshCw", { size: 12 })}<span>Force Resync</span></button>
-                    </div>
-                    <div class="canvas-split" id="canvas-split">
-                        <div class="canvas-editor-pane" id="canvas-editor-pane">
-                            <div class="canvas-pane-header">
-                                <span id="canvas-file-title">untitled.html</span>
-                            </div>
-                            <div id="canvas-monaco" class="canvas-monaco-container"></div>
-                        </div>
-                        <div class="canvas-divider" id="canvas-divider"></div>
-                        <div class="canvas-preview-pane" id="canvas-preview-pane">
-                            <div class="canvas-pane-header">
-                                <span>Live Preview</span>
-                                <button class="canvas-btn canvas-btn-sm" id="canvas-refresh-btn" aria-label="Refresh preview">↺</button>
-                            </div>
-                            <iframe id="canvas-preview-frame" class="canvas-preview-frame" sandbox="allow-scripts allow-modals" title="Live Preview"></iframe>
-                            <pre id="canvas-preview-output" class="canvas-preview-output" style="display: none; flex: 1; margin: 0; padding: 15px; background: #050505; color: #00FF88; font-family: var(--font-mono); font-size: 0.9rem; overflow: auto; white-space: pre-wrap; word-break: break-all; border: none; height: calc(100% - 30px); box-sizing: border-box;"></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Interactive PTY Terminal View -->
-                <div class="view-content view-layout-column" id="view-terminal" data-testid="view-terminal">
-                    <!-- Unified top bar: session tabs + shell selector + actions in one row -->
-                    <div class="term-topbar">
-                        <div class="term-session-tabs" id="terminal-tabs-list"></div>
-                        <button class="term-new-tab-btn" id="terminal-add-tab-btn" title="New Tab" aria-label="New Terminal Tab">+</button>
-                        <div class="term-topbar-sep"></div>
-                        <div class="term-shell-group" id="shell-pill-group">
-                            <button class="term-shell-btn active" data-shell="default" title="Default Shell" aria-label="Default Shell">&gt;_</button>
-                            <button class="term-shell-btn" data-shell="/bin/bash" title="Bash" aria-label="Bash Shell">bash</button>
-                            <button class="term-shell-btn" data-shell="/bin/zsh" title="Zsh" aria-label="Zsh Shell">zsh</button>
-                            <button class="term-shell-btn" data-shell="/bin/fish" title="Fish" aria-label="Fish Shell">fish</button>
-                            <button class="term-shell-btn" data-shell="powershell.exe" title="PowerShell" aria-label="PowerShell">PS</button>
-                            <button class="term-shell-btn" data-shell="cmd.exe" title="CMD" aria-label="CMD">cmd</button>
-                        </div>
-                        <div class="term-topbar-sep"></div>
-                        <div class="term-actions">
-                            <button class="term-action-btn" id="term-font-dec-btn" title="Decrease Font Size" aria-label="Decrease Font Size">A-</button>
-                            <button class="term-action-btn" id="term-font-inc-btn" title="Increase Font Size" aria-label="Increase Font Size">A+</button>
-                            <button class="term-action-btn" id="term-clear-btn" title="Clear Screen" aria-label="Clear Screen">⌫</button>
-                            <button class="term-action-btn" id="pty-reconnect-btn" title="Restart Shell" aria-label="Restart Shell">↺</button>
-                        </div>
-                    </div>
-                    <div id="pty-terminal-container"></div>
-                </div>
-
-                <!-- SSH Client View -->
-                <div class="view-content" id="view-ssh" data-testid="view-ssh">
-                    <div class="ssh-shell">
-                    <div class="ssh-layout">
-                        <div class="ssh-sidebar">
-                            <span class="ssh-kicker">Secure Link</span>
-                            <div class="ssh-panel-header">SSH Connection</div>
-                            <div class="setting-field-group">
-                                <label>Host / IP</label>
-                                <input type="text" id="ssh-host-input" class="tunnel-text-input" placeholder="192.168.1.100" style="width:100%;box-sizing:border-box;">
-                            </div>
-                            <div class="ssh-row-fields">
-                                <div class="setting-field-group" style="flex:0 0 80px;">
-                                    <label>Port</label>
-                                    <input type="number" id="ssh-port-input" class="tunnel-text-input" value="22" style="width:100%;box-sizing:border-box;" aria-label="Port">
-                                </div>
-                                <div class="setting-field-group" style="flex:1;">
-                                    <label>Username</label>
-                                    <input type="text" id="ssh-user-input" class="tunnel-text-input" placeholder="deck" style="width:100%;box-sizing:border-box;">
-                                </div>
-                            </div>
-                            <div class="setting-field-group">
-                                <label>Auth Type</label>
-                                <select id="ssh-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;" aria-label="Authentication type">
-                                    <option value="password">Password</option>
-                                    <option value="key">Key File</option>
-                                </select>
-                            </div>
-                            <div class="setting-field-group" id="ssh-pass-group">
-                                <label>Password</label>
-                                <input type="password" id="ssh-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
-                            </div>
-                            <div class="setting-field-group" id="ssh-key-path-group" style="display: none;">
-                                <label>Private Key Path</label>
-                                <input type="text" id="ssh-key-path-input" class="tunnel-text-input" placeholder="~/.ssh/id_rsa" style="width:100%;box-sizing:border-box;">
-                            </div>
-                            <button class="send-prompt-btn" id="ssh-connect-btn" style="width:100%;margin-top:8px;">Connect</button>
-                            <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
-                            <div class="ssh-profiles-list" id="ssh-profiles-list">
-                                <div class="ssh-no-profiles">No saved profiles.</div>
-                            </div>
-                            <button class="canvas-btn" id="ssh-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
-                        </div>
-                        <div class="ssh-terminal-area">
-                            <div class="ssh-status-bar">
-                                <span class="ssh-status-dot disconnected" id="ssh-status-dot">●</span>
-                                <span id="ssh-status-text">Not connected</span>
-                                <div style="margin-left:auto;display:flex;gap:8px;">
-                                    <button class="canvas-btn" id="ssh-disconnect-btn">Disconnect</button>
-                                </div>
-                            </div>
-                            <div id="ssh-terminal-container"></div>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-
-                <!-- SteamOS Tunnel View -->
-                <div class="view-content" id="view-tunnel" data-testid="view-tunnel">
-                    <div class="tunnel-shell">
-                    <div class="tunnel-grid">
-                        <div class="tunnel-panel">
-                            <span class="tunnel-kicker">Host Bridge</span>
-                            <h3>SteamOS Host Tunnel</h3>
-                            <p class="tunnel-desc">Enables local TCP loopback command execution and file operations from the sandboxed Game Mode environment to the host Desktop Mode.</p>
-                            <div class="setting-field-group">
-                                <label>Tunnel Server Connection Status</label>
-                                <div class="tunnel-status-bar">
-                                    <div class="tunnel-status-indicator offline" id="tunnel-status-indicator">OFFLINE</div>
-                                    <button class="canvas-btn" id="tunnel-check-btn">Check Server</button>
-                                    <button class="canvas-btn" id="tunnel-toggle-btn">Start Local Server</button>
-                                </div>
-                            </div>
-                            <div class="setting-field-group tunnel-section">
-                                <label>Host Command Executor</label>
-                                <div class="input-row">
-                                    <input type="text" class="tunnel-text-input" id="tunnel-cmd-input" placeholder="e.g. echo 'Hello from S-Term' > test.txt">
-                                    <button class="send-prompt-btn" id="tunnel-cmd-send">Execute</button>
-                                </div>
-                            </div>
-                            <div class="setting-field-group tunnel-section">
-                                <label>Write Host File</label>
-                                <input type="text" class="tunnel-text-input" id="tunnel-filepath-input" placeholder="File path (e.g. /home/deck/Desktop/note.txt)" style="margin-bottom: 8px;">
-                                <textarea class="tunnel-text-area" id="tunnel-filecontent-input" placeholder="File content..." rows="3"></textarea>
-                                <button class="send-prompt-btn" id="tunnel-file-send" style="margin-top:8px;">Write File</button>
-                            </div>
-                            <div class="setting-field-group tunnel-section">
-                                <label>Query Host Directory</label>
-                                <div class="input-row">
-                                    <input type="text" class="tunnel-text-input" id="tunnel-dirpath-input" placeholder="/home/deck">
-                                    <button class="send-prompt-btn" id="tunnel-dir-send">Read Dir</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tunnel-panel">
-                            <span class="tunnel-kicker">Telemetry</span>
-                            <h3>Tunnel Operations Log</h3>
-                            <div class="tunnel-log" id="tunnel-log">
-                                <div class="log-entry system">System: Log initialized. Tunnel operates on 127.0.0.1:18337.</div>
-                            </div>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-
-                <!-- LAN File Sharing / SFTP / FTP View -->
-                <div class="view-content view-layout-column" id="view-share" data-testid="view-share">
-                    <div class="share-view-header">
-                        <span class="share-view-kicker">Transfer Mesh</span>
-                        <span class="share-view-title">📤 Share &amp; Transfer</span>
-                        <span class="share-view-subtitle">LAN · SFTP · FTP · BT</span>
-                    </div>
-                    <div class="share-inner-tabs">
-                        <button class="share-inner-tab active" data-panel="lan">📡 LAN</button>
-                        <button class="share-inner-tab" data-panel="sftp">🔒 SFTP</button>
-                        <button class="share-inner-tab" data-panel="ftp">📁 FTP</button>
-                        <button class="share-inner-tab nd-icon-button" data-panel="torrent">${createIcon("download", { size: 14 })}<span class="nd-button-label">Torrent</span></button>
-                    </div>
-
-                    <!-- LAN Panel -->
-                    <div class="share-panel-section active" id="share-panel-lan">
-                        <div class="share-grid">
-                            <div class="share-panel">
-                                <h3>LAN Discovery &amp; Sending</h3>
-                                <p class="share-desc">Discovers NEURODECK instances running on your local network. Select a peer, drag/drop a file or enter a path, then send.</p>
-                                <div class="setting-field-group">
-                                    <label>Warpinator Group Code</label>
-                                    <div class="input-row">
-                                        <input type="text" class="tunnel-text-input" id="share-group-code-input" placeholder="DEFAULT" style="flex:1;">
-                                        <button class="send-prompt-btn" id="share-group-code-save-btn">Apply</button>
-                                    </div>
-                                </div>
-                                <div class="setting-field-group tunnel-section">
-                                    <label>Active Peers on LAN</label>
-                                    <div class="peers-list" id="share-peers-list">
-                                        <div class="peer-item-empty">Scanning local network for active peers...</div>
-                                    </div>
-                                </div>
-                                <div class="setting-field-group tunnel-section">
-                                    <label>Drag &amp; Drop File or Select Path</label>
-                                    <div class="share-dropzone" id="share-dropzone">
-                                        <div class="dropzone-text">Drag files here or click to select a file</div>
-                                    </div>
-                                    <input type="text" class="tunnel-text-input" id="share-filepath-input" placeholder="Absolute file path (e.g. /home/deck/file.zip)" style="margin-top:8px;width:100%;box-sizing:border-box;">
-                                </div>
-                                <button class="send-prompt-btn share-send-full" id="share-send-btn" disabled>Send File 🚀</button>
-                            </div>
-                            <div class="share-panel">
-                                <h3>File Transfer Queue</h3>
-                                <p class="share-desc">Active and historical file transfers. Files are saved to Downloads/neurodeck_transfers/.</p>
-                                <div class="transfers-list" id="share-transfers-list">
-                                    <div class="transfer-item-empty">No active or past transfers in this session.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Torrent Panel -->
-                    <div class="share-panel-section" id="share-panel-torrent">
-                        <div class="share-grid torrent-grid">
-                            <div class="share-panel torrent-control-panel">
-                                <span class="torrent-kicker">Managed Swarm</span>
-                                <h3>Secure Torrent Client</h3>
-                                <p class="share-desc">Accepts magnet links or validated local .torrent files. Downloads stay inside the app-managed torrent root and start paused by default.</p>
-                                <div class="setting-field-group">
-                                    <label>Magnet URI or .torrent Path</label>
-                                    <input type="text" id="torrent-source-input" class="tunnel-text-input" placeholder="magnet:?xt=urn:btih:... or /absolute/path/file.torrent" style="width:100%;box-sizing:border-box;">
-                                    <div class="share-dropzone torrent-dropzone" id="torrent-dropzone">
-                                        <div class="dropzone-text">Drag a .torrent file here or drop a magnet link from another app</div>
-                                    </div>
-                                </div>
-                                <div class="torrent-action-row">
-                                    <button class="send-prompt-btn nd-icon-button torrent-action-btn" id="torrent-add-btn">${createIcon("download", { size: 14 })}<span class="nd-button-label">Add Paused</span></button>
-                                    <button class="send-prompt-btn nd-icon-button torrent-action-btn torrent-action-btn-secondary" id="torrent-refresh-btn">${createIcon("refreshCw", { size: 14 })}<span class="nd-button-label">Refresh</span></button>
-                                </div>
-                                <div class="torrent-toolbar">
-                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-pause-all-btn">${createIcon("pause", { size: 14 })}<span class="nd-button-label">Pause All</span></button>
-                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-resume-all-btn">${createIcon("play", { size: 14 })}<span class="nd-button-label">Resume All</span></button>
-                                    <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-open-root-btn">${createIcon("folderOpen", { size: 14 })}<span class="nd-button-label">Open Folder</span></button>
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Session Summary</label>
-                                    <div class="torrent-root-line" id="torrent-root-label">Download root: initializing...</div>
-                                    <div class="torrent-root-line" id="torrent-count-label">0 active</div>
-                                </div>
-                                <div class="torrent-summary-grid" id="torrent-summary-grid">
-                                    <div class="torrent-summary-card"><span>Total</span><strong id="torrent-total-count">0</strong></div>
-                                    <div class="torrent-summary-card"><span>Running</span><strong id="torrent-running-count">0</strong></div>
-                                    <div class="torrent-summary-card"><span>Paused</span><strong id="torrent-paused-count">0</strong></div>
-                                    <div class="torrent-summary-card"><span>Done</span><strong id="torrent-complete-count">0</strong></div>
-                                </div>
-                                <div class="torrent-inspector" id="torrent-inspector">
-                                    <div class="torrent-inspector-title">Torrent Inspector</div>
-                                    <div class="torrent-inspector-empty">Select a torrent to inspect swarm, source, and hash details.</div>
-                                </div>
-                            </div>
-                            <div class="share-panel torrent-list-panel">
-                                <h3>Active Torrents</h3>
-                                <p class="share-desc">Paused by default. Resume only the swarm you trust.</p>
-                                <div class="torrent-batch-toolbar" id="torrent-batch-toolbar">
-                                    <div class="torrent-batch-copy" id="torrent-batch-copy">No queue items selected.</div>
-                                    <div class="torrent-batch-actions">
-                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-select-visible-btn">${createIcon("plusCircle", { size: 14 })}<span class="nd-button-label">Select Visible</span></button>
-                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-clear-selection-btn">${createIcon("x", { size: 14 })}<span class="nd-button-label">Clear</span></button>
-                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-pause-selected-btn">${createIcon("pause", { size: 14 })}<span class="nd-button-label">Pause Selected</span></button>
-                                        <button class="canvas-btn nd-icon-button torrent-mini-btn" id="torrent-resume-selected-btn">${createIcon("play", { size: 14 })}<span class="nd-button-label">Resume Selected</span></button>
-                                        <button class="canvas-btn nd-icon-button torrent-mini-btn torrent-batch-remove-btn" id="torrent-remove-selected-btn">${createIcon("trash2", { size: 14 })}<span class="nd-button-label">Remove Selected</span></button>
-                                    </div>
-                                </div>
-                                <div class="torrent-filter-grid">
-                                    <input type="text" id="torrent-search-input" class="tunnel-text-input" placeholder="Search torrent name or source">
-                                    <select id="torrent-filter-select" class="tunnel-text-input">
-                                        <option value="all">All states</option>
-                                        <option value="running">Running</option>
-                                        <option value="paused">Paused</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="metadata">Metadata</option>
-                                        <option value="stalled">Stalled</option>
-                                    </select>
-                                    <select id="torrent-sort-select" class="tunnel-text-input">
-                                        <option value="recent">Newest first</option>
-                                        <option value="progress">Highest progress</option>
-                                        <option value="name">Name A-Z</option>
-                                        <option value="peers">Most peers</option>
-                                        <option value="status">Status</option>
-                                    </select>
-                                </div>
-                                <div class="torrent-list" id="torrent-list">
-                                    <div class="peer-item-empty">No torrents loaded yet.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FTP Panel -->
-                    <div class="share-panel-section" id="share-panel-ftp">
-                        <div class="ftp-layout">
-                            <div class="ftp-sidebar">
-                                <div class="ssh-panel-header">FTP Connection</div>
-                                <div class="setting-field-group">
-                                    <label>Host / IP</label>
-                                    <input type="text" id="ftp-host-input" class="tunnel-text-input" placeholder="ftp.example.com" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="ssh-row-fields">
-                                    <div class="setting-field-group" style="flex:0 0 80px;">
-                                        <label>Port</label>
-                                        <input type="number" id="ftp-port-input" class="tunnel-text-input" value="21" style="width:100%;box-sizing:border-box;">
-                                    </div>
-                                    <div class="setting-field-group" style="flex:1;">
-                                        <label>Username</label>
-                                        <input type="text" id="ftp-user-input" class="tunnel-text-input" placeholder="anonymous" style="width:100%;box-sizing:border-box;">
-                                    </div>
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Password</label>
-                                    <input type="password" id="ftp-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Remote Path</label>
-                                    <input type="text" id="ftp-path-input" class="tunnel-text-input" value="/" placeholder="/" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <button class="send-prompt-btn" id="ftp-connect-btn" style="width:100%;margin-top:8px;">Connect & List</button>
-                                <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
-                                <div class="ftp-profiles-list" id="ftp-profiles-list">
-                                    <div class="ftp-no-profiles">No saved profiles.</div>
-                                </div>
-                                <button class="canvas-btn" id="ftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
-                                <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
-                                <div class="share-dropzone" id="ftp-dropzone" style="margin-bottom: 8px;">
-                                    <div class="dropzone-text">Drag files here to upload</div>
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Local File Path</label>
-                                    <input type="text" id="ftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Remote Destination</label>
-                                    <input type="text" id="ftp-remote-dest-input" class="tunnel-text-input" placeholder="/uploads/file.txt" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <button class="canvas-btn" id="ftp-upload-btn" style="width:100%;margin-top:8px;">⬆ Upload</button>
-                                <div id="ftp-upload-progress-wrap" style="display:none;margin-top:6px;">
-                                    <div style="background:#2a2a2a;border-radius:3px;height:5px;overflow:hidden;">
-                                        <div id="ftp-upload-progress-fill" style="background:var(--accent,#7c3aed);height:5px;width:0%;transition:width 0.15s linear;"></div>
-                                    </div>
-                                    <div id="ftp-upload-progress-label" style="font-size:10px;color:#888;margin-top:3px;text-align:right;"></div>
-                                </div>
-                            </div>
-                            <div class="ftp-browser">
-                                <div class="ftp-browser-header">
-                                    <span id="ftp-cwd-label">📁 /</span>
-                                    <span id="ftp-status-text" class="ftp-status">Disconnected</span>
-                                </div>
-                                <div class="ftp-file-list" id="ftp-file-list">
-                                    <div class="ftp-empty-state">Connect to an FTP server to browse files.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- SFTP Panel -->
-                    <div class="share-panel-section" id="share-panel-sftp">
-                        <div class="ftp-layout">
-                            <div class="ftp-sidebar">
-                                <div class="ssh-panel-header">SFTP Connection</div>
-                                <div class="setting-field-group">
-                                    <label>Host / IP</label>
-                                    <input type="text" id="sftp-host-input" class="tunnel-text-input" placeholder="192.168.1.100" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="ssh-row-fields">
-                                    <div class="setting-field-group" style="flex:0 0 80px;">
-                                        <label>Port</label>
-                                        <input type="number" id="sftp-port-input" class="tunnel-text-input" value="22" style="width:100%;box-sizing:border-box;">
-                                    </div>
-                                    <div class="setting-field-group" style="flex:1;">
-                                        <label>Username</label>
-                                        <input type="text" id="sftp-user-input" class="tunnel-text-input" placeholder="deck" style="width:100%;box-sizing:border-box;">
-                                    </div>
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Auth Type</label>
-                                    <select id="sftp-auth-type" class="canvas-lang-select" style="width:100%;box-sizing:border-box;">
-                                        <option value="password">Password</option>
-                                        <option value="key">Key File</option>
-                                    </select>
-                                </div>
-                                <div class="setting-field-group" id="sftp-pass-group">
-                                    <label>Password</label>
-                                    <input type="password" id="sftp-pass-input" class="tunnel-text-input" placeholder="••••••••" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="setting-field-group" id="sftp-key-path-group" style="display: none;">
-                                    <label>Private Key Path</label>
-                                    <input type="text" id="sftp-key-path-input" class="tunnel-text-input" placeholder="~/.ssh/id_rsa" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Remote Path</label>
-                                    <input type="text" id="sftp-path-input" class="tunnel-text-input" value="/" placeholder="/" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <button class="send-prompt-btn" id="sftp-connect-btn" style="width:100%;margin-top:8px;">Connect & List</button>
-                                <div class="ssh-panel-header" style="margin-top:20px;">Saved Profiles</div>
-                                <div class="ftp-profiles-list" id="sftp-profiles-list">
-                                    <div class="ftp-no-profiles">No saved profiles.</div>
-                                </div>
-                                <button class="canvas-btn" id="sftp-save-profile-btn" style="width:100%;margin-top:8px;">+ Save Profile</button>
-                                <div class="ssh-panel-header" style="margin-top:20px;">Upload File</div>
-                                <div class="share-dropzone" id="sftp-dropzone" style="margin-bottom: 8px;">
-                                    <div class="dropzone-text">Drag files here to upload</div>
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Local File Path</label>
-                                    <input type="text" id="sftp-local-path-input" class="tunnel-text-input" placeholder="/home/deck/file.txt" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <div class="setting-field-group">
-                                    <label>Remote Destination</label>
-                                    <input type="text" id="sftp-remote-dest-input" class="tunnel-text-input" placeholder="/uploads/file.txt" style="width:100%;box-sizing:border-box;">
-                                </div>
-                                <button class="canvas-btn" id="sftp-upload-btn" style="width:100%;margin-top:8px;">⬆ Upload</button>
-                            </div>
-                            <div class="ftp-browser">
-                                <div class="ftp-browser-header">
-                                    <span id="sftp-cwd-label">📁 /</span>
-                                    <span id="sftp-status-text" class="ftp-status">Disconnected</span>
-                                </div>
-                                <div class="ftp-file-list" id="sftp-file-list">
-                                    <div class="ftp-empty-state">Connect to an SFTP server to browse files.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Built-in Web Browser View -->
-                <div class="view-content" id="view-browser" data-testid="view-browser">
-                    <div class="browser-container">
-                        <div class="browser-toolbar">
-                            <div class="browser-toolbar-title">
-                                <span class="browser-kicker">Sandboxed Web</span>
-                            </div>
-                            <div class="browser-nav-buttons">
-                                <button class="browser-btn" id="browser-back-btn" title="Go Back" aria-label="Go Back">${createIcon("arrowLeft", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-forward-btn" title="Go Forward" aria-label="Go Forward">${createIcon("arrowRight", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-refresh-btn" title="Refresh" aria-label="Refresh">${createIcon("refreshCw", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-home-btn" title="New Tab / Home" aria-label="New Tab">${createIcon("house", { size: 16 })}</button>
-                                <button class="browser-btn" id="browser-hf-btn" title="Hugging Face Models" aria-label="Hugging Face Models">${createIcon("cpu", { size: 16 })}</button>
-                            </div>
-                            <div class="browser-address-bar-wrapper">
-                                <input type="text" id="browser-url-input" class="browser-url-input" placeholder="Enter URL or search term...">
-                                <button class="browser-url-clear" id="browser-url-clear-btn" title="Clear" aria-label="Clear URL">${createIcon("x", { size: 14 })}</button>
-                            </div>
-                            <button class="browser-btn go-btn" id="browser-go-btn">${createIcon("sendHorizontal", { size: 14 })}<span>Go</span></button>
-                            <button class="browser-btn open-ext-btn" id="browser-open-ext-btn" title="Open in System Browser">${createIcon("arrowUpRight", { size: 14 })}<span>Open Ext</span></button>
-                            <button class="browser-btn save-memory-btn" id="browser-save-memory-btn" title="Save page content to Vector DB">${createIcon("database", { size: 14 })}<span>Save to Memory</span></button>
-                            <button class="browser-btn copy-citation-btn" id="browser-copy-citation-btn" title="Copy Markdown Citation">${createIcon("quote", { size: 14 })}<span>Copy Citation</span></button>
-                            <button class="browser-btn download-model-btn" id="browser-download-model-btn" title="Download Model from HuggingFace" disabled>${createIcon("download", { size: 14 })}<span>Download Model</span></button>
-                        </div>
-
-                        <!-- Loading progress bar (sits between toolbar and viewport) -->
-                        <div id="browser-progress-bar" class="browser-progress-bar hidden"></div>
-
-                        <!-- Main viewport -->
-                        <div class="browser-viewport">
-                            <!-- New Tab / Home View -->
-                            <div class="browser-home-screen" id="browser-home-screen">
-                                <div class="browser-home-content">
-                                    <span class="browser-home-kicker">Navigation Hub</span>
-                                    <div class="browser-home-logo">NEURODECK<span>BROWSER</span></div>
-                                    <p class="browser-home-subtitle">Built-in Sandbox Navigation Engine</p>
-
-                                    <div class="browser-search-box">
-                                        <input type="text" id="browser-home-search-input" placeholder="Search the web (via DuckDuckGo frame)...">
-                                        <button id="browser-home-search-btn">Search</button>
-                                    </div>
-
-                                    <div class="speed-dial-title">Quick Bookmarks</div>
-                                    <div class="speed-dial-grid">
-                                        <div class="speed-dial-card" data-url="https://huggingface.co/models">
-                                            <div class="sd-icon">${createIcon("cpu", { size: 24 })}</div>
-                                            <div class="sd-label">Hugging Face</div>
-                                            <div class="sd-desc">AI models repository</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://html.duckduckgo.com/html/">
-                                            <div class="sd-icon">${createIcon("search", { size: 24 })}</div>
-                                            <div class="sd-label">DuckDuckGo</div>
-                                            <div class="sd-desc">Privacy-first web search</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://en.m.wikipedia.org/wiki/Main_Page">
-                                            <div class="sd-icon">${createIcon("fileText", { size: 24 })}</div>
-                                            <div class="sd-label">Wikipedia</div>
-                                            <div class="sd-desc">Mobile encyclopedia</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://news.ycombinator.com/">
-                                            <div class="sd-icon">${createIcon("chartColumn", { size: 24 })}</div>
-                                            <div class="sd-label">Hacker News</div>
-                                            <div class="sd-desc">Tech & Dev community board</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://www.reddit.com/r/SteamDeck">
-                                            <div class="sd-icon">${createIcon("gamepad2", { size: 24 })}</div>
-                                            <div class="sd-label">r/SteamDeck</div>
-                                            <div class="sd-desc">Steam Deck community</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://mrdoob.com/projects/chromeexperiments/google-gravity/">
-                                            <div class="sd-icon">${createIcon("globe", { size: 24 })}</div>
-                                            <div class="sd-label">Google Gravity</div>
-                                            <div class="sd-desc">Anti-gravity Easter egg</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://codepen.io/trending">
-                                            <div class="sd-icon">${createIcon("code2", { size: 24 })}</div>
-                                            <div class="sd-label">CodePen</div>
-                                            <div class="sd-desc">Live front-end code demos</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://archive.org/search">
-                                            <div class="sd-icon">${createIcon("folderOpen", { size: 24 })}</div>
-                                            <div class="sd-label">Internet Archive</div>
-                                            <div class="sd-desc">Web history & media vault</div>
-                                        </div>
-                                        <div class="speed-dial-card" data-url="https://caniuse.com/">
-                                            <div class="sd-icon">${createIcon("bug", { size: 24 })}</div>
-                                            <div class="sd-label">Can I Use</div>
-                                            <div class="sd-desc">Browser feature support tables</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="browser-info-panel">
-                                        <div class="info-icon">${createIcon("info", { size: 18 })}</div>
-                                        <div class="info-text">
-                                            <strong>Framing Notice:</strong> Many modern websites (like Google, GitHub, or YouTube) send headers that restrict them from running inside an embedded iframe for security. If a website refuses to connect, use the <strong>Open Ext</strong> button to launch it in your default desktop browser.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Active IFrame -->
-                            <iframe id="browser-iframe" class="browser-iframe hidden" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-popups allow-top-navigation-by-user-activation allow-downloads"></iframe>
-
-                            <!-- Blocked / Error Screen -->
-                            <div class="browser-blocked-screen hidden" id="browser-blocked-screen">
-                                <div class="blocked-content">
-                                    <span class="blocked-kicker">Embed Guard</span>
-                                    <div class="blocked-icon">${createIcon("shieldCheck", { size: 34 })}</div>
-                                    <div class="blocked-title" role="heading" aria-level="3">Connection Blocked</div>
-                                    <p class="blocked-msg">This site uses <strong>X-Frame-Options</strong> or <strong>CSP</strong> headers that prevent embedding inside NEURODECK Browser.</p>
-                                    <p class="blocked-url" id="blocked-url-display"></p>
-                                    <button class="browser-btn go-btn blocked-ext-btn" id="blocked-open-ext-btn">${createIcon("arrowUpRight", { size: 14 })}<span>Open in System Browser</span></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Autonomous Coding Agent View -->
-                <div class="view-content view-layout-column" id="view-agent" data-testid="view-agent">
-                    <div class="agent-shell">
-                        <div class="agent-shell-header">
-                            <span class="agent-kicker">Execution Fabric</span>
-                        </div>
-                        <!-- Mode toggle -->
-                        <div class="agent-mode-bar">
-                            <button class="agent-mode-btn active" id="agent-mode-task" data-mode="task">🤖 Agent Task</button>
-                            <button class="agent-mode-btn" id="agent-mode-roundtable" data-mode="roundtable">🗣 Roundtable</button>
-                            <button class="agent-mode-btn" id="agent-mode-orchestrate" data-mode="orchestrate">🧩 Orchestrate</button>
-                        </div>
-
-                        <!-- Task mode toolbar -->
-                        <div class="agent-toolbar" id="agent-toolbar-task">
-                            <input type="text" id="agent-task-input" class="agent-task-input" placeholder="Describe your task… e.g. Write a Python script that lists all .txt files in the current directory">
-                            <button class="agent-btn agent-btn-run" id="agent-run-btn">▶ Run Agent</button>
-                            <button class="agent-btn agent-btn-stop hidden" id="agent-stop-btn">■ Stop</button>
-                            <span class="agent-iter-label hidden" id="agent-iter-label">Step 1 / 5</span>
-                        </div>
-
-                        <!-- Orchestrate mode toolbar -->
-                        <div class="agent-toolbar hidden" id="agent-toolbar-orchestrate">
-                            <input type="text" id="orchestrator-goal-input" class="agent-task-input" placeholder="Describe the multi-agent goal… e.g. Research and summarize the fastest way to add a settings import flow">
-                            <button class="agent-btn agent-btn-run" id="orchestrator-start-btn">▶ Start</button>
-                            <button class="agent-btn" id="orchestrator-status-btn">Status</button>
-                            <button class="agent-btn agent-btn-stop hidden" id="orchestrator-stop-btn">■ Stop</button>
-                        </div>
-
-                        <!-- Roundtable mode toolbar -->
-                        <div class="agent-toolbar hidden" id="agent-toolbar-roundtable">
-                            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
-                                <select id="rt-persona-a" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
-                                    <option value="">Persona A…</option>
-                                </select>
-                                <select id="rt-persona-b" class="agent-task-input" style="flex:0 0 auto;width:130px;padding:0 8px;">
-                                    <option value="">Persona B…</option>
-                                </select>
-                                <input type="text" id="rt-topic-input" class="agent-task-input" placeholder="Topic or question to debate…" style="flex:1;min-width:180px;">
-                                <select id="rt-rounds" class="agent-task-input" style="flex:0 0 auto;width:90px;padding:0 8px;" title="Number of rounds">
-                                    <option value="2">2 rounds</option>
-                                    <option value="3">3 rounds</option>
-                                    <option value="4" selected>4 rounds</option>
-                                    <option value="6">6 rounds</option>
-                                </select>
-                                <button class="agent-btn agent-btn-run" id="rt-start-btn">▶ Start</button>
-                                <button class="agent-btn agent-btn-stop hidden" id="rt-stop-btn">■ Stop</button>
-                            </div>
-                        </div>
-
-                        <div class="agent-body">
-                            <!-- Left: step-by-step log -->
-                            <div class="agent-log-pane" id="agent-log-pane">
-                                <div class="agent-pane-header">Execution Log</div>
-                                <div class="agent-log" id="agent-log">
-                                    <div class="agent-empty-state">
-                                        <div class="agent-empty-icon">${createIcon("bot", { size: 32 })}</div>
-                                        <p>Describe a task above and click <strong>Run Agent</strong>.</p>
-                                        <p class="agent-empty-hint">The agent will write code, execute it, and iterate until the task is complete — up to 5 steps.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: code + live output -->
-                            <div class="agent-code-pane" id="agent-code-pane">
-                                <div class="agent-pane-header">
-                                    <span id="agent-code-pane-title">Current Code</span>
-                                    <button class="agent-btn agent-btn-sm" id="agent-send-canvas-btn" title="Open in Canvas">→ Canvas</button>
-                                </div>
-                                <div class="agent-code-display" id="agent-code-display">
-                                    <pre id="agent-code-pre"><code id="agent-code-content" class="agent-code"></code></pre>
-                                </div>
-                                <div class="agent-output-header" id="agent-output-title">Output</div>
-                                <div class="agent-output" id="agent-output">
-                                    <span class="agent-output-empty">No output yet.</span>
-                                </div>
-                                <div class="agent-orchestrator-panel hidden" id="agent-orchestrator-panel">
-                                    <div class="agent-orchestrator-panel-title">Task Status</div>
-                                    <div class="agent-orchestrator-task-list" id="orchestrator-task-list">
-                                        <div class="agent-orchestrator-empty">No orchestration plan yet.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Prompt Lab UI View -->
-                <div class="view-content" id="view-prompt-lab" data-testid="view-prompt-lab">
-                    <!-- Template Gallery Drawer -->
-                    <div class="pl-template-gallery hidden" id="pl-template-gallery">
-                        <div class="pl-gallery-overlay" id="pl-gallery-overlay"></div>
-                        <div class="pl-gallery-panel">
-                            <div class="pl-gallery-header">
-                                <span>Template Gallery</span>
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <input type="text" id="pl-gallery-search" class="pl-gallery-search" placeholder="Search templates...">
-                                    <button class="pl-gallery-close" id="pl-gallery-close" aria-label="Close gallery">${createIcon("x", { size: 16 })}</button>
-                                </div>
-                            </div>
-                            <div class="pl-gallery-body" id="pl-gallery-body"></div>
-                        </div>
-                    </div>
-
-                    <div class="prompt-lab-container">
-                        <!-- Left pane: Input Form -->
-                        <div class="prompt-lab-form">
-                            <div class="prompt-lab-header">
-                                <div class="pl-header-title">
-                                    <span class="pl-header-kicker">Prompt Studio</span>
-                                    <span class="pl-header-icon">${createIcon("sparkles", { size: 18 })}</span>
-                                    <h3>Prompt Lab</h3>
-                                </div>
-                                <div class="pl-header-actions">
-                                    <button class="pl-gallery-btn" id="pl-open-gallery-btn" title="Browse Template Gallery">${createIcon("fileText", { size: 14 })}<span>Templates</span></button>
-                                    <input type="text" id="pl-preset-name" placeholder="Preset name..." class="pl-dropdown" style="display:none;width:96px;padding:4px 8px;font-size:0.8rem;background:rgba(0,0,0,0.3);">
-                                    <button class="agent-btn agent-btn-sm" id="pl-save-preset-btn" style="display:none;font-size:0.75rem;">${createIcon("save", { size: 13 })}<span>Save</span></button>
-                                    <button class="agent-btn agent-btn-sm" id="pl-toggle-preset-input-btn" style="font-size:0.75rem;" title="Save Custom Preset" aria-label="Save Custom Preset">${createIcon("save", { size: 13 })}</button>
-                                </div>
-                            </div>
-
-                            <!-- Strength Meter -->
-                            <div class="pl-strength-container">
-                                <span class="pl-strength-label-text">Strength</span>
-                                <div class="pl-strength-bar-bg">
-                                    <div id="pl-strength-bar-fill" class="pl-strength-bar-fill"></div>
-                                </div>
-                                <span id="pl-strength-label" class="pl-strength-value">Weak (0/5)</span>
-                            </div>
-
-                            <div class="pl-field">
-                                <label>Persona / Role</label>
-                                <input type="text" id="pl-persona" placeholder="e.g. You are a senior software engineer.">
-                                <div class="pl-chips">
-                                    <span class="pl-chip" data-target="pl-persona">Game Dev</span>
-                                    <span class="pl-chip" data-target="pl-persona">Engineer</span>
-                                    <span class="pl-chip" data-target="pl-persona">Copywriter</span>
-                                    <span class="pl-chip" data-target="pl-persona">Analyst</span>
-                                    <span class="pl-chip" data-target="pl-persona">Teacher</span>
-                                    <span class="pl-chip" data-target="pl-persona">Marketer</span>
-                                </div>
-                            </div>
-                            <div class="pl-field">
-                                <div class="pl-field-header">
-                                    <label>Task / Objective</label>
-                                    <button class="pl-optimize-btn" id="pl-optimize-ai-btn" title="AI Decompose & Optimize">${createIcon("zap", { size: 13 })}<span>AI Optimize</span></button>
-                                </div>
-                                <input type="text" id="pl-task" placeholder="e.g. Design an endless runner game.">
-                            </div>
-                            <div class="pl-field">
-                                <label>Context / Background</label>
-                                <textarea id="pl-context" placeholder="e.g. Target audience: casual gamers, ages 12-18." rows="2"></textarea>
-                            </div>
-                            <div class="pl-field">
-                                <label>Tone / Style</label>
-                                <input type="text" id="pl-tone" placeholder="e.g. Concise and professional.">
-                                <div class="pl-chips">
-                                    <span class="pl-chip" data-target="pl-tone">Technical</span>
-                                    <span class="pl-chip" data-target="pl-tone">Casual</span>
-                                    <span class="pl-chip" data-target="pl-tone">Professional</span>
-                                    <span class="pl-chip" data-target="pl-tone">Playful</span>
-                                    <span class="pl-chip" data-target="pl-tone">Concise</span>
-                                    <span class="pl-chip" data-target="pl-tone">Academic</span>
-                                </div>
-                            </div>
-                            <div class="pl-field">
-                                <label>Constraints</label>
-                                <textarea id="pl-constraints" placeholder="e.g. Max 150 words. No jargon." rows="2"></textarea>
-                            </div>
-                            <div class="pl-field">
-                                <label>Output Format</label>
-                                <input type="text" id="pl-format" placeholder="e.g. JSON with keys: concept, mechanics">
-                                <div class="pl-chips">
-                                    <span class="pl-chip" data-target="pl-format">Markdown</span>
-                                    <span class="pl-chip" data-target="pl-format">JSON</span>
-                                    <span class="pl-chip" data-target="pl-format">Bullet List</span>
-                                    <span class="pl-chip" data-target="pl-format">Code Block</span>
-                                    <span class="pl-chip" data-target="pl-format">Step-by-step</span>
-                                    <span class="pl-chip" data-target="pl-format">Table</span>
-                                </div>
-                            </div>
-
-                            <!-- Formula Card Gallery -->
-                            <div class="pl-formula-section">
-                                <div class="pl-formula-section-header">
-                                    <label>Framework / Formula</label>
-                                    <span class="pl-formula-active-badge" id="pl-formula-badge">Default</span>
-                                </div>
-                                <div class="pl-formula-grid" id="pl-formula-grid"></div>
-                                <input type="hidden" id="pl-formula" value="default">
-                                <div id="pl-formula-info" class="pl-formula-info">
-                                    Standard prompt structure: Persona → Task → Context → Constraints → Format.
-                                </div>
-                            </div>
-
-                            <!-- Few-shot examples (collapsible) -->
-                                <div class="pl-advanced-toggle" id="pl-advanced-toggle">${createIcon("settings2", { size: 14 })}<span>Few-Shot Examples</span></div>
-                            <div class="pl-advanced-fields hidden" id="pl-advanced-fields">
-                                <div class="pl-field">
-                                    <label>Examples</label>
-                                    <textarea id="pl-examples" placeholder="e.g. Input: Puzzle game. Output: A grid-based..." rows="3"></textarea>
-                                </div>
-                            </div>
-
-                            <button class="pl-btn-primary" id="pl-generate-btn">${createIcon("zap", { size: 14 })}<span>Generate Prompt</span></button>
-                        </div>
-
-                        <!-- Right pane: Output & JPE -->
-                        <div class="prompt-lab-output">
-                            <div class="pl-output-section">
-                                <div class="pl-output-header">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <span>Generated Prompt</span>
-                                        <span class="pl-token-counter" id="pl-token-counter">~0 tokens</span>
-                                    </div>
-                                    <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-history-btn" title="Prompt History" aria-label="Prompt History">${createIcon("refreshCw", { size: 13 })}</button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-copy-prompt-btn" title="Copy Prompt">${createIcon("copy", { size: 13 })}<span>Copy</span></button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-send-chat-btn" title="Send to Chat">${createIcon("messageSquare", { size: 13 })}<span>Chat</span></button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-json-btn" title="Export JSON Schema">${createIcon("fileText", { size: 13 })}<span>JSON</span></button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-export-lua-btn" title="Export Lua Macro">${createIcon("settings2", { size: 13 })}<span>Lua</span></button>
-                                    </div>
-                                </div>
-                                <div class="pl-history-drawer hidden" id="pl-history-drawer">
-                                    <div class="pl-history-header">
-                                        <span>Recent Prompts</span>
-                                        <button class="pl-history-clear" id="pl-history-clear">Clear all</button>
-                                    </div>
-                                    <div class="pl-history-list" id="pl-history-list"></div>
-                                </div>
-                                <textarea id="pl-result-prompt" class="pl-result-textarea" readonly placeholder="Your generated prompt will appear here..."></textarea>
-                            </div>
-
-                            <div class="pl-output-section jpe-section">
-                                <div class="pl-output-header">
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span>JPE Explanation</span>
-                                        <select id="pl-jpe-level-select" class="pl-dropdown" style="padding:2px 4px;font-size:0.75rem;background:rgba(0,0,0,0.2);" aria-label="JPE explanation level">
-                                            <option value="grade8">Grade 8 (Simple)</option>
-                                            <option value="grade12">Grade 12 (Standard)</option>
-                                            <option value="executive">Executive</option>
-                                            <option value="technical">Technical</option>
-                                        </select>
-                                    </div>
-                                    <div class="pl-actions">
-                                        <button class="agent-btn agent-btn-sm" id="pl-explain-jpe-btn" title="Explain in JPE">${createIcon("search", { size: 13 })}<span>Explain</span></button>
-                                        <button class="agent-btn agent-btn-sm" id="pl-copy-jpe-btn" title="Copy Explanation">${createIcon("copy", { size: 13 })}<span>Copy</span></button>
-                                    </div>
-                                </div>
-                                <div id="pl-result-jpe" class="pl-result-jpe">
-                                    <span class="pl-empty-text">Generate a prompt then click Explain to get a plain-English breakdown of what it instructs the AI to do.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Memory UI View -->
-                <div class="view-content view-layout-column" id="view-memory" data-testid="view-memory">
-                    <div class="memory-shell">
-                        <div class="memory-toolbar">
-                            <div class="memory-toolbar-title">
-                                <span class="memory-kicker">Long-Term Context</span>
-                                <span class="memory-title">Memory Ledger</span>
-                            </div>
-                            <div class="memory-search-shell">
-                                <span class="memory-search-icon">${createIcon("search", { size: 14 })}</span>
-                                <input type="text" id="memory-search-input" class="memory-search-input" placeholder="Search memory records…">
-                            </div>
-                            <div class="memory-filter-tabs">
-                                <button class="memory-filter-btn active" data-filter="all">All</button>
-                                <button class="memory-filter-btn" data-filter="pinned">📌 Pinned</button>
-                                <button class="memory-filter-btn" data-filter="ns:chat">💬 Chat</button>
-                                <button class="memory-filter-btn" data-filter="ns:documents">📄 Docs</button>
-                                <button class="memory-filter-btn" data-filter="ns:game_notes">🎮 Games</button>
-                                <button class="memory-filter-btn" data-filter="user">User</button>
-                                <button class="memory-filter-btn" data-filter="ai">AI</button>
-                                <button class="memory-filter-btn" data-filter="fact">Facts</button>
-                            </div>
-                            <button class="memory-btn memory-btn-refresh" id="memory-refresh-btn" aria-label="Refresh memory">↺ Refresh</button>
-                            <div class="memory-io-bar">
-                                <button class="memory-btn memory-btn-export" id="memory-export-btn" title="Export all memory to .ndmem file" aria-label="Export memory">⬆ Export</button>
-                                <label class="memory-btn memory-btn-import" for="memory-import-file" title="Import .ndmem file" aria-label="Import memory" tabindex="0" role="button">⬇ Import</label>
-                                <input type="file" id="memory-import-file" accept=".ndmem" style="display:none" aria-label="Choose .ndmem file to import">
-                                <button class="memory-btn memory-btn-backup" id="memory-backup-btn" title="Create a timestamped backup now" aria-label="Backup memory">💾 Backup</button>
-                                <button class="memory-btn memory-btn-backups-toggle" id="memory-show-backups-btn" title="Show/hide backup history" aria-label="Show backup history" aria-expanded="false">🗂 History</button>
-                            </div>
-                        </div>
-
-                        <div class="memory-backup-panel" id="memory-backup-panel" style="display:none" aria-label="Backup history panel">
-                            <div class="memory-backup-header">
-                                <span class="memory-backup-title">Backup History</span>
-                                <button class="memory-btn-icon memory-backup-close" id="memory-backup-close" aria-label="Close backup panel">✕</button>
-                            </div>
-                            <div class="memory-backup-list" id="memory-backup-list">
-                                <div class="memory-backup-empty">No backups yet.</div>
-                            </div>
-                        </div>
-
-                        <div class="memory-add-fact-bar" id="memory-add-fact-bar">
-                            <input type="text" id="memory-fact-input" class="memory-fact-input" placeholder="Add a pinned fact or note to memory…">
-                            <button class="memory-btn memory-btn-pin" id="memory-fact-save-btn">📌 Save Fact</button>
-                        </div>
-
-                        <div class="memory-body">
-                            <div class="memory-list" id="memory-list">
-                                <div class="memory-empty-state" id="memory-empty-state">
-                                    <div class="memory-empty-icon">🧠</div>
-                                    <p>No memory records yet.</p>
-                                    <p class="memory-empty-hint">Records are stored automatically during chat sessions. You can also add pinned facts above.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="memory-status-bar" id="memory-status-bar">
-                            <span id="memory-total-count">0 records</span>
-                            <span class="memory-sep">·</span>
-                            <span id="memory-pinned-count">0 pinned</span>
-                            <span class="memory-sep">·</span>
-                            <span id="memory-filtered-count">showing 0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Remote Control View -->
-                <div class="view-content" id="view-remote" data-testid="view-remote">
-                    <div class="remote-container">
-                        <!-- Header -->
-                        <div class="remote-header">
-                            <div class="remote-header-left">
-                                <span class="remote-kicker">LAN Bridge</span>
-                                <span class="remote-title">🖥️ Remote Control</span>
-                                <span class="remote-subtitle">Connect your iPhone via local Wi-Fi</span>
-                            </div>
-                            <div class="remote-header-right">
-                                <div class="remote-status-badge" id="remote-status-badge">
-                                    <span class="remote-status-dot" id="remote-status-dot"></span>
-                                    <span id="remote-status-text">Offline</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Main grid -->
-                        <div class="remote-grid">
-                            <!-- Left: Server controls + QR -->
-                            <div class="remote-panel remote-panel-left">
-                                <div class="remote-section">
-                                    <div class="remote-section-label">Server</div>
-                                    <div class="remote-server-controls">
-                                        <div class="remote-port-row">
-                                            <label class="remote-field-label">Port</label>
-                                            <input type="number" id="remote-port-input" class="remote-port-input" value="9890" min="1024" max="65535" aria-label="Port">
-                                        </div>
-                                        <button class="remote-start-btn" id="remote-start-btn">▶ Start Server</button>
-                                        <button class="remote-stop-btn" id="remote-stop-btn" style="display:none">■ Stop Server</button>
-                                    </div>
-                                </div>
-
-                                <div class="remote-section" id="remote-qr-section" style="display:none">
-                                    <div class="remote-section-label">Scan to Connect</div>
-                                    <div class="remote-qr-wrapper">
-                                        <div id="remote-qr-canvas"></div>
-                                    </div>
-                                    <div class="remote-url-row">
-                                        <span class="remote-url-text" id="remote-url-text"></span>
-                                        <button class="remote-copy-btn" id="remote-copy-url-btn" title="Copy URL" aria-label="Copy Remote URL">📋</button>
-                                    </div>
-                                    <div class="remote-pin-row">
-                                        <span class="remote-field-label">PIN</span>
-                                        <span class="remote-pin-display" id="remote-pin-display">------</span>
-                                    </div>
-                                    <div class="remote-ttl-row" id="remote-ttl-row" style="display:none">
-                                        <span class="remote-field-label">Session expires in</span>
-                                        <span class="remote-ttl-value" id="remote-ttl-value">15:00</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Connection log + stats -->
-                            <div class="remote-panel remote-panel-right">
-                                <div class="remote-section">
-                                    <div class="remote-section-label">Connection Log</div>
-                                    <div class="remote-log" id="remote-log">
-                                        <div class="remote-log-entry remote-log-info">Remote Control ready. Start the server to begin.</div>
-                                    </div>
-                                </div>
-                                <div class="remote-stats-row" id="remote-stats-row" style="display:none">
-                                    <div class="remote-stat">
-                                        <span class="remote-stat-label">Clients</span>
-                                        <span class="remote-stat-value" id="remote-clients-count">0</span>
-                                    </div>
-                                    <div class="remote-stat">
-                                        <span class="remote-stat-label">IP</span>
-                                        <span class="remote-stat-value" id="remote-ip-display">--</span>
-                                    </div>
-                                    <div class="remote-stat">
-                                        <span class="remote-stat-label">Port</span>
-                                        <span class="remote-stat-value" id="remote-port-display">--</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Security notice -->
-                        <div class="remote-security-notice">
-                            <span class="remote-security-icon">${createIcon("shieldCheck", { size: 14 })}</span>
-                            <span>Connection is unencrypted (HTTP/WS). Use on trusted home networks only. PIN expires when the server is restarted.</span>
-                        </div>
-
-                        <!-- Instructions -->
-                        <div class="remote-instructions" id="remote-instructions">
-                            <div class="remote-instr-step"><span class="remote-instr-num">1</span><span>Ensure your iPhone is on the same Wi-Fi network as this device.</span></div>
-                            <div class="remote-instr-step"><span class="remote-instr-num">2</span><span>Start the server, then scan the QR code with your iPhone Camera app.</span></div>
-                            <div class="remote-instr-step"><span class="remote-instr-num">3</span><span>The NEURODECK Remote webapp opens in Safari — no install required.</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ============================================================ -->
-                <!-- VIEW: DOCS — Knowledge Base Viewer                           -->
-                <!-- ============================================================ -->
-                <div class="view-content view-layout-column" id="view-docs" data-testid="view-docs">
-                    <div class="docs-container">
-                        <div class="docs-header">
-                            <div class="docs-header-left">
-                                <span class="docs-kicker">Knowledge Mesh</span>
-                                <span class="docs-title">📚 Knowledge Base</span>
-                                <span class="docs-subtitle" id="docs-count-badge">0 documents indexed</span>
-                            </div>
-                            <div class="docs-header-right">
-                                <div class="docs-toolbar-actions">
-                                    <button class="docs-index-btn" id="docs-index-btn" title="Index a folder">+ Index Folder</button>
-                                    <button class="docs-clear-btn" id="docs-clear-btn" title="Clear all indexed docs">Clear All</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="docs-search-bar">
-                            <div class="docs-search-shell">
-                                <span class="docs-search-icon">${createIcon("search", { size: 14 })}</span>
-                                <input type="text" id="docs-search-input" class="docs-search-input" placeholder="Semantic search across indexed documents…">
-                            </div>
-                            <button class="docs-search-btn" id="docs-search-btn">Search</button>
-                        </div>
-
-                        <div class="docs-body">
-                            <!-- Left: file list -->
-                            <div class="docs-file-panel">
-                                <div class="docs-panel-label">Indexed Files</div>
-                                <div class="docs-file-list" id="docs-file-list">
-                                    <div class="docs-empty-msg">No documents indexed yet.</div>
-                                </div>
-                            </div>
-
-                            <!-- Right: results -->
-                            <div class="docs-results-panel">
-                                <div class="docs-panel-label" id="docs-results-label">Results</div>
-                                <div class="docs-results-list" id="docs-results-list">
-                                    <div class="docs-empty-msg">Search to find relevant passages.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     GIT VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-git" data-testid="view-git">
-                    <div class="git-workspace">
-                        <div class="git-pane git-pane-left">
-                            <div class="git-pane-header">🌿 Repositories</div>
-                            <div class="git-repo-actions">
-                                <button class="git-btn" id="git-clone-btn">Clone</button>
-                                <button class="git-btn" id="git-init-btn">Init</button>
-                                <button class="git-btn" id="git-open-btn">Open</button>
-                            </div>
-                            <div class="git-repo-list" id="git-repo-list">
-                                <div class="git-empty">No repositories yet.</div>
-                            </div>
-                            <div class="git-pane-header" style="margin-top:12px;">🔑 Accounts</div>
-                            <div class="git-account-list" id="git-account-list"></div>
-                        </div>
-                        <div class="git-pane git-pane-center">
-                            <div class="git-pane-header">
-                                <span id="git-repo-name">No repo selected</span>
-                                <span class="git-repo-branch" id="git-repo-branch"></span>
-                            </div>
-                            <div class="git-repo-actions" style="margin-bottom:6px;">
-                                <button class="git-btn" id="git-stage-btn">Stage</button>
-                                <button class="git-btn" id="git-unstage-btn">Unstage</button>
-                                <button class="git-btn" id="git-discard-btn" style="border-color:var(--error-color);color:var(--error-color);">Discard</button>
-                            </div>
-                            <div class="git-worktree" id="git-worktree">
-                                <div class="git-empty">Select a repository to view changes.</div>
-                            </div>
-                            <div class="git-diff-viewer" id="git-diff-viewer">
-                                <div class="git-diff-header">Diff</div>
-                                <pre class="git-diff-body" id="git-diff-body"></pre>
-                            </div>
-                            <div class="git-commit-bar">
-                                <textarea id="git-commit-msg" class="git-commit-input" placeholder="Commit message…"></textarea>
-                                <button class="git-btn git-btn-ai" id="git-ai-commit-btn" title="AI Suggest">✨</button>
-                                <button class="git-btn git-btn-primary" id="git-commit-btn">Commit</button>
-                            </div>
-                        </div>
-                        <div class="git-pane git-pane-right">
-                            <div class="git-pane-header">Branches</div>
-                            <div class="git-branch-list" id="git-branch-list"></div>
-                            <div class="git-pane-header" style="margin-top:12px;">History</div>
-                            <div class="git-history-list" id="git-history-list"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     API LAB VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-api-lab" data-testid="view-api-lab">
-                    <div class="api-lab-workspace">
-                        <!-- Left: collections + env + history sidebar -->
-                        <div class="api-lab-sidebar">
-                            <div class="api-lab-sidebar-tabs">
-                                <button class="api-lab-stab active" data-stab="collections">Collections</button>
-                                <button class="api-lab-stab" data-stab="env">Env</button>
-                                <button class="api-lab-stab" data-stab="history">History</button>
-                            </div>
-
-                            <!-- Collections panel -->
-                            <div class="api-lab-stab-panel active" id="api-stab-collections">
-                                <div class="api-lab-actions">
-                                    <button class="api-lab-btn" id="api-new-collection-btn" aria-label="New collection">+ Collection</button>
-                                    <button class="api-lab-btn" id="api-save-request-btn" aria-label="Save request to collection">💾 Save</button>
-                                </div>
-                                <div class="api-lab-collections" id="api-lab-collections" role="list">
-                                    <div class="api-lab-empty">No collections yet.</div>
-                                </div>
-                            </div>
-
-                            <!-- Environment variables panel -->
-                            <div class="api-lab-stab-panel" id="api-stab-env">
-                                <div class="api-lab-env-hint">Use {{VAR}} in URLs and values.</div>
-                                <div class="api-lab-kv-list" id="api-env-list"></div>
-                                <button class="api-lab-btn-small" id="api-add-env-btn">+ Variable</button>
-                            </div>
-
-                            <!-- History panel -->
-                            <div class="api-lab-stab-panel" id="api-stab-history">
-                                <div class="api-lab-history-actions">
-                                    <button class="api-lab-btn-small" id="api-clear-history-btn">Clear history</button>
-                                </div>
-                                <div class="api-lab-history-list" id="api-history-list" role="list">
-                                    <div class="api-lab-empty">No history yet.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: request builder + response -->
-                        <div class="api-lab-main">
-                            <!-- URL bar -->
-                            <div class="api-lab-method-row">
-                                <select id="api-method-select" class="api-lab-method-select" aria-label="HTTP method">
-                                    <option>GET</option><option>POST</option><option>PUT</option>
-                                    <option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
-                                </select>
-                                <input type="url" id="api-url-input" class="api-lab-url-input"
-                                       placeholder="https://api.example.com/v1/resource" aria-label="Request URL">
-                                <button class="api-lab-btn api-lab-btn-primary" id="api-send-btn" aria-label="Send request">Send ▶</button>
-                            </div>
-
-                            <!-- Request tabs -->
-                            <div class="api-lab-tabs" role="tablist">
-                                <button class="api-lab-tab active" data-api-tab="headers" role="tab" aria-selected="true">Headers</button>
-                                <button class="api-lab-tab" data-api-tab="body"    role="tab" aria-selected="false">Body</button>
-                                <button class="api-lab-tab" data-api-tab="auth"    role="tab" aria-selected="false">Auth</button>
-                                <button class="api-lab-tab" data-api-tab="curl"    role="tab" aria-selected="false">cURL</button>
-                                <button class="api-lab-tab" data-api-tab="ai"      role="tab" aria-selected="false">✨ AI</button>
-                            </div>
-
-                            <div class="api-lab-tab-panel active" id="api-tab-headers" role="tabpanel">
-                                <div class="api-lab-kv-list" id="api-headers-list"></div>
-                                <button class="api-lab-btn-small" id="api-add-header-btn" aria-label="Add header">+ Header</button>
-                            </div>
-
-                            <div class="api-lab-tab-panel" id="api-tab-body" role="tabpanel">
-                                <div class="api-lab-body-mode-row">
-                                    <label class="api-lab-body-mode-label">Mode:</label>
-                                    <select id="api-body-mode" class="api-lab-method-select" aria-label="Body mode">
-                                        <option value="raw">Raw (JSON)</option>
-                                        <option value="form">Form Data</option>
-                                        <option value="none">None</option>
-                                    </select>
-                                </div>
-                                <textarea id="api-body-input" class="api-lab-body-input"
-                                          placeholder='{"key": "value"}' aria-label="Request body"></textarea>
-                                <div class="api-lab-form-list hidden" id="api-form-list"></div>
-                                <button class="api-lab-btn-small hidden" id="api-add-form-btn" aria-label="Add form field">+ Field</button>
-                            </div>
-
-                            <div class="api-lab-tab-panel" id="api-tab-auth" role="tabpanel">
-                                <label class="api-lab-prop-label">Auth type</label>
-                                <select id="api-auth-type" class="api-lab-method-select" aria-label="Auth type">
-                                    <option value="none">None</option>
-                                    <option value="bearer">Bearer Token</option>
-                                    <option value="basic">Basic Auth</option>
-                                    <option value="apikey">API Key Header</option>
-                                </select>
-                                <div id="api-auth-bearer" class="api-auth-fields hidden">
-                                    <label class="api-lab-prop-label" style="margin-top:8px">Token</label>
-                                    <input type="password" id="api-auth-token" class="api-lab-url-input"
-                                           placeholder="Bearer token value" aria-label="Bearer token">
-                                </div>
-                                <div id="api-auth-basic" class="api-auth-fields hidden">
-                                    <label class="api-lab-prop-label" style="margin-top:8px">Username</label>
-                                    <input type="text" id="api-auth-username" class="api-lab-url-input"
-                                           placeholder="Username" aria-label="Basic auth username">
-                                    <label class="api-lab-prop-label" style="margin-top:6px">Password</label>
-                                    <input type="password" id="api-auth-password" class="api-lab-url-input"
-                                           placeholder="Password" aria-label="Basic auth password">
-                                </div>
-                                <div id="api-auth-apikey" class="api-auth-fields hidden">
-                                    <label class="api-lab-prop-label" style="margin-top:8px">Header name</label>
-                                    <input type="text" id="api-auth-key-name" class="api-lab-url-input"
-                                           placeholder="X-API-Key" aria-label="API key header name">
-                                    <label class="api-lab-prop-label" style="margin-top:6px">Value</label>
-                                    <input type="password" id="api-auth-key-value" class="api-lab-url-input"
-                                           placeholder="Key value" aria-label="API key value">
-                                </div>
-                            </div>
-
-                            <div class="api-lab-tab-panel" id="api-tab-curl" role="tabpanel">
-                                <div class="api-lab-curl-row">
-                                    <button class="api-lab-btn" id="api-export-curl-btn" aria-label="Export as cURL">⬇ Export cURL</button>
-                                    <button class="api-lab-btn" id="api-import-curl-btn" aria-label="Import from cURL">⬆ Import cURL</button>
-                                </div>
-                                <textarea id="api-curl-area" class="api-lab-body-input"
-                                          placeholder="curl -X GET https://api.example.com/v1/resource" rows="5"
-                                          aria-label="cURL import/export area"></textarea>
-                            </div>
-
-                            <div class="api-lab-tab-panel" id="api-tab-ai" role="tabpanel">
-                                <textarea id="api-ai-input" class="api-lab-body-input"
-                                          placeholder="Describe the API request you want to make…"
-                                          aria-label="AI request description"></textarea>
-                                <button class="api-lab-btn" id="api-ai-generate-btn" aria-label="Generate request">✨ Generate Request</button>
-                            </div>
-
-                            <!-- Response viewer -->
-                            <div class="api-lab-response-viewer" id="api-response-viewer">
-                                <div class="api-lab-response-bar">
-                                    <span class="api-lab-response-status" id="api-response-status">Waiting…</span>
-                                    <div class="api-lab-response-actions">
-                                        <button class="api-lab-btn-small" id="api-resp-copy-btn" aria-label="Copy response body">Copy</button>
-                                        <button class="api-lab-btn-small" id="api-resp-canvas-btn" aria-label="Send to Canvas">→ Canvas</button>
-                                    </div>
-                                </div>
-                                <div class="api-lab-resp-tabs">
-                                    <button class="api-lab-resp-tab active" data-resp-tab="body" aria-selected="true">Body</button>
-                                    <button class="api-lab-resp-tab" data-resp-tab="headers" aria-selected="false">Headers</button>
-                                </div>
-                                <pre class="api-lab-response-body" id="api-response-body" role="region" aria-label="Response body"></pre>
-                                <div class="api-lab-response-headers hidden" id="api-response-headers" role="region" aria-label="Response headers"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     CLI MAKER VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-cli-maker" data-testid="view-cli-maker">
-                    <div class="cli-maker-workspace">
-                        <!-- Left: command list -->
-                        <div class="cli-maker-pane cli-maker-left">
-                            <div class="cli-maker-header">CLI Commands</div>
-                            <div class="cli-maker-filters" id="cli-maker-filters">
-                                <button class="cli-filter active" data-filter="all">All</button>
-                                <button class="cli-filter" data-filter="prompt">Prompt</button>
-                                <button class="cli-filter" data-filter="shell">Shell</button>
-                                <button class="cli-filter" data-filter="view">View</button>
-                                <button class="cli-filter" data-filter="chain">Chain</button>
-                                <button class="cli-filter" data-filter="plugin">Plugin</button>
-                            </div>
-                            <div class="cli-maker-list" id="cli-maker-list" role="list">
-                                <div class="cli-maker-empty">Loading commands…</div>
-                            </div>
-                            <button class="cli-maker-btn-primary" id="cli-new-cmd-btn" aria-label="New command">+ New Command</button>
-                            <label class="cli-import-btn" id="cli-import-btn" tabindex="0" role="button" aria-label="Import from Lua file">⬇ Import Lua</label>
-                            <input type="file" id="cli-import-file-input" class="cli-import-input" accept=".lua">
-                        </div>
-
-                        <!-- Center: form editor -->
-                        <div class="cli-maker-pane cli-maker-center">
-                            <div class="cli-maker-header" id="cli-editor-title">New Command</div>
-                            <div class="cli-editor-form" id="cli-editor-form">
-                                <!-- Core fields -->
-                                <div class="cli-form-row">
-                                    <input type="text" id="cli-cmd-name" class="cli-input cli-input-name"
-                                           placeholder="command-name" aria-label="Command name">
-                                    <select id="cli-icon-select" class="cli-select cli-select-icon" aria-label="Icon"></select>
-                                </div>
-                                <input type="text" id="cli-cmd-desc" class="cli-input"
-                                       placeholder="Short description shown in --help" aria-label="Description">
-                                <div class="cli-form-row">
-                                    <select id="cli-cmd-category" class="cli-select" aria-label="Action type">
-                                        <option value="prompt">Prompt</option>
-                                        <option value="shell">Shell</option>
-                                        <option value="view">View</option>
-                                        <option value="chain">Chain</option>
-                                        <option value="plugin">Plugin</option>
-                                    </select>
-                                    <select id="cli-lang-select" class="cli-select" aria-label="Language" style="display:none">
-                                        <option value="lua">Lua</option>
-                                        <option value="bash">Bash</option>
-                                        <option value="python">Python</option>
-                                    </select>
-                                </div>
-
-                                <!-- Dynamic action fields -->
-                                <div class="cli-dynamic-fields" id="cli-dynamic-fields"></div>
-
-                                <!-- Flags editor -->
-                                <div class="cli-flags-section" id="cli-flags-section">
-                                    <div class="cli-section-label">Flags / Arguments</div>
-                                    <div class="cli-flags-list" id="cli-flags-list"></div>
-                                    <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-flag-btn"
-                                            aria-label="Add flag">+ Flag</button>
-                                </div>
-
-                                <!-- Subcommands -->
-                                <div class="cli-subcmds-section" id="cli-subcmds-section">
-                                    <div class="cli-section-label">Subcommands</div>
-                                    <div class="cli-subcmds-list" id="cli-subcmds-list"></div>
-                                    <button class="cli-maker-btn cli-maker-btn-sm" id="cli-add-subcmd-btn"
-                                            aria-label="Add subcommand">+ Subcommand</button>
-                                </div>
-
-                                <!-- Bindings row -->
-                                <div class="cli-bindings-row">
-                                    <input type="text" id="cli-shortcut-input" class="cli-input"
-                                           placeholder="Shortcut (e.g. Ctrl+K)" readonly
-                                           title="Press a key combination" aria-label="Keyboard shortcut">
-                                    <select id="cli-radial-select" class="cli-select" aria-label="Radial slot">
-                                        <option value="">No radial</option>
-                                        ${Array.from({length: 20}, (_, i) => `<option value="${i}">Slot ${i}</option>`).join('')}
-                                    </select>
-                                </div>
-
-                                <!-- Action buttons -->
-                                <div class="cli-editor-actions">
-                                    <button class="cli-maker-btn cli-maker-btn-primary" id="cli-save-btn" aria-label="Save command">💾 Save</button>
-                                    <button class="cli-maker-btn" id="cli-test-btn" aria-label="Test command">▶ Test</button>
-                                    <button class="cli-maker-btn" id="cli-save-plugin-btn" aria-label="Save as plugin">🔌 Save Plugin</button>
-                                    <button class="cli-maker-btn" id="cli-export-script-btn" aria-label="Export as script">⬇ Export Script</button>
-                                    <button class="cli-maker-btn" id="cli-export-btn" aria-label="Export Lua to clipboard">📋 Copy Lua</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: --help preview + test output -->
-                        <div class="cli-maker-pane cli-maker-right">
-                            <div class="cli-maker-header">--help Preview</div>
-                            <pre class="cli-help-preview" id="cli-help-preview" aria-label="Generated help text">Select or create a command to see the --help preview.</pre>
-                            <div class="cli-maker-header" style="margin-top:12px;">Test Output</div>
-                            <pre class="cli-preview-output" id="cli-preview-output" aria-label="Test output">No output yet.</pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     KNOWLEDGE GRAPH VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-graph" data-testid="view-graph">
-                    <div class="graph-loading" id="graph-loading">
-                        <div class="graph-loading-icon">⬡</div>
-                        <div class="graph-loading-text">Loading knowledge graph…</div>
-                    </div>
-                    <div class="graph-toolbar">
-                        <button class="graph-toolbar-btn" id="graph-refresh-btn" title="Refresh graph">⟳ Refresh</button>
-                        <button class="graph-toolbar-btn" id="graph-center-btn" title="Center view">⊕ Center</button>
-                        <span class="graph-toolbar-sep"></span>
-                        <span class="graph-node-legend">
-                            <span class="graph-legend-dot" style="background:#00f0ff"></span>Memory
-                            <span class="graph-legend-dot" style="background:#f59e0b"></span>Fact
-                            <span class="graph-legend-dot" style="background:#a78bfa"></span>Session
-                        </span>
-                    </div>
-                    <svg id="graph-svg" style="width:100%;height:calc(100% - 44px);display:block;"></svg>
-                    <div id="graph-tooltip" class="graph-tooltip" style="display:none;"></div>
-                    <div id="graph-empty" class="graph-empty" style="display:none;">
-                        <div class="graph-empty-icon">🧠</div>
-                        <div class="graph-empty-text">No memory records yet.<br>Start a conversation to build your knowledge graph.</div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     TASK SCHEDULER VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-scheduler" data-testid="view-scheduler">
-                    <div class="scheduler-workspace">
-                        <div class="scheduler-header">
-                            <h3>⏰ Task Scheduler</h3>
-                            <p>Automate recurring agent tasks with cron expressions.</p>
-                        </div>
-                        <div class="scheduler-task-list" id="scheduler-task-list">
-                            <div class="agent-empty-state">Loading tasks…</div>
-                        </div>
-                        <div class="scheduler-form">
-                            <input type="text" id="scheduler-name-input" class="scheduler-input" placeholder="Task name">
-                            <input type="text" id="scheduler-cron-input" class="scheduler-input" placeholder="Cron (e.g. 0 9 * * 1)">
-                            <textarea id="scheduler-goal-input" class="scheduler-textarea" placeholder="Agent goal / prompt…"></textarea>
-                            <button class="scheduler-btn" id="scheduler-add-btn">+ Add Scheduled Task</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     WORKFLOW BUILDER VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-workflow" data-testid="view-workflow">
-                    <div class="wf-loading" id="wf-loading">
-                        <div class="wf-loading-icon">🔀</div>
-                        <div class="wf-loading-text">Loading workflow builder…</div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     MINI IDE VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content" id="view-ide" data-testid="view-ide">
-                    <div class="ide-workspace">
-                        <!-- Toolbar -->
-                        <div class="ide-toolbar">
-                            <button class="ide-toolbar-btn" id="ide-btn-new-file" title="New File">📄 New</button>
-                            <button class="ide-toolbar-btn" id="ide-btn-new-folder" title="New Folder">📁 Folder</button>
-                            <button class="ide-toolbar-btn" id="ide-btn-save" title="Save (Ctrl+S)">💾 Save</button>
-                            <button class="ide-toolbar-btn" id="ide-btn-delete" title="Delete">🗑️ Delete</button>
-                            <button class="ide-toolbar-btn" id="ide-btn-run" title="Run">▶ Run</button>
-                            <button class="ide-toolbar-btn" id="ide-btn-refresh" title="Refresh">🔄 Refresh</button>
-                            <span class="ide-toolbar-spacer"></span>
-                            <span class="ide-lsp-server-row" id="ide-lsp-server-row" aria-label="Language server selector">
-                                <select class="ide-lsp-server-select" id="ide-lsp-server-select" aria-label="Language server">
-                                    <option value="">Loading LSP servers…</option>
-                                </select>
-                                <button class="ide-toolbar-btn ide-lsp-toggle-btn" id="ide-lsp-toggle" title="Start / stop language server" aria-pressed="false">▶ LSP</button>
-                            </span>
-                            <span class="ide-toolbar-title">Mini IDE</span>
-                        </div>
-                        <!-- Main area -->
-                        <div class="ide-main">
-                            <!-- File tree sidebar -->
-                            <div class="ide-sidebar">
-                                <div class="ide-sidebar-header">📂 Explorer</div>
-                                <div class="ide-file-tree" id="ide-file-tree"></div>
-                            </div>
-                            <!-- Editor area -->
-                            <div class="ide-editor-area">
-                                <div class="ide-tab-bar" id="ide-tab-bar"></div>
-                                <div class="ide-editor-wrap" style="position:relative;">
-                                    <div class="ide-line-numbers" id="ide-line-numbers"><div class="ide-line-num">1</div></div>
-                                    <div class="ide-editor-mirror" id="ide-editor-mirror" aria-hidden="true"></div>
-                                    <textarea class="ide-editor" id="ide-editor" spellcheck="false" placeholder="Open a file from the explorer to start editing…" aria-describedby="ide-lsp-hover-tooltip"></textarea>
-                                    <div class="lsp-completions" id="ide-lsp-completions" role="listbox" aria-label="Code completions"></div>
-                                    <div class="lsp-hover" id="ide-lsp-hover-tooltip" role="tooltip"></div>
-                                </div>
-                                <div class="ide-lsp-status" id="ide-lsp-status" aria-live="polite" aria-atomic="false"></div>
-                                <div class="ide-lsp-diag-panel collapsed" id="ide-lsp-diagnostics-panel">
-                                    <div class="ide-lsp-diag-panel-header" id="ide-lsp-diag-panel-header">
-                                        <span class="ide-lsp-diag-panel-title">Diagnostics (0)</span>
-                                        <span class="ide-lsp-diag-panel-toggle">▲</span>
-                                    </div>
-                                    <div class="ide-lsp-diag-panel-content" id="ide-lsp-diag-panel-content"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Output panel -->
-                        <div class="ide-output-panel">
-                            <div class="ide-output-header">
-                                <span>📋 Output</span>
-                                <button class="ide-output-clear" id="ide-btn-clear-output">Clear</button>
-                            </div>
-                            <div class="ide-output" id="ide-output"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══════════════════════════════════════════════════════════
-                     MULTI-AGENT ORCHESTRATOR VIEW
-                     ═══════════════════════════════════════════════════════════ -->
-                <div class="view-content view-layout-column" id="view-orchestrator" data-testid="view-orchestrator">
-                    <div class="orch-shell">
-                        <!-- Toolbar -->
-                        <div class="orch-toolbar">
-                            <span class="orch-kicker">Multi-Agent Pipeline Builder</span>
-                            <div class="orch-toolbar-controls">
-                                <input type="text" id="orch-pipeline-name" class="orch-name-input"
-                                       value="New Pipeline" aria-label="Pipeline name" />
-                                <button class="orch-btn orch-btn-primary" id="orch-add-node-btn"
-                                        title="Add agent node" aria-label="Add agent node">
-                                    + Node
-                                </button>
-                                <button class="orch-btn orch-btn-run" id="orch-run-btn"
-                                        title="Run pipeline" aria-label="Run pipeline">
-                                    ▶ Run
-                                </button>
-                                <button class="orch-btn" id="orch-pause-btn" disabled
-                                        title="Pause / resume" aria-label="Pause or resume pipeline">
-                                    ⏸ Pause
-                                </button>
-                                <button class="orch-btn orch-btn-stop" id="orch-stop-btn" disabled
-                                        title="Stop pipeline" aria-label="Stop pipeline">
-                                    ■ Stop
-                                </button>
-                                <button class="orch-btn" id="orch-save-btn"
-                                        title="Save pipeline" aria-label="Save pipeline">
-                                    💾 Save
-                                </button>
-                                <button class="orch-btn" id="orch-new-btn"
-                                        title="New pipeline" aria-label="New pipeline">
-                                    + New
-                                </button>
-                                <button class="orch-btn orch-btn-ghost" id="orch-clear-btn"
-                                        title="Clear canvas" aria-label="Clear all nodes">
-                                    🗑 Clear
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Auto-orchestration bar -->
-                        <div class="orch-auto-bar">
-                            <span class="orch-auto-label">Auto-Plan:</span>
-                            <input type="text" id="orch-auto-goal" class="orch-auto-input"
-                                   placeholder="Describe a high-level goal — AI decomposes it into agents automatically…"
-                                   aria-label="Auto-orchestration goal" />
-                            <button class="orch-btn orch-btn-primary" id="orch-auto-btn"
-                                    title="Auto-generate agent plan" aria-label="Auto-generate plan">
-                                🧠 Auto
-                            </button>
-                        </div>
-
-                        <!-- Main body -->
-                        <div class="orch-body">
-                            <!-- Left: saved pipelines + log -->
-                            <div class="orch-left-panel">
-                                <div class="orch-panel-header">Saved Pipelines</div>
-                                <div class="orch-pipeline-list" id="orch-pipeline-list">
-                                    <div class="orch-empty-list">No saved pipelines</div>
-                                </div>
-                                <div class="orch-panel-header" style="margin-top:12px;">Execution Log</div>
-                                <div class="orch-log" id="orch-log" aria-live="polite" aria-label="Execution log"></div>
-                            </div>
-
-                            <!-- Center: visual canvas -->
-                            <div class="orch-canvas-wrap">
-                                <svg class="orch-defs-svg" aria-hidden="true">
-                                    <defs>
-                                        <marker id="orch-arrowhead" markerWidth="8" markerHeight="6"
-                                                refX="8" refY="3" orient="auto">
-                                            <polygon points="0 0, 8 3, 0 6" class="orch-arrowhead-poly" />
-                                        </marker>
-                                    </defs>
-                                </svg>
-                                <div class="orch-canvas" id="orch-canvas" role="region"
-                                     aria-label="Pipeline canvas">
-                                    <div class="orch-canvas-empty" id="orch-canvas-empty">
-                                        <div class="orch-canvas-empty-icon">🧩</div>
-                                        <p>Click <strong>+ Node</strong> to add an agent,<br>
-                                           or use <strong>Auto</strong> to generate a plan from a goal.</p>
-                                        <p class="orch-canvas-hint">Drag handles to move nodes · Drag → button to connect</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: output -->
-                            <div class="orch-right-panel">
-                                <div class="orch-panel-header">Pipeline Output</div>
-                                <div class="orch-output" id="orch-output">
-                                    <div class="orch-output-empty">Run a pipeline to see output here.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-
-        <!-- Collapsible Context Drawer (Right) -->
-        <aside class="inspect-drawer collapsed" id="inspect-drawer">
-            <div class="inspect-header">
-                <span class="inspect-title">Agent Context</span>
-                <button class="sidebar-toggle-btn" id="inspect-close-btn" title="Collapse Drawer">▶</button>
-            </div>
-            <div class="inspect-content" style="overflow-y: auto; max-height: calc(100% - 52px);" tabindex="0">
-                <div class="inspect-card">
-                    <h4>SYSTEM HEALTH</h4>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Active Provider:</span>
-                        <span class="inspect-stat-value" id="drawer-active-provider">--</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Active Model:</span>
-                        <span class="inspect-stat-value" id="drawer-active-model">--</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Available RAM:</span>
-                        <span class="inspect-stat-value" id="drawer-ram-val">--</span>
-                    </div>
-                </div>
-
-                <div class="inspect-card">
-                    <h4>VECTOR MEMORY</h4>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">DB Status:</span>
-                        <span class="inspect-stat-value" id="vector-db-status">Connected</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Total Records:</span>
-                        <span class="inspect-stat-value" id="drawer-memory-records">0</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Pinned Facts:</span>
-                        <span class="inspect-stat-value" id="drawer-memory-pinned">0</span>
-                    </div>
-                </div>
-
-                <div class="inspect-card">
-                    <h4>SESSION METRICS</h4>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Session ID:</span>
-                        <span class="inspect-stat-value" id="drawer-session-id">Active</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Created At:</span>
-                        <span class="inspect-stat-value" id="drawer-session-created">--</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Messages Count:</span>
-                        <span class="inspect-stat-value" id="drawer-session-messages">0</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Latency:</span>
-                        <span class="inspect-stat-value" id="latency-val">--ms</span>
-                    </div>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Tokens Speed:</span>
-                        <span class="inspect-stat-value" id="token-speed">--/s</span>
-                    </div>
-                </div>
-
-                <div class="inspect-card">
-                    <h4>ACTIVE PERSONA</h4>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Persona Name:</span>
-                        <span class="inspect-stat-value" id="drawer-active-persona">Default</span>
-                    </div>
-                </div>
-
-                <div class="inspect-card">
-                    <h4>AGENT</h4>
-                    <div class="inspect-stat-row">
-                        <span class="inspect-stat-label">Status:</span>
-                        <span class="inspect-stat-value" id="drawer-agent-status">Idle</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Settings Modal Overlay — Apple TV Style -->
-        <div class="settings-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings">
-            <div class="settings-modal-card">
-
-                <!-- ── Sidebar nav ── -->
-                <nav class="stv-sidebar">
-                    <div class="stv-sidebar-brand">
-                        <div class="stv-sidebar-brand-chip">${createIcon("sparkles", { size: 12 })}<span>Preference Center</span></div>
-                        <div class="stv-sidebar-brand-title">NEURODECK</div>
-                        <div class="stv-sidebar-brand-sub">SYSTEM PREFERENCES</div>
-                    </div>
-                    <button class="stv-nav-item active" data-panel="sp-general" data-settings-theme="general"><span class="stv-nav-icon">${createIcon("settings2", { size: 15 })}</span> General</button>
-                    <button class="stv-nav-item" data-panel="sp-ai" data-settings-theme="ai"><span class="stv-nav-icon">${createIcon("bot", { size: 15 })}</span> AI Model</button>
-                    <button class="stv-nav-item" data-panel="sp-models" data-settings-theme="models"><span class="stv-nav-icon">${createIcon("cpu", { size: 15 })}</span> Models</button>
-                    <button class="stv-nav-item" data-panel="sp-appearance" data-settings-theme="appearance"><span class="stv-nav-icon">${createIcon("sparkles", { size: 15 })}</span> Appearance</button>
-                    <button class="stv-nav-item" data-panel="sp-terminal" data-settings-theme="terminal"><span class="stv-nav-icon">${createIcon("squareTerminal", { size: 15 })}</span> Terminal</button>
-                    <button class="stv-nav-item" data-panel="sp-extensions" data-settings-theme="extensions"><span class="stv-nav-icon">${createIcon("code2", { size: 15 })}</span> Extensions</button>
-                    <button class="stv-nav-item" data-panel="sp-memory" data-settings-theme="memory"><span class="stv-nav-icon">${createIcon("brain", { size: 15 })}</span> Memory</button>
-                    <button class="stv-nav-item" data-panel="sp-network" data-settings-theme="network"><span class="stv-nav-icon">${createIcon("globe", { size: 15 })}</span> Network</button>
-                    <button class="stv-nav-item" data-panel="sp-computer" data-settings-theme="computer"><span class="stv-nav-icon">${createIcon("camera", { size: 15 })}</span> Computer</button>
-                    <button class="stv-nav-item" data-panel="sp-sync" data-settings-theme="sync"><span class="stv-nav-icon">${createIcon("share2", { size: 15 })}</span> Sync</button>
-                    <button class="stv-nav-item" data-panel="sp-voice" data-settings-theme="voice"><span class="stv-nav-icon">${createIcon("mic", { size: 15 })}</span> Voice</button>
-                    <button class="stv-nav-item" data-panel="sp-lsp" data-settings-theme="lsp"><span class="stv-nav-icon">${createIcon("code2", { size: 15 })}</span> LSP</button>
-                    <button class="stv-nav-item" data-panel="sp-privacy" data-settings-theme="privacy"><span class="stv-nav-icon">${createIcon("shieldCheck", { size: 15 })}</span> Privacy &amp; Security</button>
-                    <button class="stv-nav-item" data-panel="sp-about" data-settings-theme="general"><span class="stv-nav-icon">${createIcon("info", { size: 15 })}</span> About</button>
-                    <div class="stv-nav-spacer"></div>
-                </nav>
-
-                <!-- ── Content panels ── -->
-                <div class="stv-content-area">
-
-                    <!-- ░ General ░ -->
-                    <div class="settings-panel active settings-panel--general" id="sp-general" data-settings-theme="general">
-                        <p class="stv-section-title">General</p>
-                        <p class="stv-section-sub">Persona, theme, font, and display preferences.</p>
-
-                        <div class="stv-group-label">AI Persona</div>
-                        <div class="stv-card">
-                            <div class="stv-row">
-                                <span class="stv-row-label">Active Persona</span>
-                                <select id="persona-select" style="flex:1;" aria-label="Active persona"></select>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Theme &amp; Font</div>
-                        <div class="stv-card">
-                            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
-                                <span class="stv-row-label">Color Theme</span>
-                                <div id="theme-preview-overlay" class="theme-viewport-preview" style="margin-top:0;">
-                                    <div class="tvp-bg-layer" id="tpo-bg-layer"></div>
-                                    <div class="tvp-header">
-                                        <span class="tvp-dot"></span><span class="tvp-dot"></span><span class="tvp-dot"></span>
-                                    </div>
-                                    <div class="tvp-body">
-                                        <div class="tvp-message user-msg">Hello, AI. Check systems.</div>
-                                        <div class="tvp-message ai-msg">System initialized. Memory online.</div>
-                                        <div class="tvp-terminal-line"><span class="tvp-prompt">neuro@deck:~$</span> <span class="tvp-cmd">./start_core.sh</span></div>
-                                        <div class="tvp-warning" style="margin-top:2px;">[Warn] Node latency high</div>
-                                        <div class="tvp-error">[Fail] Uplink dropped</div>
-                                    </div>
-                                </div>
-                                <div id="theme-cards-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px; max-height:220px; overflow-y:auto; padding:4px; border:1px solid rgba(255,255,255,0.05); border-radius:6px;"></div>
-                                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
-                                    <button class="stv-btn-ghost" id="theme-reset-btn" style="padding:4px 12px; height:28px;">Reset</button>
-                                    <button class="stv-btn-primary" id="theme-apply-btn" style="padding:4px 12px; height:28px;">Apply</button>
-                                </div>
-                            </div>
-                            <div class="stv-row">
-                                <span class="stv-row-label">UI Font</span>
-                                <select id="font-select" style="flex:1;" aria-label="UI font">
-                                    <option value="spacegrotesk">Space Grotesk (Default — AI Terminal)</option>
-                                    <option value="syne">Syne (Brand Display)</option>
-                                    <option value="inter">Inter (Modern Clean)</option>
-                                    <option value="outfit">Outfit (Premium Rounded)</option>
-                                    <option value="jetbrains">JetBrains Mono (Sleek Coding)</option>
-                                    <option value="vt323">VT323 (Retro Phosphor)</option>
-                                    <option value="sharetech">Share Tech Mono (Futuristic Sci-Fi)</option>
-                                    <option value="orbitron">Orbitron (Gamer HUD)</option>
-                                    <option value="pressstart">Press Start 2P (8-Bit Arcade)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Keyboard Shortcuts</div>
-                        <div class="stv-card" id="shortcut-customization-card">
-                            <p style="font-size:0.75rem;opacity:0.5;margin:0 0 10px;line-height:1.4;">Click any shortcut row and press a new key combination to rebind. Reset to restore the default.</p>
-                            <div id="shortcut-customization-table" tabindex="0" style="display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;"></div>
-                        </div>
-
-                        <div class="stv-group-label">Window Behavior</div>
-                        <div class="stv-card">
-                            <div class="stv-toggle-row">
-                                <div>
-                                    <div class="stv-toggle-label">Minimize to tray on close</div>
-                                    <div class="stv-toggle-desc">Closing the window hides NEURODECK to the system tray instead of quitting. Background agent and scheduled tasks keep running.</div>
-                                </div>
-                                <input type="checkbox" id="minimize-to-tray-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;" aria-label="Minimize to tray on close">
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">CRT Effects</div>
-                        <div class="stv-card">
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Scanlines</div><div class="stv-toggle-desc">Overlay horizontal CRT scan-line texture</div></div>
-                                <input type="checkbox" id="scanlines-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;" aria-label="Scanlines">
-                            </div>
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Screen Flicker</div><div class="stv-toggle-desc">Subtle phosphor flicker animation</div></div>
-                                <input type="checkbox" id="flicker-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;" aria-label="Screen flicker">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ AI Model ░ -->
-                    <div class="settings-panel settings-panel--ai" id="sp-ai" data-settings-theme="ai">
-                        <p class="stv-section-title">AI Model</p>
-                        <p class="stv-section-sub">Configure your LLM provider, credentials, and local models.</p>
-
-                        <div class="stv-group-label">Provider</div>
-                        <div class="stv-card">
-                            <div class="stv-row">
-                                <span class="stv-row-label">LLM Provider</span>
-                                <select id="llm-provider-select" style="flex:1;">
-                                    <option value="gemini">Google Gemini</option>
-                                    <option value="openai_compat">OpenAI-Compatible (Groq, OpenRouter, llama.cpp…)</option>
-                                    <option value="kimi">Kimi (Moonshot AI)</option>
-                                    <option value="ollama">Ollama (Local / Remote)</option>
-                                    <option value="huggingface">Hugging Face</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Gemini Credentials</div>
-                        <div class="stv-card" id="settings-gemini-group">
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>API Key</label>
-                                <input type="password" id="settings-gemini-key" placeholder="AIzaSy…">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:0;">
-                                <label>Model ID</label>
-                                <input type="text" id="settings-gemini-model" placeholder="gemini-1.5-flash">
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label" style="display:none;" id="stv-openai-compat-label">OpenAI-Compatible Endpoint</div>
-                        <div class="stv-card" id="settings-openai-compat-group" style="display:none;">
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>Base URL</label>
-                                <input type="text" id="settings-openai-compat-url" placeholder="https://api.groq.com/openai/v1">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>API Key</label>
-                                <input type="password" id="settings-openai-compat-key" placeholder="sk-…  (leave blank for keyless endpoints)">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:8px;">
-                                <label>Model ID</label>
-                                <input type="text" id="settings-openai-compat-model" placeholder="llama-3.3-70b-versatile">
-                            </div>
-                            <p style="font-size:0.72rem;opacity:0.5;margin:0 0 4px;">
-                                Works with Groq · OpenRouter · llama.cpp · Mistral · Together · Perplexity · any /v1/chat/completions endpoint.
-                                Memory search falls back to keyword matching when the endpoint lacks /v1/embeddings.
-                            </p>
-                        </div>
-
-                        <div class="stv-group-label" style="display:none;" id="stv-ollama-label">Ollama Server</div>
-                        <div class="stv-card" id="settings-ollama-group" style="display:none;">
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>Base URL</label>
-                                <input type="text" id="settings-ollama-url" placeholder="http://localhost:11434">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:0;">
-                                <label>Model Name</label>
-                                <input type="text" id="settings-ollama-model" placeholder="hermes3:8b, llama3.2:1b">
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label" style="display:none;" id="stv-kimi-label">Kimi Credentials</div>
-                        <div class="stv-card" id="settings-kimi-group" style="display:none;">
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>API Key</label>
-                                <input type="password" id="settings-kimi-key" placeholder="sk-...">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>Model ID</label>
-                                <input type="text" id="settings-kimi-model" placeholder="kimi-k2.5">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:0;">
-                                <label>Base URL (optional)</label>
-                                <input type="text" id="settings-kimi-url" placeholder="https://api.moonshot.ai/v1">
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label" style="display:none;" id="stv-hf-label">Hugging Face</div>
-                        <div class="stv-card" id="settings-hf-group" style="display:none;">
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>API Key</label>
-                                <input type="password" id="settings-hf-key" placeholder="hf_...">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>Model ID</label>
-                                <input type="text" id="settings-hf-model" placeholder="meta-llama/Llama-3.2-1B-Instruct">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:0;">
-                                <label>Base URL (optional)</label>
-                                <input type="text" id="settings-hf-url" placeholder="https://api-inference.huggingface.co">
-                            </div>
-                        </div>
-
-                        <div class="stv-action-bar">
-                            <button class="stv-btn-ghost" id="settings-test-connection-btn">Test Connection</button>
-                            <button class="stv-btn-primary" id="settings-save-llm-btn">Save &amp; Apply</button>
-                        </div>
-                        <div id="settings-llm-status" class="stv-status-line stv-status-row"></div>
-
-                        <div class="stv-group-label">Data Privacy & Security</div>
-                        <div class="stv-card">
-                            <div class="stv-row">
-                                <div style="display:flex;flex-direction:column;gap:2px;max-width:300px;">
-                                    <span class="stv-row-label">Trust & Safety Center</span>
-                                    <span style="font-size:0.7rem;opacity:0.6;">Audit data handling and understand local vs cloud API boundaries.</span>
-                                </div>
-                                <button class="stv-btn-ghost" id="trust-safety-btn" style="padding: 0 16px;">Review Data Flow</button>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Local Models</div>
-                        <div class="stv-card" id="settings-ollama-models-section" style="display:none;">
-                            <div style="display:flex;gap:8px;margin-bottom:12px;">
-                                <input type="text" id="settings-ollama-pull-input" placeholder="e.g. hermes3:8b, llama3.2:1b" style="flex:1;">
-                                <button class="stv-btn-primary" id="settings-ollama-pull-btn">Pull</button>
-                            </div>
-                            <div id="settings-ollama-pull-progress-container" style="display:none;margin-bottom:10px;">
-                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;font-family:var(--font-mono);">
-                                    <span id="settings-ollama-pull-status">Downloading…</span>
-                                    <span id="settings-ollama-pull-percent">0%</span>
-                                </div>
-                                <div class="stv-progress-bar"><div id="settings-ollama-pull-bar" class="stv-progress-fill" style="width:0%;"></div></div>
-                            </div>
-                            <div id="settings-ollama-models-list" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
-                                <span style="opacity:0.4;font-style:italic;">Loading models…</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Models ░ -->
-                    <div class="settings-panel settings-panel--models" id="sp-models" data-settings-theme="models">
-                        <p class="stv-section-title">Model Library</p>
-                        <p class="stv-section-sub">Discover, download, and manage AI models for your Steam Deck.</p>
-
-                        <div class="stv-sub-tabs">
-                            <button class="stv-sub-tab active" data-models-tab="browse">Browse</button>
-                            <button class="stv-sub-tab" data-models-tab="browser">Browser</button>
-                            <button class="stv-sub-tab" data-models-tab="installed">Installed</button>
-                            <button class="stv-sub-tab" data-models-tab="downloads">Downloads</button>
-                        </div>
-
-                        <div class="models-tab-panel active" id="models-tab-browse">
-                            <div class="models-search-bar">
-                                <input type="text" id="models-search-input" placeholder="Search HuggingFace models…">
-                                <button id="models-search-btn" class="stv-btn-primary">Search</button>
-                            </div>
-                            <div class="models-filter-chips">
-                                <button class="filter-chip active" data-filter="steam-deck">Steam Deck Best</button>
-                                <button class="filter-chip" data-filter="1b">1B</button>
-                                <button class="filter-chip" data-filter="3b">3B</button>
-                                <button class="filter-chip" data-filter="7b">7B</button>
-                                <button class="filter-chip" data-filter="all">All GGUF</button>
-                            </div>
-                            <div class="models-grid" id="models-browse-grid">
-                                <div class="models-empty-state">
-                                    <p>Loading Steam Deck compatible models…</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- HuggingFace Model Browser -->
-                        <div class="models-tab-panel" id="models-tab-browser">
-                            <div class="hf-browser-container">
-                                <div class="hf-browser-toolbar">
-                                    <div class="hf-browser-nav">
-                                        <button class="hf-browser-btn" id="hf-browser-back" title="Back" aria-label="Go Back">${createIcon("arrowLeft", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-forward" title="Forward" aria-label="Go Forward">${createIcon("arrowRight", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-refresh" title="Refresh" aria-label="Refresh">${createIcon("refreshCw", { size: 14 })}</button>
-                                        <button class="hf-browser-btn" id="hf-browser-home" title="Home" aria-label="Home">${createIcon("house", { size: 14 })}</button>
-                                    </div>
-                                    <div class="hf-browser-address">
-                                        <input type="text" id="hf-browser-url" class="hf-browser-url-input" value="https://huggingface.co/models" placeholder="Enter HuggingFace URL…">
-                                    </div>
-                                    <button class="hf-browser-btn hf-browser-go" id="hf-browser-go" aria-label="Go to URL">${createIcon("sendHorizontal", { size: 14 })}</button>
-                                    <button class="hf-browser-btn hf-browser-download" id="hf-browser-download" title="Download this model">${createIcon("download", { size: 14 })}<span>Download</span></button>
-                                </div>
-                                <div class="hf-browser-viewport">
-                                    <iframe id="hf-browser-iframe" class="hf-browser-iframe" src="https://huggingface.co/models" sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads" referrerpolicy="no-referrer"></iframe>
-                                </div>
-                                <div class="hf-browser-status" id="hf-browser-status">
-                                    <span>Navigate to a model page and click Download to fetch GGUF files.</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="models-tab-panel" id="models-tab-installed">
-                            <div class="models-list" id="models-installed-list">
-                                <div class="models-empty-state">
-                                    <p>No models installed yet.</p>
-                                    <p class="models-empty-hint">Browse the Steam Deck Best tab to find and download models.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="models-tab-panel" id="models-tab-downloads">
-                            <div class="models-downloads-list" id="models-downloads-list">
-                                <div class="models-empty-state">
-                                    <p>No active downloads.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Appearance ░ -->
-                    <div class="settings-panel settings-panel--appearance" id="sp-appearance" data-settings-theme="appearance">
-                        <p class="stv-section-title">Appearance</p>
-                        <p class="stv-section-sub">Background, custom themes, and visual tuning.</p>
-
-                        <div class="stv-group-label">Background</div>
-                        <div class="stv-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                                <span style="font-size:0.8rem; opacity:0.6; text-transform:uppercase; letter-spacing:0.05em; font-family:var(--font-mono);">Visual Atmosphere</span>
-                                <div style="display:flex; gap:6px;">
-                                    <button class="stv-btn-ghost bg-tab-btn active" id="bg-tab-live" style="font-size:0.7rem; padding:0 8px; height:24px; border-radius:4px;">Live Animated</button>
-                                    <button class="stv-btn-ghost bg-tab-btn" id="bg-tab-static" style="font-size:0.7rem; padding:0 8px; height:24px; border-radius:4px;">Static Presets</button>
-                                </div>
-                            </div>
-
-                            <!-- Live backgrounds grid -->
-                            <div id="bg-gallery-live" class="bg-gallery-grid"></div>
-
-                            <!-- Static backgrounds grid -->
-                            <div id="bg-gallery-static" class="bg-gallery-grid" style="display:none;"></div>
-
-                            <div class="setting-field-group" style="margin-top:12px; margin-bottom:10px;">
-                                <label>Custom Wallpaper URL</label>
-                                <input type="text" id="bg-url-input" placeholder="https://…">
-                            </div>
-
-                            <div class="stv-slider-row">
-                                <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Opacity</span>
-                                <input type="range" id="bg-opacity-slider" min="0" max="100" value="10">
-                                <span class="stv-slider-val" id="bg-opacity-val">10%</span>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Custom Theme Builder</div>
-                        <div class="stv-card">
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Theme Name</label>
-                                <input type="text" id="ct-name" placeholder="e.g. Vapor Wave">
-                            </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Background</label><input type="color" id="ct-bg" value="#050505" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Foreground</label><input type="color" id="ct-fg" value="#D9F7FF" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Accent</label><input type="color" id="ct-accent" value="#00F0FF" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Response</label><input type="color" id="ct-response" value="#00FF88" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Warning</label><input type="color" id="ct-warning" value="#FFB000" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                                <div style="display:flex;flex-direction:column;gap:4px;"><label style="font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;">Error</label><input type="color" id="ct-error" value="#FF3C5A" style="width:100%;height:28px;border:1px solid var(--border-color);border-radius:6px;background:none;cursor:pointer;padding:2px;"></div>
-                            </div>
-                            <div id="theme-viewport-preview" class="theme-viewport-preview">
-                                <div class="tvp-bg-layer" id="tvp-bg-layer"></div>
-                                <div class="tvp-header">
-                                    <span class="tvp-dot"></span><span class="tvp-dot"></span><span class="tvp-dot"></span>
-                                </div>
-                                <div class="tvp-body">
-                                    <div class="tvp-message user-msg">Hello, AI. Check systems.</div>
-                                    <div class="tvp-message ai-msg">System initialized. Memory online.</div>
-                                    <div class="tvp-terminal-line"><span class="tvp-prompt">neuro@deck:~$</span> <span class="tvp-cmd">./start_core.sh</span></div>
-                                    <div class="tvp-warning" style="margin-top:2px;">[Warn] Node latency high</div>
-                                    <div class="tvp-error">[Fail] Uplink dropped</div>
-                                </div>
-                            </div>
-                            <button class="stv-btn-primary" id="ct-save-btn" style="width:100%;justify-content:center;">Save Theme</button>
-                            <div id="ct-status" class="stv-status-line"></div>
-                            <div class="stv-group-label" style="margin-top:14px;">Saved Custom Themes</div>
-                            <div id="ct-list" style="display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
-                                <span style="opacity:0.4;font-style:italic;">No custom themes yet.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Terminal ░ -->
-                    <div class="settings-panel settings-panel--terminal" id="sp-terminal" data-settings-theme="terminal">
-                        <p class="stv-section-title">Terminal</p>
-                        <p class="stv-section-sub">Shell, display, and saved connection profiles.</p>
-
-                        <div class="stv-group-label">Shell &amp; Display</div>
-                        <div class="stv-card">
-                            <div class="stv-row">
-                                <span class="stv-row-label">Shell</span>
-                                <select id="shell-select" style="flex:1;">
-                                    <option value="default">Default</option>
-                                    <option value="/bin/bash">/bin/bash</option>
-                                    <option value="/bin/zsh">/bin/zsh</option>
-                                    <option value="/bin/sh">/bin/sh</option>
-                                    <option value="powershell.exe">powershell.exe</option>
-                                    <option value="cmd.exe">cmd.exe</option>
-                                    <option value="custom">Custom…</option>
-                                </select>
-                            </div>
-                            <div id="custom-shell-group" style="display:none;">
-                                <input type="text" id="custom-shell-input" placeholder="/bin/zsh" style="width:100%;margin-top:8px;">
-                            </div>
-                            <div class="stv-slider-row" style="margin-top:12px;">
-                                <span class="stv-row-label" style="min-width:unset;font-size:0.75rem;opacity:0.5;">Font Size</span>
-                                <input type="range" id="term-fontsize-slider" min="10" max="24" value="14" step="1">
-                                <span class="stv-slider-val" id="term-fontsize-val">14px</span>
-                            </div>
-                            <div class="stv-row" style="margin-top:10px;">
-                                <span class="stv-row-label">Scrollback</span>
-                                <input type="number" id="term-scrollback-input" min="500" max="10000" value="2000" style="flex:1;">
-                            </div>
-                        </div>
-
-                        <div class="terminal-profiles-row">
-                            <div>
-                                <div class="stv-group-label">SSH Profiles</div>
-                                <div class="stv-card">
-                                    <div class="ssh-settings-profiles-list" id="settings-ssh-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
-                                    </div>
-                                    <button class="stv-btn-ghost" id="settings-clear-ssh-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SSH Profiles</button>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="stv-group-label">FTP Profiles</div>
-                                <div class="stv-card">
-                                    <div class="ssh-settings-profiles-list" id="settings-ftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
-                                    </div>
-                                    <button class="stv-btn-ghost" id="settings-clear-ftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All FTP Profiles</button>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="stv-group-label">SFTP Profiles</div>
-                                <div class="stv-card">
-                                    <div class="ssh-settings-profiles-list" id="settings-sftp-profiles-list" style="font-size:0.78rem;max-height:100px;overflow-y:auto;margin-bottom:8px;">
-                                        <div style="opacity:0.4;font-style:italic;">No saved profiles.</div>
-                                    </div>
-                                    <button class="stv-btn-ghost" id="settings-clear-sftp-profiles" style="font-size:0.75rem;height:28px;padding:0 12px;">Clear All SFTP Profiles</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Extensions ░ -->
-                    <div class="settings-panel settings-panel--extensions" id="sp-extensions" data-settings-theme="extensions">
-                        <p class="stv-section-title">Extensions</p>
-                        <p class="stv-section-sub">Lua plugins and the BMAD AI framework installer.</p>
-
-                        <div class="stv-group-label">Lua Plugins</div>
-                        <div class="stv-card">
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <input type="text" id="settings-plugin-install-url" placeholder="Raw URL to .lua plugin" style="flex:1;">
-                                <button class="stv-btn-primary" id="settings-plugin-install-btn">Install</button>
-                            </div>
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-ghost" id="settings-plugin-new-btn" style="flex:1;font-size:0.75rem;">+ New Plugin</button>
-                                <button class="stv-btn-ghost" id="settings-plugin-reload-btn" style="flex:1;font-size:0.75rem;">↺ Reload All</button>
-                            </div>
-                            <div id="settings-plugin-status" class="stv-status-line"></div>
-                            <div id="settings-plugins-list" style="display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
-                                <span style="opacity:0.4;font-style:italic;">Loading…</span>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Plugin Marketplace</div>
-                        <div class="stv-card">
-                            <div class="marketplace-toolbar">
-                                <input type="text" id="plugin-marketplace-search" placeholder="Search plugins…">
-                                <select id="plugin-marketplace-category">
-                                    <option value="">All Categories</option>
-                                    <option value="ai">AI / LLM</option>
-                                    <option value="productivity">Productivity</option>
-                                    <option value="system">System</option>
-                                    <option value="integration">Integration</option>
-                                    <option value="gaming">Gaming</option>
-                                    <option value="utility">Utility</option>
-                                </select>
-                                <select id="plugin-marketplace-tag">
-                                    <option value="">All Tags</option>
-                                </select>
-                                <button class="stv-btn-ghost" id="plugin-marketplace-refresh-btn">Refresh</button>
-                            </div>
-                            <div id="plugin-marketplace-status" class="stv-status-line"></div>
-                            <div id="plugin-marketplace-grid" class="plugin-marketplace-grid">
-                                <span style="opacity:0.4;font-style:italic;">Registry not loaded.</span>
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">BMAD Method v6.7.1</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Installs <code style="color:var(--accent-color);">_bmad/</code> + <code style="color:var(--accent-color);">.claude/skills/</code> (44 Claude Code skills) into any project — no Node.js required.</p>
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Project Directory</label>
-                                <input type="text" id="bmad-target-dir" placeholder="/home/deck/myproject  or  C:\Projects\myapp">
-                            </div>
-                            <div style="display:flex;gap:8px;">
-                                <button class="stv-btn-primary" id="bmad-install-btn" style="flex:1;">Install BMAD</button>
-                                <button class="stv-btn-ghost" id="bmad-docs-btn">Docs ↗</button>
-                            </div>
-                            <div id="bmad-status-line" class="stv-status-line"></div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Memory ░ -->
-                    <div class="settings-panel settings-panel--memory" id="sp-memory" data-settings-theme="memory">
-                        <p class="stv-section-title">Memory</p>
-                        <p class="stv-section-sub">RAG knowledge base and custom AI personas.</p>
-
-                        <div class="stv-group-label">Personal Knowledge Base</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Index a local folder of .txt / .md / .rst files so the AI can reference them during chat.</p>
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Folder Path</label>
-                                <input type="text" id="rag-folder-input" placeholder="/home/deck/notes">
-                            </div>
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-primary" id="rag-index-btn" style="flex:1;">Index Folder</button>
-                                <button class="stv-btn-ghost" id="rag-clear-btn">Clear Index</button>
-                            </div>
-                            <div id="rag-progress-container" style="display:none;">
-                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px;font-family:var(--font-mono);">
-                                    <span id="rag-progress-label">Indexing…</span><span id="rag-progress-pct">0%</span>
-                                </div>
-                                <div class="stv-progress-bar"><div id="rag-progress-bar" class="stv-progress-fill" style="width:0%;"></div></div>
-                            </div>
-                            <div id="rag-status-line" class="stv-status-line"></div>
-                            <p style="margin:8px 0 0;font-size:0.73rem;opacity:0.5;">Documents indexed: <span id="rag-doc-count" style="color:var(--accent-color);font-family:var(--font-mono);">0</span></p>
-                        </div>
-
-                        <div class="stv-group-label">Vector Database Management</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Export or import your entire vector memory database to a compressed <code>.ndmem</code> archive.</p>
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-primary" id="memory-export-btn" style="flex:1;">${createIcon("download", { size: 14 })} Export Database</button>
-                                <button class="stv-btn-ghost" id="memory-import-btn" style="flex:1;">${createIcon("upload", { size: 14 })} Import Database</button>
-                            </div>
-                            <div id="memory-db-status-line" class="stv-status-line"></div>
-                        </div>
-
-                        <div class="stv-group-label">Custom Personas</div>
-                        <div class="stv-card">
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Name</label>
-                                <input type="text" id="settings-persona-name" placeholder="e.g. GamerBot">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>System Prompt</label>
-                                <textarea id="settings-persona-prompt" placeholder="You are a retro gamer bot…" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:var(--fg-color);border-radius:8px;padding:9px 12px;font-family:var(--font-sans);font-size:0.83rem;outline:none;"></textarea>
-                            </div>
-                            <button class="stv-btn-primary" id="settings-persona-create-btn" style="width:100%;justify-content:center;margin-bottom:10px;">Create Persona</button>
-                            <div id="settings-persona-status" class="stv-status-line"></div>
-                            <div id="settings-personas-list-custom" style="display:flex;flex-direction:column;gap:5px;max-height:130px;overflow-y:auto;font-family:var(--font-mono);font-size:0.78rem;">
-                                <span style="opacity:0.4;font-style:italic;">No custom personas.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Network ░ -->
-                    <div class="settings-panel settings-panel--network" id="sp-network" data-settings-theme="network">
-                        <p class="stv-section-title">Network</p>
-                        <p class="stv-section-sub">MCP server and remote connection settings.</p>
-
-                        <div class="stv-group-label">MCP Server</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Expose NEURODECK as a <strong>Model Context Protocol 2024-11</strong> server so Claude Desktop or any MCP client can invoke tools, read memory resources, and list prompt presets directly.</p>
-                            <div class="stv-row" style="margin-bottom:12px;">
-                                <span class="stv-row-label">Port</span>
-                                <input type="number" id="mcp-port-input" value="13337" min="1024" max="65535" style="width:100px;" aria-label="MCP server port">
-                            </div>
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-primary" id="mcp-start-btn" style="flex:1;" aria-label="Start MCP server">Start MCP Server</button>
-                                <button class="stv-btn-ghost" id="mcp-stop-btn" style="flex:1;" disabled aria-label="Stop MCP server">Stop Server</button>
-                            </div>
-                            <div id="mcp-status-line" class="stv-status-line" role="status" aria-live="polite"></div>
-                            <!-- Token row (shown while running) -->
-                            <div id="mcp-token-row" style="display:none;margin-top:8px;display:none;">
-                                <div class="stv-row" style="margin-bottom:4px;">
-                                    <span class="stv-row-label">Bearer Token</span>
-                                    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
-                                        <code id="mcp-token-display" style="font-size:0.68rem;color:var(--response-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;display:block;" aria-label="MCP bearer token"></code>
-                                        <button class="stv-btn-ghost" id="mcp-copy-token-btn" style="padding:2px 8px;font-size:0.68rem;" aria-label="Copy bearer token">Copy</button>
-                                    </div>
-                                </div>
-                                <div class="stv-row">
-                                    <span class="stv-row-label">Discovery</span>
-                                    <code id="mcp-discovery-url" style="font-size:0.68rem;color:var(--accent-color);"></code>
-                                </div>
-                            </div>
-                            <!-- Tool whitelist -->
-                            <div class="stv-group-label" style="margin-top:14px;font-size:0.72rem;">Tool Whitelist</div>
-                            <div id="mcp-tool-whitelist" class="mcp-tool-checklist" role="group" aria-label="MCP tool whitelist">
-                                <div class="mcp-tool-check-loading">Loading…</div>
-                            </div>
-                            <p style="font-size:0.68rem;opacity:0.45;margin:6px 0 0;line-height:1.4;">Changes take effect on next server start. Exec tools also require <code>NEURODECK_ENABLE_MCP_EXEC=true</code>.</p>
-                            <!-- Claude Desktop config snippet -->
-                            <div id="mcp-claude-config" style="display:none;margin-top:10px;">
-                                <p style="font-size:0.72rem;opacity:0.5;margin:0 0 4px;">Add to claude_desktop_config.json:</p>
-                                <pre id="mcp-claude-config-snippet" style="margin:0;padding:8px 10px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:7px;font-size:0.7rem;overflow-x:auto;white-space:pre;color:var(--response-color);" aria-label="Claude Desktop config snippet"></pre>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Computer Use ░ -->
-                    <div class="settings-panel settings-panel--computer" id="sp-computer" data-settings-theme="computer">
-                        <p class="stv-section-title">Computer Use</p>
-                        <p class="stv-section-sub">Desktop screenshot, mouse, keyboard, and OCR controls for approved agent actions.</p>
-
-                        <div class="stv-group-label">Safety Gate</div>
-                        <div class="stv-card">
-                            <div class="stv-toggle-row">
-                                <div>
-                                    <div class="stv-toggle-label">Approve All for This Session</div>
-                                    <div class="stv-toggle-desc">Skips the modal until NEURODECK is reloaded.</div>
-                                </div>
-                                <input type="checkbox" id="computer-approve-all-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
-                            </div>
-                            <p class="computer-use-warning">Actions that move the mouse, click, type, or press keys still pass an explicit approval flag to the backend. Screenshot and OCR are read-only.</p>
-                        </div>
-
-                        <div class="stv-group-label">Live Desktop Snapshot</div>
-                        <div class="stv-card">
-                            <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                <button class="stv-btn-primary" id="computer-capture-btn" style="flex:1;">Capture Screenshot</button>
-                                <button class="stv-btn-ghost" id="computer-ocr-btn" style="flex:1;">Find Text</button>
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>OCR Text</label>
-                                <input type="text" id="computer-ocr-input" placeholder="Text to locate on screen">
-                            </div>
-                            <div id="computer-status-line" class="stv-status-line"></div>
-                            <div class="computer-preview-shell">
-                                <img id="computer-preview-img" class="computer-preview-img" alt="Desktop screenshot preview">
-                                <div id="computer-preview-empty" class="computer-preview-empty">No screenshot captured.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Sync ░ -->
-                    <div class="settings-panel settings-panel--sync" id="sp-sync" data-settings-theme="sync">
-                        <p class="stv-section-title">Cloud Sync</p>
-                        <p class="stv-section-sub">Encrypted sync for memory records and chat sessions.</p>
-
-                        <div class="stv-group-label">Sync Scope</div>
-                        <div class="stv-card">
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Enable Cloud Sync</div><div class="stv-toggle-desc">Opt in before any data leaves this device.</div></div>
-                                <input type="checkbox" id="sync-enabled-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
-                            </div>
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Memory Records</div><div class="stv-toggle-desc">Sync RAG facts and embedded chat memory.</div></div>
-                                <input type="checkbox" id="sync-memory-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
-                            </div>
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Chat Sessions</div><div class="stv-toggle-desc">Sync saved conversation files.</div></div>
-                                <input type="checkbox" id="sync-sessions-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
-                            </div>
-                        </div>
-
-                        <div class="stv-group-label">Sync API</div>
-                        <div class="stv-card">
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Base URL</label>
-                                <input type="text" id="sync-api-url-input" placeholder="https://your-neurodeck-sync-api.fly.dev">
-                            </div>
-                            <div class="sync-status-grid">
-                                <div><span>Device</span><strong id="sync-device-id">-</strong></div>
-                                <div><span>Last Sync</span><strong id="sync-last-at">Never</strong></div>
-                                <div><span>Pending</span><strong id="sync-pending-count">0</strong></div>
-                                <div><span>Conflicts</span><strong id="sync-conflict-count">0</strong></div>
-                            </div>
-                            <div style="display:flex;gap:8px;margin-top:12px;">
-                                <button class="stv-btn-primary" id="sync-save-btn" style="flex:1;">Save Sync Settings</button>
-                                <button class="stv-btn-ghost" id="sync-now-btn" style="flex:1;">Sync Now</button>
-                            </div>
-                            <div id="sync-status-line" class="stv-status-line"></div>
-                        </div>
-                    </div>
-
-                    <!-- ░ Voice ░ -->
-                    <div class="settings-panel settings-panel--voice" id="sp-voice" data-settings-theme="voice">
-                        <p class="stv-section-title">Voice</p>
-                        <p class="stv-section-sub">Offline speech-to-text via whisper.cpp.</p>
-
-                        <div class="stv-group-label">Whisper STT</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">When configured, the 🎙️ button routes through whisper.cpp for fully offline transcription — no internet required.</p>
-
-                            <!-- Auto-download section -->
-                            <div class="stv-group-label" style="margin-bottom:8px;">Quick Download</div>
-                            <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-                                <select id="whisper-model-select" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:inherit;border-radius:6px;padding:6px 10px;font-size:0.8rem;">
-                                    <option value="base.en">base.en — 142 MB (recommended)</option>
-                                    <option value="tiny.en">tiny.en — 75 MB (fastest)</option>
-                                    <option value="small.en">small.en — 466 MB (accurate)</option>
-                                    <option value="medium.en">medium.en — 1.5 GB (best)</option>
-                                </select>
-                                <button class="stv-btn-primary" id="whisper-download-btn" style="white-space:nowrap;">⬇ Download</button>
-                            </div>
-                            <div id="whisper-dl-progress-wrap" style="display:none;margin-bottom:10px;">
-                                <div style="display:flex;justify-content:space-between;font-size:0.72rem;opacity:0.6;margin-bottom:4px;">
-                                    <span id="whisper-dl-label">Downloading...</span>
-                                    <span id="whisper-dl-pct">0%</span>
-                                </div>
-                                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
-                                    <div id="whisper-dl-bar" style="height:100%;width:0%;background:var(--accent-color);transition:width 0.3s;"></div>
-                                </div>
-                            </div>
-
-                            <!-- Manual config -->
-                            <div class="stv-group-label" style="margin-bottom:8px;">Manual Config</div>
-                            <div class="setting-field-group" style="margin-bottom:10px;">
-                                <label>Binary Path</label>
-                                <input type="text" id="whisper-binary-input" placeholder="whisper-cli  (or full path)">
-                            </div>
-                            <div class="setting-field-group" style="margin-bottom:12px;">
-                                <label>Model Path</label>
-                                <input type="text" id="whisper-model-input" placeholder="/path/to/ggml-base.en.bin">
-                            </div>
-                            <div style="display:flex;gap:8px;">
-                                <button class="stv-btn-primary" id="whisper-save-btn" style="flex:1;">Save Config</button>
-                                <button class="stv-btn-ghost" id="whisper-test-btn" style="flex:1;">Test Transcription</button>
-                            </div>
-                            <div id="whisper-status-line" class="stv-status-line"></div>
-                        </div>
-
-                        <div class="stv-group-label">Text-to-Speech Mode</div>
-                        <div class="stv-card">
-                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Controls when the AI response is spoken aloud. Streaming mode speaks each sentence as it arrives.</p>
-                            <div class="tts-mode-group" id="tts-mode-group" role="radiogroup" aria-label="TTS mode">
-                                <label class="tts-mode-option">
-                                    <input type="radio" name="tts-mode" value="off" id="tts-mode-off"> Off
-                                </label>
-                                <label class="tts-mode-option">
-                                    <input type="radio" name="tts-mode" value="complete" id="tts-mode-complete"> After complete
-                                </label>
-                                <label class="tts-mode-option">
-                                    <input type="radio" name="tts-mode" value="stream" id="tts-mode-stream"> Stream sentences
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ LSP ░ -->
-                    <div class="settings-panel settings-panel--lsp" id="sp-lsp" data-settings-theme="lsp">
-                        <p class="stv-section-title">Language Server Protocol</p>
-                        <p class="stv-section-sub">Real-time code intelligence — completions, hover docs, and diagnostics — powered by local LSP servers.</p>
-                        <div id="lsp-settings-container" class="lsp-settings-container"></div>
-                    </div>
-
-                    <!-- ░ Privacy ░ -->
-                    <div class="settings-panel settings-panel--privacy" id="sp-privacy" data-settings-theme="privacy">
-                        <p class="stv-section-title">Privacy &amp; Security</p>
-                        <p class="stv-section-sub">Control workspace boundaries and sandbox permissions.</p>
-
-                        <div class="stv-group-label">Workspace Sandbox</div>
-                        <div class="stv-card">
-                            <div class="stv-toggle-row">
-                                <div><div class="stv-toggle-label">Restrict Agent & Terminal Workspace</div><div class="stv-toggle-desc">Prevent the agent and terminal from executing code or accessing files outside the specified directory.</div></div>
-                                <input type="checkbox" id="privacy-workspace-toggle" style="accent-color:var(--accent-color);width:18px;height:18px;">
-                            </div>
-                            <div class="setting-field-group" style="margin-top:10px;">
-                                <label>Authorized Workspace Path</label>
-                                <input type="text" id="privacy-workspace-path" placeholder="~/.neurodeck_workspace">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ░ About & Licenses ░ -->
-                    <div class="settings-panel settings-panel--about" id="sp-about" data-settings-theme="general">
-                        <p class="stv-section-title">About NEURODECK</p>
-                        <p class="stv-section-sub">Version 1.5.0 (Horus)</p>
-                        
-                        <div class="stv-group-label">Open Source Attributions</div>
-                        <div class="stv-card" style="padding: 10px;">
-                            <textarea readonly style="width: 100%; height: 350px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; color: var(--foreground-color); font-family: monospace; font-size: 0.75rem; padding: 10px; resize: none;">
-NEURODECK incorporates several open-source libraries. We are grateful to the authors and contributors of these projects. The following licenses apply to those components.
-
-==================================================
-Tauri
-==================================================
-Copyright (c) 2024 Tauri Programme within The Commons Conservancy
-Licensed under the MIT License and Apache License 2.0.
-
-==================================================
-Vite
-==================================================
-Copyright (c) 2019-present, Yuxi (Evan) You and Vite contributors
-Licensed under the MIT License.
-
-==================================================
-xterm.js
-==================================================
-Copyright (c) 2017-2022, The xterm.js authors
-Licensed under the MIT License.
-
-==================================================
-marked
-==================================================
-Copyright (c) 2011-2022, Christopher Jeffrey
-Licensed under the MIT License.
-
-==================================================
-Rust Crates & Standard Library
-==================================================
-Portions of this software use Rust crates licensed under the MIT License and Apache License 2.0. The Rust Project is dual-licensed under Apache 2.0 and MIT.
-
----
-
-THE MIT LICENSE
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-                            </textarea>
-                        </div>
-                    </div>
-
-                </div><!-- end stv-content-area -->
-
-                <!-- Close button (floating) -->
-                <button class="stv-close-btn" id="close-settings-x" aria-label="Close settings">${createIcon("x", { size: 16 })}</button>
-                <!-- Legacy close (hidden — JS still binds to it) -->
-                <button id="close-settings" style="display:none;"></button>
-
-                <!-- [legacy content removed — all IDs now live in panels above] -->
-                <div class="settings-modal-content" style="display:none;"></div>
-                <div class="settings-modal-footer"></div>
-            </div>
-        </div>
-
-        <!-- Canvas Collaboration Modal -->
-        <div class="settings-overlay" id="collab-modal" role="dialog" aria-modal="true" aria-label="Canvas Collaboration">
-            <div class="settings-modal-card collab-workspace-card collab-modal-card">
-                <div class="settings-modal-header">
-                    <div class="modal-title-stack">
-                        <span class="collab-modal-kicker">Live Mesh</span>
-                        <h3>Live Workspace</h3>
-                    </div>
-                    <button class="sidebar-toggle-btn" id="close-collab-x" aria-label="Close collaboration panel">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="settings-modal-content">
-                    <div class="setting-field-group collab-field">
-                        <label for="collab-workspace-name">Workspace:</label>
-                        <input type="text" id="collab-workspace-name" class="tunnel-text-input" value="NEURODECK Workspace">
-                    </div>
-                    <!-- Tab toggle -->
-                    <div class="collab-tab-row">
-                        <button class="canvas-btn" id="collab-host-tab-btn" style="flex: 1; background: rgba(0,229,255,0.1); border-color: var(--accent-color);">Host Session</button>
-                        <button class="canvas-btn" id="collab-join-tab-btn" style="flex: 1;">Join Session</button>
-                    </div>
-                    <!-- Host panel -->
-                    <div id="collab-host-panel">
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="collab-port-input">Port:</label>
-                            <input type="number" id="collab-port-input" class="tunnel-text-input" value="13338" min="1024" max="65535" style="width: 100px; box-sizing: border-box; margin: 0;">
-                        </div>
-                        <button class="send-prompt-btn" id="collab-host-start-btn" style="width: 100%; margin: 0 0 10px;">Start Hosting</button>
-                        <div id="collab-host-waiting" class="collab-host-waiting" style="display: none;">
-                            Waiting for peer... Share this address with your collaborator:<br>
-                            <span id="collab-host-addr" style="color: var(--accent-color);"></span>
-                            <textarea id="collab-invite-payload" class="collab-invite-payload" readonly></textarea>
-                        </div>
-                    </div>
-                    <!-- Join panel -->
-                    <div id="collab-join-panel" style="display: none;">
-                        <div class="setting-field-group" style="margin-bottom: 10px;">
-                            <label for="collab-addr-input">Host Address:</label>
-                            <input type="text" id="collab-addr-input" class="tunnel-text-input" placeholder="192.168.1.5:13338" style="flex: 1; box-sizing: border-box; margin: 0;">
-                        </div>
-                        <button class="send-prompt-btn" id="collab-join-start-btn" style="width: 100%; margin: 0 0 10px;">Connect</button>
-                        <div id="collab-peer-list-wrap" style="margin-top: 8px;">
-                            <div style="font-size:0.72rem;opacity:0.6;margin-bottom:4px;">Discovered on LAN:</div>
-                            <div id="collab-peer-list" style="display:flex;flex-direction:column;gap:4px;"></div>
-                            <div id="collab-peer-list-empty" style="font-size:0.72rem;opacity:0.4;display:none;">No peers found. Ensure both devices are on the same LAN.</div>
-                        </div>
-                    </div>
-                    <!-- Status / active session -->
-                    <div id="collab-status-line" style="font-family: var(--font-mono); font-size: 0.78rem; min-height: 16px; opacity: 0.8;"></div>
-                    <div id="collab-active-panel" style="display: none; margin-top: 10px; padding: 8px; background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; font-size: 0.8rem;">
-                        <span style="color: var(--response-color);">✓ Peer connected</span> — edits are syncing live.
-                        <div class="collab-workspace-grid">
-                            <section class="collab-workspace-panel">
-                                <div class="collab-panel-title">Presence</div>
-                                <div id="collab-presence-list" class="collab-presence-list"></div>
-                            </section>
-                            <section class="collab-workspace-panel">
-                                <div class="collab-panel-title">Shared Chat</div>
-                                <div id="collab-chat-log" class="collab-chat-log"></div>
-                                <div class="collab-chat-compose">
-                                    <input type="text" id="collab-chat-input" class="tunnel-text-input" placeholder="Message workspace">
-                                    <button class="canvas-btn canvas-btn-sm" id="collab-chat-send">Send</button>
-                                </div>
-                            </section>
-                            <section class="collab-workspace-panel collab-workspace-panel-wide">
-                                <div class="collab-panel-title">Shared Agent Approval</div>
-                                <button class="canvas-btn canvas-btn-sm" id="collab-agent-approval-btn">Request Approval</button>
-                                <div id="collab-approval-log" class="collab-approval-log"></div>
-                            </section>
-                        </div>
-                        <button class="canvas-btn" id="collab-stop-btn" style="display: block; width: 100%; margin-top: 8px; border-color: var(--error-color); color: var(--error-color);">Disconnect</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Incoming Transfer Confirmation Modal -->
-        <div class="settings-overlay" id="transfer-modal" role="dialog" aria-modal="true" aria-label="Incoming File Transfer">
-            <div class="settings-modal-card transfer-modal-card">
-                <div class="settings-modal-header">
-                    <div class="modal-title-stack">
-                        <span class="transfer-modal-kicker">Trust Gate</span>
-                        <h3>Incoming File Transfer</h3>
-                    </div>
-                    <button class="sidebar-toggle-btn" id="transfer-modal-close-x" aria-label="Close transfer dialog">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="settings-modal-content">
-                    <p>Another S-Term peer is requesting to send you a file.</p>
-                    <div class="transfer-modal-details">
-                        <div class="transfer-detail-row">
-                            <span class="detail-label">From Peer:</span>
-                            <span class="detail-value" id="transfer-modal-peer">Deck (192.168.1.5)</span>
-                        </div>
-                        <div class="transfer-detail-row">
-                            <span class="detail-label">File Name:</span>
-                            <span class="detail-value" id="transfer-modal-filename">game_save.tar.gz</span>
-                        </div>
-                        <div class="transfer-detail-row">
-                            <span class="detail-label">File Size:</span>
-                            <span class="detail-value" id="transfer-modal-size">45.2 MB</span>
-                        </div>
-                    </div>
-                    <p class="transfer-modal-warning">${createIcon("shieldCheck", { size: 16 })}<span>Only accept files from trusted sources on your local network.</span></p>
-                </div>
-                <div class="settings-modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button class="canvas-btn" id="transfer-modal-reject" style="background: rgba(255, 60, 90, 0.2); border-color: var(--error-color);">Reject</button>
-                    <button class="send-prompt-btn" id="transfer-modal-accept" style="margin-top: 0;">Accept</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Game Context Panel Modal -->
-        <div class="settings-overlay" id="game-context-modal" role="dialog" aria-modal="true" aria-label="Game Context">
-            <div class="settings-modal-card game-context-card">
-                <div class="settings-modal-header">
-                    <h3>Active Game Context</h3>
-                    <button class="sidebar-toggle-btn" id="close-game-context-x" aria-label="Close game context">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="settings-modal-content">
-                    <div class="game-context-hero">
-                        <img id="game-context-header" class="game-context-header-img" src="" alt="Game Header">
-                        <div id="game-context-fallback" class="game-context-fallback">
-                            <div class="game-context-fallback-icon">${createIcon("gamepad2", { size: 20 })}</div>
-                            <div class="game-context-fallback-copy">
-                                <strong id="game-context-fallback-name">No Active Game</strong>
-                                <span>Open a title to inject live deck-aware assistance and notes.</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="game-context-row">
-                        <span class="game-context-label">Game Name:</span>
-                        <span class="game-context-val" id="game-context-name">None Detected</span>
-                    </div>
-                    <div class="game-context-row">
-                        <span class="game-context-label">Steam App ID:</span>
-                        <span class="game-context-val" id="game-context-appid">-</span>
-                    </div>
-                    <div class="game-context-row">
-                        <span class="game-context-label">Running Status:</span>
-                        <span class="game-context-val" id="game-context-status">Offline</span>
-                    </div>
-                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">STEAM DECK OPTIMIZATION NOTES</div>
-                    <div id="game-context-notes" style="font-size: 0.8rem; line-height: 1.4; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 4px; max-height: 120px; overflow-y: auto;">
-                        No game optimization notes available.
-                    </div>
-                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">INJECTED AI PROMPT CONTEXT</div>
-                    <textarea id="game-context-prompt-view" class="tunnel-text-input" readonly style="width: 100%; box-sizing: border-box; resize: none; height: 100px; font-family: var(--font-mono); font-size: 0.72rem; background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 8px;" placeholder="No active context injected."></textarea>
-                    <div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: var(--accent-color);">MY SESSION NOTES</div>
-                    <textarea id="game-session-notes" class="tunnel-text-input" style="width: 100%; box-sizing: border-box; resize: vertical; height: 90px; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(0,0,0,0.25); border-color: rgba(0,229,255,0.2); color: var(--foreground-color); padding: 8px;" placeholder="Personal notes for this game (auto-saved)..."></textarea>
-                    <div id="game-notes-save-indicator" style="font-size: 0.72rem; opacity: 0; text-align: right; font-family: var(--font-mono); color: var(--response-color); margin-top: 3px; transition: opacity 0.4s;">Saved</div>
-                </div>
-                <div class="settings-modal-footer">
-                    <button class="settings-close-btn" id="close-game-context" style="margin-left: auto;">Close</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Computer Use Approval Modal -->
-        <div class="settings-overlay" id="computer-use-modal" role="alertdialog" aria-modal="true" aria-label="Computer Use Approval Required">
-            <div class="settings-modal-card computer-use-modal-card">
-                <div class="settings-modal-header">
-                    <h3>Computer Use Approval</h3>
-                    <button class="sidebar-toggle-btn" id="computer-use-deny-x">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="settings-modal-content computer-use-modal-content">
-                    <div class="computer-use-modal-copy">
-                        <div class="computer-use-modal-action" id="computer-use-modal-action">Pending desktop action</div>
-                        <div class="computer-use-modal-details" id="computer-use-modal-details">Review the current desktop before approving.</div>
-                    </div>
-                    <div class="computer-approval-preview-shell">
-                        <img id="computer-use-modal-img" class="computer-approval-preview" alt="Current desktop screenshot">
-                        <div id="computer-use-modal-empty" class="computer-preview-empty">Screenshot unavailable.</div>
-                        <div id="computer-use-target-box" class="computer-use-target-box"></div>
-                    </div>
-                </div>
-                <div class="settings-modal-footer computer-use-modal-actions">
-                    <button class="canvas-btn" id="computer-use-deny-btn">Deny</button>
-                    <button class="canvas-btn" id="computer-use-approve-session-btn">Approve All for Session</button>
-                    <button class="send-prompt-btn" id="computer-use-approve-btn">Approve Once</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notification Center Modal -->
-        <div class="settings-overlay" id="notif-modal" role="dialog" aria-modal="true" aria-label="Notification Center">
-            <div class="settings-modal-card notif-modal-card" style="max-width: 400px;">
-                <div class="settings-modal-header">
-                    <div class="modal-title-stack">
-                        <span class="notif-center-kicker">Activity Feed</span>
-                        <h3>Notification Center</h3>
-                    </div>
-                    <button class="sidebar-toggle-btn" id="close-notif-x">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="settings-modal-content" style="max-height: 350px; overflow-y: auto;" id="notif-list-container">
-                    <div class="notif-empty-state">No notifications yet.</div>
-                </div>
-                <div class="settings-modal-footer" style="padding-top: 10px; display: flex; gap: 10px; justify-content: space-between; align-items: center;">
-                    <button class="canvas-btn" id="notif-clear-all-btn" style="font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color); padding: 5px 10px; margin: 0;">Clear All</button>
-                    <button class="settings-close-btn" id="close-notif-btn" style="margin: 0;">Close</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- JPE Manual Modal -->
-        <div class="settings-overlay" id="manual-modal" role="dialog" aria-modal="true" aria-label="JPE Manual">
-            <div class="settings-modal-card manual-modal-card" style="max-width: 800px; width: 90%; height: 85vh; display: flex; flex-direction: column;">
-                <div class="settings-modal-header" style="justify-content: space-between; flex-shrink: 0;">
-                    <div style="display:flex; flex-direction:column;">
-                        <span class="notif-center-kicker">Just Plain English</span>
-                        <h3>NEURODECK Manual</h3>
-                    </div>
-                    <button class="sidebar-toggle-btn" id="close-manual-x">${createIcon("x", { size: 16 })}</button>
-                </div>
-                <div class="manual-sub-header">
-                    <!-- Real-time search filter -->
-                    <div class="manual-search-wrapper">
-                        <span class="manual-search-icon-span">
-                            ${createIcon("search", { size: 14 })}
-                        </span>
-                        <input type="text" id="manual-search" placeholder="Search features, commands, or keywords..." autocomplete="off" spellcheck="false" />
-                    </div>
-
-                    <!-- System Health Check Widget -->
-                    <div class="manual-health-widget" id="manual-health-widget">
-                        <div class="health-item" title="PTY System Health">
-                            <span class="health-dot pending" id="manual-health-pty"></span>
-                            <span class="health-lbl">PTY</span>
-                        </div>
-                        <div class="health-item" title="Network Connectivity">
-                            <span class="health-dot pending" id="manual-health-net"></span>
-                            <span class="health-lbl">NET</span>
-                        </div>
-                        <div class="health-item" title="OS Keychain Health">
-                            <span class="health-dot pending" id="manual-health-key"></span>
-                            <span class="health-lbl">KEY</span>
-                        </div>
-                        <button class="canvas-btn" id="manual-health-refresh" title="Refresh Health Diagnostics">
-                            ${createIcon("refreshCw", { size: 11 })}
-                        </button>
-                    </div>
-                </div>
-                <div class="settings-modal-content manual-content" style="flex: 1; overflow-y: auto; padding: 24px;" id="manual-content-container">
-                    <!-- Rendered markdown goes here -->
-                </div>
-                <div class="settings-modal-footer" style="justify-content: flex-end; flex-shrink: 0;">
-                    <button class="settings-close-btn" id="close-manual-btn" style="margin: 0;">Close</button>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- Controller Prompt Picker Overlay -->
-        <div class="ctrl-prompt-overlay" id="ctrl-prompt-overlay" aria-hidden="true">
-                <div class="ctrl-prompt-modal">
-                    <div class="ctrl-prompt-header">
-                    <span class="ctrl-prompt-title">${createIcon("play", { size: 14 })}<span>PROMPT LIBRARY</span></span>
-                    <div class="ctrl-prompt-search-wrap">
-                        <input type="text" id="ctrl-prompt-search" class="ctrl-prompt-search" placeholder="Search prompts..." autocomplete="off" spellcheck="false">
-                    </div>
-                    <div class="ctrl-prompt-hint">B=Close &nbsp; A=Send &nbsp; L1/R1=Category &nbsp; &#x2191;&#x2193;=Navigate</div>
-                </div>
-                <div class="ctrl-prompt-body">
-                    <div class="ctrl-prompt-categories" id="ctrl-prompt-cats"></div>
-                    <div class="ctrl-prompt-list-wrap">
-                        <div class="ctrl-prompt-list" id="ctrl-prompt-list"></div>
-                    </div>
-                </div>
-                <div class="ctrl-prompt-footer">
-                    <div class="ctrl-prompt-preview" id="ctrl-prompt-preview">Select a prompt to preview it here.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Trust & Safety Modal -->
-        <div class="settings-overlay" id="trust-safety-modal" role="dialog" aria-modal="true" aria-label="Trust & Safety Center">
-            <div class="settings-modal-card" style="width: 700px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;" data-settings-theme="general">
-                <div class="settings-modal-header" style="flex-shrink:0;">
-                    <div class="settings-modal-title">${createIcon("shieldCheck", { size: 16 })} Trust & Safety Center</div>
-                    <button class="settings-close-btn" id="close-trust-safety-x" aria-label="Close Trust & Safety">${createIcon("x", { size: 18 })}</button>
-                </div>
-                <div class="settings-modal-body" style="padding: 24px; overflow-y:auto; flex:1;">
-                    <h3 style="margin: 0 0 4px; color: var(--accent-color);">DATA HANDLING & PRIVACY</h3>
-                    <p style="font-size: 0.8rem; opacity: 0.7; margin: 0 0 16px;">Active LLM Provider: <strong id="ts-active-provider" style="color: var(--foreground-color);">Unknown</strong></p>
-
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <div style="background: rgba(0, 255, 128, 0.05); border: 1px solid rgba(0, 255, 128, 0.2); border-radius: 8px; padding: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: rgb(0, 255, 128); font-weight: bold;">
-                                ${createIcon("hardDrive", { size: 16 })} Strictly Local Data
-                            </div>
-                            <ul style="margin: 0; padding-left: 20px; font-size: 0.75rem; opacity: 0.85; line-height: 1.5;">
-                                <li style="margin-bottom: 4px;"><strong>Vector Database:</strong> Memory embeddings and retrieved context never leave your device.</li>
-                                <li style="margin-bottom: 4px;"><strong>Filesystem & FTP:</strong> Synced files and local workspace data remain entirely on-disk.</li>
-                                <li style="margin-bottom: 4px;"><strong>PTY Shell Output:</strong> Terminal commands and their output are processed locally.</li>
-                                <li><strong>Chat History:</strong> Saved in your <code>~/.neurodeck</code> config folder locally.</li>
-                            </ul>
-                        </div>
-
-                        <div id="ts-cloud-data-card" style="background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.2); border-radius: 8px; padding: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: rgb(255, 170, 0); font-weight: bold;">
-                                ${createIcon("cloud", { size: 16 })} Cloud API Transmissions
-                            </div>
-                            <p style="font-size: 0.75rem; opacity: 0.85; margin: 0 0 8px;">The following data is sent securely via TLS to your active cloud provider:</p>
-                            <ul style="margin: 0; padding-left: 20px; font-size: 0.75rem; opacity: 0.85; line-height: 1.5;">
-                                <li style="margin-bottom: 4px;"><strong>Chat Prompts:</strong> Text typed in the chat input.</li>
-                                <li style="margin-bottom: 4px;"><strong>Injected RAG Context:</strong> Relevant Memory blocks injected dynamically to answer queries.</li>
-                                <li><strong>Game Context (If Active):</strong> Current Steam game title for context-aware prompts.</li>
-                            </ul>
-                        </div>
-
-                        <div id="ts-local-llm-card" style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 16px; display: none;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--accent-color); font-weight: bold;">
-                                ${createIcon("shieldCheck", { size: 16 })} Full Offline Mode
-                            </div>
-                            <p style="font-size: 0.75rem; opacity: 0.85; margin: 0;">You are using a Local LLM (Ollama). <strong>Zero data is being sent to the cloud.</strong> All chat prompts, memory context, and logic are processed securely on this device.</p>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 24px; text-align: center;">
-                        <button class="settings-close-btn stv-btn-ghost" id="close-trust-safety-btn" style="padding: 6px 24px;">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Notifications Container -->
-        <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
-
-        <!-- Screen-reader live region for dynamic announcements -->
-        <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="false"></div>
-    </div>
-    <div class="app-background-container" id="app-background-container">
-        <div class="app-background-image" id="app-background-image"></div>
-        <canvas class="app-background-canvas" id="app-background-canvas"></canvas>
-        <div class="app-background-css" id="app-background-css"></div>
-    </div>
-    <!-- Keyboard Shortcuts Cheat Sheet -->
-    <div class="shortcuts-overlay hidden" id="shortcuts-overlay" aria-hidden="true">
-        <div class="shortcuts-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title"></div>
-    </div>
-
-    <div class="crt-overlay crt-flicker"></div>
-`;
 
 // ==========================================================================
 // LIVE & STATIC BACKGROUNDS SYSTEM
@@ -4529,65 +1344,62 @@ document.addEventListener("mousedown", () => {
   state.gamepadFocusIndex = -1;
 });
 
-function initRadialMenu() {
-  const overlay = document.createElement("div");
-  overlay.id = "radial-menu";
-  overlay.className = "radial-menu";
-  overlay.setAttribute("aria-hidden", "true");
+const _RADIAL_R_OUTER = 130, _RADIAL_R_INNER = 52, _RADIAL_CX = 150, _RADIAL_CY = 150;
 
-  // Build SVG pie ring — 10 sectors of 36° each
-  const R_OUTER = 130;
-  const R_INNER = 52;
-  const CX = 150;
-  const CY = 150;
-  const SEG_COUNT = RADIAL_SEGMENTS.length;
-  const SEG_DEG = 360 / SEG_COUNT;
+function _radialPolarToXY(angleDeg, r) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: _RADIAL_CX + r * Math.cos(rad), y: _RADIAL_CY + r * Math.sin(rad) };
+}
 
-  function polarToXY(angleDeg, r) {
-    const rad = ((angleDeg - 90) * Math.PI) / 180;
-    return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
-  }
-
+function _radialBuildPaths(segDeg) {
   let svgPaths = "";
   RADIAL_SEGMENTS.forEach((seg, i) => {
-    const startAngle = i * SEG_DEG - SEG_DEG / 2;
-    const endAngle = startAngle + SEG_DEG;
-    const p1 = polarToXY(startAngle, R_INNER);
-    const p2 = polarToXY(startAngle, R_OUTER);
-    const p3 = polarToXY(endAngle, R_OUTER);
-    const p4 = polarToXY(endAngle, R_INNER);
-    const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${R_OUTER} ${R_OUTER} 0 0 1 ${p3.x} ${p3.y} L ${p4.x} ${p4.y} A ${R_INNER} ${R_INNER} 0 0 0 ${p1.x} ${p1.y} Z`;
+    const startAngle = i * segDeg - segDeg / 2;
+    const endAngle = startAngle + segDeg;
+    const p1 = _radialPolarToXY(startAngle, _RADIAL_R_INNER);
+    const p2 = _radialPolarToXY(startAngle, _RADIAL_R_OUTER);
+    const p3 = _radialPolarToXY(endAngle, _RADIAL_R_OUTER);
+    const p4 = _radialPolarToXY(endAngle, _RADIAL_R_INNER);
+    const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${_RADIAL_R_OUTER} ${_RADIAL_R_OUTER} 0 0 1 ${p3.x} ${p3.y} L ${p4.x} ${p4.y} A ${_RADIAL_R_INNER} ${_RADIAL_R_INNER} 0 0 0 ${p1.x} ${p1.y} Z`;
     svgPaths += `<path class="radial-slice" data-segment="${i}" d="${d}" />`;
   });
+  return svgPaths;
+}
 
-  // Build item labels positioned around the ring
+function _radialBuildItems(segDeg) {
   const LABEL_R = 105;
   let items = "";
   RADIAL_SEGMENTS.forEach((seg, i) => {
-    const angleDeg = i * SEG_DEG;
-    const rad = ((angleDeg - 90) * Math.PI) / 180;
-    const x = CX + LABEL_R * Math.cos(rad);
-    const y = CY + LABEL_R * Math.sin(rad);
+    const rad = ((i * segDeg - 90) * Math.PI) / 180;
+    const x = _RADIAL_CX + LABEL_R * Math.cos(rad);
+    const y = _RADIAL_CY + LABEL_R * Math.sin(rad);
     items += `<div class="radial-item" data-segment="${i}" style="left:${x}px;top:${y}px">
             <span class="radial-item-icon">${seg.icon}</span>
             <span class="radial-item-label">${seg.label}</span>
         </div>`;
   });
+  return items;
+}
 
+function initRadialMenu() {
+  const segDeg = 360 / RADIAL_SEGMENTS.length;
+  const overlay = document.createElement("div");
+  overlay.id = "radial-menu";
+  overlay.className = "radial-menu";
+  overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
         <div class="radial-backdrop"></div>
         <div class="radial-ring" id="radial-ring">
             <svg class="radial-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-                ${svgPaths}
+                ${_radialBuildPaths(segDeg)}
             </svg>
-            ${items}
+            ${_radialBuildItems(segDeg)}
             <div class="radial-center" id="radial-center-label">
                 <span class="radial-center-icon" id="radial-center-icon">🎮</span>
                 <span class="radial-center-text" id="radial-center-text">MENU</span>
             </div>
         </div>
         <div class="radial-hint">Release L2 to navigate · Push stick to select</div>`;
-
   document.body.appendChild(overlay);
 }
 
@@ -4744,20 +1556,15 @@ function _gpHandleFaceButtons(gp) {
   _gpFaceButtonY(gp);
 }
 
-function _gpHandleShoulderButtons(gp) {
-  // L2/R2 in share view — cycle inner tabs
+function _gpShoulderL2R2(gp) {
   if (_gpButtonPressed(gp, 6) || _gpButtonPressed(gp, 7)) {
     const shareView = document.getElementById("view-share");
     if (shareView && shareView.classList.contains("active")) {
       const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
       const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-      if (idx !== -1) {
-        subtabs[_gpButtonPressed(gp, 6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
-        triggerHaptic("light");
-      }
+      if (idx !== -1) { subtabs[_gpButtonPressed(gp, 6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click(); triggerHaptic("light"); }
     }
   }
-  // R2 outside share view — toggle ctrl-prompt
   if (_gpButtonPressed(gp, 7)) {
     const shareView = document.getElementById("view-share");
     if (!(shareView && shareView.classList.contains("active"))) {
@@ -4765,23 +1572,19 @@ function _gpHandleShoulderButtons(gp) {
         triggerHaptic("light");
         getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
       } else {
-        openCtrlPromptOverlay();
-        triggerHaptic("medium");
+        openCtrlPromptOverlay(); triggerHaptic("medium");
         if (state.gamepadActive && window.showVirtualKeyboard) {
-          setTimeout(() => {
-            const searchEl = document.getElementById("ctrl-prompt-search");
-            if (searchEl) { searchEl.focus(); window.showVirtualKeyboard(searchEl); }
-          }, 120);
+          setTimeout(() => { const s = document.getElementById("ctrl-prompt-search"); if (s) { s.focus(); window.showVirtualKeyboard(s); } }, 120);
         }
       }
     }
   }
-  // L1/R1 in ctrl-prompt — navigate categories
+}
+
+function _gpShoulderL1R1(gp) {
   if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && getCtrlPromptVisible()) {
-    triggerHaptic("light");
-    navigateCtrlPromptCat(_gpButtonPressed(gp, 4) ? -1 : 1);
+    triggerHaptic("light"); navigateCtrlPromptCat(_gpButtonPressed(gp, 4) ? -1 : 1); return;
   }
-  // L1/R1 outside ctrl-prompt — scroll chat or cycle tabs
   if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && !getCtrlPromptVisible()) {
     const chatView = document.getElementById("view-chat");
     if (chatView && chatView.classList.contains("active")) {
@@ -4797,14 +1600,14 @@ function _gpHandleShoulderButtons(gp) {
     const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
     if (activeTabIdx !== -1) {
       const nextIdx = _gpButtonPressed(gp, 4) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-      if (nextIdx !== activeTabIdx) {
-        tabs[nextIdx].click();
-        triggerHaptic("light");
-        state.gamepadFocusIndex = -1;
-        document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
-      }
+      if (nextIdx !== activeTabIdx) { tabs[nextIdx].click(); triggerHaptic("light"); state.gamepadFocusIndex = -1; document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused")); }
     }
   }
+}
+
+function _gpHandleShoulderButtons(gp) {
+  _gpShoulderL2R2(gp);
+  _gpShoulderL1R1(gp);
 }
 
 function _gpHandleMenuButtons(gp) {
@@ -5333,7 +2136,7 @@ function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
     outgoing.classList.remove("active");
     outgoing.classList.add(`view-exit-${direction}`);
     setTimeout(() => outgoing.classList.remove(`view-exit-${direction}`), 300);
-    if (currentViewId === "view-ide") deactivateIdeView();
+    if (currentViewId === "view-ide" && typeof window._deactivateIdeView === "function") window._deactivateIdeView();
   }
   if (incoming) {
     const enterDir = direction === "right" ? "left" : "right";
@@ -5362,10 +2165,27 @@ function _navActivateSideEffects(targetViewName) {
   if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") initCliMakerView();
   if (targetViewName === "graph" && typeof initGraphView === "function") initGraphView();
   if (targetViewName === "scheduler" && typeof initSchedulerView === "function") initSchedulerView();
-  if (targetViewName === "workflow" && typeof initWorkflowView === "function") initWorkflowView();
-  if (targetViewName === "ide" && typeof initIdeView === "function") initIdeView();
-  if (targetViewName === "orchestrator" && typeof initOrchestrator === "function") initOrchestrator();
-  if (targetViewName === "share" && typeof initTorrentClient === "function") initTorrentClient();
+  if (targetViewName === "workflow") {
+    import("./workflow_view.js").then((m) => {
+      if (typeof m.initWorkflowView === "function") m.initWorkflowView();
+    }).catch(e => console.error("Failed to load workflow view", e));
+  }
+  if (targetViewName === "ide") {
+    import("./ide_view.js").then((m) => {
+      window._deactivateIdeView = m.deactivateIdeView;
+      if (typeof m.initIdeView === "function") m.initIdeView();
+    }).catch(e => console.error("Failed to load ide view", e));
+  }
+  if (targetViewName === "orchestrator") {
+    import("./orchestrator.js").then((m) => {
+      if (typeof m.initOrchestrator === "function") m.initOrchestrator();
+    }).catch(e => console.error("Failed to load orchestrator", e));
+  }
+  if (targetViewName === "share") {
+    import("./torrent.js").then((m) => {
+      if (typeof m.initTorrentClient === "function") m.initTorrentClient();
+    }).catch(e => console.error("Failed to load torrent client", e));
+  }
 }
 
 function _navTabClick(tab, navTabs) {
@@ -5456,16 +2276,7 @@ function parseTipText(text) {
   return frag;
 }
 
-function showContextualTip(viewName) {
-  const tipText = CONTEXTUAL_TIPS[viewName];
-  if (!tipText) return;
-
-  const storageKey = `neurodeck_tip_dismissed_${viewName}`;
-  if (localStorage.getItem(storageKey) === "true") return;
-
-  // Remove any existing tip first
-  dismissContextualTip();
-
+function _buildContextualTipDOM(tipText) {
   const tip = document.createElement("div");
   tip.id = "contextual-tip";
   tip.className = "contextual-tip";
@@ -5491,12 +2302,10 @@ function showContextualTip(viewName) {
   progress.style.width = "100%";
   tip.appendChild(progress);
 
-  document.body.appendChild(tip);
+  return { tip, closeBtn, progress };
+}
 
-  // Trigger enter animation
-  requestAnimationFrame(() => tip.classList.add("active"));
-
-  // Progress bar countdown (8 seconds)
+function _startContextualTipTimers(progress) {
   let remaining = 8000;
   const step = 100;
   activeTipInterval = setInterval(() => {
@@ -5505,23 +2314,39 @@ function showContextualTip(viewName) {
     if (remaining <= 0) clearInterval(activeTipInterval);
   }, step);
 
-  // Auto-dismiss
   activeTipTimer = setTimeout(() => {
     dismissContextualTip();
   }, 8000);
+}
 
-  // Manual dismiss — click
+function _wireContextualTipEvents(tip, closeBtn, storageKey) {
   closeBtn.addEventListener("click", () => {
     localStorage.setItem(storageKey, "true");
     dismissContextualTip();
   });
 
-  // Manual dismiss — tip body click also dismisses
   tip.addEventListener("click", (e) => {
     if (e.target.closest(".contextual-tip-close")) return;
     localStorage.setItem(storageKey, "true");
     dismissContextualTip();
   });
+}
+
+function showContextualTip(viewName) {
+  const tipText = CONTEXTUAL_TIPS[viewName];
+  if (!tipText) return;
+
+  const storageKey = `neurodeck_tip_dismissed_${viewName}`;
+  if (localStorage.getItem(storageKey) === "true") return;
+
+  dismissContextualTip();
+
+  const { tip, closeBtn, progress } = _buildContextualTipDOM(tipText);
+  document.body.appendChild(tip);
+
+  requestAnimationFrame(() => tip.classList.add("active"));
+  _startContextualTipTimers(progress);
+  _wireContextualTipEvents(tip, closeBtn, storageKey);
 }
 
 // Global dismiss handlers for Escape and gamepad B
@@ -5834,27 +2659,51 @@ function highlightLabel(label, matches) {
   return fragment;
 }
 
+function _cpBuildActionBtn(action, index) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = `command-palette-item${index === commandPaletteState.activeIndex ? " active" : ""}`;
+  btn.setAttribute("data-command-index", String(index));
+  const main = document.createElement("span");
+  main.className = "command-palette-item-main";
+  const icon = document.createElement("span");
+  icon.className = "command-palette-item-icon";
+  icon.innerHTML = createIcon(action.icon, { size: 15 });
+  const copy = document.createElement("span");
+  copy.className = "command-palette-item-copy";
+  const title = document.createElement("span");
+  title.className = "command-palette-item-title";
+  title.appendChild(highlightLabel(action.label, action._labelMatches || []));
+  const subtitle = document.createElement("span");
+  subtitle.className = "command-palette-item-subtitle";
+  subtitle.textContent = action.group;
+  copy.append(title, subtitle);
+  main.append(icon.firstElementChild || icon, copy);
+  btn.appendChild(main);
+  btn.addEventListener("click", () => {
+    const selected = commandPaletteState.filtered[index];
+    if (!selected) return;
+    addPaletteHistory(selected.label);
+    closeCommandPalette();
+    selected.run();
+  });
+  return btn;
+}
+
 function renderCommandPalette() {
   const list = document.getElementById("command-palette-list");
   const input = document.getElementById("command-palette-input");
   if (!list || !input) return;
-
   commandPaletteState.filtered = getCommandPaletteFilteredActions();
   if (commandPaletteState.activeIndex >= commandPaletteState.filtered.length) {
-    commandPaletteState.activeIndex = Math.max(
-      0,
-      commandPaletteState.filtered.length - 1,
-    );
+    commandPaletteState.activeIndex = Math.max(0, commandPaletteState.filtered.length - 1);
   }
-
   if (!commandPaletteState.filtered.length) {
     const empty = document.createElement("div");
     empty.className = "command-palette-empty";
-    empty.textContent = `No commands match “${input.value}”.`;
-    list.replaceChildren(empty);
-    return;
+    empty.textContent = `No commands match "${input.value}".`;
+    list.replaceChildren(empty); return;
   }
-
   list.replaceChildren();
   let lastGroup = null;
   commandPaletteState.filtered.forEach((action, index) => {
@@ -5867,36 +2716,7 @@ function renderCommandPalette() {
       list.appendChild(header);
       lastGroup = action.group;
     }
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `command-palette-item${index === commandPaletteState.activeIndex ? " active" : ""}`;
-    btn.setAttribute("data-command-index", String(index));
-
-    const main = document.createElement("span");
-    main.className = "command-palette-item-main";
-    const icon = document.createElement("span");
-    icon.className = "command-palette-item-icon";
-    icon.innerHTML = createIcon(action.icon, { size: 15 });
-    const copy = document.createElement("span");
-    copy.className = "command-palette-item-copy";
-    const title = document.createElement("span");
-    title.className = "command-palette-item-title";
-    title.appendChild(highlightLabel(action.label, action._labelMatches || []));
-    const subtitle = document.createElement("span");
-    subtitle.className = "command-palette-item-subtitle";
-    subtitle.textContent = action.group;
-    copy.append(title, subtitle);
-    main.append(icon.firstElementChild || icon, copy);
-    btn.appendChild(main);
-    btn.addEventListener("click", () => {
-      const selected = commandPaletteState.filtered[index];
-      if (!selected) return;
-      addPaletteHistory(selected.label);
-      closeCommandPalette();
-      selected.run();
-    });
-    list.appendChild(btn);
+    list.appendChild(_cpBuildActionBtn(action, index));
   });
 }
 
@@ -6370,8 +3190,10 @@ document.querySelectorAll(".share-inner-tab").forEach((tab) => {
       .forEach((s) => s.classList.remove("active"));
     const el = document.getElementById(`share-panel-${panel}`);
     if (el) el.classList.add("active");
-    if (panel === "torrent" && typeof initTorrentClient === "function") {
-      initTorrentClient();
+    if (panel === "torrent") {
+      import("./torrent.js").then((m) => {
+        if (typeof m.initTorrentClient === "function") m.initTorrentClient();
+      }).catch(e => console.error("Failed to load torrent client", e));
     }
   };
 });
@@ -7523,75 +4345,50 @@ function initPluginsManager() {
   loadPluginMarketplace();
 }
 
+function _canvasSavePluginClick() {
+  const code = document.getElementById("canvas-editor").value;
+  let activeFile = window.neurodeckCanvas.activePluginFile;
+  if (activeFile) {
+    invoke("save_plugin", { fileName: activeFile, content: code })
+      .then(() => { alert(`Plugin '${activeFile}' saved successfully.`); })
+      .catch((err) => { alert(`Failed to save plugin: ${err}`); });
+  } else {
+    const fileNameInput = prompt("Enter filename for the new plugin (must end with .lua):", "my_plugin.lua");
+    if (!fileNameInput) return;
+    let sanitized = fileNameInput.trim();
+    if (!sanitized.endsWith(".lua")) sanitized += ".lua";
+    if (sanitized.includes("/") || sanitized.includes("\\") || sanitized.includes("..")) {
+      alert("Invalid file name. Do not include path slashes or dots.");
+      return;
+    }
+    invoke("save_plugin", { fileName: sanitized, content: code })
+      .then(() => {
+        window.neurodeckCanvas.activePluginFile = sanitized;
+        const fileTitle = document.getElementById("canvas-file-title");
+        if (fileTitle) fileTitle.textContent = sanitized;
+        alert(`Plugin '${sanitized}' saved successfully.`);
+      })
+      .catch((err) => { alert(`Failed to save plugin: ${err}`); });
+  }
+}
+
 function updateCanvasToolbarButtons() {
   const lang = window.neurodeckCanvas.currentLang;
   let saveBtn = document.getElementById("canvas-save-plugin-btn");
-
   if (lang === "lua") {
     if (!saveBtn) {
-      // Create "Save Plugin" button
       saveBtn = document.createElement("button");
       saveBtn.className = "canvas-btn";
       saveBtn.id = "canvas-save-plugin-btn";
       saveBtn.innerHTML = `${createIcon("save", { size: 14 })}<span>Save Plugin</span>`;
       saveBtn.style.marginLeft = "8px";
-
-      // Insert it after canvas-run-btn
       const runBtn = document.getElementById("canvas-run-btn");
-      if (runBtn) {
-        runBtn.parentNode.insertBefore(saveBtn, runBtn.nextSibling);
-      }
-
-      // Wire up Save click
-      saveBtn.onclick = () => {
-        const code = document.getElementById("canvas-editor").value;
-        let activeFile = window.neurodeckCanvas.activePluginFile;
-
-        if (activeFile) {
-          invoke("save_plugin", { fileName: activeFile, content: code })
-            .then(() => {
-              alert(`Plugin '${activeFile}' saved successfully.`);
-            })
-            .catch((err) => {
-              alert(`Failed to save plugin: ${err}`);
-            });
-        } else {
-          const fileNameInput = prompt(
-            "Enter filename for the new plugin (must end with .lua):",
-            "my_plugin.lua",
-          );
-          if (!fileNameInput) return;
-          let sanitized = fileNameInput.trim();
-          if (!sanitized.endsWith(".lua")) {
-            sanitized += ".lua";
-          }
-          if (
-            sanitized.includes("/") ||
-            sanitized.includes("\\") ||
-            sanitized.includes("..")
-          ) {
-            alert("Invalid file name. Do not include path slashes or dots.");
-            return;
-          }
-
-          invoke("save_plugin", { fileName: sanitized, content: code })
-            .then(() => {
-              window.neurodeckCanvas.activePluginFile = sanitized;
-              const fileTitle = document.getElementById("canvas-file-title");
-              if (fileTitle) fileTitle.textContent = sanitized;
-              alert(`Plugin '${sanitized}' saved successfully.`);
-            })
-            .catch((err) => {
-              alert(`Failed to save plugin: ${err}`);
-            });
-        }
-      };
+      if (runBtn) runBtn.parentNode.insertBefore(saveBtn, runBtn.nextSibling);
+      saveBtn.onclick = () => _canvasSavePluginClick();
     }
     saveBtn.style.display = "inline-block";
   } else {
-    if (saveBtn) {
-      saveBtn.style.display = "none";
-    }
+    if (saveBtn) saveBtn.style.display = "none";
   }
 }
 
@@ -7900,6 +4697,57 @@ function renderAgentSwitcher() {
   });
 }
 
+function _recBuildModelCard(m) {
+  const tierLabel = TIER_LABEL[m.tier] || m.tier;
+  const vramStr = m.vram_mb > 0 ? `${m.vram_mb} MB RAM` : "Cloud";
+  const card = document.createElement("div");
+  card.className = "agent-rec-card";
+  card.addEventListener("click", () => instantiateRecommended(m.provider, m.model, m.name));
+
+  const top = document.createElement("div");
+  top.className = "agent-rec-top";
+  const name = document.createElement("span");
+  name.className = "agent-rec-name";
+  name.textContent = String(m.name ?? "");
+  const tier = document.createElement("span");
+  tier.className = "agent-tier-badge";
+  tier.textContent = String(tierLabel);
+  top.append(name, tier);
+
+  const meta = document.createElement("div");
+  meta.className = "agent-rec-meta";
+  const providerBadge = document.createElement("span");
+  providerBadge.className = `agent-provider-badge agent-provider-${String(m.provider ?? "")}`;
+  providerBadge.textContent = String(PROVIDER_BADGE[m.provider] || m.provider);
+  const vram = document.createElement("span");
+  vram.className = "agent-vram";
+  vram.textContent = vramStr;
+  const deck = document.createElement("span");
+  deck.className = `agent-deck-badge${m.steam_deck_ok ? "" : " warn"}`;
+  deck.textContent = m.steam_deck_ok ? "✅ Deck OK" : "⚠️ Heavy";
+  meta.append(providerBadge, vram, deck);
+
+  const desc = document.createElement("div");
+  desc.className = "agent-rec-desc";
+  desc.textContent = String(m.description ?? "");
+
+  const tags = document.createElement("div");
+  tags.className = "agent-rec-tags";
+  (m.tags || []).filter((t) => ["recommended", "long-context", "multilingual", "code"].includes(t)).forEach((tag) => {
+    const span = document.createElement("span");
+    span.className = "agent-tag";
+    span.textContent = String(tag);
+    tags.appendChild(span);
+  });
+
+  const modelId = document.createElement("div");
+  modelId.className = "agent-rec-model-id";
+  modelId.textContent = String(m.model ?? "");
+
+  card.append(top, meta, desc, tags, modelId);
+  return card;
+}
+
 function renderRecommendedModels() {
   const grid = document.getElementById("agent-rec-grid");
   if (!grid) return;
@@ -7907,64 +4755,7 @@ function renderRecommendedModels() {
   invoke("get_recommended_models")
     .then((models) => {
       grid.replaceChildren();
-      models.forEach((m) => {
-        const tierLabel = TIER_LABEL[m.tier] || m.tier;
-        const vramStr = m.vram_mb > 0 ? `${m.vram_mb} MB RAM` : "Cloud";
-        const card = document.createElement("div");
-        card.className = "agent-rec-card";
-        card.addEventListener("click", () =>
-          instantiateRecommended(m.provider, m.model, m.name),
-        );
-
-        const top = document.createElement("div");
-        top.className = "agent-rec-top";
-        const name = document.createElement("span");
-        name.className = "agent-rec-name";
-        name.textContent = String(m.name ?? "");
-        const tier = document.createElement("span");
-        tier.className = "agent-tier-badge";
-        tier.textContent = String(tierLabel);
-        top.append(name, tier);
-
-        const meta = document.createElement("div");
-        meta.className = "agent-rec-meta";
-        const providerBadge = document.createElement("span");
-        providerBadge.className = `agent-provider-badge agent-provider-${String(m.provider ?? "")}`;
-        providerBadge.textContent = String(
-          PROVIDER_BADGE[m.provider] || m.provider,
-        );
-        const vram = document.createElement("span");
-        vram.className = "agent-vram";
-        vram.textContent = vramStr;
-        const deck = document.createElement("span");
-        deck.className = `agent-deck-badge${m.steam_deck_ok ? "" : " warn"}`;
-        deck.textContent = m.steam_deck_ok ? "✅ Deck OK" : "⚠️ Heavy";
-        meta.append(providerBadge, vram, deck);
-
-        const desc = document.createElement("div");
-        desc.className = "agent-rec-desc";
-        desc.textContent = String(m.description ?? "");
-
-        const tags = document.createElement("div");
-        tags.className = "agent-rec-tags";
-        (m.tags || [])
-          .filter((t) =>
-            ["recommended", "long-context", "multilingual", "code"].includes(t),
-          )
-          .forEach((tag) => {
-            const span = document.createElement("span");
-            span.className = "agent-tag";
-            span.textContent = String(tag);
-            tags.appendChild(span);
-          });
-
-        const modelId = document.createElement("div");
-        modelId.className = "agent-rec-model-id";
-        modelId.textContent = String(m.model ?? "");
-
-        card.append(top, meta, desc, tags, modelId);
-        grid.appendChild(card);
-      });
+      models.forEach((m) => grid.appendChild(_recBuildModelCard(m)));
     })
     .catch(() => {
       grid.innerHTML = `<div class="agent-empty">Failed to load recommendations.</div>`;
@@ -8523,6 +5314,58 @@ function _mmCloseManual(mmCtx) {
   if (mmCtx.trap) mmCtx.trap.deactivate();
 }
 
+function _mmWireAccordions(contentContainer) {
+  contentContainer.querySelectorAll(".manual-accordion-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const card = header.closest(".manual-accordion-card");
+      const wasExpanded = card.classList.contains("expanded");
+      contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove("expanded");
+          otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
+          otherCard.querySelector(".manual-accordion-body").style.maxHeight = null;
+        }
+      });
+      card.classList.toggle("expanded", !wasExpanded);
+      header.setAttribute("aria-expanded", !wasExpanded ? "true" : "false");
+      const body = card.querySelector(".manual-accordion-body");
+      body.style.maxHeight = !wasExpanded ? body.scrollHeight + "px" : null;
+    });
+  });
+}
+
+function _mmWireLaunchBtns(contentContainer, mmCtx) {
+  contentContainer.querySelectorAll(".launch-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const vid = btn.getAttribute("data-view");
+      _mmCloseManual(mmCtx);
+      if (vid === "settings") { openSettingsModal(); }
+      else if (vid === "plugins") { openSettingsModal(); setTimeout(() => activateSettingsPanel("sp-extensions"), 50); }
+      else if (vid === "prompt-sidebar") { openCtrlPromptOverlay(); }
+      else { const tab = document.querySelector('.nav-tab[data-view="' + vid + '"]'); if (tab) tab.click(); }
+    });
+  });
+}
+
+function _mmWireAiBtns(contentContainer, mmCtx) {
+  contentContainer.querySelectorAll(".ai-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const feature = btn.getAttribute("data-feature");
+      _mmCloseManual(mmCtx);
+      const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+      if (chatTab) chatTab.click();
+      const chatInput = document.getElementById("user-input");
+      if (chatInput) {
+        chatInput.value = "How do I use the " + feature + " feature in NEURODECK?";
+        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+        chatInput.focus();
+      }
+    });
+  });
+}
+
 function _mmBuildUI(contentContainer, mmCtx) {
   if (!contentContainer) return;
   const parts = manualContent.split(/\n##\s+/);
@@ -8564,52 +5407,9 @@ function _mmBuildUI(contentContainer, mmCtx) {
 
   html += '</div>';
   contentContainer.innerHTML = html;
-
-  contentContainer.querySelectorAll(".manual-accordion-header").forEach(header => {
-    header.addEventListener("click", () => {
-      const card = header.closest(".manual-accordion-card");
-      const wasExpanded = card.classList.contains("expanded");
-      contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
-        if (otherCard !== card) {
-          otherCard.classList.remove("expanded");
-          otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
-          otherCard.querySelector(".manual-accordion-body").style.maxHeight = null;
-        }
-      });
-      card.classList.toggle("expanded", !wasExpanded);
-      header.setAttribute("aria-expanded", !wasExpanded ? "true" : "false");
-      const body = card.querySelector(".manual-accordion-body");
-      body.style.maxHeight = !wasExpanded ? body.scrollHeight + "px" : null;
-    });
-  });
-
-  contentContainer.querySelectorAll(".launch-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const vid = btn.getAttribute("data-view");
-      _mmCloseManual(mmCtx);
-      if (vid === "settings") { openSettingsModal(); }
-      else if (vid === "plugins") { openSettingsModal(); setTimeout(() => activateSettingsPanel("sp-extensions"), 50); }
-      else if (vid === "prompt-sidebar") { openCtrlPromptOverlay(); }
-      else { const tab = document.querySelector('.nav-tab[data-view="' + vid + '"]'); if (tab) tab.click(); }
-    });
-  });
-
-  contentContainer.querySelectorAll(".ai-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const feature = btn.getAttribute("data-feature");
-      _mmCloseManual(mmCtx);
-      const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
-      if (chatTab) chatTab.click();
-      const chatInput = document.getElementById("user-input");
-      if (chatInput) {
-        chatInput.value = "How do I use the " + feature + " feature in NEURODECK?";
-        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
-        chatInput.focus();
-      }
-    });
-  });
+  _mmWireAccordions(contentContainer);
+  _mmWireLaunchBtns(contentContainer, mmCtx);
+  _mmWireAiBtns(contentContainer, mmCtx);
 }
 
 async function _mmRunHealthDiagnostics() {
@@ -9139,64 +5939,57 @@ function _plInitOutputSection(ctx) {
   }
 }
 
-function initPromptLab() {
-  const generateBtn          = document.getElementById("pl-generate-btn");
-  const explainBtn           = document.getElementById("pl-explain-jpe-btn");
-  const copyPromptBtn        = document.getElementById("pl-copy-prompt-btn");
-  const sendChatBtn          = document.getElementById("pl-send-chat-btn");
-  const copyJpeBtn           = document.getElementById("pl-copy-jpe-btn");
-  const personaInput         = document.getElementById("pl-persona");
-  const taskInput            = document.getElementById("pl-task");
-  const contextInput         = document.getElementById("pl-context");
-  const toneInput            = document.getElementById("pl-tone");
-  const constraintsInput     = document.getElementById("pl-constraints");
-  const formatInput          = document.getElementById("pl-format");
-  const examplesInput        = document.getElementById("pl-examples");
-  const formulaHidden        = document.getElementById("pl-formula");
-  const resultPrompt         = document.getElementById("pl-result-prompt");
-  const resultJpe            = document.getElementById("pl-result-jpe");
-  const advancedToggle       = document.getElementById("pl-advanced-toggle");
-  const advancedFields       = document.getElementById("pl-advanced-fields");
-  const optimizeAiBtn        = document.getElementById("pl-optimize-ai-btn");
-  const jpeLevelSelect       = document.getElementById("pl-jpe-level-select");
-  const savePresetBtn        = document.getElementById("pl-save-preset-btn");
-  const togglePresetInputBtn = document.getElementById("pl-toggle-preset-input-btn");
-  const presetNameInput      = document.getElementById("pl-preset-name");
-  const exportJsonBtn        = document.getElementById("pl-export-json-btn");
-  const exportLuaBtn         = document.getElementById("pl-export-lua-btn");
-  const strengthBarFill      = document.getElementById("pl-strength-bar-fill");
-  const strengthLabel        = document.getElementById("pl-strength-label");
-  const tokenCounter         = document.getElementById("pl-token-counter");
-  const formulaBadge         = document.getElementById("pl-formula-badge");
-  const formulaGrid          = document.getElementById("pl-formula-grid");
-  const formulaInfo          = document.getElementById("pl-formula-info");
-  const historyBtn           = document.getElementById("pl-history-btn");
-  const historyDrawer        = document.getElementById("pl-history-drawer");
-  const historyClear         = document.getElementById("pl-history-clear");
-  const historyList          = document.getElementById("pl-history-list");
-  const openGalleryBtn       = document.getElementById("pl-open-gallery-btn");
-  const galleryOverlay       = document.getElementById("pl-gallery-overlay");
-  const galleryClose         = document.getElementById("pl-gallery-close");
-  const galleryDrawer        = document.getElementById("pl-template-gallery");
-  const galleryBody          = document.getElementById("pl-gallery-body");
-  const gallerySearch        = document.getElementById("pl-gallery-search");
-
-  if (!generateBtn) return;
-
-  const ctx = {
-    generateBtn, explainBtn, copyPromptBtn, sendChatBtn, copyJpeBtn,
-    personaInput, taskInput, contextInput, toneInput, constraintsInput,
-    formatInput, examplesInput, formulaHidden, resultPrompt, resultJpe,
-    advancedToggle, advancedFields, optimizeAiBtn, jpeLevelSelect,
-    savePresetBtn, togglePresetInputBtn, presetNameInput,
-    exportJsonBtn, exportLuaBtn, strengthBarFill, strengthLabel, tokenCounter,
-    formulaBadge, formulaGrid, formulaInfo, historyBtn, historyDrawer,
-    historyClear, historyList, openGalleryBtn, galleryOverlay, galleryClose,
-    galleryDrawer, galleryBody, gallerySearch,
+function _plBuildCtx() {
+  return {
+    generateBtn:          document.getElementById("pl-generate-btn"),
+    explainBtn:           document.getElementById("pl-explain-jpe-btn"),
+    copyPromptBtn:        document.getElementById("pl-copy-prompt-btn"),
+    sendChatBtn:          document.getElementById("pl-send-chat-btn"),
+    copyJpeBtn:           document.getElementById("pl-copy-jpe-btn"),
+    personaInput:         document.getElementById("pl-persona"),
+    taskInput:            document.getElementById("pl-task"),
+    contextInput:         document.getElementById("pl-context"),
+    toneInput:            document.getElementById("pl-tone"),
+    constraintsInput:     document.getElementById("pl-constraints"),
+    formatInput:          document.getElementById("pl-format"),
+    examplesInput:        document.getElementById("pl-examples"),
+    formulaHidden:        document.getElementById("pl-formula"),
+    resultPrompt:         document.getElementById("pl-result-prompt"),
+    resultJpe:            document.getElementById("pl-result-jpe"),
+    advancedToggle:       document.getElementById("pl-advanced-toggle"),
+    advancedFields:       document.getElementById("pl-advanced-fields"),
+    optimizeAiBtn:        document.getElementById("pl-optimize-ai-btn"),
+    jpeLevelSelect:       document.getElementById("pl-jpe-level-select"),
+    savePresetBtn:        document.getElementById("pl-save-preset-btn"),
+    togglePresetInputBtn: document.getElementById("pl-toggle-preset-input-btn"),
+    presetNameInput:      document.getElementById("pl-preset-name"),
+    exportJsonBtn:        document.getElementById("pl-export-json-btn"),
+    exportLuaBtn:         document.getElementById("pl-export-lua-btn"),
+    strengthBarFill:      document.getElementById("pl-strength-bar-fill"),
+    strengthLabel:        document.getElementById("pl-strength-label"),
+    tokenCounter:         document.getElementById("pl-token-counter"),
+    formulaBadge:         document.getElementById("pl-formula-badge"),
+    formulaGrid:          document.getElementById("pl-formula-grid"),
+    formulaInfo:          document.getElementById("pl-formula-info"),
+    historyBtn:           document.getElementById("pl-history-btn"),
+    historyDrawer:        document.getElementById("pl-history-drawer"),
+    historyClear:         document.getElementById("pl-history-clear"),
+    historyList:          document.getElementById("pl-history-list"),
+    openGalleryBtn:       document.getElementById("pl-open-gallery-btn"),
+    galleryOverlay:       document.getElementById("pl-gallery-overlay"),
+    galleryClose:         document.getElementById("pl-gallery-close"),
+    galleryDrawer:        document.getElementById("pl-template-gallery"),
+    galleryBody:          document.getElementById("pl-gallery-body"),
+    gallerySearch:        document.getElementById("pl-gallery-search"),
     promptHistory: [],
     loadedCustomPresets: {},
     _renderHistory: null,
   };
+}
+
+function initPromptLab() {
+  const ctx = _plBuildCtx();
+  if (!ctx.generateBtn) return;
 
   _plInitFormulaSection(ctx);
   _plInitHistorySection(ctx);
@@ -9377,33 +6170,8 @@ function _obSlide2() {
                 </div>`;
 }
 
-function _obSlide3() {
+function _obSlide3ProviderSetupPanels() {
   return `
-                <div class="onboarding-slide" id="slide-3">
-                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">PROVIDER_AUTHENTICATION</h3>
-                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 10px;">Choose your LLM backend — powers Chat, Agent, RAG memory, and AI autocomplete.</p>
-                    <div class="onboarding-choice-container" style="margin-bottom: 12px;">
-                        <div class="onboarding-choice-card active" data-provider="gemini-key" role="button" tabindex="0" aria-pressed="true">
-                            <span class="onboarding-choice-icon">${createIcon("shieldCheck", { size: 16 })}</span>
-                            <span class="onboarding-choice-title">Gemini API Key</span>
-                            <span class="onboarding-choice-desc">Manual entry of Google Gemini API key. Saved to secure OS keychain.</span>
-                        </div>
-                        <div class="onboarding-choice-card" data-provider="gemini-oauth" role="button" tabindex="0" aria-pressed="false">
-                            <span class="onboarding-choice-icon">${createIcon("panelRightOpen", { size: 16 })}</span>
-                            <span class="onboarding-choice-title">Google Login (QR)</span>
-                            <span class="onboarding-choice-desc">Authenticate via device code grant. Scan QR code with your phone.</span>
-                        </div>
-                        <div class="onboarding-choice-card" data-provider="kimi" role="button" tabindex="0" aria-pressed="false">
-                            <span class="onboarding-choice-icon">${createIcon("moon", { size: 16 })}</span>
-                            <span class="onboarding-choice-title">Kimi (Moonshot)</span>
-                            <span class="onboarding-choice-desc">Moonshot AI cloud models. Strong reasoning and ultra-long context.</span>
-                        </div>
-                        <div class="onboarding-choice-card" data-provider="ollama" role="button" tabindex="0" aria-pressed="false">
-                            <span class="onboarding-choice-icon">${createIcon("server", { size: 16 })}</span>
-                            <span class="onboarding-choice-title">Ollama (Offline)</span>
-                            <span class="onboarding-choice-desc">Local Ollama server on Steam Deck. Completely offline operation.</span>
-                        </div>
-                    </div>
                     <div id="container-gemini-key" class="provider-setup-container">
                         <div class="onboarding-input-wrapper">
                             <label for="ob-gemini-key">GEMINI API KEY</label>
@@ -9435,7 +6203,37 @@ function _obSlide3() {
                             <button class="onboarding-btn secondary" id="ob-btn-pull-model" style="font-size:0.72rem;padding:5px 12px;">Pull Model Now</button>
                             <span id="ob-pull-status" style="font-size:0.7rem;opacity:0.75;"></span>
                         </div>
+                    </div>`;
+}
+
+function _obSlide3() {
+  return `
+                <div class="onboarding-slide" id="slide-3">
+                    <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">PROVIDER_AUTHENTICATION</h3>
+                    <p style="font-size: 0.72rem; opacity: 0.7; margin: 0 0 10px;">Choose your LLM backend — powers Chat, Agent, RAG memory, and AI autocomplete.</p>
+                    <div class="onboarding-choice-container" style="margin-bottom: 12px;">
+                        <div class="onboarding-choice-card active" data-provider="gemini-key" role="button" tabindex="0" aria-pressed="true">
+                            <span class="onboarding-choice-icon">${createIcon("shieldCheck", { size: 16 })}</span>
+                            <span class="onboarding-choice-title">Gemini API Key</span>
+                            <span class="onboarding-choice-desc">Manual entry of Google Gemini API key. Saved to secure OS keychain.</span>
+                        </div>
+                        <div class="onboarding-choice-card" data-provider="gemini-oauth" role="button" tabindex="0" aria-pressed="false">
+                            <span class="onboarding-choice-icon">${createIcon("panelRightOpen", { size: 16 })}</span>
+                            <span class="onboarding-choice-title">Google Login (QR)</span>
+                            <span class="onboarding-choice-desc">Authenticate via device code grant. Scan QR code with your phone.</span>
+                        </div>
+                        <div class="onboarding-choice-card" data-provider="kimi" role="button" tabindex="0" aria-pressed="false">
+                            <span class="onboarding-choice-icon">${createIcon("moon", { size: 16 })}</span>
+                            <span class="onboarding-choice-title">Kimi (Moonshot)</span>
+                            <span class="onboarding-choice-desc">Moonshot AI cloud models. Strong reasoning and ultra-long context.</span>
+                        </div>
+                        <div class="onboarding-choice-card" data-provider="ollama" role="button" tabindex="0" aria-pressed="false">
+                            <span class="onboarding-choice-icon">${createIcon("server", { size: 16 })}</span>
+                            <span class="onboarding-choice-title">Ollama (Offline)</span>
+                            <span class="onboarding-choice-desc">Local Ollama server on Steam Deck. Completely offline operation.</span>
+                        </div>
                     </div>
+                    ${_obSlide3ProviderSetupPanels()}
                     <div class="onboarding-log-viewport" id="ob-validation-log"><div class="onboarding-log-line">[SYS] Awaiting input credentials...</div></div>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
                         <button class="onboarding-btn secondary" id="ob-btn-skip-setup" style="opacity:0.7;font-size:0.72rem;">Skip — Configure Later</button>
@@ -10783,6 +7581,129 @@ initCtrlPromptPanel();
 initRemoteControl();
 
 // ============================= DOCS VIEW =================================
+async function _docsRefreshFileList(ctx) {
+  try {
+    const files = await invoke("get_indexed_docs");
+    ctx.indexedFiles = files;
+    const count = await invoke("get_doc_count");
+    ctx.countBadge.textContent = `${count} chunk${count === 1 ? "" : "s"} indexed`;
+    if (files.length === 0) {
+      ctx.fileList.innerHTML = '<div class="docs-empty-msg">No documents indexed yet.</div>';
+      return;
+    }
+    ctx.fileList.replaceChildren();
+    files.forEach((f) => {
+      const name = f.replace(/\\/g, "/").split("/").pop();
+      const row = document.createElement("div");
+      row.className = "docs-file-row";
+      row.dataset.path = f;
+      row.title = f;
+      const icon = document.createElement("span");
+      icon.className = "docs-file-icon";
+      icon.innerHTML = createIcon("file", { size: 14 });
+      const fileName = document.createElement("span");
+      fileName.className = "docs-file-name";
+      fileName.textContent = name;
+      const btn = document.createElement("button");
+      btn.className = "docs-remove-btn";
+      btn.dataset.path = f;
+      btn.title = "Remove from index";
+      btn.setAttribute("aria-label", `Remove ${name} from index`);
+      btn.innerHTML = createIcon("x", { size: 12 });
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        btn.innerHTML = createIcon("zap", { size: 12 });
+        btn.disabled = true;
+        await invoke("remove_indexed_doc", { filePath: btn.dataset.path });
+        await _docsRefreshFileList(ctx);
+      });
+      row.append(icon, fileName, btn);
+      ctx.fileList.appendChild(row);
+    });
+  } catch (_) {
+    ctx.countBadge.textContent = "Error loading";
+  }
+}
+
+async function _docsRunSearch(ctx) {
+  const query = ctx.searchInput.value.trim();
+  if (!query) return;
+  ctx.resultsList.innerHTML = '<div class="docs-search-spinner"></div>';
+  ctx.resultsLabel.textContent = "Searching…";
+  try {
+    const results = await invoke("search_docs_semantic", { query, limit: 10 });
+    if (results.length === 0) {
+      ctx.resultsList.innerHTML = '<div class="docs-empty-msg">No relevant passages found.</div>';
+      ctx.resultsLabel.textContent = "Results — 0 found";
+      return;
+    }
+    ctx.resultsLabel.textContent = `Results — ${results.length} found`;
+    ctx.resultsList.replaceChildren();
+    results.forEach((r) => {
+      const pct = Math.round(r.score * 100);
+      const name = r.file.replace(/\\/g, "/").split("/").pop();
+      const row = document.createElement("div");
+      row.className = "docs-result-row";
+      const header = document.createElement("div");
+      header.className = "docs-result-header";
+      const file = document.createElement("span");
+      file.className = "docs-result-file";
+      file.title = r.file;
+      const icon = document.createElement("span");
+      icon.innerHTML = createIcon("fileText", { size: 13 });
+      const label = document.createElement("span");
+      label.textContent = name;
+      file.append(icon.firstElementChild || icon, label);
+      const score = document.createElement("span");
+      score.className = "docs-result-score";
+      score.textContent = `${pct}%`;
+      header.append(file, score);
+      const snippet = document.createElement("div");
+      snippet.className = "docs-result-snippet";
+      snippet.textContent = String(r.snippet ?? "");
+      row.append(header, snippet);
+      ctx.resultsList.appendChild(row);
+    });
+  } catch (err) {
+    const error = document.createElement("div");
+    error.className = "docs-empty-msg";
+    error.style.color = "var(--error-color)";
+    error.textContent = `Search failed: ${String(err)}`;
+    ctx.resultsList.replaceChildren(error);
+    ctx.resultsLabel.textContent = "Results — error";
+  }
+}
+
+function _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx) {
+  searchBtn.addEventListener("click", () => _docsRunSearch(ctx));
+  ctx.searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") _docsRunSearch(ctx); });
+  indexBtn.addEventListener("click", async () => {
+    const dir = prompt("Enter absolute folder path to index:");
+    if (!dir || !dir.trim()) return;
+    try {
+      indexBtn.disabled = true;
+      indexBtn.textContent = "Indexing…";
+      await invoke("index_directory", { path: dir.trim() });
+      await _docsRefreshFileList(ctx);
+      if (window.addNotification)
+        window.addNotification("Docs Indexed", `Folder indexed: ${dir.trim().split(/[\\/]/).pop()}`, "success");
+    } catch (err) {
+      alert(`Indexing failed: ${err}`);
+    } finally {
+      indexBtn.disabled = false;
+      indexBtn.textContent = "+ Index Folder";
+    }
+  });
+  clearBtn.addEventListener("click", async () => {
+    if (!confirm("Remove all indexed documents from the knowledge base?")) return;
+    await invoke("clear_doc_index");
+    await _docsRefreshFileList(ctx);
+    ctx.resultsList.innerHTML = '<div class="docs-empty-msg">Search to find relevant passages.</div>';
+    ctx.resultsLabel.textContent = "Results";
+  });
+  document.querySelector('.nav-tab[data-view="docs"]')?.addEventListener("click", () => _docsRefreshFileList(ctx));
+}
+
 function initDocsView() {
   const searchInput = document.getElementById("docs-search-input");
   const searchBtn = document.getElementById("docs-search-btn");
@@ -10792,157 +7713,8 @@ function initDocsView() {
   const resultsList = document.getElementById("docs-results-list");
   const resultsLabel = document.getElementById("docs-results-label");
   const countBadge = document.getElementById("docs-count-badge");
-
-  let indexedFiles = [];
-
-  async function refreshFileList() {
-    try {
-      const files = await invoke("get_indexed_docs");
-      indexedFiles = files;
-      const count = await invoke("get_doc_count");
-      countBadge.textContent = `${count} chunk${count === 1 ? "" : "s"} indexed`;
-
-      if (files.length === 0) {
-        fileList.innerHTML =
-          '<div class="docs-empty-msg">No documents indexed yet.</div>';
-        return;
-      }
-      fileList.replaceChildren();
-      files.forEach((f) => {
-        const name = f.replace(/\\/g, "/").split("/").pop();
-        const row = document.createElement("div");
-        row.className = "docs-file-row";
-        row.dataset.path = f;
-        row.title = f;
-
-        const icon = document.createElement("span");
-        icon.className = "docs-file-icon";
-        icon.innerHTML = createIcon("file", { size: 14 });
-
-        const fileName = document.createElement("span");
-        fileName.className = "docs-file-name";
-        fileName.textContent = name;
-
-        const btn = document.createElement("button");
-        btn.className = "docs-remove-btn";
-        btn.dataset.path = f;
-        btn.title = "Remove from index";
-        btn.setAttribute("aria-label", `Remove ${name} from index`);
-        btn.innerHTML = createIcon("x", { size: 12 });
-        btn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const path = btn.dataset.path;
-          btn.innerHTML = createIcon("zap", { size: 12 });
-          btn.disabled = true;
-          await invoke("remove_indexed_doc", { filePath: path });
-          await refreshFileList();
-        });
-
-        row.append(icon, fileName, btn);
-        fileList.appendChild(row);
-      });
-    } catch (err) {
-      countBadge.textContent = "Error loading";
-    }
-  }
-
-  async function runSearch() {
-    const query = searchInput.value.trim();
-    if (!query) return;
-    resultsList.innerHTML = '<div class="docs-search-spinner"></div>';
-    resultsLabel.textContent = "Searching…";
-    try {
-      const results = await invoke("search_docs_semantic", {
-        query,
-        limit: 10,
-      });
-      if (results.length === 0) {
-        resultsList.innerHTML =
-          '<div class="docs-empty-msg">No relevant passages found.</div>';
-        resultsLabel.textContent = "Results — 0 found";
-        return;
-      }
-      resultsLabel.textContent = `Results — ${results.length} found`;
-      resultsList.replaceChildren();
-      results.forEach((r) => {
-        const pct = Math.round(r.score * 100);
-        const name = r.file.replace(/\\/g, "/").split("/").pop();
-        const row = document.createElement("div");
-        row.className = "docs-result-row";
-
-        const header = document.createElement("div");
-        header.className = "docs-result-header";
-        const file = document.createElement("span");
-        file.className = "docs-result-file";
-        file.title = r.file;
-        const icon = document.createElement("span");
-        icon.innerHTML = createIcon("fileText", { size: 13 });
-        const label = document.createElement("span");
-        label.textContent = name;
-        file.append(icon.firstElementChild || icon, label);
-        const score = document.createElement("span");
-        score.className = "docs-result-score";
-        score.textContent = `${pct}%`;
-        header.append(file, score);
-
-        const snippet = document.createElement("div");
-        snippet.className = "docs-result-snippet";
-        snippet.textContent = String(r.snippet ?? "");
-
-        row.append(header, snippet);
-        resultsList.appendChild(row);
-      });
-    } catch (err) {
-      const error = document.createElement("div");
-      error.className = "docs-empty-msg";
-      error.style.color = "var(--error-color)";
-      error.textContent = `Search failed: ${String(err)}`;
-      resultsList.replaceChildren(error);
-      resultsLabel.textContent = "Results — error";
-    }
-  }
-
-  searchBtn.addEventListener("click", runSearch);
-  searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") runSearch();
-  });
-
-  indexBtn.addEventListener("click", async () => {
-    const dir = prompt("Enter absolute folder path to index:");
-    if (!dir || !dir.trim()) return;
-    try {
-      indexBtn.disabled = true;
-      indexBtn.textContent = "Indexing…";
-      await invoke("index_directory", { path: dir.trim() });
-      await refreshFileList();
-      if (window.addNotification)
-        window.addNotification(
-          "Docs Indexed",
-          `Folder indexed: ${dir.trim().split(/[\\/]/).pop()}`,
-          "success",
-        );
-    } catch (err) {
-      alert(`Indexing failed: ${err}`);
-    } finally {
-      indexBtn.disabled = false;
-      indexBtn.textContent = "+ Index Folder";
-    }
-  });
-
-  clearBtn.addEventListener("click", async () => {
-    if (!confirm("Remove all indexed documents from the knowledge base?"))
-      return;
-    await invoke("clear_doc_index");
-    await refreshFileList();
-    resultsList.innerHTML =
-      '<div class="docs-empty-msg">Search to find relevant passages.</div>';
-    resultsLabel.textContent = "Results";
-  });
-
-  // Refresh when tab is activated
-  document
-    .querySelector('.nav-tab[data-view="docs"]')
-    ?.addEventListener("click", refreshFileList);
+  const ctx = { indexedFiles: [], fileList, countBadge, resultsList, resultsLabel, searchInput };
+  _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx);
 }
 
 initDocsView();
