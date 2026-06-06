@@ -225,49 +225,57 @@ window.sanitizeHtml = function (html) {
     ]);
     const allowedUrlSchemes = /^(https?:|mailto:|#|\/)/i;
 
+    function _cleanUnallowedNode(child, tagName, cleanNodeFn) {
+      if (
+        [
+          "script",
+          "style",
+          "iframe",
+          "object",
+          "embed",
+          "noscript",
+          "meta",
+          "link",
+        ].includes(tagName)
+      ) {
+        child.remove();
+      } else {
+        cleanNodeFn(child);
+        while (child.firstChild) {
+          child.parentNode.insertBefore(child.firstChild, child);
+        }
+        child.remove();
+      }
+    }
+
+    function _cleanNodeAttributes(child, tagName, allowedAttrs, allowedUrlSchemes) {
+      const attrs = Array.from(child.attributes);
+      for (const attr of attrs) {
+        const name = attr.name.toLowerCase();
+        if (!allowedAttrs.has(name) || name.startsWith("on")) {
+          child.removeAttribute(attr.name);
+        } else if (name === "href" || name === "src") {
+          const val = attr.value.trim();
+          if (!allowedUrlSchemes.test(val)) {
+            child.removeAttribute(attr.name);
+          }
+        }
+      }
+      if (tagName === "a") {
+        child.setAttribute("rel", "noopener noreferrer nofollow");
+        child.setAttribute("target", "_blank");
+      }
+    }
+
     function cleanNode(node) {
       const children = Array.from(node.childNodes);
       for (const child of children) {
         if (child.nodeType === Node.ELEMENT_NODE) {
           const tagName = child.tagName.toLowerCase();
           if (!allowedTags.has(tagName)) {
-            if (
-              [
-                "script",
-                "style",
-                "iframe",
-                "object",
-                "embed",
-                "noscript",
-                "meta",
-                "link",
-              ].includes(tagName)
-            ) {
-              child.remove();
-            } else {
-              cleanNode(child);
-              while (child.firstChild) {
-                child.parentNode.insertBefore(child.firstChild, child);
-              }
-              child.remove();
-            }
+            _cleanUnallowedNode(child, tagName, cleanNode);
           } else {
-            const attrs = Array.from(child.attributes);
-            for (const attr of attrs) {
-              const name = attr.name.toLowerCase();
-              if (!allowedAttrs.has(name) || name.startsWith("on")) {
-                child.removeAttribute(attr.name);
-              } else if (name === "href" || name === "src") {
-                const val = attr.value.trim();
-                if (!allowedUrlSchemes.test(val)) {
-                  child.removeAttribute(attr.name);
-                }
-              }
-            }
-            if (tagName === "a") {
-              child.setAttribute("rel", "noopener noreferrer nofollow");
-              child.setAttribute("target", "_blank");
-            }
+            _cleanNodeAttributes(child, tagName, allowedAttrs, allowedUrlSchemes);
             cleanNode(child);
           }
         }
@@ -1600,28 +1608,54 @@ function _gpShoulderL2R2(gp) {
   }
 }
 
+function _gpShoulderL1R1_CtrlPrompt(isL1) {
+  triggerHaptic("light"); 
+  navigateCtrlPromptCat(isL1 ? -1 : 1);
+}
+
+function _gpShoulderL1R1_ChatScroll(isL1) {
+  const chatView = document.getElementById("view-chat");
+  if (chatView && chatView.classList.contains("active")) {
+    const workspace = document.getElementById("chat-workspace");
+    if (workspace) workspace.scrollTop += isL1 ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
+  }
+}
+
+function _gpShoulderL1R1_SshProfile() {
+  const sshView = document.getElementById("view-ssh");
+  if (sshView && sshView.classList.contains("active")) {
+    const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
+    if (focused) focused.click();
+  }
+}
+
+function _gpShoulderL1R1_NavTabs(isL1) {
+  const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+  const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
+  if (activeTabIdx !== -1) {
+    const nextIdx = isL1 ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
+    if (nextIdx !== activeTabIdx) { 
+      tabs[nextIdx].click(); 
+      triggerHaptic("light"); 
+      state.gamepadFocusIndex = -1; 
+      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused")); 
+    }
+  }
+}
+
 function _gpShoulderL1R1(gp) {
-  if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && getCtrlPromptVisible()) {
-    triggerHaptic("light"); navigateCtrlPromptCat(_gpButtonPressed(gp, 4) ? -1 : 1); return;
+  const isL1 = _gpButtonPressed(gp, 4);
+  const isR1 = _gpButtonPressed(gp, 5);
+  if (!isL1 && !isR1) return;
+
+  if (getCtrlPromptVisible()) {
+    _gpShoulderL1R1_CtrlPrompt(isL1);
+    return;
   }
-  if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && !getCtrlPromptVisible()) {
-    const chatView = document.getElementById("view-chat");
-    if (chatView && chatView.classList.contains("active")) {
-      const workspace = document.getElementById("chat-workspace");
-      if (workspace) workspace.scrollTop += _gpButtonPressed(gp, 4) ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
-    }
-    const sshView = document.getElementById("view-ssh");
-    if (sshView && sshView.classList.contains("active")) {
-      const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
-      if (focused) focused.click();
-    }
-    const tabs = Array.from(document.querySelectorAll(".nav-tab"));
-    const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
-    if (activeTabIdx !== -1) {
-      const nextIdx = _gpButtonPressed(gp, 4) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-      if (nextIdx !== activeTabIdx) { tabs[nextIdx].click(); triggerHaptic("light"); state.gamepadFocusIndex = -1; document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused")); }
-    }
-  }
+  
+  _gpShoulderL1R1_ChatScroll(isL1);
+  _gpShoulderL1R1_SshProfile();
+  _gpShoulderL1R1_NavTabs(isL1);
 }
 
 function _gpHandleShoulderButtons(gp) {
@@ -1645,29 +1679,41 @@ function _gpHandleMenuButtons(gp) {
   }
 }
 
+function _gpDpadVerticalCtrlPrompt(goUp) {
+  if (getCtrlPromptTemplateMode()) navigateTemplatePlaceholder(goUp ? -1 : 1);
+  else navigateCtrlPromptList(goUp ? -1 : 1);
+}
+
+function _gpDpadVerticalShare(goUp) {
+  const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+  const idx = subtabs.findIndex((t) => t.classList.contains("active"));
+  if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+}
+
+function _gpDpadVerticalSsh(goUp) {
+  const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
+  if (items.length > 0) {
+    const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
+    const nextIdx = goUp ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1) : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
+    items.forEach((el) => el.classList.remove("gamepad-focused"));
+    items[nextIdx].classList.add("gamepad-focused");
+    items[nextIdx].scrollIntoView({ block: "nearest" });
+  } else {
+    updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
+  }
+}
+
 function _gpDpadVertical(gp, goUp) {
   if (getCtrlPromptVisible()) {
-    if (getCtrlPromptTemplateMode()) navigateTemplatePlaceholder(goUp ? -1 : 1);
-    else navigateCtrlPromptList(goUp ? -1 : 1);
+    _gpDpadVerticalCtrlPrompt(goUp);
     return;
   }
   const shareView = document.getElementById("view-share");
   const sshView = document.getElementById("view-ssh");
   if (shareView && shareView.classList.contains("active")) {
-    const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
-    const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-    if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+    _gpDpadVerticalShare(goUp);
   } else if (sshView && sshView.classList.contains("active")) {
-    const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
-    if (items.length > 0) {
-      const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
-      const nextIdx = goUp ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1) : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
-      items.forEach((el) => el.classList.remove("gamepad-focused"));
-      items[nextIdx].classList.add("gamepad-focused");
-      items[nextIdx].scrollIntoView({ block: "nearest" });
-    } else {
-      updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
-    }
+    _gpDpadVerticalSsh(goUp);
   } else {
     updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
   }

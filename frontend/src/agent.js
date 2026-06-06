@@ -89,53 +89,82 @@ async function _agRunComputerTool(tool, args = {}) {
     }
 }
 
+function _btRequire(args, ...keys) {
+    for (const k of keys) { if (!String(args[k] || args[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] || "")) throw new Error(`${keys[0]}'s tool requires args.${k}.`); }
+}
+
+function _btSessionId(args) { return String(args.session_id || args.sessionId || ""); }
+
+async function _btOpenSession(args) {
+    const url = String(args.url || "");
+    if (!url) throw new Error("browser_open_session requires args.url.");
+    return `Browser session opened: ${await invoke("browser_open_session", { url })}`;
+}
+
+async function _btNavigateSession(args) {
+    const sessionId = _btSessionId(args), url = String(args.url || "");
+    if (!sessionId || !url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
+    await invoke("browser_navigate_session", { sessionId, url });
+    return `Navigated session ${sessionId} to ${url}.`;
+}
+
+async function _btGetContent(args) {
+    const sessionId = _btSessionId(args);
+    if (!sessionId) throw new Error("browser_get_content requires args.session_id.");
+    const content = await invoke("browser_get_content", { sessionId });
+    return typeof content === "string" ? content.slice(0, 6000) : String(content);
+}
+
+async function _btClick(args) {
+    const sessionId = _btSessionId(args), selector = String(args.selector || "");
+    if (!sessionId || !selector) throw new Error("browser_click requires args.session_id and args.selector.");
+    await invoke("browser_click", { sessionId, selector });
+    return `Clicked ${selector} in session ${sessionId}.`;
+}
+
+async function _btFill(args) {
+    const sessionId = _btSessionId(args), selector = String(args.selector || ""), value = String(args.value || "");
+    if (!sessionId || !selector) throw new Error("browser_fill requires args.session_id and args.selector.");
+    await invoke("browser_fill", { sessionId, selector, value });
+    return `Filled ${selector} in session ${sessionId}.`;
+}
+
+async function _btScreenshot(args) {
+    const sessionId = _btSessionId(args);
+    if (!sessionId) throw new Error("browser_screenshot requires args.session_id.");
+    const b64 = await invoke("browser_screenshot", { sessionId });
+    return `Screenshot captured (base64 bytes: ${String(b64 || "").length}).`;
+}
+
+async function _btEvaluateJs(args) {
+    const sessionId = _btSessionId(args), script = String(args.script || "");
+    if (!sessionId || !script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
+    const result = await invoke("browser_evaluate_js", { sessionId, script });
+    return typeof result === "string" ? result : JSON.stringify(result);
+}
+
+async function _btCloseSession(args) {
+    const sessionId = _btSessionId(args);
+    if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
+    await invoke("browser_close_session", { sessionId });
+    return `Closed browser session ${sessionId}.`;
+}
+
+const _BROWSER_TOOL_DISPATCH = {
+    browser_open_session: _btOpenSession,
+    browser_navigate_session: _btNavigateSession,
+    browser_get_content: _btGetContent,
+    browser_click: _btClick,
+    browser_fill: _btFill,
+    browser_screenshot: _btScreenshot,
+    browser_evaluate_js: _btEvaluateJs,
+    browser_close_session: _btCloseSession,
+};
+
 async function _agRunBrowserTool(tool, args = {}) {
-    switch (tool) {
-        case "browser_open_session": {
-            const url = String(args.url||"");
-            if (!url) throw new Error("browser_open_session requires args.url.");
-            return `Browser session opened: ${await invoke("browser_open_session",{url})}`;
-        }
-        case "browser_navigate_session": {
-            const sessionId = String(args.session_id||args.sessionId||""), url = String(args.url||"");
-            if (!sessionId||!url) throw new Error("browser_navigate_session requires args.session_id and args.url.");
-            await invoke("browser_navigate_session",{sessionId,url}); return `Navigated session ${sessionId} to ${url}.`;
-        }
-        case "browser_get_content": {
-            const sessionId = String(args.session_id||args.sessionId||"");
-            if (!sessionId) throw new Error("browser_get_content requires args.session_id.");
-            const content = await invoke("browser_get_content",{sessionId});
-            return typeof content==="string"?content.slice(0,6000):String(content);
-        }
-        case "browser_click": {
-            const sessionId=String(args.session_id||args.sessionId||""), selector=String(args.selector||"");
-            if (!sessionId||!selector) throw new Error("browser_click requires args.session_id and args.selector.");
-            await invoke("browser_click",{sessionId,selector}); return `Clicked ${selector} in session ${sessionId}.`;
-        }
-        case "browser_fill": {
-            const sessionId=String(args.session_id||args.sessionId||""), selector=String(args.selector||""), value=String(args.value||"");
-            if (!sessionId||!selector) throw new Error("browser_fill requires args.session_id and args.selector.");
-            await invoke("browser_fill",{sessionId,selector,value}); return `Filled ${selector} in session ${sessionId}.`;
-        }
-        case "browser_screenshot": {
-            const sessionId=String(args.session_id||args.sessionId||"");
-            if (!sessionId) throw new Error("browser_screenshot requires args.session_id.");
-            const b64 = await invoke("browser_screenshot",{sessionId});
-            return `Screenshot captured (base64 bytes: ${String(b64||"").length}).`;
-        }
-        case "browser_evaluate_js": {
-            const sessionId=String(args.session_id||args.sessionId||""), script=String(args.script||"");
-            if (!sessionId||!script) throw new Error("browser_evaluate_js requires args.session_id and args.script.");
-            const result = await invoke("browser_evaluate_js",{sessionId,script});
-            return typeof result==="string"?result:JSON.stringify(result);
-        }
-        case "browser_close_session": {
-            const sessionId=String(args.session_id||args.sessionId||"");
-            if (!sessionId) throw new Error("browser_close_session requires args.session_id.");
-            await invoke("browser_close_session",{sessionId}); return `Closed browser session ${sessionId}.`;
-        }
-        default: throw new Error(`Unsupported browser tool: ${tool}`);
-    }
+    const handler = _BROWSER_TOOL_DISPATCH[tool];
+    if (!handler) throw new Error(`Unsupported browser tool: ${tool}`);
+    return handler(args);
 }
 
 // ── State helpers ─────────────────────────────────────────────────────────────

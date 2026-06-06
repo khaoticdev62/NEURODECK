@@ -159,50 +159,39 @@ function handleShellSelect() {
   applySettings();
 }
 
-function toggleSettingsLlmGroups(provider) {
-  const geminiGroup = document.getElementById("settings-gemini-group");
+const _LLM_GROUP_VISIBILITY = {
+  gemini: { groups: ["settings-gemini-group"], labels: [] },
+  openai_compat: { groups: ["settings-openai-compat-group"], labels: ["stv-openai-compat-label"] },
+  kimi: { groups: ["settings-kimi-group"], labels: ["stv-kimi-label"] },
+  huggingface: { groups: ["settings-hf-group"], labels: ["stv-hf-label"] },
+};
+const _LLM_ALL_GROUP_IDS = ["settings-gemini-group", "settings-ollama-group", "settings-kimi-group", "settings-hf-group", "settings-openai-compat-group"];
+const _LLM_ALL_LABEL_IDS = ["stv-ollama-label", "stv-kimi-label", "stv-hf-label", "stv-openai-compat-label"];
+
+function _llmHideAll() {
+  _LLM_ALL_GROUP_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
+  _LLM_ALL_LABEL_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
+  const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
+  if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
+}
+
+function _llmShowOllama() {
   const ollamaGroup = document.getElementById("settings-ollama-group");
   const ollamaLabel = document.getElementById("stv-ollama-label");
-  const ollamaModelsSec = document.getElementById(
-    "settings-ollama-models-section",
-  );
-  const kimiGroup = document.getElementById("settings-kimi-group");
-  const kimiLabel = document.getElementById("stv-kimi-label");
-  const hfGroup = document.getElementById("settings-hf-group");
-  const hfLabel = document.getElementById("stv-hf-label");
-  const oaGroup = document.getElementById("settings-openai-compat-group");
-  const oaLabel = document.getElementById("stv-openai-compat-label");
+  const ollamaModelsSec = document.getElementById("settings-ollama-models-section");
+  if (ollamaGroup) ollamaGroup.style.display = "block";
+  if (ollamaLabel) ollamaLabel.style.display = "block";
+  if (ollamaModelsSec) { ollamaModelsSec.style.display = "block"; refreshOllamaModels(); }
+}
 
-  // Hide everything first, then show only what belongs to the selected provider
-  const allGroups = [geminiGroup, ollamaGroup, kimiGroup, hfGroup, oaGroup];
-  const allLabels = [ollamaLabel, kimiLabel, hfLabel, oaLabel];
-  allGroups.forEach(g => g && (g.style.display = "none"));
-  allLabels.forEach(l => l && (l.style.display = "none"));
-  if (ollamaModelsSec) ollamaModelsSec.style.display = "none";
-
-  if (provider === "gemini") {
-    if (geminiGroup) geminiGroup.style.display = "block";
-  } else if (provider === "openai_compat") {
-    if (oaGroup) oaGroup.style.display = "block";
-    if (oaLabel) oaLabel.style.display = "block";
-  } else if (provider === "kimi") {
-    if (kimiGroup) kimiGroup.style.display = "block";
-    if (kimiLabel) kimiLabel.style.display = "block";
-  } else if (provider === "huggingface") {
-    if (hfGroup) hfGroup.style.display = "block";
-    if (hfLabel) hfLabel.style.display = "block";
+function toggleSettingsLlmGroups(provider) {
+  _llmHideAll();
+  const config = _LLM_GROUP_VISIBILITY[provider];
+  if (config) {
+    config.groups.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "block"; });
+    config.labels.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "block"; });
   } else {
-    if (geminiGroup) geminiGroup.style.display = "none";
-    if (kimiGroup) kimiGroup.style.display = "none";
-    if (kimiLabel) kimiLabel.style.display = "none";
-    if (ollamaGroup) ollamaGroup.style.display = "block";
-    if (ollamaLabel) ollamaLabel.style.display = "block";
-    if (ollamaModelsSec) {
-      ollamaModelsSec.style.display = "block";
-      refreshOllamaModels();
-    }
-    if (hfGroup) hfGroup.style.display = "none";
-    if (hfLabel) hfLabel.style.display = "none";
+    _llmShowOllama();
   }
 }
 
@@ -1176,6 +1165,37 @@ function initBmadInstaller() {
   }
 }
 
+function _whHandleProgressEvent(event, els, model, unlistenRef) {
+  let data;
+  try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; } catch { return; }
+  const { done, pct, path, skipped } = data;
+  if (els.dlPct) els.dlPct.textContent = `${pct || 0}%`;
+  if (els.dlBar) els.dlBar.style.width = `${pct || 0}%`;
+  if (done) {
+    _whOnDownloadDone(els, model, path, skipped, unlistenRef);
+  } else {
+    if (els.dlLabel) els.dlLabel.textContent = skipped ? "Already downloaded" : `Downloading ggml-${model}.bin...`;
+  }
+}
+
+function _whOnDownloadDone(els, model, path, skipped, unlistenRef) {
+  unlistenRef.fn();
+  if (els.dlWrap) els.dlWrap.style.display = "none";
+  els.downloadBtn.disabled = false;
+  if (path) {
+    if (els.modelInput) els.modelInput.value = path;
+    if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--response-color);display:inline-flex;align-items:center;gap:6px;">${createIcon("shieldCheck", { size: 14 })}<span>${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span></span>`;
+    if (typeof addNotification === "function") addNotification("Whisper Model Ready", `ggml-${model}.bin downloaded.`, "success");
+  }
+}
+
+function _whOnDownloadError(err, els, unlistenRef) {
+  unlistenRef.fn();
+  els.downloadBtn.disabled = false;
+  if (els.dlWrap) els.dlWrap.style.display = "none";
+  if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--error-color);">Download failed: ${err}</span>`;
+}
+
 async function _whHandleDownloadClick(els) {
   const model = els.modelSelect.value;
   els.downloadBtn.disabled = true;
@@ -1185,32 +1205,11 @@ async function _whHandleDownloadClick(els) {
   if (els.dlBar) els.dlBar.style.width = "0%";
   if (els.statusLine) els.statusLine.innerHTML = `<span style="opacity:0.6;">Downloading ${model}...</span>`;
   const unlistenRef = { fn: () => {} };
-  unlistenRef.fn = await listen("whisper_download_progress", (event) => {
-    let data;
-    try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; } catch { return; }
-    const { done, pct, path, skipped } = data;
-    if (els.dlPct) els.dlPct.textContent = `${pct || 0}%`;
-    if (els.dlBar) els.dlBar.style.width = `${pct || 0}%`;
-    if (done) {
-      unlistenRef.fn();
-      if (els.dlWrap) els.dlWrap.style.display = "none";
-      els.downloadBtn.disabled = false;
-      if (path) {
-        if (els.modelInput) els.modelInput.value = path;
-        if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--response-color);display:inline-flex;align-items:center;gap:6px;">${createIcon("shieldCheck", { size: 14 })}<span>${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span></span>`;
-        if (typeof addNotification === "function") addNotification("Whisper Model Ready", `ggml-${model}.bin downloaded.`, "success");
-      }
-    } else {
-      if (els.dlLabel) els.dlLabel.textContent = skipped ? "Already downloaded" : `Downloading ggml-${model}.bin...`;
-    }
-  }).catch(() => () => {});
+  unlistenRef.fn = await listen("whisper_download_progress", (event) => _whHandleProgressEvent(event, els, model, unlistenRef)).catch(() => () => {});
   try {
     await invoke("download_whisper_model", { model });
   } catch (err) {
-    unlistenRef.fn();
-    els.downloadBtn.disabled = false;
-    if (els.dlWrap) els.dlWrap.style.display = "none";
-    if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--error-color);">Download failed: ${err}</span>`;
+    _whOnDownloadError(err, els, unlistenRef);
   }
 }
 
