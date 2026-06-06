@@ -19,8 +19,8 @@ export const test = base.extend<{ page: Page, electronApp: ElectronApplication }
   },
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow();
-    // Wait for the window to finish loading
-    await page.waitForLoadState('domcontentloaded');
+    // M5: explicit timeout prevents hanging if the sidecar or renderer never reaches domcontentloaded
+    await page.waitForLoadState('domcontentloaded', { timeout: 20000 });
     await use(page);
   }
 });

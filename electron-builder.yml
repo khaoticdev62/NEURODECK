@@ -7,6 +7,8 @@ directories:
 files:
   - electron/**/*
   - frontend/dist/**/*
+# M3: Only include cross-platform assets here.
+# Linux-only shell scripts (install.sh, launch_gamescope.sh) are in the linux section.
 extraResources:
   - from: plugins
     to: plugins
@@ -18,10 +20,6 @@ extraResources:
       - "**/*"
   - from: llm-term.toml
     to: llm-term.toml
-  - from: install.sh
-    to: install.sh
-  - from: launch_gamescope.sh
-    to: launch_gamescope.sh
 
 win:
   target:
@@ -44,6 +42,11 @@ linux:
   extraResources:
     - from: target/release/app
       to: neurodeck
+    # M3: Linux/SteamOS-only deployment scripts
+    - from: install.sh
+      to: install.sh
+    - from: launch_gamescope.sh
+      to: launch_gamescope.sh
   desktop:
     Name: NEURODECK
     Comment: AI Terminal OS for Steam Deck
@@ -59,6 +62,9 @@ mac:
   artifactName: ${productName}_${version}_${arch}.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
+  # M4: entitlements required for hardenedRuntime — without this, JIT and audio break post-notarization
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
   extraResources:
     - from: target/release/app
       to: neurodeck
