@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { state, wireDragAndDrop } from "./state.js";
 import { triggerHaptic } from "./haptics.js";
 import {
   updateMuteButtonUI,
@@ -2241,15 +2241,19 @@ function _navActivateSideEffects(targetViewName) {
       if (typeof m.initIdeView === "function") m.initIdeView();
     }).catch(e => console.error("Failed to load ide view", e));
   }
+function _loadTorrentClient() {
+  import("./torrent.js").then((m) => {
+    if (typeof m.initTorrentClient === "function") m.initTorrentClient();
+  }).catch(e => console.error("Failed to load torrent client", e));
+}
+
   if (targetViewName === "orchestrator") {
     import("./orchestrator.js").then((m) => {
       if (typeof m.initOrchestrator === "function") m.initOrchestrator();
     }).catch(e => console.error("Failed to load orchestrator", e));
   }
   if (targetViewName === "share") {
-    import("./torrent.js").then((m) => {
-      if (typeof m.initTorrentClient === "function") m.initTorrentClient();
-    }).catch(e => console.error("Failed to load torrent client", e));
+    _loadTorrentClient();
   }
 }
 
@@ -3289,9 +3293,7 @@ document.querySelectorAll(".share-inner-tab").forEach((tab) => {
     const el = document.getElementById(`share-panel-${panel}`);
     if (el) el.classList.add("active");
     if (panel === "torrent") {
-      import("./torrent.js").then((m) => {
-        if (typeof m.initTorrentClient === "function") m.initTorrentClient();
-      }).catch(e => console.error("Failed to load torrent client", e));
+      _loadTorrentClient();
     }
   };
 });
@@ -3658,15 +3660,8 @@ function _fsWireGlobalListeners() {
 
 function _fsWireDropzoneSend(dropzone, pathInput, sendBtn) {
   if (dropzone && pathInput) {
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add("dragover"); });
-    dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover"); });
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover");
-      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        pathInput.value = file.path || file.name;
-        updateSendButtonState();
-      }
+    wireDragAndDrop(dropzone, pathInput, () => {
+      updateSendButtonState();
     });
     pathInput.oninput = function () { updateSendButtonState(); };
   }
@@ -3853,15 +3848,24 @@ function _browserWireNavBtns(els, bCtx, urlInput, homeScreen) {
   }
 }
 
+function _browserGetActiveUrl(urlInput, bCtx) {
+  const url = (urlInput ? urlInput.value.trim() : null) || bCtx.url;
+  return _browserParseUrlOrSearch(url);
+}
+
+function _browserDisableButtonAndGetOriginal(btn, iconName, label) {
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = createIcon(iconName, { size: 14 }) + `<span>${label}...</span>`;
+  return originalHtml;
+}
+
 function _browserWireSaveMemory(btn, urlInput, bCtx) {
   if (!btn) return;
   btn.onclick = async () => {
-    const url = (urlInput ? urlInput.value.trim() : null) || bCtx.url;
-    const parsed = _browserParseUrlOrSearch(url);
+    const parsed = _browserGetActiveUrl(urlInput, bCtx);
     if (!parsed || parsed === "neurodeck://home") return;
-    btn.disabled = true;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = createIcon("database", { size: 14 }) + "<span>Saving...</span>";
+    const originalHtml = _browserDisableButtonAndGetOriginal(btn, "database", "Saving");
     try {
       const res = await invoke("browser_save_to_memory", { url: parsed });
       btn.innerHTML = createIcon("check", { size: 14 }) + "<span>Saved (" + res.indexed + " chunks)</span>";
@@ -3877,12 +3881,9 @@ function _browserWireSaveMemory(btn, urlInput, bCtx) {
 function _browserWireCopyCitation(btn, urlInput, bCtx) {
   if (!btn) return;
   btn.onclick = async () => {
-    const url = (urlInput ? urlInput.value.trim() : null) || bCtx.url;
-    const parsed = _browserParseUrlOrSearch(url);
+    const parsed = _browserGetActiveUrl(urlInput, bCtx);
     if (!parsed || parsed === "neurodeck://home") return;
-    btn.disabled = true;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = createIcon("quote", { size: 14 }) + "<span>Fetching...</span>";
+    const originalHtml = _browserDisableButtonAndGetOriginal(btn, "quote", "Fetching");
     try {
       const citation = await invoke("browser_get_citation", { url: parsed });
       await navigator.clipboard.writeText(citation);
@@ -6875,6 +6876,12 @@ async function _obInitPersonaTheme(obs) {
   _obBindThemeCards(obs);
 }
 
+function _obCardKeydownHandler(e, index, cards, selectFn) {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectFn(); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
+  else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
+}
+
 function _obBindPersonaCards(obs) {
   const cards = Array.from(document.querySelectorAll(".onboarding-persona-card"));
   cards.forEach((card, index) => {
@@ -6885,11 +6892,7 @@ function _obBindPersonaCards(obs) {
       try { await invoke("set_persona", { name: obs.selectedPersona }); } catch (e) { console.error("Failed to set persona", e); }
     };
     card.onclick = select;
-    card.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
-      else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
-    };
+    card.onkeydown = (e) => _obCardKeydownHandler(e, index, cards, select);
   });
 }
 
@@ -6905,11 +6908,7 @@ function _obBindThemeCards(obs) {
       catch (e) { console.error("Failed to apply theme live", e); }
     };
     card.onclick = select;
-    card.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
-      else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
-    };
+    card.onkeydown = (e) => _obCardKeydownHandler(e, index, cards, select);
   });
 }
 

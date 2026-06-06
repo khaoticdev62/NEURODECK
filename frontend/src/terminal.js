@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, wireDragAndDrop } from './state.js';
 import { invoke } from './neurobridge.js';
 import { listen } from './neurobridge.js';
 import { Terminal } from 'xterm';
@@ -1477,18 +1477,9 @@ function initSftpProfileListeners() {
 // --- FTP/SFTP DRAG AND DROP UPLOADS ---
 function _wireDropzone(dropzone, pathInput, remoteDest, label) {
     if (!dropzone || !pathInput) return;
-    dropzone.addEventListener("dragover", e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add("dragover"); });
-    dropzone.addEventListener("dragleave", e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover"); });
-    dropzone.addEventListener("drop", e => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.remove("dragover");
-        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-            const file = e.dataTransfer.files[0];
-            pathInput.value = file.path || file.name;
-            if (remoteDest && !remoteDest.value.trim()) remoteDest.value = "/" + file.name;
-            addNotification(`${label} File Drop`, `File local path set to: ${file.name}`, "info");
-        }
+    wireDragAndDrop(dropzone, pathInput, (file) => {
+        if (remoteDest && !remoteDest.value.trim()) remoteDest.value = "/" + file.name;
+        addNotification(`${label} File Drop`, `File local path set to: ${file.name}`, "info");
     });
 }
 

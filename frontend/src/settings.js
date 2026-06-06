@@ -892,6 +892,15 @@ function _mcpWireSettingsBtn(els) {
   });
 }
 
+function _mcpHandleError(err, statusLine, btn) {
+  statusLine.innerHTML = "";
+  const span = document.createElement("span");
+  span.style.color = "var(--error-color)";
+  span.textContent = `Error: ${err}`;
+  statusLine.appendChild(span);
+  if (btn) btn.disabled = false;
+}
+
 function _mcpWireStartBtn(els) {
   els.startBtn.addEventListener("click", async () => {
     const port = parseInt(els.portInput.value, 10) || 13337;
@@ -902,12 +911,7 @@ function _mcpWireStartBtn(els) {
       _mcpSetRunningUI(port, result.token, result.discovery, els);
       if (typeof window.addNotification === "function") window.addNotification("MCP Server Started", `Listening on port ${port}. Copy the config snippet below.`, "success");
     } catch (err) {
-      els.statusLine.innerHTML = "";
-      const span = document.createElement("span");
-      span.style.color = "var(--error-color)";
-      span.textContent = `Error: ${err}`;
-      els.statusLine.appendChild(span);
-      els.startBtn.disabled = false;
+      _mcpHandleError(err, els.statusLine, els.startBtn);
     }
   });
 }
@@ -920,15 +924,11 @@ function _mcpWireStopBtn(els) {
       _mcpSetStoppedUI(els);
       if (typeof window.addNotification === "function") window.addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
     } catch (err) {
-      els.statusLine.innerHTML = "";
-      const span = document.createElement("span");
-      span.style.color = "var(--error-color)";
-      span.textContent = `Error: ${err}`;
-      els.statusLine.appendChild(span);
-      els.stopBtn.disabled = false;
+      _mcpHandleError(err, els.statusLine, els.stopBtn);
     }
   });
 }
+
 
 function initMcpSettings() {
   const els = {

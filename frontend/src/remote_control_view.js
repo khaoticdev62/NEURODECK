@@ -32,21 +32,27 @@ function _rcUpdateTtlDisplay(rc) {
 
 // ── Server UI states ───────────────────────────────────────────────────────────
 
+function _rcGetElements() {
+    return {
+        startBtn: _rcEl('remote-start-btn'),
+        stopBtn:  _rcEl('remote-stop-btn'),
+        qrSec:    _rcEl('remote-qr-section'),
+        stats:    _rcEl('remote-stats-row'),
+        badge:    _rcEl('remote-status-badge'),
+        dot:      _rcEl('remote-status-dot'),
+        statusTx: _rcEl('remote-status-text')
+    };
+}
+
 function _rcApplyOnlineState(info, rc) {
-    const startBtn = _rcEl('remote-start-btn');
-    const stopBtn  = _rcEl('remote-stop-btn');
-    const qrSec    = _rcEl('remote-qr-section');
-    const stats    = _rcEl('remote-stats-row');
-    const badge    = _rcEl('remote-status-badge');
-    const dot      = _rcEl('remote-status-dot');
-    const statusTx = _rcEl('remote-status-text');
-    if (startBtn) startBtn.style.display = 'none';
-    if (stopBtn)  stopBtn.style.display  = '';
-    if (qrSec)    qrSec.style.display    = '';
-    if (stats)    stats.style.display    = '';
-    if (badge)    badge.classList.add('remote-status-online');
-    if (dot)      dot.classList.add('remote-dot-online');
-    if (statusTx) statusTx.textContent   = 'Online';
+    const els = _rcGetElements();
+    if (els.startBtn) els.startBtn.style.display = 'none';
+    if (els.stopBtn)  els.stopBtn.style.display  = '';
+    if (els.qrSec)    els.qrSec.style.display    = '';
+    if (els.stats)    els.stats.style.display    = '';
+    if (els.badge)    els.badge.classList.add('remote-status-online');
+    if (els.dot)      els.dot.classList.add('remote-dot-online');
+    if (els.statusTx) els.statusTx.textContent   = 'Online';
     const urlEl = _rcEl('remote-url-text');
     const pinEl = _rcEl('remote-pin-display');
     const ipEl  = _rcEl('remote-ip-display');
@@ -72,22 +78,16 @@ function _rcApplyOnlineState(info, rc) {
 }
 
 function _rcApplyOfflineState(rc) {
-    const startBtn = _rcEl('remote-start-btn');
-    const stopBtn  = _rcEl('remote-stop-btn');
-    const qrSec    = _rcEl('remote-qr-section');
-    const stats    = _rcEl('remote-stats-row');
-    const badge    = _rcEl('remote-status-badge');
-    const dot      = _rcEl('remote-status-dot');
-    const statusTx = _rcEl('remote-status-text');
-    if (startBtn) startBtn.style.display = '';
-    if (stopBtn)  stopBtn.style.display  = 'none';
-    if (qrSec)    qrSec.style.display    = 'none';
-    if (stats)    stats.style.display    = 'none';
+    const els = _rcGetElements();
+    if (els.startBtn) els.startBtn.style.display = '';
+    if (els.stopBtn)  els.stopBtn.style.display  = 'none';
+    if (els.qrSec)    els.qrSec.style.display    = 'none';
+    if (els.stats)    els.stats.style.display    = 'none';
     const ttlRowOff = _rcEl('remote-ttl-row');
     if (ttlRowOff) ttlRowOff.style.display = 'none';
-    if (badge)    badge.classList.remove('remote-status-online');
-    if (dot)      dot.classList.remove('remote-dot-online');
-    if (statusTx) statusTx.textContent   = 'Offline';
+    if (els.badge)    els.badge.classList.remove('remote-status-online');
+    if (els.dot)      els.dot.classList.remove('remote-dot-online');
+    if (els.statusTx) els.statusTx.textContent   = 'Offline';
     clearInterval(rc.ttlTimer);
 }
 
