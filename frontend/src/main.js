@@ -12080,14 +12080,14 @@ listen("deckcode-action", (event) => {
       // A more complex implementation could select the first placeholder
       snippet = snippet.replace(/\$\{[^}]+\}/g, "");
       
-      // Insert the snippet
-      activeEl.value = val.substring(0, start) + snippet + val.substring(end);
+      // Insert the snippet natively (works for Monaco and standard textareas)
+      const selectionBefore = activeEl.selectionStart || 0;
+      document.execCommand("insertText", false, snippet);
       
-      // Update cursor position
-      activeEl.selectionStart = activeEl.selectionEnd = start + cursorOffset;
-      
-      // Dispatch input event so ide_view or canvas knows the content changed
-      activeEl.dispatchEvent(new Event("input", { bubbles: true }));
+      // Move cursor back if ${cursor} placeholder was placed earlier in the string
+      if (cursorOffset < snippet.length) {
+        activeEl.selectionStart = activeEl.selectionEnd = selectionBefore + cursorOffset;
+      }
       return;
     }
   }
