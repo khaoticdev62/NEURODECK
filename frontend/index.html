@@ -7,7 +7,464 @@
     <title>neurodeck</title>
 </head>
 <body>
-<div id="app"></div>
+<div id="app-background-container" aria-hidden="true">
+    <img id="app-background-image" alt="" />
+</div>
+
+<div id="app">
+    <div id="sr-announcer" class="sr-only" aria-live="polite"></div>
+    <div class="app-layout">
+        <aside id="sidebar" class="sidebar collapsed" aria-label="Session sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">NEURODECK <span class="sidebar-brand-version">1.8</span></div>
+                <button id="sidebar-close-btn" class="sidebar-toggle-btn" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">Close</button>
+            </div>
+            <button id="new-chat-btn" class="new-chat-btn" type="button">New Chat</button>
+            <div id="sidebar-history" class="sidebar-history">
+                <div class="history-group-label">Current Session</div>
+                <div class="history-item active" tabindex="0">
+                    <span class="history-title">Welcome session</span>
+                </div>
+            </div>
+            <div id="sidebar-diagnostics" class="session-browser">
+                <button class="session-browser-toggle" type="button">Diagnostics</button>
+                <div class="session-browser-list hidden"></div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-nav">
+                <div class="top-nav-left">
+                    <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">Menu</button>
+                    <div class="top-nav-title">
+                        <span>Active Session</span>
+                    </div>
+                    <div id="game-badge" class="game-context-badge hidden">
+                        <span id="game-badge-dot" class="game-badge-dot"></span>
+                        <span id="game-badge-name"></span>
+                    </div>
+                </div>
+                <div class="top-nav-right">
+                    <span id="model-name" class="model-selector-indicator">[ MODEL: LOADING ]</span>
+                    <span class="status-badge"><span class="status-dot"></span><span id="tool-status">Idle</span></span>
+                    <span id="memory-status" class="status-badge">Stable</span>
+                    <button id="command-palette-btn" class="sidebar-toggle-btn" type="button" title="Command palette" aria-label="Open command palette">Commands</button>
+                    <button id="mute-btn" class="sidebar-toggle-btn" type="button" title="Mute audio" aria-label="Mute audio">Mute</button>
+                    <button id="notif-btn" class="sidebar-toggle-btn" type="button" title="Notifications" aria-label="Notifications">Alerts</button>
+                    <button id="settings-btn" class="sidebar-toggle-btn" type="button" title="Settings" aria-label="Open settings">Settings</button>
+                </div>
+            </header>
+
+            <div class="breadcrumb-bar" aria-label="Current location">
+                <span class="breadcrumb-root">NEURODECK</span>
+                <span class="breadcrumb-sep">/</span>
+                <span id="breadcrumb-view" class="breadcrumb-view">Chat</span>
+            </div>
+
+            <nav class="nav-tab-row" aria-label="Primary views">
+                <div class="nav-tab-bar" role="tablist" aria-label="Primary views">
+                    <span id="nav-tab-glide" class="nav-tab-glide" aria-hidden="true"></span>
+                    <button class="nav-tab active" type="button" role="tab" aria-selected="true" aria-controls="view-chat" data-view="chat" data-testid="nav-tab-chat">Chat</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-canvas" data-view="canvas" data-testid="nav-tab-canvas">Canvas</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-terminal" data-view="terminal" data-testid="nav-tab-terminal">Terminal</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-ssh" data-view="ssh" data-testid="nav-tab-ssh">SSH</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-tunnel" data-view="tunnel" data-testid="nav-tab-tunnel">Tunnel</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-share" data-view="share" data-testid="nav-tab-share">Share</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-browser" data-view="browser" data-testid="nav-tab-browser">Browser</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-agent" data-view="agent" data-testid="nav-tab-agent">Agent</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-memory" data-view="memory" data-testid="nav-tab-memory">Memory</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-prompt-lab" data-view="prompt-lab" data-testid="nav-tab-prompt-lab">Prompt Lab</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-remote" data-view="remote" data-testid="nav-tab-remote">Remote</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-docs" data-view="docs" data-testid="nav-tab-docs">Docs</button>
+                </div>
+            </nav>
+
+            <section class="view-container" aria-live="polite">
+                <section id="view-chat" class="view-content active chat-workspace" role="tabpanel" aria-labelledby="nav-tab-chat" data-testid="view-chat">
+                    <div class="chat-session-header">
+                        <div class="chat-session-header-left">
+                            <span class="chat-session-kicker">Active Session</span>
+                            <span id="chat-status-dot" class="chat-session-status-dot"></span>
+                            <span id="chat-session-name" class="chat-session-name">Welcome session</span>
+                            <span id="session-id" class="chat-session-tokens">test-session</span>
+                        </div>
+                        <div class="chat-session-header-center"><span id="chat-session-model" class="chat-session-model-chip">Gemini</span></div>
+                        <div class="chat-session-header-right">
+                            <span id="chat-session-tokens" class="chat-session-tokens">0 tokens</span>
+                            <button id="new-chat-btn-header" class="chat-session-new-btn" type="button">New</button>
+                            <button id="compare-toggle-btn" class="chat-session-new-btn" type="button">Compare</button>
+                        </div>
+                    </div>
+                    <div id="chat-workspace" class="chat-viewport">
+                        <div id="chat-welcome" class="chat-welcome">
+                            <div class="chat-welcome-logo" aria-hidden="true"></div>
+                            <h1 class="chat-welcome-title">NEURODECK</h1>
+                            <p class="chat-welcome-sub">AI-native terminal OS. Ask anything.</p>
+                            <div class="chat-starters-grid" aria-label="Starter prompts">
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Explain RAG</div>
+                                    <div class="chat-starter-hint">How retrieval-augmented generation works</div>
+                                </button>
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Rust Handler</div>
+                                    <div class="chat-starter-hint">Async Axum endpoint with error handling</div>
+                                </button>
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Game Mechanic</div>
+                                    <div class="chat-starter-hint">Unique roguelike system design concept</div>
+                                </button>
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Code Review</div>
+                                    <div class="chat-starter-hint">Find bugs and performance issues in pasted code</div>
+                                </button>
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Sprint Planning</div>
+                                    <div class="chat-starter-hint">Break scope into tasks for a solo-dev AI app</div>
+                                </button>
+                                <button class="chat-starter-card" type="button">
+                                    <div class="chat-starter-label">Debug Help</div>
+                                    <div class="chat-starter-hint">Paste your error for AI-assisted diagnosis</div>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="chat-viewport" class="chat-messages" aria-live="polite"></div>
+                    </div>
+                    <div id="chat-gen-bar" class="hidden">
+                        <span id="chat-gen-model"></span>
+                        <span id="chat-gen-tokens"></span>
+                        <button id="chat-gen-stop" type="button">Stop</button>
+                    </div>
+                    <div id="chat-attachment-bar" class="hidden"></div>
+                    <div class="floating-input-container">
+                        <div class="input-console-bar">
+                            <div id="chat-input-context" class="chat-input-context"></div>
+                            <div class="input-textarea-wrapper">
+                                <textarea id="user-input" class="chat-input chat-textarea" data-testid="chat-input" rows="2" aria-label="Chat message" placeholder="Enter command or type message..."></textarea>
+                            </div>
+                            <div class="input-actions-bar">
+                                <div class="input-actions-left">
+                                    <button id="attach-btn" class="input-btn attach-btn" type="button" aria-label="Attach file">Attach</button>
+                                    <input id="file-input" type="file" class="sr-only" aria-label="Attachment file" />
+                                    <button id="mic-btn" class="input-btn mic-btn" type="button" title="Voice input" aria-label="Voice input">Mic</button>
+                                    <button id="screenshot-btn" class="input-btn screenshot-btn" type="button" title="Capture screenshot" aria-label="Capture screenshot">Shot</button>
+                                    <button id="toggle-drawer-btn" class="input-btn" type="button" title="Context drawer" aria-label="Open context drawer">Context</button>
+                                </div>
+                                <div class="input-actions-right">
+                                    <button id="send-btn" class="send-btn" data-testid="chat-send-btn" type="button">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-canvas" class="view-content" role="tabpanel" aria-labelledby="nav-tab-canvas" data-testid="view-canvas">
+                    <div class="canvas-toolbar">
+                        <select id="canvas-lang-select" aria-label="Canvas language"><option value="html">HTML</option><option value="python">Python</option></select>
+                        <button id="canvas-run-btn" class="canvas-btn" type="button">Run</button>
+                        <button id="canvas-copy-btn" class="canvas-btn" type="button">Copy</button>
+                        <button id="canvas-clear-btn" class="canvas-btn" type="button">Clear</button>
+                        <button id="canvas-ai-edit-btn" class="canvas-btn" type="button">AI Edit</button>
+                        <button id="canvas-collab-btn" class="canvas-btn" type="button">Collab</button>
+                        <button id="canvas-refresh-btn" class="canvas-btn" type="button" title="Refresh preview" aria-label="Refresh preview">Refresh</button>
+                    </div>
+                    <textarea id="canvas-monaco" aria-label="Code canvas"></textarea>
+                    <iframe id="canvas-preview-frame" title="Canvas preview"></iframe>
+                    <iframe id="canvas-preview" title="Canvas preview legacy" class="sr-only"></iframe>
+                    <button id="canvas-collab-resync-btn" type="button">Force Resync</button>
+                </section>
+
+                <section id="view-terminal" class="view-content" role="tabpanel" aria-labelledby="nav-tab-terminal" data-testid="view-terminal">
+                    <div class="term-topbar">
+                        <div id="terminal-tabs-list" role="tablist" aria-label="Terminal sessions"></div>
+                        <button id="terminal-add-tab-btn" type="button" title="New terminal" aria-label="New terminal">New Terminal</button>
+                        <button id="term-clear-btn" class="term-action-btn" type="button" title="Clear terminal" aria-label="Clear terminal">Clear</button>
+                        <button id="pty-reconnect-btn" class="term-action-btn" type="button" title="Reconnect terminal" aria-label="Reconnect terminal">Reconnect</button>
+                        <button id="term-font-dec-btn" class="term-action-btn" type="button">A-</button>
+                        <button id="term-font-inc-btn" class="term-action-btn" type="button">A+</button>
+                    </div>
+                    <div id="terminal-container"></div>
+                </section>
+
+                <section id="view-ssh" class="view-content" role="tabpanel" aria-labelledby="nav-tab-ssh" data-testid="view-ssh">
+                    <div class="ssh-kicker">Secure Shell</div>
+                    <input id="ssh-host-input" aria-label="SSH host" placeholder="Host" />
+                    <input id="ssh-port-input" aria-label="SSH port" value="22" />
+                    <input id="ssh-user-input" aria-label="SSH user" placeholder="User" />
+                    <select id="ssh-auth-type" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
+                    <div id="ssh-pass-group"><input id="ssh-pass-input" type="password" aria-label="SSH password" /></div>
+                    <div id="ssh-key-path-group"><input id="ssh-key-path-input" aria-label="SSH key path" /></div>
+                    <button id="ssh-connect-btn" type="button">Connect</button>
+                    <button id="ssh-disconnect-btn" type="button">Disconnect</button>
+                    <button id="ssh-save-profile-btn" type="button">Save Profile</button>
+                    <div id="ssh-profiles-list"></div>
+                    <div id="ssh-terminal-container"></div>
+                </section>
+
+                <section id="view-tunnel" class="view-content" role="tabpanel" aria-labelledby="nav-tab-tunnel" data-testid="view-tunnel">
+                    <div class="tunnel-kicker">SteamOS Bridge</div>
+                    <div id="tunnel-status-indicator" class="tunnel-status-indicator offline">OFFLINE</div>
+                    <button id="tunnel-check-btn" type="button">Check</button>
+                    <button id="tunnel-toggle-btn" type="button">Toggle</button>
+                    <input id="tunnel-cmd-input" aria-label="Tunnel command" />
+                    <button id="tunnel-cmd-send" type="button">Send</button>
+                    <input id="tunnel-filepath-input" aria-label="Tunnel file path" />
+                    <textarea id="tunnel-filecontent-input" aria-label="Tunnel file content"></textarea>
+                    <button id="tunnel-file-send" type="button">Send File</button>
+                    <input id="tunnel-dirpath-input" aria-label="Tunnel directory path" />
+                    <button id="tunnel-dir-send" type="button">List Directory</button>
+                    <div id="tunnel-log"></div>
+                </section>
+
+                <section id="view-share" class="view-content" role="tabpanel" aria-labelledby="nav-tab-share" data-testid="view-share">
+                    <div class="share-view-kicker">Transfer Hub</div>
+                    <h1 class="share-view-title">Share &amp; Transfer</h1>
+                    <div class="share-inner-tabs" role="tablist" aria-label="Share panels">
+                        <button class="share-inner-tab active" type="button" role="tab" aria-selected="true" data-panel="lan">LAN</button>
+                        <button class="share-inner-tab" type="button" role="tab" aria-selected="false" data-panel="sftp">SFTP</button>
+                        <button class="share-inner-tab" type="button" role="tab" aria-selected="false" data-panel="ftp">FTP</button>
+                        <button class="share-inner-tab" type="button" role="tab" aria-selected="false" data-panel="torrent">Torrent</button>
+                    </div>
+                    <div id="share-panel-lan" class="share-panel-section active">
+                        <div id="share-dropzone" tabindex="0">Drop files here</div>
+                        <input id="share-filepath-input" aria-label="File path to share" />
+                        <button id="share-send-btn" type="button">Send File</button>
+                        <input id="share-group-code-input" aria-label="Share group code" />
+                        <button id="share-group-code-save-btn" type="button">Apply</button>
+                        <div id="peer-list"></div>
+                    </div>
+                    <div id="share-panel-ftp" class="share-panel-section">
+                    <input id="ftp-host-input" aria-label="FTP host" /><input id="ftp-port-input" value="21" aria-label="FTP port" /><input id="ftp-user-input" aria-label="FTP user" /><input id="ftp-pass-input" type="password" aria-label="FTP password" /><input id="ftp-path-input" aria-label="FTP path" />
+                    <button id="ftp-connect-btn" type="button">Connect &amp; List</button><button id="ftp-save-profile-btn" type="button">Save Profile</button>
+                    <div id="ftp-status-text"></div><div id="ftp-cwd-label"></div><div id="ftp-file-list"></div><div id="ftp-profiles-list"></div>
+                    <div id="ftp-dropzone"></div><input id="ftp-local-path-input" aria-label="FTP local path" /><input id="ftp-remote-dest-input" aria-label="FTP remote path" /><button id="ftp-upload-btn" type="button">Upload</button>
+                    <div id="ftp-upload-progress-wrap"><div id="ftp-upload-progress-fill"></div><span id="ftp-upload-progress-label"></span></div>
+                    </div>
+                    <div id="share-panel-sftp" class="share-panel-section">
+                    <input id="sftp-host-input" aria-label="SFTP host" /><input id="sftp-port-input" value="22" aria-label="SFTP port" /><input id="sftp-user-input" aria-label="SFTP user" /><select id="sftp-auth-type" aria-label="SFTP auth type"><option value="password">Password</option><option value="key">Key</option></select><input id="sftp-pass-input" type="password" aria-label="SFTP password" /><input id="sftp-key-path-input" aria-label="SFTP key path" /><input id="sftp-path-input" aria-label="SFTP path" />
+                    <button id="sftp-connect-btn" type="button">Connect &amp; List</button><button id="sftp-save-profile-btn" type="button">Save Profile</button>
+                    <div id="sftp-status-text"></div><div id="sftp-cwd-label"></div><div id="sftp-file-list"></div><div id="sftp-profiles-list"></div>
+                    <div id="sftp-dropzone"></div><input id="sftp-local-path-input" aria-label="SFTP local path" /><input id="sftp-remote-dest-input" aria-label="SFTP remote path" /><button id="sftp-upload-btn" type="button">Upload</button>
+                    </div>
+                    <div id="share-panel-torrent" class="share-panel-section">
+                        <div class="torrent-kicker">Torrent Transfer</div>
+                        <input id="torrent-source-input" aria-label="Torrent source" placeholder="Magnet link or torrent file" />
+                        <button id="torrent-add-btn" type="button">Add Torrent</button>
+                    </div>
+                </section>
+
+                <section id="view-browser" class="view-content" role="tabpanel" aria-labelledby="nav-tab-browser" data-testid="view-browser">
+                    <div class="browser-container">
+                    <div class="browser-kicker">Browser</div>
+                    <button id="browser-back-btn" type="button" title="Back" aria-label="Back">Back</button>
+                    <button id="browser-forward-btn" type="button" title="Forward" aria-label="Forward">Forward</button>
+                    <button id="browser-refresh-btn" type="button" title="Refresh" aria-label="Refresh">Refresh</button>
+                    <button id="browser-home-btn" type="button" title="Home" aria-label="Home">Home</button>
+                    <button id="browser-hf-btn" type="button" title="Hugging Face" aria-label="Open Hugging Face">HF</button>
+                    <input id="browser-url-input" aria-label="Browser URL" value="https://example.com" />
+                    <button id="browser-url-clear-btn" type="button" title="Clear URL" aria-label="Clear URL">Clear</button>
+                    <button id="browser-go-btn" type="button">Go</button>
+                    <button id="browser-open-ext-btn" type="button">Open Ext</button>
+                    <div class="browser-home-kicker">Home</div>
+                    <div id="browser-content"></div>
+                    </div>
+                </section>
+
+                <section id="view-agent" class="view-content" role="tabpanel" aria-labelledby="nav-tab-agent" data-testid="view-agent">
+                    <div class="agent-shell">
+                        <div class="agent-kicker">Autonomous Agent</div>
+                        <textarea id="agent-task-input" aria-label="Agent task"></textarea>
+                        <button id="agent-run-btn" type="button">Run</button>
+                        <button id="agent-stop-btn" type="button">Stop</button>
+                        <button id="agent-send-canvas-btn" type="button">Send Canvas</button>
+                        <span id="agent-iter-label"></span>
+                        <div id="agent-log"></div>
+                        <pre id="agent-code-content"></pre>
+                        <div id="agent-output"></div>
+                        <div id="agent-toolbar-task"></div><div id="agent-toolbar-roundtable" class="hidden"></div><div id="agent-toolbar-orchestrate"></div>
+                        <input id="orchestrator-goal-input" aria-label="Orchestrator goal" /><button id="orchestrator-start-btn" type="button">Start</button><button id="orchestrator-status-btn" type="button">Status</button><button id="orchestrator-stop-btn" type="button">Stop</button>
+                        <div id="agent-orchestrator-panel"></div><div id="orchestrator-task-list"></div>
+                        <select id="rt-persona-a" aria-label="Roundtable persona A"></select><select id="rt-persona-b" aria-label="Roundtable persona B"></select><input id="rt-topic-input" aria-label="Roundtable topic" /><input id="rt-rounds" aria-label="Roundtable rounds" value="3" /><button id="rt-start-btn" type="button">Start</button><button id="rt-stop-btn" type="button">Stop</button>
+                        <h2 id="agent-code-pane-title">Code</h2><h2 id="agent-output-title">Output</h2>
+                    </div>
+                </section>
+
+                <section id="view-memory" class="view-content" role="tabpanel" aria-labelledby="nav-tab-memory" data-testid="view-memory">
+                    <div class="memory-shell">
+                        <div class="memory-kicker">Vector Memory</div>
+                        <div class="memory-search-shell"><input id="memory-search-input" class="memory-search-input" aria-label="Search memory" /></div>
+                        <div class="memory-filter-row"><button class="memory-filter-btn active" type="button" data-filter="all">All</button><button class="memory-filter-btn" type="button" data-filter="pinned">Pinned</button><button class="memory-filter-btn" type="button" data-filter="facts">Facts</button></div>
+                        <button id="memory-refresh-btn" class="memory-btn" type="button" aria-label="Refresh memory">Refresh</button>
+                        <textarea id="memory-fact-input" aria-label="Memory fact"></textarea>
+                        <button id="memory-fact-save-btn" class="memory-btn" type="button">Save Fact</button>
+                        <button id="memory-export-btn" class="memory-btn" type="button">Export</button>
+                        <button id="memory-import-btn" class="memory-btn" type="button">Import</button>
+                        <input id="memory-import-file" type="file" class="sr-only" aria-label="Import memory file" />
+                        <button id="memory-backup-btn" class="memory-btn" type="button">Backup</button>
+                        <button id="memory-show-backups-btn" class="memory-btn" type="button" aria-expanded="false">Backups</button>
+                        <div id="memory-backup-panel" class="hidden"><button id="memory-backup-close" type="button">Close</button><div id="memory-backup-list"></div></div>
+                        <div id="memory-empty-state">No memories yet.</div>
+                        <div id="memory-list"></div>
+                        <span id="memory-total-count">0</span><span id="memory-pinned-count">0</span><span id="memory-filtered-count">0</span>
+                    </div>
+                </section>
+
+                <section id="view-prompt-lab" class="view-content" role="tabpanel" aria-labelledby="nav-tab-prompt-lab" data-testid="view-prompt-lab">
+                    <div class="prompt-lab-container">
+                        <div class="pl-header-kicker">Prompt Lab</div>
+                        <textarea id="pl-task-input" aria-label="Prompt Lab task"></textarea>
+                        <button id="pl-open-gallery-btn" type="button">Templates</button><button id="pl-save-preset-btn" type="button">Save</button><button id="pl-toggle-preset-input-btn" type="button" title="Toggle preset import" aria-label="Toggle preset import">Import</button>
+                        <button id="pl-optimize-ai-btn" type="button">AI Optimize</button><button id="pl-generate-btn" type="button">Generate Prompt</button><button id="pl-history-btn" type="button" title="History" aria-label="Prompt history">History</button>
+                        <button id="pl-copy-prompt-btn" type="button">Copy</button><button id="pl-send-chat-btn" type="button">Chat</button><button id="pl-export-json-btn" type="button">JSON</button><button id="pl-export-lua-btn" type="button">Lua</button>
+                        <button id="pl-explain-jpe-btn" type="button">Explain</button><button id="pl-copy-jpe-btn" type="button">Copy</button><button id="pl-advanced-toggle" type="button">Few-Shot Examples</button>
+                        <div id="pl-formula-grid"></div><div id="pl-history-list"></div><div id="pl-result-prompt"></div><div id="pl-result-jpe"></div>
+                        <div id="pl-gallery-modal" class="hidden"><button id="pl-gallery-close" type="button" title="Close gallery" aria-label="Close gallery">Close</button><div id="pl-gallery-body"></div></div>
+                    </div>
+                </section>
+
+                <section id="view-remote" class="view-content" role="tabpanel" aria-labelledby="nav-tab-remote" data-testid="view-remote">
+                    <div class="remote-container">
+                    <div class="remote-kicker">Remote Control</div>
+                    <h1 class="remote-title">Remote Control</h1>
+                    <div id="remote-status-badge" class="remote-status-badge">Offline</div>
+                    <button id="remote-start-btn" type="button">Start Server</button>
+                    <button id="remote-stop-btn" type="button">Stop Server</button>
+                    <button id="remote-copy-url-btn" type="button" title="Copy remote URL" aria-label="Copy remote URL">Copy</button>
+                    <div id="remote-qr"></div>
+                    </div>
+                </section>
+
+                <section id="view-docs" class="view-content" role="tabpanel" aria-labelledby="nav-tab-docs" data-testid="view-docs">
+                    <div class="docs-container">
+                        <div class="docs-kicker">Knowledge Base</div>
+                        <h1 class="docs-title">Knowledge Base</h1>
+                        <span id="docs-count-badge">0 chunks indexed</span>
+                        <div class="docs-search-shell"><input id="docs-search-input" class="docs-search-input" aria-label="Search docs" /></div>
+                        <button id="docs-search-btn" type="button">Search</button>
+                        <button id="docs-index-btn" type="button">Index Folder</button>
+                        <button id="docs-clear-btn" type="button">Clear</button>
+                        <div id="docs-file-list"><div class="docs-empty-msg">No documents indexed yet.</div></div>
+                        <h2 id="docs-results-label">Results</h2>
+                        <div id="docs-results-list"><div class="docs-empty-msg">Search to find relevant passages.</div></div>
+                    </div>
+                </section>
+            </section>
+        </main>
+
+        <aside id="inspect-drawer" class="inspect-drawer collapsed" aria-label="Context drawer">
+            <button id="inspect-close-btn" type="button" title="Close context drawer" aria-label="Close context drawer">Close</button>
+            <dl>
+                <dt>Provider</dt><dd id="drawer-active-provider">--</dd>
+                <dt>Model</dt><dd id="drawer-active-model">--</dd>
+                <dt>RAM</dt><dd id="drawer-ram-val">--</dd>
+                <dt>Memory records</dt><dd id="drawer-memory-records">0</dd>
+                <dt>Pinned</dt><dd id="drawer-memory-pinned">0</dd>
+                <dt>Session</dt><dd id="drawer-session-id">--</dd>
+                <dt>Created</dt><dd id="drawer-session-created">--</dd>
+                <dt>Messages</dt><dd id="drawer-session-messages">0</dd>
+                <dt>Persona</dt><dd id="drawer-active-persona">Default</dd>
+                <dt>Agent</dt><dd id="drawer-agent-status">Idle</dd>
+            </dl>
+        </aside>
+    </div>
+</div>
+
+<div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true" inert>
+    <div class="settings-modal-card" data-settings-theme="general">
+        <header class="settings-header">
+            <h1 id="settings-title">Settings</h1>
+            <button id="close-settings-x" type="button" title="Close settings" aria-label="Close settings">Close</button>
+        </header>
+        <div class="settings-body">
+            <nav class="stv-sidebar" aria-label="Settings sections">
+                <div class="stv-sidebar-brand-chip">NEURODECK Control</div>
+                <button class="stv-nav-item active" type="button" data-panel="sp-general" data-settings-theme="general">General</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-ai" data-settings-theme="ai">AI Model</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-models" data-settings-theme="models">Models</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-appearance" data-settings-theme="appearance">Appearance</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-terminal" data-settings-theme="terminal">Terminal</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-extensions" data-settings-theme="extensions">Extensions</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-memory" data-settings-theme="memory">Memory</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-network" data-settings-theme="network">Network</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-computer" data-settings-theme="computer">Computer</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-sync" data-settings-theme="sync">Sync</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-voice" data-settings-theme="voice">Voice</button>
+            </nav>
+            <div class="settings-panels">
+                <section id="sp-general" class="settings-panel settings-panel--general active" data-settings-theme="general"><h2>General</h2><label>Theme <select id="theme-select"><option value="Neurodeck">Neurodeck</option><option value="Midnight">Midnight</option></select></label><div id="theme-cards-grid"></div><button id="theme-apply-btn" type="button">Apply</button><button id="theme-reset-btn" type="button">Reset</button><label>Persona <select id="persona-select"><option>Default</option></select></label><label>Font <select id="font-select"><option>System</option></select></label><label><input id="minimize-to-tray-toggle" type="checkbox" /> Minimize to tray</label><button id="trust-safety-btn" type="button">Trust &amp; Safety</button></section>
+                <section id="sp-ai" class="settings-panel settings-panel--ai" data-settings-theme="ai"><h2>AI Model</h2><label>Provider <select id="llm-provider-select"><option value="gemini">Gemini</option><option value="ollama">Ollama</option></select></label><div id="settings-gemini-group"><input id="settings-gemini-key" aria-label="Gemini API key" /><input id="settings-gemini-model" aria-label="Gemini model" /></div><div id="settings-ollama-group"><span id="stv-ollama-label">Ollama</span><input id="settings-ollama-url" aria-label="Ollama URL" /><input id="settings-ollama-model" aria-label="Ollama model" /></div><div id="settings-kimi-group"><span id="stv-kimi-label">Kimi</span><input id="settings-kimi-key" aria-label="Kimi API key" /><input id="settings-kimi-model" aria-label="Kimi model" /><input id="settings-kimi-url" aria-label="Kimi URL" /></div><div id="settings-hf-group"><span id="stv-hf-label">Hugging Face</span><input id="settings-hf-key" aria-label="HF key" /><input id="settings-hf-model" aria-label="HF model" /><input id="settings-hf-url" aria-label="HF URL" /></div><div id="settings-openai-compat-group"><span id="stv-openai-compat-label">OpenAI Compatible</span><input id="settings-openai-compat-key" aria-label="OpenAI compatible key" /><input id="settings-openai-compat-model" aria-label="OpenAI compatible model" /><input id="settings-openai-compat-url" aria-label="OpenAI compatible URL" /></div><button id="settings-test-connection-btn" type="button">Test</button><button id="settings-save-llm-btn" type="button">Save</button><div id="settings-llm-status"></div></section>
+                <section id="sp-models" class="settings-panel settings-panel--models" data-settings-theme="models"><h2>Models</h2><div id="models-browse-grid"></div><div id="models-downloads-list"></div><div id="models-installed-list"></div></section>
+                <section id="sp-appearance" class="settings-panel settings-panel--appearance" data-settings-theme="appearance"><h2>Appearance</h2><input id="bg-url-input" aria-label="Background URL" /><input id="bg-opacity-slider" type="range" min="0" max="1" step="0.1" /><span id="bg-opacity-val"></span><label><input id="scanlines-toggle" type="checkbox" /> Scanlines</label><label><input id="flicker-toggle" type="checkbox" /> Flicker</label><div id="theme-preview-overlay"></div><input id="ct-name" aria-label="Custom theme name" /><input id="ct-bg" value="#050505" /><input id="ct-fg" value="#D9F7FF" /><input id="ct-accent" value="#00F0FF" /><input id="ct-response" value="#00FF88" /><input id="ct-warning" value="#FFB000" /><input id="ct-error" value="#FF3C5A" /><button id="ct-save-btn" type="button">Save Theme</button><div id="ct-list"></div><div id="ct-status"></div></section>
+                <section id="sp-terminal" class="settings-panel settings-panel--terminal" data-settings-theme="terminal"><h2>Terminal</h2><select id="shell-select"><option value="">Default</option><option value="custom">Custom</option></select><div id="custom-shell-group"><input id="custom-shell-input" aria-label="Custom shell" /></div><input id="term-fontsize-slider" type="range" min="10" max="28" value="16" /><span id="term-fontsize-val">16</span><input id="term-scrollback-input" value="10000" /></section>
+                <section id="sp-extensions" class="settings-panel settings-panel--extensions" data-settings-theme="extensions"><h2>Extensions</h2><div id="settings-personas-list-custom"></div><input id="settings-persona-name" aria-label="Persona name" /><textarea id="settings-persona-prompt" aria-label="Persona prompt"></textarea><button id="settings-persona-create-btn" type="button">Create</button><div id="settings-persona-status"></div><div id="marketplace-grid"></div><button id="bmad-docs-btn" type="button">Docs</button><input id="bmad-target-dir" aria-label="BMAD target directory" /><button id="bmad-install-btn" type="button">Install</button><div id="bmad-status-line"></div></section>
+                <section id="sp-memory" class="settings-panel settings-panel--memory" data-settings-theme="memory"><h2>Memory</h2><span id="vector-db-status">Stable</span><button id="memory-export-btn-settings" type="button">Export</button><div id="memory-db-status-line"></div><input id="rag-folder-input" aria-label="RAG folder" /><button id="rag-index-btn" type="button">Index</button><button id="rag-clear-btn" type="button">Clear</button><div id="rag-progress-container"><span id="rag-progress-label"></span><span id="rag-progress-pct"></span><div id="rag-progress-bar"></div></div><div id="rag-status-line"></div><span id="rag-doc-count"></span></section>
+                <section id="sp-network" class="settings-panel settings-panel--network" data-settings-theme="network"><h2>Network</h2><div id="settings-ssh-profiles-list"></div><button id="settings-clear-ssh-profiles" type="button">Clear SSH</button><div id="settings-ftp-profiles-list"></div><button id="settings-clear-ftp-profiles" type="button">Clear FTP</button><div id="settings-sftp-profiles-list"></div><button id="settings-clear-sftp-profiles" type="button">Clear SFTP</button><button id="mcp-start-btn" type="button">Start MCP</button><button id="mcp-stop-btn" type="button">Stop MCP</button><input id="mcp-port-input" aria-label="MCP port" value="13337" /><div id="mcp-status-line"></div><div id="mcp-claude-config"></div><pre id="mcp-claude-config-snippet"></pre><div id="mcp-token-row"></div><code id="mcp-token-display"></code><button id="mcp-copy-token-btn" type="button">Copy Token</button><span id="mcp-discovery-url"></span><textarea id="mcp-tool-whitelist" aria-label="MCP tool whitelist"></textarea></section>
+                <section id="sp-computer" class="settings-panel settings-panel--computer" data-settings-theme="computer"><h2>Computer</h2><label><input id="privacy-workspace-toggle" type="checkbox" /> Limit workspace</label><input id="privacy-workspace-path" aria-label="Privacy workspace path" /></section>
+                <section id="sp-sync" class="settings-panel settings-panel--sync" data-settings-theme="sync"><h2>Sync</h2><label><input id="sync-enabled-toggle" type="checkbox" /> Enabled</label><label><input id="sync-memory-toggle" type="checkbox" /> Memory</label><label><input id="sync-sessions-toggle" type="checkbox" /> Sessions</label><input id="sync-api-url-input" aria-label="Sync API URL" /><button id="sync-save-btn" type="button">Save</button><button id="sync-now-btn" type="button">Sync Now</button><div id="sync-status-line"></div><span id="sync-device-id"></span><span id="sync-last-at"></span><span id="sync-pending-count"></span><span id="sync-conflict-count"></span></section>
+                <section id="sp-voice" class="settings-panel settings-panel--voice" data-settings-theme="voice"><h2>Voice</h2><div id="tts-mode-group"><label><input id="tts-mode-off" name="tts-mode" type="radio" value="off" /> Off</label><label><input id="tts-mode-stream" name="tts-mode" type="radio" value="stream" /> Stream</label><label><input id="tts-mode-complete" name="tts-mode" type="radio" value="complete" /> Complete</label></div><input id="whisper-binary-input" aria-label="Whisper binary path" /><input id="whisper-model-input" aria-label="Whisper model path" /><select id="whisper-model-select" aria-label="Whisper model"></select><button id="whisper-save-btn" type="button">Save</button><button id="whisper-test-btn" type="button">Test</button><button id="whisper-download-btn" type="button">Download</button><div id="whisper-status-line"></div><div id="whisper-dl-progress-wrap"><span id="whisper-dl-label"></span><span id="whisper-dl-pct"></span><div id="whisper-dl-bar"></div></div></section>
+            </div>
+        </div>
+        <footer><button id="close-settings" type="button">Close</button></footer>
+    </div>
+</div>
+
+<div id="command-palette-overlay" class="command-palette-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-palette-title" aria-hidden="true">
+    <div class="command-palette-card">
+        <h1 id="command-palette-title" class="sr-only">Command Palette</h1>
+        <input id="command-palette-input" aria-label="Command search" autocomplete="off" />
+        <button id="command-palette-close" type="button" aria-label="Close command palette">Close</button>
+        <div id="command-palette-list" aria-label="Command results"></div>
+    </div>
+</div>
+
+<div id="quick-switcher-overlay" class="quick-switcher-overlay hidden" role="dialog" aria-modal="true" aria-label="Quick switcher" aria-hidden="true">
+    <div id="quick-switcher-list" class="quick-switcher-list"></div>
+</div>
+
+<div id="shortcuts-overlay" class="shortcuts-overlay hidden" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts"></div>
+<div id="ctrl-prompt-overlay" class="ctrl-prompt-overlay" aria-hidden="true">
+    <div class="ctrl-prompt-title"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Controller Prompt</span></div>
+    <div class="ctrl-prompt-cat-icon"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+    <input id="ctrl-prompt-search" aria-label="Controller prompt search" />
+    <input id="ctrl-prompt-input" aria-label="Controller prompt" />
+</div>
+<div id="radial-menu-overlay" class="radial-menu-overlay hidden" aria-hidden="true"></div>
+
+<div id="agent-switcher-panel" class="agent-switcher-panel hidden" role="dialog" aria-label="Agent switcher">
+    <div class="agent-switcher-header">
+        <div id="agent-switcher-title" class="agent-switcher-title">Agent Switch</div>
+        <button class="agent-switcher-close" type="button" aria-label="Close agent switcher">Close</button>
+    </div>
+    <div id="agent-card-grid"></div>
+    <div id="agent-recommended-grid"></div>
+</div>
+
+<div id="history-search-overlay" class="hidden" role="dialog" aria-label="History search">
+    <div class="history-search-panel">
+        <div class="history-search-header"><div class="history-search-title"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>History Search</span></div></div>
+        <input id="history-search-input" aria-label="History search" />
+        <div id="history-search-status"></div>
+        <div id="history-search-body"><div class="history-empty-icon"><svg class="nd-icon-svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5l3 2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg></div></div>
+    </div>
+</div>
+
+<div id="notif-modal" role="dialog" aria-label="Notifications">
+    <div class="notif-modal-card">
+        <button id="close-notif-x" type="button" aria-label="Close notifications">Close</button>
+        <div id="notifications-list"></div>
+        <button id="notif-clear-all-btn" type="button">Clear All</button>
+        <button id="close-notif-btn" type="button">Close</button>
+    </div>
+</div>
+<div id="collab-modal" class="hidden"><button id="close-collab-x" type="button" aria-label="Close collaboration">Close</button></div>
+<div id="transfer-modal" class="hidden"><button id="transfer-modal-close-x" type="button" aria-label="Close transfer">Close</button></div>
+<div id="game-context-panel" class="hidden"><button id="close-game-context-x" type="button" aria-label="Close game context">Close</button></div>
+<div id="computer-use-modal" class="hidden"><button id="computer-use-deny-x" type="button" aria-label="Deny computer use">Deny</button><img id="computer-preview-img" alt="Computer preview" /><div id="computer-preview-empty">No preview</div></div>
+<div id="trust-safety-modal" class="hidden"><span id="ts-active-provider"></span><div id="ts-cloud-data-card"></div><div id="ts-local-llm-card"></div><button id="close-trust-safety-btn" type="button">Close</button><button id="close-trust-safety-x" type="button" aria-label="Close trust and safety">Close</button></div>
+
+<span id="latency-val" class="sr-only">--ms</span>
+<span id="token-speed" class="sr-only">--/s</span>
+<span id="session-title" class="sr-only">Welcome session</span>
+
 <script src="./src/main.js" type="module"></script>
 </body>
 </html>

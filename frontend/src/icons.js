@@ -154,15 +154,43 @@ const ICONS = {
     <path d="M9 4.5h6"></path>
     <path d="M10 2h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1z"></path>
   `,
+  check: `
+    <path d="m20 6-11 11-5-5"></path>
+  `,
   info: `
     <circle cx="12" cy="12" r="9"></circle>
     <path d="M12 10v6"></path>
     <path d="M12 7h.01"></path>
   `,
+  cpu: `
+    <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+    <path d="M9 1v3"></path>
+    <path d="M15 1v3"></path>
+    <path d="M9 20v3"></path>
+    <path d="M15 20v3"></path>
+    <path d="M20 9h3"></path>
+    <path d="M20 14h3"></path>
+    <path d="M1 9h3"></path>
+    <path d="M1 14h3"></path>
+    <path d="M10 10h4v4h-4z"></path>
+  `,
+  database: `
+    <ellipse cx="12" cy="5" rx="8" ry="3"></ellipse>
+    <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path>
+    <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path>
+  `,
+  quote: `
+    <path d="M7 17a4 4 0 0 1-4-4V7h6v6H6a2 2 0 0 0 2 2v2z"></path>
+    <path d="M18 17a4 4 0 0 1-4-4V7h6v6h-3a2 2 0 0 0 2 2v2z"></path>
+  `,
   save: `
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
     <path d="M7 3v6h8"></path>
     <path d="M8 21V13h8v8"></path>
+  `,
+  cornerDownLeft: `
+    <path d="m9 10-5 5 5 5"></path>
+    <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
   `,
   folderOpen: `
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"></path>
@@ -275,6 +303,16 @@ const ICONS = {
     <path d="M12 16V6"></path>
     <path d="m7 11 5-5 5 5"></path>
     <path d="M20 16.5v1.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5"></path>
+  `,
+  send: `
+    <path d="m22 2-7 20-4-9-9-4 20-7z"></path>
+    <path d="M22 2 11 13"></path>
+  `,
+  workflow: `
+    <rect x="3" y="4" width="6" height="6" rx="1.5"></rect>
+    <rect x="15" y="14" width="6" height="6" rx="1.5"></rect>
+    <path d="M9 7h3a4 4 0 0 1 4 4v3"></path>
+    <path d="m13 11 3 3 3-3"></path>
   `,
   moreVertical: `
     <circle cx="12" cy="5" r="1.5"></circle>
@@ -413,6 +451,7 @@ function _applyShellButtonIcons() {
     ["#mute-btn", { icon: "volume2", iconOnly: true, keepBadge: true }],
     ["#notif-btn", { icon: "bell", iconOnly: true, keepBadge: true }],
     ["#settings-btn", { icon: "settings2", iconOnly: true }],
+    ["#attach-btn", { icon: "paperclip", iconOnly: true }],
     ["#mic-btn", { icon: "mic", iconOnly: true }],
     ["#toggle-drawer-btn", { icon: "panelRightOpen", iconOnly: true }],
     ["#screenshot-btn", { icon: "camera", iconOnly: true }],

@@ -242,6 +242,15 @@ function renderTerminalTabs() {
     const list = document.getElementById("terminal-tabs-list");
     if (!list) return;
 
+    if (!state.terminalSessions.length) {
+        list.innerHTML = `
+            <div class="terminal-tab active terminal-tab--placeholder" aria-disabled="true">
+                <span class="terminal-tab-label">${createIcon("squareTerminal", { size: 14 })}<span>Shell initializing</span></span>
+            </div>
+        `;
+        return;
+    }
+
     list.innerHTML = state.terminalSessions.map((s, idx) => {
         const defaultLabel = `Shell ${idx + 1}`;
         const label = s.name || defaultLabel;

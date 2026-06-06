@@ -353,10 +353,17 @@ export function activateSettingsPanel(panelId, themeName) {
   );
   document
     .querySelectorAll(".stv-nav-item")
-    .forEach((b) => b.classList.remove("active"));
+    .forEach((b) => {
+      b.classList.remove("active");
+      b.removeAttribute("aria-selected");
+    });
   document
     .querySelectorAll(".settings-panel")
-    .forEach((p) => p.classList.remove("active"));
+    .forEach((p) => {
+      p.classList.remove("active");
+      p.toggleAttribute("hidden", true);
+      p.toggleAttribute("inert", true);
+    });
 
   const fallbackPanelId = "sp-general";
   const requestedButton = document.querySelector(
@@ -369,8 +376,15 @@ export function activateSettingsPanel(panelId, themeName) {
     `.stv-nav-item[data-panel="${resolvedPanelId}"]`,
   );
   const activePanel = document.getElementById(resolvedPanelId);
-  if (activeButton) activeButton.classList.add("active");
-  if (activePanel) activePanel.classList.add("active");
+  if (activeButton) {
+    activeButton.classList.add("active");
+    activeButton.removeAttribute("aria-selected");
+  }
+  if (activePanel) {
+    activePanel.classList.add("active");
+    activePanel.toggleAttribute("hidden", false);
+    activePanel.toggleAttribute("inert", false);
+  }
 
   const resolvedTheme =
     themeName ||
@@ -551,7 +565,11 @@ function _loadThemesForSettings() {
 }
 
 export function openSettingsModal() {
-  if (settingsOverlay) settingsOverlay.classList.add("active");
+  if (settingsOverlay) {
+    settingsOverlay.classList.add("active");
+    settingsOverlay.setAttribute("aria-hidden", "false");
+    settingsOverlay.toggleAttribute("inert", false);
+  }
   activateSettingsPanel(localStorage.getItem("settingsActivePanel") || "sp-general");
   if (!settingsFocusTrap) settingsFocusTrap = new FocusTrap(settingsOverlay);
   settingsFocusTrap.activate();
@@ -1582,11 +1600,30 @@ function _stWireSettingsModal() {
   closeSettings = document.getElementById("close-settings");
   closeSettingsX = document.getElementById("close-settings-x");
   if (settingsBtn) settingsBtn.onclick = openSettingsModal;
-  const closeOverlay = () => { if (settingsOverlay) settingsOverlay.classList.remove("active"); if (settingsFocusTrap) settingsFocusTrap.deactivate(); };
+  const closeOverlay = () => {
+    if (settingsOverlay) {
+      settingsOverlay.classList.remove("active");
+      settingsOverlay.setAttribute("aria-hidden", "true");
+      settingsOverlay.toggleAttribute("inert", true);
+    }
+    if (settingsFocusTrap) settingsFocusTrap.deactivate();
+  };
   if (closeSettings) closeSettings.onclick = closeOverlay;
   if (closeSettingsX) closeSettingsX.onclick = closeOverlay;
   if (settingsOverlay) settingsOverlay.addEventListener("click", e => { if (e.target === settingsOverlay) closeOverlay(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && settingsOverlay?.classList.contains("active")) settingsOverlay.classList.remove("active"); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && settingsOverlay?.classList.contains("active")) closeOverlay(); });
+}
+function _stWireLegacyThemeSelect() {
+  const themeSelect = document.getElementById("theme-select");
+  if (!themeSelect) return;
+  themeSelect.value = localStorage.getItem("selectedTheme") || themeSelect.value;
+  themeSelect.addEventListener("change", () => {
+    const selectedTheme = themeSelect.value;
+    localStorage.setItem("selectedTheme", selectedTheme);
+    invoke("set_theme", { name: selectedTheme })
+      .then(theme => { if (theme && window.applyThemeColors) window.applyThemeColors(theme); })
+      .catch(() => {});
+  });
 }
 function _stWireTrustSafety() {
   const tsBtn = document.getElementById("trust-safety-btn");
@@ -1613,6 +1650,7 @@ export function initSettings() {
   _stWireShellSwitcher();
   _stWireTerminalSettings();
   _stWireSettingsModal();
+  _stWireLegacyThemeSelect();
   _stWireTrustSafety();
   initCustomPersonas();
   initModelsPanel();

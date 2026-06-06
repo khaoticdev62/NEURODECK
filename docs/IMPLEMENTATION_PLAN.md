@@ -11,7 +11,7 @@
 - Codename: `Ptah`
 - Tag: `v1.8.0-ptah`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-06-06T21:32:57Z`
+- Last stamped build: `2026-06-06T22:55:14Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

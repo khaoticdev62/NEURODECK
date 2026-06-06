@@ -1361,7 +1361,7 @@ function _radialBuildPaths(segDeg) {
     const p3 = _radialPolarToXY(endAngle, _RADIAL_R_OUTER);
     const p4 = _radialPolarToXY(endAngle, _RADIAL_R_INNER);
     const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${_RADIAL_R_OUTER} ${_RADIAL_R_OUTER} 0 0 1 ${p3.x} ${p3.y} L ${p4.x} ${p4.y} A ${_RADIAL_R_INNER} ${_RADIAL_R_INNER} 0 0 0 ${p1.x} ${p1.y} Z`;
-    svgPaths += `<path class="radial-slice" data-segment="${i}" d="${d}" />`;
+    svgPaths += `<path class="radial-slice radial-segment" data-segment="${i}" d="${d}" />`;
   });
   return svgPaths;
 }
@@ -1383,9 +1383,9 @@ function _radialBuildItems(segDeg) {
 
 function initRadialMenu() {
   const segDeg = 360 / RADIAL_SEGMENTS.length;
-  const overlay = document.createElement("div");
-  overlay.id = "radial-menu";
-  overlay.className = "radial-menu";
+  const overlay = document.getElementById("radial-menu-overlay") || document.createElement("div");
+  overlay.id = "radial-menu-overlay";
+  overlay.className = "radial-menu hidden";
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
         <div class="radial-backdrop"></div>
@@ -1400,12 +1400,27 @@ function initRadialMenu() {
             </div>
         </div>
         <div class="radial-hint">Release L2 to navigate · Push stick to select</div>`;
-  document.body.appendChild(overlay);
+  if (!overlay.parentNode) document.body.appendChild(overlay);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.radialMenuVisible) {
+      event.preventDefault();
+      hideRadialMenu();
+      return;
+    }
+    if (event.key !== "Backquote" && event.code !== "Backquote" && event.key !== "`") return;
+    event.preventDefault();
+    if (state.radialMenuVisible) hideRadialMenu();
+    else showRadialMenu();
+  });
 }
 
 function showRadialMenu() {
-  const el = document.getElementById("radial-menu");
-  if (el) el.classList.add("active");
+  const el = document.getElementById("radial-menu-overlay");
+  if (el) {
+    el.classList.remove("hidden");
+    el.classList.add("active");
+    el.setAttribute("aria-hidden", "false");
+  }
   state.radialMenuVisible = true;
   state.radialSelectedSegment = null;
   updateRadialDisplay(null);
@@ -1413,8 +1428,12 @@ function showRadialMenu() {
 }
 
 function hideRadialMenu() {
-  const el = document.getElementById("radial-menu");
-  if (el) el.classList.remove("active");
+  const el = document.getElementById("radial-menu-overlay");
+  if (el) {
+    el.classList.remove("active");
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+  }
   state.radialMenuVisible = false;
   state.radialSelectedSegment = null;
   triggerHaptic("light");
@@ -2188,6 +2207,21 @@ function _navActivateSideEffects(targetViewName) {
   }
 }
 
+function syncNavA11yState(activeTab, navTabs) {
+  navTabs.forEach((tab) => {
+    const isActive = tab === activeTab || tab.classList.contains("active");
+    const viewId = `view-${tab.getAttribute("data-view")}`;
+    const view = document.getElementById(viewId);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+    tab.tabIndex = isActive ? 0 : -1;
+    if (view) {
+      view.toggleAttribute("hidden", !isActive);
+      view.toggleAttribute("inert", !isActive);
+      view.removeAttribute("aria-hidden");
+    }
+  });
+}
+
 function _navTabClick(tab, navTabs) {
   const targetViewName = tab.getAttribute("data-view");
   const targetViewId = `view-${targetViewName}`;
@@ -2200,6 +2234,7 @@ function _navTabClick(tab, navTabs) {
 
   navTabs.forEach((t) => t.classList.remove("active"));
   tab.classList.add("active");
+  syncNavA11yState(tab, navTabs);
   updateTabGlide(tab);
   ensureTabVisible(tab);
   saveViewState(currentViewId);
@@ -2219,7 +2254,20 @@ function _navTabClick(tab, navTabs) {
 
 navTabs.forEach((tab) => {
   tab.onclick = function () { _navTabClick(tab, navTabs); };
+  tab.addEventListener("keydown", (event) => {
+    const tabsArray = Array.from(navTabs);
+    const currentIndex = tabsArray.indexOf(tab);
+    const nextIndex =
+      event.key === "ArrowRight" ? (currentIndex + 1) % tabsArray.length :
+      event.key === "ArrowLeft" ? (currentIndex - 1 + tabsArray.length) % tabsArray.length :
+      -1;
+    if (nextIndex >= 0) {
+      event.preventDefault();
+      tabsArray[nextIndex].focus();
+    }
+  });
 });
+syncNavA11yState(document.querySelector(".nav-tab.active") || navTabs[0], navTabs);
 /* ------------------------------------------------------------------
    Contextual Tips — shown once per view on first visit
    ------------------------------------------------------------------ */
@@ -3183,8 +3231,12 @@ document.querySelectorAll(".share-inner-tab").forEach((tab) => {
     const panel = this.getAttribute("data-panel");
     document
       .querySelectorAll(".share-inner-tab")
-      .forEach((t) => t.classList.remove("active"));
+      .forEach((t) => {
+        t.classList.remove("active");
+        t.setAttribute("aria-selected", "false");
+      });
     this.classList.add("active");
+    this.setAttribute("aria-selected", "true");
     document
       .querySelectorAll(".share-panel-section")
       .forEach((s) => s.classList.remove("active"));
@@ -4821,6 +4873,7 @@ function instantiateRecommended(provider, model, name) {
 
 // Expose agent switcher functions for inline onclick handlers
 window.toggleAgentSwitcher = toggleAgentSwitcher;
+document.getElementById("model-name")?.addEventListener("click", toggleAgentSwitcher);
 window.activateAgent = activateAgent;
 window.deleteAgentById = deleteAgentById;
 window.instantiateRecommended = instantiateRecommended;
@@ -4962,7 +5015,12 @@ document.addEventListener("click", (e) => {
   const panel = document.getElementById("agent-switcher-panel");
   const modelBtn = document.getElementById("model-name");
   if (!panel || panel.classList.contains("hidden")) return;
-  if (!panel.contains(e.target) && e.target !== modelBtn) {
+  const target = e.target instanceof Element ? e.target : null;
+  if (target?.closest(".agent-switcher-close")) {
+    panel.classList.add("hidden");
+    return;
+  }
+  if (target && !panel.contains(target) && target !== modelBtn) {
     panel.classList.add("hidden");
   }
 });
