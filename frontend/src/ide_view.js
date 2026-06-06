@@ -41,6 +41,13 @@ const _s = {
   knownServers: [],
   lspInitialized: false,
   viewInitialized: false,
+  // New LSP UI elements
+  mirrorEl: null,
+  diagPanelEl: null,
+  diagContentEl: null,
+  diagHeaderTitle: null,
+  diagToggle: null,
+  diagnosticsCache: {},
 };
 
 // ── Language detection ──────────────────────────────────────────────────────
@@ -203,6 +210,7 @@ function switchTab(path) {
     _s.editorEl.dataset.lang = tab.lang;
     _s.editorEl.dataset.path = tab.path;
     updateLineNumbers();
+    _syncMirror();
     openDocument(tab.lang, workspaceUri(path), tab.content).catch(() => {});
     
     // Notify DeckCode runtime of the active language
@@ -228,6 +236,12 @@ function closeTab(path, event) {
 
   _s.openTabs.splice(idx, 1);
 
+  // Auto-stop server if no other tabs of this language are open.
+  const langStillOpen = _s.openTabs.some(t => t.lang === closedLang);
+  if (!langStillOpen && getServerStatus()[closedLang]) {
+    stopServer(closedLang).catch(() => {});
+  }
+
   if (_s.activeTab === path) {
     if (_s.openTabs.length > 0) {
       switchTab(_s.openTabs[Math.min(idx, _s.openTabs.length - 1)].path);
@@ -237,6 +251,7 @@ function closeTab(path, event) {
         _s.editorEl.value = "";
         _s.editorEl.dataset.lang = "";
         _s.editorEl.dataset.path = "";
+        _syncMirror();
       }
     }
   }
@@ -274,6 +289,7 @@ function updateLineNumbers() {
 
 function onEditorInput() {
   updateLineNumbers();
+  _syncMirror();
   if (_s.activeTab) {
     const tab = _s.openTabs.find((t) => t.path === _s.activeTab);
     if (tab) {
@@ -297,6 +313,10 @@ function onEditorInput() {
 function onEditorScroll() {
   if (_s.lineNumbersEl) {
     _s.lineNumbersEl.scrollTop = _s.editorEl.scrollTop;
+  }
+  if (_s.mirrorEl) {
+    _s.mirrorEl.scrollTop = _s.editorEl.scrollTop;
+    _s.mirrorEl.scrollLeft = _s.editorEl.scrollLeft;
   }
 }
 
@@ -558,6 +578,12 @@ export async function initIdeView() {
   _s.lspHoverEl = $("ide-lsp-hover-tooltip");
   _s.lspStatusBarEl = $("ide-lsp-status");
 
+  _s.mirrorEl = $("ide-editor-mirror");
+  _s.diagPanelEl = $("ide-lsp-diagnostics-panel");
+  _s.diagContentEl = $("ide-lsp-diag-panel-content");
+  _s.diagHeaderTitle = document.querySelector(".ide-lsp-diag-panel-title");
+  _s.diagToggle = document.querySelector(".ide-lsp-diag-panel-toggle");
+
   if (!_s.editorEl) return;
 
   // DOM event listeners are wired once — guard prevents duplicate handlers on
@@ -592,6 +618,13 @@ export async function initIdeView() {
     $("ide-btn-refresh")?.addEventListener("click", () => loadFileTree(_s.currentPath));
     $("ide-btn-clear-output")?.addEventListener("click", clearOutput);
     $("ide-btn-run")?.addEventListener("click", runActiveFile);
+
+    $("ide-lsp-diag-panel-header")?.addEventListener("click", () => {
+      if (_s.diagPanelEl && _s.diagToggle) {
+        _s.diagPanelEl.classList.toggle("collapsed");
+        _s.diagToggle.textContent = _s.diagPanelEl.classList.contains("collapsed") ? "▲" : "▼";
+      }
+    });
 
     await _initLspToolbar();
 
@@ -644,14 +677,22 @@ function _renderLspStatusBar(statusMap) {
 }
 
 function _renderDiagnostics(language, uri, diagnostics) {
-  if (!_s.outputEl || !diagnostics) return;
+  _s.diagnosticsCache[uri] = diagnostics;
+
+  if (_s.activeTab && workspaceUri(_s.activeTab) === uri) {
+    _syncMirror();
+  }
+
+  if (!_s.diagContentEl) return;
 
   // Remove existing diagnostics section for this URI.
-  _s.outputEl
+  _s.diagContentEl
     .querySelectorAll(`.ide-lsp-diag-section[data-uri="${CSS.escape(uri)}"]`)
     .forEach((el) => el.remove());
 
-  if (diagnostics.length === 0) return;
+  _updateDiagnosticsHeader();
+
+  if (!diagnostics || diagnostics.length === 0) return;
 
   const section = document.createElement("div");
   section.className = "ide-lsp-diag-section";
@@ -679,8 +720,67 @@ function _renderDiagnostics(language, uri, diagnostics) {
     section.appendChild(line);
   }
 
-  _s.outputEl.appendChild(section);
-  _s.outputEl.scrollTop = _s.outputEl.scrollHeight;
+  _s.diagContentEl.appendChild(section);
+}
+
+function _updateDiagnosticsHeader() {
+  if (!_s.diagHeaderTitle) return;
+  let totalDiags = 0;
+  for (const diags of Object.values(_s.diagnosticsCache)) {
+    totalDiags += diags.length;
+  }
+  _s.diagHeaderTitle.textContent = `Diagnostics (${totalDiags})`;
+}
+
+function _syncMirror() {
+  if (!_s.mirrorEl || !_s.editorEl || !_s.activeTab) return;
+  const content = _s.editorEl.value;
+  const uri = workspaceUri(_s.activeTab);
+  const diags = _s.diagnosticsCache[uri] || [];
+
+  if (diags.length === 0) {
+    _s.mirrorEl.textContent = content + " "; // space to allow trailing empty line
+    return;
+  }
+
+  const lines = content.split("\n");
+  const renderedLines = lines.map((text, lineIdx) => {
+    const lineDiags = diags.filter(d => 
+      d.range && 
+      d.range.start.line <= lineIdx && 
+      d.range.end.line >= lineIdx
+    );
+
+    if (lineDiags.length === 0) return escapeHtml(text);
+
+    const classes = new Array(text.length).fill("");
+    for (const d of lineDiags) {
+      const sev = d.severity || 3;
+      const cls = sev === 1 ? "ide-lsp-squiggly-error" : sev === 2 ? "ide-lsp-squiggly-warn" : "ide-lsp-squiggly-info";
+      
+      const startC = d.range.start.line < lineIdx ? 0 : d.range.start.character;
+      const endC = d.range.end.line > lineIdx ? text.length : d.range.end.character;
+      
+      for (let i = startC; i < endC; i++) {
+        if (i < text.length) classes[i] = `ide-lsp-squiggly ${cls}`;
+      }
+    }
+
+    let out = "";
+    for (let i = 0; i < text.length; i++) {
+      if (classes[i]) {
+        let j = i;
+        while (j < text.length && classes[j] === classes[i]) j++;
+        out += `<span class="${classes[i]}">${escapeHtml(text.slice(i, j))}</span>`;
+        i = j - 1;
+      } else {
+        out += escapeHtml(text[i]);
+      }
+    }
+    return out;
+  });
+
+  _s.mirrorEl.innerHTML = renderedLines.join("\n") + " ";
 }
 
 /** Called when the user navigates away from the IDE tab. Tears down LSP
@@ -689,6 +789,14 @@ export function deactivateIdeView() {
   if (_s.lspInitialized) {
     destroyLspClient();
     _s.lspInitialized = false;
+
+    // Stop all running servers
+    const statuses = getServerStatus();
+    for (const [lang, status] of Object.entries(statuses)) {
+      if (status === "ready" || status === "starting") {
+        stopServer(lang).catch(() => {});
+      }
+    }
   }
 }
 

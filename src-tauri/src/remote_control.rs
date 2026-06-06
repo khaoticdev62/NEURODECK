@@ -384,7 +384,7 @@ function doConnect(){
   setS('Connecting to '+host+'…');
   // SECURITY: Session token is sent in the WebSocket message body, not the URL,
   // to prevent exposure in proxy logs and browser network history.
-  ws=new WebSocket('ws://'+host+'/ws');
+  ws=new WebSocket('ws://'+host+'/ws', ['x-neurodeck-token', session]);
   ws.onopen=function(){setS('Authenticating…');ws.send(JSON.stringify({type:'auth',pin:pin,session:session}));};
   ws.onmessage=function(ev){
     var m;try{m=JSON.parse(ev.data);}catch(ex){return;}
@@ -705,6 +705,7 @@ async fn root_handler(
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
+    headers: axum::http::HeaderMap,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(state): State<WsAppState>,
 ) -> impl IntoResponse {
@@ -718,23 +719,42 @@ async fn ws_handler(
             .into_response();
     }
 
-    // SECURITY: Session token is intentionally NOT validated in the URL query
-    // parameter. It is exchanged only inside the WebSocket auth message after
-    // upgrade, keeping it out of proxy logs and browser network history.
-
-    // Lockout check
-    {
-        let attempts_map = state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(&attempts) = attempts_map.get(&ip) {
-            if attempts >= 5 {
-                return (
-                    axum::http::StatusCode::FORBIDDEN,
-                    "Lockout: Too many failed connection attempts.",
-                )
-                    .into_response();
+    // Extract subprotocol tokens: browser sends Sec-WebSocket-Protocol: x-neurodeck-token, <token>
+    let mut valid_token = false;
+    if let Some(proto_val) = headers.get(axum::http::header::SEC_WEBSOCKET_PROTOCOL) {
+        if let Ok(proto_str) = proto_val.to_str() {
+            let protocols: Vec<&str> = proto_str.split(',').map(|s| s.trim()).collect();
+            if protocols.len() == 2 && protocols[0] == "x-neurodeck-token" {
+                let token = protocols[1];
+                if constant_time_eq(token.as_bytes(), state.access_token.as_bytes()) {
+                    valid_token = true;
+                }
             }
         }
     }
+
+    if !valid_token {
+        let mut attempts_map = state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = attempts_map.entry(ip).or_insert(0);
+        *entry += 1;
+
+        if *entry >= 5 {
+            return (
+                axum::http::StatusCode::FORBIDDEN,
+                "Lockout: Too many failed connection attempts.",
+            )
+                .into_response();
+        }
+
+        return (
+            axum::http::StatusCode::FORBIDDEN,
+            "Invalid session token in WebSocket subprotocol.",
+        )
+            .into_response();
+    }
+
+    // We must echo back the accepted subprotocol so the browser doesn't fail the connection
+    let ws = ws.protocols(["x-neurodeck-token"]);
 
     ws.on_upgrade(move |socket| handle_ws_connection(socket, ip, state))
 }

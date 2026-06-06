@@ -2283,48 +2283,67 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Torrent (TorrentState methods are private; bridge via Tauri frontend)
+        // Torrent
         // ────────────────────────────────────────────────────────────────────
+        "torrent_get_status" => {
+            let res = crate::torrent::torrent_get_status(&state.torrent).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
+        }
+
         "torrent_list" => {
-            Ok(serde_json::json!({ "torrents": [], "count": 0, "note": "Torrent list requires Tauri State injection; use Tauri frontend torrent_list command" }))
+            let res = crate::torrent::torrent_list(&state.torrent).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_add" => {
             let source = args.get("source").and_then(|v| v.as_str()).ok_or("Missing 'source' (magnet URI or infohash)")?;
-            Ok(serde_json::json!({ "status": "queued", "source": source, "note": "Torrent add requires Tauri State injection; use Tauri frontend torrent_add command" }))
+            let res = crate::torrent::torrent_add(&state.torrent, source.to_string()).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_pause" => {
             let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            state.broadcaster.emit("torrent_pause_requested", serde_json::json!({ "id": id }));
-            Ok(serde_json::json!({ "status": "pause_requested", "id": id }))
+            let res = crate::torrent::torrent_pause(&state.torrent, id.to_string()).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_resume" => {
             let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            state.broadcaster.emit("torrent_resume_requested", serde_json::json!({ "id": id }));
-            Ok(serde_json::json!({ "status": "resume_requested", "id": id }))
+            let res = crate::torrent::torrent_resume(&state.torrent, id.to_string()).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_pause_all" => {
-            state.broadcaster.emit("torrent_pause_all_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "pause_all_requested" }))
+            let res = crate::torrent::torrent_pause_all(&state.torrent).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_resume_all" => {
-            state.broadcaster.emit("torrent_resume_all_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "resume_all_requested" }))
+            let res = crate::torrent::torrent_resume_all(&state.torrent).await?;
+            Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_get_download_root" => {
-            let root = crate::user_config_dir().join("downloads");
-            Ok(serde_json::json!({ "download_root": root.display().to_string() }))
+            let res = crate::torrent::torrent_get_download_root(&state.torrent).await?;
+            Ok(serde_json::json!({ "download_root": res }))
+        }
+
+        "torrent_open_download_root" => {
+            crate::torrent::torrent_open_download_root(&state.torrent).await?;
+            Ok(serde_json::json!({ "status": "ok" }))
+        }
+
+        "torrent_open_save_path" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            crate::torrent::torrent_open_save_path(&state.torrent, id.to_string()).await?;
+            Ok(serde_json::json!({ "status": "ok" }))
         }
 
         "torrent_remove" => {
             let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            state.broadcaster.emit("torrent_remove_requested", serde_json::json!({ "id": id }));
-            Ok(serde_json::json!({ "status": "remove_requested", "id": id }))
+            let delete_data = args.get("deleteData").and_then(|v| v.as_bool());
+            crate::torrent::torrent_remove(&state.torrent, id.to_string(), delete_data).await?;
+            Ok(serde_json::json!({ "status": "removed", "id": id }))
         }
 
         // ────────────────────────────────────────────────────────────────────

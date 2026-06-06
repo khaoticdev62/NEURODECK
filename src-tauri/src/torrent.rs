@@ -10,7 +10,6 @@ use fx_torrent::{
     TorrentMetadata,
 };
 use serde::Serialize;
-use tauri::State;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -637,9 +636,8 @@ impl ParsedTorrentSource {
     }
 }
 
-#[tauri::command]
 pub async fn torrent_get_status(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
 ) -> Result<TorrentClientStatus, String> {
     let guard = state.inner.lock().await;
     let torrents = guard.list().await?;
@@ -650,24 +648,21 @@ pub async fn torrent_get_status(
     })
 }
 
-#[tauri::command]
-pub async fn torrent_list(state: State<'_, TorrentState>) -> Result<Vec<TorrentSnapshot>, String> {
+pub async fn torrent_list(state: &TorrentState) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.list().await
 }
 
-#[tauri::command]
 pub async fn torrent_add(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
     source: String,
 ) -> Result<TorrentSnapshot, String> {
     let mut guard = state.inner.lock().await;
     guard.add_source(&source).await
 }
 
-#[tauri::command]
 pub async fn torrent_remove(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
     id: String,
     delete_data: Option<bool>,
 ) -> Result<(), String> {
@@ -675,48 +670,42 @@ pub async fn torrent_remove(
     guard.remove(&id, delete_data.unwrap_or(false)).await
 }
 
-#[tauri::command]
 pub async fn torrent_pause(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
     id: String,
 ) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.pause(&id).await
 }
 
-#[tauri::command]
 pub async fn torrent_resume(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
     id: String,
 ) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.resume(&id).await
 }
 
-#[tauri::command]
 pub async fn torrent_pause_all(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
 ) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.pause_all().await
 }
 
-#[tauri::command]
 pub async fn torrent_resume_all(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
 ) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.resume_all().await
 }
 
-#[tauri::command]
-pub async fn torrent_get_download_root(state: State<'_, TorrentState>) -> Result<String, String> {
+pub async fn torrent_get_download_root(state: &TorrentState) -> Result<String, String> {
     let guard = state.inner.lock().await;
     Ok(guard.download_root())
 }
 
-#[tauri::command]
-pub async fn torrent_open_download_root(state: State<'_, TorrentState>) -> Result<(), String> {
+pub async fn torrent_open_download_root(state: &TorrentState) -> Result<(), String> {
     let guard = state.inner.lock().await;
     let root = PathBuf::from(guard.download_root());
     drop(guard);
@@ -731,9 +720,8 @@ pub async fn torrent_open_download_root(state: State<'_, TorrentState>) -> Resul
     open_path_in_shell(&root, false)
 }
 
-#[tauri::command]
 pub async fn torrent_open_save_path(
-    state: State<'_, TorrentState>,
+    state: &TorrentState,
     id: String,
 ) -> Result<(), String> {
     let guard = state.inner.lock().await;
