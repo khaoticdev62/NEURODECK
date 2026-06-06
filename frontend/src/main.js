@@ -2409,9 +2409,26 @@ document.querySelector("#app").innerHTML = `
 
                         <div class="stv-group-label">Theme &amp; Font</div>
                         <div class="stv-card">
-                            <div class="stv-row">
+                            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
                                 <span class="stv-row-label">Color Theme</span>
-                                <select id="theme-select" style="flex:1;" aria-label="Color theme"></select>
+                                <div id="theme-preview-overlay" class="theme-viewport-preview" style="margin-top:0;">
+                                    <div class="tvp-bg-layer" id="tpo-bg-layer"></div>
+                                    <div class="tvp-header">
+                                        <span class="tvp-dot"></span><span class="tvp-dot"></span><span class="tvp-dot"></span>
+                                    </div>
+                                    <div class="tvp-body">
+                                        <div class="tvp-message user-msg">Hello, AI. Check systems.</div>
+                                        <div class="tvp-message ai-msg">System initialized. Memory online.</div>
+                                        <div class="tvp-terminal-line"><span class="tvp-prompt">neuro@deck:~$</span> <span class="tvp-cmd">./start_core.sh</span></div>
+                                        <div class="tvp-warning" style="margin-top:2px;">[Warn] Node latency high</div>
+                                        <div class="tvp-error">[Fail] Uplink dropped</div>
+                                    </div>
+                                </div>
+                                <div id="theme-cards-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:8px; max-height:220px; overflow-y:auto; padding:4px; border:1px solid rgba(255,255,255,0.05); border-radius:6px;"></div>
+                                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+                                    <button class="stv-btn-ghost" id="theme-reset-btn" style="padding:4px 12px; height:28px;">Reset</button>
+                                    <button class="stv-btn-primary" id="theme-apply-btn" style="padding:4px 12px; height:28px;">Apply</button>
+                                </div>
                             </div>
                             <div class="stv-row">
                                 <span class="stv-row-label">UI Font</span>
@@ -2881,6 +2898,16 @@ document.querySelector("#app").innerHTML = `
                             </div>
                             <div id="rag-status-line" class="stv-status-line"></div>
                             <p style="margin:8px 0 0;font-size:0.73rem;opacity:0.5;">Documents indexed: <span id="rag-doc-count" style="color:var(--accent-color);font-family:var(--font-mono);">0</span></p>
+                        </div>
+
+                        <div class="stv-group-label">Vector Database Management</div>
+                        <div class="stv-card">
+                            <p style="font-size:0.78rem;opacity:0.6;margin:0 0 12px;line-height:1.5;">Export or import your entire vector memory database to a compressed <code>.ndmem</code> archive.</p>
+                            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                                <button class="stv-btn-primary" id="memory-export-btn" style="flex:1;">${createIcon("download", { size: 14 })} Export Database</button>
+                                <button class="stv-btn-ghost" id="memory-import-btn" style="flex:1;">${createIcon("upload", { size: 14 })} Import Database</button>
+                            </div>
+                            <div id="memory-db-status-line" class="stv-status-line"></div>
                         </div>
 
                         <div class="stv-group-label">Custom Personas</div>
@@ -4188,157 +4215,76 @@ class LiveBackgroundManager {
 
 window.liveBgManager = new LiveBackgroundManager();
 
+function _bgCreateCard(bg, isLive) {
+  const card = document.createElement("div");
+  card.className = "bg-gallery-card";
+  card.setAttribute("data-id", bg.id);
+  if (!isLive) card.setAttribute("data-url", bg.url);
+  const preview = document.createElement("div");
+  preview.className = "bg-gallery-card-preview";
+  if (isLive) { preview.style.background = bg.preview; }
+  else if (bg.url) { preview.style.backgroundImage = "url('" + bg.url + "')"; }
+  else { preview.style.background = "#050505"; }
+  const title = document.createElement("div");
+  title.className = "bg-gallery-card-title";
+  title.innerText = bg.name;
+  const desc = document.createElement("div");
+  desc.className = "bg-gallery-card-desc";
+  desc.innerText = bg.desc;
+  card.append(preview, title, desc);
+  card.onclick = function () {
+    document.querySelectorAll(".bg-gallery-card").forEach((c) => c.classList.remove("active"));
+    card.classList.add("active");
+    const url = isLive ? "live:" + bg.id : bg.url;
+    const bgUrlInput = document.getElementById("bg-url-input");
+    if (bgUrlInput) bgUrlInput.value = url;
+    localStorage.setItem("bgUrl", url);
+    const tvpBgLayer = document.getElementById("tvp-bg-layer");
+    if (tvpBgLayer) {
+      if (isLive) { tvpBgLayer.style.backgroundImage = "none"; tvpBgLayer.style.backgroundColor = bg.preview || "#050505"; }
+      else if (bg.url) { tvpBgLayer.style.backgroundColor = "transparent"; tvpBgLayer.style.backgroundImage = "url('" + bg.url + "')"; }
+      else { tvpBgLayer.style.backgroundImage = "none"; tvpBgLayer.style.backgroundColor = "transparent"; }
+    }
+    applySettings();
+  };
+  return card;
+}
+
+function _bgUpdateThemePreview() {
+  const tvpPreview = document.getElementById("theme-viewport-preview");
+  if (!tvpPreview) return;
+  tvpPreview.style.setProperty("--preview-bg", document.getElementById("ct-bg")?.value || "#050505");
+  tvpPreview.style.setProperty("--preview-fg", document.getElementById("ct-fg")?.value || "#D9F7FF");
+  tvpPreview.style.setProperty("--preview-accent", document.getElementById("ct-accent")?.value || "#00F0FF");
+  tvpPreview.style.setProperty("--preview-response", document.getElementById("ct-response")?.value || "#00FF88");
+  tvpPreview.style.setProperty("--preview-warning", document.getElementById("ct-warning")?.value || "#FFB000");
+  tvpPreview.style.setProperty("--preview-error", document.getElementById("ct-error")?.value || "#FF3C5A");
+}
+
 function renderBackgroundGallery() {
   const liveContainer = document.getElementById("bg-gallery-live");
   const staticContainer = document.getElementById("bg-gallery-static");
   if (!liveContainer || !staticContainer) return;
 
-  function createCard(bg, isLive) {
-    const card = document.createElement("div");
-    card.className = "bg-gallery-card";
-    card.setAttribute("data-id", bg.id);
-    if (!isLive) card.setAttribute("data-url", bg.url);
-
-    const preview = document.createElement("div");
-    preview.className = "bg-gallery-card-preview";
-    if (isLive) {
-      preview.style.background = bg.preview;
-    } else if (bg.url) {
-      preview.style.backgroundImage = `url('${bg.url}')`;
-    } else {
-      preview.style.background = "#050505";
-    }
-
-    const title = document.createElement("div");
-    title.className = "bg-gallery-card-title";
-    title.innerText = bg.name;
-
-    const desc = document.createElement("div");
-    desc.className = "bg-gallery-card-desc";
-    desc.innerText = bg.desc;
-
-    card.appendChild(preview);
-    card.appendChild(title);
-    card.appendChild(desc);
-
-    card.onclick = function () {
-      document
-        .querySelectorAll(".bg-gallery-card")
-        .forEach((c) => c.classList.remove("active"));
-      card.classList.add("active");
-
-      const url = isLive ? `live:${bg.id}` : bg.url;
-      const bgUrlInput = document.getElementById("bg-url-input");
-      if (bgUrlInput) {
-        bgUrlInput.value = url;
-      }
-      localStorage.setItem("bgUrl", url);
-
-      // Update the miniature preview viewport background
-      const tvpBgLayer = document.getElementById("tvp-bg-layer");
-      if (tvpBgLayer) {
-        if (isLive) {
-          tvpBgLayer.style.backgroundImage = "none";
-          tvpBgLayer.style.backgroundColor = bg.preview || "#050505";
-        } else if (bg.url) {
-          tvpBgLayer.style.backgroundColor = "transparent";
-          tvpBgLayer.style.backgroundImage = `url('${bg.url}')`;
-        } else {
-          tvpBgLayer.style.backgroundImage = "none";
-          tvpBgLayer.style.backgroundColor = "transparent";
-        }
-      }
-
-      applySettings();
-    };
-
-    return card;
-  }
-
   liveContainer.innerHTML = "";
   staticContainer.innerHTML = "";
-
-  const noneLiveCard = createCard(
-    {
-      id: "",
-      name: "None (Solid Black)",
-      desc: "Deep matte black battery-saver mode",
-      preview: "#050505",
-    },
-    true,
-  );
-  liveContainer.appendChild(noneLiveCard);
-
-  LIVE_BACKGROUNDS.forEach((bg) => {
-    liveContainer.appendChild(createCard(bg, true));
-  });
-
-  const noneStaticCard = createCard(
-    {
-      id: "",
-      name: "None (Solid Black)",
-      url: "",
-      desc: "Deep matte black battery-saver mode",
-    },
-    false,
-  );
-  staticContainer.appendChild(noneStaticCard);
-
-  STATIC_BACKGROUNDS.forEach((bg) => {
-    staticContainer.appendChild(createCard(bg, false));
-  });
+  liveContainer.appendChild(_bgCreateCard({ id: "", name: "None (Solid Black)", desc: "Deep matte black battery-saver mode", preview: "#050505" }, true));
+  LIVE_BACKGROUNDS.forEach((bg) => liveContainer.appendChild(_bgCreateCard(bg, true)));
+  staticContainer.appendChild(_bgCreateCard({ id: "", name: "None (Solid Black)", url: "", desc: "Deep matte black battery-saver mode" }, false));
+  STATIC_BACKGROUNDS.forEach((bg) => staticContainer.appendChild(_bgCreateCard(bg, false)));
 
   const tabLive = document.getElementById("bg-tab-live");
   const tabStatic = document.getElementById("bg-tab-static");
-
   if (tabLive && tabStatic) {
-    tabLive.onclick = function () {
-      tabLive.classList.add("active");
-      tabStatic.classList.remove("active");
-      liveContainer.style.display = "grid";
-      staticContainer.style.display = "none";
-    };
-    tabStatic.onclick = function () {
-      tabStatic.classList.add("active");
-      tabLive.classList.remove("active");
-      staticContainer.style.display = "grid";
-      liveContainer.style.display = "none";
-    };
+    tabLive.onclick = function () { tabLive.classList.add("active"); tabStatic.classList.remove("active"); liveContainer.style.display = "grid"; staticContainer.style.display = "none"; };
+    tabStatic.onclick = function () { tabStatic.classList.add("active"); tabLive.classList.remove("active"); staticContainer.style.display = "grid"; liveContainer.style.display = "none"; };
   }
 
-  // --- Theme Viewport Preview Color Wiring ---
-  function updateThemePreview() {
-    const tvpPreview = document.getElementById("theme-viewport-preview");
-    if (!tvpPreview) return;
-    const bg = document.getElementById("ct-bg")?.value || "#050505";
-    const fg = document.getElementById("ct-fg")?.value || "#D9F7FF";
-    const accent = document.getElementById("ct-accent")?.value || "#00F0FF";
-    const response = document.getElementById("ct-response")?.value || "#00FF88";
-    const warning = document.getElementById("ct-warning")?.value || "#FFB000";
-    const error = document.getElementById("ct-error")?.value || "#FF3C5A";
-
-    tvpPreview.style.setProperty("--preview-bg", bg);
-    tvpPreview.style.setProperty("--preview-fg", fg);
-    tvpPreview.style.setProperty("--preview-accent", accent);
-    tvpPreview.style.setProperty("--preview-response", response);
-    tvpPreview.style.setProperty("--preview-warning", warning);
-    tvpPreview.style.setProperty("--preview-error", error);
-  }
-
-  const colorInputs = [
-    "ct-bg",
-    "ct-fg",
-    "ct-accent",
-    "ct-response",
-    "ct-warning",
-    "ct-error",
-  ];
-  colorInputs.forEach((id) => {
+  ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener("input", updateThemePreview);
+    if (el) el.addEventListener("input", _bgUpdateThemePreview);
   });
-  // Initial sync
-  updateThemePreview();
+  _bgUpdateThemePreview();
 }
 window.renderBackgroundGallery = renderBackgroundGallery;
 
@@ -4488,104 +4434,55 @@ function getActiveModalFocusableElements(modalId, selector = "button") {
   return null;
 }
 
+const _GP_FOCUSABLE_SELECTORS = [
+  "#sidebar:not(.collapsed) #sidebar-close-btn",
+  "#sidebar:not(.collapsed) #new-chat-btn",
+  "#sidebar:not(.collapsed) .history-item",
+  "#sidebar-toggle-btn", ".nav-tab", "#mute-btn", "#notif-btn", "#settings-btn",
+  "#view-chat.active #user-input", "#view-chat.active #mic-btn",
+  "#view-chat.active #toggle-drawer-btn", "#view-chat.active #send-btn",
+  "#view-chat.active .code-header-btn", "#view-chat.active .message",
+  "#view-canvas.active #canvas-run-btn", "#view-canvas.active #canvas-clear-btn",
+  "#view-canvas.active #canvas-copy-btn", "#view-canvas.active #canvas-lang-select",
+  "#view-canvas.active #canvas-collab-btn",
+  "#view-terminal.active #pty-reconnect-btn",
+  "#view-tunnel.active #tunnel-check-btn", "#view-tunnel.active #tunnel-toggle-btn",
+  "#view-tunnel.active #tunnel-cmd-input", "#view-tunnel.active #tunnel-cmd-send",
+  "#view-tunnel.active #tunnel-filepath-input", "#view-tunnel.active #tunnel-filecontent-input",
+  "#view-tunnel.active #tunnel-file-send", "#view-tunnel.active #tunnel-dirpath-input",
+  "#view-tunnel.active #tunnel-dir-send",
+  "#view-share.active .peer-item", "#view-share.active #share-dropzone",
+  "#view-share.active #share-filepath-input", "#view-share.active #share-send-btn",
+  "#view-memory.active #memory-search-input", "#view-memory.active #memory-refresh-btn",
+  "#view-memory.active #memory-fact-input", "#view-memory.active #memory-fact-save-btn",
+  "#view-agent.active #agent-task-input", "#view-agent.active #agent-run-btn",
+  "#view-agent.active #agent-stop-btn", "#view-agent.active #agent-send-canvas-btn",
+  "#view-docs.active #docs-search-input", "#view-docs.active #docs-search-btn",
+  "#view-docs.active #docs-index-btn", "#view-docs.active #docs-clear-btn",
+  "#view-docs.active .docs-remove-btn",
+  "#inspect-drawer:not(.collapsed) #inspect-close-btn",
+];
+
+function _gpCheckModalFocusable() {
+  const modals = ["notif-modal", "game-context-modal", "computer-use-modal", "transfer-modal"];
+  for (const id of modals) {
+    const els = getActiveModalFocusableElements(id);
+    if (els) return els;
+  }
+  const settingsEls = getActiveModalFocusableElements("settings-overlay", "select, input, button");
+  if (settingsEls) return settingsEls;
+  return null;
+}
+
 function getGamepadFocusableElements() {
-  // If ctrl prompt picker is open, return empty (handled separately in pollGamepads)
   if (getCtrlPromptVisible()) return [];
-
-  let activeEls = getActiveModalFocusableElements("notif-modal");
-  if (activeEls) return activeEls;
-
-  activeEls = getActiveModalFocusableElements("game-context-modal");
-  if (activeEls) return activeEls;
-
-  activeEls = getActiveModalFocusableElements("computer-use-modal");
-  if (activeEls) return activeEls;
-
-  activeEls = getActiveModalFocusableElements("settings-overlay", "select, input, button");
-  if (activeEls) return activeEls;
-
-  activeEls = getActiveModalFocusableElements("transfer-modal");
-  if (activeEls) return activeEls;
-
-  // Otherwise, build a list of visible elements from active view and layout
-  const selectors = [
-    // Sidebar if not collapsed
-    "#sidebar:not(.collapsed) #sidebar-close-btn",
-    "#sidebar:not(.collapsed) #new-chat-btn",
-    "#sidebar:not(.collapsed) .history-item",
-
-    // Top nav buttons
-    "#sidebar-toggle-btn",
-    ".nav-tab",
-    "#mute-btn",
-    "#notif-btn",
-    "#settings-btn",
-
-    // Chat View
-    "#view-chat.active #user-input",
-    "#view-chat.active #mic-btn",
-    "#view-chat.active #toggle-drawer-btn",
-    "#view-chat.active #send-btn",
-    "#view-chat.active .code-header-btn",
-    "#view-chat.active .message",
-
-    // Canvas View
-    "#view-canvas.active #canvas-run-btn",
-    "#view-canvas.active #canvas-clear-btn",
-    "#view-canvas.active #canvas-copy-btn",
-    "#view-canvas.active #canvas-lang-select",
-    "#view-canvas.active #canvas-collab-btn",
-
-    // Terminal View
-    "#view-terminal.active #pty-reconnect-btn",
-
-    // Tunnel View
-    "#view-tunnel.active #tunnel-check-btn",
-    "#view-tunnel.active #tunnel-toggle-btn",
-    "#view-tunnel.active #tunnel-cmd-input",
-    "#view-tunnel.active #tunnel-cmd-send",
-    "#view-tunnel.active #tunnel-filepath-input",
-    "#view-tunnel.active #tunnel-filecontent-input",
-    "#view-tunnel.active #tunnel-file-send",
-    "#view-tunnel.active #tunnel-dirpath-input",
-    "#view-tunnel.active #tunnel-dir-send",
-
-    // Share View
-    "#view-share.active .peer-item",
-    "#view-share.active #share-dropzone",
-    "#view-share.active #share-filepath-input",
-    "#view-share.active #share-send-btn",
-
-    // Memory View
-    "#view-memory.active #memory-search-input",
-    "#view-memory.active #memory-refresh-btn",
-    "#view-memory.active #memory-fact-input",
-    "#view-memory.active #memory-fact-save-btn",
-
-    // Agent View
-    "#view-agent.active #agent-task-input",
-    "#view-agent.active #agent-run-btn",
-    "#view-agent.active #agent-stop-btn",
-    "#view-agent.active #agent-send-canvas-btn",
-
-    // Docs View
-    "#view-docs.active #docs-search-input",
-    "#view-docs.active #docs-search-btn",
-    "#view-docs.active #docs-index-btn",
-    "#view-docs.active #docs-clear-btn",
-    "#view-docs.active .docs-remove-btn",
-
-    // Inspect Drawer if not collapsed
-    "#inspect-drawer:not(.collapsed) #inspect-close-btn",
-  ];
-
+  const modalEls = _gpCheckModalFocusable();
+  if (modalEls) return modalEls;
   const elements = [];
-  selectors.forEach((sel) => {
+  _GP_FOCUSABLE_SELECTORS.forEach((sel) => {
     document.querySelectorAll(sel).forEach((el) => {
       const rect = el.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0 && !el.disabled) {
-        elements.push(el);
-      }
+      if (rect.width > 0 && rect.height > 0 && !el.disabled) elements.push(el);
     });
   });
   return elements;
@@ -4759,13 +4656,285 @@ function activateRadialSegment(segIdx) {
   }
 }
 
+function _gpButtonPressed(gp, index) {
+  return !!(gp.buttons[index] && gp.buttons[index].pressed && !state.previousGamepadState.buttons[index]);
+}
+
+function _gpFaceButtonA(gp) {
+  if (!_gpButtonPressed(gp, 0)) return;
+  triggerHaptic("medium");
+  if (getCtrlPromptVisible()) {
+    getCtrlPromptTemplateMode() ? confirmTemplateAndSend() : confirmCtrlPrompt();
+  } else {
+    const els = getGamepadFocusableElements();
+    const activeEl = els[state.gamepadFocusIndex];
+    if (activeEl) { activeEl.click(); if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") activeEl.focus(); }
+    else { updateGamepadFocus(0); }
+  }
+}
+
+function _gpFaceButtonB(gp) {
+  if (!_gpButtonPressed(gp, 1)) return;
+  triggerHaptic("medium");
+  if (getCtrlPromptVisible()) { getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay(); }
+  else { closeTopmostOverlay(); }
+}
+
+function _gpFaceButtonX(gp) {
+  if (!_gpButtonPressed(gp, 2) || getCtrlPromptVisible()) return;
+  const focused = document.querySelector(".gamepad-focused");
+  if (focused && focused.classList.contains("message")) {
+    triggerHaptic("doubleTick");
+    const text = getMessageText(focused);
+    if (text) {
+      navigator.clipboard.writeText(text).catch(() => {});
+      focused.style.transition = "background 0.2s";
+      const oldBg = focused.style.background;
+      focused.style.background = "rgba(94, 235, 255, 0.15)";
+      setTimeout(() => { focused.style.background = oldBg; }, 400);
+    }
+  } else {
+    triggerHaptic("light");
+    const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+    if (chatTab) chatTab.click();
+    setTimeout(() => {
+      const userInput = document.getElementById("user-input");
+      if (userInput) {
+        userInput.focus();
+        const els = getGamepadFocusableElements();
+        const uidx = els.indexOf(userInput);
+        if (uidx !== -1) updateGamepadFocus(uidx);
+      }
+    }, 50);
+  }
+}
+
+function _gpFaceButtonY(gp) {
+  if (!_gpButtonPressed(gp, 3) || getCtrlPromptVisible()) return;
+  triggerHaptic("medium");
+  const chatView = document.getElementById("view-chat");
+  if (chatView && chatView.classList.contains("active")) {
+    const msgs = getMessageElements();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].classList.contains("user")) {
+        const text = getMessageText(msgs[i]);
+        if (text) {
+          const input = document.getElementById("user-input");
+          if (input) {
+            input.value = text; input.style.height = "auto";
+            input.style.height = Math.min(input.scrollHeight, 300) + "px"; input.focus();
+          }
+          setTimeout(() => { const s = document.getElementById("send-btn"); if (s) s.click(); }, 300);
+        }
+        break;
+      }
+    }
+  } else if (state.availablePersonas && state.availablePersonas.length > 0) {
+    const nextPersona = state.availablePersonas[(state.availablePersonas.indexOf(state.activePersona) + 1) % state.availablePersonas.length];
+    invoke("set_persona", { name: nextPersona })
+      .then(() => { state.activePersona = nextPersona; const sel = document.getElementById("persona-select"); if (sel) sel.value = nextPersona; })
+      .catch((err) => console.error("Error setting persona via Gamepad:", err));
+  }
+}
+
+function _gpHandleFaceButtons(gp) {
+  _gpFaceButtonA(gp);
+  _gpFaceButtonB(gp);
+  _gpFaceButtonX(gp);
+  _gpFaceButtonY(gp);
+}
+
+function _gpHandleShoulderButtons(gp) {
+  // L2/R2 in share view — cycle inner tabs
+  if (_gpButtonPressed(gp, 6) || _gpButtonPressed(gp, 7)) {
+    const shareView = document.getElementById("view-share");
+    if (shareView && shareView.classList.contains("active")) {
+      const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+      const idx = subtabs.findIndex((t) => t.classList.contains("active"));
+      if (idx !== -1) {
+        subtabs[_gpButtonPressed(gp, 6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+        triggerHaptic("light");
+      }
+    }
+  }
+  // R2 outside share view — toggle ctrl-prompt
+  if (_gpButtonPressed(gp, 7)) {
+    const shareView = document.getElementById("view-share");
+    if (!(shareView && shareView.classList.contains("active"))) {
+      if (getCtrlPromptVisible()) {
+        triggerHaptic("light");
+        getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
+      } else {
+        openCtrlPromptOverlay();
+        triggerHaptic("medium");
+        if (state.gamepadActive && window.showVirtualKeyboard) {
+          setTimeout(() => {
+            const searchEl = document.getElementById("ctrl-prompt-search");
+            if (searchEl) { searchEl.focus(); window.showVirtualKeyboard(searchEl); }
+          }, 120);
+        }
+      }
+    }
+  }
+  // L1/R1 in ctrl-prompt — navigate categories
+  if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && getCtrlPromptVisible()) {
+    triggerHaptic("light");
+    navigateCtrlPromptCat(_gpButtonPressed(gp, 4) ? -1 : 1);
+  }
+  // L1/R1 outside ctrl-prompt — scroll chat or cycle tabs
+  if ((_gpButtonPressed(gp, 4) || _gpButtonPressed(gp, 5)) && !getCtrlPromptVisible()) {
+    const chatView = document.getElementById("view-chat");
+    if (chatView && chatView.classList.contains("active")) {
+      const workspace = document.getElementById("chat-workspace");
+      if (workspace) workspace.scrollTop += _gpButtonPressed(gp, 4) ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
+    }
+    const sshView = document.getElementById("view-ssh");
+    if (sshView && sshView.classList.contains("active")) {
+      const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
+      if (focused) focused.click();
+    }
+    const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+    const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
+    if (activeTabIdx !== -1) {
+      const nextIdx = _gpButtonPressed(gp, 4) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
+      if (nextIdx !== activeTabIdx) {
+        tabs[nextIdx].click();
+        triggerHaptic("light");
+        state.gamepadFocusIndex = -1;
+        document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+      }
+    }
+  }
+}
+
+function _gpHandleMenuButtons(gp) {
+  if (_gpButtonPressed(gp, 8) && !getCtrlPromptVisible()) {
+    triggerHaptic("medium");
+    const runBtn = document.getElementById("canvas-run-btn");
+    if (runBtn) runBtn.click();
+  }
+  if (_gpButtonPressed(gp, 9) && !getCtrlPromptVisible()) {
+    triggerHaptic("medium");
+    const settingsOverlay = document.getElementById("settings-overlay");
+    if (settingsOverlay) {
+      if (settingsOverlay.classList.contains("active")) document.getElementById("close-settings").click();
+      else document.getElementById("settings-btn").click();
+    }
+  }
+}
+
+function _gpDpadVertical(gp, goUp) {
+  if (getCtrlPromptVisible()) {
+    if (getCtrlPromptTemplateMode()) navigateTemplatePlaceholder(goUp ? -1 : 1);
+    else navigateCtrlPromptList(goUp ? -1 : 1);
+    return;
+  }
+  const shareView = document.getElementById("view-share");
+  const sshView = document.getElementById("view-ssh");
+  if (shareView && shareView.classList.contains("active")) {
+    const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
+    const idx = subtabs.findIndex((t) => t.classList.contains("active"));
+    if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+  } else if (sshView && sshView.classList.contains("active")) {
+    const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
+    if (items.length > 0) {
+      const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
+      const nextIdx = goUp ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1) : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
+      items.forEach((el) => el.classList.remove("gamepad-focused"));
+      items[nextIdx].classList.add("gamepad-focused");
+      items[nextIdx].scrollIntoView({ block: "nearest" });
+    } else {
+      updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
+    }
+  } else {
+    updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
+  }
+}
+
+function _gpDpadHorizontal(gp, goLeft) {
+  if (getCtrlPromptVisible()) {
+    if (getCtrlPromptTemplateMode()) cycleTemplatePlaceholder(goLeft ? -1 : 1);
+    else navigateCtrlPromptCat(goLeft ? -1 : 1);
+    return;
+  }
+  const els = getGamepadFocusableElements();
+  const activeEl = els[state.gamepadFocusIndex];
+  const handled = activeEl && (() => {
+    if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
+      const step = parseInt(activeEl.step, 10) || 5;
+      activeEl.value = goLeft
+        ? Math.max(parseInt(activeEl.min, 10) || 0, parseInt(activeEl.value, 10) - step)
+        : Math.min(parseInt(activeEl.max, 10) || 100, parseInt(activeEl.value, 10) + step);
+      activeEl.dispatchEvent(new Event("input", { bubbles: true })); return true;
+    }
+    if (activeEl.tagName === "SELECT") {
+      const idx = goLeft ? Math.max(0, activeEl.selectedIndex - 1) : Math.min(activeEl.options.length - 1, activeEl.selectedIndex + 1);
+      if (idx !== activeEl.selectedIndex) { activeEl.selectedIndex = idx; activeEl.dispatchEvent(new Event("change", { bubbles: true })); }
+      return true;
+    }
+    return false;
+  })();
+  if (!handled) {
+    const tabs = Array.from(document.querySelectorAll(".nav-tab"));
+    const activeTabIdx = tabs.findIndex((t) => t.classList.contains("active"));
+    if (activeTabIdx !== -1) {
+      const nextIdx = goLeft ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
+      tabs[nextIdx].click(); state.gamepadFocusIndex = -1;
+      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+    }
+  }
+}
+
+function _gpHandleDpad(gp) {
+  if (_gpButtonPressed(gp, 12) || _gpButtonPressed(gp, 13)) _gpDpadVertical(gp, _gpButtonPressed(gp, 12));
+  if (_gpButtonPressed(gp, 14) || _gpButtonPressed(gp, 15)) _gpDpadHorizontal(gp, _gpButtonPressed(gp, 14));
+}
+
+function _gpHandleGripButtons(gp) {
+  if (getCtrlPromptVisible()) return;
+  if (_gpButtonPressed(gp, 17)) { triggerHaptic("light"); const s = document.getElementById("sidebar"); if (s) s.classList.toggle("collapsed"); }
+  if (_gpButtonPressed(gp, 18)) { triggerHaptic("light"); const d = document.getElementById("inspect-drawer"); if (d) d.classList.toggle("collapsed"); }
+  if (_gpButtonPressed(gp, 19)) { triggerHaptic("heavy"); const c = document.getElementById("canvas-clear-btn"); if (c) c.click(); }
+  if (_gpButtonPressed(gp, 20)) { triggerHaptic("light"); cycleTheme(); }
+}
+
+function _gpHandleRadialMenu(gp, l2Held, l2WasHeld) {
+  if (l2Held && !l2WasHeld) {
+    showRadialMenu();
+  } else if (l2Held) {
+    const seg = getRadialSegmentFromStick(gp.axes[0] || 0, gp.axes[1] || 0);
+    if (seg !== state.radialSelectedSegment) { updateRadialDisplay(seg); triggerHaptic("tick"); }
+  } else if (!l2Held && l2WasHeld) {
+    activateRadialSegment(state.radialSelectedSegment);
+    hideRadialMenu();
+  }
+}
+
+function _gpHandleTouchpadAndScroll(gp, l2Held) {
+  const rtX = gp.axes[2] || 0, rtY = gp.axes[3] || 0;
+  if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held) moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
+  if (_gpButtonPressed(gp, 11) && state.tpCursorVisible) { triggerHaptic("medium"); tpClick(0); }
+  if (!l2Held && Math.abs(gp.axes[1] || 0) > 0.2) {
+    const scrollEl = getActiveScrollContainer();
+    if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
+  }
+  if (_gpButtonPressed(gp, 1) && state.tpCursorVisible) {
+    const c = document.getElementById("tp-cursor");
+    if (c) c.classList.remove("tp-visible");
+    state.tpCursorVisible = false;
+  }
+  if (_gpButtonPressed(gp, 1) && !getCtrlPromptVisible()) {
+    const vkEl = document.getElementById("vk-overlay");
+    if (vkEl && vkEl.classList.contains("vk-visible") && window.hideVirtualKeyboard) window.hideVirtualKeyboard();
+  }
+}
+
 function pollGamepads() {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   let gp = null;
   for (let i = 0; i < gamepads.length; i++) {
     if (gamepads[i]) { gp = gamepads[i]; break; }
   }
-
   if (!gp) {
     if (state.gamepadActive) {
       state.gamepadActive = false;
@@ -4775,313 +4944,21 @@ function pollGamepads() {
     requestAnimationFrame(pollGamepads);
     return;
   }
-
   state.gamepadActive = true;
 
-  function buttonPressed(index) {
-    const isPressed = gp.buttons[index] && gp.buttons[index].pressed;
-    return isPressed && !state.previousGamepadState.buttons[index];
-  }
-
-  // ── Face buttons: A(0) B(1) X(2) Y(3) ──────────────────────────────────
-  function handleFaceButtons() {
-    // A — confirm / click focused element
-    if (buttonPressed(0)) {
-      triggerHaptic("medium");
-      if (getCtrlPromptVisible()) {
-        getCtrlPromptTemplateMode() ? confirmTemplateAndSend() : confirmCtrlPrompt();
-      } else {
-        const els = getGamepadFocusableElements();
-        const activeEl = els[state.gamepadFocusIndex];
-        if (activeEl) {
-          activeEl.click();
-          if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") activeEl.focus();
-        } else {
-          updateGamepadFocus(0);
-        }
-      }
-    }
-    // B — close overlays / back
-    if (buttonPressed(1)) {
-      triggerHaptic("medium");
-      if (getCtrlPromptVisible()) {
-        getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
-      } else {
-        closeTopmostOverlay();
-      }
-    }
-    // X — copy focused message or jump to chat input
-    if (buttonPressed(2) && !getCtrlPromptVisible()) {
-      const focused = document.querySelector(".gamepad-focused");
-      if (focused && focused.classList.contains("message")) {
-        triggerHaptic("doubleTick");
-        const text = getMessageText(focused);
-        if (text) {
-          navigator.clipboard.writeText(text).catch(() => {});
-          focused.style.transition = "background 0.2s";
-          const oldBg = focused.style.background;
-          focused.style.background = "rgba(94, 235, 255, 0.15)";
-          setTimeout(() => { focused.style.background = oldBg; }, 400);
-        }
-      } else {
-        triggerHaptic("light");
-        const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
-        if (chatTab) chatTab.click();
-        setTimeout(() => {
-          const userInput = document.getElementById("user-input");
-          if (userInput) {
-            userInput.focus();
-            const els = getGamepadFocusableElements();
-            const uidx = els.indexOf(userInput);
-            if (uidx !== -1) updateGamepadFocus(uidx);
-          }
-        }, 50);
-      }
-    }
-    // Y — regenerate last message or cycle persona
-    if (buttonPressed(3) && !getCtrlPromptVisible()) {
-      triggerHaptic("medium");
-      const chatView = document.getElementById("view-chat");
-      if (chatView && chatView.classList.contains("active")) {
-        const msgs = getMessageElements();
-        for (let i = msgs.length - 1; i >= 0; i--) {
-          if (msgs[i].classList.contains("user")) {
-            const text = getMessageText(msgs[i]);
-            if (text) {
-              const input = document.getElementById("user-input");
-              if (input) {
-                input.value = text;
-                input.style.height = "auto";
-                input.style.height = Math.min(input.scrollHeight, 300) + "px";
-                input.focus();
-              }
-              setTimeout(() => { const s = document.getElementById("send-btn"); if (s) s.click(); }, 300);
-            }
-            break;
-          }
-        }
-      } else if (state.availablePersonas && state.availablePersonas.length > 0) {
-        const nextPersona = state.availablePersonas[(state.availablePersonas.indexOf(state.activePersona) + 1) % state.availablePersonas.length];
-        invoke("set_persona", { name: nextPersona })
-          .then(() => {
-            state.activePersona = nextPersona;
-            const sel = document.getElementById("persona-select");
-            if (sel) sel.value = nextPersona;
-          })
-          .catch((err) => console.error("Error setting persona via Gamepad:", err));
-      }
-    }
-  }
-
-  // ── Shoulder buttons: L1(4) R1(5) L2(6) R2(7) ──────────────────────────
-  function handleShoulderButtons() {
-    // L2/R2 in share view — cycle inner tabs
-    if (buttonPressed(6) || buttonPressed(7)) {
-      const shareView = document.getElementById("view-share");
-      if (shareView && shareView.classList.contains("active")) {
-        const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
-        const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-        if (idx !== -1) {
-          subtabs[buttonPressed(6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
-          triggerHaptic("light");
-        }
-      }
-    }
-    // R2 outside share view — toggle ctrl-prompt
-    if (buttonPressed(7)) {
-      const shareView = document.getElementById("view-share");
-      if (!(shareView && shareView.classList.contains("active"))) {
-        if (getCtrlPromptVisible()) {
-          triggerHaptic("light");
-          getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
-        } else {
-          openCtrlPromptOverlay();
-          triggerHaptic("medium");
-          if (state.gamepadActive && window.showVirtualKeyboard) {
-            setTimeout(() => {
-              const searchEl = document.getElementById("ctrl-prompt-search");
-              if (searchEl) { searchEl.focus(); window.showVirtualKeyboard(searchEl); }
-            }, 120);
-          }
-        }
-      }
-    }
-    // L1/R1 in ctrl-prompt — navigate categories
-    if ((buttonPressed(4) || buttonPressed(5)) && getCtrlPromptVisible()) {
-      triggerHaptic("light");
-      navigateCtrlPromptCat(buttonPressed(4) ? -1 : 1);
-    }
-    // L1/R1 outside ctrl-prompt — scroll chat or cycle tabs
-    if ((buttonPressed(4) || buttonPressed(5)) && !getCtrlPromptVisible()) {
-      const chatView = document.getElementById("view-chat");
-      if (chatView && chatView.classList.contains("active")) {
-        const workspace = document.getElementById("chat-workspace");
-        if (workspace) workspace.scrollTop += buttonPressed(4) ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
-      }
-      const sshView = document.getElementById("view-ssh");
-      if (sshView && sshView.classList.contains("active")) {
-        const focused = document.querySelector("#ssh-profiles-list .ssh-profile-item.gamepad-focused");
-        if (focused) focused.click();
-      }
-      const tabs = Array.from(document.querySelectorAll(".nav-tab"));
-      const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
-      if (activeTabIdx !== -1) {
-        const nextIdx = buttonPressed(4) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-        if (nextIdx !== activeTabIdx) {
-          tabs[nextIdx].click();
-          triggerHaptic("light");
-          state.gamepadFocusIndex = -1;
-          document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
-        }
-      }
-    }
-  }
-
-  // ── Menu buttons: Select(8) Start(9) ────────────────────────────────────
-  function handleMenuButtons() {
-    if (buttonPressed(8) && !getCtrlPromptVisible()) {
-      triggerHaptic("medium");
-      const runBtn = document.getElementById("canvas-run-btn");
-      if (runBtn) runBtn.click();
-    }
-    if (buttonPressed(9) && !getCtrlPromptVisible()) {
-      triggerHaptic("medium");
-      const settingsOverlay = document.getElementById("settings-overlay");
-      if (settingsOverlay) {
-        if (settingsOverlay.classList.contains("active")) document.getElementById("close-settings").click();
-        else document.getElementById("settings-btn").click();
-      }
-    }
-  }
-
-  // ── D-pad: Up(12) Down(13) Left(14) Right(15) ───────────────────────────
-  function handleDpad() {
-    if (buttonPressed(12) || buttonPressed(13)) {
-      const goUp = buttonPressed(12);
-      if (getCtrlPromptVisible()) {
-        if (getCtrlPromptTemplateMode()) navigateTemplatePlaceholder(goUp ? -1 : 1);
-        else navigateCtrlPromptList(goUp ? -1 : 1);
-      } else {
-        const shareView = document.getElementById("view-share");
-        const sshView   = document.getElementById("view-ssh");
-        if (shareView && shareView.classList.contains("active")) {
-          const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
-          const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-          if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
-        } else if (sshView && sshView.classList.contains("active")) {
-          const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
-          if (items.length > 0) {
-            const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
-            const nextIdx = goUp
-              ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1)
-              : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
-            items.forEach((el) => el.classList.remove("gamepad-focused"));
-            items[nextIdx].classList.add("gamepad-focused");
-            items[nextIdx].scrollIntoView({ block: "nearest" });
-          } else {
-            updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
-          }
-        } else {
-          updateGamepadFocus(goUp ? state.gamepadFocusIndex - 1 : state.gamepadFocusIndex + 1);
-        }
-      }
-    }
-    if ((buttonPressed(14) || buttonPressed(15)) && getCtrlPromptVisible()) {
-      const goLeft = buttonPressed(14);
-      if (getCtrlPromptTemplateMode()) cycleTemplatePlaceholder(goLeft ? -1 : 1);
-      else navigateCtrlPromptCat(goLeft ? -1 : 1);
-    }
-    if ((buttonPressed(14) || buttonPressed(15)) && !getCtrlPromptVisible()) {
-      const els = getGamepadFocusableElements();
-      const activeEl = els[state.gamepadFocusIndex];
-      const handled = activeEl && (() => {
-        if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
-          const step = parseInt(activeEl.step, 10) || 5;
-          activeEl.value = buttonPressed(14)
-            ? Math.max(parseInt(activeEl.min, 10) || 0, parseInt(activeEl.value, 10) - step)
-            : Math.min(parseInt(activeEl.max, 10) || 100, parseInt(activeEl.value, 10) + step);
-          activeEl.dispatchEvent(new Event("input", { bubbles: true }));
-          return true;
-        }
-        if (activeEl.tagName === "SELECT") {
-          let idx = buttonPressed(14) ? Math.max(0, activeEl.selectedIndex - 1) : Math.min(activeEl.options.length - 1, activeEl.selectedIndex + 1);
-          if (idx !== activeEl.selectedIndex) { activeEl.selectedIndex = idx; activeEl.dispatchEvent(new Event("change", { bubbles: true })); }
-          return true;
-        }
-        return false;
-      })();
-      if (!handled) {
-        const tabs = Array.from(document.querySelectorAll(".nav-tab"));
-        const activeTabIdx = tabs.findIndex((t) => t.classList.contains("active"));
-        if (activeTabIdx !== -1) {
-          const nextIdx = buttonPressed(14) ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-          tabs[nextIdx].click();
-          state.gamepadFocusIndex = -1;
-          document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
-        }
-      }
-    }
-  }
-
-  // ── Grip buttons: L4(17) R4(18) L5(19) R5(20) ──────────────────────────
-  function handleGripButtons() {
-    if (getCtrlPromptVisible()) return;
-    if (buttonPressed(17)) { triggerHaptic("light"); const s = document.getElementById("sidebar"); if (s) s.classList.toggle("collapsed"); }
-    if (buttonPressed(18)) { triggerHaptic("light"); const d = document.getElementById("inspect-drawer"); if (d) d.classList.toggle("collapsed"); }
-    if (buttonPressed(19)) { triggerHaptic("heavy"); const c = document.getElementById("canvas-clear-btn"); if (c) c.click(); }
-    if (buttonPressed(20)) { triggerHaptic("light"); cycleTheme(); }
-  }
-
-  // ── Radial menu: L2 trigger (button 6 / axis 5) ─────────────────────────
-  function handleRadialMenu(l2Held, l2WasHeld) {
-    if (l2Held && !l2WasHeld) {
-      showRadialMenu();
-    } else if (l2Held) {
-      const seg = getRadialSegmentFromStick(gp.axes[0] || 0, gp.axes[1] || 0);
-      if (seg !== state.radialSelectedSegment) { updateRadialDisplay(seg); triggerHaptic("tick"); }
-    } else if (!l2Held && l2WasHeld) {
-      activateRadialSegment(state.radialSelectedSegment);
-      hideRadialMenu();
-    }
-  }
-
-  // ── Touchpad cursor + left-stick scroll ─────────────────────────────────
-  function handleTouchpadAndScroll(l2Held) {
-    const rtX = gp.axes[2] || 0, rtY = gp.axes[3] || 0;
-    if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held) moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
-    if (buttonPressed(11) && state.tpCursorVisible) { triggerHaptic("medium"); tpClick(0); }
-    if (!l2Held && Math.abs(gp.axes[1] || 0) > 0.2) {
-      const scrollEl = getActiveScrollContainer();
-      if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
-    }
-    if (buttonPressed(1) && state.tpCursorVisible) {
-      const c = document.getElementById("tp-cursor");
-      if (c) c.classList.remove("tp-visible");
-      state.tpCursorVisible = false;
-    }
-    if (buttonPressed(1) && !getCtrlPromptVisible()) {
-      const vkEl = document.getElementById("vk-overlay");
-      if (vkEl && vkEl.classList.contains("vk-visible") && window.hideVirtualKeyboard) window.hideVirtualKeyboard();
-    }
-  }
-
-  // ── Compute L2 state once — used by radial and touchpad handlers ────────
   const l2Held    = (gp.buttons[6] ? gp.buttons[6].value : 0) > 0.5;
   const l2WasHeld = state.previousGamepadState.l2Held;
 
-  // ── Dispatch to named handlers ───────────────────────────────────────────
-  handleFaceButtons();
-  handleShoulderButtons();
-  handleMenuButtons();
-  handleDpad();
-  handleGripButtons();
-  handleRadialMenu(l2Held, l2WasHeld);
-  handleTouchpadAndScroll(l2Held);
+  _gpHandleFaceButtons(gp);
+  _gpHandleShoulderButtons(gp);
+  _gpHandleMenuButtons(gp);
+  _gpHandleDpad(gp);
+  _gpHandleGripButtons(gp);
+  _gpHandleRadialMenu(gp, l2Held, l2WasHeld);
+  _gpHandleTouchpadAndScroll(gp, l2Held);
 
-  // Sync button state for next frame
   for (let i = 0; i < gp.buttons.length; i++) {
-    state.previousGamepadState.buttons[i] =
-      gp.buttons[i] && gp.buttons[i].pressed;
+    state.previousGamepadState.buttons[i] = !!(gp.buttons[i] && gp.buttons[i].pressed);
   }
   state.previousGamepadState.l2Held = l2Held;
 
@@ -5298,184 +5175,95 @@ setInterval(() => {
 }, 15000);
 
 // Initial state initialization
-invoke("get_initial_state")
-  .then(async (initialState) => {
-    const modelNameEl = document.getElementById("model-name");
-    if (modelNameEl)
-      modelNameEl.innerText = `[ MODEL: ${initialState.model.toUpperCase()} ]`;
-
-    const dbStatusEl = document.getElementById("vector-db-status");
-    if (dbStatusEl) dbStatusEl.innerText = initialState.memory_status;
-
-    const memoryStatusEl = document.getElementById("memory-status");
-    if (memoryStatusEl) memoryStatusEl.innerText = initialState.memory_status;
-
-    const toolStatusEl = document.getElementById("tool-status");
-    if (toolStatusEl) toolStatusEl.innerText = initialState.tool_status;
-    if (
-      toolStatusEl &&
-      initialState.boot_health_status &&
-      initialState.boot_health_status !== "healthy"
-    ) {
+function _initUpdateStatusBadges(initialState) {
+  const modelNameEl = document.getElementById("model-name");
+  if (modelNameEl) modelNameEl.innerText = `[ MODEL: ${initialState.model.toUpperCase()} ]`;
+  const dbStatusEl = document.getElementById("vector-db-status");
+  if (dbStatusEl) dbStatusEl.innerText = initialState.memory_status;
+  const memoryStatusEl = document.getElementById("memory-status");
+  if (memoryStatusEl) memoryStatusEl.innerText = initialState.memory_status;
+  const toolStatusEl = document.getElementById("tool-status");
+  if (toolStatusEl) {
+    toolStatusEl.innerText = initialState.tool_status;
+    if (initialState.boot_health_status && initialState.boot_health_status !== "healthy") {
       toolStatusEl.innerText = "Recovered Boot";
     }
+  }
+  const sessionIdEl = document.getElementById("session-id");
+  if (sessionIdEl) sessionIdEl.innerText = initialState.session_id;
+}
 
-    const sessionIdEl = document.getElementById("session-id");
-    if (sessionIdEl) sessionIdEl.innerText = initialState.session_id;
+function _initSetupStateAndListeners(initialState) {
+  state.currentSessionId = initialState.session_id;
+  state.activePersona = initialState.active_persona || "Default";
+  state.activeProvider = initialState.provider || "gemini";
+  state.activeAgentId = initialState.active_agent_id || "";
+  invoke("list_agents").then((agents) => { state.agents = agents; renderAgentSwitcher(); }).catch(() => {});
+  listen("agent_changed", (event) => {
+    const agent = event.payload;
+    state.activeAgentId = agent.id;
+    state.activeProvider = agent.provider;
+    const el = document.getElementById("model-name");
+    if (el) el.innerText = `[ ${agent.name.toUpperCase()} ]`;
+    renderAgentSwitcher();
+  });
+  updateContextDrawer();
+  updateGameBadge({ name: initialState.game_name || "", app_id: initialState.game_app_id || "", is_running: initialState.game_running || "false" });
+  invoke("get_personas").then((personas) => { state.availablePersonas = personas; }).catch((err) => { console.error("Error loading personas:", err); });
+}
 
-    state.currentSessionId = initialState.session_id;
-    state.activePersona = initialState.active_persona || "Default";
-    state.activeProvider = initialState.provider || "gemini";
-    state.activeAgentId = initialState.active_agent_id || "";
+async function _initRunDiskMigration() {
+  if (localStorage.getItem("neurodeck_disk_migrated_v1")) return;
+  const migrateProfiles = async (lsKey, profileKey) => {
+    try {
+      const raw = localStorage.getItem(lsKey);
+      if (raw && raw !== "[]") await invoke("save_profiles", { key: profileKey, data: raw });
+    } catch (_) {}
+  };
+  const migrateThemes = async () => {
+    try {
+      const raw = localStorage.getItem("neurodeck_custom_themes");
+      if (raw && raw !== "[]") await invoke("save_custom_themes", { data: raw });
+    } catch (_) {}
+  };
+  await Promise.all([migrateProfiles("sshProfiles", "ssh"), migrateProfiles("ftpProfiles", "ftp"), migrateProfiles("sftpProfiles", "sftp"), migrateThemes()]);
+  localStorage.setItem("neurodeck_disk_migrated_v1", "true");
+}
 
-    // Load agent list and render switcher
-    invoke("list_agents")
-      .then((agents) => {
-        state.agents = agents;
-        renderAgentSwitcher();
-      })
-      .catch(() => {});
+function _initRunOriginMigration() {
+  if (localStorage.getItem("neurodeck_origin_migrated_v2")) return;
+  if (!localStorage.getItem("selectedTheme")) localStorage.setItem("selectedTheme", "BLACKSITE");
+  if (!localStorage.getItem("neurodeckTheme")) localStorage.setItem("neurodeckTheme", "BLACKSITE");
+  localStorage.setItem("neurodeck_origin_migrated_v2", "true");
+  if (typeof addNotification === "function") addNotification("Updated", "App origin changed — UI preferences reset to defaults.", "info");
+}
 
-    // React to agent_changed events from backend
-    listen("agent_changed", (event) => {
-      const agent = event.payload;
-      state.activeAgentId = agent.id;
-      state.activeProvider = agent.provider;
-      const modelNameEl = document.getElementById("model-name");
-      if (modelNameEl)
-        modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
-      renderAgentSwitcher();
-    });
+function _initBootHealthNotification(initialState) {
+  if (!initialState.boot_health_status || initialState.boot_health_status === "healthy" || typeof addNotification !== "function") return;
+  const level = initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0 ? "warning" : "info";
+  addNotification("Boot Recovery", initialState.boot_health_summary || "Startup self-heal applied recovery actions.", level);
+}
 
-    // Initial Context Drawer metrics load
-    updateContextDrawer();
+async function _applyInitialState(initialState) {
+  _initUpdateStatusBadges(initialState);
+  _initSetupStateAndListeners(initialState);
+  await _initRunDiskMigration();
+  _initRunOriginMigration();
+  const savedTheme = localStorage.getItem("selectedTheme");
+  if (savedTheme) invoke("set_theme", { name: savedTheme }).then((theme) => { if (theme) applyThemeColors(theme); });
+  initChat(); initSettings(); initTerminal(); initCanvas(); initNotificationCenter();
+  initSessionBrowser(); initShortcutsOverlay(); initShortcutCustomization(); initOsThemeSync();
+  const initialActiveTab = document.querySelector(".nav-tab.active");
+  if (initialActiveTab) updateTabGlide(initialActiveTab);
+  _initBootHealthNotification(initialState);
+  initCommandPalette(); initQuickSwitcher(); initGameContextPanel();
+  initTunnelClient(); initFileShare(); initBrowser();
+  initAgentView(); initMemoryView(); initRadialMenu(); initManualModal();
+  checkOnboarding();
+}
 
-    // Show game badge if a game was detected at startup
-    updateGameBadge({
-      name: initialState.game_name || "",
-      app_id: initialState.game_app_id || "",
-      is_running: initialState.game_running || "false",
-    });
-
-    // Fetch and cache available personas list
-    invoke("get_personas")
-      .then((personas) => {
-        state.availablePersonas = personas;
-      })
-      .catch((err) => {
-        console.error("Error loading personas:", err);
-      });
-
-    // ── Profile & theme disk migration (localStorage → OS config dir) ──
-    // In Electron mode the disk-persistence guards previously checked
-    // window.__TAURI_INTERNALS__, which is never set. This one-time pass
-    // reads any data already stored in localStorage and writes it to disk
-    // so it survives WebView cache wipes and cross-origin resets.
-    if (!localStorage.getItem("neurodeck_disk_migrated_v1")) {
-      const migrateProfiles = async (lsKey, profileKey) => {
-        try {
-          const raw = localStorage.getItem(lsKey);
-          if (raw && raw !== "[]") {
-            await invoke("save_profiles", { key: profileKey, data: raw });
-          }
-        } catch (_) {}
-      };
-      const migrateThemes = async () => {
-        try {
-          const raw = localStorage.getItem("neurodeck_custom_themes");
-          if (raw && raw !== "[]") {
-            await invoke("save_custom_themes", { data: raw });
-          }
-        } catch (_) {}
-      };
-      await Promise.all([
-        migrateProfiles("sshProfiles", "ssh"),
-        migrateProfiles("ftpProfiles", "ftp"),
-        migrateProfiles("sftpProfiles", "sftp"),
-        migrateThemes(),
-      ]);
-      localStorage.setItem("neurodeck_disk_migrated_v1", "true");
-    }
-
-    // ── Origin-change migration (Tauri → Electron) ──
-    // localStorage is origin-scoped. When the app origin changes
-    // (tauri://localhost → file:// → neurodeck://app), stored UI
-    // preferences are lost. This one-time migration seeds defaults
-    // and surfaces a gentle notice.
-    if (!localStorage.getItem("neurodeck_origin_migrated_v2")) {
-      // Seed defaults for keys that were previously in localStorage only
-      if (!localStorage.getItem("selectedTheme")) {
-        localStorage.setItem("selectedTheme", "BLACKSITE");
-      }
-      if (!localStorage.getItem("neurodeckTheme")) {
-        localStorage.setItem("neurodeckTheme", "BLACKSITE");
-      }
-      localStorage.setItem("neurodeck_origin_migrated_v2", "true");
-      // Show a subtle toast if the notification system is ready
-      if (typeof addNotification === "function") {
-        addNotification(
-          "Updated",
-          "App origin changed — UI preferences reset to defaults.",
-          "info",
-        );
-      }
-    }
-
-    // Load persisted theme
-    let savedTheme = localStorage.getItem("selectedTheme");
-    if (savedTheme) {
-      invoke("set_theme", { name: savedTheme }).then((theme) => {
-        if (theme) {
-          applyThemeColors(theme);
-        }
-      });
-    }
-
-    // Initialize our sub-systems
-    initChat();
-    initSettings();
-    initTerminal();
-    initCanvas();
-    initNotificationCenter();
-    initSessionBrowser();
-    initShortcutsOverlay();
-    initShortcutCustomization();
-    initOsThemeSync();
-
-    // Position tab glide indicator on initial active tab
-    const initialActiveTab = document.querySelector(".nav-tab.active");
-    if (initialActiveTab) updateTabGlide(initialActiveTab);
-    if (
-      initialState.boot_health_status &&
-      initialState.boot_health_status !== "healthy" &&
-      typeof addNotification === "function"
-    ) {
-      const level =
-        initialState.boot_health_warning_count &&
-        Number(initialState.boot_health_warning_count) > 0
-          ? "warning"
-          : "info";
-      addNotification(
-        "Boot Recovery",
-        initialState.boot_health_summary ||
-          "Startup self-heal applied recovery actions.",
-        level,
-      );
-    }
-    initCommandPalette();
-    initQuickSwitcher();
-    initGameContextPanel();
-    initTunnelClient();
-    initFileShare();
-    initBrowser();
-    initAgentView();
-    initMemoryView();
-    initRadialMenu();
-    initManualModal();
-
-    // Check Onboarding
-    checkOnboarding();
-  })
+invoke("get_initial_state")
+  .then(_applyInitialState)
   .catch((err) => {
     console.error("Error getting initial state:", err);
   });
@@ -5540,127 +5328,78 @@ function restoreViewState(viewId) {
 // Track current view for transition direction
 let currentViewId = "view-chat";
 
+function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
+  if (outgoing) {
+    outgoing.classList.remove("active");
+    outgoing.classList.add(`view-exit-${direction}`);
+    setTimeout(() => outgoing.classList.remove(`view-exit-${direction}`), 300);
+    if (currentViewId === "view-ide") deactivateIdeView();
+  }
+  if (incoming) {
+    const enterDir = direction === "right" ? "left" : "right";
+    incoming.classList.remove("view-enter-left", "view-enter-right");
+    incoming.classList.add(`view-enter-${enterDir}`);
+    void incoming.offsetWidth;
+    incoming.classList.add("active");
+    incoming.classList.remove(`view-enter-${enterDir}`);
+  }
+}
+
+function _navActivateSideEffects(targetViewName) {
+  if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
+    setTimeout(() => { try { window.ptyTerminalFitAddon.fit(); } catch (e) { console.error("Error fitting terminal:", e); } }, 50);
+  }
+  if (targetViewName === "ssh") {
+    if (!window.sshTerminal) initSshTerminal();
+    setTimeout(() => { try { window.sshTerminalFitAddon?.fit(); } catch (e) {} }, 50);
+  }
+  if (targetViewName === "share") {
+    Promise.all([initSshProfilesFromDisk(), initFtpProfilesFromDisk(), initSftpProfilesFromDisk()])
+      .then(() => { renderSshProfilesSettings(); renderFtpProfiles(); renderSftpProfiles(); });
+  }
+  if (targetViewName === "git" && typeof initGitView === "function") initGitView();
+  if (targetViewName === "api-lab" && typeof initApiLabView === "function") initApiLabView();
+  if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") initCliMakerView();
+  if (targetViewName === "graph" && typeof initGraphView === "function") initGraphView();
+  if (targetViewName === "scheduler" && typeof initSchedulerView === "function") initSchedulerView();
+  if (targetViewName === "workflow" && typeof initWorkflowView === "function") initWorkflowView();
+  if (targetViewName === "ide" && typeof initIdeView === "function") initIdeView();
+  if (targetViewName === "orchestrator" && typeof initOrchestrator === "function") initOrchestrator();
+  if (targetViewName === "share" && typeof initTorrentClient === "function") initTorrentClient();
+}
+
+function _navTabClick(tab, navTabs) {
+  const targetViewName = tab.getAttribute("data-view");
+  const targetViewId = `view-${targetViewName}`;
+  if (targetViewId === currentViewId) return;
+
+  const tabsArray = Array.from(navTabs);
+  const currentIdx = tabsArray.findIndex((t) => t.getAttribute("data-view") === currentViewId.replace("view-", ""));
+  const targetIdx = tabsArray.indexOf(tab);
+  const direction = targetIdx > currentIdx ? "right" : "left";
+
+  navTabs.forEach((t) => t.classList.remove("active"));
+  tab.classList.add("active");
+  updateTabGlide(tab);
+  ensureTabVisible(tab);
+  saveViewState(currentViewId);
+
+  const outgoing = document.getElementById(currentViewId);
+  const incoming = document.getElementById(targetViewId);
+  _navAnimateTransition(outgoing, incoming, direction, currentViewId);
+  currentViewId = targetViewId;
+  recordViewSwitch(targetViewId);
+
+  requestAnimationFrame(() => restoreViewState(targetViewId));
+  updateBreadcrumb(targetViewName);
+  updateContextualSidebar(targetViewName);
+  showContextualTip(targetViewName);
+  _navActivateSideEffects(targetViewName);
+}
+
 navTabs.forEach((tab) => {
-  tab.onclick = function () {
-    const targetViewName = tab.getAttribute("data-view");
-    const targetViewId = `view-${targetViewName}`;
-    if (targetViewId === currentViewId) return;
-
-    // Determine direction based on tab index order
-    const tabsArray = Array.from(navTabs);
-    const currentIdx = tabsArray.findIndex(
-      (t) => t.getAttribute("data-view") === currentViewId.replace("view-", ""),
-    );
-    const targetIdx = tabsArray.indexOf(tab);
-    const direction = targetIdx > currentIdx ? "right" : "left";
-
-    navTabs.forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    updateTabGlide(tab);
-    ensureTabVisible(tab);
-
-    // Save state of outgoing view
-    saveViewState(currentViewId);
-
-    // Animate transition
-    const outgoing = document.getElementById(currentViewId);
-    const incoming = document.getElementById(targetViewId);
-
-    if (outgoing) {
-      outgoing.classList.remove("active");
-      outgoing.classList.add(`view-exit-${direction}`);
-      setTimeout(() => {
-        outgoing.classList.remove(`view-exit-${direction}`);
-      }, 300);
-      if (currentViewId === "view-ide") deactivateIdeView();
-    }
-
-    if (incoming) {
-      incoming.classList.remove(`view-enter-left`, `view-enter-right`);
-      incoming.classList.add(
-        `view-enter-${direction === "right" ? "left" : "right"}`,
-      );
-      // Force reflow
-      void incoming.offsetWidth;
-      incoming.classList.add("active");
-      incoming.classList.remove(
-        `view-enter-${direction === "right" ? "left" : "right"}`,
-      );
-    }
-
-    currentViewId = targetViewId;
-    recordViewSwitch(targetViewId);
-
-    // Restore state of incoming view
-    requestAnimationFrame(() => restoreViewState(targetViewId));
-
-    // Update breadcrumb and contextual sidebar
-    updateBreadcrumb(targetViewName);
-    updateContextualSidebar(targetViewName);
-
-    // Show first-visit contextual tip if available
-    showContextualTip(targetViewName);
-
-    if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
-      setTimeout(() => {
-        try {
-          window.ptyTerminalFitAddon.fit();
-        } catch (e) {
-          console.error("Error fitting terminal:", e);
-        }
-      }, 50);
-    }
-    if (targetViewName === "ssh") {
-      if (!window.sshTerminal) {
-        initSshTerminal();
-      }
-      setTimeout(() => {
-        try {
-          window.sshTerminalFitAddon?.fit();
-        } catch (e) {}
-      }, 50);
-    }
-    if (targetViewName === "share") {
-      Promise.all([
-        initSshProfilesFromDisk(),
-        initFtpProfilesFromDisk(),
-        initSftpProfilesFromDisk(),
-      ]).then(() => {
-        renderSshProfilesSettings();
-        renderFtpProfiles();
-        renderSftpProfiles();
-      });
-    }
-    if (targetViewName === "git" && typeof initGitView === "function") {
-      initGitView();
-    }
-    if (targetViewName === "api-lab" && typeof initApiLabView === "function") {
-      initApiLabView();
-    }
-    if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") {
-      initCliMakerView();
-    }
-    if (targetViewName === "graph" && typeof initGraphView === "function") {
-      initGraphView();
-    }
-    if (targetViewName === "scheduler" && typeof initSchedulerView === "function") {
-      initSchedulerView();
-    }
-    if (targetViewName === "workflow" && typeof initWorkflowView === "function") {
-      initWorkflowView();
-    }
-    if (targetViewName === "ide" && typeof initIdeView === "function") {
-      initIdeView();
-    }
-    if (targetViewName === "orchestrator" && typeof initOrchestrator === "function") {
-      initOrchestrator();
-    }
-    if (targetViewName === "share" && typeof initTorrentClient === "function") {
-      initTorrentClient();
-    }
-  };
+  tab.onclick = function () { _navTabClick(tab, navTabs); };
 });
-
 /* ------------------------------------------------------------------
    Contextual Tips — shown once per view on first visit
    ------------------------------------------------------------------ */
@@ -6229,72 +5968,45 @@ function runCommandPaletteActiveAction() {
   action.run();
 }
 
+function _cpWireInputEl(input) {
+  if (!input) return;
+  input.addEventListener("input", () => {
+    commandPaletteState.query = input.value;
+    commandPaletteState.activeIndex = 0;
+    renderCommandPalette();
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown") { event.preventDefault(); moveCommandPaletteSelection(1); }
+    else if (event.key === "ArrowUp") { event.preventDefault(); moveCommandPaletteSelection(-1); }
+    else if (event.key === "Enter") { event.preventDefault(); runCommandPaletteActiveAction(); }
+    else if (event.key === "Escape") { event.preventDefault(); closeCommandPalette(); }
+  });
+}
+
+function _cpWireGlobalKeydown() {
+  document.addEventListener("keydown", (event) => {
+    const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+    if (isShortcut) {
+      event.preventDefault();
+      if (commandPaletteState.open) { closeCommandPalette(); }
+      else { if (quickSwitcherState.open) closeQuickSwitcher(); openCommandPalette(); }
+      return;
+    }
+    if (!commandPaletteState.open) return;
+    if (event.key === "Escape") { event.preventDefault(); closeCommandPalette(); }
+  }, true);
+}
+
 function initCommandPalette() {
   const overlay = document.getElementById("command-palette-overlay");
   const openBtn = document.getElementById("command-palette-btn");
   const closeBtn = document.getElementById("command-palette-close");
   const input = document.getElementById("command-palette-input");
-
-  if (openBtn) {
-    openBtn.onclick = () => openCommandPalette();
-  }
-  if (closeBtn) {
-    closeBtn.onclick = closeCommandPalette;
-  }
-  if (overlay) {
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
-        closeCommandPalette();
-      }
-    });
-  }
-  if (input) {
-    input.addEventListener("input", () => {
-      commandPaletteState.query = input.value;
-      commandPaletteState.activeIndex = 0;
-      renderCommandPalette();
-    });
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        moveCommandPaletteSelection(1);
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        moveCommandPaletteSelection(-1);
-      } else if (event.key === "Enter") {
-        event.preventDefault();
-        runCommandPaletteActiveAction();
-      } else if (event.key === "Escape") {
-        event.preventDefault();
-        closeCommandPalette();
-      }
-    });
-  }
-
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      const isShortcut =
-        (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
-      if (isShortcut) {
-        event.preventDefault();
-        if (commandPaletteState.open) {
-          closeCommandPalette();
-        } else {
-          if (quickSwitcherState.open) closeQuickSwitcher();
-          openCommandPalette();
-        }
-        return;
-      }
-
-      if (!commandPaletteState.open) return;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeCommandPalette();
-      }
-    },
-    true,
-  );
+  if (openBtn) openBtn.onclick = () => openCommandPalette();
+  if (closeBtn) closeBtn.onclick = closeCommandPalette;
+  if (overlay) overlay.addEventListener("click", (e) => { if (e.target === overlay) closeCommandPalette(); });
+  _cpWireInputEl(input);
+  _cpWireGlobalKeydown();
 }
 
 
@@ -6578,6 +6290,28 @@ function sendAndLogTunnelRequest(req, successLabel) {
     });
 }
 
+function _tunnelWireToggle(toggleBtn) {
+  if (!toggleBtn) return;
+  toggleBtn.onclick = function () {
+    if (state.tunnelStatus === "offline") {
+      logTunnel("system", "Starting local loopback tunnel server...");
+      invoke("start_tunnel_server")
+        .then((msg) => { logTunnel("received", msg); setTimeout(checkTunnelServerStatus, 500); })
+        .catch((err) => logTunnel("error", "Failed to start server: " + err));
+    } else {
+      logTunnel("system", "Stopping local loopback tunnel server...");
+      invoke("stop_tunnel_server")
+        .then((msg) => {
+          logTunnel("received", msg);
+          state.tunnelStatus = "offline";
+          const indicator = document.getElementById("tunnel-status-indicator");
+          if (indicator) { indicator.innerText = "OFFLINE"; indicator.className = "tunnel-status-indicator offline"; }
+        })
+        .catch((err) => logTunnel("error", "Failed to stop server: " + err));
+    }
+  };
+}
+
 function initTunnelClient() {
   const checkBtn = document.getElementById("tunnel-check-btn");
   const toggleBtn = document.getElementById("tunnel-toggle-btn");
@@ -6585,100 +6319,42 @@ function initTunnelClient() {
   const fileSend = document.getElementById("tunnel-file-send");
   const dirSend = document.getElementById("tunnel-dir-send");
 
-  if (checkBtn) {
-    checkBtn.onclick = function () {
-      logTunnel("system", "Checking tunnel server status...");
-      checkTunnelServerStatus();
-    };
-  }
-
-  if (toggleBtn) {
-    toggleBtn.onclick = function () {
-      if (state.tunnelStatus === "offline") {
-        logTunnel("system", "Starting local loopback tunnel server...");
-        invoke("start_tunnel_server")
-          .then((msg) => {
-            logTunnel("received", msg);
-            setTimeout(checkTunnelServerStatus, 500);
-          })
-          .catch((err) => {
-            logTunnel("error", `Failed to start server: ${err}`);
-          });
-      } else {
-        logTunnel("system", "Stopping local loopback tunnel server...");
-        invoke("stop_tunnel_server")
-          .then((msg) => {
-            logTunnel("received", msg);
-            state.tunnelStatus = "offline";
-            const indicator = document.getElementById(
-              "tunnel-status-indicator",
-            );
-            if (indicator) {
-              indicator.innerText = "OFFLINE";
-              indicator.className = "tunnel-status-indicator offline";
-            }
-          })
-          .catch((err) => {
-            logTunnel("error", `Failed to stop server: ${err}`);
-          });
-      }
-    };
-  }
-
+  if (checkBtn) { checkBtn.onclick = function () { logTunnel("system", "Checking tunnel server status..."); checkTunnelServerStatus(); }; }
+  _tunnelWireToggle(toggleBtn);
   if (cmdSend) {
     cmdSend.onclick = function () {
       const input = document.getElementById("tunnel-cmd-input");
       const command = input.value.trim();
       if (!command) return;
-
-      logTunnel("sent", `Execute command: ${command}`);
-      const req = JSON.stringify({ type: "run_cmd", command: command });
-      sendAndLogTunnelRequest(req, "Stdout:");
+      logTunnel("sent", "Execute command: " + command);
+      sendAndLogTunnelRequest(JSON.stringify({ type: "run_cmd", command }), "Stdout:");
       input.value = "";
     };
   }
-
   if (fileSend) {
     fileSend.onclick = function () {
       const pathInput = document.getElementById("tunnel-filepath-input");
       const contentArea = document.getElementById("tunnel-filecontent-input");
-
       const path = pathInput.value.trim();
       const content = contentArea.value;
       if (!path) return;
-
-      logTunnel("sent", `Write file: ${path} (${content.length} chars)`);
-      const req = JSON.stringify({
-        type: "write_file",
-        path: path,
-        content: content,
-      });
-      sendAndLogTunnelRequest(req);
-      pathInput.value = "";
-      contentArea.value = "";
+      logTunnel("sent", "Write file: " + path + " (" + content.length + " chars)");
+      sendAndLogTunnelRequest(JSON.stringify({ type: "write_file", path, content }));
+      pathInput.value = ""; contentArea.value = "";
     };
   }
-
   if (dirSend) {
     dirSend.onclick = function () {
       const input = document.getElementById("tunnel-dirpath-input");
       const path = input.value.trim();
       if (!path) return;
-
-      logTunnel("sent", `Read dir: ${path}`);
-      const req = JSON.stringify({ type: "read_dir", path: path });
-      sendAndLogTunnelRequest(req, "Contents:");
+      logTunnel("sent", "Read dir: " + path);
+      sendAndLogTunnelRequest(JSON.stringify({ type: "read_dir", path }), "Contents:");
       input.value = "";
     };
   }
-
-  // Auto-probe tunnel server on startup
   checkTunnelServerStatus(true);
-
-  // Periodically poll tunnel server status every 5 seconds silently
-  setInterval(() => {
-    checkTunnelServerStatus(true);
-  }, 5000);
+  setInterval(() => checkTunnelServerStatus(true), 5000);
 }
 
 // --- SHARE INNER TAB SWITCHING ---
@@ -6817,6 +6493,64 @@ function calculateTransferSpeedAndEta(t, progress) {
   return { speedText, etaText };
 }
 
+function _buildTransferItem(t) {
+  const item = document.createElement("div");
+  item.className = "transfer-item";
+  item.id = "transfer-" + t.id;
+  const percent = t.size > 0 ? Math.round((t.progress / t.size) * 100) : 0;
+  const progressClass = t.status === "Completed" ? "completed" : (t.status === "Failed" || t.status === "Rejected") ? "failed" : "";
+  const { speedText, etaText } = calculateTransferSpeedAndEta(t, t.progress);
+  const isCancelable = ["Pending","Accepted","Transferring"].includes(t.status);
+
+  const header = document.createElement("div");
+  header.className = "transfer-header";
+  const filename = document.createElement("span");
+  filename.className = "transfer-filename";
+  filename.title = String(t.filename ?? "");
+  filename.textContent = String(t.filename ?? "");
+  const headerRight = document.createElement("div");
+  Object.assign(headerRight.style, { display: "flex", alignItems: "center", gap: "8px" });
+  const status = document.createElement("span");
+  status.className = "transfer-status " + String(t.status || "").toLowerCase();
+  status.textContent = String(t.status ?? "");
+  headerRight.appendChild(status);
+  if (isCancelable) {
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "cancel-transfer-btn";
+    cancelBtn.title = "Cancel Transfer";
+    cancelBtn.setAttribute("aria-label", "Cancel Transfer");
+    cancelBtn.innerHTML = createIcon("x", { size: 12 });
+    cancelBtn.addEventListener("click", (e) => { e.stopPropagation(); window.cancelTransfer(t.id); });
+    headerRight.appendChild(cancelBtn);
+  }
+  header.append(filename, headerRight);
+
+  const progressContainer = document.createElement("div");
+  progressContainer.className = "transfer-progress-container";
+  const progressBg = document.createElement("div");
+  progressBg.className = "transfer-progress-bar-bg";
+  const progressFill = document.createElement("div");
+  progressFill.className = "transfer-progress-bar-fill " + progressClass;
+  progressFill.style.width = percent + "%";
+  progressBg.appendChild(progressFill);
+  const percentEl = document.createElement("span");
+  percentEl.className = "transfer-percent";
+  percentEl.textContent = percent + "%";
+  progressContainer.append(progressBg, percentEl);
+
+  const meta = document.createElement("div");
+  meta.className = "transfer-meta";
+  const peer = document.createElement("span");
+  peer.textContent = (t.direction === "Incoming" ? "From" : "To") + ": " + String(t.peer_name || t.peer_ip || "");
+  const stats = document.createElement("span");
+  stats.className = "transfer-stats-text";
+  stats.textContent = formatBytes(t.progress) + " / " + formatBytes(t.size) + speedText + etaText;
+  meta.append(peer, stats);
+
+  item.append(header, progressContainer, meta);
+  return item;
+}
+
 function renderTransfers(transfers) {
   const listEl = document.getElementById("share-transfers-list");
   if (!listEl) return;
@@ -6828,90 +6562,10 @@ function renderTransfers(transfers) {
     listEl.appendChild(empty);
     return;
   }
-
   if (!window.activeTransfersMap) window.activeTransfersMap = new Map();
   window.activeTransfersMap.clear();
-
   transfers.sort((a, b) => b.id.localeCompare(a.id));
-
-  transfers.forEach((t) => {
-    window.activeTransfersMap.set(t.id, t);
-    const item = document.createElement("div");
-    item.className = "transfer-item";
-    item.id = `transfer-${t.id}`;
-
-    const percent = t.size > 0 ? Math.round((t.progress / t.size) * 100) : 0;
-    const progressClass =
-      t.status === "Completed"
-        ? "completed"
-        : t.status === "Failed" || t.status === "Rejected"
-          ? "failed"
-          : "";
-
-    const { speedText, etaText } = calculateTransferSpeedAndEta(t, t.progress);
-
-    const isCancelable =
-      t.status === "Pending" ||
-      t.status === "Accepted" ||
-      t.status === "Transferring";
-    const header = document.createElement("div");
-    header.className = "transfer-header";
-
-    const filename = document.createElement("span");
-    filename.className = "transfer-filename";
-    filename.title = String(t.filename ?? "");
-    filename.textContent = String(t.filename ?? "");
-
-    const headerRight = document.createElement("div");
-    headerRight.style.display = "flex";
-    headerRight.style.alignItems = "center";
-    headerRight.style.gap = "8px";
-
-    const status = document.createElement("span");
-    status.className = `transfer-status ${String(t.status || "").toLowerCase()}`;
-    status.textContent = String(t.status ?? "");
-    headerRight.appendChild(status);
-
-    if (isCancelable) {
-      const cancelBtn = document.createElement("button");
-      cancelBtn.className = "cancel-transfer-btn";
-      cancelBtn.title = "Cancel Transfer";
-      cancelBtn.setAttribute("aria-label", "Cancel Transfer");
-      cancelBtn.innerHTML = createIcon("x", { size: 12 });
-      cancelBtn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        window.cancelTransfer(t.id);
-      });
-      headerRight.appendChild(cancelBtn);
-    }
-
-    header.append(filename, headerRight);
-
-    const progressContainer = document.createElement("div");
-    progressContainer.className = "transfer-progress-container";
-    const progressBg = document.createElement("div");
-    progressBg.className = "transfer-progress-bar-bg";
-    const progressFill = document.createElement("div");
-    progressFill.className = `transfer-progress-bar-fill ${progressClass}`;
-    progressFill.style.width = `${percent}%`;
-    progressBg.appendChild(progressFill);
-    const percentEl = document.createElement("span");
-    percentEl.className = "transfer-percent";
-    percentEl.textContent = `${percent}%`;
-    progressContainer.append(progressBg, percentEl);
-
-    const meta = document.createElement("div");
-    meta.className = "transfer-meta";
-    const peer = document.createElement("span");
-    peer.textContent = `${t.direction === "Incoming" ? "From" : "To"}: ${String(t.peer_name || t.peer_ip || "")}`;
-    const stats = document.createElement("span");
-    stats.className = "transfer-stats-text";
-    stats.textContent = `${formatBytes(t.progress)} / ${formatBytes(t.size)}${speedText}${etaText}`;
-    meta.append(peer, stats);
-
-    item.append(header, progressContainer, meta);
-    listEl.appendChild(item);
-  });
+  transfers.forEach((t) => { window.activeTransfersMap.set(t.id, t); listEl.appendChild(_buildTransferItem(t)); });
 }
 
 function updateTransferCardProgress(transferId, progress) {
@@ -6971,97 +6625,81 @@ function updateSendButtonState() {
   }
 }
 
-function initFileShare() {
-  const dropzone = document.getElementById("share-dropzone");
-  const pathInput = document.getElementById("share-filepath-input");
-  const sendBtn = document.getElementById("share-send-btn");
-
-  const acceptBtn = document.getElementById("transfer-modal-accept");
-  const rejectBtn = document.getElementById("transfer-modal-reject");
-  const closeXBtn = document.getElementById("transfer-modal-close-x");
-  let transferFocusTrap = null;
-
-  // Initial fetch of peers and transfers
-  invoke("get_discovered_peers")
-    .then(renderPeers)
-    .catch((err) => console.error("Error fetching peers:", err));
-  invoke("get_active_transfers")
-    .then(renderTransfers)
-    .catch((err) => console.error("Error fetching transfers:", err));
-
-  // Group Code Settings
-  const groupCodeInput = document.getElementById("share-group-code-input");
-  const saveGroupCodeBtn = document.getElementById("share-group-code-save-btn");
-
-  if (groupCodeInput && saveGroupCodeBtn) {
-    invoke("get_group_code")
-      .then((code) => {
-        groupCodeInput.value = code || "DEFAULT";
+function _fsWireGroupCode(groupCodeInput, saveGroupCodeBtn) {
+  invoke("get_group_code")
+    .then((code) => { groupCodeInput.value = code || "DEFAULT"; })
+    .catch((err) => console.error("Error fetching group code:", err));
+  saveGroupCodeBtn.onclick = function () {
+    const code = groupCodeInput.value.trim();
+    saveGroupCodeBtn.disabled = true;
+    saveGroupCodeBtn.innerText = "Applying...";
+    invoke("set_group_code", { code })
+      .then(() => {
+        saveGroupCodeBtn.disabled = false;
+        saveGroupCodeBtn.innerText = "Apply";
+        if (typeof addNotification === "function") {
+          addNotification("Group Code Updated", `Discovery group set to: ${code}`, "success");
+        }
+        invoke("get_discovered_peers").then(renderPeers);
       })
-      .catch((err) => console.error("Error fetching group code:", err));
+      .catch((err) => {
+        saveGroupCodeBtn.disabled = false;
+        saveGroupCodeBtn.innerText = "Apply";
+        console.error("Error setting group code:", err);
+        alert("Error: " + err);
+      });
+  };
+}
 
-    saveGroupCodeBtn.onclick = function () {
-      const code = groupCodeInput.value.trim();
-      saveGroupCodeBtn.disabled = true;
-      saveGroupCodeBtn.innerText = "Applying...";
-      invoke("set_group_code", { code })
-        .then(() => {
-          saveGroupCodeBtn.disabled = false;
-          saveGroupCodeBtn.innerText = "Apply";
-          if (typeof addNotification === "function") {
-            addNotification(
-              "Group Code Updated",
-              `Discovery group set to: ${code}`,
-              "success",
-            );
-          }
-          invoke("get_discovered_peers").then(renderPeers);
-        })
-        .catch((err) => {
-          saveGroupCodeBtn.disabled = false;
-          saveGroupCodeBtn.innerText = "Apply";
-          console.error("Error setting group code:", err);
-          alert("Error: " + err);
-        });
-    };
+function _fsHandleTransferResponse(accept, ftCtx) {
+  if (state.pendingTransferId) {
+    const action = accept ? "accepting" : "rejecting";
+    invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept })
+      .then(() => {
+        const modal = document.getElementById("transfer-modal");
+        if (modal) modal.classList.remove("active");
+        if (ftCtx.trap) ftCtx.trap.deactivate();
+        state.pendingTransferId = null;
+        invoke("get_active_transfers").then(renderTransfers);
+      })
+      .catch((err) => { console.error(`Error ${action} transfer:`, err); alert("Error: " + err); });
+  } else {
+    const modal = document.getElementById("transfer-modal");
+    if (modal) modal.classList.remove("active");
+    if (ftCtx.trap) ftCtx.trap.deactivate();
   }
+}
 
-  // Listen for peer discovery updates
-  listen("peers_updated", (event) => {
-    renderPeers(event.payload);
-  });
+function _fsWireModalBtns(acceptBtn, rejectBtn, closeXBtn, ftCtx) {
+  if (acceptBtn) acceptBtn.onclick = () => _fsHandleTransferResponse(true, ftCtx);
+  if (rejectBtn) rejectBtn.onclick = () => _fsHandleTransferResponse(false, ftCtx);
+  if (closeXBtn) closeXBtn.onclick = () => _fsHandleTransferResponse(false, ftCtx);
+}
 
-  // Listen for incoming transfer requests
+function _fsWireTransferModal(ftCtx) {
   listen("transfer_incoming", (event) => {
     const transfer = event.payload;
     state.pendingTransferId = transfer.id;
-
     const modal = document.getElementById("transfer-modal");
     const modalPeer = document.getElementById("transfer-modal-peer");
     const modalFilename = document.getElementById("transfer-modal-filename");
     const modalSize = document.getElementById("transfer-modal-size");
-
     if (modal && modalPeer && modalFilename && modalSize) {
       modalPeer.innerText = `${transfer.peer_name || "Unknown"} (${transfer.peer_ip})`;
       modalFilename.innerText = transfer.filename;
       modalSize.innerText = formatBytes(transfer.size);
       modal.classList.add("active");
-      if (!transferFocusTrap) transferFocusTrap = new FocusTrap(modal);
-      transferFocusTrap.activate();
+      if (!ftCtx.trap) ftCtx.trap = new FocusTrap(modal);
+      ftCtx.trap.activate();
     }
-
     if (typeof addNotification === "function") {
-      addNotification(
-        "Incoming Transfer Request",
-        `From ${transfer.peer_name || "Unknown"} (${transfer.peer_ip}): ${transfer.filename}`,
-        "info",
-      );
+      addNotification("Incoming Transfer Request", `From ${transfer.peer_name || "Unknown"} (${transfer.peer_ip}): ${transfer.filename}`, "info");
     }
-
     invoke("get_active_transfers").then(renderTransfers);
   });
+}
 
-  // Listen for transfer progress and completions
+function _fsWireGlobalListeners() {
   listen("transfer_progress", (event) => {
     if (event && event.payload) {
       const [transferId, progress] = event.payload;
@@ -7070,148 +6708,48 @@ function initFileShare() {
       invoke("get_active_transfers").then(renderTransfers);
     }
   });
-  listen("transfer_completed", (event) => {
-    if (typeof addNotification === "function") {
-      addNotification(
-        "File Transfer Complete",
-        "A LAN file transfer completed successfully.",
-        "success",
-      );
-    }
+  listen("transfer_completed", () => {
+    if (typeof addNotification === "function") addNotification("File Transfer Complete", "A LAN file transfer completed successfully.", "success");
     invoke("get_active_transfers").then(renderTransfers);
   });
-  listen("transfer_failed", (event) => {
-    if (typeof addNotification === "function") {
-      addNotification(
-        "File Transfer Failed",
-        "A LAN file transfer has failed.",
-        "error",
-      );
-    }
+  listen("transfer_failed", () => {
+    if (typeof addNotification === "function") addNotification("File Transfer Failed", "A LAN file transfer has failed.", "error");
     invoke("get_active_transfers").then(renderTransfers);
   });
-
-  // Agent step progress events
-  listen("agent_thinking", () => {
-    document.getElementById("tool-status").innerText = "Agent thinking...";
-  });
-  listen("agent_step_complete", () => {
-    document.getElementById("tool-status").innerText = "Idle";
-  });
+  listen("agent_thinking", () => { document.getElementById("tool-status").innerText = "Agent thinking..."; });
+  listen("agent_step_complete", () => { document.getElementById("tool-status").innerText = "Idle"; });
   listen("agent_step_error", (event) => {
     const err = event.payload?.error || "Agent step failed";
-    if (typeof addNotification === "function") {
-      addNotification("Agent Error", err, "error");
-    }
+    if (typeof addNotification === "function") addNotification("Agent Error", err, "error");
   });
-
-  // Plugin reload progress events
-  listen("plugin_reload_start", () => {
-    if (typeof addNotification === "function") {
-      addNotification("Plugins", "Reloading plugin runtime...", "info");
-    }
-  });
-  listen("plugin_reload_done", () => {
-    if (typeof addNotification === "function") {
-      addNotification("Plugins", "Plugin runtime reloaded.", "success");
-    }
-  });
+  listen("plugin_reload_start", () => { if (typeof addNotification === "function") addNotification("Plugins", "Reloading plugin runtime...", "info"); });
+  listen("plugin_reload_done", () => { if (typeof addNotification === "function") addNotification("Plugins", "Plugin runtime reloaded.", "success"); });
   listen("plugin_reload_error", (event) => {
     const err = event.payload || "Plugin reload failed";
-    if (typeof addNotification === "function") {
-      addNotification("Plugins", String(err), "error");
-    }
+    if (typeof addNotification === "function") addNotification("Plugins", String(err), "error");
   });
-
-  // BMAD install progress events
   listen("bmad_install_progress", (event) => {
     const payload = event.payload || {};
-    if (payload.stage === "start") {
-      if (typeof addNotification === "function") {
-        addNotification("BMAD", `Installing to ${payload.target}...`, "info");
-      }
-    } else if (payload.stage === "done") {
-      if (typeof addNotification === "function") {
-        addNotification("BMAD", "Installation complete.", "success");
-      }
-    } else if (payload.stage === "error") {
-      if (typeof addNotification === "function") {
-        addNotification("BMAD", `Install failed: ${payload.reason}`, "error");
-      }
-    }
+    if (payload.stage === "start") { if (typeof addNotification === "function") addNotification("BMAD", `Installing to ${payload.target}...`, "info"); }
+    else if (payload.stage === "done") { if (typeof addNotification === "function") addNotification("BMAD", "Installation complete.", "success"); }
+    else if (payload.stage === "error") { if (typeof addNotification === "function") addNotification("BMAD", `Install failed: ${payload.reason}`, "error"); }
   });
+}
 
-  // Setup modal button handlers
-  function handleTransferResponse(accept) {
-    if (state.pendingTransferId) {
-      const action = accept ? "accepting" : "rejecting";
-      invoke("respond_to_transfer", {
-        transferId: state.pendingTransferId,
-        accept: accept,
-      })
-        .then(() => {
-          const modal = document.getElementById("transfer-modal");
-          if (modal) modal.classList.remove("active");
-          if (transferFocusTrap) transferFocusTrap.deactivate();
-          state.pendingTransferId = null;
-          invoke("get_active_transfers").then(renderTransfers);
-        })
-        .catch((err) => {
-          console.error(`Error ${action} transfer:`, err);
-          alert("Error: " + err);
-        });
-    } else {
-      const modal = document.getElementById("transfer-modal");
-      if (modal) modal.classList.remove("active");
-      if (transferFocusTrap) transferFocusTrap.deactivate();
-    }
-  }
-
-  if (acceptBtn) {
-    acceptBtn.onclick = () => handleTransferResponse(true);
-  }
-
-  if (rejectBtn) {
-    rejectBtn.onclick = () => handleTransferResponse(false);
-  }
-
-  if (closeXBtn) {
-    closeXBtn.onclick = () => handleTransferResponse(false);
-  }
-
-  // Drag & drop file path populate
+function _fsWireDropzoneSend(dropzone, pathInput, sendBtn) {
   if (dropzone && pathInput) {
-    dropzone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropzone.classList.add("dragover");
-    });
-
-    dropzone.addEventListener("dragleave", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropzone.classList.remove("dragover");
-    });
-
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add("dragover"); });
+    dropzone.addEventListener("dragleave", (e) => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover"); });
     dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropzone.classList.remove("dragover");
-
+      e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("dragover");
       if (e.dataTransfer && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
-        const path = file.path || file.name;
-        pathInput.value = path;
+        pathInput.value = file.path || file.name;
         updateSendButtonState();
       }
     });
-
-    pathInput.oninput = function () {
-      updateSendButtonState();
-    };
+    pathInput.oninput = function () { updateSendButtonState(); };
   }
-
-  // Send button event handler
   if (sendBtn) {
     sendBtn.onclick = function () {
       if (pathInput) {
@@ -7219,10 +6757,7 @@ function initFileShare() {
         if (state.selectedPeerIp && path) {
           sendBtn.disabled = true;
           sendBtn.innerText = "Initiating... ⏳";
-          invoke("start_file_transfer", {
-            peerIp: state.selectedPeerIp,
-            filePath: path,
-          })
+          invoke("start_file_transfer", { peerIp: state.selectedPeerIp, filePath: path })
             .then(() => {
               sendBtn.innerText = "Send File 🚀";
               pathInput.value = "";
@@ -7240,7 +6775,272 @@ function initFileShare() {
   }
 }
 
+function initFileShare() {
+  const dropzone = document.getElementById("share-dropzone");
+  const pathInput = document.getElementById("share-filepath-input");
+  const sendBtn = document.getElementById("share-send-btn");
+  const acceptBtn = document.getElementById("transfer-modal-accept");
+  const rejectBtn = document.getElementById("transfer-modal-reject");
+  const closeXBtn = document.getElementById("transfer-modal-close-x");
+  const ftCtx = { trap: null };
+
+  invoke("get_discovered_peers").then(renderPeers).catch((err) => console.error("Error fetching peers:", err));
+  invoke("get_active_transfers").then(renderTransfers).catch((err) => console.error("Error fetching transfers:", err));
+
+  const groupCodeInput = document.getElementById("share-group-code-input");
+  const saveGroupCodeBtn = document.getElementById("share-group-code-save-btn");
+  if (groupCodeInput && saveGroupCodeBtn) _fsWireGroupCode(groupCodeInput, saveGroupCodeBtn);
+
+  listen("peers_updated", (event) => { renderPeers(event.payload); });
+  _fsWireTransferModal(ftCtx);
+  _fsWireGlobalListeners();
+  _fsWireModalBtns(acceptBtn, rejectBtn, closeXBtn, ftCtx);
+  _fsWireDropzoneSend(dropzone, pathInput, sendBtn);
+}
+
 // --- BUILT-IN WEB BROWSER SYSTEM ---
+function _browserParseUrlOrSearch(input) {
+  const trimmed = input.trim();
+  if (!trimmed) return "neurodeck://home";
+  if (/^[a-zA-Z0-9+.-]+:\/\//.test(trimmed)) return trimmed;
+  const isDomain =
+    /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(trimmed) ||
+    /^localhost(:\d+)?(\/.*)?$/.test(trimmed) ||
+    /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed);
+  return isDomain ? "https://" + trimmed : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(trimmed);
+}
+
+// Returns the browser viewport area in logical CSS pixels, viewport-relative.
+// The native browser window is positioned by Rust using viewport coords + Tauri inner_position().
+function _browserGetViewportRect() {
+  const view = document.getElementById("view-browser");
+  if (!view) return null;
+  const toolbar = view.querySelector(".browser-toolbar");
+  const toolbarH = toolbar ? toolbar.getBoundingClientRect().height : 52;
+  const r = view.getBoundingClientRect();
+  return { x: r.left, y: r.top + toolbarH, width: r.width, height: r.height - toolbarH };
+}
+
+function _browserRectsEqual(a, b) {
+  return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+async function _browserNavigateTo(raw, bCtx, urlInput, homeScreen) {
+  const url = _browserParseUrlOrSearch(raw);
+  if (url === "neurodeck://home") {
+    bCtx.url = "neurodeck://home";
+    if (bCtx.open) await invoke("browser_hide").catch(() => {});
+    if (homeScreen) homeScreen.classList.remove("hidden");
+    if (urlInput) urlInput.value = "";
+    return;
+  }
+  bCtx.url = url;
+  if (urlInput) urlInput.value = url;
+  const r = _browserGetViewportRect();
+  if (!r) return;
+  try {
+    if (bCtx.open) {
+      await invoke("browser_navigate", { url });
+    } else {
+      await invoke("browser_open", { url, viewportX: r.x, viewportY: r.y, width: r.width, height: r.height });
+      bCtx.open = true;
+      if (homeScreen) homeScreen.classList.add("hidden");
+    }
+  } catch (e) {
+    console.error("[Browser] Navigation error:", e);
+    window.addNotification("Browser Error", String(e), "error");
+  }
+}
+
+function _browserStartSync(urlInput, bCtx) {
+  if (bCtx.syncInt) return;
+  bCtx.syncInt = setInterval(async () => {
+    if (!bCtx.open) return;
+    const r = _browserGetViewportRect();
+    if (r && !_browserRectsEqual(r, bCtx.lastRect)) {
+      bCtx.lastRect = r;
+      await invoke("browser_show", { viewportX: r.x, viewportY: r.y, width: r.width, height: r.height }).catch(() => {});
+    }
+    try {
+      const liveUrl = await invoke("browser_get_url");
+      if (liveUrl && liveUrl !== bCtx.url && document.activeElement !== urlInput) {
+        bCtx.url = liveUrl;
+        if (urlInput) urlInput.value = liveUrl;
+      }
+      const downloadModelBtn = document.getElementById("browser-download-model-btn");
+      if (downloadModelBtn) {
+        const match = liveUrl ? liveUrl.match(/huggingface\.co\/([^/]+)\/([^/?#]+)/) : null;
+        if (match) {
+          const org = match[1];
+          const model = match[2];
+          if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
+            downloadModelBtn.disabled = false;
+            downloadModelBtn.dataset.repo = org + "/" + model;
+          } else {
+            downloadModelBtn.disabled = true;
+            delete downloadModelBtn.dataset.repo;
+          }
+        } else {
+          downloadModelBtn.disabled = true;
+          delete downloadModelBtn.dataset.repo;
+        }
+      }
+    } catch (_) {}
+  }, 250);
+}
+
+function _browserStopSync(bCtx) {
+  if (bCtx.syncInt) { clearInterval(bCtx.syncInt); bCtx.syncInt = null; }
+  bCtx.lastRect = null;
+}
+
+function _browserWireTabViz(browserTab, bCtx, urlInput, homeScreen) {
+  if (browserTab) {
+    browserTab.addEventListener("click", async () => {
+      if (bCtx.open && bCtx.url !== "neurodeck://home") {
+        const r = _browserGetViewportRect();
+        if (r) await invoke("browser_show", { viewportX: r.x, viewportY: r.y, width: r.width, height: r.height }).catch(() => {});
+      }
+      _browserStartSync(urlInput, bCtx);
+    });
+  }
+  document.querySelectorAll('.nav-tab:not([data-view="browser"])').forEach((tab) => {
+    tab.addEventListener("click", () => {
+      if (bCtx.open) invoke("browser_hide").catch(() => {});
+      _browserStopSync(bCtx);
+    });
+  });
+}
+
+function _browserWireNavBtns(els, bCtx, urlInput, homeScreen) {
+  const { backBtn, forwardBtn, refreshBtn, homeBtn, hfBtn, goBtn, clearBtn, openExtBtn } = els;
+  if (goBtn && urlInput) {
+    goBtn.onclick = () => _browserNavigateTo(urlInput.value, bCtx, urlInput, homeScreen);
+    urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") _browserNavigateTo(urlInput.value, bCtx, urlInput, homeScreen); });
+  }
+  if (clearBtn && urlInput) { clearBtn.onclick = () => { urlInput.value = ""; urlInput.focus(); }; }
+  if (backBtn) backBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.history.back()" }).catch(() => {}); };
+  if (forwardBtn) forwardBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.history.forward()" }).catch(() => {}); };
+  if (refreshBtn) refreshBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.location.reload()" }).catch(() => {}); };
+  if (homeBtn) homeBtn.onclick = () => _browserNavigateTo("neurodeck://home", bCtx, urlInput, homeScreen);
+  if (hfBtn) hfBtn.onclick = () => _browserNavigateTo("https://huggingface.co/models", bCtx, urlInput, homeScreen);
+  if (openExtBtn) {
+    openExtBtn.onclick = () => {
+      const url = urlInput ? urlInput.value.trim() : bCtx.url;
+      const parsed = _browserParseUrlOrSearch(url || bCtx.url);
+      if (parsed && parsed !== "neurodeck://home") invoke("open_external", { url: parsed }).catch(() => {});
+    };
+  }
+}
+
+function _browserWireSaveMemory(btn, urlInput, bCtx) {
+  if (!btn) return;
+  btn.onclick = async () => {
+    const url = (urlInput ? urlInput.value.trim() : null) || bCtx.url;
+    const parsed = _browserParseUrlOrSearch(url);
+    if (!parsed || parsed === "neurodeck://home") return;
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = createIcon("database", { size: 14 }) + "<span>Saving...</span>";
+    try {
+      const res = await invoke("browser_save_to_memory", { url: parsed });
+      btn.innerHTML = createIcon("check", { size: 14 }) + "<span>Saved (" + res.indexed + " chunks)</span>";
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 3000);
+    } catch (e) {
+      console.error("Save memory error:", e);
+      btn.innerHTML = createIcon("x", { size: 14 }) + "<span>Failed</span>";
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 3000);
+    }
+  };
+}
+
+function _browserWireCopyCitation(btn, urlInput, bCtx) {
+  if (!btn) return;
+  btn.onclick = async () => {
+    const url = (urlInput ? urlInput.value.trim() : null) || bCtx.url;
+    const parsed = _browserParseUrlOrSearch(url);
+    if (!parsed || parsed === "neurodeck://home") return;
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = createIcon("quote", { size: 14 }) + "<span>Fetching...</span>";
+    try {
+      const citation = await invoke("browser_get_citation", { url: parsed });
+      await navigator.clipboard.writeText(citation);
+      btn.innerHTML = createIcon("check", { size: 14 }) + "<span>Copied</span>";
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 2000);
+    } catch (e) {
+      console.error("Copy citation error:", e);
+      btn.innerHTML = createIcon("x", { size: 14 }) + "<span>Failed</span>";
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 2000);
+    }
+  };
+}
+
+function _browserWireDownloadModel(btn, bCtx) {
+  if (!btn) return;
+  btn.onclick = () => {
+    const repo = btn.dataset.repo;
+    if (!repo) return;
+    btn.disabled = true;
+    const btnSpan = btn.querySelector("span");
+    const originalText = btnSpan ? btnSpan.textContent : "Download Model";
+    if (btnSpan) btnSpan.textContent = "Checking...";
+    const proceedToModelSearch = () => {
+      if (bCtx.open) invoke("browser_hide").catch(() => {});
+      _browserStopSync(bCtx);
+      openSettingsModal();
+      activateSettingsPanel("sp-models", "models");
+      switchToBrowseTabAndSearch(repo);
+      if (btnSpan) btnSpan.textContent = originalText;
+      btn.disabled = false;
+    };
+    invoke("hf_get_model_info", { repoId: repo })
+      .then((modelInfo) => {
+        if (!modelInfo.steam_deck_compat) {
+          const ok = window.confirm(
+            "\u26A0\uFE0F Compatibility Warning\n\nThe model \"" + repo + "\" might not run flawlessly on the Steam Deck.\n" +
+            "\u2022 Steam Deck has 16GB of unified RAM.\n\u2022 Flawlessly compatible models are usually < 6GB in size and <= 7B parameters.\n\n" +
+            "Do you still want to proceed with downloading it?"
+          );
+          if (!ok) { if (btnSpan) btnSpan.textContent = originalText; btn.disabled = false; return; }
+        }
+        proceedToModelSearch();
+      })
+      .catch((err) => {
+        const ok = window.confirm(
+          "\u26A0\uFE0F Compatibility Check Failed\n\nCould not verify Steam Deck compatibility for \"" + repo + "\" (Error: " + err + ").\n\n" +
+          "Do you still want to proceed to the Model Library?"
+        );
+        if (!ok) { if (btnSpan) btnSpan.textContent = originalText; btn.disabled = false; return; }
+        proceedToModelSearch();
+      });
+  };
+}
+
+function _browserWireSpeedDial(cards, bCtx, urlInput, homeScreen) {
+  cards.forEach((card) => {
+    card.onclick = () => { const url = card.getAttribute("data-url"); if (url) _browserNavigateTo(url, bCtx, urlInput, homeScreen); };
+  });
+}
+
+function _browserWireHomeSearch(btn, input, bCtx, urlInput, homeScreen) {
+  if (!btn || !input) return;
+  btn.onclick = () => { const q = input.value.trim(); if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen); };
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { const q = input.value.trim(); if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen); } });
+}
+
+function _browserWireKeyboard(els, bCtx, urlInput) {
+  const { refreshBtn, backBtn, forwardBtn } = els;
+  document.addEventListener("keydown", (e) => {
+    const bv = document.getElementById("view-browser");
+    if (!bv || !bv.classList.contains("active")) return;
+    if (e.key === "F5") { e.preventDefault(); if (refreshBtn) refreshBtn.click(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === "l") { e.preventDefault(); if (urlInput) { urlInput.focus(); urlInput.select(); } }
+    if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); if (backBtn) backBtn.click(); }
+    if (e.altKey && e.key === "ArrowRight") { e.preventDefault(); if (forwardBtn) forwardBtn.click(); }
+  });
+}
+
 function initBrowser() {
   const urlInput = document.getElementById("browser-url-input");
   const clearBtn = document.getElementById("browser-url-clear-btn");
@@ -7257,419 +7057,25 @@ function initBrowser() {
   const saveMemoryBtn = document.getElementById("browser-save-memory-btn");
   const copyCitationBtn = document.getElementById("browser-copy-citation-btn");
   const speedDialCards = document.querySelectorAll(".speed-dial-card");
+  const downloadModelBtn = document.getElementById("browser-download-model-btn");
+  const browserTab = document.querySelector('.nav-tab[data-view="browser"]');
 
-  // Permanently hide the old iframe — the native window replaces it
   const oldIframe = document.getElementById("browser-iframe");
   if (oldIframe) oldIframe.style.display = "none";
   const blockedScreen = document.getElementById("browser-blocked-screen");
   if (blockedScreen) blockedScreen.style.display = "none";
 
-  // State
-  let browserWindowOpen = false;
-  let currentUrl = "neurodeck://home";
-  let syncInterval = null; // URL + position polling
-  let lastRect = null;
+  const bCtx = { open: false, url: "neurodeck://home", syncInt: null, lastRect: null };
+  window.browserNavigateTo = (raw) => _browserNavigateTo(raw, bCtx, urlInput, homeScreen);
 
-  // --- URL parsing ---
-  function parseUrlOrSearch(input) {
-    const trimmed = input.trim();
-    if (!trimmed) return "neurodeck://home";
-    if (/^[a-zA-Z0-9+.-]+:\/\//.test(trimmed)) return trimmed;
-    const isDomain =
-      /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(trimmed) ||
-      /^localhost(:\d+)?(\/.*)?$/.test(trimmed) ||
-      /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed);
-    return isDomain
-      ? "https://" + trimmed
-      : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(trimmed);
-  }
-
-  // Returns the browser viewport area in logical CSS pixels, viewport-relative.
-  // The native browser window is positioned by Rust using these + the Tauri
-  // window's inner_position(), so we never need window.screenX/Y.
-  function getViewportRect() {
-    const view = document.getElementById("view-browser");
-    if (!view) return null;
-    const toolbar = view.querySelector(".browser-toolbar");
-    const toolbarH = toolbar ? toolbar.getBoundingClientRect().height : 52;
-    const r = view.getBoundingClientRect();
-    return {
-      x: r.left,
-      y: r.top + toolbarH,
-      width: r.width,
-      height: r.height - toolbarH,
-    };
-  }
-
-  function rectsEqual(a, b) {
-    return (
-      a &&
-      b &&
-      a.x === b.x &&
-      a.y === b.y &&
-      a.width === b.width &&
-      a.height === b.height
-    );
-  }
-
-  // --- Home screen visibility ---
-  function showHome() {
-    if (homeScreen) homeScreen.classList.remove("hidden");
-    if (urlInput) urlInput.value = "";
-    currentUrl = "neurodeck://home";
-  }
-
-  function hideHome() {
-    if (homeScreen) homeScreen.classList.add("hidden");
-  }
-
-  // --- Navigation ---
-  async function navigateTo(raw) {
-    const url = parseUrlOrSearch(raw);
-
-    if (url === "neurodeck://home") {
-      currentUrl = "neurodeck://home";
-      if (browserWindowOpen) {
-        await invoke("browser_hide").catch(() => {});
-      }
-      showHome();
-      return;
-    }
-
-    currentUrl = url;
-    if (urlInput) urlInput.value = url;
-
-    const r = getViewportRect();
-    if (!r) return;
-
-    try {
-      if (browserWindowOpen) {
-        await invoke("browser_navigate", { url });
-      } else {
-        await invoke("browser_open", {
-          url,
-          viewportX: r.x,
-          viewportY: r.y,
-          width: r.width,
-          height: r.height,
-        });
-        browserWindowOpen = true;
-        hideHome();
-      }
-    } catch (e) {
-      console.error("[Browser] Navigation error:", e);
-      window.addNotification("Browser Error", String(e), "error");
-    }
-  }
-
-  window.browserNavigateTo = navigateTo;
-
-  // --- Sync interval: URL readback + reposition on move/resize ---
-  function startSync() {
-    if (syncInterval) return;
-    syncInterval = setInterval(async () => {
-      // Reposition if view moved or resized
-      if (browserWindowOpen) {
-        const r = getViewportRect();
-        if (r && !rectsEqual(r, lastRect)) {
-          lastRect = r;
-          await invoke("browser_show", {
-            viewportX: r.x,
-            viewportY: r.y,
-            width: r.width,
-            height: r.height,
-          }).catch(() => {});
-        }
-
-        // Sync URL back to address bar
-        try {
-          const liveUrl = await invoke("browser_get_url");
-          if (
-            liveUrl &&
-            liveUrl !== currentUrl &&
-            document.activeElement !== urlInput
-          ) {
-            currentUrl = liveUrl;
-            if (urlInput) urlInput.value = liveUrl;
-          }
-
-          // Check if it's a Hugging Face model repo page
-          const downloadModelBtn = document.getElementById("browser-download-model-btn");
-          if (downloadModelBtn) {
-            const match = liveUrl ? liveUrl.match(/huggingface\.co\/([^\/]+)\/([^\/\?#]+)/) : null;
-            if (match) {
-              const org = match[1];
-              const model = match[2];
-              if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
-                downloadModelBtn.disabled = false;
-                downloadModelBtn.dataset.repo = `${org}/${model}`;
-              } else {
-                downloadModelBtn.disabled = true;
-                delete downloadModelBtn.dataset.repo;
-              }
-            } else {
-              downloadModelBtn.disabled = true;
-              delete downloadModelBtn.dataset.repo;
-            }
-          }
-        } catch (_) {}
-      }
-    }, 250);
-  }
-
-  function stopSync() {
-    if (syncInterval) {
-      clearInterval(syncInterval);
-      syncInterval = null;
-    }
-    lastRect = null;
-  }
-
-  // --- Tab activation / deactivation ---
-  const browserTab = document.querySelector('.nav-tab[data-view="browser"]');
-  if (browserTab) {
-    browserTab.addEventListener("click", async () => {
-      if (browserWindowOpen && currentUrl !== "neurodeck://home") {
-        const r = getViewportRect();
-        if (r) {
-          await invoke("browser_show", {
-            viewportX: r.x,
-            viewportY: r.y,
-            width: r.width,
-            height: r.height,
-          }).catch(() => {});
-        }
-      }
-      startSync();
-    });
-  }
-
-  document
-    .querySelectorAll('.nav-tab:not([data-view="browser"])')
-    .forEach((tab) => {
-      tab.addEventListener("click", () => {
-        if (browserWindowOpen) invoke("browser_hide").catch(() => {});
-        stopSync();
-      });
-    });
-
-  // --- Toolbar button events ---
-  if (goBtn && urlInput) {
-    goBtn.onclick = () => navigateTo(urlInput.value);
-    urlInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") navigateTo(urlInput.value);
-    });
-  }
-
-  if (clearBtn && urlInput) {
-    clearBtn.onclick = () => {
-      urlInput.value = "";
-      urlInput.focus();
-    };
-  }
-
-  if (backBtn) {
-    backBtn.onclick = () => {
-      if (browserWindowOpen)
-        invoke("browser_exec", {
-          js: "window.history.back()",
-        }).catch(() => {});
-    };
-  }
-
-  if (forwardBtn) {
-    forwardBtn.onclick = () => {
-      if (browserWindowOpen)
-        invoke("browser_exec", {
-          js: "window.history.forward()",
-        }).catch(() => {});
-    };
-  }
-
-  if (refreshBtn) {
-    refreshBtn.onclick = () => {
-      if (browserWindowOpen)
-        invoke("browser_exec", {
-          js: "window.location.reload()",
-        }).catch(() => {});
-    };
-  }
-
-  if (homeBtn) homeBtn.onclick = () => navigateTo("neurodeck://home");
-  if (hfBtn) hfBtn.onclick = () => navigateTo("https://huggingface.co/models");
-
-  if (openExtBtn) {
-    openExtBtn.onclick = () => {
-      const url = urlInput?.value.trim() || currentUrl;
-      const parsed = parseUrlOrSearch(url);
-      if (parsed && parsed !== "neurodeck://home") {
-        invoke("open_external", { url: parsed }).catch(() => {});
-      }
-    };
-  }
-
-  if (saveMemoryBtn) {
-    saveMemoryBtn.onclick = async () => {
-      const url = urlInput?.value.trim() || currentUrl;
-      const parsed = parseUrlOrSearch(url);
-      if (parsed && parsed !== "neurodeck://home") {
-        saveMemoryBtn.disabled = true;
-        const originalHtml = saveMemoryBtn.innerHTML;
-        saveMemoryBtn.innerHTML = `${createIcon("database", { size: 14 })}<span>Saving...</span>`;
-        try {
-          const res = await invoke("browser_save_to_memory", { url: parsed });
-          saveMemoryBtn.innerHTML = `${createIcon("check", { size: 14 })}<span>Saved (${res.indexed} chunks)</span>`;
-          setTimeout(() => {
-            saveMemoryBtn.disabled = false;
-            saveMemoryBtn.innerHTML = originalHtml;
-          }, 3000);
-        } catch (e) {
-          console.error("Save memory error:", e);
-          saveMemoryBtn.innerHTML = `${createIcon("x", { size: 14 })}<span>Failed</span>`;
-          setTimeout(() => {
-            saveMemoryBtn.disabled = false;
-            saveMemoryBtn.innerHTML = originalHtml;
-          }, 3000);
-        }
-      }
-    };
-  }
-
-  if (copyCitationBtn) {
-    copyCitationBtn.onclick = async () => {
-      const url = urlInput?.value.trim() || currentUrl;
-      const parsed = parseUrlOrSearch(url);
-      if (parsed && parsed !== "neurodeck://home") {
-        copyCitationBtn.disabled = true;
-        const originalHtml = copyCitationBtn.innerHTML;
-        copyCitationBtn.innerHTML = `${createIcon("quote", { size: 14 })}<span>Fetching...</span>`;
-        try {
-          const citation = await invoke("browser_get_citation", { url: parsed });
-          await navigator.clipboard.writeText(citation);
-          copyCitationBtn.innerHTML = `${createIcon("check", { size: 14 })}<span>Copied</span>`;
-          setTimeout(() => {
-            copyCitationBtn.disabled = false;
-            copyCitationBtn.innerHTML = originalHtml;
-          }, 2000);
-        } catch (e) {
-          console.error("Copy citation error:", e);
-          copyCitationBtn.innerHTML = `${createIcon("x", { size: 14 })}<span>Failed</span>`;
-          setTimeout(() => {
-            copyCitationBtn.disabled = false;
-            copyCitationBtn.innerHTML = originalHtml;
-          }, 2000);
-        }
-      }
-    };
-  }
-
-  const downloadModelBtn = document.getElementById("browser-download-model-btn");
-  if (downloadModelBtn) {
-    downloadModelBtn.onclick = () => {
-      const repo = downloadModelBtn.dataset.repo;
-      if (!repo) return;
-
-      // Disable button and show loading state
-      downloadModelBtn.disabled = true;
-      const btnSpan = downloadModelBtn.querySelector("span");
-      const originalText = btnSpan ? btnSpan.textContent : "Download Model";
-      if (btnSpan) btnSpan.textContent = "Checking...";
-
-      const proceedToModelSearch = () => {
-        if (browserWindowOpen) {
-          invoke("browser_hide").catch(() => {});
-        }
-        stopSync();
-
-        openSettingsModal();
-        activateSettingsPanel("sp-models", "models");
-        switchToBrowseTabAndSearch(repo);
-
-        if (btnSpan) btnSpan.textContent = originalText;
-        downloadModelBtn.disabled = false;
-      };
-
-      invoke("hf_get_model_info", { repoId: repo })
-        .then((modelInfo) => {
-          if (!modelInfo.steam_deck_compat) {
-            const userConfirmed = window.confirm(
-              `⚠️ Compatibility Warning\n\n` +
-              `The model "${repo}" might not run flawlessly on the Steam Deck.\n` +
-              `• Steam Deck has 16GB of unified RAM.\n` +
-              `• Flawlessly compatible models are usually < 6GB in size and <= 7B parameters.\n\n` +
-              `Do you still want to proceed with downloading it?`
-            );
-            if (!userConfirmed) {
-              if (btnSpan) btnSpan.textContent = originalText;
-              downloadModelBtn.disabled = false;
-              return;
-            }
-          }
-
-          proceedToModelSearch();
-        })
-        .catch((err) => {
-          const userConfirmed = window.confirm(
-            `⚠️ Compatibility Check Failed\n\n` +
-            `Could not verify Steam Deck compatibility for "${repo}" (Error: ${err}).\n\n` +
-            `Do you still want to proceed to the Model Library?`
-          );
-          if (!userConfirmed) {
-            if (btnSpan) btnSpan.textContent = originalText;
-            downloadModelBtn.disabled = false;
-            return;
-          }
-
-          proceedToModelSearch();
-        });
-    };
-  }
-
-  speedDialCards.forEach((card) => {
-    card.onclick = () => {
-      const url = card.getAttribute("data-url");
-      if (url) navigateTo(url);
-    };
-  });
-
-  if (homeSearchBtn && homeSearchInput) {
-    homeSearchBtn.onclick = () => {
-      const q = homeSearchInput.value.trim();
-      if (q) navigateTo(q);
-    };
-    homeSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const q = homeSearchInput.value.trim();
-        if (q) navigateTo(q);
-      }
-    });
-  }
-
-  // --- Keyboard shortcuts ---
-  document.addEventListener("keydown", (e) => {
-    const bv = document.getElementById("view-browser");
-    if (!bv?.classList.contains("active")) return;
-
-    if (e.key === "F5") {
-      e.preventDefault();
-      if (refreshBtn) refreshBtn.click();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "l") {
-      e.preventDefault();
-      if (urlInput) {
-        urlInput.focus();
-        urlInput.select();
-      }
-    }
-    if (e.altKey && e.key === "ArrowLeft") {
-      e.preventDefault();
-      if (backBtn) backBtn.click();
-    }
-    if (e.altKey && e.key === "ArrowRight") {
-      e.preventDefault();
-      if (forwardBtn) forwardBtn.click();
-    }
-  });
+  _browserWireTabViz(browserTab, bCtx, urlInput, homeScreen);
+  _browserWireNavBtns({ backBtn, forwardBtn, refreshBtn, homeBtn, hfBtn, goBtn, clearBtn, openExtBtn }, bCtx, urlInput, homeScreen);
+  _browserWireSaveMemory(saveMemoryBtn, urlInput, bCtx);
+  _browserWireCopyCitation(copyCitationBtn, urlInput, bCtx);
+  _browserWireDownloadModel(downloadModelBtn, bCtx);
+  _browserWireSpeedDial(speedDialCards, bCtx, urlInput, homeScreen);
+  _browserWireHomeSearch(homeSearchBtn, homeSearchInput, bCtx, urlInput, homeScreen);
+  _browserWireKeyboard({ refreshBtn, backBtn, forwardBtn }, bCtx, urlInput);
 }
 
 // ==========================================================================
@@ -7678,108 +7084,73 @@ function initBrowser() {
 // initAgentView is imported from ./agent.js
 
 // --- OLLAMA MODEL MANAGER SYSTEM ---
+function _buildOllamaModelRow(m, baseUrl) {
+  const isCurrent =
+    m.name.includes(localStorage.getItem("settings-ollama-model") || "llama2") ||
+    m.name === (document.getElementById("settings-ollama-model")?.value || "llama2");
+  const row = document.createElement("div");
+  Object.assign(row.style, { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px", borderBottom: "1px solid rgba(255,255,255,0.03)" });
+  const item = document.createElement("div");
+  Object.assign(item.style, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", cursor: "pointer" });
+  item.className = "settings-ollama-model-item";
+  item.setAttribute("data-model", m.name);
+  if (isCurrent) {
+    const active = document.createElement("span");
+    Object.assign(active.style, { color: "var(--accent-color)", fontWeight: "bold", marginRight: "6px" });
+    active.textContent = "[Active]";
+    item.appendChild(active);
+  }
+  item.append(" " + m.name + " ");
+  const size = document.createElement("span");
+  Object.assign(size.style, { opacity: "0.5", fontSize: "0.75rem" });
+  size.textContent = "(" + formatBytes(m.size) + ")";
+  item.appendChild(size);
+  item.onclick = () => {
+    const modelInput = document.getElementById("settings-ollama-model");
+    if (modelInput) { modelInput.value = m.name; document.getElementById("settings-save-llm-btn")?.click(); }
+  };
+  const btn = document.createElement("button");
+  btn.className = "canvas-btn settings-ollama-delete-btn";
+  Object.assign(btn.style, { padding: "2px 8px", fontSize: "0.7rem", borderColor: "#ff3c5a", color: "#ff3c5a" });
+  btn.setAttribute("data-model", m.name);
+  btn.textContent = "Delete";
+  btn.onclick = () => {
+    if (confirm("Are you sure you want to delete local model " + m.name + "?")) {
+      btn.disabled = true; btn.innerText = "Deleting...";
+      invoke("ollama_delete_model", { baseUrl, model: m.name })
+        .then(() => refreshOllamaModels())
+        .catch((err) => { alert("Delete failed: " + err); refreshOllamaModels(); });
+    }
+  };
+  row.append(item, btn);
+  return row;
+}
+
 function refreshOllamaModels() {
   const baseUrlInput = document.getElementById("settings-ollama-url");
-  const baseUrl =
-    (baseUrlInput?.value || "").trim() || "http://localhost:11434";
+  const baseUrl = (baseUrlInput?.value || "").trim() || "http://localhost:11434";
   const listEl = document.getElementById("settings-ollama-models-list");
   if (!listEl) return;
-
   const loading = document.createElement("div");
-  loading.style.opacity = "0.5";
-  loading.style.fontStyle = "italic";
+  Object.assign(loading.style, { opacity: "0.5", fontStyle: "italic" });
   loading.textContent = "Loading models...";
   listEl.replaceChildren(loading);
-
   invoke("ollama_list_models", { baseUrl })
     .then((models) => {
       if (models.length === 0) {
         const empty = document.createElement("div");
-        empty.style.opacity = "0.5";
-        empty.style.fontStyle = "italic";
+        Object.assign(empty.style, { opacity: "0.5", fontStyle: "italic" });
         empty.textContent = "No local models found.";
         listEl.replaceChildren(empty);
         return;
       }
       listEl.replaceChildren();
-      models.forEach((m) => {
-        const isCurrent =
-          m.name.includes(
-            localStorage.getItem("settings-ollama-model") || "llama2",
-          ) ||
-          m.name ===
-            (document.getElementById("settings-ollama-model")?.value ||
-              "llama2");
-        const row = document.createElement("div");
-        row.style.display = "flex";
-        row.style.justifyContent = "space-between";
-        row.style.alignItems = "center";
-        row.style.padding = "4px";
-        row.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
-
-        const item = document.createElement("div");
-        item.style.overflow = "hidden";
-        item.style.textOverflow = "ellipsis";
-        item.style.whiteSpace = "nowrap";
-        item.style.flex = "1";
-        item.style.cursor = "pointer";
-        item.className = "settings-ollama-model-item";
-        item.setAttribute("data-model", m.name);
-        if (isCurrent) {
-          const active = document.createElement("span");
-          active.style.color = "var(--accent-color)";
-          active.style.fontWeight = "bold";
-          active.style.marginRight = "6px";
-          active.textContent = "[Active]";
-          item.appendChild(active);
-        }
-        item.append(` ${m.name} `);
-        const size = document.createElement("span");
-        size.style.opacity = "0.5";
-        size.style.fontSize = "0.75rem";
-        size.textContent = `(${formatBytes(m.size)})`;
-        item.appendChild(size);
-        item.onclick = () => {
-          const modelInput = document.getElementById("settings-ollama-model");
-          if (modelInput) {
-            modelInput.value = m.name;
-            document.getElementById("settings-save-llm-btn")?.click();
-          }
-        };
-
-        const btn = document.createElement("button");
-        btn.className = "canvas-btn settings-ollama-delete-btn";
-        btn.style.padding = "2px 8px";
-        btn.style.fontSize = "0.7rem";
-        btn.style.borderColor = "#ff3c5a";
-        btn.style.color = "#ff3c5a";
-        btn.setAttribute("data-model", m.name);
-        btn.textContent = "Delete";
-        btn.onclick = () => {
-          if (
-            confirm(`Are you sure you want to delete local model ${m.name}?`)
-          ) {
-            btn.disabled = true;
-            btn.innerText = "Deleting...";
-            invoke("ollama_delete_model", { baseUrl, model: m.name })
-              .then(() => {
-                refreshOllamaModels();
-              })
-              .catch((err) => {
-                alert(`Delete failed: ${err}`);
-                refreshOllamaModels();
-              });
-          }
-        };
-        row.append(item, btn);
-        listEl.appendChild(row);
-      });
+      models.forEach((m) => listEl.appendChild(_buildOllamaModelRow(m, baseUrl)));
     })
     .catch((err) => {
       const error = document.createElement("div");
-      error.style.color = "#ff6b6b";
-      error.style.fontSize = "0.75rem";
-      error.textContent = `Failed to list models: ${String(err)}`;
+      Object.assign(error.style, { color: "#ff6b6b", fontSize: "0.75rem" });
+      error.textContent = "Failed to list models: " + String(err);
       listEl.replaceChildren(error);
     });
 }
@@ -7858,131 +7229,81 @@ listen("ollama_pull_progress", (event) => {
 });
 
 // --- LUA PLUGINS MANAGER SYSTEM ---
+function _buildPluginRow(p) {
+  const row = document.createElement("div");
+  row.className = "ssh-profile-item";
+  row.style.cssText = "padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;";
+  const left = document.createElement("div");
+  left.style.cssText = "display:flex;align-items:center;gap:8px;";
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.className = "plugin-toggle-checkbox";
+  chk.setAttribute("data-file", p.file_name);
+  chk.checked = !!p.enabled;
+  chk.style.accentColor = "var(--accent-color)";
+  chk.style.cursor = "pointer";
+  chk.onchange = () => {
+    const enabled = chk.checked;
+    const statusEl = document.getElementById("settings-plugin-status");
+    if (statusEl) statusEl.innerText = "Toggling plugin...";
+    invoke("toggle_plugin", { fileName: p.file_name, enabled })
+      .then(() => { if (statusEl) statusEl.innerText = "Plugin " + (enabled ? "enabled" : "disabled") + " successfully."; loadPluginsList(); })
+      .catch((err) => { if (statusEl) statusEl.innerText = "Failed to toggle: " + err; chk.checked = !enabled; });
+  };
+  const name = document.createElement("span");
+  name.style.fontWeight = "500";
+  name.style.color = p.enabled ? "var(--foreground-color)" : "rgba(255,255,255,0.3)";
+  name.textContent = p.name;
+  const file = document.createElement("span");
+  file.style.cssText = "font-size:0.7rem;opacity:0.5;";
+  file.textContent = "(" + p.file_name + ")";
+  left.append(chk, name, file);
+  const btn = document.createElement("button");
+  btn.className = "canvas-btn plugin-edit-btn";
+  btn.setAttribute("data-file", p.file_name);
+  btn.style.cssText = "padding:3px 8px;font-size:0.75rem;";
+  btn.textContent = "Edit";
+  btn.onclick = () => {
+    const statusEl = document.getElementById("settings-plugin-status");
+    if (statusEl) statusEl.innerText = "Reading plugin content...";
+    invoke("read_plugin", { fileName: p.file_name })
+      .then((content) => {
+        document.getElementById("settings-overlay")?.classList.remove("active");
+        if (statusEl) statusEl.innerText = "";
+        window.neurodeckCanvas.activePluginFile = p.file_name;
+        loadCanvasCode("lua", content, p.file_name);
+        const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
+        if (canvasTab) canvasTab.click();
+      })
+      .catch((err) => { if (statusEl) statusEl.innerText = "Failed to read plugin: " + err; });
+  };
+  row.append(left, btn);
+  return row;
+}
+
 function loadPluginsList() {
   const listEl = document.getElementById("settings-plugins-list");
   if (!listEl) return;
-
   const loading = document.createElement("div");
-  loading.style.opacity = "0.5";
-  loading.style.fontStyle = "italic";
+  loading.style.cssText = "opacity:0.5;font-style:italic;";
   loading.textContent = "Loading plugins...";
   listEl.replaceChildren(loading);
-
   invoke("list_plugins")
     .then((plugins) => {
       if (plugins.length === 0) {
         const empty = document.createElement("div");
-        empty.style.opacity = "0.5";
-        empty.style.fontStyle = "italic";
-        empty.style.padding = "5px";
+        empty.style.cssText = "opacity:0.5;font-style:italic;padding:5px;";
         empty.textContent = "No plugins found.";
         listEl.replaceChildren(empty);
         return;
       }
-
       listEl.replaceChildren();
-      plugins.forEach((p) => {
-        const row = document.createElement("div");
-        row.className = "ssh-profile-item";
-        row.style.padding = "6px 8px";
-        row.style.background = "rgba(255,255,255,0.02)";
-        row.style.borderRadius = "4px";
-        row.style.border = "1px solid rgba(255,255,255,0.04)";
-        row.style.display = "flex";
-        row.style.alignItems = "center";
-        row.style.justifyContent = "space-between";
-        row.style.gap = "10px";
-        row.style.marginBottom = "4px";
-
-        const left = document.createElement("div");
-        left.style.display = "flex";
-        left.style.alignItems = "center";
-        left.style.gap = "8px";
-
-        const chk = document.createElement("input");
-        chk.type = "checkbox";
-        chk.className = "plugin-toggle-checkbox";
-        chk.setAttribute("data-file", p.file_name);
-        chk.checked = !!p.enabled;
-        chk.style.accentColor = "var(--accent-color)";
-        chk.style.cursor = "pointer";
-        chk.onchange = () => {
-          const enabled = chk.checked;
-          const statusEl = document.getElementById("settings-plugin-status");
-          if (statusEl) statusEl.innerText = "Toggling plugin...";
-
-          invoke("toggle_plugin", { fileName: p.file_name, enabled })
-            .then(() => {
-              if (statusEl)
-                statusEl.innerText = `Plugin ${enabled ? "enabled" : "disabled"} successfully.`;
-              loadPluginsList();
-            })
-            .catch((err) => {
-              if (statusEl) statusEl.innerText = `Failed to toggle: ${err}`;
-              chk.checked = !enabled; // revert
-            });
-        };
-
-        const name = document.createElement("span");
-        name.style.fontWeight = "500";
-        name.style.color = p.enabled
-          ? "var(--foreground-color)"
-          : "rgba(255,255,255,0.3)";
-        name.textContent = p.name;
-
-        const file = document.createElement("span");
-        file.style.fontSize = "0.7rem";
-        file.style.opacity = "0.5";
-        file.textContent = `(${p.file_name})`;
-
-        left.append(chk, name, file);
-
-        const btn = document.createElement("button");
-        btn.className = "canvas-btn plugin-edit-btn";
-        btn.setAttribute("data-file", p.file_name);
-        btn.style.padding = "3px 8px";
-        btn.style.fontSize = "0.75rem";
-        btn.textContent = "Edit";
-        btn.onclick = () => {
-          const statusEl = document.getElementById("settings-plugin-status");
-          if (statusEl) statusEl.innerText = "Reading plugin content...";
-
-          invoke("read_plugin", { fileName: p.file_name })
-            .then((content) => {
-              // Close settings modal
-              document
-                .getElementById("settings-overlay")
-                ?.classList.remove("active");
-
-              // Clear status
-              if (statusEl) statusEl.innerText = "";
-
-              // Set active file
-              window.neurodeckCanvas.activePluginFile = p.file_name;
-
-              // Load into canvas
-              loadCanvasCode("lua", content, p.file_name);
-
-              // Switch to canvas tab
-              const canvasTab = document.querySelector(
-                '.nav-tab[data-view="canvas"]',
-              );
-              if (canvasTab) canvasTab.click();
-            })
-            .catch((err) => {
-              if (statusEl)
-                statusEl.innerText = `Failed to read plugin: ${err}`;
-            });
-        };
-        row.append(left, btn);
-        listEl.appendChild(row);
-      });
+      plugins.forEach((p) => listEl.appendChild(_buildPluginRow(p)));
     })
     .catch((err) => {
       const error = document.createElement("div");
-      error.style.color = "var(--error-color)";
-      error.style.padding = "5px";
-      error.textContent = `Failed to load plugins: ${String(err)}`;
+      error.style.cssText = "color:var(--error-color);padding:5px;";
+      error.textContent = "Failed to load plugins: " + String(err);
       listEl.replaceChildren(error);
     });
 }
@@ -8002,147 +7323,92 @@ function escapeMarketplaceHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function _buildMarketplaceCard(plugin) {
+  const card = document.createElement("div");
+  card.className = ("plugin-marketplace-card " + (plugin.installed ? "installed" : "")).trim();
+  const title = document.createElement("div");
+  title.className = "plugin-marketplace-title";
+  const strong = document.createElement("strong");
+  strong.textContent = String(plugin.name ?? "");
+  const secondary = document.createElement("span");
+  secondary.className = "plugin-marketplace-badge";
+  const hasUpdate = plugin.installed && plugin.installed_version && plugin.version && plugin.version !== plugin.installed_version;
+  if (plugin.installed && !plugin.enabled) { secondary.textContent = "Disabled"; }
+  else if (hasUpdate) { secondary.textContent = "Update → v" + plugin.version; secondary.style.cssText = "background:rgba(255,200,87,0.15);color:var(--warning-color);border-color:rgba(255,200,87,0.3);"; }
+  else if (plugin.installed) { secondary.textContent = "Installed"; }
+  else { secondary.textContent = "v" + String(plugin.version ?? ""); }
+  title.append(strong, secondary);
+  const meta = document.createElement("div");
+  meta.className = "plugin-marketplace-meta";
+  meta.textContent = String(plugin.author ?? "") + " · " + String(plugin.lua_file ?? "");
+  const desc = document.createElement("div");
+  desc.className = "plugin-marketplace-desc";
+  desc.textContent = String(plugin.description ?? "");
+  const tagsWrap = document.createElement("div");
+  tagsWrap.className = "plugin-marketplace-tags";
+  (plugin.tags && plugin.tags.length ? plugin.tags : ["utility"]).forEach((tag) => {
+    const span = document.createElement("span");
+    span.className = "plugin-marketplace-tag";
+    span.textContent = String(tag);
+    tagsWrap.appendChild(span);
+  });
+  const actions = document.createElement("div");
+  actions.className = "plugin-marketplace-actions";
+  const btn = document.createElement("button");
+  btn.className = plugin.installed ? "stv-btn-ghost marketplace-uninstall-btn" : "stv-btn-primary marketplace-install-btn";
+  btn.setAttribute("data-plugin-id", String(plugin.id));
+  btn.textContent = plugin.installed ? "Uninstall" : "Install";
+  btn.onclick = async () => {
+    const statusEl = document.getElementById("plugin-marketplace-status");
+    btn.disabled = true;
+    if (plugin.installed) {
+      if (!confirm("Uninstall marketplace plugin '" + plugin.id + "'?")) { btn.disabled = false; return; }
+      if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
+      try { await invoke("uninstall_plugin", { pluginId: plugin.id }); if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded."; await loadPluginMarketplace(); loadPluginsList(); }
+      catch (err) { if (statusEl) statusEl.innerText = "Uninstall failed: " + err; }
+      finally { btn.disabled = false; }
+    } else {
+      if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
+      try { await invoke("install_plugin_from_registry", { pluginId: plugin.id }); if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded."; await loadPluginMarketplace(); loadPluginsList(); }
+      catch (err) { if (statusEl) statusEl.innerText = "Install failed: " + err; }
+      finally { btn.disabled = false; }
+    }
+  };
+  actions.appendChild(btn);
+  card.append(title, meta, desc, tagsWrap, actions);
+  return card;
+}
+
 function renderPluginMarketplace() {
   const grid = document.getElementById("plugin-marketplace-grid");
   const tagSelect = document.getElementById("plugin-marketplace-tag");
   const categorySelect = document.getElementById("plugin-marketplace-category");
   if (!grid) return;
-
-  const tags = [
-    ...new Set(pluginMarketplaceState.plugins.flatMap((p) => p.tags || [])),
-  ].sort();
+  const tags = [...new Set(pluginMarketplaceState.plugins.flatMap((p) => p.tags || []))].sort();
   if (tagSelect) {
     const selected = tagSelect.value || pluginMarketplaceState.tag;
     tagSelect.replaceChildren();
-    const allOption = document.createElement("option");
-    allOption.value = "";
-    allOption.textContent = "All Tags";
-    tagSelect.appendChild(allOption);
-    tags.forEach((tag) => {
-      const option = document.createElement("option");
-      option.value = String(tag);
-      option.textContent = String(tag);
-      tagSelect.appendChild(option);
-    });
+    const allOpt = document.createElement("option"); allOpt.value = ""; allOpt.textContent = "All Tags"; tagSelect.appendChild(allOpt);
+    tags.forEach((tag) => { const opt = document.createElement("option"); opt.value = String(tag); opt.textContent = String(tag); tagSelect.appendChild(opt); });
     tagSelect.value = tags.includes(selected) ? selected : "";
     pluginMarketplaceState.tag = tagSelect.value;
   }
-
   const query = pluginMarketplaceState.search.trim().toLowerCase();
   const selectedTag = pluginMarketplaceState.tag;
   const selectedCategory = categorySelect?.value || "";
   const filtered = pluginMarketplaceState.plugins.filter((plugin) => {
-    const haystack =
-      `${plugin.name} ${plugin.description} ${plugin.author} ${(plugin.tags || []).join(" ")} ${plugin.category || ""}`.toLowerCase();
-    const matchesQuery = !query || haystack.includes(query);
-    const matchesTag = !selectedTag || (plugin.tags || []).includes(selectedTag);
-    const matchesCategory = !selectedCategory || (plugin.category || "utility") === selectedCategory;
-    return matchesQuery && matchesTag && matchesCategory;
+    const haystack = (plugin.name + " " + plugin.description + " " + plugin.author + " " + (plugin.tags || []).join(" ") + " " + (plugin.category || "")).toLowerCase();
+    return (!query || haystack.includes(query)) && (!selectedTag || (plugin.tags || []).includes(selectedTag)) && (!selectedCategory || (plugin.category || "utility") === selectedCategory);
   });
-
   if (filtered.length === 0) {
     const empty = document.createElement("div");
-    empty.style.opacity = "0.45";
-    empty.style.fontStyle = "italic";
+    empty.style.cssText = "opacity:0.45;font-style:italic;";
     empty.textContent = "No marketplace plugins match this filter.";
     grid.replaceChildren(empty);
     return;
   }
-
   grid.replaceChildren();
-  filtered.forEach((plugin) => {
-    const card = document.createElement("div");
-    card.className =
-      `plugin-marketplace-card ${plugin.installed ? "installed" : ""}`.trim();
-
-    const title = document.createElement("div");
-    title.className = "plugin-marketplace-title";
-    const strong = document.createElement("strong");
-    strong.textContent = String(plugin.name ?? "");
-    const secondary = document.createElement("span");
-    secondary.className = "plugin-marketplace-badge";
-    const hasUpdate = plugin.installed && plugin.installed_version &&
-      plugin.version && plugin.version !== plugin.installed_version;
-    if (plugin.installed && !plugin.enabled) {
-      secondary.textContent = "Disabled";
-    } else if (hasUpdate) {
-      secondary.textContent = `Update → v${plugin.version}`;
-      secondary.style.background = "rgba(255,200,87,0.15)";
-      secondary.style.color = "var(--warning-color)";
-      secondary.style.borderColor = "rgba(255,200,87,0.3)";
-    } else if (plugin.installed) {
-      secondary.textContent = "Installed";
-    } else {
-      secondary.textContent = `v${String(plugin.version ?? "")}`;
-    }
-    title.append(strong, secondary);
-
-    const meta = document.createElement("div");
-    meta.className = "plugin-marketplace-meta";
-    meta.textContent = `${String(plugin.author ?? "")} · ${String(plugin.lua_file ?? "")}`;
-
-    const desc = document.createElement("div");
-    desc.className = "plugin-marketplace-desc";
-    desc.textContent = String(plugin.description ?? "");
-
-    const tagsWrap = document.createElement("div");
-    tagsWrap.className = "plugin-marketplace-tags";
-    const tagValues =
-      plugin.tags && plugin.tags.length ? plugin.tags : ["utility"];
-    tagValues.forEach((tag) => {
-      const span = document.createElement("span");
-      span.className = "plugin-marketplace-tag";
-      span.textContent = String(tag);
-      tagsWrap.appendChild(span);
-    });
-
-    const actions = document.createElement("div");
-    actions.className = "plugin-marketplace-actions";
-    const btn = document.createElement("button");
-    btn.className = plugin.installed
-      ? "stv-btn-ghost marketplace-uninstall-btn"
-      : "stv-btn-primary marketplace-install-btn";
-    btn.setAttribute("data-plugin-id", String(plugin.id));
-    btn.textContent = plugin.installed ? "Uninstall" : "Install";
-    btn.onclick = async () => {
-      const statusEl = document.getElementById("plugin-marketplace-status");
-      btn.disabled = true;
-      if (plugin.installed) {
-        if (!confirm(`Uninstall marketplace plugin '${plugin.id}'?`)) {
-          btn.disabled = false;
-          return;
-        }
-        if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
-        try {
-          await invoke("uninstall_plugin", { pluginId: plugin.id });
-          if (statusEl)
-            statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded.";
-          await loadPluginMarketplace();
-          loadPluginsList();
-        } catch (err) {
-          if (statusEl) statusEl.innerText = `Uninstall failed: ${err}`;
-        } finally {
-          btn.disabled = false;
-        }
-      } else {
-        if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
-        try {
-          await invoke("install_plugin_from_registry", { pluginId: plugin.id });
-          if (statusEl)
-            statusEl.innerText = "Plugin installed and Lua runtime reloaded.";
-          await loadPluginMarketplace();
-          loadPluginsList();
-        } catch (err) {
-          if (statusEl) statusEl.innerText = `Install failed: ${err}`;
-        } finally {
-          btn.disabled = false;
-        }
-      }
-    };
-    actions.appendChild(btn);
-    card.append(title, meta, desc, tagsWrap, actions);
-    grid.appendChild(card);
-  });
+  filtered.forEach((plugin) => grid.appendChild(_buildMarketplaceCard(plugin)));
 }
 
 async function loadPluginMarketplace() {
@@ -8180,54 +7446,25 @@ async function loadPluginMarketplace() {
   }
 }
 
-function initPluginsManager() {
-  // Wire install plugin from URL
-  const installBtn = document.getElementById("settings-plugin-install-btn");
-  const urlInput = document.getElementById("settings-plugin-install-url");
-  const statusEl = document.getElementById("settings-plugin-status");
-  const newBtn = document.getElementById("settings-plugin-new-btn");
-  const reloadBtn = document.getElementById("settings-plugin-reload-btn");
-  const marketplaceSearch = document.getElementById(
-    "plugin-marketplace-search",
-  );
-  const marketplaceTag = document.getElementById("plugin-marketplace-tag");
-  const marketplaceRefresh = document.getElementById(
-    "plugin-marketplace-refresh-btn",
-  );
+function _pluginsWireInstall(installBtn, urlInput, statusEl) {
+  if (!installBtn || !urlInput) return;
+  installBtn.onclick = () => {
+    const url = urlInput.value.trim();
+    if (!url) { alert("Please enter a valid plugin URL."); return; }
+    if (statusEl) statusEl.innerText = "Downloading and installing plugin...";
+    installBtn.disabled = true;
+    invoke("install_plugin", { url })
+      .then(() => { if (statusEl) statusEl.innerText = "Plugin installed successfully!"; urlInput.value = ""; loadPluginsList(); loadPluginMarketplace(); })
+      .catch((err) => { if (statusEl) statusEl.innerText = "Installation failed: " + err; })
+      .finally(() => { installBtn.disabled = false; });
+  };
+}
 
-  if (installBtn && urlInput) {
-    installBtn.onclick = () => {
-      const url = urlInput.value.trim();
-      if (!url) {
-        alert("Please enter a valid plugin URL.");
-        return;
-      }
-      if (statusEl) statusEl.innerText = "Downloading and installing plugin...";
-      installBtn.disabled = true;
-
-      invoke("install_plugin", { url })
-        .then(() => {
-          if (statusEl) statusEl.innerText = "Plugin installed successfully!";
-          urlInput.value = "";
-          loadPluginsList();
-          loadPluginMarketplace();
-        })
-        .catch((err) => {
-          if (statusEl) statusEl.innerText = `Installation failed: ${err}`;
-        })
-        .finally(() => {
-          installBtn.disabled = false;
-        });
-    };
-  }
-
-  if (newBtn) {
-    newBtn.onclick = () => {
-      // Close settings modal
-      document.getElementById("settings-overlay")?.classList.remove("active");
-
-      // Boilerplate template
-      const boilerplate = `-- plugins/new_plugin.lua
+function _pluginsWireNewBtn(newBtn) {
+  if (!newBtn) return;
+  newBtn.onclick = () => {
+    document.getElementById("settings-overlay")?.classList.remove("active");
+    const boilerplate = `-- plugins/new_plugin.lua
 -- Template for a new S-Term plugin.
 
 -- 1. Register a custom chat command (type /mycommand in chat)
@@ -8246,55 +7483,43 @@ end)
 
 print("[Plugin] New plugin loaded successfully!")
 `;
-      // Load into canvas
-      loadCanvasCode("lua", boilerplate, "");
+    loadCanvasCode("lua", boilerplate, "");
+    const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
+    if (canvasTab) canvasTab.click();
+  };
+}
 
-      // Switch to canvas tab
-      const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
-      if (canvasTab) canvasTab.click();
-    };
-  }
+function _pluginsWireReload(reloadBtn, statusEl) {
+  if (!reloadBtn) return;
+  reloadBtn.onclick = () => {
+    if (statusEl) statusEl.innerText = "Reloading plugins in engine...";
+    reloadBtn.disabled = true;
+    invoke("reload_plugins")
+      .then(() => { if (statusEl) statusEl.innerText = "Plugins reloaded successfully!"; loadPluginsList(); loadPluginMarketplace(); })
+      .catch((err) => { if (statusEl) statusEl.innerText = "Reload failed: " + err; })
+      .finally(() => { reloadBtn.disabled = false; });
+  };
+}
 
-  if (reloadBtn) {
-    reloadBtn.onclick = () => {
-      if (statusEl) statusEl.innerText = "Reloading plugins in engine...";
-      reloadBtn.disabled = true;
+function initPluginsManager() {
+  const installBtn = document.getElementById("settings-plugin-install-btn");
+  const urlInput = document.getElementById("settings-plugin-install-url");
+  const statusEl = document.getElementById("settings-plugin-status");
+  const newBtn = document.getElementById("settings-plugin-new-btn");
+  const reloadBtn = document.getElementById("settings-plugin-reload-btn");
+  const marketplaceSearch = document.getElementById("plugin-marketplace-search");
+  const marketplaceTag = document.getElementById("plugin-marketplace-tag");
+  const marketplaceRefresh = document.getElementById("plugin-marketplace-refresh-btn");
 
-      invoke("reload_plugins")
-        .then(() => {
-          if (statusEl) statusEl.innerText = "Plugins reloaded successfully!";
-          loadPluginsList();
-          loadPluginMarketplace();
-        })
-        .catch((err) => {
-          if (statusEl) statusEl.innerText = `Reload failed: ${err}`;
-        })
-        .finally(() => {
-          reloadBtn.disabled = false;
-        });
-    };
-  }
+  _pluginsWireInstall(installBtn, urlInput, statusEl);
+  _pluginsWireNewBtn(newBtn);
+  _pluginsWireReload(reloadBtn, statusEl);
 
-  if (marketplaceSearch) {
-    marketplaceSearch.oninput = () => {
-      pluginMarketplaceState.search = marketplaceSearch.value || "";
-      renderPluginMarketplace();
-    };
-  }
-  if (marketplaceTag) {
-    marketplaceTag.onchange = () => {
-      pluginMarketplaceState.tag = marketplaceTag.value || "";
-      renderPluginMarketplace();
-    };
-  }
+  if (marketplaceSearch) marketplaceSearch.oninput = () => { pluginMarketplaceState.search = marketplaceSearch.value || ""; renderPluginMarketplace(); };
+  if (marketplaceTag) marketplaceTag.onchange = () => { pluginMarketplaceState.tag = marketplaceTag.value || ""; renderPluginMarketplace(); };
   const marketplaceCategory = document.getElementById("plugin-marketplace-category");
-  if (marketplaceCategory) {
-    marketplaceCategory.onchange = () => renderPluginMarketplace();
-  }
-  if (marketplaceRefresh) {
-    marketplaceRefresh.onclick = () => loadPluginMarketplace();
-  }
-
+  if (marketplaceCategory) marketplaceCategory.onchange = () => renderPluginMarketplace();
+  if (marketplaceRefresh) marketplaceRefresh.onclick = () => loadPluginMarketplace();
   loadPluginMarketplace();
 }
 
@@ -8528,125 +7753,58 @@ async function invokeApprovedComputerAction(command, args, approvalMeta) {
   return invoke(command, { ...args, approved: true });
 }
 
+function _cuBuildApi() {
+  return {
+    captureScreenshot: captureComputerScreenshot,
+    requestApproval: requestComputerUseApproval,
+    mouseMove: (x, y) => invokeApprovedComputerAction("computer_mouse_move", { x, y }, { action: "Move mouse pointer", details: "Move pointer to " + x + ", " + y + ".", target: { x, y, width: 28, height: 28 } }),
+    click: (button = "left") => invokeApprovedComputerAction("computer_mouse_click", { button }, { action: "Mouse click", details: "Perform a " + button + " click at the current pointer position." }),
+    type: (text) => invokeApprovedComputerAction("computer_type", { text }, { action: "Type text", details: "Type " + String(text || "").length + " character" + (String(text || "").length === 1 ? "" : "s") + " into the focused application." }),
+    key: (key) => invokeApprovedComputerAction("computer_key", { key }, { action: "Press keyboard key", details: "Send key: " + key + "." }),
+    findText: (text) => invoke("computer_find_text", { text }),
+  };
+}
+
 function initComputerUse() {
   const captureBtn = document.getElementById("computer-capture-btn");
   const ocrBtn = document.getElementById("computer-ocr-btn");
   const ocrInput = document.getElementById("computer-ocr-input");
-  const approveAllToggle = document.getElementById(
-    "computer-approve-all-toggle",
-  );
+  const approveAllToggle = document.getElementById("computer-approve-all-toggle");
   const approveBtn = document.getElementById("computer-use-approve-btn");
-  const approveSessionBtn = document.getElementById(
-    "computer-use-approve-session-btn",
-  );
+  const approveSessionBtn = document.getElementById("computer-use-approve-session-btn");
   const denyBtn = document.getElementById("computer-use-deny-btn");
   const denyX = document.getElementById("computer-use-deny-x");
 
   if (approveAllToggle) {
     approveAllToggle.checked = computerUseState.approveAll;
-    approveAllToggle.onchange = () => {
-      computerUseState.approveAll = approveAllToggle.checked;
-      setComputerStatus(
-        computerUseState.approveAll
-          ? "Computer use auto-approval is active for this session."
-          : "Computer use approval modal is active.",
-        "info",
-      );
-    };
+    approveAllToggle.onchange = () => { computerUseState.approveAll = approveAllToggle.checked; setComputerStatus(computerUseState.approveAll ? "Computer use auto-approval is active for this session." : "Computer use approval modal is active.", "info"); };
   }
-
   if (captureBtn) {
     captureBtn.onclick = async () => {
-      captureBtn.disabled = true;
-      setComputerStatus("Capturing desktop screenshot...");
-      try {
-        await captureComputerScreenshot({ showInAgentLog: true });
-        setComputerStatus("Screenshot captured.", "ok");
-      } catch (err) {
-        setComputerStatus(`Screenshot failed: ${err}`, "error");
-      } finally {
-        captureBtn.disabled = false;
-      }
+      captureBtn.disabled = true; setComputerStatus("Capturing desktop screenshot...");
+      try { await captureComputerScreenshot({ showInAgentLog: true }); setComputerStatus("Screenshot captured.", "ok"); }
+      catch (err) { setComputerStatus("Screenshot failed: " + err, "error"); }
+      finally { captureBtn.disabled = false; }
     };
   }
-
   if (ocrBtn && ocrInput) {
     ocrBtn.onclick = async () => {
       const text = ocrInput.value.trim();
-      if (!text) {
-        ocrInput.focus();
-        return;
-      }
-      ocrBtn.disabled = true;
-      setComputerStatus("Running OCR over the current desktop...");
+      if (!text) { ocrInput.focus(); return; }
+      ocrBtn.disabled = true; setComputerStatus("Running OCR over the current desktop...");
       try {
         const match = await invoke("computer_find_text", { text });
-        await requestComputerUseApproval({
-          action: `Found text: ${match.text}`,
-          details: `Coordinates ${match.x}, ${match.y}; confidence ${Math.round(match.confidence)}%.`,
-          target: match,
-        });
-        setComputerStatus(
-          `Found "${match.text}" at ${match.x}, ${match.y}.`,
-          "ok",
-        );
-      } catch (err) {
-        setComputerStatus(`OCR failed: ${err}`, "error");
-      } finally {
-        ocrBtn.disabled = false;
-      }
+        await requestComputerUseApproval({ action: "Found text: " + match.text, details: "Coordinates " + match.x + ", " + match.y + "; confidence " + Math.round(match.confidence) + "%.", target: match });
+        setComputerStatus('Found "' + match.text + '" at ' + match.x + ", " + match.y + ".", "ok");
+      } catch (err) { setComputerStatus("OCR failed: " + err, "error"); }
+      finally { ocrBtn.disabled = false; }
     };
   }
-
-  if (approveBtn)
-    approveBtn.onclick = () => finishComputerUseApproval(true, false);
-  if (approveSessionBtn)
-    approveSessionBtn.onclick = () => finishComputerUseApproval(true, true);
+  if (approveBtn) approveBtn.onclick = () => finishComputerUseApproval(true, false);
+  if (approveSessionBtn) approveSessionBtn.onclick = () => finishComputerUseApproval(true, true);
   if (denyBtn) denyBtn.onclick = () => finishComputerUseApproval(false, false);
   if (denyX) denyX.onclick = () => finishComputerUseApproval(false, false);
-
-  window.neurodeckComputerUse = {
-    captureScreenshot: captureComputerScreenshot,
-    requestApproval: requestComputerUseApproval,
-    mouseMove: (x, y) =>
-      invokeApprovedComputerAction(
-        "computer_mouse_move",
-        { x, y },
-        {
-          action: "Move mouse pointer",
-          details: `Move pointer to ${x}, ${y}.`,
-          target: { x, y, width: 28, height: 28 },
-        },
-      ),
-    click: (button = "left") =>
-      invokeApprovedComputerAction(
-        "computer_mouse_click",
-        { button },
-        {
-          action: "Mouse click",
-          details: `Perform a ${button} click at the current pointer position.`,
-        },
-      ),
-    type: (text) =>
-      invokeApprovedComputerAction(
-        "computer_type",
-        { text },
-        {
-          action: "Type text",
-          details: `Type ${String(text || "").length} character${String(text || "").length === 1 ? "" : "s"} into the focused application.`,
-        },
-      ),
-    key: (key) =>
-      invokeApprovedComputerAction(
-        "computer_key",
-        { key },
-        {
-          action: "Press keyboard key",
-          details: `Send key: ${key}.`,
-        },
-      ),
-    findText: (text) => invoke("computer_find_text", { text }),
-  };
+  window.neurodeckComputerUse = _cuBuildApi();
 }
 
 // Initialize Plugins Manager event handlers
@@ -9021,128 +8179,78 @@ document.addEventListener("click", (e) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // SESSION BROWSER — Sprint 9.1
 // ═══════════════════════════════════════════════════════════════════════════
+function _sbFormatDate(isoStr) {
+  try {
+    const d = new Date(isoStr), now = new Date(), diff = now - d;
+    if (diff < 86_400_000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (diff < 7 * 86_400_000) return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  } catch { return isoStr || ""; }
+}
+
+function _sbBuildSessionItem(session, loadSessions) {
+  const item = document.createElement("div");
+  item.className = "session-browser-item";
+  item.dataset.id = session.id;
+  const title = document.createElement("div");
+  title.className = "session-browser-title";
+  title.textContent = session.name || _sbFormatDate(session.created_at);
+  const meta = document.createElement("div");
+  meta.className = "session-browser-meta";
+  meta.textContent = session.message_count + " msgs" + (session.preview ? " · " + session.preview : "");
+  const actions = document.createElement("div");
+  actions.className = "session-browser-actions";
+  const openBtn = document.createElement("button");
+  openBtn.className = "session-browser-btn"; openBtn.title = "Restore session"; openBtn.innerHTML = createIcon("cornerDownLeft", { size: 12 });
+  openBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    invoke("load_session_by_id", { id: session.id })
+      .then((data) => { activateViewByName("chat"); if (typeof window.restoreSessionMessages === "function") window.restoreSessionMessages(data); addNotification("Session Restored", "Loaded: " + (session.name || session.id), "success"); })
+      .catch((err) => addNotification("Session Error", String(err), "error"));
+  });
+  const renameBtn = document.createElement("button");
+  renameBtn.className = "session-browser-btn"; renameBtn.title = "Rename"; renameBtn.innerHTML = createIcon("pencil", { size: 12 });
+  renameBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const newName = prompt("Rename session:", session.name || "");
+    if (newName === null) return;
+    invoke("rename_session", { id: session.id, name: newName.trim() }).then(() => loadSessions()).catch((err) => addNotification("Rename Error", String(err), "error"));
+  });
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "session-browser-btn session-browser-btn--danger"; deleteBtn.title = "Delete"; deleteBtn.innerHTML = createIcon("trash2", { size: 12 });
+  deleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!confirm('Delete session "' + (session.name || session.id) + '"?')) return;
+    invoke("delete_session", { id: session.id }).then(() => loadSessions()).catch((err) => addNotification("Delete Error", String(err), "error"));
+  });
+  actions.append(openBtn, renameBtn, deleteBtn);
+  item.append(title, meta, actions);
+  item.addEventListener("click", () => openBtn.click());
+  return item;
+}
+
+function _sbRenderSessionList(sessions, list, loadSessions) {
+  list.innerHTML = "";
+  if (!sessions || sessions.length === 0) {
+    const empty = document.createElement("div"); empty.className = "session-browser-empty"; empty.textContent = "No saved sessions yet."; list.appendChild(empty); return;
+  }
+  sessions.forEach(session => list.appendChild(_sbBuildSessionItem(session, loadSessions)));
+}
+
 function initSessionBrowser() {
   const toggleBtn = document.getElementById("session-browser-toggle");
   const list = document.getElementById("session-browser-list");
   const chevron = document.getElementById("session-browser-chevron");
   if (!toggleBtn || !list) return;
-
   let loaded = false;
-
-  function formatSessionDate(isoStr) {
-    try {
-      const d = new Date(isoStr);
-      const now = new Date();
-      const diff = now - d;
-      if (diff < 86_400_000) {
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      }
-      if (diff < 7 * 86_400_000) {
-        return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
-      }
-      return d.toLocaleDateString([], { month: "short", day: "numeric" });
-    } catch { return isoStr || ""; }
-  }
-
-  function renderSessionList(sessions) {
-    list.innerHTML = "";
-    if (!sessions || sessions.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "session-browser-empty";
-      empty.textContent = "No saved sessions yet.";
-      list.appendChild(empty);
-      return;
-    }
-    sessions.forEach(session => {
-      const item = document.createElement("div");
-      item.className = "session-browser-item";
-      item.dataset.id = session.id;
-
-      const title = document.createElement("div");
-      title.className = "session-browser-title";
-      title.textContent = session.name || formatSessionDate(session.created_at);
-
-      const meta = document.createElement("div");
-      meta.className = "session-browser-meta";
-      meta.textContent = `${session.message_count} msgs${session.preview ? " · " + session.preview : ""}`;
-
-      const actions = document.createElement("div");
-      actions.className = "session-browser-actions";
-
-      const openBtn = document.createElement("button");
-      openBtn.className = "session-browser-btn";
-      openBtn.title = "Restore session";
-      openBtn.innerHTML = createIcon("cornerDownLeft", { size: 12 });
-      openBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        invoke("load_session_by_id", { id: session.id })
-          .then((data) => {
-            activateViewByName("chat");
-            if (typeof window.restoreSessionMessages === "function") {
-              window.restoreSessionMessages(data);
-            }
-            addNotification("Session Restored", `Loaded: ${session.name || session.id}`, "success");
-          })
-          .catch((err) => addNotification("Session Error", String(err), "error"));
-      });
-
-      const renameBtn = document.createElement("button");
-      renameBtn.className = "session-browser-btn";
-      renameBtn.title = "Rename";
-      renameBtn.innerHTML = createIcon("pencil", { size: 12 });
-      renameBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const current = session.name || "";
-        const newName = prompt("Rename session:", current);
-        if (newName === null) return;
-        invoke("rename_session", { id: session.id, name: newName.trim() })
-          .then(() => loadSessions())
-          .catch((err) => addNotification("Rename Error", String(err), "error"));
-      });
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "session-browser-btn session-browser-btn--danger";
-      deleteBtn.title = "Delete";
-      deleteBtn.innerHTML = createIcon("trash2", { size: 12 });
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!confirm(`Delete session "${session.name || session.id}"?`)) return;
-        invoke("delete_session", { id: session.id })
-          .then(() => loadSessions())
-          .catch((err) => addNotification("Delete Error", String(err), "error"));
-      });
-
-      actions.append(openBtn, renameBtn, deleteBtn);
-      item.append(title, meta, actions);
-
-      item.addEventListener("click", () => {
-        openBtn.click();
-      });
-
-      list.appendChild(item);
-    });
-  }
-
-  function loadSessions() {
-    invoke("list_sessions_meta")
-      .then(renderSessionList)
-      .catch(() => {
-        list.innerHTML = '<div class="session-browser-empty" style="color:var(--error-color)">Failed to load sessions.</div>';
-      });
-  }
-
+  const loadSessions = () => invoke("list_sessions_meta").then(sessions => _sbRenderSessionList(sessions, list, loadSessions)).catch(() => { list.innerHTML = '<div class="session-browser-empty" style="color:var(--error-color)">Failed to load sessions.</div>'; });
   toggleBtn.addEventListener("click", () => {
     const isHidden = list.classList.contains("hidden");
     list.classList.toggle("hidden", !isHidden);
     toggleBtn.setAttribute("aria-expanded", String(isHidden));
-    chevron.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
-    if (isHidden && !loaded) {
-      loaded = true;
-      loadSessions();
-    }
+    if (chevron) chevron.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
+    if (isHidden && !loaded) { loaded = true; loadSessions(); }
   });
-
-  // Refresh when a session is saved
   document.addEventListener("neurodeck:session-saved", loadSessions);
 }
 
@@ -9203,107 +8311,69 @@ function initNotificationCenter() {
 // ═══════════════════════════════════════════════════════════════════════════
 // SHORTCUT CUSTOMIZATION — Sprint 9.6
 // ═══════════════════════════════════════════════════════════════════════════
+function _scFormatKeys(keys) {
+  return keys.map((k) => '<kbd style="font-size:0.7rem;padding:2px 6px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.06);font-family:var(--font-mono)">' + escapeHtml(k) + '</kbd>').join(" + ");
+}
+
+function _scBuildShortcutRow(sc, overrides, table) {
+  const effectiveKeys = overrides[sc.action] || sc.keys;
+  const isCustom = !!overrides[sc.action];
+  const row = document.createElement("div");
+  row.className = "shortcut-row-custom";
+  row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background 0.12s,border-color 0.12s;";
+  const actionSpan = document.createElement("span");
+  actionSpan.style.cssText = "flex:1;font-size:0.78rem;color:rgba(255,255,255,0.7);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+  actionSpan.textContent = sc.action;
+  if (sc.scope !== "global") {
+    const scope = document.createElement("span");
+    scope.style.cssText = "font-size:0.65rem;opacity:0.4;margin-left:6px;font-family:var(--font-mono)";
+    scope.textContent = "[" + sc.scope + "]";
+    actionSpan.appendChild(scope);
+  }
+  const keysSpan = document.createElement("span");
+  keysSpan.style.cssText = "display:flex;gap:3px;align-items:center;flex-shrink:0;";
+  keysSpan.innerHTML = _scFormatKeys(effectiveKeys);
+  if (isCustom) {
+    const badge = document.createElement("span");
+    badge.style.cssText = "font-size:0.6rem;color:var(--warning-color);margin-left:4px;opacity:0.8;";
+    badge.textContent = "✎";
+    keysSpan.appendChild(badge);
+  }
+  const resetBtn = document.createElement("button");
+  resetBtn.style.cssText = "background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.65rem;display:" + (isCustom ? "block" : "none") + ";";
+  resetBtn.title = "Reset to default"; resetBtn.textContent = "↺";
+  resetBtn.addEventListener("click", (e) => { e.stopPropagation(); resetShortcutOverride(sc.action); _scRenderTable(table); });
+  row.append(actionSpan, keysSpan, resetBtn);
+  row.addEventListener("click", () => {
+    row.style.background = "rgba(var(--accent-rgb),0.1)";
+    row.style.borderColor = "rgba(var(--accent-rgb),0.3)";
+    keysSpan.innerHTML = '<span style="font-size:0.72rem;color:var(--accent-color);font-family:var(--font-mono)">Press keys…</span>';
+    const onKey = (e) => {
+      if (e.key === "Escape") { document.removeEventListener("keydown", onKey, true); _scRenderTable(table); return; }
+      const keys = [];
+      if (e.ctrlKey || e.metaKey) keys.push("Ctrl");
+      if (e.shiftKey) keys.push("Shift");
+      if (e.altKey) keys.push("Alt");
+      if (!["Control","Shift","Alt","Meta"].includes(e.key)) keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+      if (keys.length > 0 && !keys.every((k) => ["Ctrl","Shift","Alt"].includes(k))) { e.preventDefault(); e.stopPropagation(); document.removeEventListener("keydown", onKey, true); saveShortcutOverride(sc.action, keys); _scRenderTable(table); }
+    };
+    document.addEventListener("keydown", onKey, true);
+  });
+  row.addEventListener("mouseenter", () => { row.style.background = "rgba(255,255,255,0.03)"; row.style.borderColor = "var(--border-color)"; });
+  row.addEventListener("mouseleave", () => { row.style.background = ""; row.style.borderColor = "transparent"; });
+  return row;
+}
+
+function _scRenderTable(table) {
+  const overrides = getShortcutOverrides();
+  table.innerHTML = "";
+  KEYBOARD_SHORTCUTS.filter((s) => s.scope !== "radial" && s.scope !== "browser").forEach((sc) => table.appendChild(_scBuildShortcutRow(sc, overrides, table)));
+}
+
 function initShortcutCustomization() {
   const table = document.getElementById("shortcut-customization-table");
   if (!table) return;
-
-  function formatKeys(keys) {
-    return keys.map((k) => `<kbd style="font-size:0.7rem;padding:2px 6px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.06);font-family:var(--font-mono)">${escapeHtml(k)}</kbd>`).join(" + ");
-  }
-
-  function renderTable() {
-    const overrides = getShortcutOverrides();
-    table.innerHTML = "";
-    // Only show global + chat scope (skip radial menu digit bindings)
-    const relevant = KEYBOARD_SHORTCUTS.filter(
-      (s) => s.scope !== "radial" && s.scope !== "browser"
-    );
-    relevant.forEach((sc) => {
-      const effectiveKeys = overrides[sc.action] || sc.keys;
-      const isCustom = !!overrides[sc.action];
-
-      const row = document.createElement("div");
-      row.className = "shortcut-row-custom";
-      row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background 0.12s,border-color 0.12s;";
-
-      const actionSpan = document.createElement("span");
-      actionSpan.style.cssText = "flex:1;font-size:0.78rem;color:rgba(255,255,255,0.7);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
-      actionSpan.textContent = sc.action;
-      if (sc.scope !== "global") {
-        const scope = document.createElement("span");
-        scope.style.cssText = "font-size:0.65rem;opacity:0.4;margin-left:6px;font-family:var(--font-mono)";
-        scope.textContent = `[${sc.scope}]`;
-        actionSpan.appendChild(scope);
-      }
-
-      const keysSpan = document.createElement("span");
-      keysSpan.style.cssText = "display:flex;gap:3px;align-items:center;flex-shrink:0;";
-      keysSpan.innerHTML = formatKeys(effectiveKeys);
-      if (isCustom) {
-        const badge = document.createElement("span");
-        badge.style.cssText = "font-size:0.6rem;color:var(--warning-color);margin-left:4px;opacity:0.8;";
-        badge.textContent = "✎";
-        keysSpan.appendChild(badge);
-      }
-
-      const resetBtn = document.createElement("button");
-      resetBtn.style.cssText = "background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.65rem;display:" + (isCustom ? "block" : "none") + ";";
-      resetBtn.title = "Reset to default";
-      resetBtn.textContent = "↺";
-      resetBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        resetShortcutOverride(sc.action);
-        renderTable();
-      });
-
-      row.append(actionSpan, keysSpan, resetBtn);
-
-      // Click to rebind
-      row.addEventListener("click", () => {
-        // Highlight as capturing
-        row.style.background = "rgba(var(--accent-rgb),0.1)";
-        row.style.borderColor = "rgba(var(--accent-rgb),0.3)";
-        keysSpan.innerHTML = `<span style="font-size:0.72rem;color:var(--accent-color);font-family:var(--font-mono)">Press keys…</span>`;
-
-        const onKey = (e) => {
-          if (e.key === "Escape") {
-            document.removeEventListener("keydown", onKey, true);
-            renderTable();
-            return;
-          }
-          // Build keys array
-          const keys = [];
-          if (e.ctrlKey || e.metaKey) keys.push("Ctrl");
-          if (e.shiftKey) keys.push("Shift");
-          if (e.altKey) keys.push("Alt");
-          if (!["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
-            keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
-          }
-          if (keys.length > 0 && !keys.every((k) => ["Ctrl","Shift","Alt"].includes(k))) {
-            e.preventDefault();
-            e.stopPropagation();
-            document.removeEventListener("keydown", onKey, true);
-            saveShortcutOverride(sc.action, keys);
-            renderTable();
-          }
-        };
-        document.addEventListener("keydown", onKey, true);
-      });
-
-      row.addEventListener("mouseenter", () => {
-        row.style.background = "rgba(255,255,255,0.03)";
-        row.style.borderColor = "var(--border-color)";
-      });
-      row.addEventListener("mouseleave", () => {
-        row.style.background = "";
-        row.style.borderColor = "transparent";
-      });
-
-      table.appendChild(row);
-    });
-  }
-
-  renderTable();
+  _scRenderTable(table);
 }
 
 function initShortcutsOverlay() {
@@ -9345,6 +8415,62 @@ function initOsThemeSync() {
 }
 
 // --- GAME CONTEXT PANEL SYSTEM ---
+function _gcApplyHeaderState(headerImg, fallbackEl, fallbackNameEl, appId, name) {
+  if (!headerImg || !fallbackEl) return;
+  const fallbackName = name || "No Active Game";
+  if (fallbackNameEl) fallbackNameEl.innerText = fallbackName;
+  if (!appId || appId === "-") {
+    headerImg.removeAttribute("src");
+    headerImg.style.display = "none";
+    fallbackEl.classList.add("active");
+    return;
+  }
+  fallbackEl.classList.remove("active");
+  headerImg.style.display = "block";
+  headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
+}
+
+function _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallbackNameEl, gcCtx) {
+  if (!gameBadge || !gameModal) return;
+  gameBadge.onclick = () => {
+    invoke("get_game_context")
+      .then((ctx) => {
+        const nameEl = document.getElementById("game-context-name");
+        const appidEl = document.getElementById("game-context-appid");
+        const statusEl = document.getElementById("game-context-status");
+        const notesEl = document.getElementById("game-context-notes");
+        const promptView = document.getElementById("game-context-prompt-view");
+        const sessionNotesEl = document.getElementById("game-session-notes");
+
+        const name = ctx.name || "None Detected";
+        const appId = ctx.app_id || "-";
+        const isRunning = ctx.is_running === "true";
+        const notes = ctx.notes || "No optimization profile found.";
+
+        if (nameEl) nameEl.innerText = name;
+        if (appidEl) appidEl.innerText = appId;
+        if (statusEl) {
+          statusEl.innerText = isRunning ? "Running" : "Offline";
+          statusEl.style.color = isRunning ? "var(--response-color)" : "rgba(255,255,255,0.4)";
+        }
+        if (notesEl) notesEl.innerText = notes;
+        _gcApplyHeaderState(headerImg, fallbackEl, fallbackNameEl, appId, name);
+        if (promptView) {
+          promptView.value = `[Active SteamOS Game Context]\nThe user is currently playing the game: ${name} (Steam AppID: ${appId}).\nSteam Deck Optimization Notes: ${notes}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.`;
+        }
+        if (sessionNotesEl && appId !== "-") {
+          invoke("get_game_notes", { appId })
+            .then((savedNotes) => { sessionNotesEl.value = savedNotes || ""; sessionNotesEl.dataset.appId = appId; })
+            .catch(() => { sessionNotesEl.value = ""; sessionNotesEl.dataset.appId = appId; });
+        }
+        gameModal.classList.add("active");
+        if (!gcCtx.trap) gcCtx.trap = new FocusTrap(gameModal);
+        gcCtx.trap.activate();
+      })
+      .catch((err) => { console.error("Error loading game context panel:", err); });
+  };
+}
+
 function initGameContextPanel() {
   const gameBadge = document.getElementById("game-badge");
   const gameModal = document.getElementById("game-context-modal");
@@ -9353,102 +8479,17 @@ function initGameContextPanel() {
   const headerImg = document.getElementById("game-context-header");
   const fallbackEl = document.getElementById("game-context-fallback");
   const fallbackNameEl = document.getElementById("game-context-fallback-name");
-  let gameFocusTrap = null;
+  const gcCtx = { trap: null };
 
-  const dismiss = () => {
-    if (gameModal) {
-      gameModal.classList.remove("active");
-      if (gameFocusTrap) gameFocusTrap.deactivate();
-    }
-  };
-
-  const applyHeaderState = (appId, name) => {
-    if (!headerImg || !fallbackEl) return;
-    const fallbackName = name || "No Active Game";
-    if (fallbackNameEl) fallbackNameEl.innerText = fallbackName;
-
-    if (!appId || appId === "-") {
-      headerImg.removeAttribute("src");
-      headerImg.style.display = "none";
-      fallbackEl.classList.add("active");
-      return;
-    }
-
-    fallbackEl.classList.remove("active");
-    headerImg.style.display = "block";
-    headerImg.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
-  };
+  const dismiss = () => { if (gameModal) { gameModal.classList.remove("active"); if (gcCtx.trap) gcCtx.trap.deactivate(); } };
 
   if (headerImg && fallbackEl) {
-    headerImg.addEventListener("load", () => {
-      fallbackEl.classList.remove("active");
-      headerImg.style.display = "block";
-    });
-    headerImg.addEventListener("error", () => {
-      headerImg.style.display = "none";
-      fallbackEl.classList.add("active");
-    });
+    headerImg.addEventListener("load", () => { fallbackEl.classList.remove("active"); headerImg.style.display = "block"; });
+    headerImg.addEventListener("error", () => { headerImg.style.display = "none"; fallbackEl.classList.add("active"); });
   }
 
-  if (gameBadge && gameModal) {
-    gameBadge.onclick = () => {
-      invoke("get_game_context")
-        .then((ctx) => {
-          const nameEl = document.getElementById("game-context-name");
-          const appidEl = document.getElementById("game-context-appid");
-          const statusEl = document.getElementById("game-context-status");
-          const notesEl = document.getElementById("game-context-notes");
-          const promptView = document.getElementById(
-            "game-context-prompt-view",
-          );
-          const sessionNotesEl = document.getElementById("game-session-notes");
+  _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallbackNameEl, gcCtx);
 
-          const name = ctx.name || "None Detected";
-          const appId = ctx.app_id || "-";
-          const isRunning = ctx.is_running === "true";
-          const notes = ctx.notes || "No optimization profile found.";
-
-          if (nameEl) nameEl.innerText = name;
-          if (appidEl) appidEl.innerText = appId;
-          if (statusEl) {
-            statusEl.innerText = isRunning ? "Running" : "Offline";
-            statusEl.style.color = isRunning
-              ? "var(--response-color)"
-              : "rgba(255,255,255,0.4)";
-          }
-          if (notesEl) notesEl.innerText = notes;
-
-          applyHeaderState(appId, name);
-
-          if (promptView) {
-            promptView.value = `[Active SteamOS Game Context]\nThe user is currently playing the game: ${name} (Steam AppID: ${appId}).\nSteam Deck Optimization Notes: ${notes}\nPlease adapt your answers to help the user with this game if applicable, keeping their hardware context in mind.`;
-          }
-
-          // Load persisted session notes for this game
-          if (sessionNotesEl && appId !== "-") {
-            invoke("get_game_notes", { appId })
-              .then((savedNotes) => {
-                sessionNotesEl.value = savedNotes || "";
-                // Store the current appId so the blur handler can reference it
-                sessionNotesEl.dataset.appId = appId;
-              })
-              .catch(() => {
-                sessionNotesEl.value = "";
-                sessionNotesEl.dataset.appId = appId;
-              });
-          }
-
-          gameModal.classList.add("active");
-          if (!gameFocusTrap) gameFocusTrap = new FocusTrap(gameModal);
-          gameFocusTrap.activate();
-        })
-        .catch((err) => {
-          console.error("Error loading game context panel:", err);
-        });
-    };
-  }
-
-  // Auto-save game session notes on blur
   const sessionNotesEl = document.getElementById("game-session-notes");
   const saveIndicator = document.getElementById("game-notes-save-indicator");
   if (sessionNotesEl) {
@@ -9456,33 +8497,158 @@ function initGameContextPanel() {
       const appId = sessionNotesEl.dataset.appId;
       if (!appId || appId === "-") return;
       invoke("save_game_note", { appId, content: sessionNotesEl.value })
-        .then(() => {
-          if (saveIndicator) {
-            saveIndicator.style.opacity = "1";
-            setTimeout(() => {
-              saveIndicator.style.opacity = "0";
-            }, 1500);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to save game note:", err);
-        });
+        .then(() => { if (saveIndicator) { saveIndicator.style.opacity = "1"; setTimeout(() => { saveIndicator.style.opacity = "0"; }, 1500); } })
+        .catch((err) => { console.error("Failed to save game note:", err); });
     });
   }
 
   if (closeX) closeX.onclick = dismiss;
   if (closeBtn) closeBtn.onclick = dismiss;
-  if (gameModal) {
-    gameModal.addEventListener("click", (event) => {
-      if (event.target === gameModal) {
-        dismiss();
+  if (gameModal) gameModal.addEventListener("click", (e) => { if (e.target === gameModal) dismiss(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && gameModal?.classList.contains("active")) dismiss(); });
+}
+
+const _MANUAL_VIEW_MAPPING = {
+  "chat": "chat", "canvas": "canvas", "terminal": "terminal",
+  "ssh": "ssh", "tunnel": "tunnel", "share": "share", "browser": "browser",
+  "agent": "agent", "memory": "memory", "prompt lab": "prompt-lab",
+  "remote": "remote", "docs": "docs", "git": "git", "api lab": "api-lab",
+  "cli maker": "cli-maker", "graph": "graph", "scheduler": "scheduler",
+  "flow": "workflow", "ide": "ide", "settings": "settings",
+  "plugins marketplace": "plugins", "prompt sidebar": "prompt-sidebar"
+};
+
+function _mmCloseManual(mmCtx) {
+  mmCtx.modal.classList.remove("active");
+  if (mmCtx.trap) mmCtx.trap.deactivate();
+}
+
+function _mmBuildUI(contentContainer, mmCtx) {
+  if (!contentContainer) return;
+  const parts = manualContent.split(/\n##\s+/);
+  const introMarkdown = parts[0];
+  const sections = parts.slice(1);
+
+  let html = '<div class="manual-intro-banner">' + marked.parse(introMarkdown) + '</div>';
+  html += '<div class="manual-accordions-list">';
+
+  sections.forEach((sec) => {
+    const secLines = sec.split("\n");
+    const headingLine = secLines[0].trim();
+    const contentMarkdown = secLines.slice(1).join("\n").trim();
+    const headingMatch = headingLine.match(/^(\d+)\.\s*([^\s]+)\s+(.*)$/);
+    let number = "", emoji = "\u{1F4D6}", title = headingLine;
+    if (headingMatch) { number = headingMatch[1]; emoji = headingMatch[2]; title = headingMatch[3]; }
+    const cleanTitle = title.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    const viewId = _MANUAL_VIEW_MAPPING[cleanTitle] || "";
+    const renderedContent = marked.parse(contentMarkdown);
+    html += `
+      <div class="manual-accordion-card" data-title="${escapeHtml(title)}" data-content="${escapeHtml(contentMarkdown.toLowerCase())}">
+        <button class="manual-accordion-header" aria-expanded="false">
+          <span class="manual-header-emoji">${emoji}</span>
+          <span class="manual-header-title"><span class="manual-header-num">${number}.</span> ${escapeHtml(title)}</span>
+          <span class="manual-header-chevron">${createIcon("chevronDown", { size: 14 })}</span>
+        </button>
+        <div class="manual-accordion-body">
+          <div class="manual-accordion-inner">
+            <div class="manual-markdown-content">${renderedContent}</div>
+            <div class="manual-actions-row">
+              ${viewId ? `<button class="manual-action-btn launch-btn" data-view="${viewId}">${createIcon("externalLink", { size: 12 })}<span>Launch ${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}</span></button>` : ""}
+              <button class="manual-action-btn ai-btn" data-feature="${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}">${createIcon("sparkles", { size: 12 })}<span>Ask AI</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  contentContainer.innerHTML = html;
+
+  contentContainer.querySelectorAll(".manual-accordion-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const card = header.closest(".manual-accordion-card");
+      const wasExpanded = card.classList.contains("expanded");
+      contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
+        if (otherCard !== card) {
+          otherCard.classList.remove("expanded");
+          otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
+          otherCard.querySelector(".manual-accordion-body").style.maxHeight = null;
+        }
+      });
+      card.classList.toggle("expanded", !wasExpanded);
+      header.setAttribute("aria-expanded", !wasExpanded ? "true" : "false");
+      const body = card.querySelector(".manual-accordion-body");
+      body.style.maxHeight = !wasExpanded ? body.scrollHeight + "px" : null;
+    });
+  });
+
+  contentContainer.querySelectorAll(".launch-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const vid = btn.getAttribute("data-view");
+      _mmCloseManual(mmCtx);
+      if (vid === "settings") { openSettingsModal(); }
+      else if (vid === "plugins") { openSettingsModal(); setTimeout(() => activateSettingsPanel("sp-extensions"), 50); }
+      else if (vid === "prompt-sidebar") { openCtrlPromptOverlay(); }
+      else { const tab = document.querySelector('.nav-tab[data-view="' + vid + '"]'); if (tab) tab.click(); }
+    });
+  });
+
+  contentContainer.querySelectorAll(".ai-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const feature = btn.getAttribute("data-feature");
+      _mmCloseManual(mmCtx);
+      const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
+      if (chatTab) chatTab.click();
+      const chatInput = document.getElementById("user-input");
+      if (chatInput) {
+        chatInput.value = "How do I use the " + feature + " feature in NEURODECK?";
+        chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+        chatInput.focus();
       }
     });
+  });
+}
+
+async function _mmRunHealthDiagnostics() {
+  const ptyDot = document.getElementById("manual-health-pty");
+  const netDot = document.getElementById("manual-health-net");
+  const keyDot = document.getElementById("manual-health-key");
+  const refreshBtn = document.getElementById("manual-health-refresh");
+  if (!ptyDot || !netDot || !keyDot) return;
+  ptyDot.className = "health-dot pending";
+  netDot.className = "health-dot pending";
+  keyDot.className = "health-dot pending";
+  if (refreshBtn) refreshBtn.classList.add("spinning");
+  try {
+    const result = await invoke("run_onboarding_diagnostics");
+    ptyDot.className = "health-dot " + (result.pty_ok ? "success" : "error");
+    ptyDot.title = result.pty_details || (result.pty_ok ? "PTY working correctly" : "PTY failed");
+    netDot.className = "health-dot " + (result.network_ok ? "success" : "error");
+    netDot.title = result.network_details || (result.network_ok ? "Network working correctly" : "Network failed");
+    keyDot.className = "health-dot " + (result.keychain_ok ? "success" : "error");
+    keyDot.title = result.keychain_details || (result.keychain_ok ? "Keychain working correctly" : "Keychain failed");
+  } catch (err) {
+    console.error("Manual health diagnostics failed:", err);
+    [ptyDot, netDot, keyDot].forEach(dot => { dot.className = "health-dot error"; dot.title = String(err); });
+  } finally {
+    if (refreshBtn) refreshBtn.classList.remove("spinning");
   }
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && gameModal?.classList.contains("active")) {
-      dismiss();
-    }
+}
+
+function _mmWireSearch(searchInput, contentContainer) {
+  if (!searchInput || !contentContainer) return;
+  searchInput.addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    const introBanner = contentContainer.querySelector(".manual-intro-banner");
+    if (introBanner) introBanner.style.display = query ? "none" : "";
+    contentContainer.querySelectorAll(".manual-accordion-card").forEach(card => {
+      const title = card.getAttribute("data-title").toLowerCase();
+      const content = card.getAttribute("data-content");
+      card.style.display = (title.includes(query) || content.includes(query)) ? "" : "none";
+    });
   });
 }
 
@@ -9492,267 +8658,24 @@ function initManualModal() {
   const closeX = document.getElementById("close-manual-x");
   const closeBtn = document.getElementById("close-manual-btn");
   const contentContainer = document.getElementById("manual-content-container");
-
-  let manualFocusTrap = null;
-
   if (!manualBtn || !manualModal) return;
 
-  const closeManual = () => {
-    manualModal.classList.remove("active");
-    if (manualFocusTrap) manualFocusTrap.deactivate();
-  };
-
-  const viewMapping = {
-    "chat": "chat",
-    "canvas": "canvas",
-    "terminal": "terminal",
-    "ssh": "ssh",
-    "tunnel": "tunnel",
-    "share": "share",
-    "browser": "browser",
-    "agent": "agent",
-    "memory": "memory",
-    "prompt lab": "prompt-lab",
-    "remote": "remote",
-    "docs": "docs",
-    "git": "git",
-    "api lab": "api-lab",
-    "cli maker": "cli-maker",
-    "graph": "graph",
-    "scheduler": "scheduler",
-    "flow": "workflow",
-    "ide": "ide",
-    "settings": "settings",
-    "plugins marketplace": "plugins",
-    "prompt sidebar": "prompt-sidebar"
-  };
-
-  const buildManualUI = () => {
-    if (!contentContainer) return;
-    const parts = manualContent.split(/\n##\s+/);
-    const introMarkdown = parts[0];
-    const sections = parts.slice(1);
-
-    let html = `<div class="manual-intro-banner">${marked.parse(introMarkdown)}</div>`;
-    html += `<div class="manual-accordions-list">`;
-
-    sections.forEach((sec) => {
-      const lines = sec.split("\n");
-      const headingLine = lines[0].trim();
-      const contentMarkdown = lines.slice(1).join("\n").trim();
-      
-      const headingRegex = /^(\d+)\.\s*([^\s]+)\s+(.*)$/;
-      const headingMatch = headingLine.match(headingRegex);
-      
-      let number = "";
-      let emoji = "📖";
-      let title = headingLine;
-      
-      if (headingMatch) {
-        number = headingMatch[1];
-        emoji = headingMatch[2];
-        title = headingMatch[3];
-      }
-      
-      const cleanTitle = title.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9\s]/g, "").trim();
-      const viewId = viewMapping[cleanTitle] || "";
-      
-      const renderedContent = marked.parse(contentMarkdown);
-      
-      html += `
-        <div class="manual-accordion-card" data-title="${escapeHtml(title)}" data-content="${escapeHtml(contentMarkdown.toLowerCase())}">
-          <button class="manual-accordion-header" aria-expanded="false">
-            <span class="manual-header-emoji">${emoji}</span>
-            <span class="manual-header-title"><span class="manual-header-num">${number}.</span> ${escapeHtml(title)}</span>
-            <span class="manual-header-chevron">${createIcon("chevronDown", { size: 14 })}</span>
-          </button>
-          <div class="manual-accordion-body">
-            <div class="manual-accordion-inner">
-              <div class="manual-markdown-content">${renderedContent}</div>
-              <div class="manual-actions-row">
-                ${viewId ? `
-                  <button class="manual-action-btn launch-btn" data-view="${viewId}">
-                    ${createIcon("externalLink", { size: 12 })}
-                    <span>Launch ${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}</span>
-                  </button>
-                ` : ""}
-                <button class="manual-action-btn ai-btn" data-feature="${escapeHtml(title.replace(/\s*\(.*\)/g, ""))}">
-                  ${createIcon("sparkles", { size: 12 })}
-                  <span>Ask AI</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    contentContainer.innerHTML = html;
-
-    // Attach click events to accordion headers
-    const headers = contentContainer.querySelectorAll(".manual-accordion-header");
-    headers.forEach(header => {
-      header.addEventListener("click", () => {
-        const card = header.closest(".manual-accordion-card");
-        const wasExpanded = card.classList.contains("expanded");
-        
-        // Collapse other cards
-        contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
-          if (otherCard !== card) {
-            otherCard.classList.remove("expanded");
-            otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
-            const otherBody = otherCard.querySelector(".manual-accordion-body");
-            otherBody.style.maxHeight = null;
-          }
-        });
-        
-        card.classList.toggle("expanded", !wasExpanded);
-        header.setAttribute("aria-expanded", !wasExpanded ? "true" : "false");
-        
-        const body = card.querySelector(".manual-accordion-body");
-        if (!wasExpanded) {
-          body.style.maxHeight = body.scrollHeight + "px";
-        } else {
-          body.style.maxHeight = null;
-        }
-      });
-    });
-
-    // Attach click events to launch buttons
-    const launchButtons = contentContainer.querySelectorAll(".launch-btn");
-    launchButtons.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const viewId = btn.getAttribute("data-view");
-        closeManual();
-        
-        if (viewId === "settings") {
-          openSettingsModal();
-        } else if (viewId === "plugins") {
-          openSettingsModal();
-          setTimeout(() => {
-            activateSettingsPanel("sp-extensions");
-          }, 50);
-        } else if (viewId === "prompt-sidebar") {
-          openCtrlPromptOverlay();
-        } else {
-          const tab = document.querySelector(`.nav-tab[data-view="${viewId}"]`);
-          if (tab) {
-            tab.click();
-          }
-        }
-      });
-    });
-
-    // Attach click events to Ask AI buttons
-    const aiButtons = contentContainer.querySelectorAll(".ai-btn");
-    aiButtons.forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const feature = btn.getAttribute("data-feature");
-        closeManual();
-        
-        const chatTab = document.querySelector('.nav-tab[data-view="chat"]');
-        if (chatTab) {
-          chatTab.click();
-        }
-        
-        const chatInput = document.getElementById("user-input");
-        if (chatInput) {
-          chatInput.value = `How do I use the ${feature} feature in NEURODECK?`;
-          chatInput.dispatchEvent(new Event("input", { bubbles: true }));
-          chatInput.focus();
-        }
-      });
-    });
-  };
-
-  const runManualHealthDiagnostics = async () => {
-    const ptyDot = document.getElementById("manual-health-pty");
-    const netDot = document.getElementById("manual-health-net");
-    const keyDot = document.getElementById("manual-health-key");
-    const refreshBtn = document.getElementById("manual-health-refresh");
-
-    if (!ptyDot || !netDot || !keyDot) return;
-
-    ptyDot.className = "health-dot pending";
-    netDot.className = "health-dot pending";
-    keyDot.className = "health-dot pending";
-    
-    if (refreshBtn) {
-      refreshBtn.classList.add("spinning");
-    }
-
-    try {
-      const result = await invoke("run_onboarding_diagnostics");
-      
-      ptyDot.className = "health-dot " + (result.pty_ok ? "success" : "error");
-      ptyDot.title = result.pty_details || (result.pty_ok ? "PTY working correctly" : "PTY failed");
-
-      netDot.className = "health-dot " + (result.network_ok ? "success" : "error");
-      netDot.title = result.network_details || (result.network_ok ? "Network working correctly" : "Network failed");
-
-      keyDot.className = "health-dot " + (result.keychain_ok ? "success" : "error");
-      keyDot.title = result.keychain_details || (result.keychain_ok ? "Keychain working correctly" : "Keychain failed");
-    } catch (err) {
-      console.error("Manual health diagnostics failed:", err);
-      ptyDot.className = "health-dot error";
-      netDot.className = "health-dot error";
-      keyDot.className = "health-dot error";
-      
-      ptyDot.title = String(err);
-      netDot.title = String(err);
-      keyDot.title = String(err);
-    } finally {
-      if (refreshBtn) {
-        refreshBtn.classList.remove("spinning");
-      }
-    }
-  };
+  const mmCtx = { modal: manualModal, trap: null };
 
   manualBtn.addEventListener("click", () => {
     manualModal.classList.add("active");
-    if (!manualFocusTrap) manualFocusTrap = new FocusTrap(manualModal);
-    manualFocusTrap.activate();
-    if (contentContainer && contentContainer.innerHTML.trim() === "") {
-      buildManualUI();
-    }
-    runManualHealthDiagnostics();
+    if (!mmCtx.trap) mmCtx.trap = new FocusTrap(manualModal);
+    mmCtx.trap.activate();
+    if (contentContainer && contentContainer.innerHTML.trim() === "") _mmBuildUI(contentContainer, mmCtx);
+    _mmRunHealthDiagnostics();
   });
 
   const refreshBtn = document.getElementById("manual-health-refresh");
-  if (refreshBtn) {
-    refreshBtn.addEventListener("click", runManualHealthDiagnostics);
-  }
+  if (refreshBtn) refreshBtn.addEventListener("click", _mmRunHealthDiagnostics);
 
-  const searchInput = document.getElementById("manual-search");
-  if (searchInput) {
-    searchInput.addEventListener("input", (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      if (!contentContainer) return;
-      const cards = contentContainer.querySelectorAll(".manual-accordion-card");
-      
-      const introBanner = contentContainer.querySelector(".manual-intro-banner");
-      if (introBanner) {
-        introBanner.style.display = query ? "none" : "";
-      }
-
-      cards.forEach(card => {
-        const title = card.getAttribute("data-title").toLowerCase();
-        const content = card.getAttribute("data-content");
-        
-        if (title.includes(query) || content.includes(query)) {
-          card.style.display = "";
-        } else {
-          card.style.display = "none";
-        }
-      });
-    });
-  }
-
-  if (closeX) closeX.addEventListener("click", closeManual);
-  if (closeBtn) closeBtn.addEventListener("click", closeManual);
+  _mmWireSearch(document.getElementById("manual-search"), contentContainer);
+  if (closeX) closeX.addEventListener("click", () => _mmCloseManual(mmCtx));
+  if (closeBtn) closeBtn.addEventListener("click", () => _mmCloseManual(mmCtx));
 }
 
 /* --- SEPARATOR --- */
@@ -11668,6 +10591,83 @@ async function _obRunDiagnostics(obs) {
 // New backend features auto-render by pushing a BootPipelineStep into the
 // `pipeline` vec — no frontend code changes required.
 // ==========================================================================
+function _bootEscapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function _bootToken(value, cls = "boot-val") {
+  return `<span class="${cls}">${_bootEscapeHtml(value)}</span>`;
+}
+
+function _bootStatusToken(label, tone = "boot-ok") {
+  return `<span class="${tone}">${_bootEscapeHtml(label)}</span>`;
+}
+
+function _bootNextAddr(bCtx) {
+  return `[0x${(bCtx.addrIndex++).toString(16).padStart(4, "0")}]`;
+}
+
+function _bootSetProgress(progressFill, progressPct, progressLabel, pct, label) {
+  const clamped = Math.min(pct, 100);
+  if (progressFill) progressFill.style.width = `${clamped}%`;
+  if (progressPct) progressPct.textContent = `${Math.round(clamped)}%`;
+  if (label && progressLabel) progressLabel.textContent = label.toUpperCase().slice(0, 48);
+}
+
+function _bootAddLine(logScroll, addr, html, extraClass) {
+  const line = document.createElement("div");
+  line.className = `boot-log-line${extraClass ? ` ${extraClass}` : ""}`;
+  line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
+  logScroll.appendChild(line);
+  logScroll.scrollTop = logScroll.scrollHeight;
+}
+
+function _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, labelText) {
+  bCtx.step += 1;
+  const pct = Math.min((bCtx.step / Math.max(totalSteps, 1)) * 100, 97);
+  _bootSetProgress(progressFill, progressPct, progressLabel, pct, labelText);
+}
+
+async function _bootRenderPipeline(bCtx, logScroll, progressFill, progressPct, progressLabel, pipeline, totalSteps, delay) {
+  const toneMap = { ok: "boot-ok", warn: "boot-warn", err: "boot-err", info: "boot-info", neutral: "boot-neutral" };
+  for (const entry of pipeline) {
+    const tone = toneMap[entry.status] || "boot-ok";
+    let html;
+    if (entry.category === "plugin") {
+      const detail = entry.detail ? ` <span style="opacity:0.42">// ${_bootEscapeHtml(entry.detail)}</span>` : "";
+      html = `${_bootEscapeHtml(entry.label)}${detail}`;
+    } else {
+      const detail = entry.detail ? ` · ${_bootEscapeHtml(entry.detail)}` : "";
+      html = `${_bootEscapeHtml(entry.label)}${detail}`;
+    }
+    _bootAddLine(logScroll, _bootNextAddr(bCtx), html);
+    _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, entry.label);
+    await delay(entry.category === "plugin" ? 110 : 140);
+  }
+}
+
+async function _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, progressLabel, diag, totalSteps, delay) {
+  const provider = diag?.provider ?? "ollama";
+  const model = diag?.model ?? "llama2";
+  _bootAddLine(logScroll, _bootNextAddr(bCtx), `Running provider handshake against ${_bootToken(provider.toUpperCase())}…`);
+  _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, "Provider handshake");
+  await delay(120);
+  const llmResult = await invoke("test_llm_connection", { provider, model, url: diag?.ollama_base_url ?? "http://localhost:11434", key: null })
+    .then((message) => ({ ok: true, message }))
+    .catch((error) => ({ ok: false, message: String(error) }));
+  const llmTone = llmResult.ok ? "boot-ok" : "boot-warn";
+  const llmLabel = llmResult.ok ? "CONNECTED" : "DEGRADED";
+  _bootAddLine(logScroll, _bootNextAddr(bCtx), `LLM session ${_bootStatusToken(llmLabel, llmTone)} · ${_bootToken(model)} <span style="opacity:0.52">${_bootEscapeHtml(llmResult.message)}</span>`);
+  _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, "LLM session");
+  await delay(200);
+  return llmResult;
+}
+
 (async function runBootSequence() {
   const overlay = document.getElementById("boot-overlay");
   const logScroll = document.getElementById("boot-log-scroll");
@@ -11682,121 +10682,22 @@ async function _obRunDiagnostics(obs) {
 
   try {
     const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-    const escapeBootHtml = (value) =>
-      String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    const token = (value, cls = "boot-val") =>
-      `<span class="${cls}">${escapeBootHtml(value)}</span>`;
-    const statusToken = (label, tone = "boot-ok") =>
-      `<span class="${tone}">${escapeBootHtml(label)}</span>`;
+    const bCtx = { step: 0, addrIndex: 1 };
 
-    let step = 0;
-    let addrIndex = 1;
-
-    function nextAddr() {
-      return `[0x${(addrIndex++).toString(16).padStart(4, "0")}]`;
-    }
-
-    function setProgress(pct, label) {
-      const clamped = Math.min(pct, 100);
-      if (progressFill) progressFill.style.width = `${clamped}%`;
-      if (progressPct) progressPct.textContent = `${Math.round(clamped)}%`;
-      if (label && progressLabel)
-        progressLabel.textContent = label.toUpperCase().slice(0, 48);
-    }
-
-    function addLine(addr, html, extraClass) {
-      const line = document.createElement("div");
-      line.className = `boot-log-line${extraClass ? ` ${extraClass}` : ""}`;
-      line.innerHTML = `<span class="boot-addr">${addr}</span>  ${html}`;
-      logScroll.appendChild(line);
-      logScroll.scrollTop = logScroll.scrollHeight;
-    }
-
-    // ── Fetch boot diagnostics in one round-trip ───────────────────────────
     const diag = await invoke("get_boot_diagnostics").catch((e) => {
       console.error("[Boot] get_boot_diagnostics failed:", e);
       return null;
     });
-
     const pipeline = Array.isArray(diag?.pipeline) ? diag.pipeline : [];
-    // +2 for the LLM handshake step and the final completion line
     const totalSteps = Math.max(pipeline.length, 1) + 2;
 
-    function advanceProgress(labelText) {
-      step += 1;
-      const pct = Math.min((step / Math.max(totalSteps, 1)) * 100, 97);
-      setProgress(pct, labelText);
-    }
+    await _bootRenderPipeline(bCtx, logScroll, progressFill, progressPct, progressLabel, pipeline, totalSteps, delay);
+    const llmResult = await _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, progressLabel, diag, totalSteps, delay);
 
-    // ── Render dynamic pipeline ────────────────────────────────────────────
-    for (const entry of pipeline) {
-      const toneMap = {
-        ok: "boot-ok",
-        warn: "boot-warn",
-        err: "boot-err",
-        info: "boot-info",
-        neutral: "boot-neutral",
-      };
-      const tone = toneMap[entry.status] || "boot-ok";
-
-      let html;
-      if (entry.category === "plugin") {
-        // Plugins get the classic // description suffix styling
-        const detail = entry.detail ? ` <span style="opacity:0.42">// ${escapeBootHtml(entry.detail)}</span>` : "";
-        html = `${escapeBootHtml(entry.label)}${detail}`;
-      } else {
-        const detail = entry.detail ? ` · ${escapeBootHtml(entry.detail)}` : "";
-        html = `${escapeBootHtml(entry.label)}${detail}`;
-      }
-
-      addLine(nextAddr(), html);
-      advanceProgress(entry.label);
-      // Cinematic stagger: system steps are fast, plugins feel weighty
-      await delay(entry.category === "plugin" ? 110 : 140);
-    }
-
-    // ── LLM handshake (frontend-side because it needs async test) ──────────
-    const provider = diag?.provider ?? "ollama";
-    const model = diag?.model ?? "llama2";
-    addLine(
-      nextAddr(),
-      `Running provider handshake against ${token(provider.toUpperCase())}…`
-    );
-    advanceProgress("Provider handshake");
-    await delay(120);
-
-    const llmResult = await invoke("test_llm_connection", {
-      provider,
-      model,
-      url: diag?.ollama_base_url ?? "http://localhost:11434",
-      key: null,
-    })
-      .then((message) => ({ ok: true, message }))
-      .catch((error) => ({ ok: false, message: String(error) }));
-
-    const llmTone = llmResult.ok ? "boot-ok" : "boot-warn";
-    const llmLabel = llmResult.ok ? "CONNECTED" : "DEGRADED";
-    addLine(
-      nextAddr(),
-      `LLM session ${statusToken(llmLabel, llmTone)} · ${token(model)} <span style="opacity:0.52">${escapeBootHtml(llmResult.message)}</span>`
-    );
-    advanceProgress("LLM session");
-    await delay(200);
-
-    // ── Final completion line ──────────────────────────────────────────────
     const memoryReady = diag?.memory_ready ?? false;
     const finalTone = llmResult.ok && memoryReady ? "boot-ok" : "boot-warn";
-    addLine(
-      nextAddr(),
-      `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`,
-      "boot-final"
-    );
-    setProgress(100, "NEURODECK ONLINE");
+    _bootAddLine(logScroll, _bootNextAddr(bCtx), `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`, "boot-final");
+    _bootSetProgress(progressFill, progressPct, progressLabel, 100, "NEURODECK ONLINE");
     await delay(1100);
 
     overlay.classList.add("fade-out");

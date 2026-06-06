@@ -5,6 +5,7 @@
     "@axe-core/playwright"
   ],
   "ignorePatterns": [
+    "scripts/**",
     "e2e/**",
     "temp_inspect/**",
     "scripts/js/test-chat-virtualization.js",

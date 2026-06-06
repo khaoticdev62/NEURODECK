@@ -27,129 +27,79 @@ let closeSettingsX = null;
 // ==========================================================================
 // SETTINGS AND PERSISTENCE IMPLEMENTATION
 // ==========================================================================
-function applySettings() {
-  // 1. Font Style
+function _applyFontSettings() {
   const font = localStorage.getItem("selectedFont") || "spacegrotesk";
   const fontSelect = document.getElementById("font-select");
   if (fontSelect) fontSelect.value = font;
-  const fontClasses = [
-    "font-spacegrotesk",
-    "font-syne",
-    "font-inter",
-    "font-outfit",
-    "font-jetbrains",
-    "font-vt323",
-    "font-sharetech",
-    "font-orbitron",
-    "font-pressstart",
-  ];
-  fontClasses.forEach((cls) => document.body.classList.remove(cls));
+  ["font-spacegrotesk","font-syne","font-inter","font-outfit","font-jetbrains",
+   "font-vt323","font-sharetech","font-orbitron","font-pressstart"]
+    .forEach(cls => document.body.classList.remove(cls));
   document.body.classList.add(`font-${font}`);
+}
 
-  // 2. Custom Background URL & Live backgrounds setup
-  const bgUrl = localStorage.getItem("bgUrl") || "";
-  const bgUrlInput = document.getElementById("bg-url-input");
-  if (bgUrlInput) bgUrlInput.value = bgUrl;
-
-  const bgImgEl = document.getElementById("app-background-image");
-  const opacityValStr = localStorage.getItem("bgOpacity");
-  const opacity = opacityValStr !== null ? parseInt(opacityValStr, 10) : 10;
-
-  const bgOpacitySlider = document.getElementById("bg-opacity-slider");
-  if (bgOpacitySlider) bgOpacitySlider.value = opacity;
-  const bgOpacityVal = document.getElementById("bg-opacity-val");
-  if (bgOpacityVal) bgOpacityVal.innerText = `${opacity}%`;
-
-  if (bgUrl.startsWith("live:")) {
-    const liveType = bgUrl.substring(5);
-    if (bgImgEl) {
-      bgImgEl.style.backgroundImage = "none";
-      bgImgEl.style.opacity = "0";
-    }
-    if (window.liveBgManager) {
-      window.liveBgManager.start(liveType);
-    }
-  } else {
-    if (window.liveBgManager) {
-      window.liveBgManager.stop();
-    }
-    if (bgImgEl) {
-      if (bgUrl) {
-        bgImgEl.style.backgroundImage = `url('${bgUrl}')`;
-        bgImgEl.style.opacity = (opacity / 100).toString();
-      } else {
-        bgImgEl.style.backgroundImage = "none";
-        bgImgEl.style.opacity = "0";
-      }
-    }
-  }
-
-  // Highlight active card in gallery
-  document.querySelectorAll(".bg-gallery-card").forEach((c) => {
+function _applyBgGallery(bgUrl) {
+  document.querySelectorAll(".bg-gallery-card").forEach(c => {
     const cardId = c.getAttribute("data-id");
     const cardUrl = c.getAttribute("data-url");
     let isActive = false;
     if (bgUrl.startsWith("live:")) {
       const liveType = bgUrl.substring(5);
-      isActive =
-        cardId === liveType && (cardUrl === null || cardUrl === undefined);
+      isActive = cardId === liveType && (cardUrl === null || cardUrl === undefined);
     } else {
-      if (!bgUrl) {
-        isActive = !cardUrl && !cardId;
-      } else {
-        isActive = cardUrl === bgUrl;
-      }
+      isActive = !bgUrl ? (!cardUrl && !cardId) : cardUrl === bgUrl;
     }
-    if (isActive) {
-      c.classList.add("active");
-    } else {
-      c.classList.remove("active");
-    }
+    c.classList.toggle("active", isActive);
   });
+}
 
-  // 3b. Minimize-to-tray toggle — reads from backend config
-  invoke("get_config").then((cfg) => {
+function _applyBgSettings() {
+  const bgUrl = localStorage.getItem("bgUrl") || "";
+  const bgUrlInput = document.getElementById("bg-url-input");
+  if (bgUrlInput) bgUrlInput.value = bgUrl;
+  const bgImgEl = document.getElementById("app-background-image");
+  const opacityValStr = localStorage.getItem("bgOpacity");
+  const opacity = opacityValStr !== null ? parseInt(opacityValStr, 10) : 10;
+  const bgOpacitySlider = document.getElementById("bg-opacity-slider");
+  if (bgOpacitySlider) bgOpacitySlider.value = opacity;
+  const bgOpacityVal = document.getElementById("bg-opacity-val");
+  if (bgOpacityVal) bgOpacityVal.innerText = `${opacity}%`;
+  if (bgUrl.startsWith("live:")) {
+    if (bgImgEl) { bgImgEl.style.backgroundImage = "none"; bgImgEl.style.opacity = "0"; }
+    if (window.liveBgManager) window.liveBgManager.start(bgUrl.substring(5));
+  } else {
+    if (window.liveBgManager) window.liveBgManager.stop();
+    if (bgImgEl) {
+      bgImgEl.style.backgroundImage = bgUrl ? `url('${bgUrl}')` : "none";
+      bgImgEl.style.opacity = bgUrl ? (opacity / 100).toString() : "0";
+    }
+  }
+  _applyBgGallery(bgUrl);
+}
+
+function _applyCrtSettings() {
+  invoke("get_config").then(cfg => {
     const toggle = document.getElementById("minimize-to-tray-toggle");
     if (toggle) toggle.checked = cfg?.prefs?.minimize_to_tray_on_close !== false;
   }).catch(() => {});
-
-  // 4. CRT Scanlines (default to false / disabled for "remove crt animation")
-  const scanlinesStr = localStorage.getItem("scanlinesEnabled");
-  const scanlines = scanlinesStr === "true"; // default false
+  const scanlines = localStorage.getItem("scanlinesEnabled") === "true";
   const scanlinesToggle = document.getElementById("scanlines-toggle");
   if (scanlinesToggle) scanlinesToggle.checked = scanlines;
-  if (scanlines) {
-    document.body.classList.remove("crt-scanlines-disabled");
-  } else {
-    document.body.classList.add("crt-scanlines-disabled");
-  }
-
-  // 5. CRT Flicker (default to false / disabled for "remove crt animation")
-  const flickerStr = localStorage.getItem("flickerEnabled");
-  const flicker = flickerStr === "true"; // default false
+  document.body.classList.toggle("crt-scanlines-disabled", !scanlines);
+  const flicker = localStorage.getItem("flickerEnabled") === "true";
   const flickerToggle = document.getElementById("flicker-toggle");
   if (flickerToggle) flickerToggle.checked = flicker;
-  if (flicker) {
-    document.body.classList.remove("crt-flicker-disabled");
-  } else {
-    document.body.classList.add("crt-flicker-disabled");
-  }
+  document.body.classList.toggle("crt-flicker-disabled", !flicker);
+}
 
-  // 6. Terminal Shell
+function _applyTerminalSettings() {
   const shell = localStorage.getItem("selectedShell") || "default";
   const shellSelect = document.getElementById("shell-select");
   if (shellSelect) shellSelect.value = shell;
-
   const customShell = localStorage.getItem("customShell") || "";
   const customShellInput = document.getElementById("custom-shell-input");
   if (customShellInput) customShellInput.value = customShell;
-
   const customShellGroup = document.getElementById("custom-shell-group");
-  if (customShellGroup) {
-    customShellGroup.style.display = shell === "custom" ? "block" : "none";
-  }
-
-  // 7. Terminal Font Size
+  if (customShellGroup) customShellGroup.style.display = shell === "custom" ? "block" : "none";
   const fontSizeValStr = localStorage.getItem("terminalFontSize");
   const fontSize = fontSizeValStr !== null ? parseInt(fontSizeValStr, 10) : 14;
   const termFontSizeSlider = document.getElementById("term-fontsize-slider");
@@ -158,24 +108,25 @@ function applySettings() {
   if (termFontSizeVal) termFontSizeVal.innerText = `${fontSize}px`;
   if (window.ptyTerminal) {
     window.ptyTerminal.options.fontSize = fontSize;
-    if (window.ptyTerminalFitAddon) {
-      try {
-        window.ptyTerminalFitAddon.fit();
-      } catch (e) {
-        console.warn("Could not refit terminal:", e);
-      }
-    }
-  }
-
-  // 8. Terminal Scrollback Limit
-  const scrollbackValStr = localStorage.getItem("terminalScrollback");
-  const scrollback =
-    scrollbackValStr !== null ? parseInt(scrollbackValStr, 10) : 2000;
-  const termScrollbackInput = document.getElementById("term-scrollback-input");
-  if (termScrollbackInput) termScrollbackInput.value = scrollback;
-  if (window.ptyTerminal) {
+    if (window.ptyTerminalFitAddon) { try { window.ptyTerminalFitAddon.fit(); } catch (e) { console.warn("Could not refit terminal:", e); } }
+    const scrollbackValStr = localStorage.getItem("terminalScrollback");
+    const scrollback = scrollbackValStr !== null ? parseInt(scrollbackValStr, 10) : 2000;
+    const termScrollbackInput = document.getElementById("term-scrollback-input");
+    if (termScrollbackInput) termScrollbackInput.value = scrollback;
     window.ptyTerminal.options.scrollback = scrollback;
+  } else {
+    const scrollbackValStr = localStorage.getItem("terminalScrollback");
+    const scrollback = scrollbackValStr !== null ? parseInt(scrollbackValStr, 10) : 2000;
+    const termScrollbackInput = document.getElementById("term-scrollback-input");
+    if (termScrollbackInput) termScrollbackInput.value = scrollback;
   }
+}
+
+function applySettings() {
+  _applyFontSettings();
+  _applyBgSettings();
+  _applyCrtSettings();
+  _applyTerminalSettings();
 }
 
 function handleFontSelect() {
@@ -339,108 +290,53 @@ function handleTestConnectionClick() {
     });
 }
 
-function handleSaveLlmClick() {
-  const {
-    provider,
-    geminiKey,
-    geminiModel,
-    ollamaUrl,
-    ollamaModel,
-    kimiKey,
-    kimiModel,
-    kimiUrl,
-    hfKey,
-    hfModel,
-    hfUrl,
-    oaKey,
-    oaModel,
-    oaUrl,
-  } = getLlmSettingsFromDom();
-
-  const statusEl = document.getElementById("settings-llm-status");
-  if (statusEl) {
-    statusEl.style.color = "var(--accent-color)";
-    statusEl.innerText = "Applying changes...";
-  }
-
-  let saveKeyPromise = Promise.resolve();
-  if (provider === "gemini" && geminiKey) {
-    saveKeyPromise = invoke("save_gemini_api_key", { key: geminiKey });
-  } else if (provider === "openai_compat" && oaKey) {
-    saveKeyPromise = invoke("save_openai_compat_api_key", { key: oaKey });
-  } else if (provider === "kimi" && kimiKey) {
-    saveKeyPromise = invoke("save_kimi_api_key", { key: kimiKey });
-  } else if (provider === "huggingface" && hfKey) {
-    saveKeyPromise = invoke("save_hf_api_key", { key: hfKey });
-  }
-
-  saveKeyPromise
-    .then(() =>
-      invoke("set_config", { key: "llm.default_provider", value: provider }),
-    )
-    .then(() =>
-      invoke("set_config", { key: "llm.gemini_model", value: geminiModel }),
-    )
-    .then(() =>
-      invoke("set_config", { key: "llm.ollama_base_url", value: ollamaUrl }),
-    )
-    .then(() =>
-      invoke("set_config", { key: "llm.ollama_model", value: ollamaModel }),
-    )
-    .then(() =>
-      invoke("set_config", { key: "llm.kimi_model", value: kimiModel }),
-    )
-    .then(() =>
-      invoke("set_config", {
-        key: "llm.kimi_base_url",
-        value: kimiUrl || "https://api.moonshot.ai/v1",
-      }),
-    )
-    .then(() => invoke("set_config", { key: "llm.hf_model", value: hfModel }))
-    .then(() =>
-      invoke("set_config", {
-        key: "llm.hf_base_url",
-        value: hfUrl || "https://api-inference.huggingface.co",
-      }),
-    )
-    .then(() => invoke("set_config", { key: "llm.openai_compat_model", value: oaModel || "gpt-4o-mini" }))
-    .then(() =>
-      invoke("set_config", {
-        key: "llm.openai_compat_base_url",
-        value: oaUrl || "https://api.groq.com/openai/v1",
-      }),
-    )
+function _saveLlmChainConfigs(s) {
+  return invoke("set_config", { key: "llm.default_provider", value: s.provider })
+    .then(() => invoke("set_config", { key: "llm.gemini_model", value: s.geminiModel }))
+    .then(() => invoke("set_config", { key: "llm.ollama_base_url", value: s.ollamaUrl }))
+    .then(() => invoke("set_config", { key: "llm.ollama_model", value: s.ollamaModel }))
+    .then(() => invoke("set_config", { key: "llm.kimi_model", value: s.kimiModel }))
+    .then(() => invoke("set_config", { key: "llm.kimi_base_url", value: s.kimiUrl || "https://api.moonshot.ai/v1" }))
+    .then(() => invoke("set_config", { key: "llm.hf_model", value: s.hfModel }))
+    .then(() => invoke("set_config", { key: "llm.hf_base_url", value: s.hfUrl || "https://api-inference.huggingface.co" }))
+    .then(() => invoke("set_config", { key: "llm.openai_compat_model", value: s.oaModel || "gpt-4o-mini" }))
+    .then(() => invoke("set_config", { key: "llm.openai_compat_base_url", value: s.oaUrl || "https://api.groq.com/openai/v1" }))
     .then(() => {
       const pToggle = document.getElementById("privacy-workspace-toggle");
       const pPath = document.getElementById("privacy-workspace-path");
-      let promises = [];
+      const promises = [];
       if (pToggle) promises.push(invoke("set_config", { key: "security.agent_workspace_only", value: pToggle.checked.toString() }));
       if (pPath) promises.push(invoke("set_config", { key: "security.agent_workspace_path", value: pPath.value.toString() }));
       return Promise.all(promises);
-    })
-    .then(() => {
-      if (statusEl) {
-        statusEl.style.color = "var(--response-color)";
-        statusEl.innerText = "Config updated and applied!";
-      }
-      let activeModelName;
-      if (provider === "gemini") activeModelName = geminiModel;
-      else if (provider === "openai_compat") activeModelName = oaModel || "openai-compat";
-      else if (provider === "kimi") activeModelName = kimiModel;
-      else if (provider === "huggingface") activeModelName = hfModel;
-      else activeModelName = ollamaModel;
-      document.getElementById("model-name").innerText =
-        `[ MODEL: ${activeModelName.toUpperCase()} ]`;
+    });
+}
 
-      if (typeof updateContextDrawer === "function") {
-        updateContextDrawer();
-      }
-    })
-    .catch((err) => {
-      if (statusEl) {
-        statusEl.style.color = "var(--error-color)";
-        statusEl.innerText = `Save error: ${err}`;
-      }
+function _llmSaveSuccess(statusEl, s) {
+  if (statusEl) { statusEl.style.color = "var(--response-color)"; statusEl.innerText = "Config updated and applied!"; }
+  let activeModelName;
+  if (s.provider === "gemini") activeModelName = s.geminiModel;
+  else if (s.provider === "openai_compat") activeModelName = s.oaModel || "openai-compat";
+  else if (s.provider === "kimi") activeModelName = s.kimiModel;
+  else if (s.provider === "huggingface") activeModelName = s.hfModel;
+  else activeModelName = s.ollamaModel;
+  document.getElementById("model-name").innerText = `[ MODEL: ${activeModelName.toUpperCase()} ]`;
+  if (typeof updateContextDrawer === "function") updateContextDrawer();
+}
+
+function handleSaveLlmClick() {
+  const s = getLlmSettingsFromDom();
+  const statusEl = document.getElementById("settings-llm-status");
+  if (statusEl) { statusEl.style.color = "var(--accent-color)"; statusEl.innerText = "Applying changes..."; }
+  let saveKeyPromise = Promise.resolve();
+  if (s.provider === "gemini" && s.geminiKey) saveKeyPromise = invoke("save_gemini_api_key", { key: s.geminiKey });
+  else if (s.provider === "openai_compat" && s.oaKey) saveKeyPromise = invoke("save_openai_compat_api_key", { key: s.oaKey });
+  else if (s.provider === "kimi" && s.kimiKey) saveKeyPromise = invoke("save_kimi_api_key", { key: s.kimiKey });
+  else if (s.provider === "huggingface" && s.hfKey) saveKeyPromise = invoke("save_hf_api_key", { key: s.hfKey });
+  saveKeyPromise
+    .then(() => _saveLlmChainConfigs(s))
+    .then(() => _llmSaveSuccess(statusEl, s))
+    .catch(err => {
+      if (statusEl) { statusEl.style.color = "var(--error-color)"; statusEl.innerText = `Save error: ${err}`; }
     });
 }
 
@@ -521,108 +417,159 @@ export function showTrustSafetyModal() {
   tsFocusTrap.activate();
 }
 
-export function openSettingsModal() {
-  if (settingsOverlay) settingsOverlay.classList.add("active");
-  const lastPanel = localStorage.getItem("settingsActivePanel") || "sp-general";
-  activateSettingsPanel(lastPanel);
-  if (!settingsFocusTrap) settingsFocusTrap = new FocusTrap(settingsOverlay);
-  settingsFocusTrap.activate();
+function _populateLlmConfig([config, apiKey, kimiApiKey, hfApiKey, oaApiKey]) {
+  const $ = id => document.getElementById(id);
+  const set = (id, val) => { const el = $(id); if (el) el.value = val; };
+  set("llm-provider-select", config.llm.default_provider);
+  set("settings-gemini-key", apiKey);
+  set("settings-gemini-model", config.llm.gemini_model);
+  set("settings-ollama-url", config.llm.ollama_base_url);
+  set("settings-ollama-model", config.llm.ollama_model);
+  set("settings-kimi-key", kimiApiKey);
+  set("settings-kimi-model", config.llm.kimi_model);
+  set("settings-kimi-url", config.llm.kimi_base_url);
+  set("settings-hf-key", hfApiKey);
+  set("settings-hf-model", config.llm.hf_model);
+  set("settings-hf-url", config.llm.hf_base_url);
+  set("settings-openai-compat-key", oaApiKey || "");
+  set("settings-openai-compat-model", config.llm.openai_compat_model || "");
+  set("settings-openai-compat-url", config.llm.openai_compat_base_url || "");
+  const privacyToggle = $("privacy-workspace-toggle");
+  const privacyPath = $("privacy-workspace-path");
+  if (privacyToggle) privacyToggle.checked = config.security?.agent_workspace_only || false;
+  if (privacyPath) privacyPath.value = config.security?.agent_workspace_path || "~/.neurodeck_workspace";
+  toggleSettingsLlmGroups(config.llm.default_provider);
+}
 
-  // Clear status text
-  const statusEl = document.getElementById("settings-llm-status");
-  if (statusEl) statusEl.innerText = "";
+let _stSettingsThemeCache = null;
 
-  // Load active LLM config and API keys
-  Promise.all([
-    invoke("get_config"),
-    invoke("get_gemini_api_key"),
-    invoke("get_kimi_api_key"),
-    invoke("get_hf_api_key"),
-    invoke("get_openai_compat_api_key"),
-  ])
-    .then(([config, apiKey, kimiApiKey, hfApiKey, oaApiKey]) => {
-      const providerSelect = document.getElementById("llm-provider-select");
-      const geminiKeyInput = document.getElementById("settings-gemini-key");
-      const geminiModelInput = document.getElementById("settings-gemini-model");
-      const ollamaUrlInput = document.getElementById("settings-ollama-url");
-      const ollamaModelInput = document.getElementById("settings-ollama-model");
-      const kimiKeyInput = document.getElementById("settings-kimi-key");
-      const kimiModelInput = document.getElementById("settings-kimi-model");
-      const kimiUrlInput = document.getElementById("settings-kimi-url");
-      const hfKeyInput = document.getElementById("settings-hf-key");
-      const hfModelInput = document.getElementById("settings-hf-model");
-      const hfUrlInput = document.getElementById("settings-hf-url");
-      const oaKeyInput = document.getElementById("settings-openai-compat-key");
-      const oaModelInput = document.getElementById("settings-openai-compat-model");
-      const oaUrlInput = document.getElementById("settings-openai-compat-url");
+function _themeApplyPreview(tc) {
+  const el = document.getElementById("theme-preview-overlay");
+  if (!el) return;
+  el.style.setProperty("--preview-bg", tc.Background || tc.background || "#050505");
+  el.style.setProperty("--preview-fg", tc.Foreground || tc.foreground || "#D9F7FF");
+  el.style.setProperty("--preview-accent", tc.Accent || tc.accent || "#00F0FF");
+  el.style.setProperty("--preview-response", tc.Response || tc.response || "#00FF88");
+  el.style.setProperty("--preview-warning", tc.Warning || tc.warning || "#FFB000");
+  el.style.setProperty("--preview-error", tc.Error || tc.error || "#FF3C5A");
+}
 
-      if (providerSelect) providerSelect.value = config.llm.default_provider;
-      if (geminiKeyInput) geminiKeyInput.value = apiKey;
-      if (geminiModelInput) geminiModelInput.value = config.llm.gemini_model;
-      if (ollamaUrlInput) ollamaUrlInput.value = config.llm.ollama_base_url;
-      if (ollamaModelInput) ollamaModelInput.value = config.llm.ollama_model;
-      if (kimiKeyInput) kimiKeyInput.value = kimiApiKey;
-      if (kimiModelInput) kimiModelInput.value = config.llm.kimi_model;
-      if (kimiUrlInput) kimiUrlInput.value = config.llm.kimi_base_url;
-      if (hfKeyInput) hfKeyInput.value = hfApiKey;
-      if (hfModelInput) hfModelInput.value = config.llm.hf_model;
-      if (hfUrlInput) hfUrlInput.value = config.llm.hf_base_url;
-      if (oaKeyInput) oaKeyInput.value = oaApiKey || "";
-      if (oaModelInput) oaModelInput.value = config.llm.openai_compat_model || "";
-      if (oaUrlInput) oaUrlInput.value = config.llm.openai_compat_base_url || "";
+function _themeWireCardHover(card, cardData, allCards, tCtx) {
+  card.addEventListener("mouseenter", () => _themeApplyPreview(cardData.tc));
+  card.addEventListener("mouseleave", () => {
+    const selected = allCards.find(c => c.name === tCtx.hoveredTheme);
+    if (selected) _themeApplyPreview(selected.tc);
+  });
+  card.addEventListener("click", () => {
+    document.querySelectorAll(".onboarding-theme-card").forEach(c => c.classList.remove("active"));
+    card.classList.add("active");
+    tCtx.hoveredTheme = card.dataset.name;
+    _themeApplyPreview(cardData.tc);
+  });
+}
 
-      const privacyToggle = document.getElementById("privacy-workspace-toggle");
-      const privacyPath = document.getElementById("privacy-workspace-path");
-      if (privacyToggle) privacyToggle.checked = config.security?.agent_workspace_only || false;
-      if (privacyPath) privacyPath.value = config.security?.agent_workspace_path || "~/.neurodeck_workspace";
+function _themeWireApplyBtn(applyBtn, customThemes, tCtx) {
+  if (!applyBtn) return;
+  applyBtn.onclick = () => {
+    const selectedTheme = tCtx.hoveredTheme;
+    const custom = customThemes.find(t => t.name === selectedTheme);
+    if (custom) {
+      _ctApplyThemeObj(custom);
+      localStorage.setItem("selectedTheme", selectedTheme);
+    } else {
+      invoke("set_theme", { name: selectedTheme }).then(theme => {
+        if (theme) { window.applyThemeColors(theme); localStorage.setItem("selectedTheme", selectedTheme); _refreshThemeCards(); }
+      });
+    }
+    if (typeof addNotification === "function") addNotification("Theme Applied", `"${selectedTheme}" is now active.`, "success");
+  };
+}
 
-      toggleSettingsLlmGroups(config.llm.default_provider);
-    })
-    .catch((err) => {
-      console.error("Error loading LLM config in settings:", err);
-    });
+function _themeWireResetBtn(resetBtn, cards, allCards, savedTheme, tCtx) {
+  if (!resetBtn) return;
+  resetBtn.onclick = () => {
+    tCtx.hoveredTheme = savedTheme;
+    cards.forEach(c => c.classList.toggle("active", c.dataset.name === savedTheme));
+    const originalCard = allCards.find(c => c.name === savedTheme);
+    if (originalCard) _themeApplyPreview(originalCard.tc);
+  };
+}
 
-  // Populate personas
-  if (typeof refreshSettingsPersonaDropdown === "function") {
-    refreshSettingsPersonaDropdown();
+async function _refreshThemeCards() {
+  const grid = document.getElementById("theme-cards-grid");
+  if (!grid) return;
+
+  let presetNames = [];
+  try { presetNames = await invoke("get_themes"); } catch (_) {}
+
+  if (!_stSettingsThemeCache) {
+    _stSettingsThemeCache = {};
+    for (const tname of presetNames) {
+      try { const colors = await invoke("set_theme", { name: tname }); if (colors) _stSettingsThemeCache[tname] = colors; } catch (_) {}
+    }
   }
 
-  // Populate themes + live preview
-  invoke("get_themes").then((themes) => {
-    let select = document.getElementById("theme-select");
-    if (select) {
-      select.innerHTML = "";
-      let savedTheme = localStorage.getItem("selectedTheme");
-      themes.forEach((t) => {
-        let option = document.createElement("option");
-        option.value = t;
-        option.innerText = t;
-        if (t === savedTheme) {
-          option.selected = true;
-        }
-        select.appendChild(option);
-      });
-      initThemeLivePreview(select, savedTheme);
-    }
+  const savedTheme = localStorage.getItem("selectedTheme") || "BLACKSITE";
+  const customThemes = _ctLoadThemes();
+  const allCards = [];
+  presetNames.forEach(tname => {
+    const tc = _stSettingsThemeCache[tname] || {};
+    allCards.push({ name: tname, bg: tc.Background, fg: tc.Foreground, accent: tc.Accent, tc });
+  });
+  customThemes.forEach(t => {
+    allCards.push({ name: t.name, bg: t.background, fg: t.foreground, accent: t.accent, tc: { Background: t.background, Foreground: t.foreground, Accent: t.accent, Response: t.response, Warning: t.warning, Error: t.error } });
   });
 
+  grid.innerHTML = allCards.map(c => `
+    <div class="onboarding-theme-card ${c.name === savedTheme ? "active" : ""}" data-name="${c.name}" role="button" tabindex="0">
+      <div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+      <div class="onboarding-theme-swatch">
+         <span style="background:${c.accent||"#00f0ff"}"></span>
+         <span style="background:${c.bg||"#050505"}"></span>
+         <span style="background:${c.fg||"#d9f7ff"}"></span>
+      </div>
+    </div>
+  `).join("");
+
+  const cards = Array.from(grid.querySelectorAll(".onboarding-theme-card"));
+  const tCtx = { hoveredTheme: savedTheme };
+
+  const currentCard = allCards.find(c => c.name === savedTheme);
+  if (currentCard) _themeApplyPreview(currentCard.tc);
+
+  cards.forEach(card => {
+    const cardData = allCards.find(c => c.name === card.dataset.name);
+    _themeWireCardHover(card, cardData, allCards, tCtx);
+  });
+
+  _themeWireApplyBtn(document.getElementById("theme-apply-btn"), customThemes, tCtx);
+  _themeWireResetBtn(document.getElementById("theme-reset-btn"), cards, allCards, savedTheme, tCtx);
+}
+
+function _loadThemesForSettings() {
+  _refreshThemeCards();
+}
+
+export function openSettingsModal() {
+  if (settingsOverlay) settingsOverlay.classList.add("active");
+  activateSettingsPanel(localStorage.getItem("settingsActivePanel") || "sp-general");
+  if (!settingsFocusTrap) settingsFocusTrap = new FocusTrap(settingsOverlay);
+  settingsFocusTrap.activate();
+  const statusEl = document.getElementById("settings-llm-status");
+  if (statusEl) statusEl.innerText = "";
+  Promise.all([
+    invoke("get_config"), invoke("get_gemini_api_key"), invoke("get_kimi_api_key"),
+    invoke("get_hf_api_key"), invoke("get_openai_compat_api_key"),
+  ]).then(_populateLlmConfig).catch(err => console.error("Error loading LLM config in settings:", err));
+  if (typeof refreshSettingsPersonaDropdown === "function") refreshSettingsPersonaDropdown();
+  _loadThemesForSettings();
   renderSshProfilesSettings();
   renderFtpProfilesSettings();
   renderSftpProfilesSettings();
-  if (typeof loadPluginsList === "function") {
-    loadPluginsList();
-  }
-  if (typeof loadCustomPersonas === "function") {
-    loadCustomPersonas();
-  }
-  if (window._customThemes) {
-    window._customThemes.renderList();
-    window._customThemes.refreshThemeSelect();
-  }
-  if (window._syncSettings) {
-    window._syncSettings.refresh();
-  }
-
+  if (typeof loadPluginsList === "function") loadPluginsList();
+  if (typeof loadCustomPersonas === "function") loadCustomPersonas();
+  if (window._customThemes) { window._customThemes.renderList(); window._customThemes.refreshThemeSelect(); }
+  if (window._syncSettings) window._syncSettings.refresh();
   refreshModelsPanel();
 }
 
@@ -644,83 +591,63 @@ function refreshSettingsPersonaDropdown() {
   });
 }
 
+function _buildPersonaItem(p) {
+  const item = document.createElement("div");
+  item.className = "ssh-profile-item";
+  item.style.cssText = "padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;";
+  const info = document.createElement("div");
+  info.style.cssText = "display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;";
+  const nameEl = document.createElement("span");
+  nameEl.style.cssText = "font-weight: 500; color: var(--foreground-color);";
+  nameEl.textContent = p.name;
+  const promptEl = document.createElement("span");
+  promptEl.style.cssText = "font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;";
+  promptEl.textContent = p.prompt;
+  promptEl.title = p.prompt;
+  info.append(nameEl, promptEl);
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "canvas-btn persona-delete-btn";
+  deleteBtn.setAttribute("data-name", p.name);
+  deleteBtn.style.cssText = "padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);";
+  deleteBtn.title = `Delete ${p.name}`;
+  deleteBtn.setAttribute("aria-label", `Delete ${p.name}`);
+  deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
+  item.append(info, deleteBtn);
+  return item;
+}
+
+async function _wirePersonaDeleteBtn(btn) {
+  btn.onclick = async () => {
+    const name = btn.getAttribute("data-name");
+    if (await showConfirm(`Are you sure you want to delete custom persona '${name}'?`, { confirmText: "Delete", cancelText: "Keep" })) {
+      const statusEl = document.getElementById("settings-persona-status");
+      if (statusEl) statusEl.innerText = "Deleting custom persona...";
+      invoke("delete_custom_persona", { name })
+        .then(() => {
+          if (statusEl) statusEl.innerText = `Custom persona '${name}' deleted successfully.`;
+          loadCustomPersonas();
+          refreshSettingsPersonaDropdown();
+        })
+        .catch(err => { if (statusEl) statusEl.innerText = `Failed to delete: ${err}`; });
+    }
+  };
+}
+
 function loadCustomPersonas() {
   const listEl = document.getElementById("settings-personas-list-custom");
   if (!listEl) return;
-
   listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic;">Loading custom personas...</div>`;
-
   invoke("list_custom_personas")
-    .then((personas) => {
+    .then(personas => {
       if (personas.length === 0) {
         listEl.innerHTML = `<div style="opacity: 0.5; font-style: italic; padding: 5px;">No custom personas found.</div>`;
         return;
       }
-
       listEl.innerHTML = "";
-      personas.forEach((p) => {
-        const item = document.createElement("div");
-        item.className = "ssh-profile-item";
-        item.style.cssText =
-          "padding: 6px 8px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px;";
-
-        const info = document.createElement("div");
-        info.style.cssText =
-          "display: flex; flex-direction: column; gap: 2px; align-items: flex-start; overflow: hidden;";
-
-        const name = document.createElement("span");
-        name.style.cssText =
-          "font-weight: 500; color: var(--foreground-color);";
-        name.textContent = p.name;
-
-        const prompt = document.createElement("span");
-        prompt.style.cssText =
-          "font-size: 0.7rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;";
-        prompt.textContent = p.prompt;
-        prompt.title = p.prompt;
-
-        info.appendChild(name);
-        info.appendChild(prompt);
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "canvas-btn persona-delete-btn";
-        deleteBtn.setAttribute("data-name", p.name);
-        deleteBtn.style.cssText =
-          "padding: 3px 8px; font-size: 0.75rem; border-color: var(--error-color); color: var(--error-color);";
-        deleteBtn.title = `Delete ${p.name}`;
-        deleteBtn.setAttribute("aria-label", `Delete ${p.name}`);
-        deleteBtn.innerHTML = createIcon("trash2", { size: 14 });
-
-        item.appendChild(info);
-        item.appendChild(deleteBtn);
-        listEl.appendChild(item);
-      });
-
-      // Wire delete button listeners
-      listEl.querySelectorAll(".persona-delete-btn").forEach((btn) => {
-        btn.onclick = async () => {
-          const name = btn.getAttribute("data-name");
-          if (
-            await showConfirm(`Are you sure you want to delete custom persona '${name}'?`, { confirmText: "Delete", cancelText: "Keep" })
-          ) {
-            const statusEl = document.getElementById("settings-persona-status");
-            if (statusEl) statusEl.innerText = "Deleting custom persona...";
-
-            invoke("delete_custom_persona", { name })
-              .then(() => {
-                if (statusEl)
-                  statusEl.innerText = `Custom persona '${name}' deleted successfully.`;
-                loadCustomPersonas();
-                refreshSettingsPersonaDropdown();
-              })
-              .catch((err) => {
-                if (statusEl) statusEl.innerText = `Failed to delete: ${err}`;
-              });
-          }
-        };
-      });
+      personas.forEach(p => listEl.appendChild(_buildPersonaItem(p)));
+      listEl.querySelectorAll(".persona-delete-btn").forEach(btn => _wirePersonaDeleteBtn(btn));
     })
-    .catch((err) => {
+    .catch(err => {
       listEl.innerHTML = "";
       const div = document.createElement("div");
       div.style.cssText = "color: var(--error-color); padding: 5px;";
@@ -774,627 +701,413 @@ function initCustomPersonas() {
 // CUSTOM THEMES EDITOR (P22)
 // ==========================================================================
 
-function initCustomThemes() {
-  const LS_KEY = "neurodeckCustomThemes";
-
-  function loadThemes() {
-    try {
-      return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function saveThemes(themes) {
-    localStorage.setItem(LS_KEY, JSON.stringify(themes));
-    if (window.__TAURI_INTERNALS__) {
-      invoke("save_custom_themes", { data: JSON.stringify(themes) }).catch(
-        () => {},
-      );
-    }
-  }
-
-  // Seed from disk if localStorage is empty
-  if (window.__TAURI_INTERNALS__) {
-    invoke("load_custom_themes")
-      .then((raw) => {
-        if (raw && raw !== "[]" && !localStorage.getItem(LS_KEY)) {
-          localStorage.setItem(LS_KEY, raw);
-          refreshThemeSelect();
-        }
-      })
-      .catch(() => {});
-  }
-
-  function applyThemeObj(t) {
-    applyThemeColors(t);
-    localStorage.setItem("selectedTheme", t.name);
-    const sel = document.getElementById("theme-select");
-    if (sel) sel.value = t.name;
-  }
-
-  function renderList() {
-    const container = document.getElementById("ct-list");
-    if (!container) return;
-    const themes = loadThemes();
-    if (themes.length === 0) {
-      container.innerHTML =
-        '<div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>';
-      return;
-    }
-    container.innerHTML = "";
-    themes.forEach((t, idx) => {
-      const row = document.createElement("div");
-      row.style.cssText =
-        "display:flex; align-items:center; gap:8px; padding:5px 6px; background:rgba(255,255,255,0.03); border-radius:4px;";
-
-      const swatch = document.createElement("div");
-      swatch.style.cssText = `width:16px; height:16px; border-radius:3px; background:${t.accent}; border:1px solid rgba(255,255,255,0.15); flex-shrink:0;`;
-
-      const name = document.createElement("span");
-      name.style.cssText =
-        "flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-      name.textContent = t.name;
-
-      const applyBtn = document.createElement("button");
-      applyBtn.textContent = "Apply";
-      applyBtn.className = "send-prompt-btn";
-      applyBtn.style.cssText =
-        "margin:0; height:22px; padding:0 8px; font-size:0.7rem; justify-content:center;";
-      applyBtn.onclick = () => {
-        applyThemeObj(t);
-        if (typeof addNotification === "function") {
-          addNotification(
-            "Theme Applied",
-            `"${t.name}" is now active.`,
-            "success",
-          );
-        }
-      };
-
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Edit";
-      editBtn.className = "canvas-btn";
-      editBtn.style.cssText = "height:22px; padding:0 8px; font-size:0.7rem;";
-      editBtn.onclick = () => {
-        document.getElementById("ct-name").value = t.name;
-        document.getElementById("ct-bg").value = t.background;
-        document.getElementById("ct-fg").value = t.foreground;
-        document.getElementById("ct-accent").value = t.accent;
-        document.getElementById("ct-response").value = t.response;
-        document.getElementById("ct-warning").value = t.warning;
-        document.getElementById("ct-error").value = t.error;
-        updatePreview();
-        // Remove the old entry so saving replaces it
-        const themes2 = loadThemes();
-        themes2.splice(idx, 1);
-        saveThemes(themes2);
-        renderList();
-        refreshThemeSelect();
-      };
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "canvas-btn";
-      delBtn.style.cssText =
-        "height:22px; padding:0 6px; font-size:0.7rem; border-color:var(--error-color);";
-      delBtn.title = `Delete ${t.name}`;
-      delBtn.setAttribute("aria-label", `Delete ${t.name}`);
-      delBtn.innerHTML = createIcon("trash2", { size: 14 });
-      delBtn.onclick = () => {
-        const themes2 = loadThemes();
-        themes2.splice(idx, 1);
-        saveThemes(themes2);
-        renderList();
-        refreshThemeSelect();
-        if (typeof addNotification === "function") {
-          addNotification("Theme Deleted", `"${t.name}" removed.`, "info");
-        }
-      };
-
-      row.appendChild(swatch);
-      row.appendChild(name);
-      row.appendChild(applyBtn);
-      row.appendChild(editBtn);
-      row.appendChild(delBtn);
-      container.appendChild(row);
-    });
-  }
-
-  function refreshThemeSelect() {
-    // Rebuild the theme-select to include custom themes alongside hardcoded ones
-    invoke("get_themes")
-      .then((themes) => {
-        const sel = document.getElementById("theme-select");
-        if (!sel) return;
-        const savedTheme = localStorage.getItem("selectedTheme");
-        sel.innerHTML = "";
-        // Hardcoded themes group
-        const group1 = document.createElement("optgroup");
-        group1.label = "Built-in";
-        themes.forEach((t) => {
-          const opt = document.createElement("option");
-          opt.value = t;
-          opt.textContent = t;
-          if (t === savedTheme) opt.selected = true;
-          group1.appendChild(opt);
-        });
-        sel.appendChild(group1);
-        // Custom themes group
-        const customThemes = loadThemes();
-        if (customThemes.length > 0) {
-          const group2 = document.createElement("optgroup");
-          group2.label = "Custom";
-          customThemes.forEach((t) => {
-            const opt = document.createElement("option");
-            opt.value = t.name;
-            opt.textContent = t.name;
-            if (t.name === savedTheme) opt.selected = true;
-            group2.appendChild(opt);
-          });
-          sel.appendChild(group2);
-        }
-      })
-      .catch(() => {});
-  }
-
-  const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
-
-  function isValidHex(v) {
-    return HEX_RE.test(v.trim());
-  }
-
-  function updatePreview() {
-    const map = {
-      "ct-preview-bg": "ct-bg",
-      "ct-preview-accent": "ct-accent",
-      "ct-preview-response": "ct-response",
-      "ct-preview-warning": "ct-warning",
-      "ct-preview-error": "ct-error",
-    };
-    Object.entries(map).forEach(([previewId, inputId]) => {
-      const el = document.getElementById(previewId);
-      const inp = document.getElementById(inputId);
-      if (!el || !inp) return;
-      if (isValidHex(inp.value)) {
-        el.style.background = inp.value.trim();
-        inp.style.borderColor = "";
-      } else {
-        inp.style.borderColor = "var(--error-color)";
-      }
-    });
-  }
-
-  // Wire color picker preview
-  [
-    "ct-bg",
-    "ct-fg",
-    "ct-accent",
-    "ct-response",
-    "ct-warning",
-    "ct-error",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("input", updatePreview);
+// ── Custom Themes helpers ─────────────────────────────────────────────────────
+const _CT_LS_KEY = "neurodeckCustomThemes";
+const _CT_HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+function _ctLoadThemes() { try { return JSON.parse(localStorage.getItem(_CT_LS_KEY) || "[]"); } catch (_) { return []; } }
+function _ctSaveThemes(themes) {
+  localStorage.setItem(_CT_LS_KEY, JSON.stringify(themes));
+  if (window.__TAURI_INTERNALS__) invoke("save_custom_themes", { data: JSON.stringify(themes) }).catch(() => {});
+}
+function _ctApplyThemeObj(t) { applyThemeColors(t); localStorage.setItem("selectedTheme", t.name); if (typeof _refreshThemeCards === "function") _refreshThemeCards(); }
+function _ctIsValidHex(v) { return _CT_HEX_RE.test(v.trim()); }
+function _ctUpdatePreview() {
+  const map = { "ct-preview-bg":"ct-bg", "ct-preview-accent":"ct-accent", "ct-preview-response":"ct-response", "ct-preview-warning":"ct-warning", "ct-preview-error":"ct-error" };
+  Object.entries(map).forEach(([previewId, inputId]) => {
+    const el = document.getElementById(previewId), inp = document.getElementById(inputId);
+    if (!el || !inp) return;
+    if (_ctIsValidHex(inp.value)) { el.style.background = inp.value.trim(); inp.style.borderColor = ""; }
+    else { inp.style.borderColor = "var(--error-color)"; }
   });
-
-  // Save button
-  const saveBtn = document.getElementById("ct-save-btn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", () => {
-      const name = (document.getElementById("ct-name")?.value || "").trim();
-      if (!name) {
-        const s = document.getElementById("ct-status");
-        if (s) {
-          s.textContent = "Enter a theme name.";
-          setTimeout(() => {
-            s.textContent = "";
-          }, 2000);
-        }
-        return;
-      }
-      const colorFields = [
-        "ct-bg",
-        "ct-fg",
-        "ct-accent",
-        "ct-response",
-        "ct-warning",
-        "ct-error",
-      ];
-      const invalidField = colorFields.find((id) => {
-        const v = document.getElementById(id)?.value;
-        return v && !isValidHex(v);
-      });
-      if (invalidField) {
-        const s = document.getElementById("ct-status");
-        if (s) {
-          s.textContent =
-            "Fix invalid hex color values (must be #RGB or #RRGGBB).";
-          setTimeout(() => {
-            s.textContent = "";
-          }, 3000);
-        }
-        return;
-      }
-      const theme = {
-        name,
-        background: document.getElementById("ct-bg")?.value || "#050505",
-        foreground: document.getElementById("ct-fg")?.value || "#D9F7FF",
-        accent: document.getElementById("ct-accent")?.value || "#00F0FF",
-        response: document.getElementById("ct-response")?.value || "#00FF88",
-        warning: document.getElementById("ct-warning")?.value || "#FFB000",
-        error: document.getElementById("ct-error")?.value || "#FF3C5A",
-      };
-      const themes = loadThemes().filter((t) => t.name !== name); // replace if exists
-      themes.push(theme);
-      saveThemes(themes);
-      renderList();
-      refreshThemeSelect();
-      const s = document.getElementById("ct-status");
-      if (s) {
-        s.textContent = `"${name}" saved!`;
-        setTimeout(() => {
-          s.textContent = "";
-        }, 2500);
-      }
-      if (typeof addNotification === "function") {
-        addNotification(
-          "Theme Saved",
-          `"${name}" added to custom themes.`,
-          "success",
-        );
-      }
+}
+function _ctBuildThemeRow(t, idx) {
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex; align-items:center; gap:8px; padding:5px 6px; background:rgba(255,255,255,0.03); border-radius:4px;";
+  const swatch = document.createElement("div");
+  swatch.style.cssText = `width:16px; height:16px; border-radius:3px; background:${t.accent}; border:1px solid rgba(255,255,255,0.15); flex-shrink:0;`;
+  const nameEl = document.createElement("span");
+  nameEl.style.cssText = "flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+  nameEl.textContent = t.name;
+  const applyBtn = document.createElement("button");
+  applyBtn.textContent = "Apply"; applyBtn.className = "send-prompt-btn";
+  applyBtn.style.cssText = "margin:0; height:22px; padding:0 8px; font-size:0.7rem; justify-content:center;";
+  applyBtn.onclick = () => { _ctApplyThemeObj(t); if (typeof addNotification === "function") addNotification("Theme Applied", `"${t.name}" is now active.`, "success"); };
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit"; editBtn.className = "canvas-btn";
+  editBtn.style.cssText = "height:22px; padding:0 8px; font-size:0.7rem;";
+  editBtn.onclick = () => {
+    ["ct-name","ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach(id => {
+      const fieldKey = id === "ct-name" ? "name" : id.replace("ct-", "");
+      const el = document.getElementById(id); if (el) el.value = t[fieldKey] || t[id.replace("ct-","")] || "";
     });
-  }
+    document.getElementById("ct-name").value = t.name;
+    document.getElementById("ct-bg").value = t.background;
+    _ctUpdatePreview();
+    const themes2 = _ctLoadThemes(); themes2.splice(idx, 1); _ctSaveThemes(themes2); _ctRenderList(); _ctRefreshThemeSelect();
+  };
+  const delBtn = document.createElement("button");
+  delBtn.className = "canvas-btn"; delBtn.style.cssText = "height:22px; padding:0 6px; font-size:0.7rem; border-color:var(--error-color);";
+  delBtn.title = `Delete ${t.name}`; delBtn.setAttribute("aria-label", `Delete ${t.name}`);
+  delBtn.innerHTML = createIcon("trash2", { size: 14 });
+  delBtn.onclick = () => { const themes2 = _ctLoadThemes(); themes2.splice(idx, 1); _ctSaveThemes(themes2); _ctRenderList(); _ctRefreshThemeSelect(); if (typeof addNotification === "function") addNotification("Theme Deleted", `"${t.name}" removed.`, "info"); };
+  row.append(swatch, nameEl, applyBtn, editBtn, delBtn);
+  return row;
+}
+function _ctRenderList() {
+  const container = document.getElementById("ct-list"); if (!container) return;
+  const themes = _ctLoadThemes();
+  if (themes.length === 0) { container.innerHTML = '<div style="opacity:0.5; font-style:italic;">No custom themes saved yet.</div>'; return; }
+  container.innerHTML = "";
+  themes.forEach((t, idx) => container.appendChild(_ctBuildThemeRow(t, idx)));
+}
+function _ctRefreshThemeSelect() {
+  if (typeof _refreshThemeCards === "function") _refreshThemeCards();
+}
+function _ctWireSaveBtn() {
+  const saveBtn = document.getElementById("ct-save-btn"); if (!saveBtn) return;
+  saveBtn.addEventListener("click", () => {
+    const name = (document.getElementById("ct-name")?.value || "").trim();
+    const s = document.getElementById("ct-status");
+    const showStatus = (msg, delay) => { if (s) { s.textContent = msg; setTimeout(() => { s.textContent = ""; }, delay); } };
+    if (!name) { showStatus("Enter a theme name.", 2000); return; }
+    const colorFields = ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"];
+    const invalidField = colorFields.find(id => { const v = document.getElementById(id)?.value; return v && !_ctIsValidHex(v); });
+    if (invalidField) { showStatus("Fix invalid hex color values (must be #RGB or #RRGGBB).", 3000); return; }
+    const theme = { name, background: document.getElementById("ct-bg")?.value||"#050505", foreground: document.getElementById("ct-fg")?.value||"#D9F7FF", accent: document.getElementById("ct-accent")?.value||"#00F0FF", response: document.getElementById("ct-response")?.value||"#00FF88", warning: document.getElementById("ct-warning")?.value||"#FFB000", error: document.getElementById("ct-error")?.value||"#FF3C5A" };
+    const themes = _ctLoadThemes().filter(t => t.name !== name); themes.push(theme); _ctSaveThemes(themes); _ctRenderList(); _ctRefreshThemeSelect();
+    showStatus(`"${name}" saved!`, 2500);
+    if (typeof addNotification === "function") addNotification("Theme Saved", `"${name}" added to custom themes.`, "success");
+  });
+}
+function _ctWireThemeSelect() {
+  // Theme selector dropdown replaced by theme cards
+}
+function _ctLoadThemesFromDisk() {
+  if (!window.__TAURI_INTERNALS__) return;
+  invoke("load_custom_themes").then(raw => {
+    if (raw && raw !== "[]" && !localStorage.getItem(_CT_LS_KEY)) { localStorage.setItem(_CT_LS_KEY, raw); _ctRefreshThemeSelect(); }
+  }).catch(() => {});
+}
 
-  // Patch theme-select onchange to handle custom themes
-  const origOnchange = document.getElementById("theme-select")?.onchange;
-  const themeSelect = document.getElementById("theme-select");
-  if (themeSelect) {
-    themeSelect.onchange = function () {
-      const val = this.value;
-      const custom = loadThemes().find((t) => t.name === val);
-      if (custom) {
-        applyThemeObj(custom);
-        localStorage.setItem("selectedTheme", val);
-      } else if (origOnchange) {
-        origOnchange.call(this);
-      } else {
-        invoke("set_theme", { name: val }).then((theme) => {
-          if (theme) {
-            applyThemeColors(theme);
-            localStorage.setItem("selectedTheme", val);
-          }
-        });
-      }
-    };
-  }
-
-  // Expose helpers for the settings modal open handler
-  window._customThemes = { renderList, refreshThemeSelect };
-
-  // Init
-  renderList();
-  updatePreview();
+function initCustomThemes() {
+  _ctLoadThemesFromDisk();
+  ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.addEventListener("input", _ctUpdatePreview);
+  });
+  _ctWireSaveBtn();
+  _ctWireThemeSelect();
+  window._customThemes = { renderList: _ctRenderList, refreshThemeSelect: _ctRefreshThemeSelect };
+  _ctRenderList();
+  _ctUpdatePreview();
 }
 
 // ==========================================================================
 // MCP SERVER SETTINGS
 // ==========================================================================
 
-function initMcpSettings() {
-  const startBtn = document.getElementById("mcp-start-btn");
-  const stopBtn = document.getElementById("mcp-stop-btn");
-  const portInput = document.getElementById("mcp-port-input");
-  const statusLine = document.getElementById("mcp-status-line");
-  const claudeConfig = document.getElementById("mcp-claude-config");
-  const configSnippet = document.getElementById("mcp-claude-config-snippet");
-  const tokenRow = document.getElementById("mcp-token-row");
-  const tokenDisplay = document.getElementById("mcp-token-display");
-  const copyTokenBtn = document.getElementById("mcp-copy-token-btn");
-  const discoveryEl = document.getElementById("mcp-discovery-url");
-  const whitelistEl = document.getElementById("mcp-tool-whitelist");
+const _MCP_TOOL_META = [
+  { name: "neurodeck_chat",  label: "neurodeck_chat",  desc: "LLM chat (always safe)" },
+  { name: "get_status",      label: "get_status",      desc: "Server info" },
+  { name: "memory_add_fact", label: "memory_add_fact", desc: "Add pinned memory fact" },
+  { name: "memory_list_all", label: "memory_list_all", desc: "List all memory records" },
+  { name: "read_file",       label: "read_file",       desc: "Read file from disk" },
+  { name: "write_file",      label: "write_file",      desc: "Write file to disk" },
+  { name: "run_shell",       label: "run_shell",       desc: "Shell exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
+  { name: "run_code",        label: "run_code",        desc: "Code exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
+];
 
-  if (!startBtn) return;
-
-  // All known tool names with friendly labels
-  const TOOL_META = [
-    { name: "neurodeck_chat",  label: "neurodeck_chat",  desc: "LLM chat (always safe)" },
-    { name: "get_status",      label: "get_status",      desc: "Server info" },
-    { name: "memory_add_fact", label: "memory_add_fact", desc: "Add pinned memory fact" },
-    { name: "memory_list_all", label: "memory_list_all", desc: "List all memory records" },
-    { name: "read_file",       label: "read_file",       desc: "Read file from disk" },
-    { name: "write_file",      label: "write_file",      desc: "Write file to disk" },
-    { name: "run_shell",       label: "run_shell",       desc: "Shell exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
-    { name: "run_code",        label: "run_code",        desc: "Code exec (needs NEURODECK_ENABLE_MCP_EXEC)" },
-  ];
-
-  async function loadWhitelistUI() {
-    if (!whitelistEl) return;
-    let current = [];
-    try { current = await invoke("get_mcp_tool_whitelist"); } catch (_) {}
-    whitelistEl.innerHTML = "";
-    TOOL_META.forEach(({ name, label, desc }) => {
-      const checked = current.includes(name);
-      const row = document.createElement("label");
-      row.className = "mcp-tool-check-row";
-      row.title = desc;
-      row.innerHTML = `<input type="checkbox" name="${window.escapeHtml(name)}"${checked ? " checked" : ""}> <span class="mcp-tool-check-name">${window.escapeHtml(label)}</span> <span class="mcp-tool-check-desc">${window.escapeHtml(desc)}</span>`;
-      row.querySelector("input").addEventListener("change", async () => {
-        const enabled = Array.from(whitelistEl.querySelectorAll("input[type=checkbox]"))
-          .filter((cb) => cb.checked)
-          .map((cb) => cb.name);
-        try {
-          await invoke("set_mcp_tool_whitelist", { tools: enabled });
-        } catch (e) {
-          if (typeof window.addNotification === "function") {
-            window.addNotification("Whitelist Error", String(e), "error");
-          }
-        }
-      });
-      whitelistEl.appendChild(row);
+async function _mcpLoadWhitelistUI(els) {
+  if (!els.whitelistEl) return;
+  let current = [];
+  try { current = await invoke("get_mcp_tool_whitelist"); } catch (_) {}
+  els.whitelistEl.innerHTML = "";
+  _MCP_TOOL_META.forEach(({ name, label, desc }) => {
+    const checked = current.includes(name);
+    const row = document.createElement("label");
+    row.className = "mcp-tool-check-row";
+    row.title = desc;
+    row.innerHTML = `<input type="checkbox" name="${window.escapeHtml(name)}"${checked ? " checked" : ""}> <span class="mcp-tool-check-name">${window.escapeHtml(label)}</span> <span class="mcp-tool-check-desc">${window.escapeHtml(desc)}</span>`;
+    row.querySelector("input").addEventListener("change", async () => {
+      const enabled = Array.from(els.whitelistEl.querySelectorAll("input[type=checkbox]"))
+        .filter(cb => cb.checked).map(cb => cb.name);
+      try { await invoke("set_mcp_tool_whitelist", { tools: enabled }); }
+      catch (e) { if (typeof window.addNotification === "function") window.addNotification("Whitelist Error", String(e), "error"); }
     });
+    els.whitelistEl.appendChild(row);
+  });
+}
+
+function _mcpSetRunningUI(port, token, discovery, els) {
+  els.startBtn.disabled = true;
+  els.stopBtn.disabled = false;
+  els.statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <span style="color: var(--accent-color);">http://127.0.0.1:${window.escapeHtml(String(port))}</span>`;
+  if (els.tokenRow) els.tokenRow.style.display = "";
+  if (els.tokenDisplay && token) els.tokenDisplay.textContent = token;
+  if (els.discoveryEl && discovery) els.discoveryEl.textContent = discovery;
+  if (els.claudeConfig) els.claudeConfig.style.display = "block";
+  if (els.configSnippet) {
+    const snippet = { mcpServers: { neurodeck: { url: `http://127.0.0.1:${port}/`, ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}) } } };
+    els.configSnippet.textContent = JSON.stringify(snippet, null, 2);
   }
+}
 
-  function setRunningUI(port, token, discovery) {
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    statusLine.innerHTML = `<span style="color: var(--response-color);">● Running</span> &nbsp;·&nbsp; <span style="color: var(--accent-color);">http://127.0.0.1:${window.escapeHtml(String(port))}</span>`;
-    if (tokenRow) tokenRow.style.display = "";
-    if (tokenDisplay && token) tokenDisplay.textContent = token;
-    if (discoveryEl && discovery) discoveryEl.textContent = discovery;
-    if (claudeConfig) claudeConfig.style.display = "block";
-    if (configSnippet) {
-      const snippet = {
-        mcpServers: {
-          neurodeck: {
-            url: `http://127.0.0.1:${port}/`,
-            ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
-          },
-        },
-      };
-      configSnippet.textContent = JSON.stringify(snippet, null, 2);
-    }
-  }
+function _mcpSetStoppedUI(els) {
+  els.startBtn.disabled = false;
+  els.stopBtn.disabled = true;
+  els.statusLine.textContent = "Server is not running.";
+  if (els.tokenRow) els.tokenRow.style.display = "none";
+  if (els.claudeConfig) els.claudeConfig.style.display = "none";
+}
 
-  function setStoppedUI() {
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-    statusLine.textContent = "Server is not running.";
-    if (tokenRow) tokenRow.style.display = "none";
-    if (claudeConfig) claudeConfig.style.display = "none";
-  }
+function _mcpWireCopyToken(els) {
+  if (!els.copyTokenBtn || !els.tokenDisplay) return;
+  els.copyTokenBtn.addEventListener("click", () => {
+    const tok = els.tokenDisplay.textContent;
+    if (tok) navigator.clipboard.writeText(tok).then(() => {
+      els.copyTokenBtn.textContent = "Copied!";
+      setTimeout(() => { els.copyTokenBtn.textContent = "Copy"; }, 1500);
+    }).catch(() => {});
+  });
+}
 
-  // Copy token button
-  if (copyTokenBtn && tokenDisplay) {
-    copyTokenBtn.addEventListener("click", () => {
-      const tok = tokenDisplay.textContent;
-      if (tok) {
-        navigator.clipboard.writeText(tok).then(() => {
-          copyTokenBtn.textContent = "Copied!";
-          setTimeout(() => { copyTokenBtn.textContent = "Copy"; }, 1500);
-        }).catch(() => {});
-      }
-    });
-  }
+function _mcpWireSettingsBtn(els) {
+  const settingsBtn = document.getElementById("settings-btn");
+  if (!settingsBtn) return;
+  settingsBtn.addEventListener("click", async () => {
+    try {
+      const status = await invoke("get_mcp_status", { execToken: state.execToken });
+      if (status.running === "true") {
+        els.portInput.value = status.port || "13337";
+        _mcpSetRunningUI(status.port, status.token, status.discovery, els);
+      } else { _mcpSetStoppedUI(els); }
+    } catch (_) { _mcpSetStoppedUI(els); }
+    _mcpLoadWhitelistUI(els);
+  });
+}
 
-  // Sync UI on settings modal open
-  document.getElementById("settings-btn") &&
-    document.getElementById("settings-btn").addEventListener("click", async () => {
-      try {
-        const status = await invoke("get_mcp_status", { execToken: state.execToken });
-        if (status.running === "true") {
-          portInput.value = status.port || "13337";
-          setRunningUI(status.port, status.token, status.discovery);
-        } else {
-          setStoppedUI();
-        }
-      } catch (_) {
-        setStoppedUI();
-      }
-      loadWhitelistUI();
-    });
-
-  startBtn.addEventListener("click", async () => {
-    const port = parseInt(portInput.value, 10) || 13337;
-    startBtn.disabled = true;
-    statusLine.textContent = "Starting...";
+function _mcpWireStartBtn(els) {
+  els.startBtn.addEventListener("click", async () => {
+    const port = parseInt(els.portInput.value, 10) || 13337;
+    els.startBtn.disabled = true;
+    els.statusLine.textContent = "Starting...";
     try {
       const result = await invoke("start_mcp_server", { port, execToken: state.execToken });
-      setRunningUI(port, result.token, result.discovery);
-      if (typeof window.addNotification === "function") {
-        window.addNotification(
-          "MCP Server Started",
-          `Listening on port ${port}. Copy the config snippet below.`,
-          "success",
-        );
-      }
+      _mcpSetRunningUI(port, result.token, result.discovery, els);
+      if (typeof window.addNotification === "function") window.addNotification("MCP Server Started", `Listening on port ${port}. Copy the config snippet below.`, "success");
     } catch (err) {
-      statusLine.innerHTML = "";
+      els.statusLine.innerHTML = "";
       const span = document.createElement("span");
       span.style.color = "var(--error-color)";
       span.textContent = `Error: ${err}`;
-      statusLine.appendChild(span);
-      startBtn.disabled = false;
+      els.statusLine.appendChild(span);
+      els.startBtn.disabled = false;
     }
   });
+}
 
-  stopBtn.addEventListener("click", async () => {
-    stopBtn.disabled = true;
+function _mcpWireStopBtn(els) {
+  els.stopBtn.addEventListener("click", async () => {
+    els.stopBtn.disabled = true;
     try {
       await invoke("stop_mcp_server", { execToken: state.execToken });
-      setStoppedUI();
-      if (typeof window.addNotification === "function") {
-        window.addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
-      }
+      _mcpSetStoppedUI(els);
+      if (typeof window.addNotification === "function") window.addNotification("MCP Server Stopped", "The MCP server has been shut down.", "info");
     } catch (err) {
-      statusLine.innerHTML = "";
+      els.statusLine.innerHTML = "";
       const span = document.createElement("span");
       span.style.color = "var(--error-color)";
       span.textContent = `Error: ${err}`;
-      statusLine.appendChild(span);
-      stopBtn.disabled = false;
+      els.statusLine.appendChild(span);
+      els.stopBtn.disabled = false;
     }
   });
+}
 
-  // Init state on load
+function initMcpSettings() {
+  const els = {
+    startBtn:      document.getElementById("mcp-start-btn"),
+    stopBtn:       document.getElementById("mcp-stop-btn"),
+    portInput:     document.getElementById("mcp-port-input"),
+    statusLine:    document.getElementById("mcp-status-line"),
+    claudeConfig:  document.getElementById("mcp-claude-config"),
+    configSnippet: document.getElementById("mcp-claude-config-snippet"),
+    tokenRow:      document.getElementById("mcp-token-row"),
+    tokenDisplay:  document.getElementById("mcp-token-display"),
+    copyTokenBtn:  document.getElementById("mcp-copy-token-btn"),
+    discoveryEl:   document.getElementById("mcp-discovery-url"),
+    whitelistEl:   document.getElementById("mcp-tool-whitelist"),
+  };
+  if (!els.startBtn) return;
+  _mcpWireCopyToken(els);
+  _mcpWireSettingsBtn(els);
+  _mcpWireStartBtn(els);
+  _mcpWireStopBtn(els);
   invoke("get_mcp_status", { execToken: state.execToken })
-    .then((status) => {
+    .then(status => {
       if (status && status.running === "true") {
-        portInput.value = status.port || "13337";
-        setRunningUI(status.port, status.token, status.discovery);
-      } else {
-        setStoppedUI();
-      }
+        els.portInput.value = status.port || "13337";
+        _mcpSetRunningUI(status.port, status.token, status.discovery, els);
+      } else { _mcpSetStoppedUI(els); }
     })
-    .catch(() => setStoppedUI());
-
-  loadWhitelistUI();
+    .catch(() => _mcpSetStoppedUI(els));
+  _mcpLoadWhitelistUI(els);
 }
 
 // --- PERSONAL KNOWLEDGE BASE (RAG) SETTINGS ---
+function _ragUpdateProgress(data, els) {
+  const { indexed, total, file, done } = data;
+  if (els.progressContainer) els.progressContainer.style.display = "block";
+  if (done) {
+    if (els.progressLabel) els.progressLabel.innerText = "Complete!";
+    if (els.progressPct) els.progressPct.innerText = "100%";
+    if (els.progressBar) els.progressBar.style.width = "100%";
+    setTimeout(() => {
+      if (els.progressContainer) els.progressContainer.style.display = "none";
+      if (els.indexBtn) els.indexBtn.disabled = false;
+      invoke("get_doc_count").then(c => { if (els.docCount) els.docCount.innerText = c || 0; }).catch(() => {});
+    }, 1200);
+  } else {
+    const pct = total > 0 ? Math.round((indexed / total) * 100) : 0;
+    if (els.progressLabel) els.progressLabel.innerText = file ? `Indexing: ${file}` : `Indexing... (${indexed}/${total})`;
+    if (els.progressPct) els.progressPct.innerText = `${pct}%`;
+    if (els.progressBar) els.progressBar.style.width = `${pct}%`;
+  }
+}
+
+async function _ragDoIndex(els) {
+  const folder = els.folderInput ? els.folderInput.value.trim() : "";
+  if (!folder) {
+    if (els.statusLine) { els.statusLine.innerHTML = ""; const s = document.createElement("span"); s.style.color = "var(--warning-color)"; s.textContent = "Enter a folder path to index."; els.statusLine.appendChild(s); }
+    return;
+  }
+  els.indexBtn.disabled = true;
+  if (els.statusLine) { els.statusLine.innerHTML = ""; const s = document.createElement("span"); s.style.opacity = "0.7"; s.textContent = "Starting indexer..."; els.statusLine.appendChild(s); }
+  if (els.progressContainer) els.progressContainer.style.display = "block";
+  if (els.progressBar) els.progressBar.style.width = "0%";
+  if (els.progressPct) els.progressPct.innerText = "0%";
+  if (els.progressLabel) els.progressLabel.innerText = "Scanning folder...";
+  try {
+    const result = await invoke("index_directory", { path: folder });
+    const count = typeof result === "number" ? `Indexed ${result} document${result !== 1 ? "s" : ""}.` : result;
+    if (els.statusLine) { els.statusLine.innerHTML = ""; const s = document.createElement("span"); s.style.color = "var(--response-color)"; s.textContent = count; els.statusLine.appendChild(s); }
+    if (typeof addNotification === "function") addNotification("RAG Index Complete", count, "success");
+    invoke("get_doc_count").then(c => { if (els.docCount) els.docCount.innerText = c || 0; }).catch(() => {});
+  } catch (err) {
+    if (els.statusLine) { els.statusLine.innerHTML = ""; const s = document.createElement("span"); s.style.color = "var(--error-color)"; s.textContent = `Error: ${err}`; els.statusLine.appendChild(s); }
+  } finally {
+    els.indexBtn.disabled = false;
+  }
+}
+
 function initDocRag() {
-  const folderInput = document.getElementById("rag-folder-input");
-  const indexBtn = document.getElementById("rag-index-btn");
-  const clearBtn = document.getElementById("rag-clear-btn");
-  const progressContainer = document.getElementById("rag-progress-container");
-  const progressLabel = document.getElementById("rag-progress-label");
-  const progressPct = document.getElementById("rag-progress-pct");
-  const progressBar = document.getElementById("rag-progress-bar");
-  const statusLine = document.getElementById("rag-status-line");
-  const docCount = document.getElementById("rag-doc-count");
-
-  if (!indexBtn) return;
-
-  // Warn if Ollama is active (embeddings require Gemini)
+  const els = {
+    folderInput: document.getElementById("rag-folder-input"),
+    indexBtn: document.getElementById("rag-index-btn"),
+    clearBtn: document.getElementById("rag-clear-btn"),
+    progressContainer: document.getElementById("rag-progress-container"),
+    progressLabel: document.getElementById("rag-progress-label"),
+    progressPct: document.getElementById("rag-progress-pct"),
+    progressBar: document.getElementById("rag-progress-bar"),
+    statusLine: document.getElementById("rag-status-line"),
+    docCount: document.getElementById("rag-doc-count"),
+  };
+  if (!els.indexBtn) return;
   const provSel = document.getElementById("llm-provider-select");
   if (provSel && provSel.value === "ollama") {
-    if (statusLine)
-      statusLine.innerHTML = `<span style="color:var(--warning-color);">⚠️ Document RAG requires Gemini (for embeddings). Switch provider in LLM Settings.</span>`;
-    indexBtn.disabled = true;
+    if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--warning-color);">⚠️ Document RAG requires Gemini (for embeddings). Switch provider in LLM Settings.</span>`;
+    els.indexBtn.disabled = true;
   }
-
-  // Load current doc count on open
-  invoke("get_doc_count")
-    .then((count) => {
-      if (docCount) docCount.innerText = count || 0;
-    })
-    .catch(() => {});
-
-  // Listen for progress events
-  listen("doc_index_progress", (event) => {
-    let data;
+  invoke("get_doc_count").then(count => { if (els.docCount) els.docCount.innerText = count || 0; }).catch(() => {});
+  listen("doc_index_progress", event => {
     try {
-      data =
-        typeof event.payload === "string"
-          ? JSON.parse(event.payload)
-          : event.payload;
-    } catch {
-      return;
-    }
-
-    const { indexed, total, file, done } = data;
-
-    if (progressContainer) progressContainer.style.display = "block";
-
-    if (done) {
-      if (progressLabel) progressLabel.innerText = "Complete!";
-      if (progressPct) progressPct.innerText = "100%";
-      if (progressBar) progressBar.style.width = "100%";
-      setTimeout(() => {
-        if (progressContainer) progressContainer.style.display = "none";
-        if (indexBtn) indexBtn.disabled = false;
-        invoke("get_doc_count")
-          .then((c) => {
-            if (docCount) docCount.innerText = c || 0;
-          })
-          .catch(() => {});
-      }, 1200);
-    } else {
-      const pct = total > 0 ? Math.round((indexed / total) * 100) : 0;
-      if (progressLabel)
-        progressLabel.innerText = file
-          ? `Indexing: ${file}`
-          : `Indexing... (${indexed}/${total})`;
-      if (progressPct) progressPct.innerText = `${pct}%`;
-      if (progressBar) progressBar.style.width = `${pct}%`;
-    }
+      const data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload;
+      _ragUpdateProgress(data, els);
+    } catch { /* malformed event payload — ignore */ }
   }).catch(() => {});
-
-  indexBtn.addEventListener("click", async () => {
-    const folder = folderInput ? folderInput.value.trim() : "";
-    if (!folder) {
-      if (statusLine) {
-        statusLine.innerHTML = "";
-        const span = document.createElement("span");
-        span.style.color = "var(--warning-color)";
-        span.textContent = "Enter a folder path to index.";
-        statusLine.appendChild(span);
-      }
-      return;
-    }
-    indexBtn.disabled = true;
-    if (statusLine) {
-      statusLine.innerHTML = "";
-      const span = document.createElement("span");
-      span.style.opacity = "0.7";
-      span.textContent = "Starting indexer...";
-      statusLine.appendChild(span);
-    }
-    if (progressContainer) progressContainer.style.display = "block";
-    if (progressBar) progressBar.style.width = "0%";
-    if (progressPct) progressPct.innerText = "0%";
-    if (progressLabel) progressLabel.innerText = "Scanning folder...";
-
+  els.indexBtn.addEventListener("click", () => _ragDoIndex(els));
+  els.clearBtn.addEventListener("click", async () => {
     try {
-      const result = await invoke("index_directory", { path: folder });
-      const count =
-        typeof result === "number"
-          ? `Indexed ${result} document${result !== 1 ? "s" : ""}.`
-          : result;
+      const result = await invoke("clear_doc_index");
+      if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--accent-color);">${result}</span>`;
+      if (els.docCount) els.docCount.innerText = "0";
+      if (typeof addNotification === "function") addNotification("RAG Index Cleared", "All indexed documents removed from memory.", "info");
+    } catch (err) {
+      if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+    }
+  });
+}
+
+function initMemoryDb() {
+  const exportBtn = document.getElementById("memory-export-btn");
+  const importBtn = document.getElementById("memory-import-btn");
+  const statusLine = document.getElementById("memory-db-status-line");
+
+  if (!exportBtn || !importBtn) return;
+
+  exportBtn.addEventListener("click", async () => {
+    if (statusLine) {
+      statusLine.innerHTML = `<span style="opacity:0.6;">Exporting memory database...</span>`;
+    }
+    exportBtn.disabled = true;
+    try {
+      const path = await window.electronAPI?.showSaveDialog({
+        title: "Export Vector Database",
+        defaultPath: "memory_export.ndmem",
+        filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
+      });
+      if (!path) {
+        if (statusLine) statusLine.innerHTML = "";
+        return;
+      }
+      
+      await invoke("memory_export", { path });
       if (statusLine) {
-        statusLine.innerHTML = "";
-        const span = document.createElement("span");
-        span.style.color = "var(--response-color)";
-        span.textContent = count;
-        statusLine.appendChild(span);
+        statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Exported successfully.</span>`;
       }
       if (typeof addNotification === "function") {
-        addNotification("RAG Index Complete", count, "success");
+        addNotification("Memory Exported", `Database exported to ${path}`, "success");
       }
-      invoke("get_doc_count")
-        .then((c) => {
-          if (docCount) docCount.innerText = c || 0;
-        })
-        .catch(() => {});
     } catch (err) {
       if (statusLine) {
-        statusLine.innerHTML = "";
-        const span = document.createElement("span");
-        span.style.color = "var(--error-color)";
-        span.textContent = `Error: ${err}`;
-        statusLine.appendChild(span);
+        statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
       }
     } finally {
-      indexBtn.disabled = false;
+      exportBtn.disabled = false;
     }
   });
 
-  clearBtn.addEventListener("click", async () => {
+  importBtn.addEventListener("click", async () => {
+    importBtn.disabled = true;
     try {
-      const result = await invoke("clear_doc_index");
-      if (statusLine)
-        statusLine.innerHTML = `<span style="color: var(--accent-color);">${result}</span>`;
-      if (docCount) docCount.innerText = "0";
+      const paths = await window.electronAPI?.showOpenDialog({
+        title: "Import Vector Database",
+        properties: ["openFile"],
+        filters: [{ name: "NEURODECK Memory", extensions: ["ndmem"] }]
+      });
+      if (!paths || paths.length === 0) {
+        return;
+      }
+      
+      const merge = await showConfirm("Do you want to merge the imported data with your existing memory, or overwrite it completely?", { confirmText: "Merge", cancelText: "Overwrite" });
+      
+      if (statusLine) {
+        statusLine.innerHTML = `<span style="opacity:0.6;">Importing database...</span>`;
+      }
+      
+      await invoke("memory_import", { path: paths[0], merge: merge !== false });
+      
+      if (statusLine) {
+        statusLine.innerHTML = `<span style="color:var(--response-color);">${createIcon("shieldCheck", { size: 14 })} Imported successfully.</span>`;
+      }
       if (typeof addNotification === "function") {
-        addNotification(
-          "RAG Index Cleared",
-          "All indexed documents removed from memory.",
-          "info",
-        );
+        addNotification("Memory Imported", `Database imported from ${paths[0]}`, "success");
       }
     } catch (err) {
-      if (statusLine)
-        statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+      if (statusLine) {
+        statusLine.innerHTML = `<span style="color:var(--error-color);">Error: ${err}</span>`;
+      }
+    } finally {
+      importBtn.disabled = false;
     }
   });
 }
@@ -1442,275 +1155,203 @@ function initBmadInstaller() {
   }
 }
 
-function initWhisperSettings() {
-  const binaryInput = document.getElementById("whisper-binary-input");
-  const modelInput = document.getElementById("whisper-model-input");
-  const saveBtn = document.getElementById("whisper-save-btn");
-  const testBtn = document.getElementById("whisper-test-btn");
-  const statusLine = document.getElementById("whisper-status-line");
-  const downloadBtn = document.getElementById("whisper-download-btn");
-  const modelSelect = document.getElementById("whisper-model-select");
-  const dlWrap = document.getElementById("whisper-dl-progress-wrap");
-  const dlLabel = document.getElementById("whisper-dl-label");
-  const dlPct = document.getElementById("whisper-dl-pct");
-  const dlBar = document.getElementById("whisper-dl-bar");
-
-  if (!saveBtn) return;
-
-  // Wire download button
-  if (downloadBtn && modelSelect) {
-    downloadBtn.addEventListener("click", async () => {
-      const model = modelSelect.value;
-      downloadBtn.disabled = true;
-      if (dlWrap) dlWrap.style.display = "block";
-      if (dlLabel) dlLabel.textContent = `Downloading ggml-${model}.bin...`;
-      if (dlPct) dlPct.textContent = "0%";
-      if (dlBar) dlBar.style.width = "0%";
-      if (statusLine)
-        statusLine.innerHTML = `<span style="opacity:0.6;">Downloading ${model}...</span>`;
-
-      const unlisten = await listen("whisper_download_progress", (event) => {
-        let data;
-        try {
-          data =
-            typeof event.payload === "string"
-              ? JSON.parse(event.payload)
-              : event.payload;
-        } catch {
-          return;
-        }
-        const { done, pct, path, skipped } = data;
-        if (dlPct) dlPct.textContent = `${pct || 0}%`;
-        if (dlBar) dlBar.style.width = `${pct || 0}%`;
-        if (done) {
-          unlisten();
-          if (dlWrap) dlWrap.style.display = "none";
-          downloadBtn.disabled = false;
-          if (path) {
-            if (modelInput) modelInput.value = path;
-            if (statusLine)
-              statusLine.innerHTML = `<span style="color:var(--response-color);display:inline-flex;align-items:center;gap:6px;">${createIcon("shieldCheck", { size: 14 })}<span>${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span></span>`;
-            if (typeof addNotification === "function") {
-              addNotification(
-                "Whisper Model Ready",
-                `ggml-${model}.bin downloaded.`,
-                "success",
-              );
-            }
-          }
-        } else {
-          if (dlLabel)
-            dlLabel.textContent = skipped
-              ? "Already downloaded"
-              : `Downloading ggml-${model}.bin...`;
-        }
-      }).catch(() => () => {});
-
-      try {
-        await invoke("download_whisper_model", { model });
-      } catch (err) {
-        unlisten();
-        downloadBtn.disabled = false;
-        if (dlWrap) dlWrap.style.display = "none";
-        if (statusLine)
-          statusLine.innerHTML = `<span style="color:var(--error-color);">Download failed: ${err}</span>`;
+async function _whHandleDownloadClick(els) {
+  const model = els.modelSelect.value;
+  els.downloadBtn.disabled = true;
+  if (els.dlWrap) els.dlWrap.style.display = "block";
+  if (els.dlLabel) els.dlLabel.textContent = `Downloading ggml-${model}.bin...`;
+  if (els.dlPct) els.dlPct.textContent = "0%";
+  if (els.dlBar) els.dlBar.style.width = "0%";
+  if (els.statusLine) els.statusLine.innerHTML = `<span style="opacity:0.6;">Downloading ${model}...</span>`;
+  const unlistenRef = { fn: () => {} };
+  unlistenRef.fn = await listen("whisper_download_progress", (event) => {
+    let data;
+    try { data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload; } catch { return; }
+    const { done, pct, path, skipped } = data;
+    if (els.dlPct) els.dlPct.textContent = `${pct || 0}%`;
+    if (els.dlBar) els.dlBar.style.width = `${pct || 0}%`;
+    if (done) {
+      unlistenRef.fn();
+      if (els.dlWrap) els.dlWrap.style.display = "none";
+      els.downloadBtn.disabled = false;
+      if (path) {
+        if (els.modelInput) els.modelInput.value = path;
+        if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--response-color);display:inline-flex;align-items:center;gap:6px;">${createIcon("shieldCheck", { size: 14 })}<span>${skipped ? "Model already exists" : "Downloaded"}: ${path}<br>Click Save Config to activate.</span></span>`;
+        if (typeof addNotification === "function") addNotification("Whisper Model Ready", `ggml-${model}.bin downloaded.`, "success");
       }
-    });
+    } else {
+      if (els.dlLabel) els.dlLabel.textContent = skipped ? "Already downloaded" : `Downloading ggml-${model}.bin...`;
+    }
+  }).catch(() => () => {});
+  try {
+    await invoke("download_whisper_model", { model });
+  } catch (err) {
+    unlistenRef.fn();
+    els.downloadBtn.disabled = false;
+    if (els.dlWrap) els.dlWrap.style.display = "none";
+    if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--error-color);">Download failed: ${err}</span>`;
   }
+}
 
-  // Load current config on modal open
-  invoke("get_whisper_status")
-    .then((status) => {
-      if (status) {
-        if (binaryInput) binaryInput.value = status.binary || "";
-        if (modelInput) modelInput.value = status.model || "";
-        if (status.configured) {
-          if (statusLine)
-            setStatusMarkup(
-              statusLine,
-              "shieldCheck",
-              "Whisper configured and ready.",
-              "var(--response-color)",
-            );
-        } else if (status.model) {
-          if (statusLine)
-            setStatusMarkup(
-              statusLine,
-              "bell",
-              "Model file not found at configured path.",
-              "var(--warning-color)",
-            );
-        }
-      }
-    })
-    .catch(() => {});
+function _whWireDownloadBtn(els) {
+  if (!els.downloadBtn || !els.modelSelect) return;
+  els.downloadBtn.addEventListener("click", () => _whHandleDownloadClick(els));
+}
 
-  saveBtn.addEventListener("click", async () => {
-    const binary = binaryInput ? binaryInput.value.trim() : "";
-    const model = modelInput ? modelInput.value.trim() : "";
+function _whLoadConfig(els) {
+  invoke("get_whisper_status").then(status => {
+    if (!status) return;
+    if (els.binaryInput) els.binaryInput.value = status.binary || "";
+    if (els.modelInput) els.modelInput.value = status.model || "";
+    if (status.configured) {
+      if (els.statusLine) setStatusMarkup(els.statusLine, "shieldCheck", "Whisper configured and ready.", "var(--response-color)");
+    } else if (status.model) {
+      if (els.statusLine) setStatusMarkup(els.statusLine, "bell", "Model file not found at configured path.", "var(--warning-color)");
+    }
+  }).catch(() => {});
+}
+
+function _whWireSaveBtn(els) {
+  els.saveBtn.addEventListener("click", async () => {
+    const binary = els.binaryInput ? els.binaryInput.value.trim() : "";
+    const model  = els.modelInput  ? els.modelInput.value.trim()  : "";
     try {
       await invoke("set_whisper_config", { binary, model });
       const status = await invoke("get_whisper_status");
       if (status.configured) {
-        if (statusLine)
-          setStatusMarkup(
-            statusLine,
-            "shieldCheck",
-            "Saved. Whisper ready - mic button will use offline STT.",
-            "var(--response-color)",
-          );
-        if (typeof addNotification === "function") {
-          addNotification(
-            "Whisper STT Configured",
-            "Offline transcription is now active.",
-            "success",
-          );
-        }
+        if (els.statusLine) setStatusMarkup(els.statusLine, "shieldCheck", "Saved. Whisper ready - mic button will use offline STT.", "var(--response-color)");
+        if (typeof addNotification === "function") addNotification("Whisper STT Configured", "Offline transcription is now active.", "success");
       } else if (!status.model_exists) {
-        if (statusLine)
-          statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but model file not found at that path.</span>`;
+        if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but model file not found at that path.</span>`;
       } else if (!status.binary_found) {
-        if (statusLine)
-          statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but whisper binary not found. Check the path.</span>`;
+        if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--warning-color);">Saved, but whisper binary not found. Check the path.</span>`;
       } else {
-        if (statusLine)
-          statusLine.innerHTML = `<span style="opacity: 0.6;">Config saved.</span>`;
+        if (els.statusLine) els.statusLine.innerHTML = `<span style="opacity: 0.6;">Config saved.</span>`;
       }
     } catch (err) {
-      if (statusLine)
-        statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+      if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
     }
   });
+}
 
-  testBtn.addEventListener("click", async () => {
-    if (statusLine)
-      statusLine.innerHTML = `<span style="opacity: 0.6;">Transcribing record.wav...</span>`;
-    testBtn.disabled = true;
+function _whWireTestBtn(els) {
+  els.testBtn.addEventListener("click", async () => {
+    if (els.statusLine) els.statusLine.innerHTML = `<span style="opacity: 0.6;">Transcribing record.wav...</span>`;
+    els.testBtn.disabled = true;
     try {
       const text = await invoke("transcribe_audio_whisper");
-      if (statusLine)
-        statusLine.innerHTML = `<span style="color: var(--response-color);">Result: "${text}"</span>`;
+      if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--response-color);">Result: "${text}"</span>`;
     } catch (err) {
-      if (statusLine)
-        statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
-    } finally {
-      testBtn.disabled = false;
-    }
+      if (els.statusLine) els.statusLine.innerHTML = `<span style="color: var(--error-color);">Error: ${err}</span>`;
+    } finally { els.testBtn.disabled = false; }
   });
+}
 
-  // TTS mode radio
+function _whWireTtsMode() {
   const ttsModeGroup = document.getElementById("tts-mode-group");
-  if (ttsModeGroup) {
-    const saved = localStorage.getItem("neurodeck_tts_mode") || "complete";
-    const radio = ttsModeGroup.querySelector(`input[value="${saved}"]`);
-    if (radio) radio.checked = true;
-    ttsModeGroup.querySelectorAll("input[type=radio]").forEach(r => {
-      r.addEventListener("change", () => {
-        if (r.checked) localStorage.setItem("neurodeck_tts_mode", r.value);
-      });
-    });
-  }
+  if (!ttsModeGroup) return;
+  const saved = localStorage.getItem("neurodeck_tts_mode") || "complete";
+  const radio = ttsModeGroup.querySelector(`input[value="${saved}"]`);
+  if (radio) radio.checked = true;
+  ttsModeGroup.querySelectorAll("input[type=radio]").forEach(r => {
+    r.addEventListener("change", () => { if (r.checked) localStorage.setItem("neurodeck_tts_mode", r.value); });
+  });
+}
+
+function initWhisperSettings() {
+  const els = {
+    binaryInput: document.getElementById("whisper-binary-input"),
+    modelInput:  document.getElementById("whisper-model-input"),
+    saveBtn:     document.getElementById("whisper-save-btn"),
+    testBtn:     document.getElementById("whisper-test-btn"),
+    statusLine:  document.getElementById("whisper-status-line"),
+    downloadBtn: document.getElementById("whisper-download-btn"),
+    modelSelect: document.getElementById("whisper-model-select"),
+    dlWrap:      document.getElementById("whisper-dl-progress-wrap"),
+    dlLabel:     document.getElementById("whisper-dl-label"),
+    dlPct:       document.getElementById("whisper-dl-pct"),
+    dlBar:       document.getElementById("whisper-dl-bar"),
+  };
+  if (!els.saveBtn) return;
+  _whWireDownloadBtn(els);
+  _whLoadConfig(els);
+  _whWireSaveBtn(els);
+  _whWireTestBtn(els);
+  _whWireTtsMode();
 }
 
 // ==========================================================================
 
+function _syncSetStatus(statusLine, text, color = "") {
+  if (!statusLine) return;
+  statusLine.textContent = text;
+  statusLine.style.color = color;
+}
+
+function _syncRenderStatus(status, els) {
+  if (!status) return;
+  if (els.enabledToggle) els.enabledToggle.checked = !!status.enabled;
+  if (els.memoryToggle) els.memoryToggle.checked = status.sync_memory !== false;
+  if (els.sessionsToggle) els.sessionsToggle.checked = status.sync_sessions !== false;
+  if (els.apiUrlInput) els.apiUrlInput.value = status.api_base_url || "";
+  if (els.deviceId) els.deviceId.textContent = status.device_id || "-";
+  if (els.lastAt) els.lastAt.textContent = status.last_sync_at ? new Date(status.last_sync_at).toLocaleString() : "Never";
+  if (els.pendingCount) els.pendingCount.textContent = String(status.pending_records || 0);
+  if (els.conflictCount) els.conflictCount.textContent = String(status.conflict_count || 0);
+  if (status.last_error) _syncSetStatus(els.statusLine, status.last_error, "var(--error-color)");
+}
+
+async function _syncDoSave(els) {
+  els.saveBtn.disabled = true;
+  _syncSetStatus(els.statusLine, "Saving sync settings...", "var(--accent-color)");
+  try {
+    const status = await invoke("configure_sync", { request: { enabled: !!els.enabledToggle?.checked, sync_memory: els.memoryToggle?.checked !== false, sync_sessions: els.sessionsToggle?.checked !== false, api_base_url: els.apiUrlInput?.value?.trim() || "" } });
+    _syncRenderStatus(status, els);
+    _syncSetStatus(els.statusLine, "Sync settings saved.", "var(--response-color)");
+  } catch (err) {
+    _syncSetStatus(els.statusLine, `Save failed: ${err}`, "var(--error-color)");
+  } finally {
+    els.saveBtn.disabled = false;
+  }
+}
+
+async function _syncDoNow(els) {
+  els.syncNowBtn.disabled = true;
+  _syncSetStatus(els.statusLine, "Starting encrypted sync...", "var(--accent-color)");
+  try {
+    const status = await invoke("sync_now");
+    _syncRenderStatus(status, els);
+    _syncSetStatus(els.statusLine, `Sync complete. Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`, "var(--response-color)");
+    if (typeof addNotification === "function") addNotification("Cloud Sync Complete", `Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`, "success");
+  } catch (err) {
+    _syncSetStatus(els.statusLine, `Sync failed: ${err}`, "var(--error-color)");
+  } finally {
+    els.syncNowBtn.disabled = false;
+  }
+}
+
 function initSyncSettings() {
-  const enabledToggle = document.getElementById("sync-enabled-toggle");
-  const memoryToggle = document.getElementById("sync-memory-toggle");
-  const sessionsToggle = document.getElementById("sync-sessions-toggle");
-  const apiUrlInput = document.getElementById("sync-api-url-input");
-  const saveBtn = document.getElementById("sync-save-btn");
-  const syncNowBtn = document.getElementById("sync-now-btn");
-  const statusLine = document.getElementById("sync-status-line");
-  const deviceId = document.getElementById("sync-device-id");
-  const lastAt = document.getElementById("sync-last-at");
-  const pendingCount = document.getElementById("sync-pending-count");
-  const conflictCount = document.getElementById("sync-conflict-count");
-
-  if (!saveBtn) return;
-
-  function setStatus(text, color = "") {
-    if (!statusLine) return;
-    statusLine.textContent = text;
-    statusLine.style.color = color;
-  }
-
-  function renderStatus(status) {
-    if (!status) return;
-    if (enabledToggle) enabledToggle.checked = !!status.enabled;
-    if (memoryToggle) memoryToggle.checked = status.sync_memory !== false;
-    if (sessionsToggle) sessionsToggle.checked = status.sync_sessions !== false;
-    if (apiUrlInput) apiUrlInput.value = status.api_base_url || "";
-    if (deviceId) deviceId.textContent = status.device_id || "-";
-    if (lastAt)
-      lastAt.textContent = status.last_sync_at
-        ? new Date(status.last_sync_at).toLocaleString()
-        : "Never";
-    if (pendingCount)
-      pendingCount.textContent = String(status.pending_records || 0);
-    if (conflictCount)
-      conflictCount.textContent = String(status.conflict_count || 0);
-    if (status.last_error) setStatus(status.last_error, "var(--error-color)");
-  }
-
-  async function refresh() {
-    try {
-      renderStatus(await invoke("get_sync_status"));
-    } catch (err) {
-      setStatus(`Sync status unavailable: ${err}`, "var(--error-color)");
-    }
-  }
-
-  saveBtn.addEventListener("click", async () => {
-    saveBtn.disabled = true;
-    setStatus("Saving sync settings...", "var(--accent-color)");
-    try {
-      const status = await invoke("configure_sync", {
-        request: {
-          enabled: !!enabledToggle?.checked,
-          sync_memory: memoryToggle?.checked !== false,
-          sync_sessions: sessionsToggle?.checked !== false,
-          api_base_url: apiUrlInput?.value?.trim() || "",
-        },
-      });
-      renderStatus(status);
-      setStatus("Sync settings saved.", "var(--response-color)");
-    } catch (err) {
-      setStatus(`Save failed: ${err}`, "var(--error-color)");
-    } finally {
-      saveBtn.disabled = false;
-    }
-  });
-
-  syncNowBtn?.addEventListener("click", async () => {
-    syncNowBtn.disabled = true;
-    setStatus("Starting encrypted sync...", "var(--accent-color)");
-    try {
-      const status = await invoke("sync_now");
-      renderStatus(status);
-      setStatus(
-        `Sync complete. Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`,
-        "var(--response-color)",
-      );
-      if (typeof addNotification === "function") {
-        addNotification(
-          "Cloud Sync Complete",
-          `Pushed ${status.pushed_records || 0}, pulled ${status.pulled_records || 0}.`,
-          "success",
-        );
-      }
-    } catch (err) {
-      setStatus(`Sync failed: ${err}`, "var(--error-color)");
-    } finally {
-      syncNowBtn.disabled = false;
-    }
-  });
-
-  listen("sync_progress", (event) => {
-    const label = String(event.payload || "");
-    if (label) setStatus(`Sync ${label}...`, "var(--accent-color)");
-  }).catch(() => {});
-
+  const els = {
+    enabledToggle: document.getElementById("sync-enabled-toggle"),
+    memoryToggle: document.getElementById("sync-memory-toggle"),
+    sessionsToggle: document.getElementById("sync-sessions-toggle"),
+    apiUrlInput: document.getElementById("sync-api-url-input"),
+    saveBtn: document.getElementById("sync-save-btn"),
+    syncNowBtn: document.getElementById("sync-now-btn"),
+    statusLine: document.getElementById("sync-status-line"),
+    deviceId: document.getElementById("sync-device-id"),
+    lastAt: document.getElementById("sync-last-at"),
+    pendingCount: document.getElementById("sync-pending-count"),
+    conflictCount: document.getElementById("sync-conflict-count"),
+  };
+  if (!els.saveBtn) return;
+  const refresh = async () => {
+    try { _syncRenderStatus(await invoke("get_sync_status"), els); }
+    catch (err) { _syncSetStatus(els.statusLine, `Sync status unavailable: ${err}`, "var(--error-color)"); }
+  };
+  els.saveBtn.addEventListener("click", () => _syncDoSave(els));
+  els.syncNowBtn?.addEventListener("click", () => _syncDoNow(els));
+  listen("sync_progress", event => { const label = String(event.payload || ""); if (label) _syncSetStatus(els.statusLine, `Sync ${label}...`, "var(--accent-color)"); }).catch(() => {});
   refresh();
   window._syncSettings = { refresh };
 }
@@ -1719,230 +1360,149 @@ function initSyncSettings() {
 // LSP SETTINGS
 // ==========================================================================
 
-async function initLspSettings() {
-  const container = document.getElementById("lsp-settings-container");
-  if (!container) return;
-
-  let knownServers = [];
+function _lspLoadConf() {
   try {
-    knownServers = await invoke("lsp_known_servers");
-  } catch (_) {}
-
-  function loadLspConf() {
-    try {
-      const raw = localStorage.getItem("neurodeck_lsp_config");
-      return raw ? JSON.parse(raw) : {};
-    } catch (_) {
-      return {};
-    }
-  }
-
-  function saveLspConf(cfg) {
-    localStorage.setItem("neurodeck_lsp_config", JSON.stringify(cfg));
-  }
-
-  function escLsp(str) {
-    return String(str ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  async function render() {
-    const cfg = loadLspConf();
-    let running = [];
-    try {
-      running = await invoke("lsp_list");
-    } catch (_) {}
-    const statusMap = Object.fromEntries(running.map((s) => [s.language, s.status]));
-
-    container.innerHTML = `
-      <p class="lsp-settings-hint">
-        Language servers run locally and provide real-time completions, hover docs, and diagnostics
-        in the IDE tab. Each server must be installed separately. Trigger completions with
-        <kbd>Ctrl+Space</kbd>.
-      </p>
-      <div class="lsp-server-list">
-        ${knownServers
-          .map((s) => {
-            const saved = cfg[s.language] || {};
-            const enabled = saved.enabled || false;
-            const command = saved.command || s.command;
-            const args = (saved.args || s.args).join(" ");
-            const status = statusMap[s.language] || "stopped";
-            const dotCls = `lsp-dot lsp-dot-${status}`;
-            return `
-              <div class="lsp-server-row" data-lang="${s.language}">
-                <div class="lsp-server-row-header">
-                  <label class="lsp-server-toggle">
-                    <input type="checkbox" class="lsp-toggle-input" data-lang="${s.language}" ${enabled ? "checked" : ""}>
-                    <span class="lsp-server-name">${escLsp(s.label)}</span>
-                  </label>
-                  <span class="lsp-server-status">
-                    <span class="${dotCls}"></span>${status}
-                  </span>
-                </div>
-                <div class="lsp-server-fields" ${enabled ? "" : 'style="display:none"'}>
-                  <label class="lsp-field-label">Command
-                    <input class="lsp-field-input lsp-cmd-input" data-lang="${s.language}" type="text"
-                      value="${escLsp(command)}" placeholder="${escLsp(s.command)}">
-                  </label>
-                  <label class="lsp-field-label">Args (space-separated)
-                    <input class="lsp-field-input lsp-args-input" data-lang="${s.language}" type="text"
-                      value="${escLsp(args)}" placeholder="${escLsp(s.args.join(" "))}">
-                  </label>
-                  <div class="lsp-hint">${escLsp(s.install_hint)}</div>
-                  <div class="lsp-server-actions">
-                    <button class="lsp-btn lsp-btn-save" data-lang="${s.language}">Save</button>
-                    ${
-                      status === "stopped" || status === "error"
-                        ? `<button class="lsp-btn lsp-btn-start" data-lang="${s.language}">Start</button>`
-                        : `<button class="lsp-btn lsp-btn-stop" data-lang="${s.language}">Stop</button>`
-                    }
-                  </div>
-                </div>
-              </div>`;
-          })
-          .join("")}
-      </div>`;
-
-    // Toggle field visibility when enabling/disabling.
-    container.querySelectorAll(".lsp-toggle-input").forEach((cb) => {
-      cb.addEventListener("change", () => {
-        const row = container.querySelector(`.lsp-server-row[data-lang="${cb.dataset.lang}"]`);
-        const fields = row?.querySelector(".lsp-server-fields");
-        if (fields) fields.style.display = cb.checked ? "" : "none";
-      });
-    });
-
-    // Save config for a server.
-    container.querySelectorAll(".lsp-btn-save").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const lang = btn.dataset.lang;
-        const row = container.querySelector(`.lsp-server-row[data-lang="${lang}"]`);
-        const enabled = row.querySelector(".lsp-toggle-input").checked;
-        const cmd = row.querySelector(".lsp-cmd-input").value.trim();
-        const argsRaw = row.querySelector(".lsp-args-input").value.trim();
-        const args = argsRaw ? argsRaw.split(/\s+/) : [];
-        const newCfg = loadLspConf();
-        newCfg[lang] = { enabled, command: cmd, args };
-        saveLspConf(newCfg);
-        addNotification({
-          type: "success",
-          title: "LSP",
-          message: `'${lang}' config saved.`,
-        });
-      });
-    });
-
-    // Start a server.
-    container.querySelectorAll(".lsp-btn-start").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const lang = btn.dataset.lang;
-        const cfg2 = loadLspConf();
-        const saved = cfg2[lang] || {};
-        const known = knownServers.find((s) => s.language === lang) || {};
-        const cmd = saved.command || known.command || lang;
-        const args = saved.args || known.args || [];
-        try {
-          await invoke("lsp_start", { language: lang, command: cmd, args });
-          addNotification({ type: "success", title: "LSP", message: `Starting '${lang}'…` });
-          setTimeout(render, 1500);
-        } catch (e) {
-          addNotification({ type: "error", title: "LSP", message: `Failed to start: ${e}` });
-        }
-      });
-    });
-
-    // Stop a server.
-    container.querySelectorAll(".lsp-btn-stop").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const lang = btn.dataset.lang;
-        try {
-          await invoke("lsp_stop", { language: lang });
-          addNotification({ type: "info", title: "LSP", message: `'${lang}' stopped.` });
-          setTimeout(render, 400);
-        } catch (e) {
-          addNotification({ type: "error", title: "LSP", message: `Stop failed: ${e}` });
-        }
-      });
-    });
-  }
-
-  await render();
-  window._lspSettingsRefresh = render;
+    const raw = localStorage.getItem("neurodeck_lsp_config");
+    return raw ? JSON.parse(raw) : {};
+  } catch (_) { return {}; }
 }
 
-// ==========================================================================
-// THEME LIVE PREVIEW
-// ==========================================================================
+function _lspSaveConf(cfg) {
+  localStorage.setItem("neurodeck_lsp_config", JSON.stringify(cfg));
+}
 
-function initThemeLivePreview(selectEl, savedThemeName) {
-  // Build a small preview row under the select
-  const card = selectEl.closest(".stv-card");
-  if (!card) return;
+function _lspEsc(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
-  let previewRow = card.querySelector(".theme-live-preview");
-  if (!previewRow) {
-    previewRow = document.createElement("div");
-    previewRow.className = "theme-live-preview";
-    previewRow.innerHTML = `
-      <span class="theme-live-swatch" id="tlp-accent"></span>
-      <span class="theme-live-swatch" id="tlp-bg"></span>
-      <span class="theme-live-swatch" id="tlp-response"></span>
-      <span class="theme-live-name" id="tlp-name"></span>
-      <button class="theme-reset-btn" id="tlp-reset-btn" title="Reset to saved theme">Reset</button>
-    `;
-    selectEl.parentNode.insertBefore(previewRow, selectEl.nextSibling);
-  }
+function _lspBuildServerHtml(s, cfg, statusMap) {
+  const saved = cfg[s.language] || {};
+  const enabled = saved.enabled || false;
+  const command = saved.command || s.command;
+  const args = (saved.args || s.args).join(" ");
+  const status = statusMap[s.language] || "stopped";
+  const dotCls = `lsp-dot lsp-dot-${status}`;
+  return `
+    <div class="lsp-server-row" data-lang="${s.language}">
+      <div class="lsp-server-row-header">
+        <label class="lsp-server-toggle">
+          <input type="checkbox" class="lsp-toggle-input" data-lang="${s.language}" ${enabled ? "checked" : ""}>
+          <span class="lsp-server-name">${_lspEsc(s.label)}</span>
+        </label>
+        <span class="lsp-server-status"><span class="${dotCls}"></span>${status}</span>
+      </div>
+      <div class="lsp-server-fields" ${enabled ? "" : 'style="display:none"'}>
+        <label class="lsp-field-label">Command
+          <input class="lsp-field-input lsp-cmd-input" data-lang="${s.language}" type="text" value="${_lspEsc(command)}" placeholder="${_lspEsc(s.command)}">
+        </label>
+        <label class="lsp-field-label">Args (space-separated)
+          <input class="lsp-field-input lsp-args-input" data-lang="${s.language}" type="text" value="${_lspEsc(args)}" placeholder="${_lspEsc(s.args.join(" "))}">
+        </label>
+        <div class="lsp-hint">${_lspEsc(s.install_hint)}</div>
+        <div class="lsp-server-actions">
+          <button class="lsp-btn lsp-btn-save" data-lang="${s.language}">Save</button>
+          ${status === "stopped" || status === "error"
+            ? `<button class="lsp-btn lsp-btn-start" data-lang="${s.language}">Start</button>`
+            : `<button class="lsp-btn lsp-btn-stop" data-lang="${s.language}">Stop</button>`}
+        </div>
+      </div>
+    </div>`;
+}
 
-  let _savedTheme = savedThemeName || localStorage.getItem("selectedTheme") || "";
-
-  function updateSwatches(theme) {
-    if (!theme) return;
-    const accentSwatch = document.getElementById("tlp-accent");
-    const bgSwatch = document.getElementById("tlp-bg");
-    const respSwatch = document.getElementById("tlp-response");
-    const nameEl = document.getElementById("tlp-name");
-    if (accentSwatch) accentSwatch.style.background = theme.accent || theme.color || "";
-    if (bgSwatch) bgSwatch.style.background = theme.background || "";
-    if (respSwatch) respSwatch.style.background = theme.response || "";
-    if (nameEl) nameEl.textContent = theme.name || "";
-  }
-
-  // Preview on select change (without immediately persisting)
-  const origOnchange = selectEl.onchange;
-  selectEl.onchange = function () {
-    const val = this.value;
-    invoke("set_theme", { name: val }).then((theme) => {
-      if (theme) {
-        window.applyThemeColors(theme);
-        updateSwatches(theme);
-        // Persist immediately (consistent with existing behaviour)
-        localStorage.setItem("selectedTheme", val);
-        _savedTheme = val;
-      }
+function _lspWireToggles(container) {
+  container.querySelectorAll(".lsp-toggle-input").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const row = container.querySelector(`.lsp-server-row[data-lang="${cb.dataset.lang}"]`);
+      const fields = row?.querySelector(".lsp-server-fields");
+      if (fields) fields.style.display = cb.checked ? "" : "none";
     });
-  };
+  });
+}
 
-  // Load current theme swatches
-  invoke("set_theme", { name: _savedTheme }).then((theme) => {
-    if (theme) updateSwatches(theme);
-  }).catch(() => {});
+function _lspWireSaveBtns(container) {
+  container.querySelectorAll(".lsp-btn-save").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const lang = btn.dataset.lang;
+      const row = container.querySelector(`.lsp-server-row[data-lang="${lang}"]`);
+      const enabled = row.querySelector(".lsp-toggle-input").checked;
+      const cmd = row.querySelector(".lsp-cmd-input").value.trim();
+      const argsRaw = row.querySelector(".lsp-args-input").value.trim();
+      const args = argsRaw ? argsRaw.split(/\s+/) : [];
+      const cfg = _lspLoadConf();
+      cfg[lang] = { enabled, command: cmd, args };
+      _lspSaveConf(cfg);
+      addNotification({ type: "success", title: "LSP", message: `'${lang}' config saved.` });
+    });
+  });
+}
 
-  // Reset button — revert to last saved theme
-  document.getElementById("tlp-reset-btn")?.addEventListener("click", () => {
-    if (!_savedTheme) return;
-    invoke("set_theme", { name: _savedTheme }).then((theme) => {
-      if (theme) {
-        window.applyThemeColors(theme);
-        updateSwatches(theme);
-        selectEl.value = _savedTheme;
+function _lspWireStartBtns(container, knownServers, renderFn) {
+  container.querySelectorAll(".lsp-btn-start").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const lang = btn.dataset.lang;
+      const cfg = _lspLoadConf();
+      const saved = cfg[lang] || {};
+      const known = knownServers.find(s => s.language === lang) || {};
+      const cmd = saved.command || known.command || lang;
+      const args = saved.args || known.args || [];
+      try {
+        await invoke("lsp_start", { language: lang, command: cmd, args });
+        addNotification({ type: "success", title: "LSP", message: `Starting '${lang}'…` });
+        setTimeout(renderFn, 1500);
+      } catch (e) {
+        addNotification({ type: "error", title: "LSP", message: `Failed to start: ${e}` });
       }
     });
   });
 }
+
+function _lspWireStopBtns(container, renderFn) {
+  container.querySelectorAll(".lsp-btn-stop").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const lang = btn.dataset.lang;
+      try {
+        await invoke("lsp_stop", { language: lang });
+        addNotification({ type: "info", title: "LSP", message: `'${lang}' stopped.` });
+        setTimeout(renderFn, 400);
+      } catch (e) {
+        addNotification({ type: "error", title: "LSP", message: `Stop failed: ${e}` });
+      }
+    });
+  });
+}
+
+async function _lspRender(container, knownServers) {
+  const cfg = _lspLoadConf();
+  let running = [];
+  try { running = await invoke("lsp_list"); } catch (_) {}
+  const statusMap = Object.fromEntries(running.map(s => [s.language, s.status]));
+  container.innerHTML = `
+    <p class="lsp-settings-hint">
+      Language servers run locally and provide real-time completions, hover docs, and diagnostics
+      in the IDE tab. Each server must be installed separately. Trigger completions with
+      <kbd>Ctrl+Space</kbd>.
+    </p>
+    <div class="lsp-server-list">
+      ${knownServers.map(s => _lspBuildServerHtml(s, cfg, statusMap)).join("")}
+    </div>`;
+  _lspWireToggles(container);
+  _lspWireSaveBtns(container);
+  _lspWireStartBtns(container, knownServers, () => _lspRender(container, knownServers));
+  _lspWireStopBtns(container, () => _lspRender(container, knownServers));
+}
+
+async function initLspSettings() {
+  const container = document.getElementById("lsp-settings-container");
+  if (!container) return;
+  let knownServers = [];
+  try { knownServers = await invoke("lsp_known_servers"); } catch (_) {}
+  await _lspRender(container, knownServers);
+  window._lspSettingsRefresh = () => _lspRender(container, knownServers);
+}
+
+// ==========================================================================
+// THEME LIVE PREVIEW
+// initThemeLivePreview logic replaced by _refreshThemeCards
 
 // ==========================================================================
 
@@ -1955,217 +1515,102 @@ export {
   initCustomThemes,
   initMcpSettings,
   initDocRag,
+  initMemoryDb,
   initBmadInstaller,
   initWhisperSettings,
   initSyncSettings,
   toggleSettingsLlmGroups,
 };
 
-export function initSettings() {
-  if (typeof renderBackgroundGallery === "function") {
-    renderBackgroundGallery();
-  }
-  applySettings();
-  initSettingsSidebar();
-  activateSettingsPanel(
-    localStorage.getItem("settingsActivePanel") || "sp-general",
-  );
-
-  // Focus the main input
-  const userInput = document.getElementById("user-input");
-  if (userInput) userInput.focus();
-
-  // Wire listeners
+// ── initSettings helpers ──────────────────────────────────────────────────────
+function _stWireAppearanceInputs() {
   const fontSelect = document.getElementById("font-select");
   if (fontSelect) fontSelect.onchange = handleFontSelect;
-
   const bgUrlInput = document.getElementById("bg-url-input");
   if (bgUrlInput) bgUrlInput.oninput = handleBgUrlInput;
-
   const bgOpacitySlider = document.getElementById("bg-opacity-slider");
   if (bgOpacitySlider) bgOpacitySlider.oninput = handleBgOpacitySlider;
-
   const scanlinesToggle = document.getElementById("scanlines-toggle");
   if (scanlinesToggle) scanlinesToggle.onchange = handleScanlinesToggle;
-
   const flickerToggle = document.getElementById("flicker-toggle");
   if (flickerToggle) flickerToggle.onchange = handleFlickerToggle;
-
   const trayToggle = document.getElementById("minimize-to-tray-toggle");
-  if (trayToggle) {
-    trayToggle.onchange = function() {
-      invoke("set_config", {
-        key: "prefs.minimize_to_tray_on_close",
-        value: this.checked ? "true" : "false",
-      }).catch((e) => console.error("Failed to save tray preference:", e));
-    };
-  }
-
+  if (trayToggle) trayToggle.onchange = function() { invoke("set_config", { key: "prefs.minimize_to_tray_on_close", value: this.checked ? "true" : "false" }).catch(e => console.error("Failed to save tray preference:", e)); };
   const shellSelect = document.getElementById("shell-select");
   if (shellSelect) shellSelect.onchange = handleShellSelect;
-
-  document
-    .getElementById("llm-provider-select")
-    ?.addEventListener("change", handleLlmProviderChange);
-  document
-    .getElementById("settings-test-connection-btn")
-    ?.addEventListener("click", handleTestConnectionClick);
-  document
-    .getElementById("settings-save-llm-btn")
-    ?.addEventListener("click", handleSaveLlmClick);
-  applyButtonIcon("#settings-test-connection-btn", {
-    icon: "globe",
-    label: "Test Connection",
-  });
-  applyButtonIcon("#settings-save-llm-btn", {
-    icon: "shieldCheck",
-    label: "Save & Apply",
-  });
-
-  initCustomThemes();
-  initMcpSettings();
-  initDocRag();
-  initBmadInstaller();
-  initWhisperSettings();
-  initSyncSettings();
-  initLspSettings();
-
-  // Shell Switcher (terminal top bar)
-  document.querySelectorAll(".term-shell-btn").forEach((pill) => {
-    pill.onclick = function () {
+}
+function _stWireLlmSettings() {
+  document.getElementById("llm-provider-select")?.addEventListener("change", handleLlmProviderChange);
+  document.getElementById("settings-test-connection-btn")?.addEventListener("click", handleTestConnectionClick);
+  document.getElementById("settings-save-llm-btn")?.addEventListener("click", handleSaveLlmClick);
+  applyButtonIcon("#settings-test-connection-btn", { icon: "globe", label: "Test Connection" });
+  applyButtonIcon("#settings-save-llm-btn", { icon: "shieldCheck", label: "Save & Apply" });
+}
+function _stWireShellSwitcher() {
+  document.querySelectorAll(".term-shell-btn").forEach(pill => {
+    pill.onclick = function() {
       const shell = this.getAttribute("data-shell");
-      document
-        .querySelectorAll(".term-shell-btn")
-        .forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active"));
       this.classList.add("active");
-      localStorage.setItem(
-        "selectedShell",
-        shell === "default" ? "default" : shell,
-      );
-      // Also sync the settings dropdown
-      const shellSelect = document.getElementById("shell-select");
-      if (shellSelect) {
-        const option = shellSelect.querySelector(`option[value="${shell}"]`);
-        if (option) shellSelect.value = shell;
-      }
-      // Update shell for the active session and restart it
+      localStorage.setItem("selectedShell", shell === "default" ? "default" : shell);
+      const sel = document.getElementById("shell-select");
+      if (sel) { const opt = sel.querySelector(`option[value="${shell}"]`); if (opt) sel.value = shell; }
       if (state.activeTerminalSessionId) {
-        const session = state.terminalSessions.find(
-          (s) => s.id === state.activeTerminalSessionId,
-        );
-        if (session) {
-          session.shell = shell === "default" ? null : shell;
-          restartTerminalSession(state.activeTerminalSessionId);
-        }
+        const session = state.terminalSessions.find(s => s.id === state.activeTerminalSessionId);
+        if (session) { session.shell = shell === "default" ? null : shell; restartTerminalSession(state.activeTerminalSessionId); }
       }
     };
   });
-
-  // Sync shell buttons on load
   const savedShell = localStorage.getItem("selectedShell") || "default";
-  const pill = document.querySelector(
-    `.term-shell-btn[data-shell="${savedShell}"]`,
-  );
-  if (pill) {
-    document
-      .querySelectorAll(".term-shell-btn")
-      .forEach((p) => p.classList.remove("active"));
-    pill.classList.add("active");
-  }
-
+  const pill = document.querySelector(`.term-shell-btn[data-shell="${savedShell}"]`);
+  if (pill) { document.querySelectorAll(".term-shell-btn").forEach(p => p.classList.remove("active")); pill.classList.add("active"); }
+}
+function _stWireTerminalSettings() {
   const customShellInput = document.getElementById("custom-shell-input");
-  if (customShellInput) {
-    customShellInput.oninput = function () {
-      localStorage.setItem("customShell", this.value);
-      applySettings();
-    };
-  }
-
+  if (customShellInput) customShellInput.oninput = function() { localStorage.setItem("customShell", this.value); applySettings(); };
   const termFontSizeSlider = document.getElementById("term-fontsize-slider");
-  if (termFontSizeSlider) {
-    termFontSizeSlider.oninput = function () {
-      localStorage.setItem("terminalFontSize", this.value);
-      applySettings();
-    };
-  }
-
+  if (termFontSizeSlider) termFontSizeSlider.oninput = function() { localStorage.setItem("terminalFontSize", this.value); applySettings(); };
   const termScrollbackInput = document.getElementById("term-scrollback-input");
-  if (termScrollbackInput) {
-    termScrollbackInput.oninput = function () {
-      localStorage.setItem("terminalScrollback", this.value);
-      applySettings();
-    };
-  }
-
-  // Modal elements
+  if (termScrollbackInput) termScrollbackInput.oninput = function() { localStorage.setItem("terminalScrollback", this.value); applySettings(); };
+}
+function _stWireSettingsModal() {
   settingsOverlay = document.getElementById("settings-overlay");
   settingsBtn = document.getElementById("settings-btn");
   closeSettings = document.getElementById("close-settings");
   closeSettingsX = document.getElementById("close-settings-x");
-
-  if (settingsBtn) {
-    settingsBtn.onclick = openSettingsModal;
-  }
-
-  if (closeSettings) {
-    closeSettings.onclick = function () {
-      if (settingsOverlay) settingsOverlay.classList.remove("active");
-      if (settingsFocusTrap) settingsFocusTrap.deactivate();
-    };
-  }
-
-  if (closeSettingsX) {
-    closeSettingsX.onclick = function () {
-      if (settingsOverlay) settingsOverlay.classList.remove("active");
-      if (settingsFocusTrap) settingsFocusTrap.deactivate();
-    };
-  }
-
-  if (settingsOverlay) {
-    settingsOverlay.addEventListener("click", (event) => {
-      if (event.target === settingsOverlay) {
-        settingsOverlay.classList.remove("active");
-        if (settingsFocusTrap) settingsFocusTrap.deactivate();
-      }
-    });
-  }
-
+  if (settingsBtn) settingsBtn.onclick = openSettingsModal;
+  const closeOverlay = () => { if (settingsOverlay) settingsOverlay.classList.remove("active"); if (settingsFocusTrap) settingsFocusTrap.deactivate(); };
+  if (closeSettings) closeSettings.onclick = closeOverlay;
+  if (closeSettingsX) closeSettingsX.onclick = closeOverlay;
+  if (settingsOverlay) settingsOverlay.addEventListener("click", e => { if (e.target === settingsOverlay) closeOverlay(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && settingsOverlay?.classList.contains("active")) settingsOverlay.classList.remove("active"); });
+}
+function _stWireTrustSafety() {
   const tsBtn = document.getElementById("trust-safety-btn");
-  if (tsBtn) {
-    tsBtn.onclick = showTrustSafetyModal;
-  }
-
+  if (tsBtn) tsBtn.onclick = showTrustSafetyModal;
   const tsModal = document.getElementById("trust-safety-modal");
   const closeTsBtn = document.getElementById("close-trust-safety-btn");
   const closeTsX = document.getElementById("close-trust-safety-x");
-
-  const closeTs = () => {
-    if (tsModal) {
-      tsModal.classList.remove("active");
-      if (tsFocusTrap) tsFocusTrap.deactivate();
-    }
-  };
-
+  const closeTs = () => { if (tsModal) { tsModal.classList.remove("active"); if (tsFocusTrap) tsFocusTrap.deactivate(); } };
   if (closeTsBtn) closeTsBtn.onclick = closeTs;
   if (closeTsX) closeTsX.onclick = closeTs;
-  if (tsModal) {
-    tsModal.addEventListener("click", (event) => {
-      if (event.target === tsModal) {
-        tsModal.classList.remove("active");
-        if (tsFocusTrap) tsFocusTrap.deactivate();
-      }
-    });
-  }
+  if (tsModal) tsModal.addEventListener("click", e => { if (e.target === tsModal) { tsModal.classList.remove("active"); if (tsFocusTrap) tsFocusTrap.deactivate(); } });
+}
 
-  document.addEventListener("keydown", (event) => {
-    if (
-      event.key === "Escape" &&
-      settingsOverlay?.classList.contains("active")
-    ) {
-      settingsOverlay.classList.remove("active");
-    }
-  });
-
+export function initSettings() {
+  if (typeof renderBackgroundGallery === "function") renderBackgroundGallery();
+  applySettings();
+  initSettingsSidebar();
+  activateSettingsPanel(localStorage.getItem("settingsActivePanel") || "sp-general");
+  const userInput = document.getElementById("user-input");
+  if (userInput) userInput.focus();
+  _stWireAppearanceInputs();
+  _stWireLlmSettings();
+  initCustomThemes(); initMcpSettings(); initDocRag(); initMemoryDb(); initBmadInstaller(); initWhisperSettings(); initSyncSettings(); initLspSettings();
+  _stWireShellSwitcher();
+  _stWireTerminalSettings();
+  _stWireSettingsModal();
+  _stWireTrustSafety();
   initCustomPersonas();
   initModelsPanel();
 }
@@ -2174,9 +1619,8 @@ export function initSettings() {
 // Model Library Panel — HuggingFace Model Downloader
 // =============================================================================
 
-function initModelsPanel() {
-  // Sub-tab switching
-  document.querySelectorAll(".stv-sub-tab[data-models-tab]").forEach((tab) => {
+function _modelsWireSubTabs() {
+  document.querySelectorAll(".stv-sub-tab[data-models-tab]").forEach(tab => {
     tab.addEventListener("click", () => {
       const tabName = tab.dataset.modelsTab;
       if (tabName === "browser") {
@@ -2184,199 +1628,117 @@ function initModelsPanel() {
         if (settingsFocusTrap) settingsFocusTrap.deactivate();
         const mainBrowserTab = document.querySelector('.nav-tab[data-view="browser"]');
         if (mainBrowserTab) mainBrowserTab.click();
-        if (window.browserNavigateTo) {
-          window.browserNavigateTo("https://huggingface.co/models");
-        }
+        if (window.browserNavigateTo) window.browserNavigateTo("https://huggingface.co/models");
         return;
       }
-
-      document
-        .querySelectorAll(".stv-sub-tab[data-models-tab]")
-        .forEach((t) => t.classList.remove("active"));
-      document
-        .querySelectorAll(".models-tab-panel")
-        .forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll(".stv-sub-tab[data-models-tab]").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".models-tab-panel").forEach(p => p.classList.remove("active"));
       tab.classList.add("active");
       const panel = document.getElementById(`models-tab-${tabName}`);
       if (panel) panel.classList.add("active");
-
       if (tabName === "installed") refreshInstalledModels();
       if (tabName === "downloads") refreshDownloadsList();
     });
   });
+}
 
-  // Filter chips
-  document.querySelectorAll(".filter-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      document
-        .querySelectorAll(".filter-chip")
-        .forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      const filter = chip.dataset.filter;
-      applyModelFilter(filter);
-    });
-  });
-
-  // Search
-  const searchBtn = document.getElementById("models-search-btn");
-  const searchInput = document.getElementById("models-search-input");
-  if (searchBtn) {
-    searchBtn.addEventListener("click", () => {
-      const query = searchInput?.value?.trim() || "";
-      if (query) performModelSearch(query);
-    });
-  }
-  if (searchInput) {
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const query = searchInput.value.trim();
-        if (query) performModelSearch(query);
-      }
-    });
-  }
-
-  // Download / cancel delegation
+function _modelsWireDelegation() {
   const browseGrid = document.getElementById("models-browse-grid");
   if (browseGrid) {
-    browseGrid.addEventListener("click", (e) => {
+    browseGrid.addEventListener("click", e => {
       const btn = e.target.closest("[data-repo][data-file]");
       if (!btn) return;
-      const repo = btn.dataset.repo;
-      const file = btn.dataset.file;
-      if (!repo || !file) return;
-      startModelDownload(repo, file, btn);
+      const { repo, file } = btn.dataset;
+      if (repo && file) startModelDownload(repo, file, btn);
     });
   }
-
   const downloadsList = document.getElementById("models-downloads-list");
   if (downloadsList) {
-    downloadsList.addEventListener("click", (e) => {
+    downloadsList.addEventListener("click", e => {
       const btn = e.target.closest("[data-cancel]");
-      if (!btn) return;
-      const id = btn.dataset.cancel;
-      if (id) cancelModelDownload(id);
+      if (btn?.dataset.cancel) cancelModelDownload(btn.dataset.cancel);
     });
   }
-
   const installedList = document.getElementById("models-installed-list");
   if (installedList) {
-    installedList.addEventListener("click", (e) => {
+    installedList.addEventListener("click", e => {
       const btn = e.target.closest("[data-delete-repo]");
       if (!btn) return;
-      const repo = btn.dataset.deleteRepo;
-      const file = btn.dataset.deleteFile;
+      const { deleteRepo: repo, deleteFile: file } = btn.dataset;
       if (repo && file) deleteInstalledModel(repo, file);
     });
   }
+}
 
-  // ── HuggingFace Model Browser ────────────────────────────────────────
+function initModelsPanel() {
+  _modelsWireSubTabs();
+  document.querySelectorAll(".filter-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      applyModelFilter(chip.dataset.filter);
+    });
+  });
+  const searchBtn = document.getElementById("models-search-btn");
+  const searchInput = document.getElementById("models-search-input");
+  if (searchBtn) searchBtn.addEventListener("click", () => { const q = searchInput?.value?.trim() || ""; if (q) performModelSearch(q); });
+  if (searchInput) searchInput.addEventListener("keydown", e => { if (e.key === "Enter") { const q = searchInput.value.trim(); if (q) performModelSearch(q); } });
+  _modelsWireDelegation();
   initHfBrowser();
+  if (typeof listen === "function") listen("hf_download_progress", event => updateDownloadProgress(event.payload)).catch(() => {});
+}
 
-  // Listen for download progress events
-  if (typeof listen === "function") {
-    listen("hf_download_progress", (event) => {
-      const payload = event.payload;
-      updateDownloadProgress(payload);
-    }).catch(() => {});
-  }
+function _hfWireNav(iframe, urlInput, backBtn, fwdBtn, refreshBtn, homeBtn, goBtn, HOME_URL) {
+  const navigateTo = url => {
+    if (!url.startsWith("http")) url = "https://" + url;
+    iframe.src = url;
+    if (urlInput) urlInput.value = url;
+  };
+  backBtn?.addEventListener("click", () => { try { iframe.contentWindow.history.back(); } catch (_) {} });
+  fwdBtn?.addEventListener("click", () => { try { iframe.contentWindow.history.forward(); } catch (_) {} });
+  refreshBtn?.addEventListener("click", () => { iframe.src = iframe.src; });
+  homeBtn?.addEventListener("click", () => navigateTo(HOME_URL));
+  goBtn?.addEventListener("click", () => navigateTo(urlInput?.value?.trim() || HOME_URL));
+  if (urlInput) urlInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); goBtn?.click(); } });
+}
+
+function _hfIframeLoad(iframe, urlInput, downloadBtn, statusEl) {
+  iframe.addEventListener("load", () => {
+    try {
+      const url = iframe.contentWindow?.location?.href || iframe.src;
+      if (urlInput) urlInput.value = url;
+      const match = url.match(/huggingface\.co\/([^\/]+)\/([^\/\?#]+)/);
+      if (match && downloadBtn) {
+        const [, org, model] = match;
+        if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
+          downloadBtn.disabled = false;
+          downloadBtn.dataset.repo = `${org}/${model}`;
+          if (statusEl) statusEl.innerHTML = `<span>Model detected: <strong>${org}/${model}</strong> — click Download to fetch GGUF files.</span>`;
+          return;
+        }
+      }
+      if (downloadBtn) { downloadBtn.disabled = true; delete downloadBtn.dataset.repo; }
+      if (statusEl) statusEl.innerHTML = `<span>Navigate to a model page and click Download to fetch GGUF files.</span>`;
+    } catch (_) {
+      if (statusEl) statusEl.innerHTML = `<span>Browsing ${escapeHtml(String(iframe.src)).slice(0, 80)}…</span>`;
+    }
+  });
 }
 
 function initHfBrowser() {
   const iframe = document.getElementById("hf-browser-iframe");
   const urlInput = document.getElementById("hf-browser-url");
-  const backBtn = document.getElementById("hf-browser-back");
-  const fwdBtn = document.getElementById("hf-browser-forward");
-  const refreshBtn = document.getElementById("hf-browser-refresh");
-  const homeBtn = document.getElementById("hf-browser-home");
-  const goBtn = document.getElementById("hf-browser-go");
   const downloadBtn = document.getElementById("hf-browser-download");
   const statusEl = document.getElementById("hf-browser-status");
-
   if (!iframe) return;
-
   const HOME_URL = "https://huggingface.co/models";
-
-  function navigateTo(url) {
-    if (!url.startsWith("http")) url = "https://" + url;
-    iframe.src = url;
-    if (urlInput) urlInput.value = url;
-  }
-
-  backBtn?.addEventListener("click", () => {
-    try { iframe.contentWindow.history.back(); } catch (e) { /* cross-origin */ }
-  });
-
-  fwdBtn?.addEventListener("click", () => {
-    try { iframe.contentWindow.history.forward(); } catch (e) { /* cross-origin */ }
-  });
-
-  refreshBtn?.addEventListener("click", () => {
-    iframe.src = iframe.src;
-  });
-
-  homeBtn?.addEventListener("click", () => {
-    navigateTo(HOME_URL);
-  });
-
-  goBtn?.addEventListener("click", () => {
-    const url = urlInput?.value?.trim() || HOME_URL;
-    navigateTo(url);
-  });
-
-  if (urlInput) {
-    urlInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        goBtn?.click();
-      }
-    });
-  }
-
-  // Detect model pages and enable download
-  iframe.addEventListener("load", () => {
-    try {
-      const url = iframe.contentWindow?.location?.href || iframe.src;
-      if (urlInput) urlInput.value = url;
-
-      // Parse HuggingFace model URL: https://huggingface.co/<org>/<model>
-      const match = url.match(/huggingface\.co\/([^\/]+)\/([^\/\?#]+)/);
-      if (match && downloadBtn) {
-        const org = match[1];
-        const model = match[2];
-        // Exclude non-model pages (datasets, spaces, etc.)
-        if (!["datasets", "spaces", "docs", "blog"].includes(org)) {
-          downloadBtn.disabled = false;
-          downloadBtn.dataset.repo = `${org}/${model}`;
-          if (statusEl) {
-            statusEl.innerHTML = `<span>Model detected: <strong>${org}/${model}</strong> — click Download to fetch GGUF files.</span>`;
-          }
-          return;
-        }
-      }
-      if (downloadBtn) {
-        downloadBtn.disabled = true;
-        delete downloadBtn.dataset.repo;
-      }
-      if (statusEl) {
-        statusEl.innerHTML = `<span>Navigate to a model page and click Download to fetch GGUF files.</span>`;
-      }
-    } catch (e) {
-      // Cross-origin restrictions may block access
-      if (statusEl) {
-        statusEl.innerHTML = `<span>Browsing ${escapeHtml(String(iframe.src)).slice(0, 80)}…</span>`;
-      }
-    }
-  });
-
+  _hfWireNav(iframe, urlInput, document.getElementById("hf-browser-back"), document.getElementById("hf-browser-forward"), document.getElementById("hf-browser-refresh"), document.getElementById("hf-browser-home"), document.getElementById("hf-browser-go"), HOME_URL);
+  _hfIframeLoad(iframe, urlInput, downloadBtn, statusEl);
   downloadBtn?.addEventListener("click", () => {
     const repo = downloadBtn.dataset.repo;
     if (!repo) return;
-
     switchToBrowseTabAndSearch(repo);
-
-    if (statusEl) {
-      statusEl.innerHTML = `<span>Switched to Browse tab — search results for <strong>${repo}</strong> loading…</span>`;
-    }
+    if (statusEl) statusEl.innerHTML = `<span>Switched to Browse tab — search results for <strong>${repo}</strong> loading…</span>`;
   });
 }
 
