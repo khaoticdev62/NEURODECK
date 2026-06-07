@@ -337,11 +337,23 @@ function createMainWindow() {
     },
   });
 
-  // Dev: load Vite dev server
-  // Prod: load built frontend via neurodeck://app custom protocol
+  // Dev: load Vite dev server if running, otherwise fall back to built files
   if (process.env.ELECTRON_DEV) {
-    mainWindow.loadURL('http://localhost:1420');
-    mainWindow.webContents.openDevTools();
+    const client = new net.Socket();
+    client.setTimeout(200);
+    const fallback = () => {
+      client.destroy();
+      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
+      mainWindow.loadURL('neurodeck://app/index.html');
+    };
+    client.once('connect', () => {
+      client.destroy();
+      mainWindow.loadURL('http://localhost:1420');
+      mainWindow.webContents.openDevTools();
+    });
+    client.once('error', fallback);
+    client.once('timeout', fallback);
+    client.connect(1420, '127.0.0.1');
   } else {
     mainWindow.loadURL('neurodeck://app/index.html');
   }
