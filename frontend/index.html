@@ -159,18 +159,33 @@
 
                 <section id="view-canvas" class="view-content" role="tabpanel" aria-labelledby="nav-tab-canvas" data-testid="view-canvas">
                     <div class="canvas-toolbar">
-                        <select id="canvas-lang-select" aria-label="Canvas language"><option value="html">HTML</option><option value="python">Python</option></select>
+                        <select id="canvas-lang-select" aria-label="Canvas language"><option value="html">HTML</option><option value="python">Python</option><option value="javascript">JavaScript</option><option value="bash">Bash</option></select>
                         <button id="canvas-run-btn" class="canvas-btn" type="button">Run</button>
                         <button id="canvas-copy-btn" class="canvas-btn" type="button">Copy</button>
                         <button id="canvas-clear-btn" class="canvas-btn" type="button">Clear</button>
-                        <button id="canvas-ai-edit-btn" class="canvas-btn" type="button">AI Edit</button>
+                        <button id="canvas-ai-edit-btn" class="canvas-btn canvas-btn-ai" type="button">AI Edit</button>
                         <button id="canvas-collab-btn" class="canvas-btn" type="button">Collab</button>
                         <button id="canvas-refresh-btn" class="canvas-btn" type="button" title="Refresh preview" aria-label="Refresh preview">Refresh</button>
+                        <span id="canvas-file-title" class="canvas-file-title"></span>
                     </div>
-                    <textarea id="canvas-monaco" aria-label="Code canvas"></textarea>
-                    <iframe id="canvas-preview-frame" title="Canvas preview"></iframe>
-                    <iframe id="canvas-preview" title="Canvas preview legacy" class="sr-only"></iframe>
-                    <button id="canvas-collab-resync-btn" type="button">Force Resync</button>
+                    <div class="canvas-split" id="canvas-split">
+                        <div class="canvas-editor-pane">
+                            <div class="canvas-pane-header">
+                                <span id="canvas-lang-label" class="canvas-lang-label">Editor</span>
+                            </div>
+                            <div id="canvas-monaco" class="canvas-monaco-container" aria-label="Code canvas"></div>
+                        </div>
+                        <div class="canvas-divider" id="canvas-divider" aria-hidden="true"></div>
+                        <div class="canvas-preview-pane">
+                            <div class="canvas-pane-header">
+                                <span>Preview</span>
+                                <button id="canvas-collab-resync-btn" class="canvas-pane-action" type="button">Force Resync</button>
+                            </div>
+                            <iframe id="canvas-preview-frame" class="canvas-preview-frame" title="Canvas preview" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"></iframe>
+                            <iframe id="canvas-preview" title="Canvas preview legacy" class="sr-only" aria-hidden="true"></iframe>
+                            <pre id="canvas-preview-output" class="canvas-preview-output"></pre>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="view-terminal" class="view-content" role="tabpanel" aria-labelledby="nav-tab-terminal" data-testid="view-terminal">
@@ -186,18 +201,33 @@
                 </section>
 
                 <section id="view-ssh" class="view-content" role="tabpanel" aria-labelledby="nav-tab-ssh" data-testid="view-ssh">
-                    <div class="ssh-kicker">Secure Shell</div>
-                    <input id="ssh-host-input" aria-label="SSH host" placeholder="Host" />
-                    <input id="ssh-port-input" aria-label="SSH port" value="22" />
-                    <input id="ssh-user-input" aria-label="SSH user" placeholder="User" />
-                    <select id="ssh-auth-type" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
-                    <div id="ssh-pass-group"><input id="ssh-pass-input" type="password" aria-label="SSH password" /></div>
-                    <div id="ssh-key-path-group"><input id="ssh-key-path-input" aria-label="SSH key path" /></div>
-                    <button id="ssh-connect-btn" type="button">Connect</button>
-                    <button id="ssh-disconnect-btn" type="button">Disconnect</button>
-                    <button id="ssh-save-profile-btn" type="button">Save Profile</button>
-                    <div id="ssh-profiles-list"></div>
-                    <div id="ssh-terminal-container"></div>
+                    <div class="ssh-shell">
+                        <div class="ssh-layout">
+                            <div class="ssh-sidebar">
+                                <div class="ssh-kicker">Secure Shell</div>
+                                <div class="ssh-panel-header">Connection</div>
+                                <div class="ssh-row-fields">
+                                    <input id="ssh-host-input" aria-label="SSH host" placeholder="Host" />
+                                    <input id="ssh-port-input" aria-label="SSH port" value="22" placeholder="Port" />
+                                </div>
+                                <input id="ssh-user-input" aria-label="SSH user" placeholder="User" />
+                                <select id="ssh-auth-type" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
+                                <div id="ssh-pass-group"><input id="ssh-pass-input" type="password" aria-label="SSH password" placeholder="Password" /></div>
+                                <div id="ssh-key-path-group"><input id="ssh-key-path-input" aria-label="SSH key path" placeholder="~/.ssh/id_rsa" /></div>
+                                <button id="ssh-connect-btn" type="button">Connect</button>
+                                <button id="ssh-disconnect-btn" type="button">Disconnect</button>
+                                <button id="ssh-save-profile-btn" type="button">Save Profile</button>
+                                <div id="ssh-profiles-list"></div>
+                            </div>
+                            <div class="ssh-terminal-area">
+                                <div class="ssh-status-bar">
+                                    <span id="ssh-status-dot" class="ssh-status-dot disconnected">●</span>
+                                    <span id="ssh-status-text">Not connected</span>
+                                </div>
+                                <div id="ssh-terminal-container"></div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="view-tunnel" class="view-content" role="tabpanel" aria-labelledby="nav-tab-tunnel" data-testid="view-tunnel">
@@ -271,20 +301,56 @@
 
                 <section id="view-agent" class="view-content" role="tabpanel" aria-labelledby="nav-tab-agent" data-testid="view-agent">
                     <div class="agent-shell">
-                        <div class="agent-kicker">Autonomous Agent</div>
-                        <textarea id="agent-task-input" aria-label="Agent task"></textarea>
-                        <button id="agent-run-btn" type="button">Run</button>
-                        <button id="agent-stop-btn" type="button">Stop</button>
-                        <button id="agent-send-canvas-btn" type="button">Send Canvas</button>
-                        <span id="agent-iter-label"></span>
-                        <div id="agent-log"></div>
-                        <pre id="agent-code-content"></pre>
-                        <div id="agent-output"></div>
-                        <div id="agent-toolbar-task"></div><div id="agent-toolbar-roundtable" class="hidden"></div><div id="agent-toolbar-orchestrate"></div>
-                        <input id="orchestrator-goal-input" aria-label="Orchestrator goal" /><button id="orchestrator-start-btn" type="button">Start</button><button id="orchestrator-status-btn" type="button">Status</button><button id="orchestrator-stop-btn" type="button">Stop</button>
-                        <div id="agent-orchestrator-panel"></div><div id="orchestrator-task-list"></div>
-                        <select id="rt-persona-a" aria-label="Roundtable persona A"></select><select id="rt-persona-b" aria-label="Roundtable persona B"></select><input id="rt-topic-input" aria-label="Roundtable topic" /><input id="rt-rounds" aria-label="Roundtable rounds" value="3" /><button id="rt-start-btn" type="button">Start</button><button id="rt-stop-btn" type="button">Stop</button>
-                        <h2 id="agent-code-pane-title">Code</h2><h2 id="agent-output-title">Output</h2>
+                        <div class="agent-mode-bar" role="tablist" aria-label="Agent mode">
+                            <button class="agent-mode-btn active" type="button" role="tab" aria-selected="true" data-mode="task">Task</button>
+                            <button class="agent-mode-btn" type="button" role="tab" aria-selected="false" data-mode="roundtable">Roundtable</button>
+                            <button class="agent-mode-btn" type="button" role="tab" aria-selected="false" data-mode="orchestrate">Orchestrate</button>
+                        </div>
+
+                        <div id="agent-toolbar-task" class="agent-toolbar">
+                            <textarea id="agent-task-input" class="agent-task-input" aria-label="Agent task" placeholder="Describe the task for the agent…" rows="2"></textarea>
+                            <button id="agent-run-btn" class="agent-btn agent-btn-run" type="button">Run</button>
+                            <button id="agent-stop-btn" class="agent-btn agent-btn-stop" type="button">Stop</button>
+                            <button id="agent-send-canvas-btn" class="agent-btn" type="button">Send Canvas</button>
+                            <span id="agent-iter-label" class="agent-iter-label"></span>
+                        </div>
+
+                        <div id="agent-toolbar-roundtable" class="agent-toolbar hidden">
+                            <select id="rt-persona-a" aria-label="Roundtable persona A"></select>
+                            <select id="rt-persona-b" aria-label="Roundtable persona B"></select>
+                            <input id="rt-topic-input" aria-label="Roundtable topic" placeholder="Topic…" />
+                            <input id="rt-rounds" type="number" aria-label="Roundtable rounds" value="3" min="1" max="20" />
+                            <button id="rt-start-btn" class="agent-btn agent-btn-run" type="button">Start</button>
+                            <button id="rt-stop-btn" class="agent-btn agent-btn-stop" type="button">Stop</button>
+                        </div>
+
+                        <div id="agent-toolbar-orchestrate" class="agent-toolbar hidden">
+                            <input id="orchestrator-goal-input" aria-label="Orchestrator goal" placeholder="Orchestration goal…" />
+                            <button id="orchestrator-start-btn" class="agent-btn agent-btn-run" type="button">Start</button>
+                            <button id="orchestrator-status-btn" class="agent-btn" type="button">Status</button>
+                            <button id="orchestrator-stop-btn" class="agent-btn agent-btn-stop" type="button">Stop</button>
+                            <div id="agent-orchestrator-panel" class="hidden" aria-live="polite"></div>
+                            <div id="orchestrator-task-list" class="hidden"></div>
+                        </div>
+
+                        <div class="agent-body">
+                            <div class="agent-log-pane">
+                                <div class="agent-pane-header">Agent Log</div>
+                                <div id="agent-log" class="agent-log" aria-live="polite" aria-label="Agent log"></div>
+                            </div>
+                            <div class="agent-code-pane">
+                                <div class="agent-pane-header">
+                                    <span id="agent-code-pane-title">Current Code</span>
+                                </div>
+                                <div class="agent-code-display">
+                                    <pre id="agent-code-content" class="agent-code"></pre>
+                                </div>
+                                <div class="agent-pane-header" style="border-top: 1px solid var(--border-color);">
+                                    <span id="agent-output-title">Output</span>
+                                </div>
+                                <div id="agent-output" class="agent-log" style="padding: 8px 12px; font-size: 0.82rem;" aria-live="polite"></div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

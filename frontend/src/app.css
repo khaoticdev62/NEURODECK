@@ -62,6 +62,11 @@
   --shadow-glow-3: 0 0 16px rgba(var(--accent-rgb), 0.35);
 
   --view-shell-max-width: 1480px;
+
+  /* Surface aliases used by IDE/LSP panels */
+  --bg-dark: #040608;
+  --bg-surface: #0c1018;
+  --fg-muted: rgba(255, 255, 255, 0.45);
 }
 
 *,

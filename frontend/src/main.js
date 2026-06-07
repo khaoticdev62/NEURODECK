@@ -4136,7 +4136,7 @@ listen("ollama_pull_progress", (event) => {
       if (inputEl) inputEl.value = "";
       refreshOllamaModels();
     }, 1500);
-  } else if (payload.status.startsWith("Error:")) {
+  } else if (payload.status?.startsWith("Error:")) {
     if (statusEl) statusEl.innerText = payload.status;
     if (pullBtn) pullBtn.disabled = false;
   } else {
