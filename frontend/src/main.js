@@ -2214,6 +2214,15 @@ function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
 }
 
 function _navActivateSideEffects(targetViewName) {
+  if (targetViewName !== "tunnel" && window._tunnelPollId) {
+    clearInterval(window._tunnelPollId);
+    window._tunnelPollId = null;
+  }
+  if (targetViewName === "tunnel") {
+    if (!window._tunnelPollId) {
+      window._tunnelPollId = setInterval(() => checkTunnelServerStatus(true), 5000);
+    }
+  }
   if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
     setTimeout(() => { try { window.ptyTerminalFitAddon.fit(); } catch (e) { console.error("Error fitting terminal:", e); } }, 50);
   }
@@ -3272,7 +3281,9 @@ function initTunnelClient() {
     };
   }
   checkTunnelServerStatus(true);
-  setInterval(() => checkTunnelServerStatus(true), 5000);
+  if (!window._tunnelPollId) {
+    window._tunnelPollId = setInterval(() => checkTunnelServerStatus(true), 5000);
+  }
 }
 
 // --- SHARE INNER TAB SWITCHING ---

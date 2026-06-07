@@ -207,16 +207,16 @@
                                 <div class="ssh-kicker">Secure Shell</div>
                                 <div class="ssh-panel-header">Connection</div>
                                 <div class="ssh-row-fields">
-                                    <input id="ssh-host-input" aria-label="SSH host" placeholder="Host" />
-                                    <input id="ssh-port-input" aria-label="SSH port" value="22" placeholder="Port" />
+                                    <input id="ssh-host-input" class="ssh-input" aria-label="SSH host" placeholder="Host" />
+                                    <input id="ssh-port-input" class="ssh-input" aria-label="SSH port" value="22" placeholder="Port" style="width:64px;flex-shrink:0" />
                                 </div>
-                                <input id="ssh-user-input" aria-label="SSH user" placeholder="User" />
-                                <select id="ssh-auth-type" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
-                                <div id="ssh-pass-group"><input id="ssh-pass-input" type="password" aria-label="SSH password" placeholder="Password" /></div>
-                                <div id="ssh-key-path-group"><input id="ssh-key-path-input" aria-label="SSH key path" placeholder="~/.ssh/id_rsa" /></div>
-                                <button id="ssh-connect-btn" type="button">Connect</button>
-                                <button id="ssh-disconnect-btn" type="button">Disconnect</button>
-                                <button id="ssh-save-profile-btn" type="button">Save Profile</button>
+                                <input id="ssh-user-input" class="ssh-input" aria-label="SSH user" placeholder="User" />
+                                <select id="ssh-auth-type" class="ssh-input" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
+                                <div id="ssh-pass-group"><input id="ssh-pass-input" class="ssh-input" type="password" aria-label="SSH password" placeholder="Password" /></div>
+                                <div id="ssh-key-path-group"><input id="ssh-key-path-input" class="ssh-input" aria-label="SSH key path" placeholder="~/.ssh/id_rsa" /></div>
+                                <button id="ssh-connect-btn" class="ssh-btn ssh-btn-primary" type="button">Connect</button>
+                                <button id="ssh-disconnect-btn" class="ssh-btn ssh-btn-danger" type="button">Disconnect</button>
+                                <button id="ssh-save-profile-btn" class="ssh-btn" type="button">Save Profile</button>
                                 <div id="ssh-profiles-list"></div>
                             </div>
                             <div class="ssh-terminal-area">

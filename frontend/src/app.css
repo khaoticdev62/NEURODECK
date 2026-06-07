@@ -8915,6 +8915,72 @@ body.crt-flicker-disabled .crt-flicker {
   color: rgba(255, 255, 255, 0.65);
 }
 
+.ssh-input {
+  width: 100%;
+  background: rgba(4, 8, 14, 0.65);
+  border: 1px solid rgba(var(--accent-rgb), 0.13);
+  border-radius: 6px;
+  color: var(--fg-color);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s var(--ease-snap);
+}
+
+.ssh-input:focus {
+  border-color: rgba(var(--accent-rgb), 0.45);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.08);
+}
+
+.ssh-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.ssh-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--fg-color);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 7px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.ssh-btn:hover {
+  background: rgba(var(--accent-rgb), 0.07);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  transform: translateY(-1px);
+}
+
+.ssh-btn-primary {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.ssh-btn-primary:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.15);
+}
+
+.ssh-btn-danger {
+  border-color: rgba(255, 60, 90, 0.3);
+  color: #ff6b8a;
+}
+
+.ssh-btn-danger:hover {
+  background: rgba(255, 60, 90, 0.1);
+  border-color: rgba(255, 60, 90, 0.6);
+}
+
 #ssh-terminal-container {
   flex: 1;
   width: 100%;
