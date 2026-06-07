@@ -285,12 +285,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_personas" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let mut persona_names = vec!["Default".to_string(), "Developer".to_string()];
-
+            let mut persona_names: Vec<String> = crate::PERSONAS.iter().map(|p| p.0.clone()).collect();
             for persona in &app_state.custom_personas {
-                persona_names.push(persona.name.clone());
+                if !persona_names.contains(&persona.name) {
+                    persona_names.push(persona.name.clone());
+                }
             }
-
             Ok(serde_json::json!(persona_names))
         }
 
