@@ -241,6 +241,7 @@ dependencies = [
  "sysinfo",
  "tar",
  "tauri",
+ "tauri-build",
  "tokio",
  "tokio-cron-scheduler",
  "tokio-util",
