@@ -423,7 +423,9 @@ app.whenReady().then(async () => {
       const filePath = path.resolve(distDir, pathname.replace(/^\//, ''));
 
       // Ensure the resolved path is strictly inside distDir
-      if (!filePath.startsWith(distDir + path.sep) && filePath !== distDir) {
+      const relative = path.relative(distDir, filePath);
+      const isInside = !relative.startsWith('..') && !path.isAbsolute(relative);
+      if (!isInside) {
         callback({ error: -6 }); // NET::ERR_FILE_NOT_FOUND
         return;
       }
