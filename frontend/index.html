@@ -231,23 +231,49 @@
                 </section>
 
                 <section id="view-tunnel" class="view-content" role="tabpanel" aria-labelledby="nav-tab-tunnel" data-testid="view-tunnel">
-                    <div class="tunnel-kicker">SteamOS Bridge</div>
-                    <div id="tunnel-status-indicator" class="tunnel-status-indicator offline">OFFLINE</div>
-                    <button id="tunnel-check-btn" type="button">Check</button>
-                    <button id="tunnel-toggle-btn" type="button">Toggle</button>
-                    <input id="tunnel-cmd-input" aria-label="Tunnel command" />
-                    <button id="tunnel-cmd-send" type="button">Send</button>
-                    <input id="tunnel-filepath-input" aria-label="Tunnel file path" />
-                    <textarea id="tunnel-filecontent-input" aria-label="Tunnel file content"></textarea>
-                    <button id="tunnel-file-send" type="button">Send File</button>
-                    <input id="tunnel-dirpath-input" aria-label="Tunnel directory path" />
-                    <button id="tunnel-dir-send" type="button">List Directory</button>
-                    <div id="tunnel-log"></div>
+                    <div class="tunnel-shell">
+                        <div class="tunnel-grid">
+                            <div class="tunnel-panel">
+                                <div class="tunnel-kicker">SteamOS Bridge</div>
+                                <h3>Tunnel Control</h3>
+                                <p class="tunnel-desc">Relay commands and files between Game Mode and Desktop Mode.</p>
+                                <div class="tunnel-status-bar">
+                                    <div id="tunnel-status-indicator" class="tunnel-status-indicator offline">OFFLINE</div>
+                                    <button id="tunnel-check-btn" class="ssh-btn" type="button">Check</button>
+                                    <button id="tunnel-toggle-btn" class="ssh-btn ssh-btn-primary" type="button">Toggle</button>
+                                </div>
+                                <div class="tunnel-section">
+                                    <div class="input-row">
+                                        <input id="tunnel-cmd-input" class="tunnel-text-input" aria-label="Tunnel command" placeholder="Shell command…" />
+                                        <button id="tunnel-cmd-send" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Send</button>
+                                    </div>
+                                </div>
+                                <div class="tunnel-section">
+                                    <div class="input-row">
+                                        <input id="tunnel-dirpath-input" class="tunnel-text-input" aria-label="Tunnel directory path" placeholder="Directory path…" />
+                                        <button id="tunnel-dir-send" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">List Dir</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tunnel-panel">
+                                <div class="tunnel-kicker">File Transfer</div>
+                                <h3>Send File</h3>
+                                <input id="tunnel-filepath-input" class="tunnel-text-input" aria-label="Tunnel file path" placeholder="Remote path…" style="margin-bottom:8px" />
+                                <textarea id="tunnel-filecontent-input" class="tunnel-text-area" aria-label="Tunnel file content" placeholder="File content…" rows="5"></textarea>
+                                <button id="tunnel-file-send" class="ssh-btn ssh-btn-primary" type="button" style="margin-top:8px">Send File</button>
+                                <div class="tunnel-section">
+                                    <div id="tunnel-log" class="tunnel-log"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section id="view-share" class="view-content" role="tabpanel" aria-labelledby="nav-tab-share" data-testid="view-share">
-                    <div class="share-view-kicker">Transfer Hub</div>
-                    <h1 class="share-view-title">Share &amp; Transfer</h1>
+                    <div class="share-view-header">
+                        <div class="share-view-kicker">Transfer Hub</div>
+                        <h1 class="share-view-title">Share &amp; Transfer</h1>
+                    </div>
                     <div class="share-inner-tabs" role="tablist" aria-label="Share panels">
                         <button class="share-inner-tab active" type="button" role="tab" aria-selected="true" data-panel="lan">LAN</button>
                         <button class="share-inner-tab" type="button" role="tab" aria-selected="false" data-panel="sftp">SFTP</button>
@@ -255,47 +281,95 @@
                         <button class="share-inner-tab" type="button" role="tab" aria-selected="false" data-panel="torrent">Torrent</button>
                     </div>
                     <div id="share-panel-lan" class="share-panel-section active">
-                        <div id="share-dropzone" tabindex="0">Drop files here</div>
-                        <input id="share-filepath-input" aria-label="File path to share" />
-                        <button id="share-send-btn" type="button">Send File</button>
-                        <input id="share-group-code-input" aria-label="Share group code" />
-                        <button id="share-group-code-save-btn" type="button">Apply</button>
+                        <div id="share-dropzone" class="share-dropzone" tabindex="0" role="button" aria-label="Drop files here or click to browse">Drop files here</div>
+                        <div class="input-row">
+                            <input id="share-filepath-input" class="tunnel-text-input" aria-label="File path to share" placeholder="File path to share…" />
+                            <button id="share-send-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Send</button>
+                        </div>
+                        <div class="input-row">
+                            <input id="share-group-code-input" class="tunnel-text-input" aria-label="Share group code" placeholder="Group code…" />
+                            <button id="share-group-code-save-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Apply</button>
+                        </div>
                         <div id="peer-list"></div>
                     </div>
                     <div id="share-panel-ftp" class="share-panel-section">
-                    <input id="ftp-host-input" aria-label="FTP host" /><input id="ftp-port-input" value="21" aria-label="FTP port" /><input id="ftp-user-input" aria-label="FTP user" /><input id="ftp-pass-input" type="password" aria-label="FTP password" /><input id="ftp-path-input" aria-label="FTP path" />
-                    <button id="ftp-connect-btn" type="button">Connect &amp; List</button><button id="ftp-save-profile-btn" type="button">Save Profile</button>
-                    <div id="ftp-status-text"></div><div id="ftp-cwd-label"></div><div id="ftp-file-list"></div><div id="ftp-profiles-list"></div>
-                    <div id="ftp-dropzone"></div><input id="ftp-local-path-input" aria-label="FTP local path" /><input id="ftp-remote-dest-input" aria-label="FTP remote path" /><button id="ftp-upload-btn" type="button">Upload</button>
-                    <div id="ftp-upload-progress-wrap"><div id="ftp-upload-progress-fill"></div><span id="ftp-upload-progress-label"></span></div>
+                        <div class="input-row">
+                            <input id="ftp-host-input" class="tunnel-text-input" aria-label="FTP host" placeholder="Host" />
+                            <input id="ftp-port-input" class="tunnel-text-input" value="21" aria-label="FTP port" placeholder="Port" style="width:70px;flex-shrink:0" />
+                        </div>
+                        <div class="input-row">
+                            <input id="ftp-user-input" class="tunnel-text-input" aria-label="FTP user" placeholder="User" />
+                            <input id="ftp-pass-input" class="tunnel-text-input" type="password" aria-label="FTP password" placeholder="Password" />
+                        </div>
+                        <input id="ftp-path-input" class="tunnel-text-input" aria-label="FTP path" placeholder="Remote path" />
+                        <div class="input-row">
+                            <button id="ftp-connect-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Connect &amp; List</button>
+                            <button id="ftp-save-profile-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Save Profile</button>
+                        </div>
+                        <div id="ftp-status-text"></div><div id="ftp-cwd-label"></div>
+                        <div id="ftp-file-list"></div><div id="ftp-profiles-list"></div>
+                        <div id="ftp-dropzone" class="share-dropzone" role="button" tabindex="0">Drop file to upload</div>
+                        <div class="input-row">
+                            <input id="ftp-local-path-input" class="tunnel-text-input" aria-label="FTP local path" placeholder="Local path" />
+                            <input id="ftp-remote-dest-input" class="tunnel-text-input" aria-label="FTP remote path" placeholder="Remote dest" />
+                            <button id="ftp-upload-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Upload</button>
+                        </div>
+                        <div id="ftp-upload-progress-wrap"><div id="ftp-upload-progress-fill"></div><span id="ftp-upload-progress-label"></span></div>
                     </div>
                     <div id="share-panel-sftp" class="share-panel-section">
-                    <input id="sftp-host-input" aria-label="SFTP host" /><input id="sftp-port-input" value="22" aria-label="SFTP port" /><input id="sftp-user-input" aria-label="SFTP user" /><select id="sftp-auth-type" aria-label="SFTP auth type"><option value="password">Password</option><option value="key">Key</option></select><input id="sftp-pass-input" type="password" aria-label="SFTP password" /><input id="sftp-key-path-input" aria-label="SFTP key path" /><input id="sftp-path-input" aria-label="SFTP path" />
-                    <button id="sftp-connect-btn" type="button">Connect &amp; List</button><button id="sftp-save-profile-btn" type="button">Save Profile</button>
-                    <div id="sftp-status-text"></div><div id="sftp-cwd-label"></div><div id="sftp-file-list"></div><div id="sftp-profiles-list"></div>
-                    <div id="sftp-dropzone"></div><input id="sftp-local-path-input" aria-label="SFTP local path" /><input id="sftp-remote-dest-input" aria-label="SFTP remote path" /><button id="sftp-upload-btn" type="button">Upload</button>
+                        <div class="input-row">
+                            <input id="sftp-host-input" class="tunnel-text-input" aria-label="SFTP host" placeholder="Host" />
+                            <input id="sftp-port-input" class="tunnel-text-input" value="22" aria-label="SFTP port" placeholder="Port" style="width:70px;flex-shrink:0" />
+                        </div>
+                        <input id="sftp-user-input" class="tunnel-text-input" aria-label="SFTP user" placeholder="User" />
+                        <select id="sftp-auth-type" class="tunnel-text-input" aria-label="SFTP auth type"><option value="password">Password</option><option value="key">Key</option></select>
+                        <input id="sftp-pass-input" class="tunnel-text-input" type="password" aria-label="SFTP password" placeholder="Password" />
+                        <input id="sftp-key-path-input" class="tunnel-text-input" aria-label="SFTP key path" placeholder="Key path" />
+                        <input id="sftp-path-input" class="tunnel-text-input" aria-label="SFTP path" placeholder="Remote path" />
+                        <div class="input-row">
+                            <button id="sftp-connect-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Connect &amp; List</button>
+                            <button id="sftp-save-profile-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Save Profile</button>
+                        </div>
+                        <div id="sftp-status-text"></div><div id="sftp-cwd-label"></div>
+                        <div id="sftp-file-list"></div><div id="sftp-profiles-list"></div>
+                        <div id="sftp-dropzone" class="share-dropzone" role="button" tabindex="0">Drop file to upload</div>
+                        <div class="input-row">
+                            <input id="sftp-local-path-input" class="tunnel-text-input" aria-label="SFTP local path" placeholder="Local path" />
+                            <input id="sftp-remote-dest-input" class="tunnel-text-input" aria-label="SFTP remote path" placeholder="Remote dest" />
+                            <button id="sftp-upload-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Upload</button>
+                        </div>
                     </div>
                     <div id="share-panel-torrent" class="share-panel-section">
                         <div class="torrent-kicker">Torrent Transfer</div>
-                        <input id="torrent-source-input" aria-label="Torrent source" placeholder="Magnet link or torrent file" />
-                        <button id="torrent-add-btn" type="button">Add Torrent</button>
+                        <div class="input-row">
+                            <input id="torrent-source-input" class="tunnel-text-input" aria-label="Torrent source" placeholder="Magnet link or torrent file" />
+                            <button id="torrent-add-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Add Torrent</button>
+                        </div>
                     </div>
                 </section>
 
                 <section id="view-browser" class="view-content" role="tabpanel" aria-labelledby="nav-tab-browser" data-testid="view-browser">
                     <div class="browser-container">
-                    <div class="browser-kicker">Browser</div>
-                    <button id="browser-back-btn" type="button" title="Back" aria-label="Back">Back</button>
-                    <button id="browser-forward-btn" type="button" title="Forward" aria-label="Forward">Forward</button>
-                    <button id="browser-refresh-btn" type="button" title="Refresh" aria-label="Refresh">Refresh</button>
-                    <button id="browser-home-btn" type="button" title="Home" aria-label="Home">Home</button>
-                    <button id="browser-hf-btn" type="button" title="Hugging Face" aria-label="Open Hugging Face">HF</button>
-                    <input id="browser-url-input" aria-label="Browser URL" value="https://example.com" />
-                    <button id="browser-url-clear-btn" type="button" title="Clear URL" aria-label="Clear URL">Clear</button>
-                    <button id="browser-go-btn" type="button">Go</button>
-                    <button id="browser-open-ext-btn" type="button">Open Ext</button>
-                    <div class="browser-home-kicker">Home</div>
-                    <div id="browser-content"></div>
+                        <div class="browser-toolbar">
+                            <div class="browser-toolbar-title">
+                                <div class="browser-kicker">Browser</div>
+                            </div>
+                            <div class="browser-nav-buttons">
+                                <button id="browser-back-btn" class="browser-btn" type="button" title="Back" aria-label="Back">&#9664;</button>
+                                <button id="browser-forward-btn" class="browser-btn" type="button" title="Forward" aria-label="Forward">&#9654;</button>
+                                <button id="browser-refresh-btn" class="browser-btn" type="button" title="Refresh" aria-label="Refresh">&#8635;</button>
+                                <button id="browser-home-btn" class="browser-btn" type="button" title="Home" aria-label="Home">&#8962;</button>
+                                <button id="browser-hf-btn" class="browser-btn" type="button" title="Hugging Face" aria-label="Open Hugging Face">HF</button>
+                            </div>
+                            <div class="browser-address-bar-wrapper">
+                                <input id="browser-url-input" class="browser-url-input" aria-label="Browser URL" value="https://example.com" />
+                                <button id="browser-url-clear-btn" class="browser-url-clear" type="button" title="Clear URL" aria-label="Clear URL">&#x2715;</button>
+                            </div>
+                            <button id="browser-go-btn" class="browser-btn go-btn" type="button">Go</button>
+                            <button id="browser-open-ext-btn" class="browser-btn open-ext-btn" type="button">Open Ext</button>
+                        </div>
+                        <div class="browser-home-kicker">Home</div>
+                        <div id="browser-content"></div>
                     </div>
                 </section>
 
@@ -356,58 +430,224 @@
 
                 <section id="view-memory" class="view-content" role="tabpanel" aria-labelledby="nav-tab-memory" data-testid="view-memory">
                     <div class="memory-shell">
-                        <div class="memory-kicker">Vector Memory</div>
-                        <div class="memory-search-shell"><input id="memory-search-input" class="memory-search-input" aria-label="Search memory" /></div>
-                        <div class="memory-filter-row"><button class="memory-filter-btn active" type="button" data-filter="all">All</button><button class="memory-filter-btn" type="button" data-filter="pinned">Pinned</button><button class="memory-filter-btn" type="button" data-filter="facts">Facts</button></div>
-                        <button id="memory-refresh-btn" class="memory-btn" type="button" aria-label="Refresh memory">Refresh</button>
-                        <textarea id="memory-fact-input" aria-label="Memory fact"></textarea>
-                        <button id="memory-fact-save-btn" class="memory-btn" type="button">Save Fact</button>
-                        <button id="memory-export-btn" class="memory-btn" type="button">Export</button>
-                        <button id="memory-import-btn" class="memory-btn" type="button">Import</button>
-                        <input id="memory-import-file" type="file" class="sr-only" aria-label="Import memory file" />
-                        <button id="memory-backup-btn" class="memory-btn" type="button">Backup</button>
-                        <button id="memory-show-backups-btn" class="memory-btn" type="button" aria-expanded="false">Backups</button>
-                        <div id="memory-backup-panel" class="hidden"><button id="memory-backup-close" type="button">Close</button><div id="memory-backup-list"></div></div>
-                        <div id="memory-empty-state">No memories yet.</div>
-                        <div id="memory-list"></div>
-                        <span id="memory-total-count">0</span><span id="memory-pinned-count">0</span><span id="memory-filtered-count">0</span>
+                        <div class="memory-toolbar">
+                            <div class="memory-toolbar-title">
+                                <div class="memory-kicker">Vector Memory</div>
+                                <div class="memory-title">Memory DB</div>
+                            </div>
+                            <div class="memory-search-shell">
+                                <input id="memory-search-input" class="memory-search-input" aria-label="Search memory" placeholder="Search memories…" />
+                            </div>
+                            <div class="memory-filter-tabs">
+                                <button class="memory-filter-btn active" type="button" data-filter="all">All</button>
+                                <button class="memory-filter-btn" type="button" data-filter="pinned">Pinned</button>
+                                <button class="memory-filter-btn" type="button" data-filter="facts">Facts</button>
+                            </div>
+                            <button id="memory-refresh-btn" class="memory-btn" type="button" aria-label="Refresh memory">Refresh</button>
+                            <div class="memory-action-row">
+                                <button id="memory-export-btn" class="memory-btn memory-btn-export" type="button">Export</button>
+                                <button id="memory-import-btn" class="memory-btn memory-btn-import" type="button">Import</button>
+                                <input id="memory-import-file" type="file" class="sr-only" aria-label="Import memory file" />
+                                <button id="memory-backup-btn" class="memory-btn memory-btn-backup" type="button">Backup</button>
+                                <button id="memory-show-backups-btn" class="memory-btn memory-btn-backups-toggle" type="button" aria-expanded="false">Backups</button>
+                            </div>
+                        </div>
+                        <div class="memory-add-fact-bar">
+                            <textarea id="memory-fact-input" class="memory-fact-input" aria-label="Memory fact" placeholder="Add a fact to memory…" rows="1"></textarea>
+                            <button id="memory-fact-save-btn" class="memory-btn" type="button">Save Fact</button>
+                        </div>
+                        <div id="memory-backup-panel" class="memory-backup-panel hidden">
+                            <div class="memory-backup-header">
+                                <span class="memory-backup-title">Backup History</span>
+                                <button id="memory-backup-close" class="memory-btn" type="button">Close</button>
+                            </div>
+                            <div id="memory-backup-list"></div>
+                        </div>
+                        <div class="memory-body">
+                            <div id="memory-empty-state" class="memory-empty-state">No memories yet.</div>
+                            <div id="memory-list" class="memory-list"></div>
+                        </div>
+                        <div aria-hidden="true" style="display:none">
+                            <span id="memory-total-count">0</span>
+                            <span id="memory-pinned-count">0</span>
+                            <span id="memory-filtered-count">0</span>
+                        </div>
                     </div>
                 </section>
 
                 <section id="view-prompt-lab" class="view-content" role="tabpanel" aria-labelledby="nav-tab-prompt-lab" data-testid="view-prompt-lab">
                     <div class="prompt-lab-container">
-                        <div class="pl-header-kicker">Prompt Lab</div>
-                        <textarea id="pl-task-input" aria-label="Prompt Lab task"></textarea>
-                        <button id="pl-open-gallery-btn" type="button">Templates</button><button id="pl-save-preset-btn" type="button">Save</button><button id="pl-toggle-preset-input-btn" type="button" title="Toggle preset import" aria-label="Toggle preset import">Import</button>
-                        <button id="pl-optimize-ai-btn" type="button">AI Optimize</button><button id="pl-generate-btn" type="button">Generate Prompt</button><button id="pl-history-btn" type="button" title="History" aria-label="Prompt history">History</button>
-                        <button id="pl-copy-prompt-btn" type="button">Copy</button><button id="pl-send-chat-btn" type="button">Chat</button><button id="pl-export-json-btn" type="button">JSON</button><button id="pl-export-lua-btn" type="button">Lua</button>
-                        <button id="pl-explain-jpe-btn" type="button">Explain</button><button id="pl-copy-jpe-btn" type="button">Copy</button><button id="pl-advanced-toggle" type="button">Few-Shot Examples</button>
-                        <div id="pl-formula-grid"></div><div id="pl-history-list"></div><div id="pl-result-prompt"></div><div id="pl-result-jpe"></div>
-                        <div id="pl-gallery-modal" class="hidden"><button id="pl-gallery-close" type="button" title="Close gallery" aria-label="Close gallery">Close</button><div id="pl-gallery-body"></div></div>
+                        <div class="prompt-lab-form">
+                            <div class="prompt-lab-header">
+                                <div class="pl-header-kicker">Prompt Lab</div>
+                                <h3>Prompt Engineering</h3>
+                                <div class="pl-actions">
+                                    <button id="pl-history-btn" type="button" aria-label="Prompt history" title="History">History</button>
+                                </div>
+                            </div>
+                            <div class="pl-formula-section">
+                                <div class="pl-formula-section-header">
+                                    <label>Formula</label>
+                                    <span id="pl-formula-badge" class="pl-formula-active-badge">Default</span>
+                                </div>
+                                <div id="pl-formula-grid" class="pl-formula-grid"></div>
+                                <div id="pl-formula-info" class="pl-formula-info"></div>
+                            </div>
+                            <input id="pl-formula" type="hidden" value="default" />
+                            <div class="pl-field">
+                                <label for="pl-task">Task / Objective</label>
+                                <textarea id="pl-task" rows="3" placeholder="What do you want to accomplish?"></textarea>
+                            </div>
+                            <div class="pl-field">
+                                <label for="pl-persona">Persona / Role</label>
+                                <input id="pl-persona" type="text" placeholder="Expert in…" />
+                            </div>
+                            <div class="pl-field">
+                                <label for="pl-context">Context / Background</label>
+                                <textarea id="pl-context" rows="2" placeholder="Relevant context…"></textarea>
+                            </div>
+                            <div class="pl-field">
+                                <label for="pl-tone">Tone / Style</label>
+                                <input id="pl-tone" type="text" placeholder="Professional, concise…" />
+                            </div>
+                            <button id="pl-advanced-toggle" class="pl-advanced-toggle" type="button">Few-Shot Examples</button>
+                            <div id="pl-advanced-fields" class="pl-advanced-fields hidden">
+                                <div class="pl-field">
+                                    <label for="pl-constraints">Constraints</label>
+                                    <textarea id="pl-constraints" rows="2" placeholder="Constraints and guardrails…"></textarea>
+                                </div>
+                                <div class="pl-field">
+                                    <label for="pl-format">Output Format</label>
+                                    <input id="pl-format" type="text" placeholder="JSON, markdown, bullet points…" />
+                                </div>
+                                <div class="pl-field">
+                                    <label for="pl-examples">Examples</label>
+                                    <textarea id="pl-examples" rows="2" placeholder="Few-shot examples…"></textarea>
+                                </div>
+                            </div>
+                            <div class="pl-actions">
+                                <button id="pl-generate-btn" class="pl-btn-primary" type="button">Generate Prompt</button>
+                                <button id="pl-optimize-ai-btn" type="button">AI Optimize</button>
+                                <button id="pl-open-gallery-btn" type="button">Templates</button>
+                                <button id="pl-toggle-preset-input-btn" type="button" title="Toggle preset import" aria-label="Toggle preset import">Import</button>
+                            </div>
+                            <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+                                <input id="pl-preset-name" type="text" style="display:none;flex:1" class="tunnel-text-input" placeholder="Preset name…" aria-label="Preset name" />
+                                <button id="pl-save-preset-btn" type="button" style="display:none">Save Preset</button>
+                            </div>
+                            <div class="pl-strength-container">
+                                <div class="pl-strength-bar-bg"><div id="pl-strength-bar-fill"></div></div>
+                                <span id="pl-strength-label">Weak (0/5)</span>
+                            </div>
+                            <span id="pl-token-counter" class="pl-token-counter">0 tokens</span>
+                            <div id="pl-history-drawer" class="pl-history-drawer hidden">
+                                <div class="pl-history-header">
+                                    <span class="pl-history-title">Prompt History</span>
+                                    <button id="pl-history-clear" class="pl-history-clear" type="button">Clear</button>
+                                </div>
+                                <div id="pl-history-list" class="pl-history-list"></div>
+                            </div>
+                        </div>
+                        <div class="prompt-lab-output">
+                            <div class="pl-output-section">
+                                <div class="pl-output-header">
+                                    <span>Generated Prompt</span>
+                                    <div class="pl-actions">
+                                        <button id="pl-copy-prompt-btn" type="button">Copy</button>
+                                        <button id="pl-send-chat-btn" type="button">Chat</button>
+                                        <button id="pl-export-json-btn" type="button">JSON</button>
+                                        <button id="pl-export-lua-btn" type="button">Lua</button>
+                                    </div>
+                                </div>
+                                <textarea id="pl-result-prompt" class="pl-result-textarea" placeholder="Generated prompt will appear here…" readonly></textarea>
+                            </div>
+                            <div class="pl-output-section jpe-section">
+                                <div class="pl-output-header">
+                                    <span>JPE Explanation</span>
+                                    <div class="pl-actions">
+                                        <select id="pl-jpe-level-select" class="pl-dropdown" aria-label="JPE reading level">
+                                            <option value="grade8">Grade 8</option>
+                                            <option value="college">College</option>
+                                            <option value="expert">Expert</option>
+                                        </select>
+                                        <button id="pl-explain-jpe-btn" type="button">Explain</button>
+                                        <button id="pl-copy-jpe-btn" type="button">Copy</button>
+                                    </div>
+                                </div>
+                                <div id="pl-result-jpe" class="pl-result-jpe"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="pl-template-gallery" class="hidden">
+                        <div id="pl-gallery-overlay" class="pl-gallery-overlay"></div>
+                        <div class="pl-gallery-panel">
+                            <div class="pl-gallery-header">
+                                <span>Template Gallery</span>
+                                <input id="pl-gallery-search" class="pl-gallery-search" type="text" placeholder="Search…" aria-label="Gallery search" />
+                                <button id="pl-gallery-close" class="pl-gallery-close" type="button" title="Close gallery" aria-label="Close gallery">&#x2715;</button>
+                            </div>
+                            <div id="pl-gallery-body" class="pl-gallery-body"></div>
+                        </div>
                     </div>
                 </section>
 
                 <section id="view-remote" class="view-content" role="tabpanel" aria-labelledby="nav-tab-remote" data-testid="view-remote">
                     <div class="remote-container">
-                    <div class="remote-kicker">Remote Control</div>
-                    <h1 class="remote-title">Remote Control</h1>
-                    <div id="remote-status-badge" class="remote-status-badge">Offline</div>
-                    <button id="remote-start-btn" type="button">Start Server</button>
-                    <button id="remote-stop-btn" type="button">Stop Server</button>
-                    <button id="remote-copy-url-btn" type="button" title="Copy remote URL" aria-label="Copy remote URL">Copy</button>
-                    <div id="remote-qr"></div>
+                        <div class="remote-header">
+                            <div class="remote-header-left">
+                                <div class="remote-kicker">Remote Control</div>
+                                <div class="remote-title">Remote Control</div>
+                                <div class="remote-subtitle">Mobile-friendly web interface for NEURODECK</div>
+                            </div>
+                            <div class="remote-header-right">
+                                <div id="remote-status-badge" class="remote-status-badge">
+                                    <span class="remote-status-dot"></span>
+                                    Offline
+                                </div>
+                            </div>
+                        </div>
+                        <div class="remote-grid">
+                            <div class="remote-panel">
+                                <div class="remote-section">
+                                    <div class="remote-section-label">Server Controls</div>
+                                    <div class="remote-server-controls">
+                                        <button id="remote-start-btn" class="remote-start-btn" type="button">Start Server</button>
+                                        <button id="remote-stop-btn" class="remote-stop-btn" type="button">Stop Server</button>
+                                        <button id="remote-copy-url-btn" class="remote-start-btn" type="button" title="Copy remote URL" aria-label="Copy remote URL">Copy URL</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="remote-panel">
+                                <div class="remote-section">
+                                    <div class="remote-section-label">QR Code</div>
+                                    <div id="remote-qr"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 <section id="view-docs" class="view-content" role="tabpanel" aria-labelledby="nav-tab-docs" data-testid="view-docs">
                     <div class="docs-container">
-                        <div class="docs-kicker">Knowledge Base</div>
-                        <h1 class="docs-title">Knowledge Base</h1>
-                        <span id="docs-count-badge">0 chunks indexed</span>
-                        <div class="docs-search-shell"><input id="docs-search-input" class="docs-search-input" aria-label="Search docs" /></div>
-                        <button id="docs-search-btn" type="button">Search</button>
-                        <button id="docs-index-btn" type="button">Index Folder</button>
-                        <button id="docs-clear-btn" type="button">Clear</button>
+                        <div class="docs-header">
+                            <div class="docs-header-left">
+                                <div class="docs-kicker">Knowledge Base</div>
+                                <div class="docs-title">Knowledge Base</div>
+                                <div class="docs-subtitle"><span id="docs-count-badge">0 chunks indexed</span></div>
+                            </div>
+                            <div class="docs-header-right">
+                                <div class="docs-toolbar-actions">
+                                    <button id="docs-index-btn" class="docs-index-btn" type="button">Index Folder</button>
+                                    <button id="docs-clear-btn" class="docs-clear-btn" type="button">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="docs-search-bar">
+                            <div class="docs-search-shell">
+                                <input id="docs-search-input" class="docs-search-input" aria-label="Search docs" placeholder="Search documentation…" />
+                            </div>
+                            <button id="docs-search-btn" class="docs-search-btn" type="button">Search</button>
+                        </div>
                         <div id="docs-file-list"><div class="docs-empty-msg">No documents indexed yet.</div></div>
                         <h2 id="docs-results-label">Results</h2>
                         <div id="docs-results-list"><div class="docs-empty-msg">Search to find relevant passages.</div></div>

@@ -8456,11 +8456,13 @@ body.crt-flicker-disabled .crt-flicker {
 }
 
 /* ── Memory IO Bar (Export / Import / Backup) ──────────────────────────── */
-.memory-io-bar {
+.memory-io-bar,
+.memory-action-row {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .memory-btn-export,

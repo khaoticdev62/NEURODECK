@@ -3560,7 +3560,10 @@ function updateSendButtonState() {
 
 function _fsWireGroupCode(groupCodeInput, saveGroupCodeBtn) {
   invoke("get_group_code")
-    .then((code) => { groupCodeInput.value = code || "DEFAULT"; })
+    .then((code) => {
+        const resolved = typeof code === 'string' ? code : (code?.code ?? code?.data ?? null);
+        groupCodeInput.value = resolved || "DEFAULT";
+      })
     .catch((err) => console.error("Error fetching group code:", err));
   saveGroupCodeBtn.onclick = function () {
     const code = groupCodeInput.value.trim();

@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-07T05:15:24Z",
+    "stamped_at_utc":  "2026-06-07T05:47:07Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -17,7 +17,7 @@
                },
     "release_plan":  {
                          "release_decision":  "NO-GO",
-                         "readiness_score":  45,
+                         "readiness_score":  20,
                          "policy":  {
                                         "go_threshold":  85,
                                         "hold_threshold":  60,
@@ -32,13 +32,13 @@
                                                           "frontend_build":  20
                                                       }
                                     },
-                         "gate_summary":  "hardening_check=pass,cargo_check=pass,cargo_test=fail,frontend_build=pass",
+                         "gate_summary":  "hardening_check=pass,cargo_check=fail,cargo_test=fail,frontend_build=pass",
                          "metadata":  "aligned",
                          "diff_hygiene":  "pass",
                          "workspace_state":  "manual-uncommitted",
-                         "loose_root_files":  18,
+                         "loose_root_files":  33,
                          "hardening_check":  "pass",
-                         "cargo_check":  "pass",
+                         "cargo_check":  "fail",
                          "cargo_test":  "fail",
                          "frontend_build":  "pass",
                          "gates":  [
@@ -47,44 +47,45 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  790,
-                                           "started_at_utc":  "2026-06-07T05:15:27Z",
-                                           "finished_at_utc":  "2026-06-07T05:15:27Z"
+                                           "duration_ms":  737,
+                                           "started_at_utc":  "2026-06-07T05:47:09Z",
+                                           "finished_at_utc":  "2026-06-07T05:47:10Z"
                                        },
                                        {
                                            "name":  "cargo check",
-                                           "status":  "pass",
+                                           "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
-                                           "message":  "",
-                                           "duration_ms":  14640,
-                                           "started_at_utc":  "2026-06-07T05:15:27Z",
-                                           "finished_at_utc":  "2026-06-07T05:15:42Z"
+                                           "message":  "cargo check failed. See .loose/inbox/kfms-release-logs/cargo-check.log",
+                                           "duration_ms":  6437,
+                                           "started_at_utc":  "2026-06-07T05:47:10Z",
+                                           "finished_at_utc":  "2026-06-07T05:47:16Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log",
-                                           "duration_ms":  75010,
-                                           "started_at_utc":  "2026-06-07T05:15:42Z",
-                                           "finished_at_utc":  "2026-06-07T05:16:57Z"
+                                           "duration_ms":  58729,
+                                           "started_at_utc":  "2026-06-07T05:47:16Z",
+                                           "finished_at_utc":  "2026-06-07T05:48:15Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  3332,
-                                           "started_at_utc":  "2026-06-07T05:16:57Z",
-                                           "finished_at_utc":  "2026-06-07T05:17:00Z"
+                                           "duration_ms":  1767,
+                                           "started_at_utc":  "2026-06-07T05:48:15Z",
+                                           "finished_at_utc":  "2026-06-07T05:48:17Z"
                                        }
                                    ],
                          "blockers":  [
                                           "Workspace has uncommitted manual changes.",
                                           "Loose root files are present outside the preserved set.",
+                                          "cargo check failed. See .loose/inbox/kfms-release-logs/cargo-check.log",
                                           "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log"
                                       ],
-                         "duration_ms":  93797,
-                         "checked_at_utc":  "2026-06-07T05:17:00Z"
+                         "duration_ms":  67701,
+                         "checked_at_utc":  "2026-06-07T05:48:17Z"
                      }
 }
