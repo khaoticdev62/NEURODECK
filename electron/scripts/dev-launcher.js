@@ -10,7 +10,7 @@ const env = { ...process.env, ELECTRON_DEV: '1' };
 delete env.ELECTRON_RUN_AS_NODE;
 
 const electronPath = require('electron');
-const child = spawn(electronPath, ['.'], {
+const child = spawn(electronPath, ['.', '--remote-debugging-port=9222'], {
   cwd: path.dirname(__dirname),
   env,
   stdio: 'inherit',

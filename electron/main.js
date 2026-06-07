@@ -358,6 +358,18 @@ function createMainWindow() {
     mainWindow.loadURL('neurodeck://app/index.html');
   }
 
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[webContents] did-fail-load: ${errorCode} - ${errorDescription} (URL: ${validatedURL})`);
+  });
+
+  mainWindow.webContents.on('crashed', (event, killed) => {
+    console.error(`[webContents] crashed (killed: ${killed})`);
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[renderer console] [Level ${level}] ${message} (Source: ${sourceId}:${line})`);
+  });
+
   mainWindow.once('ready-to-show', () => {
     if (splashWindow) {
       splashWindow.close();

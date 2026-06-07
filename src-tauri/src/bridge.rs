@@ -254,6 +254,37 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<WsEven
     }
 }
 
+async fn cors_middleware(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    let method = req.method().clone();
+    let origin = req.headers().get("origin").cloned();
+
+    if method == axum::http::Method::OPTIONS {
+        let mut response = Response::new(axum::body::Body::empty());
+        let headers = response.headers_mut();
+        if let Some(origin_val) = origin {
+            headers.insert("access-control-allow-origin", origin_val);
+        } else {
+            headers.insert("access-control-allow-origin", axum::http::HeaderValue::from_static("*"));
+        }
+        headers.insert("access-control-allow-methods", axum::http::HeaderValue::from_static("POST, GET, OPTIONS"));
+        headers.insert("access-control-allow-headers", axum::http::HeaderValue::from_static("Content-Type"));
+        headers.insert("access-control-max-age", axum::http::HeaderValue::from_static("86400"));
+        return response;
+    }
+
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    if let Some(origin_val) = origin {
+        headers.insert("access-control-allow-origin", origin_val);
+    } else {
+        headers.insert("access-control-allow-origin", axum::http::HeaderValue::from_static("*"));
+    }
+    response
+}
+
 // ─────────────────────────────────────────────────────────
 // Server bootstrap
 // ─────────────────────────────────────────────────────────
@@ -272,13 +303,14 @@ pub async fn start_server(state: ServerState) -> anyhow::Result<()> {
         .route("/health", get(health))
         .route("/ws", get(ws_handler))
         .route("/api/{command}", post(api_command))
+        .layer(axum::middleware::from_fn(cors_middleware))
         .with_state(state);
 
     tracing::info!("NEURODECK bridge server listening on {}", addr);
     println!("NEURODECK_READY:{}", port);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
     Ok(())
 }
 

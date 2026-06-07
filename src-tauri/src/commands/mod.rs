@@ -72,51 +72,153 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Chat & Session Management
         // ────────────────────────────────────────────────────────────────────
         "get_initial_state" => {
-            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let memory_count = app_state.mem_db.as_ref()
-                .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
-                .unwrap_or(0);
+            let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let model_name = match app.config.llm.default_provider.as_str() {
+                "gemini" => app.config.llm.gemini_model.clone(),
+                "kimi" => app.config.llm.kimi_model.clone(),
+                "huggingface" => app.config.llm.hf_model.clone(),
+                _ => app.config.llm.ollama_model.clone(),
+            };
+
+            let (game_name, game_id, game_running) = crate::detect_game();
 
             Ok(serde_json::json!({
-                "session_id": app_state.session_id,
-                "persona": app_state.active_persona,
-                "messages": app_state.messages,
-                "memory_count": memory_count,
-                "provider": app_state.config.llm.default_provider,
-                "model": if app_state.config.llm.default_provider == "gemini" {
-                    app_state.config.llm.gemini_model.clone()
-                } else {
-                    app_state.config.llm.ollama_model.clone()
-                },
+                "model": model_name,
+                "provider": app.config.llm.default_provider,
+                "active_agent_id": app.config.llm.active_agent_id,
+                "session_id": app.session_id,
+                "active_persona": app.active_persona,
+                "memory_status": if app.mem_db.is_some() { "Stable" } else { "Offline" },
+                "tool_status": "Idle",
+                "boot_health_status": app.boot_self_heal.status,
+                "boot_health_summary": app.boot_self_heal.summary(),
+                "boot_health_recovered_count": app.boot_self_heal.recovered_count.to_string(),
+                "boot_health_warning_count": app.boot_self_heal.warning_count.to_string(),
+                "game_name": game_name,
+                "game_app_id": game_id,
+                "game_running": game_running.to_string(),
             }))
         }
 
         "list_sessions" => {
-            let sessions_dir = crate::user_config_dir().join("sessions");
-            let mut session_list = Vec::new();
+            let sessions = crate::commands::session::list_sessions()
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!(sessions))
+        }
 
-            if let Ok(entries) = std::fs::read_dir(&sessions_dir) {
-                for entry in entries.flatten() {
-                    if let Ok(metadata) = entry.metadata() {
-                        if metadata.is_file() {
-                            if let Some(name) = entry.file_name().to_str() {
-                                if name.ends_with(".json") {
-                                    let id = name.trim_end_matches(".json").to_string();
-                                    session_list.push(serde_json::json!({
-                                        "id": id,
-                                        "size": metadata.len(),
-                                    }));
-                                }
-                            }
-                        }
+        "list_sessions_meta" => {
+            let meta = crate::commands::session::list_sessions_meta()
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::to_value(meta).map_err(|e| e.to_string())?)
+        }
+
+        "load_latest_session" => {
+            let read_dir = std::fs::read_dir(crate::user_config_dir().join("sessions"))
+                .map_err(|e| format!("Error reading sessions dir: {}", e))?;
+
+            let mut latest_file = std::path::PathBuf::new();
+            let mut latest_name = String::new();
+
+            for entry in read_dir.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
+                    let name = path
+                        .file_name()
+                        .map(|f| f.to_string_lossy().into_owned())
+                        .unwrap_or_default();
+                    if latest_name.is_empty() || name > latest_name {
+                        latest_name = name;
+                        latest_file = path;
                     }
                 }
             }
 
+            if latest_name.is_empty() {
+                return Err("No saved sessions found".to_string());
+            }
+
+            let session = crate::storage::load_session(&latest_file)
+                .map_err(|e| format!("Failed to load session: {}", e))?;
+
+            let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            app.messages = session.messages.clone();
+            app.session_id = session.id.clone();
+
             Ok(serde_json::json!({
-                "sessions": session_list,
-                "count": session_list.len(),
+                "session_id": session.id,
+                "messages": session.messages,
             }))
+        }
+
+        "load_session_by_id" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
+                return Err(format!("Invalid session ID: {}", id));
+            }
+
+            let file_path = crate::user_config_dir()
+                .join("sessions")
+                .join(format!("{}.json", id));
+            if !file_path.exists() {
+                return Err(format!("Session {} does not exist", id));
+            }
+
+            let session = crate::storage::load_session(&file_path)
+                .map_err(|e| format!("Failed to load session: {}", e))?;
+
+            let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            app.messages = session.messages.clone();
+            app.session_id = session.id.clone();
+
+            Ok(serde_json::json!({
+                "session_id": session.id,
+                "messages": session.messages,
+            }))
+        }
+
+        "delete_session" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            crate::commands::session::delete_session(id.to_string())?;
+            Ok(serde_json::json!({ "status": "deleted", "id": id }))
+        }
+
+        "fork_session" => {
+            let base_messages = args.get("base_messages")
+                .and_then(|v| v.as_array())
+                .ok_or("Missing 'base_messages'")?
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect::<Vec<_>>();
+
+            let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let new_id = chrono::Utc::now().format("%Y%m%d-%H%M%S").to_string();
+            app.session_id = new_id.clone();
+            app.messages = base_messages;
+
+            Ok(serde_json::json!(new_id))
+        }
+
+        "rename_session" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            
+            crate::commands::session::rename_session(id.to_string(), name.to_string())?;
+            Ok(serde_json::Value::Null)
+        }
+
+        "export_session_content" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let format_val = args.get("format").and_then(|v| v.as_str()).ok_or("Missing 'format'")?;
+
+            let content = crate::commands::session::export_session_content(id.to_string(), format_val.to_string())?;
+            Ok(serde_json::json!(content))
+        }
+
+        "export_session_markdown" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+
+            let path = crate::commands::session::export_session_markdown(id.to_string())?;
+            Ok(serde_json::json!(path))
         }
 
         "save_session" => {
@@ -189,10 +291,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 persona_names.push(persona.name.clone());
             }
 
-            Ok(serde_json::json!({
-                "personas": persona_names,
-                "count": persona_names.len(),
-            }))
+            Ok(serde_json::json!(persona_names))
         }
 
         "set_persona" => {
@@ -510,14 +609,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let session_id = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
             app_state.session_id = session_id.clone();
             app_state.messages.clear();
-            app_state.active_persona = "Default".to_string();
 
-            Ok(serde_json::json!({
-                "status": "created",
-                "session_id": session_id,
-                "messages": 0,
-                "persona": "Default"
-            }))
+            Ok(serde_json::json!(session_id))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -1827,76 +1920,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // Session Extended
-        // ────────────────────────────────────────────────────────────────────
-        "delete_session" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
-            if path.exists() {
-                std::fs::remove_file(&path).map_err(|e| format!("Failed to delete: {}", e))?;
-                Ok(serde_json::json!({ "status": "deleted", "id": id }))
-            } else {
-                Err(format!("Session '{}' not found", id))
-            }
-        }
-
-        "rename_session" => {
-            let id   = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
-            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
-            let raw = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-            let mut val: serde_json::Value = serde_json::from_str(&raw).map_err(|e| e.to_string())?;
-            val["name"] = serde_json::json!(name);
-            std::fs::write(&path, serde_json::to_string_pretty(&val).unwrap_or_default())
-                .map_err(|e| format!("Failed to save: {}", e))?;
-            Ok(serde_json::json!({ "status": "renamed", "id": id, "name": name }))
-        }
-
-        "export_session_content" => {
-            let id     = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let format = args.get("format").and_then(|v| v.as_str()).unwrap_or("text");
-            let path   = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
-            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
-            let session: crate::storage::Session =
-                serde_json::from_str(&std::fs::read_to_string(&path).map_err(|e| e.to_string())?)
-                    .map_err(|e| e.to_string())?;
-            let content = match format {
-                "markdown" => session.messages.iter().map(|m| {
-                    if      m.starts_with("User: ") { format!("**User:** {}", &m[6..]) }
-                    else if m.starts_with("AI: ")   { format!("**AI:** {}",   &m[4..]) }
-                    else                             { m.clone() }
-                }).collect::<Vec<_>>().join("\n\n"),
-                _ => session.messages.join("\n"),
-            };
-            Ok(serde_json::json!({
-                "id": id, "format": format,
-                "content": content, "messages": session.messages.len()
-            }))
-        }
-
-        "list_sessions_meta" => {
-            let dir = crate::user_config_dir().join("sessions");
-            let mut sessions = Vec::new();
-            if let Ok(entries) = std::fs::read_dir(&dir) {
-                for entry in entries.flatten() {
-                    if let (Ok(meta), Some(fname)) = (entry.metadata(), entry.file_name().to_str().map(|s| s.to_string())) {
-                        if meta.is_file() && fname.ends_with(".json") {
-                            let id  = fname.trim_end_matches(".json").to_string();
-                            let mod_secs = meta.modified().ok()
-                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                                .map(|d| d.as_secs()).unwrap_or(0);
-                            sessions.push(serde_json::json!({
-                                "id": id, "size_bytes": meta.len(), "modified_at": mod_secs
-                            }));
-                        }
-                    }
-                }
-            }
-            sessions.sort_by(|a, b| b["modified_at"].as_u64().cmp(&a["modified_at"].as_u64()));
-            Ok(serde_json::json!({ "sessions": sessions, "count": sessions.len() }))
-        }
+        // Session Extended handlers moved to primary session section
 
         // ────────────────────────────────────────────────────────────────────
         // Memory Extended
@@ -2701,18 +2725,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Themes
         // ────────────────────────────────────────────────────────────────────
         "get_themes" => {
-            let names: Vec<_> = crate::THEMES.iter().map(|t| serde_json::json!({
-                "name": t.name, "color": t.color, "background": t.background
-            })).collect();
-            Ok(serde_json::json!({ "themes": names, "count": names.len() }))
+            let names: Vec<String> = crate::THEMES.iter().map(|t| t.name.clone()).collect();
+            Ok(serde_json::json!(names))
         }
 
         "set_theme" => {
             let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
             if let Some(t) = crate::THEMES.iter().find(|t| t.name == name) {
                 Ok(serde_json::json!({
-                    "status": "set", "name": t.name, "color": t.color,
-                    "background": t.background, "foreground": t.foreground, "accent": t.accent
+                    "Name": t.name,
+                    "Color": t.color,
+                    "Pulse": serde_json::to_string(&t.pulse).unwrap_or_default(),
+                    "Background": t.background,
+                    "Foreground": t.foreground,
+                    "Accent": t.accent,
+                    "Response": t.response,
+                    "Warning": t.warning,
+                    "Error": t.error,
+                    // also add lowercase for compatibility
+                    "name": t.name,
+                    "color": t.color,
+                    "background": t.background,
+                    "foreground": t.foreground,
+                    "accent": t.accent,
+                    "response": t.response,
+                    "warning": t.warning,
+                    "error": t.error,
                 }))
             } else {
                 Err(format!("Theme '{}' not found", name))
@@ -2742,7 +2780,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let personas: Vec<_> = app_state.custom_personas.iter().map(|p| serde_json::json!({
                 "name": p.name, "prompt": p.prompt
             })).collect();
-            Ok(serde_json::json!({ "personas": personas, "count": personas.len() }))
+            Ok(serde_json::json!(personas))
         }
 
         "add_custom_persona" => {
@@ -2802,21 +2840,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_mcp_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut result = std::collections::HashMap::new();
             if app_state.mcp_abort.is_some() {
-                Ok(serde_json::json!({
-                    "running": true,
-                    "port":    app_state.mcp_port,
-                    "url":     format!("http://127.0.0.1:{}", app_state.mcp_port),
-                    "discovery": format!("http://127.0.0.1:{}/.well-known/mcp", app_state.mcp_port)
-                }))
+                result.insert("running".to_string(), "true".to_string());
+                result.insert("port".to_string(), app_state.mcp_port.to_string());
+                result.insert("url".to_string(), format!("http://127.0.0.1:{}", app_state.mcp_port));
+                result.insert("discovery".to_string(), format!("http://127.0.0.1:{}/.well-known/mcp", app_state.mcp_port));
+                if let Some(tok) = &app_state.mcp_token {
+                    result.insert("token".to_string(), tok.clone());
+                }
             } else {
-                Ok(serde_json::json!({ "running": false, "port": app_state.mcp_port }))
+                result.insert("running".to_string(), "false".to_string());
+                result.insert("port".to_string(), app_state.mcp_port.to_string());
             }
+            Ok(serde_json::json!(result))
         }
 
         "get_mcp_tool_whitelist" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            Ok(serde_json::json!({ "whitelist": app_state.mcp_tool_whitelist }))
+            Ok(serde_json::json!(app_state.mcp_tool_whitelist))
         }
 
         "set_mcp_tool_whitelist" => {
@@ -3356,23 +3398,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "saved", "app_id": app_id }))
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // Misc Session & Model Utilities
-        // ────────────────────────────────────────────────────────────────────
-        "fork_session" => {
-            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let forked_id = chrono::Local::now().format("fork-%Y%m%d-%H%M%S").to_string();
-            let session = crate::storage::Session {
-                id: forked_id.clone(),
-                created_at: chrono::Utc::now(),
-                messages: app_state.messages.clone(),
-                name: Some(format!("Fork of {}", app_state.session_id)),
-            };
-            crate::storage::save_session(crate::user_config_dir().join("sessions"), &session)
-                .map_err(|e| format!("Fork failed: {}", e))?;
-            app_state.session_id = forked_id.clone();
-            Ok(serde_json::json!({ "status": "forked", "new_session_id": forked_id, "messages": session.messages.len() }))
-        }
+        // fork_session moved to primary session section
 
         // compare_models is implemented further below with real parallel LLM calls
 
@@ -3549,72 +3575,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "sent", "response": result }))
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // Session Extended
-        // ────────────────────────────────────────────────────────────────────
-        "export_session_markdown" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            if id.contains("..") || id.contains('/') || id.contains('\\') {
-                return Err("Invalid session ID".to_string());
-            }
-            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
-            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
-            let session = crate::storage::load_session(&path).map_err(|e| e.to_string())?;
-            let export_dir = crate::user_config_dir().join("exports");
-            std::fs::create_dir_all(&export_dir).ok();
-            let file_path = export_dir.join(format!("{}.md", id));
-            crate::storage::export_to_markdown(&file_path, &session).map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "exported", "path": file_path.display().to_string() }))
-        }
-
-        "load_latest_session" => {
-            let sessions_dir = crate::user_config_dir().join("sessions");
-            let mut latest: Option<(std::time::SystemTime, std::path::PathBuf)> = None;
-            if let Ok(entries) = std::fs::read_dir(&sessions_dir) {
-                for entry in entries.flatten() {
-                    if let Ok(meta) = entry.metadata() {
-                        if meta.is_file() && entry.path().extension().map(|e| e == "json").unwrap_or(false) {
-                            if let Ok(mod_time) = meta.modified() {
-                                if latest.as_ref().map(|(t, _)| mod_time > *t).unwrap_or(true) {
-                                    latest = Some((mod_time, entry.path()));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if let Some((_, path)) = latest {
-                let session = crate::storage::load_session(&path).map_err(|e| e.to_string())?;
-                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                app_state.messages    = session.messages.clone();
-                app_state.session_id  = session.id.clone();
-                Ok(serde_json::json!({
-                    "session_id": session.id,
-                    "messages":   session.messages.len(),
-                    "name":       session.name
-                }))
-            } else {
-                Err("No saved sessions found".to_string())
-            }
-        }
-
-        "load_session_by_id" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
-                return Err(format!("Invalid session ID: {}", id));
-            }
-            let path = crate::user_config_dir().join("sessions").join(format!("{}.json", id));
-            if !path.exists() { return Err(format!("Session '{}' not found", id)); }
-            let session = crate::storage::load_session(&path).map_err(|e| e.to_string())?;
-            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            app_state.messages   = session.messages.clone();
-            app_state.session_id = session.id.clone();
-            Ok(serde_json::json!({
-                "session_id": session.id,
-                "messages":   session.messages,
-                "name":       session.name
-            }))
-        }
+        // Session Extended handlers moved to primary session section
 
         // ────────────────────────────────────────────────────────────────────
         // Keychain — get & delete
