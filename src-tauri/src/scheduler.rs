@@ -310,7 +310,7 @@ pub fn run_task_now(
                     if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
                         let broadcaster = app_handle.clone();
                         let state2 = app_state.clone();
-                        broadcaster.emit("workflow_started", serde_json::json!({
+                        let _ = broadcaster.emit("workflow_started", serde_json::json!({
                             "name": &wf_name,
                             "triggered_by": "manual",
                         }));

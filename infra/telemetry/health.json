@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-08T17:51:15Z",
+    "stamped_at_utc":  "2026-06-08T21:44:21Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -36,7 +36,7 @@
                          "metadata":  "aligned",
                          "diff_hygiene":  "pass",
                          "workspace_state":  "manual-uncommitted",
-                         "loose_root_files":  12,
+                         "loose_root_files":  13,
                          "hardening_check":  "fail",
                          "cargo_check":  "pass",
                          "cargo_test":  "pass",
@@ -47,36 +47,36 @@
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
-                                           "duration_ms":  777,
-                                           "started_at_utc":  "2026-06-08T17:51:18Z",
-                                           "finished_at_utc":  "2026-06-08T17:51:18Z"
+                                           "duration_ms":  1249,
+                                           "started_at_utc":  "2026-06-08T21:44:25Z",
+                                           "finished_at_utc":  "2026-06-08T21:44:27Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1295,
-                                           "started_at_utc":  "2026-06-08T17:51:18Z",
-                                           "finished_at_utc":  "2026-06-08T17:51:20Z"
+                                           "duration_ms":  1232,
+                                           "started_at_utc":  "2026-06-08T21:44:27Z",
+                                           "finished_at_utc":  "2026-06-08T21:44:28Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  4331,
-                                           "started_at_utc":  "2026-06-08T17:51:20Z",
-                                           "finished_at_utc":  "2026-06-08T17:51:24Z"
+                                           "duration_ms":  168351,
+                                           "started_at_utc":  "2026-06-08T21:44:28Z",
+                                           "finished_at_utc":  "2026-06-08T21:47:16Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  1034,
-                                           "started_at_utc":  "2026-06-08T17:51:24Z",
-                                           "finished_at_utc":  "2026-06-08T17:51:25Z"
+                                           "duration_ms":  6273,
+                                           "started_at_utc":  "2026-06-08T21:47:16Z",
+                                           "finished_at_utc":  "2026-06-08T21:47:22Z"
                                        }
                                    ],
                          "blockers":  [
@@ -84,7 +84,7 @@
                                           "Loose root files are present outside the preserved set.",
                                           "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log"
                                       ],
-                         "duration_ms":  7461,
-                         "checked_at_utc":  "2026-06-08T17:51:25Z"
+                         "duration_ms":  177137,
+                         "checked_at_utc":  "2026-06-08T21:47:23Z"
                      }
 }
