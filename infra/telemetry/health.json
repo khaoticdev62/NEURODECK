@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-08T06:58:26Z",
+    "stamped_at_utc":  "2026-06-08T07:14:29Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -48,35 +48,35 @@
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
                                            "duration_ms":  842,
-                                           "started_at_utc":  "2026-06-08T06:58:29Z",
-                                           "finished_at_utc":  "2026-06-08T06:58:30Z"
+                                           "started_at_utc":  "2026-06-08T07:14:36Z",
+                                           "finished_at_utc":  "2026-06-08T07:14:37Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1309,
-                                           "started_at_utc":  "2026-06-08T06:58:30Z",
-                                           "finished_at_utc":  "2026-06-08T06:58:31Z"
+                                           "duration_ms":  1223,
+                                           "started_at_utc":  "2026-06-08T07:14:37Z",
+                                           "finished_at_utc":  "2026-06-08T07:14:38Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log",
-                                           "duration_ms":  104683,
-                                           "started_at_utc":  "2026-06-08T06:58:31Z",
-                                           "finished_at_utc":  "2026-06-08T07:00:16Z"
+                                           "duration_ms":  66472,
+                                           "started_at_utc":  "2026-06-08T07:14:38Z",
+                                           "finished_at_utc":  "2026-06-08T07:15:44Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  2391,
-                                           "started_at_utc":  "2026-06-08T07:00:16Z",
-                                           "finished_at_utc":  "2026-06-08T07:00:18Z"
+                                           "duration_ms":  1613,
+                                           "started_at_utc":  "2026-06-08T07:15:44Z",
+                                           "finished_at_utc":  "2026-06-08T07:15:46Z"
                                        }
                                    ],
                          "blockers":  [
@@ -84,7 +84,7 @@
                                           "Loose root files are present outside the preserved set.",
                                           "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log"
                                       ],
-                         "duration_ms":  109274,
-                         "checked_at_utc":  "2026-06-08T07:00:18Z"
+                         "duration_ms":  70190,
+                         "checked_at_utc":  "2026-06-08T07:15:46Z"
                      }
 }
