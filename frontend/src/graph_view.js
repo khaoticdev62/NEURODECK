@@ -2,7 +2,8 @@ import { invoke } from './neurobridge.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const D3_CDN = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js';
+// Vendored locally at frontend/public/d3.min.js to satisfy CSP script-src 'self'
+const D3_CDN = '/d3.min.js';
 
 const NODE_COLORS = {
     memory:  '#00f0ff',   // cyan
