@@ -157,6 +157,37 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ---
 
+## Repository Structure
+
+The project follows the structure documented in `neurodeck-production-package/docs/07_CI_CD_Setup.md`. Key locations:
+
+| Directory | What Lives Here |
+|---|---|
+| `src-tauri/src/` | Rust backend — ~5,400-line dispatch table in `commands/mod.rs`, all modules |
+| `src-tauri/src/commands/` | Bridge command implementations (agent, browser, git, system, session...) |
+| `src-tauri/src/db/migrations/` | SQLite schema evolution (001, 002, 003...) |
+| `src-tauri/tests/` | Rust integration tests |
+| `frontend/src/` | Vanilla JS frontend — `main.js` (~8K lines), `app.css` (~9K lines) |
+| `frontend/src/main.js` | App bootstrap, view switching, all UI logic (monolithic by design) |
+| `electron/` | Electron main process + preload script |
+| `infrastructure/` | Rust workspace crate — secrets, OAuth, Warpinator |
+| `plugins/` | Lua plugins auto-loaded at startup |
+| `assets/` | Static assets — brand, steam-grid, steam_input, deckcode schemas |
+| `docs/` | All documentation — epics, roadmaps, architecture, user guide |
+| `neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates |
+| `production_code_prompt_system/` | PromptFlow CLI + 15 production prompts |
+| `scripts/` | Build & utility scripts — `dev/`, `shell/`, `powershell/`, `kfms/`, `git-hooks/` |
+| `scripts/dev/` | Development utilities (CSS, JS, JSON, Lua, Python helpers) |
+| `e2e/` | Playwright E2E tests (~390 tests) |
+| `tests/` | Shared test fixtures (config, memory, plugins) |
+| `infra/` | KFMS metadata and telemetry |
+| `aur/` | Arch Linux PKGBUILD |
+| `flatpak/` | Flatpak manifest & build scripts |
+
+**Do not create new top-level directories without updating `neurodeck-production-package/docs/07_CI_CD_Setup.md`.**
+
+---
+
 ## Deeper Docs
 
 > **Primary reference (north star):** `neurodeck-production-package/` — This is the single source of truth for architecture, specs, release gates, and backlog. All other docs are supplementary.

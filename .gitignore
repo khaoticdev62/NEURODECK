@@ -40,6 +40,9 @@ e2e/test-results/
 .playwright-mcp/
 .serena/
 scratch/
+temp_inspect/
+data/
+promptflow_runs/
 
 # --- Python / UV ---
 .venv/

@@ -257,6 +257,7 @@ def run(
         sequence_prompts = resolve_sequence(
             seq_name,
             prompts,
+            custom_sequences=cfg.custom_sequences,
             include_orchestration=cfg.workflow_include_orchestration,
             from_stage=from_stage,
             to_stage=to_stage,
@@ -398,6 +399,7 @@ def resume(
         sequence_prompts = resolve_sequence(
             seq_name,
             prompts,
+            custom_sequences=cfg.custom_sequences,
             include_orchestration=True,
         )
     except PromptFlowError as exc:

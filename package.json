@@ -38,7 +38,20 @@
     "quality:fallow:json": "fallow audit --format json",
     "quality:fallow:health": "fallow health --score --hotspots --targets",
     "quality:fallow:dead-code": "fallow dead-code",
-    "quality:fallow:dupes": "fallow dupes"
+    "quality:fallow:dupes": "fallow dupes",
+    "promptflow:init": "python -m promptflow init --force",
+    "promptflow:list": "python -m promptflow list-prompts",
+    "promptflow:inspect": "python -m promptflow inspect-repo --repo .",
+    "promptflow:audit": "python -m promptflow run --sequence audit-only --provider manual",
+    "promptflow:security": "python -m promptflow run --sequence security --provider manual",
+    "promptflow:refactor": "python -m promptflow run --sequence refactor --provider manual",
+    "promptflow:frontend": "python -m promptflow run --sequence frontend --provider manual",
+    "promptflow:build": "python -m promptflow run --sequence build-repair --provider manual",
+    "promptflow:release": "python -m promptflow run --sequence release-certification --provider manual",
+    "promptflow:full": "python -m promptflow run --sequence full --provider manual",
+    "promptflow:report": "python -m promptflow report --run-id latest",
+    "promptflow:export": "python -m promptflow export --run-id latest",
+    "promptflow:clean": "python -m promptflow clean --keep 5"
   },
   "devDependencies": {
     "electron": "^36.0.0",

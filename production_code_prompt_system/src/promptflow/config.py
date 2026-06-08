@@ -164,6 +164,13 @@ class Config:
         return str(self._data.get("workflow", {}).get("sequence", "full"))
 
     @property
+    def custom_sequences(self) -> dict[str, list[str]] | None:
+        seqs = self._data.get("sequences")
+        if isinstance(seqs, dict):
+            return {str(k): [str(i) for i in v] for k, v in seqs.items() if isinstance(v, list)}
+        return None
+
+    @property
     def workflow_stop_on_blocker(self) -> bool:
         return bool(self._data.get("workflow", {}).get("stop_on_blocker", True))
 

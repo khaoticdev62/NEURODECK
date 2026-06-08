@@ -12,53 +12,153 @@ S-Term/
 ├── promptflow.yaml ....................... PromptFlow config (dev workflow SSoT)
 ├── package.json .......................... Root package, npm scripts
 ├── Cargo.toml ............................ Workspace root
+├── Cargo.lock ............................ Dependency lockfile
+├──
 ├── src-tauri/ ............................ Rust backend
 │   ├── Cargo.toml
 │   ├── src/
-│   │   ├── lib.rs
-│   │   ├── bridge.rs
-│   │   ├── commands/
-│   │   ├── db/migrations/
-│   │   └── ... (modules)
-│   └── tests/
+│   │   ├── lib.rs ........................ AppState, module re-exports
+│   │   ├── bridge.rs ..................... axum server, WsBroadcaster
+│   │   ├── commands/ ..................... ~5,400-line dispatch table
+│   │   │   ├── mod.rs .................... Bridge command router
+│   │   │   ├── agent.rs .................. Agent execution commands
+│   │   │   ├── browser.rs ................ Headless Chrome commands
+│   │   │   ├── git.rs .................... Git2 integration
+│   │   │   ├── session.rs ................ send_command, RAG injection
+│   │   │   └── system.rs ................. Index, export, context stats
+│   │   ├── db/migrations/ ................ SQLite schema evolution
+│   │   └── ... (modules: llm, memory, pty_manager, scheduler,
+│   │               workflow_engine, orchestrator, permissions,
+│   │               lua, plugin_mgr, game, transfer, canvas_collab,
+│   │               computer_use, sync, security, ftp, tunnel,
+│   │               whisper, mcp, lsp, doc_indexer, dashboard,
+│   │               context_packs, privacy, search, projects,
+│   │               models, providers, paths, config, storage)
+│   └── tests/ ............................ Integration tests
+│
 ├── frontend/ ............................. Vite frontend
 │   ├── src/
-│   │   ├── main.js
-│   │   ├── app.css
-│   │   └── ... (modules)
+│   │   ├── main.js ....................... ~8K lines, app bootstrap
+│   │   ├── app.css ....................... ~9K lines, Tactical Glass
+│   │   ├── neurobridge.js ................ Tauri API replacement
+│   │   ├── chat.js ....................... Message rendering
+│   │   ├── canvas.js ..................... Editor + preview
+│   │   ├── memory.js ..................... Memory tab UI
+│   │   ├── agent.js ...................... Agent loop UI
+│   │   ├── workflow_view.js .............. Node editor
+│   │   ├── settings.js ................... Settings modal
+│   │   ├── radial.js ..................... Radial menu
+│   │   ├── graph_view.js ................. D3.js memory graph
+│   │   ├── ide_view.js ................... IDE tab
+│   │   ├── lsp_client.js ................. LSP completions
+│   │   └── ...
 │   ├── index.html
-│   └── package.json
+│   ├── package.json
+│   └── ...
+│
 ├── electron/ ............................. Electron main process
 │   ├── main.js
 │   ├── preload.js
 │   └── package.json
+│
 ├── infrastructure/ ....................... Rust workspace crate
-│   ├── src/
+│   ├── src/ .............................. secrets, oauth, warpinator
 │   └── Cargo.toml
+│
 ├── core/ ................................. Rust workspace crate
-├── bootstrapper/ ......................... Rust workspace crate
-├── plugins/ .............................. Lua plugins
-├── assets/ ............................... Images, icons, steam input VDF
-├── docs/ ................................. All documentation
-│   ├── epics/
-│   ├── IMPLEMENTATION_PLAN.md
-│   ├── ANTIGRAVITY_HANDOFF.md
 │   └── ...
+│
+├── bootstrapper/ ......................... Rust workspace crate
+│   └── ...
+│
+├── plugins/ .............................. Lua plugins (auto-loaded)
+│   ├── hermes.lua
+│   ├── bmad.lua
+│   ├── promptgen.lua
+│   └── ...
+│
+├── assets/ ............................... Static assets
+│   ├── brand/ ............................ Logo, icons, grid images
+│   ├── steam-grid/ ....................... Steam Grid assets
+│   ├── steam_input/ ...................... Controller VDF mappings
+│   ├── bmad-bundle/ ...................... BMAD agent bundles
+│   └── deckcode/ ......................... DeckCode schema files
+│
+├── docs/ ................................. All documentation
+│   ├── epics/ ............................ EPIC-001 through EPIC-007
+│   ├── IMPLEMENTATION_PLAN.md ............ Sprint roadmap
+│   ├── ANTIGRAVITY_HANDOFF.md ............ Feature backlog
+│   ├── project-context.md ................ Identity & sprint history
+│   ├── ROADMAP_*.md ...................... Version roadmaps
+│   ├── BRIDGE_SERVER.md .................. IPC documentation
+│   ├── ARCHITECTURE.md ................... High-level architecture
+│   ├── USER_GUIDE.md ..................... End-user documentation
+│   └── ...
+│
 ├── neurodeck-production-package/ ......... This package (SSoT)
-├── production_code_prompt_system/ ........ PromptFlow + 15 production prompts
-├── scripts/ .............................. Shell/PowerShell scripts
-│   ├── shell/
-│   ├── powershell/
-│   ├── kfms/
-│   ├── promptflow-run.sh
-│   └── promptflow-run.ps1
+│   ├── README.md
+│   ├── INDEX.md
+│   ├── manifest.json
+│   ├── checklists/
+│   ├── ci/
+│   ├── docs/ ............................. 00–09 specification documents
+│   └── scripts/
+│
+├── production_code_prompt_system/ ........ PromptFlow CLI + 15 prompts
+│   ├── src/promptflow/ ................... Python CLI source
+│   ├── prompts/ .......................... 01–15 production prompts
+│   ├── tests/ ............................ 57 Python tests
+│   └── pyproject.toml
+│
+├── scripts/ .............................. Build & utility scripts
+│   ├── dev/ .............................. Development utilities
+│   │   ├── css/, js/, json/, lua/, python/
+│   │   ├── add_compat_imports.py
+│   │   ├── fix_tauri_remainders.py
+│   │   ├── build-sidecar.ps1
+│   │   └── build-sidecar.sh
+│   ├── shell/ ............................ Shell build scripts
+│   ├── powershell/ ....................... PowerShell build scripts
+│   ├── kfms/ ............................. KFMS governance scripts
+│   ├── git-hooks/ ........................ Git hooks
+│   ├── promptflow-run.sh ................. PromptFlow wrapper (Unix)
+│   └── promptflow-run.ps1 ................ PromptFlow wrapper (Windows)
+│
 ├── e2e/ .................................. Playwright E2E tests
+│   ├── tests/
+│   ├── pages/
+│   ├── support/
+│   └── playwright.config.ts
+│
+├── tests/ ................................ Shared test fixtures
+│   ├── fixtures/ ......................... Config, memory, plugin fixtures
+│   └── README.md
+│
 ├── infra/ ................................ KFMS metadata
 │   ├── meta/
+│   │   ├── meta.json
+│   │   ├── meta.schema.json
+│   │   └── CODENAME_REGISTRY.md
 │   └── telemetry/
+│       └── health.json
+│
+├── aur/ .................................. Arch Linux PKGBUILD
+├── flatpak/ .............................. Flatpak manifest & build scripts
+│
 ├── build/ ................................ Build artifacts
 ├── dist/ ................................. Distribution packages
-└── dist-electron/ ........................ Electron unpackaged builds
+├── dist-electron/ ........................ Electron unpackaged builds
+│
+├── _bmad/ ................................ BMAD agent configuration
+├── _bmad-output/ ......................... BMAD sprint artifacts
+│
+├── .agents/ .............................. BMAD skill definitions
+├── .loose/ ............................... KFMS loose-file inbox
+│
+├── .github/ .............................. GitHub templates & workflows
+│   ├── workflows/
+│   ├── ISSUE_TEMPLATE/
+│   └── PULL_REQUEST_TEMPLATE.md
 ```
 
 ---

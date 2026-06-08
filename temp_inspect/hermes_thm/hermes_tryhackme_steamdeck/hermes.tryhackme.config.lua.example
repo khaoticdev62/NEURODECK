@@ -1,7 +1,0 @@
-return {
-  url = "https://tryhackme.com/dashboard",
-  browser = "auto",
-  kiosk = false,
-  ovpn_path = "~/.config/hermes-tryhackme/tryhackme.ovpn",
-  vpn_enabled = true,
-}

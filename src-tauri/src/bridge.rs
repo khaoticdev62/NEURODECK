@@ -516,13 +516,13 @@ pub async fn run_bridge_server(
     );
 
     // ── DeckCode input daemon (Linux/Steam Deck) ───────────────────────────
-    let deckcode_schema_path = std::path::PathBuf::from("../deckcode-controller-profile.schema.json");
+    let deckcode_schema_path = std::path::PathBuf::from("assets/deckcode/deckcode-controller-profile.schema.json");
     let deckcode_schema_path = if deckcode_schema_path.exists() {
         deckcode_schema_path
     } else {
         std::path::PathBuf::from("deckcode-controller-profile.schema.json")
     };
-    let deckcode_multilang_path = std::path::PathBuf::from("../deckcode-multilang-code-entry.profile.json");
+    let deckcode_multilang_path = std::path::PathBuf::from("assets/deckcode/deckcode-multilang-code-entry.profile.json");
     let deckcode_multilang_path = if deckcode_multilang_path.exists() {
         deckcode_multilang_path
     } else {
