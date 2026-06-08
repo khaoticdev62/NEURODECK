@@ -22,7 +22,7 @@ pub fn plugins_dir() -> PathBuf {
     p
 }
 
-fn audit_log_path() -> PathBuf {
+pub fn audit_log_path() -> PathBuf {
     crate::user_config_dir().join("logs").join(AUDIT_LOG_FILE)
 }
 

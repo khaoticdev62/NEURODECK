@@ -3066,8 +3066,33 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "workflow_run" => {
             let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let json = crate::workflow::workflow_run(name.to_string())?;
-            Ok(serde_json::json!({ "name": name, "json": json }))
+            let json_str = crate::workflow::workflow_run(name.to_string())?;
+            let doc = crate::workflow_engine::parse_workflow(&json_str)
+                .map_err(|e| format!("Failed to parse workflow: {}", e))?;
+
+            let broadcaster = state.broadcaster.clone();
+            let app_state = state.app_state.clone();
+            let name_owned = name.to_string();
+
+            broadcaster.emit("workflow_started", serde_json::json!({ "name": name }));
+
+            tokio::spawn(async move {
+                let run_state = crate::workflow_engine::execute_workflow(
+                    &name_owned, &doc, app_state, broadcaster,
+                ).await;
+                if let Err(e) = crate::workflow_engine::save_run_history(&name_owned, &run_state) {
+                    tracing::warn!("Failed to save workflow run history: {}", e);
+                }
+            });
+
+            Ok(serde_json::json!({ "status": "started", "name": name }))
+        }
+
+        "get_workflow_history" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let runs = crate::workflow_engine::list_run_history(name)
+                .map_err(|e| format!("Failed to list history: {}", e))?;
+            Ok(serde_json::json!({ "name": name, "runs": runs }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -5373,6 +5398,45 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let dashboard = crate::dashboard::DashboardDB::new(db.pool.clone(), &db.db_path);
             let stats = dashboard.get_stats(&provider, &model).await?;
             Ok(serde_json::to_value(stats).map_err(|e| e.to_string())?)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Observability
+        // ────────────────────────────────────────────────────────────────────
+        "generate_support_bundle" => {
+            let app_arc = state.app_state.clone();
+            let result = tokio::task::spawn_blocking(move || {
+                crate::commands::system::generate_support_bundle(app_arc)
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))??;
+            Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
+        }
+
+        "get_system_health" => {
+            let app_arc = state.app_state.clone();
+            let report = tokio::task::spawn_blocking(move || {
+                crate::commands::system::get_system_health(app_arc)
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))?;
+            Ok(serde_json::to_value(report).map_err(|e| e.to_string())?)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // LLM Utilities
+        // ────────────────────────────────────────────────────────────────────
+        "llm_oneshot" => {
+            let prompt = args.get("prompt").and_then(|v| v.as_str())
+                .ok_or("Missing 'prompt'")?;
+            let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(512) as u32;
+            let provider = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                Arc::clone(&app.provider)
+            };
+            let result = provider.generate_oneshot(prompt, max_tokens).await
+                .map_err(|e| format!("LLM oneshot failed: {}", e))?;
+            Ok(serde_json::json!({ "result": result }))
         }
 
         // ────────────────────────────────────────────────────────────────────

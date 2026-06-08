@@ -439,8 +439,12 @@ pub async fn run_bridge_server(
 
     // ── Lua engine ─────────────────────────────────────────────────────────
     let lua_engine = crate::lua::LuaEngine::new_headless()?;
+    let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
+    if safe_mode {
+        tracing::warn!("SAFE MODE active — plugin loading is disabled (NEURODECK_SAFE_MODE is set)");
+    }
     let plugins_dir = crate::plugin_mgr::plugins_dir();
-    if plugins_dir.exists() {
+    if !safe_mode && plugins_dir.exists() {
         let can_load_plugins = {
             let reg = &app_state.config.security.permission_registry;
             let agent_id = &app_state.config.llm.active_agent_id;

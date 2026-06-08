@@ -2946,6 +2946,353 @@ pub async fn llm_oneshot(
     provider.generate_oneshot(&prompt, max_tokens).await
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Observability: Support Bundle + System Health
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn redact_line(line: &str) -> String {
+    let mut out = line.to_string();
+    // Simple textual redaction — not regex-based to avoid an extra crate.
+    // Replace literal token-like strings using heuristic substrings.
+    for redaction in [
+        ("AIza", "[REDACTED_API_KEY]"),
+        ("GOCSPX-", "[REDACTED_OAUTH_SECRET]"),
+        ("Bearer ", "Bearer [REDACTED_TOKEN]"),
+    ] {
+        if let Some(pos) = out.find(redaction.0) {
+            // Replace from the marker to end-of-token (non-whitespace run)
+            let prefix = &out[..pos];
+            let rest = &out[pos..];
+            let token_end = rest
+                .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
+                .unwrap_or(rest.len());
+            out = format!("{}{}{}", prefix, redaction.1, &rest[token_end..]);
+        }
+    }
+    // Redact passwords in toml-style `key = "value"` lines
+    let lower = out.to_lowercase();
+    if lower.contains("password") || lower.contains("secret") || lower.contains("api_key") {
+        if let Some(eq_pos) = out.find('=') {
+            let key_part = &out[..=eq_pos];
+            out = format!("{} [REDACTED]", key_part.trim_end());
+        }
+    }
+    out
+}
+
+/// Collect the tail of a log file (last `max_lines` lines), redacting secrets.
+fn collect_log_tail(path: &Path, max_lines: usize) -> Vec<String> {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return vec!["[could not read log file]".to_string()];
+    };
+    let lines: Vec<&str> = content.lines().collect();
+    let start = lines.len().saturating_sub(max_lines);
+    lines[start..]
+        .iter()
+        .map(|l| redact_line(l))
+        .collect()
+}
+
+#[derive(serde::Serialize)]
+pub struct SupportBundleResult {
+    pub path: String,
+    pub size_bytes: u64,
+    pub sections: Vec<String>,
+}
+
+/// Generate a redacted support bundle in `user_config_dir()/exports/`.
+///
+/// The bundle is a plain-text file that contains:
+///   - Platform / version info
+///   - Sanitized config summary (secrets masked)
+///   - Plugin list (names only)
+///   - Memory stats (counts only)
+///   - Tail of each log file (with secrets redacted)
+///
+/// Nothing is sent anywhere — the user controls distribution.
+pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBundleResult, String> {
+    let config_dir = crate::user_config_dir();
+    let exports_dir = config_dir.join("exports");
+    std::fs::create_dir_all(&exports_dir).map_err(|e| format!("exports dir: {}", e))?;
+
+    let timestamp = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    };
+    let bundle_path = exports_dir.join(format!("support_bundle_{}.txt", timestamp));
+    let mut sections: Vec<String> = Vec::new();
+    let mut buf = String::new();
+
+    // ── Section: header ──────────────────────────────────────────────────────
+    buf.push_str(&format!(
+        "NEURODECK Support Bundle\nGenerated: {} (Unix seconds)\n{}\n\n",
+        timestamp,
+        "=".repeat(60)
+    ));
+    sections.push("header".to_string());
+
+    // ── Section: platform ────────────────────────────────────────────────────
+    buf.push_str("## PLATFORM\n");
+    buf.push_str(&format!("OS:           {}\n", std::env::consts::OS));
+    buf.push_str(&format!("Arch:         {}\n", std::env::consts::ARCH));
+    buf.push_str(&format!("Config dir:   {}\n", config_dir.display()));
+    buf.push_str(&format!(
+        "Safe mode:    {}\n",
+        std::env::var("NEURODECK_SAFE_MODE").is_ok()
+    ));
+
+    // Disk space at config dir (best-effort)
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(stat) = nix::sys::statvfs::statvfs(&config_dir) {
+            let free_mb = stat.blocks_free() * stat.block_size() as u64 / 1024 / 1024;
+            buf.push_str(&format!("Free disk:    {} MB\n", free_mb));
+        }
+    }
+    buf.push('\n');
+    sections.push("platform".to_string());
+
+    // ── Section: version / KFMS ──────────────────────────────────────────────
+    buf.push_str("## VERSION\n");
+    let meta_path = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("infra/meta/meta.json");
+    if let Ok(meta_str) = std::fs::read_to_string(&meta_path) {
+        if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_str) {
+            let version = meta_val.get("version").and_then(|v| v.as_str()).unwrap_or("unknown");
+            let codename = meta_val
+                .pointer("/codename/name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            buf.push_str(&format!("KFMS version: {} ({})\n", version, codename));
+        }
+    } else {
+        buf.push_str("KFMS meta: not found\n");
+    }
+    buf.push('\n');
+    sections.push("version".to_string());
+
+    // ── Section: config summary ──────────────────────────────────────────────
+    buf.push_str("## CONFIG SUMMARY (secrets redacted)\n");
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        buf.push_str(&format!("Provider:     {}\n", app.config.llm.default_provider));
+        buf.push_str(&format!("Gemini model: {}\n", app.config.llm.gemini_model));
+        buf.push_str(&format!("Ollama model: {}\n", app.config.llm.ollama_model));
+        buf.push_str(&format!("Ollama URL:   {}\n", app.config.llm.ollama_base_url));
+        // Gemini key is stored in the OS keychain — check env var as proxy
+        let key_env = std::env::var("GEMINI_API_KEY").is_ok();
+        buf.push_str(&format!("Gemini key:   {}\n", if key_env { "[SET via env]" } else { "[keychain or unset]" }));
+    }
+    buf.push('\n');
+    sections.push("config".to_string());
+
+    // ── Section: plugins ─────────────────────────────────────────────────────
+    buf.push_str("## PLUGINS\n");
+    let plugins_dir = crate::plugin_mgr::plugins_dir();
+    if plugins_dir.is_dir() {
+        let mut plugin_count = 0usize;
+        let mut disabled_count = 0usize;
+        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".lua") {
+                    plugin_count += 1;
+                    buf.push_str(&format!("  [active]   {}\n", name));
+                } else if name.ends_with(".lua.disabled") {
+                    disabled_count += 1;
+                    buf.push_str(&format!("  [disabled] {}\n", name));
+                }
+            }
+        }
+        buf.push_str(&format!(
+            "Total: {} active, {} disabled\n",
+            plugin_count, disabled_count
+        ));
+    } else {
+        buf.push_str("Plugins directory not found\n");
+    }
+    buf.push('\n');
+    sections.push("plugins".to_string());
+
+    // ── Section: memory stats ────────────────────────────────────────────────
+    buf.push_str("## MEMORY DB\n");
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(ref db) = app.mem_db {
+            let doc_count = db.list_all().map(|v| v.len()).unwrap_or(0);
+            buf.push_str(&format!("Status:  ready\nDocs:    {}\n", doc_count));
+        } else {
+            buf.push_str("Status:  not initialized\n");
+        }
+    }
+    buf.push('\n');
+    sections.push("memory".to_string());
+
+    // ── Section: logs ────────────────────────────────────────────────────────
+    buf.push_str("## LOGS (last 150 lines each, secrets redacted)\n");
+    let logs_dir = config_dir.join("logs");
+    if logs_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&logs_dir) {
+            let mut log_files: Vec<PathBuf> = entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().and_then(|e| e.to_str()) == Some("log"))
+                .collect();
+            log_files.sort();
+            for log_path in &log_files {
+                let name = log_path.file_name().unwrap_or_default().to_string_lossy();
+                buf.push_str(&format!("\n### {}\n", name));
+                for line in collect_log_tail(log_path, 150) {
+                    buf.push_str(&line);
+                    buf.push('\n');
+                }
+                sections.push(format!("log:{}", name));
+            }
+        }
+    } else {
+        buf.push_str("Logs directory not found\n");
+    }
+    buf.push('\n');
+
+    // ── Section: audit log ───────────────────────────────────────────────────
+    let audit_path = crate::plugin_mgr::audit_log_path();
+    if audit_path.exists() {
+        buf.push_str("## PLUGIN AUDIT LOG (last 50 lines)\n");
+        for line in collect_log_tail(&audit_path, 50) {
+            buf.push_str(&line);
+            buf.push('\n');
+        }
+        buf.push('\n');
+        sections.push("plugin_audit".to_string());
+    }
+
+    // ── Write bundle ─────────────────────────────────────────────────────────
+    std::fs::write(&bundle_path, &buf).map_err(|e| format!("write bundle: {}", e))?;
+    let size_bytes = std::fs::metadata(&bundle_path).map(|m| m.len()).unwrap_or(0);
+
+    Ok(SupportBundleResult {
+        path: bundle_path.to_string_lossy().to_string(),
+        size_bytes,
+        sections,
+    })
+}
+
+#[derive(serde::Serialize)]
+pub struct SystemHealthReport {
+    pub status: String, // "healthy" | "degraded" | "critical"
+    pub safe_mode: bool,
+    pub provider: String,
+    pub model: String,
+    pub memory_db_ready: bool,
+    pub memory_doc_count: usize,
+    pub plugin_count: usize,
+    pub plugin_disabled_count: usize,
+    pub config_valid: bool,
+    pub kfms_version: String,
+    pub issues: Vec<String>,
+}
+
+/// Extended health check returning structured diagnostics.
+/// Safe to call from the Electron main process health-check loop.
+pub fn get_system_health(state: Arc<Mutex<AppState>>) -> SystemHealthReport {
+    let mut issues: Vec<String> = Vec::new();
+
+    // Safe mode
+    let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
+
+    // Provider / config
+    let (provider, model, key_set, config_valid) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        let provider = app.config.llm.default_provider.clone();
+        let model = if provider == "gemini" {
+            app.config.llm.gemini_model.clone()
+        } else {
+            app.config.llm.ollama_model.clone()
+        };
+        let key_set = std::env::var("GEMINI_API_KEY").is_ok();
+        (provider, model, key_set, true)
+    };
+
+    if provider == "gemini" && !key_set {
+        issues.push("Gemini provider selected but API key is not set".to_string());
+    }
+
+    // Memory DB
+    let (mem_ready, mem_count) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(ref db) = app.mem_db {
+            let count = db.list_all().map(|v| v.len()).unwrap_or(0);
+            (true, count)
+        } else {
+            issues.push("Memory database not initialized".to_string());
+            (false, 0)
+        }
+    };
+
+    // Plugins
+    let plugins_dir = crate::plugin_mgr::plugins_dir();
+    let (plugin_count, plugin_disabled) = if plugins_dir.is_dir() {
+        let mut active = 0usize;
+        let mut disabled = 0usize;
+        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".lua") {
+                    active += 1;
+                } else if name.ends_with(".lua.disabled") {
+                    disabled += 1;
+                }
+            }
+        }
+        (active, disabled)
+    } else {
+        (0, 0)
+    };
+
+    // KFMS version
+    let kfms_version = {
+        let meta_path = std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join("infra/meta/meta.json");
+        std::fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .and_then(|v| v.get("version").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .unwrap_or_else(|| "unknown".to_string())
+    };
+
+    if safe_mode {
+        issues.push("Running in safe mode — plugins are disabled".to_string());
+    }
+
+    let status = if issues.iter().any(|i| i.contains("database") || i.contains("critical")) {
+        "critical"
+    } else if issues.is_empty() {
+        "healthy"
+    } else {
+        "degraded"
+    }
+    .to_string();
+
+    SystemHealthReport {
+        status,
+        safe_mode,
+        provider,
+        model,
+        memory_db_ready: mem_ready,
+        memory_doc_count: mem_count,
+        plugin_count,
+        plugin_disabled_count: plugin_disabled,
+        config_valid,
+        kfms_version,
+        issues,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{_text_similarity, get_lan_ip};

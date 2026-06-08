@@ -1,0 +1,150 @@
+# =============================================================================
+# plugin-qa.yml — Static QA gate for all bundled Lua plugins
+# =============================================================================
+#
+# Runs on:
+#   - Every push to main/master that touches plugins/
+#   - Every pull request that touches plugins/
+#   - Manual trigger (workflow_dispatch)
+#
+# Validates each .lua file in plugins/ against the NEURODECK Plugin QA gate:
+#   1. Manifest annotations present (@name, @version, @author)
+#   2. File size ≤ 512 KB
+#   3. No blocked APIs (os.execute, io.popen, dofile, loadfile, etc.)
+#
+# All plugins must pass before merge.
+# =============================================================================
+
+name: Plugin QA Gate
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'plugins/**'
+      - '.github/workflows/plugin-qa.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'plugins/**'
+      - '.github/workflows/plugin-qa.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plugin-qa:
+    name: Plugin Static QA
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check for plugins
+        id: check-plugins
+        run: |
+          PLUGIN_COUNT=$(find plugins/ -name "*.lua" 2>/dev/null | wc -l)
+          echo "count=$PLUGIN_COUNT" >> "$GITHUB_OUTPUT"
+          echo "Found $PLUGIN_COUNT Lua plugin(s)"
+
+      - name: Run plugin QA gate
+        if: steps.check-plugins.outputs.count != '0'
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          PLUGINS_DIR = Path("plugins")
+          MAX_SIZE_BYTES = 512 * 1024  # 512 KB
+
+          UNSAFE_PATTERNS = [
+              r'\bos\.execute\b',
+              r'\bio\.popen\b',
+              r'\brequire\s*\(\s*["\']socket["\']',
+              r'\bdofile\b',
+              r'\bloadfile\b',
+              r'\bpackage\.loadlib\b',
+              r'\bdebug\.getinfo\b',
+              r'\bdebug\.sethook\b',
+          ]
+
+          REQUIRED_ANNOTATIONS = ["@name", "@version", "@author"]
+
+          total = 0
+          passed = 0
+          failed = 0
+          all_errors = []
+
+          for lua_file in sorted(PLUGINS_DIR.glob("*.lua")):
+              total += 1
+              errors = []
+              warnings = []
+
+              # Size check
+              size = lua_file.stat().st_size
+              if size > MAX_SIZE_BYTES:
+                  errors.append(f"File too large: {size} bytes (max {MAX_SIZE_BYTES})")
+
+              source = lua_file.read_text(encoding="utf-8", errors="replace")
+
+              # Manifest annotation check (first 40 lines)
+              header_lines = source.splitlines()[:40]
+              header_text = "\n".join(header_lines)
+              for annotation in REQUIRED_ANNOTATIONS:
+                  if annotation not in header_text:
+                      errors.append(f"Missing manifest annotation: {annotation}")
+
+              # Unsafe API check
+              for pattern in UNSAFE_PATTERNS:
+                  matches = re.findall(pattern, source)
+                  if matches:
+                      errors.append(f"Blocked API usage: {matches[0]} ({pattern})")
+
+              # Report
+              if errors:
+                  failed += 1
+                  print(f"\n❌ FAIL: {lua_file.name}")
+                  for e in errors:
+                      print(f"     ERROR: {e}")
+                  all_errors.extend([f"{lua_file.name}: {e}" for e in errors])
+              else:
+                  passed += 1
+                  print(f"✅ PASS: {lua_file.name}")
+                  if warnings:
+                      for w in warnings:
+                          print(f"     WARN: {w}")
+
+          print(f"\n{'='*60}")
+          print(f"Plugin QA Gate: {passed}/{total} passed, {failed} failed")
+
+          if failed > 0:
+              print("\nFailed plugins:")
+              for err in all_errors:
+                  print(f"  - {err}")
+              sys.exit(1)
+
+          print("All plugins passed QA gate.")
+          PYEOF
+
+      - name: Skip (no plugins)
+        if: steps.check-plugins.outputs.count == '0'
+        run: echo "No .lua plugins found in plugins/ — skipping QA gate"
+
+      - name: Write QA summary
+        if: always()
+        run: |
+          PLUGIN_COUNT="${{ steps.check-plugins.outputs.count }}"
+          echo "## Plugin QA Gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Plugins scanned: **${PLUGIN_COUNT}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Rules enforced" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Manifest annotations: \`@name\`, \`@version\`, \`@author\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- File size ≤ 512 KB" >> "$GITHUB_STEP_SUMMARY"
+          echo "- No blocked APIs: \`os.execute\`, \`io.popen\`, \`dofile\`, \`loadfile\`, \`package.loadlib\`, \`debug.*\`" >> "$GITHUB_STEP_SUMMARY"
