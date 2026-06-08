@@ -42,6 +42,203 @@ use futures_util::StreamExt;
 /// 5. Return JSON result
 use std::sync::Arc;
 
+pub async fn dispatch_send_command(
+    state: ServerState,
+    message: String,
+    image_base64: Option<String>,
+    image_mime: Option<String>,
+    pack_id: Option<String>,
+) -> Result<Value, String> {
+    {
+        let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+        let agent_id = app.config.llm.active_agent_id.clone();
+        crate::permissions::require_capability(
+            &app.config.security.permission_registry,
+            &agent_id,
+            crate::permissions::Capability::Network,
+        )?;
+    }
+
+    let broadcaster = state.broadcaster.clone();
+    let app_state_clone = state.app_state.clone();
+    let (provider_clone, mem_db, session_id, messages_len) = {
+        let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+        (
+            app.provider.clone(),
+            app.mem_db.clone(),
+            app.session_id.clone(),
+            app.messages.len(),
+        )
+    };
+    let message_clone = message;
+
+    if let Some(ref db) = mem_db {
+        let msg_id = format!("{}-{}", session_id, messages_len);
+        let mut metadata = std::collections::HashMap::new();
+        metadata.insert("role".to_string(), "user".to_string());
+        let db_clone = db.clone();
+        let prompt_clone = message_clone.clone();
+        let provider_clone2 = provider_clone.clone();
+        tokio::spawn(async move {
+            if let Ok(embedding) = provider_clone2.generate_embedding(&prompt_clone).await {
+                let _ = db_clone.store_message(msg_id, prompt_clone, embedding, metadata);
+            }
+        });
+    }
+
+    tokio::spawn(async move {
+        {
+            let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+            app.messages.push(format!("User: {}", message_clone));
+        }
+
+        let mut system_prompt = {
+            let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+            let active_persona = app.active_persona.clone();
+            let custom_personas = app.custom_personas.clone();
+
+            crate::PERSONAS
+                .iter()
+                .find(|p| p.0 == active_persona)
+                .map(|p| p.1.clone())
+                .unwrap_or_else(|| {
+                    custom_personas
+                        .iter()
+                        .find(|p| p.name == active_persona)
+                        .map(|p| p.prompt.clone())
+                        .unwrap_or_else(|| "You are a helpful assistant.".to_string())
+                })
+        };
+
+        if let Some(ref db) = mem_db {
+            let rag_results = match provider_clone.generate_embedding(&message_clone).await {
+                Ok(query_embed) => db.search(&query_embed, 10).ok(),
+                Err(_) => db.list_all().ok().map(|records| {
+                    let query_words: Vec<&str> = message_clone
+                        .split_whitespace()
+                        .filter(|w| w.len() > 3)
+                        .collect();
+                    if query_words.is_empty() {
+                        return Vec::new();
+                    }
+                    let mut scored: Vec<(usize, _)> = records
+                        .into_iter()
+                        .filter_map(|rec| {
+                            let lower = rec.content.to_lowercase();
+                            let hits = query_words
+                                .iter()
+                                .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                                .count();
+                            if hits > 0 { Some((hits, rec)) } else { None }
+                        })
+                        .collect();
+                    scored.sort_by(|a, b| b.0.cmp(&a.0));
+                    scored.into_iter().take(10).map(|(_, rec)| rec).collect()
+                }),
+            };
+
+            if let Some(results) = rag_results {
+                let unlock_state = {
+                    let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                    app.unlock_state.clone()
+                };
+                let mut filtered = Vec::new();
+                for rec in results {
+                    if let Some(ref pid) = pack_id {
+                        if rec.pack_id.as_ref() != Some(pid) {
+                            continue;
+                        }
+                    }
+                    let level = crate::privacy::PrivacyLevel::from_str(
+                        rec.metadata
+                            .get("privacy_level")
+                            .map(|s| s.as_str())
+                            .unwrap_or("standard"),
+                    );
+                    let is_unlocked = unlock_state.is_unlocked(&rec.id);
+                    if !crate::privacy::PrivacyFilter::can_inject(&level, is_unlocked) {
+                        continue;
+                    }
+                    filtered.push(rec);
+                    if filtered.len() >= 3 {
+                        break;
+                    }
+                }
+
+                if !filtered.is_empty() {
+                    system_prompt.push_str("\n\nRelevant past context:\n");
+                    let mut provenance_list = Vec::new();
+                    for res in &filtered {
+                        system_prompt.push_str(&format!("- {}\n", res.content));
+                        let title = res
+                            .metadata
+                            .get("title")
+                            .or_else(|| res.metadata.get("filename"))
+                            .map(|s| s.as_str())
+                            .unwrap_or(if res.content.len() > 30 {
+                                &res.content[0..30]
+                            } else {
+                                &res.content
+                            });
+                        provenance_list.push(serde_json::json!({
+                            "id": res.id,
+                            "title": title,
+                            "content_snippet": if res.content.len() > 100 { format!("{}...", &res.content[0..97]) } else { res.content.clone() },
+                            "role": res.metadata.get("role").unwrap_or(&"unknown".to_string())
+                        }));
+                    }
+                    broadcaster.emit("rag_sources", serde_json::json!(provenance_list).to_string());
+                }
+            }
+        }
+
+        let mut full_response = String::new();
+
+        if let Some(ref b64) = image_base64 {
+            let mime_str = image_mime.as_deref().unwrap_or("image/png");
+            match provider_clone
+                .chat_with_image(&message_clone, &system_prompt, Some(b64), Some(mime_str))
+                .await
+            {
+                Ok(response) => {
+                    full_response = response.clone();
+                    broadcaster.emit("command_token", serde_json::json!({ "token": response }));
+                }
+                Err(e) => {
+                    broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                    return;
+                }
+            }
+        } else {
+            let mut stream = provider_clone.stream_response(&message_clone, &system_prompt);
+            while let Some(chunk_res) = stream.next().await {
+                match chunk_res {
+                    Ok(chunk) => {
+                        full_response.push_str(&chunk);
+                        broadcaster.emit("command_token", serde_json::json!({ "token": chunk }));
+                    }
+                    Err(e) => {
+                        broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                        return;
+                    }
+                }
+            }
+        }
+
+        {
+            let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+            app.messages.push(format!("AI: {}", full_response));
+        }
+
+        broadcaster.emit("command_done", serde_json::json!({ "status": "complete" }));
+    });
+
+    Ok(serde_json::json!({
+        "status": "streaming",
+        "message": "LLM response streaming via WebSocket events"
+    }))
+}
+
 pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     match command {
         // ────────────────────────────────────────────────────────────────────
@@ -1221,31 +1418,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     Err(format!("Lua command error: {}", e))
                 }
             }
-        }
-
-        // ────────────────────────────────────────────────────────────────────
-        // Document Indexing & Search
-        // ────────────────────────────────────────────────────────────────────
-        "get_indexed_docs" => {
-            // Document indexing is optional; return empty list if not initialized
-            Ok(serde_json::json!({
-                "docs": [],
-                "count": 0,
-                "note": "Document indexing not yet integrated in bridge mode"
-            }))
-        }
-
-        "search_docs_semantic" => {
-            let _query = args.get("query").and_then(|v| v.as_str())
-                .ok_or("Missing 'query'")?;
-
-            // Semantic search requires the doc_indexer module
-            // For bridge mode, return placeholder
-            Ok(serde_json::json!({
-                "results": [],
-                "count": 0,
-                "note": "Semantic search not yet integrated in bridge mode"
-            }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2794,6 +2966,193 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Prompt Lab
         // ────────────────────────────────────────────────────────────────────
+        "promptdrive_list_packs" => {
+            let packs = crate::promptdrive::load_builtin_packs()?;
+            Ok(serde_json::json!(packs))
+        }
+
+        "promptdrive_list_templates" => {
+            let pack_id = args.get("pack_id").and_then(|v| v.as_str());
+            let templates = crate::promptdrive::list_templates(pack_id)?;
+            Ok(serde_json::json!(templates))
+        }
+
+        "promptdrive_get_template" => {
+            let template_id = args
+                .get("template_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'template_id'")?;
+            let template = crate::promptdrive::find_template(template_id)?;
+            Ok(serde_json::json!(template))
+        }
+
+        "promptdrive_validate_slots" => {
+            let template_id = args
+                .get("template_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'template_id'")?;
+            let raw_slot_values = args
+                .get("slot_values")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}));
+            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template = crate::promptdrive::find_template(template_id)?;
+            let result = crate::promptdrive::validate_slots(&template, &slot_values);
+            Ok(serde_json::json!(result))
+        }
+
+        "promptdrive_preview_prompt" => {
+            let template_id = args
+                .get("template_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'template_id'")?;
+            let raw_slot_values = args
+                .get("slot_values")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}));
+            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template = crate::promptdrive::find_template(template_id)?;
+            let result = crate::promptdrive::validate_slots(&template, &slot_values);
+            Ok(serde_json::json!(result))
+        }
+
+        "promptdrive_execute_prompt" => {
+            let template_id = args
+                .get("template_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'template_id'")?;
+            let raw_slot_values = args
+                .get("slot_values")
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!({}));
+            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template = crate::promptdrive::find_template(template_id)?;
+            let result = crate::promptdrive::validate_slots(&template, &slot_values);
+            let prompt = result
+                .rendered_prompt
+                .clone()
+                .ok_or_else(|| format!("Prompt is invalid: {}", result.errors.join("; ")))?;
+            let response = dispatch_send_command(
+                state,
+                prompt,
+                None,
+                None,
+                args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            )
+            .await?;
+            Ok(serde_json::json!({
+                "status": "streaming",
+                "validation": result,
+                "stream": response
+            }))
+        }
+
+        "promptdrive_save_prompt" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Untitled Prompt")
+                .trim()
+                .to_string();
+            let prompt = args
+                .get("prompt")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'prompt'")?
+                .to_string();
+            let saved = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .save_prompt(
+                    if title.is_empty() { "Untitled Prompt".to_string() } else { title },
+                    args.get("template_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                    args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                    args.get("slot_values").cloned().unwrap_or_else(|| serde_json::json!({})),
+                    prompt,
+                )
+                .await?;
+            Ok(serde_json::json!(saved))
+        }
+
+        "promptdrive_list_saved_prompts" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let prompts = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .list_saved_prompts()
+                .await?;
+            Ok(serde_json::json!(prompts))
+        }
+
+        "promptdrive_macro_start" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let recording_id = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .macro_start()
+                .await?;
+            Ok(serde_json::json!({ "recording_id": recording_id, "status": "recording" }))
+        }
+
+        "promptdrive_macro_stop" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let recording_id = args
+                .get("recording_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'recording_id'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("PromptDrive Macro")
+                .to_string();
+            let steps: Vec<crate::promptdrive::MacroStep> = serde_json::from_value(
+                args.get("steps").cloned().unwrap_or_else(|| serde_json::json!([])),
+            )
+            .map_err(|e| format!("Invalid macro steps: {}", e))?;
+            let macro_def = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .macro_stop(recording_id, name, steps)
+                .await?;
+            Ok(serde_json::json!(macro_def))
+        }
+
+        "promptdrive_macro_execute" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let macro_id = args
+                .get("macro_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'macro_id'")?;
+            let macro_def = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .get_macro(macro_id)
+                .await?;
+            Ok(serde_json::json!({
+                "status": "ready",
+                "macro": macro_def,
+                "safe_replay": true
+            }))
+        }
+
+        "promptdrive_list_macros" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let macros = crate::promptdrive::PromptDriveDb::new(db.pool)
+                .list_macros()
+                .await?;
+            Ok(serde_json::json!(macros))
+        }
+
+        "promptdrive_delete_macro" => {
+            let db = state.db.clone().ok_or("SQLite database not initialized")?;
+            let macro_id = args
+                .get("macro_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'macro_id'")?;
+            crate::promptdrive::PromptDriveDb::new(db.pool)
+                .delete_macro(macro_id)
+                .await?;
+            Ok(serde_json::json!({ "status": "deleted", "macro_id": macro_id }))
+        }
+
+        "promptdrive_get_suggestions" => {
+            let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+            let template_id = args.get("template_id").and_then(|v| v.as_str());
+            let suggestions = crate::promptdrive::suggestions(query, template_id)?;
+            Ok(serde_json::json!(suggestions))
+        }
+
         "save_prompt_preset" => {
             let name        = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
             let schema_json = args.get("schema_json").and_then(|v| v.as_str()).ok_or("Missing 'schema_json'")?;
@@ -4829,6 +5188,147 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             });
 
             Ok(serde_json::json!({ "status": "indexing", "path": path, "note": "Monitor WebSocket for doc_index_progress events" }))
+        }
+
+        "get_indexed_docs" => {
+            let mem_db = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.mem_db.clone()
+            };
+            let db = match mem_db {
+                Some(db) => db,
+                None => return Ok(serde_json::json!([])),
+            };
+            let records = db.list_all().map_err(|e| e.to_string())?;
+            let mut paths: std::collections::HashSet<String> = std::collections::HashSet::new();
+            for r in records {
+                // Support both "path" (set by index_directory) and "file" (set by doc_indexer.rs)
+                if r.metadata.get("source").map(|s| s.as_str()) == Some("doc")
+                    || r.metadata.get("namespace").map(|s| s.as_str()) == Some("docs")
+                {
+                    if let Some(p) = r.metadata.get("path").or_else(|| r.metadata.get("file")) {
+                        paths.insert(p.clone());
+                    }
+                }
+            }
+            let mut result: Vec<String> = paths.into_iter().collect();
+            result.sort();
+            Ok(serde_json::to_value(result).unwrap_or(serde_json::json!([])))
+        }
+
+        "search_docs_semantic" => {
+            let query = args.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?.to_string();
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+
+            let (mem_db, provider) = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                (app.mem_db.clone(), app.provider.clone())
+            };
+            let db = match mem_db {
+                Some(db) => db,
+                None => return Ok(serde_json::json!([])),
+            };
+
+            // Generate embedding for the query
+            let embedding = match provider.generate_embedding(&query).await {
+                Ok(e) => e,
+                Err(_) => {
+                    // Keyword fallback — return top-N by text match
+                    let records = db.list_all().map_err(|e| e.to_string())?;
+                    let words: Vec<&str> = query.split_whitespace().collect();
+                    let results: Vec<serde_json::Value> = records
+                        .into_iter()
+                        .filter(|r| {
+                            r.metadata.get("source").map(|s| s.as_str()) == Some("doc")
+                                || r.metadata.get("namespace").map(|s| s.as_str()) == Some("docs")
+                        })
+                        .filter(|r| {
+                            let lc = r.content.to_lowercase();
+                            words.iter().any(|w| lc.contains(&w.to_lowercase()))
+                        })
+                        .take(limit)
+                        .map(|r| {
+                            let file = r.metadata.get("path")
+                                .or_else(|| r.metadata.get("file"))
+                                .cloned()
+                                .unwrap_or_default();
+                            serde_json::json!({
+                                "file": file,
+                                "snippet": r.content.chars().take(300).collect::<String>(),
+                                "score": 0.5_f32
+                            })
+                        })
+                        .collect();
+                    return Ok(serde_json::to_value(results).unwrap_or(serde_json::json!([])));
+                }
+            };
+
+            let all_records = db.list_all().map_err(|e| e.to_string())?;
+            let docs_records: Vec<_> = all_records
+                .into_iter()
+                .filter(|r| {
+                    r.metadata.get("source").map(|s| s.as_str()) == Some("doc")
+                        || r.metadata.get("namespace").map(|s| s.as_str()) == Some("docs")
+                })
+                .filter(|r| !r.embedding.is_empty())
+                .collect();
+
+            let cosine = |a: &[f32], b: &[f32]| -> f32 {
+                let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+                let na: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+                let nb: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+                if na == 0.0 || nb == 0.0 { 0.0 } else { dot / (na * nb) }
+            };
+
+            let mut scored: Vec<(f32, _)> = docs_records
+                .into_iter()
+                .map(|r| { let s = cosine(&embedding, &r.embedding); (s, r) })
+                .collect();
+            scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+
+            let results: Vec<serde_json::Value> = scored
+                .into_iter()
+                .take(limit)
+                .map(|(score, r)| {
+                    let file = r.metadata.get("path")
+                        .or_else(|| r.metadata.get("file"))
+                        .cloned()
+                        .unwrap_or_default();
+                    serde_json::json!({
+                        "file": file,
+                        "snippet": r.content.chars().take(300).collect::<String>(),
+                        "score": score
+                    })
+                })
+                .collect();
+
+            Ok(serde_json::to_value(results).unwrap_or(serde_json::json!([])))
+        }
+
+        "remove_indexed_doc" => {
+            let file_path = args.get("filePath").or_else(|| args.get("file_path"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'filePath'")?.to_string();
+            let mem_db = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.mem_db.clone()
+            };
+            let db = match mem_db {
+                Some(db) => db,
+                None => return Ok(serde_json::json!({ "removed": 0 })),
+            };
+            let all = db.list_all().map_err(|e| e.to_string())?;
+            let mut removed = 0usize;
+            for r in all {
+                let is_doc = r.metadata.get("source").map(|s| s.as_str()) == Some("doc")
+                    || r.metadata.get("namespace").map(|s| s.as_str()) == Some("docs");
+                let path_val = r.metadata.get("path").or_else(|| r.metadata.get("file"));
+                let matches = path_val.map(|p| p.as_str() == file_path.as_str()).unwrap_or(false);
+                if is_doc && matches {
+                    let _ = db.delete_record(&r.id);
+                    removed += 1;
+                }
+            }
+            Ok(serde_json::json!({ "removed": removed }))
         }
 
         // ────────────────────────────────────────────────────────────────────
