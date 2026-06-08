@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 fullscreen window.
+NEURODECK is a desktop app (originally Tauri v2, now transitioning to an **Electron + axum bridge** architecture) that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, LSP, workflow automation, and gamepad-native navigation in one 1280×800 fullscreen window.
+
+**Architecture shift**: `tauri.conf.json` has been deleted. The Rust backend now runs as a standalone sidecar process exposing an axum HTTP + WebSocket server on `localhost:9477`. The Electron shell loads the frontend and communicates via `neurobridge.js` instead of Tauri's `invoke()` / `listen()`. See `bridge.rs` and `neurobridge.js`.
 
 ---
 
@@ -25,11 +27,11 @@ NEURODECK is a Tauri v2 desktop app that turns a Steam Deck into an AI-powered t
 
 ### IPC Flow
 ```
-frontend/src/main.js
-  └─ invoke("command_name", { args })  ──►  src-tauri/src/lib.rs  (Tauri command)
-  └─ listen("event_name", handler)     ◄──  app_handle.emit("event", payload)
+frontend/src/neurobridge.js
+  └─ invoke("command_name", { args })  ──►  POST http://localhost:9477/api/{command}
+  └─ listen("event_name", handler)     ◄──  WebSocket  ws://localhost:9477/ws
 ```
-All streaming (LLM tokens, PTY output, agent steps) goes through `emit()`. All request/response goes through `invoke()`.
+`neurobridge.js` is a drop-in replacement for `@tauri-apps/api`. It wraps HTTP fetch (for commands) and a WebSocket (for backend→frontend events). All streaming (LLM tokens, PTY output, agent steps) goes through the WebSocket. All request/response goes through `POST /api/{command}`. The Rust sidecar binds to `127.0.0.1:9477` by default; override with the `NEURODECK_PORT` env var. `GET /health` is polled by Electron to know the sidecar is ready.
 
 ### The One Big File Problem
 `lib.rs` (~1600 lines) owns everything: command handlers, app state structs, persona definitions, theme palettes, game detection, voice I/O, and the agent loop. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
@@ -41,7 +43,8 @@ The heavy logic modules have been extracted from `main.js` into ES modules:
 ### Frontend Module Split (ES Modules under `frontend/src/`)
 | Module | What It Owns |
 |---|---|
-| `main.js` | HTML templates, view routing, IPC wiring, radial menu, boot/onboarding, one-off view init |
+| `main.js` | HTML templates, view routing, IPC wiring, boot/onboarding, one-off view init |
+| `neurobridge.js` | Drop-in replacement for `@tauri-apps/api` — wraps HTTP + WebSocket; **all `invoke()`/`listen()` calls go here** |
 | `chat.js` | All chat logic — send flow, RAG context, streaming, history, persona/theme switching, welcome screen |
 | `agent.js` | Agent loop, roundtable mode, computer/browser tool dispatch |
 | `memory.js` | Memory view — list, filter, pin, delete, add fact |
@@ -50,22 +53,63 @@ The heavy logic modules have been extracted from `main.js` into ES modules:
 | `terminal.js` | xterm.js sessions, tab management, PTY wiring, SSH tab |
 | `state.js` | Shared mutable state object (singleton) |
 | `icons.js` | `createIcon()` / `applyButtonIcon()` — Lucide SVG icon factory |
+| `settings.js` | Settings modal — all settings read/write, theme/persona/LLM config UI |
+| `radial.js` | Radial menu segment registry and L2/backtick menu rendering |
+| `ctrl_prompt.js` | Controller prompt picker — gamepad-native shortcut/prompt selection UI |
+| `shortcuts.js` | Keyboard shortcut bindings and command palette trigger |
+| `slash-commands.js` | Slash command parser and dispatch (e.g., `/formula`, `/promptgen`) |
+| `palette-commands.js` | Command palette command definitions |
+| `dashboard.js` | Dashboard view — system stats, quick-launch widgets |
+| `api_lab.js` | API Lab view — interactive HTTP request builder |
+| `cli_maker.js` | CLI Maker view — visual CLI argument builder |
+| `git.js` | Git view — status, diff, commit, branch ops via bridge |
+| `ide_view.js` | IDE view — file tree, editor tabs, run integration |
+| `lsp_client.js` | LSP client — sends textDocument requests over the bridge, renders diagnostics |
+| `graph_view.js` | Graph view — knowledge/memory relationship visualizer |
+| `orchestrator.js` | Orchestrator view — multi-step LLM pipeline builder |
+| `remote_control_view.js` | Remote control view — UDP remote session UI |
+| `scheduler_view.js` | Scheduler view — cron job list/create/delete UI |
+| `workflow_view.js` | Workflow view — DAG workflow definition and execution UI |
+| `torrent.js` | Torrent view — BitTorrent/magnet link UI |
+| `haptics.js` | Haptic feedback helpers for Steam Deck gamepad |
+| `focus-trap.js` | Focus trap utility for modals/drawers |
 
 ### Rust Module Responsibilities
 | Module | What It Owns |
 |---|---|
-| `lib.rs` | All `#[tauri::command]` handlers, `AppState`, themes, personas, game detection, voice I/O |
+| `lib.rs` | All command handler registration, `AppState`, themes, personas, game detection, voice I/O |
+| `bridge.rs` | **axum HTTP + WebSocket server** on `127.0.0.1:9477` — `POST /api/{cmd}` routes all commands, `GET /ws` streams events, `GET /health` is the readiness probe |
 | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
 | `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
 | `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
 | `memory.rs` | Cosine-similarity vector DB; persists to `user_config_dir()/data/memory/` |
 | `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
+| `sftp.rs` | SFTP via SSH subprocess (`ssh`/`sftp` CLI); wraps `std::process::Command` in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
 | `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
 | `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
 | `sync.rs` | Cross-device encrypted sync over HTTPS |
-| `commands/` | Sub-module split: `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` |
-| `deckcode/` | DeckCode input orchestration: schema parsing (`schema.rs`, `multilang_schema.rs`), raw input loop (`input.rs`), bindings mapping (`resolver.rs`), and frontend IPC dispatch (`dispatch.rs`). |
+| `autocomplete.rs` | Terminal autocomplete — command/path/history suggestions for the PTY |
+| `computer_use.rs` | Screenshot capture and computer-use tool support (base64 image encoding) |
+| `doc_indexer.rs` | Document indexer — crawls files/URLs into `MemoryRecord` embeddings for RAG |
+| `hf_model_mgr.rs` | HuggingFace model manager — download/list/delete local GGUF/ONNX models |
+| `lsp.rs` | LSP client manager — one stdio JSON-RPC language server per language; publishes `lsp:diagnostics` events |
+| `ollama_mgr.rs` | Ollama model lifecycle — pull, list, delete models via the Ollama REST API |
+| `orchestrator.rs` | Multi-step LLM orchestration — chained prompts with tool dispatch and state |
+| `plugin_mgr.rs` | Plugin lifecycle manager — load/unload/reload Lua plugins at runtime |
+| `remote_control.rs` | UDP remote control server — accept remote keystrokes/commands over LAN |
+| `scheduler.rs` | Cron scheduler via `tokio-cron-scheduler` — persist and fire timed Lua/workflow jobs |
+| `workflow.rs` | Workflow runner — DAG step executor integrated with the scheduler |
+| `commands/` | Sub-module split: `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs`, `api_lab.rs`, `cli_maker.rs`, `git.rs`, `ide.rs` |
+| `deckcode/` | DeckCode input orchestration: schema parsing (`schema.rs`, `multilang_schema.rs`), raw input loop (`input.rs`), bindings mapping (`resolver.rs`), and frontend IPC dispatch (`dispatch.rs`) |
+
+### New `commands/` Sub-Modules
+| Sub-module | What It Owns |
+|---|---|
+| `api_lab.rs` | Interactive API Lab — save/run HTTP request presets, view response history |
+| `cli_maker.rs` | CLI Maker — generate CLI argument schemas and command templates |
+| `git.rs` | Git commands — status, diff, log, commit, branch, stash via `git` subprocess |
+| `ide.rs` | IDE workspace — file tree listing, open/save/rename files in `user_config_dir()/workspace/` |
 
 ### Infrastructure Crate (`infrastructure/`)
 A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
@@ -97,7 +141,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Rules
 
-- **Every new Tauri command** must be: (1) defined with `#[tauri::command]` in a `src/` module, (2) added to `generate_handler![]` in `lib.rs`. The dev-mode mock IPC shim has been removed — commands are no longer duplicated there.
+- **Every new backend command** must be: (1) defined as an `async fn` in a `commands/` sub-module, (2) registered in `bridge.rs`'s router via `.route("/api/command_name", post(...))`. The Tauri `generate_handler![]` macro is no longer used — the bridge routes directly.
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. The backend now auto-evicts via `sessions.remove(&id)` before insert, but the rule still stands — double-spawning without kill leaves a brief reader-thread overlap that can emit duplicate output events.
@@ -114,7 +158,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Do not load the full FTP file into a `Vec<u8>` for files that could be large** — `retr_as_buffer` is for small files only. Stream to disk for anything user-selectable.
 - **Do not use `unwrap()` in Tauri command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
 - **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
-- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and Tauri's JS API (all CDN or vendored). Adding a bundled npm package will bloat the Tauri WebView bundle.
+- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and `neurobridge.js` (local). Adding a bundled npm package will bloat the Electron renderer bundle.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
 - **Never use `./data/` or `./sessions/` relative paths** in Rust — always call `user_config_dir().join("data/...")`. CWD-relative paths work in `tauri dev` but fail on read-only SteamOS installs.
 - **Never mutate `GEMINI_API_KEY` env var globally** — use `GeminiProvider::new_with_key(model, key)` for key injection in test/one-off paths. Mutating the env var races with concurrent `send_command` calls.
@@ -180,6 +224,28 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection, avoiding generic JS evaluations or hardcoded Monaco commands.
 
+- **`neurobridge.js` is the only IPC entrypoint** — all `invoke()` and `listen()` calls in the frontend import from `./neurobridge.js`, not from `@tauri-apps/api`. If you see a `@tauri-apps/api` import, replace it. The bridge must be running (sidecar started by Electron) before any command calls succeed.
+
+- **Bridge port conflict** — if `NEURODECK_PORT` is not set, the sidecar binds to `9477`. If another process holds that port, the bridge fails silently and all `invoke()` calls reject. Set a different port via env var and update Electron's expected port accordingly.
+
+- **`sftp.rs` uses the system `ssh`/`sftp` CLI** — unlike `ftp.rs` which uses the `suppaftp` crate, SFTP is implemented by spawning the system `sftp` process. Requires `ssh`/`sftp` to be on `PATH`. All calls use `spawn_blocking`.
+
+- **LSP sessions are per-language** — `lsp.rs` maintains one stdio JSON-RPC child process per language (keyed by language ID). Diagnostics are published as `lsp:diagnostics` WebSocket events. `lsp_client.js` subscribes and renders inline markers in the IDE view. Starting two LSP servers for the same language ID replaces the first.
+
+- **Scheduler jobs are cron-string-based** — `scheduler.rs` uses `tokio-cron-scheduler`. Jobs are persisted to `user_config_dir()/data/jobs.json` and rehydrated on startup. Lua snippet jobs call back into the Lua runtime. Workflow jobs call `workflow.rs`'s DAG executor.
+
+- **Ollama manager vs. the original Ollama path** — `ollama_mgr.rs` provides model lifecycle commands (pull, list, delete) against the local Ollama REST API. `llm.rs`'s `OllamaProvider` is still used for actual inference. These are separate concerns — `ollama_mgr.rs` does not replace `OllamaProvider`.
+
+- **`computer_use.rs` captures screenshots as base64** — used by the agent's computer-use tool to pass screen state to the LLM. Does not perform OCR or UI tree extraction natively; the LLM interprets the image directly.
+
+- **`doc_indexer.rs` generates embeddings on ingest** — when indexing a file or URL, it calls `provider.generate_embedding()` and stores a `MemoryRecord` with a real embedding vector. Requires a live Gemini API key. Without it, the record is stored with a zero-vector and RAG search skips it.
+
+- **Production CI workflows** — `.github/workflows/production-ci.yml` and `production-release.yml` are new. CI runs lint, typecheck, Rust `cargo check`, and build. Release workflow builds Windows MSI and Linux AppImage artifacts.
+
+- **`radial.js` is now a standalone module** — the radial menu segment registry was extracted from `main.js`. Add new views to the radial menu by registering them in `radial.js`'s segment array, not in `main.js`.
+
+- **`settings.js` owns all settings UI** — all settings modal logic (read, write, reset, theme preview, LLM config) lives in `settings.js`. `main.js` only mounts the modal; it does not duplicate settings logic.
+
 ---
 
 ## KFMS v1.0 — Khaotic Foundation Metadata Standard
@@ -228,15 +294,18 @@ next:    v1.3.x → Osiris  (MINOR=3, index 3)
 ## Dev Commands
 
 ```bash
-npm run tauri dev                     # Hot-reload (Vite + Rust)
-npm run build                         # Production build
+npm run tauri dev                     # Legacy hot-reload path (Vite + Rust via Tauri) — may not work post-bridge
+npm run build                         # Production build (Electron + bridge sidecar)
 
-npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without Tauri)
+npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without bridge sidecar)
 npm run --prefix frontend build       # Vite build only
 
 cd src-tauri && cargo check           # Fast type-check
 cd src-tauri && cargo clippy          # Lint
 cd src-tauri && cargo build           # Debug build (~2min first time due to mlua vendored)
+
+# Start the bridge sidecar manually for frontend-only dev:
+NEURODECK_PORT=9477 cargo run --manifest-path src-tauri/Cargo.toml
 
 ./install.sh                          # SteamOS deploy → ~/Applications/neurodeck/
 ./launch_gamescope.sh                 # Run in gamescope 1280×800 (Steam Deck Game Mode)
