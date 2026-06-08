@@ -794,21 +794,368 @@
                 </section>
 
                 <section id="view-git" class="view-content" role="tabpanel" aria-labelledby="nav-tab-git" data-testid="view-git">
+                  <div class="git-workspace">
+                    <div class="git-pane git-pane-left">
+                      <div class="git-pane-header">Repositories</div>
+                      <div class="git-repo-actions">
+                        <button id="git-clone-btn" class="git-btn" type="button" aria-label="Clone repository">Clone</button>
+                        <button id="git-init-btn" class="git-btn" type="button" aria-label="Init new repository">Init</button>
+                        <button id="git-open-btn" class="git-btn" type="button" aria-label="Open existing repository">Open</button>
+                      </div>
+                      <ul id="git-repo-list" class="git-repo-list" role="listbox" aria-label="Repository list"></ul>
+                    </div>
+                    <div class="git-pane git-pane-center">
+                      <div class="git-pane-header">
+                        <span id="git-repo-name">No repo selected</span>
+                        <span class="git-branch-badge" id="git-repo-branch"></span>
+                      </div>
+                      <div id="git-worktree" class="git-worktree" role="list" aria-label="Working tree files"></div>
+                      <pre id="git-diff-body" class="git-diff-body" aria-label="Diff output" aria-live="polite"></pre>
+                    </div>
+                    <div class="git-pane git-pane-right">
+                      <div class="git-pane-header">Commit</div>
+                      <div class="git-commit-actions">
+                        <button id="git-stage-btn" class="git-btn" type="button" aria-label="Stage selected files">Stage</button>
+                        <button id="git-unstage-btn" class="git-btn" type="button" aria-label="Unstage selected files">Unstage</button>
+                        <button id="git-discard-btn" class="git-btn" type="button" aria-label="Discard changes">Discard</button>
+                      </div>
+                      <textarea id="git-commit-msg" class="git-commit-msg" rows="3" placeholder="Commit message..." aria-label="Commit message"></textarea>
+                      <div style="display:flex;gap:6px;flex-shrink:0;">
+                        <button id="git-commit-btn" class="git-btn" type="button" style="flex:1" aria-label="Commit staged changes">Commit</button>
+                        <button id="git-ai-commit-btn" class="git-btn" type="button" aria-label="Generate commit message with AI">AI</button>
+                      </div>
+                      <div class="git-pane-header" style="margin-top:10px;">Branches</div>
+                      <ul id="git-branch-list" class="git-branch-list" role="list" aria-label="Branch list"></ul>
+                      <div class="git-pane-header" style="margin-top:10px;">History</div>
+                      <ul id="git-history-list" class="git-history-list" role="list" aria-label="Commit history"></ul>
+                      <div class="git-pane-header" style="margin-top:10px;">Accounts</div>
+                      <ul id="git-account-list" class="git-account-list" role="list" aria-label="Git accounts"></ul>
+                    </div>
+                  </div>
                 </section>
 
                 <section id="view-api-lab" class="view-content" role="tabpanel" aria-labelledby="nav-tab-api-lab" data-testid="view-api-lab">
+                  <div class="api-lab-workspace">
+                    <!-- Left: sidebar (collections / history / env) -->
+                    <div class="api-lab-pane api-lab-left">
+                      <div class="api-lab-header">API Lab</div>
+                      <div class="api-lab-actions">
+                        <button id="api-new-collection-btn" class="api-lab-btn" type="button" aria-label="New collection">+ Collection</button>
+                        <button id="api-clear-history-btn" class="api-lab-btn" type="button" aria-label="Clear history">Clear</button>
+                      </div>
+                      <div class="api-lab-stab-bar" role="tablist" aria-label="Sidebar sections">
+                        <button class="api-lab-stab active" role="tab" type="button" data-stab="collections" aria-selected="true">Collections</button>
+                        <button class="api-lab-stab" role="tab" type="button" data-stab="history" aria-selected="false">History</button>
+                        <button class="api-lab-stab" role="tab" type="button" data-stab="env" aria-selected="false">Env</button>
+                      </div>
+                      <div id="api-stab-collections" class="api-lab-stab-panel active" role="tabpanel"></div>
+                      <div id="api-stab-history" class="api-lab-stab-panel" role="tabpanel"></div>
+                      <div id="api-stab-env" class="api-lab-stab-panel" role="tabpanel">
+                        <div id="api-env-list" class="api-lab-kv-list"></div>
+                        <button id="api-add-env-btn" class="api-lab-btn" type="button" aria-label="Add environment variable" style="margin-top:6px;">+ Var</button>
+                      </div>
+                    </div>
+                    <!-- Right: request builder + response -->
+                    <div class="api-lab-pane api-lab-right">
+                      <!-- URL bar -->
+                      <div class="api-lab-url-bar">
+                        <select id="api-method-select" class="api-lab-method-select" aria-label="HTTP method">
+                          <option value="GET">GET</option>
+                          <option value="POST">POST</option>
+                          <option value="PUT">PUT</option>
+                          <option value="PATCH">PATCH</option>
+                          <option value="DELETE">DELETE</option>
+                          <option value="HEAD">HEAD</option>
+                          <option value="OPTIONS">OPTIONS</option>
+                        </select>
+                        <input id="api-url-input" class="api-lab-url-input" type="url" placeholder="https://api.example.com/v1/resource" aria-label="Request URL" />
+                        <button id="api-send-btn" class="api-lab-btn api-lab-btn-primary" type="button" aria-label="Send request">Send</button>
+                      </div>
+                      <!-- Request tabs -->
+                      <div class="api-lab-tab-bar" role="tablist" aria-label="Request configuration">
+                        <button class="api-lab-tab active" role="tab" type="button" data-api-tab="headers" aria-selected="true">Headers</button>
+                        <button class="api-lab-tab" role="tab" type="button" data-api-tab="auth" aria-selected="false">Auth</button>
+                        <button class="api-lab-tab" role="tab" type="button" data-api-tab="body" aria-selected="false">Body</button>
+                      </div>
+                      <div id="api-tab-headers" class="api-lab-tab-panel active" role="tabpanel">
+                        <div id="api-headers-list" class="api-lab-kv-list" aria-label="Request headers"></div>
+                        <button id="api-add-header-btn" class="api-lab-btn" type="button" aria-label="Add header">+ Header</button>
+                      </div>
+                      <div id="api-tab-auth" class="api-lab-tab-panel" role="tabpanel">
+                        <select id="api-auth-type" class="api-lab-select" aria-label="Authentication type">
+                          <option value="none">None</option>
+                          <option value="bearer">Bearer Token</option>
+                          <option value="basic">Basic Auth</option>
+                          <option value="apikey">API Key</option>
+                        </select>
+                        <div id="api-auth-bearer" class="hidden" style="margin-top:8px;">
+                          <input id="api-auth-token" class="api-lab-input" type="password" placeholder="Bearer token..." aria-label="Bearer token" />
+                        </div>
+                        <div id="api-auth-basic" class="hidden" style="margin-top:8px;display:flex;gap:6px;">
+                          <input id="api-auth-username" class="api-lab-input" type="text" placeholder="Username" aria-label="Username" />
+                          <input id="api-auth-password" class="api-lab-input" type="password" placeholder="Password" aria-label="Password" />
+                        </div>
+                        <div id="api-auth-apikey" class="hidden" style="margin-top:8px;display:flex;gap:6px;">
+                          <input id="api-auth-key-name" class="api-lab-input" type="text" placeholder="Header name" aria-label="API key header name" />
+                          <input id="api-auth-key-value" class="api-lab-input" type="password" placeholder="Key value" aria-label="API key value" />
+                        </div>
+                      </div>
+                      <div id="api-tab-body" class="api-lab-tab-panel" role="tabpanel">
+                        <select id="api-body-mode" class="api-lab-select" aria-label="Body mode">
+                          <option value="raw">Raw JSON</option>
+                          <option value="form">Form Data</option>
+                        </select>
+                        <textarea id="api-body-input" class="api-lab-body-input" rows="4" placeholder='{"key": "value"}' aria-label="Request body" style="margin-top:6px;"></textarea>
+                        <div id="api-form-list" class="api-lab-kv-list hidden" aria-label="Form fields"></div>
+                        <button id="api-add-form-btn" class="api-lab-btn hidden" type="button" style="margin-top:6px;">+ Field</button>
+                      </div>
+                      <!-- Action buttons -->
+                      <div class="api-lab-actions" style="flex-shrink:0;">
+                        <button id="api-save-request-btn" class="api-lab-btn" type="button" aria-label="Save request to collection">Save</button>
+                        <button id="api-ai-generate-btn" class="api-lab-btn" type="button" aria-label="AI generate request">AI</button>
+                        <button id="api-export-curl-btn" class="api-lab-btn" type="button" aria-label="Export as cURL">cURL</button>
+                        <button id="api-import-curl-btn" class="api-lab-btn" type="button" aria-label="Import cURL command">Import</button>
+                      </div>
+                      <textarea id="api-curl-area" class="api-lab-curl-area hidden" rows="2" aria-label="cURL command" readonly></textarea>
+                      <!-- Response area -->
+                      <div class="api-lab-resp-area">
+                        <div class="api-lab-resp-header">
+                          <span id="api-response-status" class="api-lab-resp-status" aria-live="polite"></span>
+                          <div class="api-lab-resp-tab-bar" role="tablist" aria-label="Response view">
+                            <button class="api-lab-resp-tab active" role="tab" type="button" data-resp-tab="body" aria-selected="true">Body</button>
+                            <button class="api-lab-resp-tab" role="tab" type="button" data-resp-tab="headers" aria-selected="false">Headers</button>
+                          </div>
+                          <div style="display:flex;gap:6px;margin-left:auto;">
+                            <button id="api-resp-copy-btn" class="api-lab-btn" type="button" aria-label="Copy response body">Copy</button>
+                            <button id="api-resp-canvas-btn" class="api-lab-btn" type="button" aria-label="Send to canvas">→ Canvas</button>
+                          </div>
+                        </div>
+                        <pre id="api-response-body" class="api-lab-resp-body" aria-label="Response body" aria-live="polite"></pre>
+                        <pre id="api-response-headers" class="api-lab-resp-body hidden" aria-label="Response headers"></pre>
+                      </div>
+                    </div>
+                  </div>
                 </section>
 
                 <section id="view-cli-maker" class="view-content" role="tabpanel" aria-labelledby="nav-tab-cli-maker" data-testid="view-cli-maker">
+                  <div class="cli-maker-workspace">
+                    <!-- Left: command list -->
+                    <div class="cli-maker-pane cli-maker-left">
+                      <div class="cli-maker-header">Commands</div>
+                      <div style="display:flex;gap:6px;flex-shrink:0;">
+                        <button id="cli-new-cmd-btn" class="cli-filter active" type="button" aria-label="New command">+ New</button>
+                        <label class="cli-filter" style="cursor:pointer;" aria-label="Import command from file">
+                          Import
+                          <input id="cli-import-file-input" type="file" accept=".json,.toml,.lua" style="display:none;" aria-hidden="true" tabindex="-1" />
+                        </label>
+                        <button id="cli-import-btn" class="cli-filter" type="button" aria-label="Import command">↑</button>
+                      </div>
+                      <div id="cli-maker-filters" class="cli-maker-filters" role="group" aria-label="Category filters">
+                        <button class="cli-filter active" type="button" data-category="all">All</button>
+                        <button class="cli-filter" type="button" data-category="prompt">Prompt</button>
+                        <button class="cli-filter" type="button" data-category="shell">Shell</button>
+                        <button class="cli-filter" type="button" data-category="view">View</button>
+                        <button class="cli-filter" type="button" data-category="chain">Chain</button>
+                        <button class="cli-filter" type="button" data-category="plugin">Plugin</button>
+                      </div>
+                      <ul id="cli-maker-list" class="cli-cmd-list" role="listbox" aria-label="Command list"></ul>
+                    </div>
+                    <!-- Center: editor form -->
+                    <div class="cli-maker-pane cli-maker-center">
+                      <div class="cli-maker-header">
+                        <span id="cli-editor-title">Select a command</span>
+                      </div>
+                      <div class="cli-form-group">
+                        <label class="cli-label" for="cli-cmd-name">Name</label>
+                        <input id="cli-cmd-name" class="cli-input" type="text" placeholder="command-name" aria-label="Command name" />
+                      </div>
+                      <div class="cli-form-group">
+                        <label class="cli-label" for="cli-cmd-desc">Description</label>
+                        <input id="cli-cmd-desc" class="cli-input" type="text" placeholder="What does this command do?" aria-label="Command description" />
+                      </div>
+                      <div class="cli-form-group" style="display:flex;gap:8px;">
+                        <div style="flex:1;">
+                          <label class="cli-label" for="cli-cmd-category">Category</label>
+                          <select id="cli-cmd-category" class="cli-select" aria-label="Command category">
+                            <option value="prompt">Prompt</option>
+                            <option value="shell">Shell</option>
+                            <option value="view">View</option>
+                            <option value="chain">Chain</option>
+                            <option value="plugin">Plugin</option>
+                          </select>
+                        </div>
+                        <div style="flex:1;">
+                          <label class="cli-label" for="cli-lang-select">Language</label>
+                          <select id="cli-lang-select" class="cli-select" aria-label="Shell language">
+                            <option value="bash">Bash</option>
+                            <option value="powershell">PowerShell</option>
+                            <option value="python">Python</option>
+                            <option value="lua">Lua</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="cli-form-group">
+                        <label class="cli-label" for="cli-shortcut-input">Shortcut</label>
+                        <input id="cli-shortcut-input" class="cli-input" type="text" placeholder="Press keys..." aria-label="Keyboard shortcut" readonly />
+                      </div>
+                      <!-- Dynamic category fields (shell, prompt, view, chain, plugin) -->
+                      <div class="cli-form-group">
+                        <label class="cli-label" for="cli-shell-command">Command</label>
+                        <input id="cli-shell-command" class="cli-input" type="text" placeholder="echo hello" aria-label="Shell command" />
+                      </div>
+                      <div class="cli-form-group">
+                        <label class="cli-label" for="cli-shell-cwd">Working dir</label>
+                        <input id="cli-shell-cwd" class="cli-input" type="text" placeholder="/home/user" aria-label="Working directory" />
+                      </div>
+                      <div id="cli-dynamic-fields" class="cli-dynamic-fields"></div>
+                      <!-- Flags section -->
+                      <div id="cli-flags-section" class="cli-section">
+                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                          <span class="cli-label">Flags</span>
+                          <button id="cli-add-flag-btn" class="cli-filter" type="button" aria-label="Add flag">+ Flag</button>
+                        </div>
+                        <div id="cli-flags-list" class="cli-flags-list" role="list" aria-label="Flags"></div>
+                      </div>
+                      <!-- Subcommands section -->
+                      <div id="cli-subcmds-section" class="cli-section">
+                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                          <span class="cli-label">Subcommands</span>
+                          <button id="cli-add-subcmd-btn" class="cli-filter" type="button" aria-label="Add subcommand">+ Sub</button>
+                        </div>
+                        <div id="cli-subcmds-list" class="cli-subcmds-list" role="list" aria-label="Subcommands"></div>
+                      </div>
+                      <!-- Chain list -->
+                      <div class="cli-section" id="cli-chain-section">
+                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                          <span class="cli-label">Chain steps</span>
+                          <button id="cli-add-chain-step" class="cli-filter" type="button" aria-label="Add chain step">+ Step</button>
+                        </div>
+                        <div id="cli-chain-list" class="cli-chain-list"></div>
+                      </div>
+                      <!-- Action buttons -->
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;margin-top:auto;padding-top:10px;">
+                        <button id="cli-save-btn" class="cli-filter active" type="button" aria-label="Save command">Save</button>
+                        <button id="cli-test-btn" class="cli-filter" type="button" aria-label="Test command">Test</button>
+                        <button id="cli-export-btn" class="cli-filter" type="button" aria-label="Export as Lua">Lua</button>
+                        <button id="cli-save-plugin-btn" class="cli-filter" type="button" aria-label="Save as plugin file">Plugin</button>
+                        <button id="cli-export-script-btn" class="cli-filter" type="button" aria-label="Export as shell script">Script</button>
+                      </div>
+                    </div>
+                    <!-- Right: help preview -->
+                    <div class="cli-maker-pane cli-maker-right">
+                      <div class="cli-maker-header">Help Preview</div>
+                      <pre id="cli-help-preview" class="cli-help-preview" aria-label="Generated help text" aria-live="polite"></pre>
+                    </div>
+                  </div>
                 </section>
 
                 <section id="view-graph" class="view-content" role="tabpanel" aria-labelledby="nav-tab-graph" data-testid="view-graph">
+                  <!-- graph_view.js self-renders via initGraphView(container) -->
                 </section>
 
                 <section id="view-orchestrator" class="view-content" role="tabpanel" aria-labelledby="nav-tab-orchestrator" data-testid="view-orchestrator">
+                  <div class="orch-shell">
+                    <!-- Toolbar -->
+                    <div class="orch-toolbar">
+                      <span class="orch-kicker">Orchestrator</span>
+                      <input id="orch-pipeline-name" class="orch-name-input" type="text" placeholder="Pipeline name..." aria-label="Pipeline name" />
+                      <div class="orch-toolbar-controls">
+                        <button id="orch-add-node-btn" class="orch-btn orch-btn-primary" type="button" aria-label="Add node">+ Node</button>
+                        <button id="orch-run-btn" class="orch-btn orch-btn-run" type="button" aria-label="Run pipeline">▶ Run</button>
+                        <button id="orch-pause-btn" class="orch-btn" type="button" aria-label="Pause pipeline" disabled>⏸ Pause</button>
+                        <button id="orch-stop-btn" class="orch-btn" type="button" aria-label="Stop pipeline" disabled>■ Stop</button>
+                        <button id="orch-save-btn" class="orch-btn" type="button" aria-label="Save pipeline">Save</button>
+                        <button id="orch-new-btn" class="orch-btn" type="button" aria-label="New pipeline">New</button>
+                        <button id="orch-clear-btn" class="orch-btn" type="button" aria-label="Clear canvas">Clear</button>
+                      </div>
+                      <div class="orch-toolbar-controls" style="margin-left:auto;">
+                        <button id="orch-auto-btn" class="orch-btn" type="button" aria-label="Auto-build pipeline from goal">Auto</button>
+                        <input id="orch-auto-goal" class="orch-auto-input" type="text" placeholder="Describe pipeline goal..." aria-label="Auto-build goal" />
+                      </div>
+                    </div>
+                    <!-- Body -->
+                    <div class="orch-body">
+                      <!-- Left panel: pipelines + log -->
+                      <div class="orch-left-panel">
+                        <div class="orch-panel-header">Pipelines</div>
+                        <div id="orch-pipeline-list" class="orch-pipeline-list" role="list" aria-label="Saved pipelines"></div>
+                        <div class="orch-panel-header" style="margin-top:8px;">Log</div>
+                        <div id="orch-log" class="orch-log" aria-label="Execution log" aria-live="polite"></div>
+                      </div>
+                      <!-- Center: canvas + output -->
+                      <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0;">
+                        <div class="orch-canvas-wrap" style="position:relative;flex:1;overflow:hidden;">
+                          <div id="orch-canvas" class="orch-canvas" aria-label="Pipeline canvas" role="region">
+                            <div class="orch-canvas-empty" aria-hidden="true">
+                              <div class="orch-canvas-empty-icon">⬡</div>
+                              <p>Click <strong>+ Node</strong> to add a step, or <strong>Auto</strong> to generate from a goal</p>
+                            </div>
+                          </div>
+                          <svg id="orch-arrows-svg" class="orch-arrows-svg" aria-hidden="true"></svg>
+                        </div>
+                        <div class="orch-output-panel">
+                          <div class="orch-panel-header">Output</div>
+                          <pre id="orch-output" class="orch-output" aria-label="Pipeline output" aria-live="polite"></pre>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </section>
 
                 <section id="view-ide" class="view-content" role="tabpanel" aria-labelledby="nav-tab-ide" data-testid="view-ide">
+                  <div class="ide-workspace">
+                    <!-- Toolbar -->
+                    <div class="ide-toolbar">
+                      <span class="ide-toolbar-title">Mini IDE</span>
+                      <button id="ide-btn-new-file" class="ide-toolbar-btn" type="button" aria-label="New file">+ File</button>
+                      <button id="ide-btn-new-folder" class="ide-toolbar-btn" type="button" aria-label="New folder">+ Folder</button>
+                      <button id="ide-btn-save" class="ide-toolbar-btn" type="button" aria-label="Save file (Ctrl+S)">Save</button>
+                      <button id="ide-btn-delete" class="ide-toolbar-btn" type="button" aria-label="Delete selected">Delete</button>
+                      <button id="ide-btn-refresh" class="ide-toolbar-btn" type="button" aria-label="Refresh file tree">Refresh</button>
+                      <div class="ide-toolbar-spacer"></div>
+                      <div class="ide-lsp-server-row">
+                        <select id="ide-lsp-server-select" class="ide-lsp-server-select" aria-label="LSP server language"></select>
+                        <button id="ide-lsp-toggle" class="ide-toolbar-btn ide-lsp-toggle-btn" type="button" aria-pressed="false" aria-label="Toggle LSP server">▶ LSP</button>
+                      </div>
+                      <span id="ide-lsp-status" class="ide-lsp-status" aria-label="LSP status" aria-live="polite"></span>
+                      <button id="ide-btn-run" class="ide-toolbar-btn" type="button" aria-label="Run active file">▶ Run</button>
+                      <button id="ide-btn-clear-output" class="ide-toolbar-btn" type="button" aria-label="Clear output panel">Clear</button>
+                    </div>
+                    <!-- Main area -->
+                    <div class="ide-main">
+                      <!-- Sidebar: file tree -->
+                      <div class="ide-sidebar">
+                        <div id="ide-file-tree" class="ide-file-tree" role="tree" aria-label="Workspace file tree"></div>
+                      </div>
+                      <!-- Editor area -->
+                      <div class="ide-editor-area">
+                        <!-- Tab bar -->
+                        <div id="ide-tab-bar" class="ide-tab-bar" role="tablist" aria-label="Open files"></div>
+                        <!-- Editor wrapper -->
+                        <div class="ide-editor-wrap" style="position:relative;flex:1;min-height:0;overflow:hidden;">
+                          <div id="ide-line-numbers" class="ide-line-numbers" aria-hidden="true"></div>
+                          <textarea id="ide-editor" class="ide-editor" spellcheck="false" autocomplete="off" autocapitalize="off"
+                                    aria-label="Code editor" aria-multiline="true" role="textbox"></textarea>
+                          <div id="ide-editor-mirror" class="ide-editor-mirror" aria-hidden="true"></div>
+                          <div id="ide-lsp-completions" class="ide-lsp-completions hidden" role="listbox" aria-label="Code completions"></div>
+                          <div id="ide-lsp-hover-tooltip" class="ide-lsp-hover-tooltip hidden" role="tooltip" aria-live="polite"></div>
+                        </div>
+                        <!-- LSP diagnostics panel -->
+                        <div id="ide-lsp-diagnostics-panel" class="ide-lsp-diag-panel collapsed">
+                          <div id="ide-lsp-diag-panel-header" class="ide-lsp-diag-panel-header" role="button" tabindex="0"
+                               aria-expanded="false" aria-label="Toggle diagnostics panel">
+                            <span class="ide-lsp-diag-panel-title">Problems</span>
+                            <span class="ide-lsp-diag-panel-toggle" aria-hidden="true">▲</span>
+                          </div>
+                          <div id="ide-lsp-diag-panel-content" class="ide-lsp-diag-panel-content" role="log" aria-label="Diagnostics" aria-live="polite"></div>
+                        </div>
+                        <!-- Output panel -->
+                        <div class="ide-output-panel">
+                          <div id="ide-output" class="ide-output" role="log" aria-label="Run output" aria-live="polite"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </section>
             </section>
         </main>
