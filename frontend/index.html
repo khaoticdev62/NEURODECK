@@ -79,6 +79,12 @@
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-docs" data-view="docs" data-testid="nav-tab-docs">Docs</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-workflow" data-view="workflow" data-testid="nav-tab-workflow">Workflow</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-scheduler" data-view="scheduler" data-testid="nav-tab-scheduler">Scheduler</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-git" data-view="git" data-testid="nav-tab-git">Git</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-api-lab" data-view="api-lab" data-testid="nav-tab-api-lab">API Lab</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-cli-maker" data-view="cli-maker" data-testid="nav-tab-cli-maker">CLI Maker</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-graph" data-view="graph" data-testid="nav-tab-graph">Graph</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-orchestrator" data-view="orchestrator" data-testid="nav-tab-orchestrator">Orchestrator</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-ide" data-view="ide" data-testid="nav-tab-ide">IDE</button>
                 </div>
             </nav>
 
@@ -772,14 +778,37 @@
                             <div class="scheduler-kicker">Automation</div>
                             <div class="scheduler-title">Task Scheduler</div>
                         </div>
+                        <div class="scheduler-form" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+                            <input id="scheduler-name-input" class="stv-input" type="text" placeholder="Task name..." aria-label="Task name" />
+                            <input id="scheduler-cron-input" class="stv-input" type="text" placeholder="Cron expression: 0 9 * * MON" aria-label="Cron expression" />
+                            <textarea id="scheduler-goal-input" class="stv-textarea" rows="2" placeholder="Task description or Lua snippet..." aria-label="Task goal or script"></textarea>
+                        </div>
                         <div class="scheduler-toolbar">
-                            <button id="sch-add-btn" class="stv-btn-primary" type="button">Add Task</button>
+                            <button id="scheduler-add-btn" class="stv-btn-primary" type="button">Add Task</button>
                             <button id="sch-refresh-btn" class="stv-btn-ghost" type="button">Refresh</button>
                         </div>
                         <div id="scheduler-task-list" class="scheduler-list" style="margin-top: 12px;">
                             <div class="scheduler-empty" style="color: var(--text-dim); padding: 20px;">Scheduled tasks will appear here.</div>
                         </div>
                     </div>
+                </section>
+
+                <section id="view-git" class="view-content" role="tabpanel" aria-labelledby="nav-tab-git" data-testid="view-git">
+                </section>
+
+                <section id="view-api-lab" class="view-content" role="tabpanel" aria-labelledby="nav-tab-api-lab" data-testid="view-api-lab">
+                </section>
+
+                <section id="view-cli-maker" class="view-content" role="tabpanel" aria-labelledby="nav-tab-cli-maker" data-testid="view-cli-maker">
+                </section>
+
+                <section id="view-graph" class="view-content" role="tabpanel" aria-labelledby="nav-tab-graph" data-testid="view-graph">
+                </section>
+
+                <section id="view-orchestrator" class="view-content" role="tabpanel" aria-labelledby="nav-tab-orchestrator" data-testid="view-orchestrator">
+                </section>
+
+                <section id="view-ide" class="view-content" role="tabpanel" aria-labelledby="nav-tab-ide" data-testid="view-ide">
                 </section>
             </section>
         </main>

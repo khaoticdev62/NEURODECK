@@ -20,4 +20,10 @@ export const RADIAL_SEGMENTS = [
   { icon: "fileText",      label: "Docs",       view: "docs"        },
   { icon: "workflow",      label: "Workflow",   view: "workflow"    },
   { icon: "calendarClock", label: "Scheduler",  view: "scheduler"   },
+  { icon: "gitBranch",    label: "Git",         view: "git"         },
+  { icon: "flask2",       label: "API Lab",     view: "api-lab"     },
+  { icon: "squareTerminal", label: "CLI Maker", view: "cli-maker"   },
+  { icon: "network",      label: "Graph",       view: "graph"       },
+  { icon: "layers",       label: "Orchestrator",view: "orchestrator"},
+  { icon: "codeXml",      label: "IDE",         view: "ide"         },
 ];

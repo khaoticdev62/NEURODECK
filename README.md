@@ -13,10 +13,10 @@
 
 [![License: Proprietary EULA](https://img.shields.io/badge/License-Proprietary%20EULA-D32F2F?style=for-the-badge&logo=probot&logoColor=white)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.92.0-FF4500?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
+[![Electron](https://img.shields.io/badge/Electron-36-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://electronjs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Steam%20Deck%20%7C%20Linux%20%7C%20Windows-1A9FFF?style=for-the-badge&logo=steamdeck&logoColor=white)](https://www.steamdeck.com/)
 [![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Ollama%20%7C%20OpenAI--Compat-8A2BE2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Version](https://img.shields.io/badge/Version-1.6.0--Bastet-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
+[![Version](https://img.shields.io/badge/Version-1.8.0--Ptah-39FF14?style=for-the-badge)](https://github.com/khaoticdev62/NEURODECK/releases)
 [![Plugins](https://img.shields.io/badge/Plugins-33-FF6B00?style=for-the-badge&logo=lua&logoColor=white)](https://github.com/khaoticdev62/neurodeck-plugins)
 
 **[Download](https://github.com/khaoticdev62/NEURODECK/releases/latest)** &nbsp;·&nbsp; **[User Guide](docs/USER_GUIDE.md)** &nbsp;·&nbsp; **[Plugin Registry](https://github.com/khaoticdev62/neurodeck-plugins)** &nbsp;·&nbsp; **[Changelog](docs/RELEASE_NOTES.md)**
@@ -37,19 +37,17 @@
 
 ## 🎯 Release Status
 
-**v1.6.0-Bastet** is **production-ready**, **100% hardened**, and **live as of 2026-05-30**:
+**v1.8.0-Ptah** is **production-ready** and **live as of 2026-06-08**:
 
-- ✅ **All security vulnerabilities patched** — command injection hardening (regex-based detection), blocklist bypass prevention, safe error handling across all Tauri commands
-- ✅ **Steam Deck AppImage fully fixed:**
-  - Fixed `EGL_BAD_PARAMETER` crash via system libwayland LD_PRELOAD + GDK_BACKEND=x11 fallback
-  - Fixed blank white page via `WEBKIT_DISABLE_DMABUF_RENDERER=1` in Rust startup
-  - Added 8-second splashscreen timeout fallback (prevents UI freeze on slow hardware)
-  - Bundled `install.sh` and `launch_gamescope.sh` inside AppImage (fully self-contained)
-- ✅ **30+ browser dialogs replaced with accessible modals** — Steam Deck Game Mode now fully compatible
-- ✅ **CI/CD pipeline passing all gates** — GitHub Actions versions aligned, security audit fixed, KFMS GO status (100/100)
-- ✅ **78 unit tests + 105 E2E tests** covering all primary flows, auth, security-sensitive operations
+- ✅ **Architecture migrated to Electron 36 + axum bridge** — Rust sidecar on `localhost:9477`, no Tauri dependency
+- ✅ **21 views fully wired** — Git, API Lab, CLI Maker, Graph, Orchestrator, and IDE now accessible in the nav bar
+- ✅ **Electron security hardened** — CSP injection, `contextIsolation: true`, `will-navigate` allowlist, dialog sanitization
+- ✅ **MCP server** on `localhost:13337` with bearer token auth (`subtle::ConstantTimeEq`)
+- ✅ **111 unit tests + 10 integration tests** — `cargo test --lib` and `cargo test --tests` passing
+- ✅ **KFMS governance active** — `infra/meta/meta.json` stamped, codename Ptah, score 90/100
+- ✅ **Capability-based deny-by-default ACL** — 9 capabilities, 3 built-in permission profiles
 
-**Download:** https://github.com/khaoticdev62/NEURODECK/releases/tag/v1.6.0-bastet
+**Download:** https://github.com/khaoticdev62/NEURODECK/releases/latest
 
 This is the **recommended version for daily use** on Steam Deck and any Linux/Windows machine.
 
@@ -61,7 +59,7 @@ NEURODECK is a **fullscreen desktop app** that turns a Steam Deck (or any Linux/
 
 **In plain English:** Imagine if your terminal, an AI chatbot, a live code editor, an SSH client, a file transfer tool, a browser, and an autonomous coding agent all lived in one app — switchable with your gamepad's left thumb, no keyboard required. That is NEURODECK.
 
-The backend is **Rust + Tauri v2**. The frontend is **vanilla JavaScript** — no React, no Vue, zero npm bloat. AI runs through Google Gemini (streaming SSE), any local Ollama model, or any **OpenAI-compatible endpoint** (Groq, OpenRouter, llama.cpp, Mistral, LM Studio). A Lua plugin API lets you extend it with a single `.lua` file drop.
+The backend is **Rust + axum** running as a sidecar on `localhost:9477`, fronted by **Electron 36**. The frontend is **vanilla JavaScript** — no React, no Vue, zero npm bloat. AI runs through Google Gemini (streaming SSE), any local Ollama model, or any **OpenAI-compatible endpoint** (Groq, OpenRouter, llama.cpp, Mistral, LM Studio). A Lua plugin API lets you extend it with a single `.lua` file drop.
 
 Built to be used from a couch, in Game Mode, with a controller in your hands.
 

@@ -31,7 +31,7 @@
 - ⬜ E2E suite passes (`cd e2e && npx playwright test`) — requires CI run
 - ✅ No `unwrap()` in new command handlers — audit confirmed
 - ✅ No `std::sync::Mutex` across `.await` in new code — audit confirmed
-- ⬜ AGENTS.md updated if conventions changed — review pending modifications
+- ✅ AGENTS.md updated if conventions changed — updated and pushed 2026-06-08 (commit d7a2a6f)
 
 ## Security Gate
 
@@ -46,7 +46,7 @@
 - ✅ Capability enforcement active on all protected commands — permissions.rs deny-by-default
 - ✅ Terminal blocklist prevents command chaining — security.rs BLOCKLIST patterns
 - ✅ Plugin path traversal validation active — plugin_mgr.rs path canonicalization
-- ⬜ MCP Bearer token validation uses ConstantTimeEq — verify in mcp.rs
+- ✅ MCP Bearer token validation uses ConstantTimeEq — confirmed `subtle::ConstantTimeEq::ct_eq()` in mcp.rs:661
 
 ## Privacy Gate
 
@@ -122,7 +122,7 @@
 
 ## Documentation Gate
 
-- ⬜ AGENTS.md is current (commands, conventions, gotchas) — has uncommitted modifications, review needed
+- ✅ AGENTS.md is current (commands, conventions, gotchas) — updated and pushed 2026-06-08
 - ⬜ README.md accurately describes stack and features — review pending
 - ⬜ CHANGELOG.md updated with all user-visible changes — update before tag
 - ✅ Production Package docs reflect current state — updated 2026-06-08
