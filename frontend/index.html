@@ -12,7 +12,7 @@
 </div>
 
 <div id="app">
-    <div id="sr-announcer" class="sr-only" aria-live="polite"></div>
+    <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <div class="app-layout">
         <aside id="sidebar" class="sidebar collapsed" aria-label="Session sidebar">
             <div class="sidebar-header">
@@ -843,7 +843,7 @@
                         <button id="api-new-collection-btn" class="api-lab-btn" type="button" aria-label="New collection">+ Collection</button>
                         <button id="api-clear-history-btn" class="api-lab-btn" type="button" aria-label="Clear history">Clear</button>
                       </div>
-                      <div class="api-lab-stab-bar" role="tablist" aria-label="Sidebar sections">
+                      <div class="api-lab-sidebar-tabs" role="tablist" aria-label="Sidebar sections">
                         <button class="api-lab-stab active" role="tab" type="button" data-stab="collections" aria-selected="true">Collections</button>
                         <button class="api-lab-stab" role="tab" type="button" data-stab="history" aria-selected="false">History</button>
                         <button class="api-lab-stab" role="tab" type="button" data-stab="env" aria-selected="false">Env</button>
@@ -872,7 +872,7 @@
                         <button id="api-send-btn" class="api-lab-btn api-lab-btn-primary" type="button" aria-label="Send request">Send</button>
                       </div>
                       <!-- Request tabs -->
-                      <div class="api-lab-tab-bar" role="tablist" aria-label="Request configuration">
+                      <div class="api-lab-tabs" role="tablist" aria-label="Request configuration">
                         <button class="api-lab-tab active" role="tab" type="button" data-api-tab="headers" aria-selected="true">Headers</button>
                         <button class="api-lab-tab" role="tab" type="button" data-api-tab="auth" aria-selected="false">Auth</button>
                         <button class="api-lab-tab" role="tab" type="button" data-api-tab="body" aria-selected="false">Body</button>
@@ -920,8 +920,8 @@
                       <!-- Response area -->
                       <div class="api-lab-resp-area">
                         <div class="api-lab-resp-header">
-                          <span id="api-response-status" class="api-lab-resp-status" aria-live="polite"></span>
-                          <div class="api-lab-resp-tab-bar" role="tablist" aria-label="Response view">
+                          <span id="api-response-status" class="api-lab-response-status" aria-live="polite"></span>
+                          <div class="api-lab-resp-tabs" role="tablist" aria-label="Response view">
                             <button class="api-lab-resp-tab active" role="tab" type="button" data-resp-tab="body" aria-selected="true">Body</button>
                             <button class="api-lab-resp-tab" role="tab" type="button" data-resp-tab="headers" aria-selected="false">Headers</button>
                           </div>
@@ -930,8 +930,8 @@
                             <button id="api-resp-canvas-btn" class="api-lab-btn" type="button" aria-label="Send to canvas">→ Canvas</button>
                           </div>
                         </div>
-                        <pre id="api-response-body" class="api-lab-resp-body" aria-label="Response body" aria-live="polite"></pre>
-                        <pre id="api-response-headers" class="api-lab-resp-body hidden" aria-label="Response headers"></pre>
+                        <pre id="api-response-body" class="api-lab-response-body" aria-label="Response body" aria-live="polite"></pre>
+                        <pre id="api-response-headers" class="api-lab-response-body hidden" aria-label="Response headers"></pre>
                       </div>
                     </div>
                   </div>
@@ -1093,7 +1093,7 @@
                           </div>
                           <svg id="orch-arrows-svg" class="orch-arrows-svg" aria-hidden="true"></svg>
                         </div>
-                        <div class="orch-output-panel">
+                        <div class="orch-right-panel">
                           <div class="orch-panel-header">Output</div>
                           <pre id="orch-output" class="orch-output" aria-label="Pipeline output" aria-live="polite"></pre>
                         </div>
