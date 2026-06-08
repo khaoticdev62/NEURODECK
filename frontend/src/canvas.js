@@ -578,12 +578,13 @@ function _ccWireCollabEvents(cc) {
 function _ccWireModalOpen(cc) {
     cc.collabBtn.addEventListener("click", () => {
         cc.collabModal.classList.add("active");
+        cc.collabModal.setAttribute("aria-hidden", "false");
         if (!cc.collabFocusTrap) cc.collabFocusTrap = new FocusTrap(cc.collabModal);
         cc.collabFocusTrap.activate();
     });
-    if (cc.closeX) cc.closeX.addEventListener("click", () => { cc.collabModal.classList.remove("active"); cc.collabFocusTrap?.deactivate(); _ccStopPeerDiscovery(cc); });
+    if (cc.closeX) cc.closeX.addEventListener("click", () => { cc.collabModal.classList.remove("active"); cc.collabModal.setAttribute("aria-hidden", "true"); cc.collabFocusTrap?.deactivate(); _ccStopPeerDiscovery(cc); });
     cc.collabModal.addEventListener("click", e => {
-        if (e.target === cc.collabModal) { cc.collabModal.classList.remove("active"); cc.collabFocusTrap?.deactivate(); _ccStopPeerDiscovery(cc); }
+        if (e.target === cc.collabModal) { cc.collabModal.classList.remove("active"); cc.collabModal.setAttribute("aria-hidden", "true"); cc.collabFocusTrap?.deactivate(); _ccStopPeerDiscovery(cc); }
     });
     if (cc.resyncBtn) {
         cc.resyncBtn.addEventListener("click", () => {

@@ -128,7 +128,6 @@ fn parse_sftp_line(line: &str) -> Option<FtpFileEntry> {
     Some(FtpFileEntry { name, is_dir, size })
 }
 
-#[tauri::command]
 pub async fn sftp_test_connection(
     host: String,
     port: u16,
@@ -155,7 +154,6 @@ pub async fn sftp_test_connection(
     .map_err(to_string_err)?
 }
 
-#[tauri::command]
 pub async fn sftp_list_dir(
     host: String,
     port: u16,
@@ -188,7 +186,6 @@ pub async fn sftp_list_dir(
     .map_err(to_string_err)?
 }
 
-#[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub async fn sftp_download_file(
     host: String,
@@ -221,7 +218,6 @@ pub async fn sftp_download_file(
     .map_err(to_string_err)?
 }
 
-#[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub async fn sftp_upload_file(
     host: String,

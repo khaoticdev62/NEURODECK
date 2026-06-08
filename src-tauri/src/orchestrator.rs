@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
 use tokio::sync::oneshot;
 
 use crate::llm::LlmProvider;
+use crate::{AppHandle, State};
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -82,7 +82,6 @@ impl OrchestratorManaged {
 
 // ── Commands ───────────────────────────────────────────────────────────────────
 
-#[tauri::command]
 pub async fn start_orchestrated_task(
     goal: String,
     app_handle: AppHandle,
@@ -112,7 +111,7 @@ pub async fn start_orchestrated_task(
     let state_arc = Arc::clone(&orch.state);
     let goal_clone = goal.clone();
 
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         let _ =
             _run_orchestration(goal_clone, provider, app_handle, state_arc, &mut abort_rx).await;
     });
@@ -120,7 +119,6 @@ pub async fn start_orchestrated_task(
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_orchestration_status(orch: State<'_, OrchestratorManaged>) -> OrchestratorStatus {
     let s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
     OrchestratorStatus {
@@ -130,7 +128,6 @@ pub fn get_orchestration_status(orch: State<'_, OrchestratorManaged>) -> Orchest
     }
 }
 
-#[tauri::command]
 pub fn stop_orchestration(orch: State<'_, OrchestratorManaged>) -> Result<(), String> {
     let mut s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = s.abort_tx.take() {
@@ -142,10 +139,10 @@ pub fn stop_orchestration(orch: State<'_, OrchestratorManaged>) -> Result<(), St
 
 // ── Orchestration engine ───────────────────────────────────────────────────────
 
-async fn _run_orchestration(
+pub async fn _run_orchestration<E: crate::bridge::EventEmitter>(
     goal: String,
     provider: Arc<dyn LlmProvider>,
-    app: AppHandle,
+    app: E,
     state: Arc<Mutex<OrchestratorState>>,
     abort_rx: &mut oneshot::Receiver<()>,
 ) -> Result<(), String> {
@@ -219,7 +216,7 @@ async fn _run_orchestration(
         let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
         s.plan = Some(plan.clone());
     }
-    let _ = app.emit("orchestrator_plan_ready", &plan);
+    app.emit("orchestrator_plan_ready", &plan);
 
     aborted!();
 
@@ -258,7 +255,7 @@ async fn _run_orchestration(
             }
         }
         for task in &ready {
-            let _ = app.emit(
+            app.emit(
                 "agent_task_started",
                 serde_json::json!({
                     "id": task.id, "role": task.role
@@ -319,7 +316,7 @@ async fn _run_orchestration(
                                 }
                             }
                         }
-                        let _ = app.emit(
+                        app.emit(
                             "agent_task_done",
                             serde_json::json!({
                                 "id": id, "role": task.role,
@@ -337,7 +334,7 @@ async fn _run_orchestration(
                                 }
                             }
                         }
-                        let _ = app.emit(
+                        app.emit(
                             "agent_task_done",
                             serde_json::json!({
                                 "id": id, "role": task.role, "error": e
@@ -358,7 +355,7 @@ async fn _run_orchestration(
     // ── 3. Synthesis ─────────────────────────────────────────────────────────
     if results.is_empty() {
         _set_done(&state);
-        let _ = app.emit(
+        app.emit(
             "orchestration_complete",
             serde_json::json!({
                 "goal": goal, "summary": "No results produced.",
@@ -395,7 +392,7 @@ async fn _run_orchestration(
         .unwrap_or_else(|_| agent_outputs.clone());
 
     _set_done(&state);
-    let _ = app.emit(
+    app.emit(
         "orchestration_complete",
         serde_json::json!({
             "goal": goal,
@@ -415,7 +412,6 @@ fn pipelines_path() -> std::path::PathBuf {
     dir.join("pipelines.json")
 }
 
-#[tauri::command]
 pub fn save_pipeline(pipeline: Pipeline) -> Result<(), String> {
     let path = pipelines_path();
     let mut all: Vec<Pipeline> = if path.exists() {
@@ -436,7 +432,6 @@ pub fn save_pipeline(pipeline: Pipeline) -> Result<(), String> {
     std::fs::write(&path, json).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn load_pipelines() -> Result<Vec<Pipeline>, String> {
     let path = pipelines_path();
     if !path.exists() {
@@ -446,7 +441,6 @@ pub fn load_pipelines() -> Result<Vec<Pipeline>, String> {
     serde_json::from_str(&raw).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
 pub fn delete_pipeline(id: String) -> Result<(), String> {
     let path = pipelines_path();
     if !path.exists() {

@@ -1,0 +1,35 @@
+{
+  "package": "NEURODECK Production Package",
+  "version": "1.0.0-blueprint",
+  "generatedAt": "2026-06-07T18:37:16Z",
+  "chapters": "1-100 complete",
+  "primaryTarget": [
+    "Steam Deck",
+    "SteamOS Game Mode",
+    "Linux x86_64",
+    "Windows x64"
+  ],
+  "architecture": [
+    "Electron",
+    "React",
+    "TypeScript",
+    "Tailwind CSS",
+    "Rust sidecar",
+    "SQLite"
+  ],
+  "documents": [
+    "README.md",
+    "checklists/FINAL_1_0_RELEASE_CHECKLIST.md",
+    "checklists/PRODUCTION_BACKLOG.md",
+    "docs/00_NEURODECK_Master_PRD_SDS_Implementation_Blueprint.md",
+    "docs/01_Product_PRD.md",
+    "docs/02_Software_Design_Specification.md",
+    "docs/03_Implementation_Roadmap.md",
+    "docs/04_Security_Privacy_Hardening.md",
+    "docs/05_Steam_Deck_UX_Release_Gate.md",
+    "docs/06_QA_Testing_Release_Gates.md",
+    "docs/07_Repository_CI_CD_Setup.md",
+    "docs/08_Plugin_Automation_Workflow_Spec.md",
+    "docs/09_Release_Packaging_Observability.md"
+  ]
+}

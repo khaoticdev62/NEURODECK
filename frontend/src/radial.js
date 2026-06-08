@@ -14,7 +14,10 @@ export const RADIAL_SEGMENTS = [
   { icon: "globe",         label: "Browser",    view: "browser"     },
   { icon: "bot",           label: "Agent",      view: "agent"       },
   { icon: "brain",         label: "Memory",     view: "memory"      },
+  { icon: "layoutDashboard", label: "Dashboard", view: "dashboard"   },
   { icon: "sparkles",      label: "PromptLab",  view: "prompt-lab"  },
   { icon: "panelRightOpen",label: "Remote",     view: "remote"      },
   { icon: "fileText",      label: "Docs",       view: "docs"        },
+  { icon: "workflow",      label: "Workflow",   view: "workflow"    },
+  { icon: "calendarClock", label: "Scheduler",  view: "scheduler"   },
 ];

@@ -197,6 +197,8 @@ pub struct SecurityConfig {
     pub agent_workspace_only: bool,
     #[serde(default = "default_agent_workspace_path")]
     pub agent_workspace_path: String,
+    #[serde(default)]
+    pub permission_registry: crate::permissions::PermissionRegistry,
 }
 
 fn default_agent_workspace_path() -> String {

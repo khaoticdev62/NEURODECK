@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tauri::{command, AppHandle, Manager};
+use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -134,12 +134,10 @@ fn save_git_creds(app: &AppHandle, creds: &HashMap<String, GitCredential>) {
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-#[command]
 pub fn git_list_repos(app: AppHandle) -> Result<Vec<GitRepoInfo>, String> {
     Ok(load_repos(&app))
 }
 
-#[command]
 pub fn git_open_repo(path: String, app: AppHandle) -> Result<GitRepoStatus, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     add_recent_repo(&app, &path);
@@ -191,7 +189,6 @@ pub fn git_open_repo(path: String, app: AppHandle) -> Result<GitRepoStatus, Stri
     })
 }
 
-#[command]
 pub fn git_clone(url: String, path: String, app: AppHandle) -> Result<(), String> {
     let mut builder = git2::build::RepoBuilder::new();
     let mut callbacks = git2::RemoteCallbacks::new();
@@ -208,14 +205,12 @@ pub fn git_clone(url: String, path: String, app: AppHandle) -> Result<(), String
     Ok(())
 }
 
-#[command]
 pub fn git_init(path: String, app: AppHandle) -> Result<(), String> {
     git2::Repository::init(&path).map_err(|e| e.to_string())?;
     add_recent_repo(&app, &path);
     Ok(())
 }
 
-#[command]
 pub fn git_status(path: String) -> Result<Vec<GitFileStatus>, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut opts = git2::StatusOptions::new();
@@ -264,7 +259,6 @@ pub fn git_status(path: String) -> Result<Vec<GitFileStatus>, String> {
     Ok(result)
 }
 
-#[command]
 pub fn git_stage(path: String, files: Vec<String>) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut index = repo.index().map_err(|e| e.to_string())?;
@@ -277,7 +271,6 @@ pub fn git_stage(path: String, files: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_unstage(path: String, files: Vec<String>) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let head = repo.head().map_err(|e| e.to_string())?;
@@ -312,7 +305,6 @@ pub fn git_unstage(path: String, files: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_discard(path: String, files: Vec<String>) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut checkout_builder = git2::build::CheckoutBuilder::new();
@@ -325,7 +317,6 @@ pub fn git_discard(path: String, files: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_commit(
     path: String,
     message: String,
@@ -359,7 +350,6 @@ pub fn git_commit(
     Ok(commit_oid.to_string())
 }
 
-#[command]
 pub fn git_log(path: String, max_count: u32) -> Result<Vec<GitCommit>, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut revwalk = repo.revwalk().map_err(|e| e.to_string())?;
@@ -389,7 +379,6 @@ pub fn git_log(path: String, max_count: u32) -> Result<Vec<GitCommit>, String> {
     Ok(result)
 }
 
-#[command]
 pub fn git_branch_list(path: String) -> Result<Vec<String>, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut branches = Vec::new();
@@ -402,7 +391,6 @@ pub fn git_branch_list(path: String) -> Result<Vec<String>, String> {
     Ok(branches)
 }
 
-#[command]
 pub fn git_branch_create(path: String, name: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let head = repo.head().map_err(|e| e.to_string())?;
@@ -414,7 +402,6 @@ pub fn git_branch_create(path: String, name: String) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_branch_delete(path: String, name: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut branch = repo
@@ -424,7 +411,6 @@ pub fn git_branch_delete(path: String, name: String) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_branch_checkout(path: String, name: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let (object, reference) = repo.revparse_ext(&name).map_err(|e| e.to_string())?;
@@ -440,7 +426,6 @@ pub fn git_branch_checkout(path: String, name: String) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_push(path: String, remote: String, branch: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut remote_obj = repo.find_remote(&remote).map_err(|e| e.to_string())?;
@@ -459,7 +444,6 @@ pub fn git_push(path: String, remote: String, branch: String) -> Result<(), Stri
     Ok(())
 }
 
-#[command]
 pub fn git_pull(path: String, remote: String, branch: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut remote_obj = repo.find_remote(&remote).map_err(|e| e.to_string())?;
@@ -485,7 +469,6 @@ pub fn git_pull(path: String, remote: String, branch: String) -> Result<(), Stri
     Ok(())
 }
 
-#[command]
 pub fn git_fetch(path: String, remote: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut remote_obj = repo.find_remote(&remote).map_err(|e| e.to_string())?;
@@ -501,7 +484,6 @@ pub fn git_fetch(path: String, remote: String) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn git_diff(
     path: String,
     old_tree: Option<String>,
@@ -534,7 +516,6 @@ pub fn git_diff(
     Ok(String::from_utf8_lossy(&buf).to_string())
 }
 
-#[command]
 pub fn git_remote_list(path: String) -> Result<Vec<GitRemote>, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     let mut remotes = Vec::new();
@@ -553,14 +534,12 @@ pub fn git_remote_list(path: String) -> Result<Vec<GitRemote>, String> {
     Ok(remotes)
 }
 
-#[command]
 pub fn git_remote_add(path: String, name: String, url: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     repo.remote(&name, &url).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-#[command]
 pub fn git_remote_remove(path: String, name: String) -> Result<(), String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
     repo.remote_delete(&name).map_err(|e| e.to_string())?;
@@ -569,7 +548,6 @@ pub fn git_remote_remove(path: String, name: String) -> Result<(), String> {
 
 // ── Credentials ────────────────────────────────────────────────────────────
 
-#[command]
 pub fn git_credential_store(
     host: String,
     username: String,
@@ -589,13 +567,11 @@ pub fn git_credential_store(
     Ok(())
 }
 
-#[command]
 pub fn git_credential_get(host: String, app: AppHandle) -> Result<Option<GitCredential>, String> {
     let creds = load_git_creds(&app);
     Ok(creds.get(&host).cloned())
 }
 
-#[command]
 pub fn git_credential_delete(host: String, app: AppHandle) -> Result<(), String> {
     let mut creds = load_git_creds(&app);
     creds.remove(&host);
@@ -612,7 +588,6 @@ fn ssh_dir(app: &AppHandle) -> PathBuf {
         .join("ssh")
 }
 
-#[command]
 pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, String> {
     let dir = ssh_dir(&app);
     let _ = std::fs::create_dir_all(&dir);
@@ -647,7 +622,6 @@ pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, Str
     Ok(pub_key.trim().to_string())
 }
 
-#[command]
 pub fn git_ssh_public_keys(app: AppHandle) -> Result<Vec<String>, String> {
     let dir = ssh_dir(&app);
     if !dir.exists() {
@@ -668,11 +642,10 @@ pub fn git_ssh_public_keys(app: AppHandle) -> Result<Vec<String>, String> {
 
 // ── AI Commit Message ──────────────────────────────────────────────────────
 
-#[command]
 pub async fn git_generate_commit_message(
     path: String,
     _app: AppHandle,
-    state: tauri::State<'_, std::sync::Mutex<crate::AppState>>,
+    state: std::sync::Arc<std::sync::Mutex<crate::AppState>> ,
 ) -> Result<String, String> {
     // Get staged diff
     let diff = git_diff(path, None, None)?;

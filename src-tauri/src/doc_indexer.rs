@@ -2,7 +2,7 @@ use crate::memory::MemoryRecord;
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::State;
+use crate::{State};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DocSearchResult {
@@ -12,7 +12,6 @@ pub struct DocSearchResult {
 }
 
 /// Returns the list of unique file paths indexed in the "docs" RAG namespace.
-#[tauri::command]
 pub fn get_indexed_docs(state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let db = match &app.mem_db {
@@ -37,7 +36,6 @@ pub fn get_indexed_docs(state: State<'_, Mutex<AppState>>) -> Result<Vec<String>
 }
 
 /// Semantic search over the "docs" namespace using cosine similarity.
-#[tauri::command]
 pub async fn search_docs_semantic(
     query: String,
     limit: Option<usize>,
@@ -103,7 +101,6 @@ pub async fn search_docs_semantic(
 }
 
 /// Remove all indexed chunks for a given file path from the "docs" namespace.
-#[tauri::command]
 pub fn remove_indexed_doc(
     file_path: String,
     state: State<'_, Mutex<AppState>>,

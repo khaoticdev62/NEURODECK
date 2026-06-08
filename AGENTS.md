@@ -24,7 +24,7 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
 - **Rust version is pinned to 1.92.0** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
 - **FTP downloads stream to disk** (P0.3): `ftp_download_file` uses `retr()` + `std::io::copy` instead of `retr_as_buffer`. A `max_download_size_mb` config gate (default 500MB) rejects oversized transfers before they start. Progress events fire every 1MB.
 - **`ELECTRON_RUN_AS_NODE` env var breaks Electron launch**: Some IDEs (Cursor, Antigravity) set this variable. If present, Electron runs as Node.js and `require('electron').app` is `undefined`. The `electron/scripts/dev-launcher.js` wrapper explicitly removes this variable before spawning Electron. Use `npm run dev` from the project root (it uses the launcher).
-- **`tauri-build` and `tauri.conf.json` must remain for now**: Even though the app runs in bridge/Electron mode, removing `tauri-build` from `[build-dependencies]` or deleting `tauri.conf.json` causes the compiled binary to crash with `STATUS_ENTRYPOINT_NOT_FOUND` (0xC0000139) on Windows. This happens because `lib.rs`'s `run()` function references Tauri symbols that the linker would otherwise dead-strip. Keep `run()` as a `pub fn` (even though `main.rs` no longer calls it) until `tauri` is fully removed from `Cargo.toml`.
+- **Pure Electron architecture**: The Rust sidecar is 100% Tauri-free. All backend↔frontend communication flows through the bridge server (`bridge.rs`) on `localhost:9477` — HTTP POST for commands, WebSocket for events. There are no Tauri dependencies in `Cargo.toml` and no `tauri.conf.json`.
 - **DeckCode input daemon works in bridge mode**: `run_bridge_server()` loads `deckcode-controller-profile.schema.json` and starts the `gilrs` gamepad polling loop. Input events are resolved through `DeckCodeResolver` and dispatched via `WsBroadcaster.emit("deckcode-action", action_id)` to the frontend. The daemon only starts if the schema file is present.
 
 ---
@@ -41,14 +41,14 @@ frontend/src/main.js
 All streaming (LLM tokens, PTY output, agent steps) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
 ### The One Big File Problem
-`lib.rs` (~764 lines) owns the app entry point (`run()`), `AppState`, the `generate_handler![]` registry, and the bridge server bootstrap. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
+`lib.rs` owns `AppState`, the bridge server bootstrap, and module re-exports. The Tauri `run()` entry point and `generate_handler![]` have been removed as part of the pure Electron migration. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
 `main.js` (~4300 lines) is similarly monolithic by design (no framework). Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file.
 
 ### Module Responsibilities
 | Module | What It Owns |
 |---|---|
-| `lib.rs` | `AppState`, `generate_handler![]` registry, `run()`, `run_bridge_server()` |
+| `lib.rs` | `AppState`, bridge server bootstrap, module re-exports |
 | `models.rs` | `Theme`, `CustomPersona`, `PERSONAS`, `THEMES` |
 | `game.rs` | Game detection: `detect_game`, `steam_library_paths`, `game_exe_map`, `get_game_details` |
 | `paths.rs` | `get_config_path`, `user_config_dir`, `user_bin_dir`, `get_home_dir`, `load_env_file` |
@@ -56,7 +56,13 @@ All streaming (LLM tokens, PTY output, agent steps) goes through WebSocket event
 | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
 | `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
 | `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
-| `memory.rs` | Cosine-similarity vector DB; persists to `data/memory/chat_history.json` |
+| `memory.rs` | Cosine-similarity vector DB; SQLite-backed with in-memory cache for fast search |
+| `projects.rs` | Project Knowledge Spaces CRUD; associates sessions and memory with projects |
+| `search.rs` | Universal Search engine using FTS5 `search_index` across messages, memory, and projects |
+| `context_packs.rs` | Context Packs CRUD + memory association; scoped RAG filter by `pack_id` |
+| `privacy.rs` | Privacy levels (`Standard`/`Private`/`Sensitive`/`Sealed`), `UnlockState`, `PrivacyFilter` for RAG/search/export gating |
+| `dashboard.rs` | Workspace Intelligence Dashboard stats aggregation (sessions, messages, memory, privacy breakdown, recent sessions) |
+| `db/` | SQLite persistence layer: `DbPool`, migrations runner, schema definitions |
 | `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
 | `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
@@ -64,7 +70,7 @@ All streaming (LLM tokens, PTY output, agent steps) goes through WebSocket event
 | `deckcode/` | DeckCode input orchestration: schema parsing (`schema.rs`, `multilang_schema.rs`), raw input loop (`input.rs`), bindings mapping (`resolver.rs`), and frontend IPC dispatch (`dispatch.rs`). |
 
 ### Infrastructure Crate (`infrastructure/`)
-A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by `src-tauri` as a path dependency.
+A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by the Rust sidecar (`src-tauri/`) as a path dependency.
 
 | Module | What It Owns |
 |---|---|
@@ -79,7 +85,7 @@ A workspace crate (`neurodeck_infrastructure`) providing platform services. Used
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
-Memory context injection is live in `send_command` (`commands/session.rs`): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. The `LlmProvider` trait now requires `generate_embedding()` and `supports_embedding()`; Ollama, HuggingFace, and OpenAI-compat providers have real implementations. If the active provider does not support embeddings, RAG is skipped with a one-time console warning.
+Memory context injection is live in bridge `send_command` (`commands/mod.rs`): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-10 relevant records, applies **pack scoping** (`pack_id` arg) and **privacy filtering** (`PrivacyFilter::can_inject` + `UnlockState`), then prepends up to 3 approved records to the LLM context. The `LlmProvider` trait requires `generate_embedding()` and `supports_embedding()`; Ollama, HuggingFace, and OpenAI-compat providers have real implementations. If the active provider does not support embeddings, a keyword fallback is used.
 
 ### PTY Session Routing + Timeout
 `pty_output` and `pty_exit` events carry a session `id` field. Multiple PTY sessions can coexist in `PtyState.sessions`. The main terminal uses `ptySessionId = "main_pty_session"`. The SSH tab creates sessions named `ssh_session_<timestamp>`. Both are routed in the same `listen("pty_output", ...)` handler by ID.
@@ -93,7 +99,12 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Rules
 
-- **Every new backend command** must be: (1) defined in a `src/` module, (2) added to the bridge dispatch table in `commands/mod.rs`. The `#[tauri::command]` macro and `generate_handler![]` are deprecated — the bridge server handles all routing.
+- **Every new backend command** must be: (1) defined in a `src/` module, (2) added to the bridge dispatch table in `commands/mod.rs`. The bridge server handles all routing via HTTP POST + WebSocket.
+- **New Project/Search commands**: `create_project`, `list_projects`, `get_project`, `update_project`, `delete_project`, `set_session_project`, `set_memory_project`, `get_project_sessions`, `get_project_memory`, `universal_search`.
+- **New Context Pack commands**: `create_pack`, `list_packs`, `get_pack`, `update_pack`, `delete_pack`, `set_memory_pack`, `get_pack_memory`.
+- **New Privacy commands**: `set_memory_privacy`, `unlock_sealed_records`, `lock_all_sealed`.
+- **New Dashboard command**: `get_dashboard_stats`.
+- **Do not use `std::sync::Mutex` across `.await` points** in bridge command handlers — `MutexGuard` is not `Send` and will break axum's `Handler` trait. Use `tokio::sync::Mutex` or rely on `SqlitePool`'s internal thread-safety (it is `Clone` and `Send`).
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).

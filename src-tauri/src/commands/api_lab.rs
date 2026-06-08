@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use tauri::{command, AppHandle, Manager};
+use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -40,7 +40,6 @@ fn collection_path(app: &AppHandle, name: &str) -> PathBuf {
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-#[command]
 pub async fn api_request(
     method: String,
     url: String,
@@ -97,7 +96,6 @@ pub async fn api_request(
     })
 }
 
-#[command]
 pub fn api_save_collection(name: String, requests: String, app: AppHandle) -> Result<(), String> {
     let dir = collections_dir(&app);
     let _ = std::fs::create_dir_all(&dir);
@@ -106,13 +104,11 @@ pub fn api_save_collection(name: String, requests: String, app: AppHandle) -> Re
     Ok(())
 }
 
-#[command]
 pub fn api_load_collection(name: String, app: AppHandle) -> Result<String, String> {
     let path = collection_path(&app, &name);
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
-#[command]
 pub fn api_list_collections(app: AppHandle) -> Result<Vec<String>, String> {
     let dir = collections_dir(&app);
     if !dir.exists() {
@@ -131,17 +127,15 @@ pub fn api_list_collections(app: AppHandle) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-#[command]
 pub fn api_delete_collection(name: String, app: AppHandle) -> Result<(), String> {
     let path = collection_path(&app, &name);
     std::fs::remove_file(&path).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-#[command]
 pub async fn api_generate_request(
     description: String,
-    state: tauri::State<'_, std::sync::Mutex<crate::AppState>>,
+    state: std::sync::Arc<std::sync::Mutex<crate::AppState>> ,
 ) -> Result<ApiRequest, String> {
     let provider = {
         let app_state = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -217,7 +211,6 @@ pub async fn api_generate_request(
     })
 }
 
-#[command]
 pub fn api_curl_import(curl: String) -> Result<ApiRequest, String> {
     let mut method = "GET".to_string();
     let mut url = String::new();
@@ -260,7 +253,6 @@ pub fn api_curl_import(curl: String) -> Result<ApiRequest, String> {
     })
 }
 
-#[command]
 pub fn api_export_curl(request: String) -> Result<String, String> {
     let req: ApiRequest = serde_json::from_str(&request).map_err(|e| e.to_string())?;
     let mut parts = vec![format!(

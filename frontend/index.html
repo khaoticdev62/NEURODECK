@@ -73,9 +73,12 @@
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-browser" data-view="browser" data-testid="nav-tab-browser">Browser</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-agent" data-view="agent" data-testid="nav-tab-agent">Agent</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-memory" data-view="memory" data-testid="nav-tab-memory">Memory</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-dashboard" data-view="dashboard" data-testid="nav-tab-dashboard">Dashboard</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-prompt-lab" data-view="prompt-lab" data-testid="nav-tab-prompt-lab">Prompt Lab</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-remote" data-view="remote" data-testid="nav-tab-remote">Remote</button>
                     <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-docs" data-view="docs" data-testid="nav-tab-docs">Docs</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-workflow" data-view="workflow" data-testid="nav-tab-workflow">Workflow</button>
+                    <button class="nav-tab" type="button" role="tab" aria-selected="false" aria-controls="view-scheduler" data-view="scheduler" data-testid="nav-tab-scheduler">Scheduler</button>
                 </div>
             </nav>
 
@@ -367,6 +370,8 @@
                             </div>
                             <button id="browser-go-btn" class="browser-btn go-btn" type="button">Go</button>
                             <button id="browser-open-ext-btn" class="browser-btn open-ext-btn" type="button">Open Ext</button>
+                            <button id="browser-save-memory-btn" class="browser-btn save-memory-btn" type="button" title="Save to Memory" aria-label="Save page to memory">💾</button>
+                            <button id="browser-copy-citation-btn" class="browser-btn copy-citation-btn" type="button" title="Copy Citation" aria-label="Copy Markdown citation">📄</button>
                         </div>
                         <div class="browser-home-kicker">Home</div>
                         <div id="browser-content"></div>
@@ -430,6 +435,30 @@
 
                 <section id="view-memory" class="view-content" role="tabpanel" aria-labelledby="nav-tab-memory" data-testid="view-memory">
                     <div class="memory-shell">
+                        <aside class="memory-projects-sidebar" id="memory-projects-sidebar">
+                            <div class="memory-projects-header">
+                                <span class="memory-projects-title">Projects</span>
+                                <button id="memory-project-add-btn" class="memory-icon-btn" type="button" title="New Project">+</button>
+                            </div>
+                            <div id="memory-projects-list" class="memory-projects-list">
+                                <div class="memory-project-item active" data-project-id="">
+                                    <span class="memory-project-dot" style="background:#888"></span>
+                                    <span class="memory-project-name">All</span>
+                                </div>
+                            </div>
+                            <div class="memory-sidebar-divider"></div>
+                            <div class="memory-projects-header">
+                                <span class="memory-projects-title">Context Packs</span>
+                                <button id="memory-pack-add-btn" class="memory-icon-btn" type="button" title="New Pack">+</button>
+                            </div>
+                            <div id="memory-packs-list" class="memory-projects-list">
+                                <div class="memory-project-item active" data-pack-id="">
+                                    <span class="memory-project-dot" style="background:#888"></span>
+                                    <span class="memory-project-name">All</span>
+                                </div>
+                            </div>
+                        </aside>
+                        <div class="memory-main">
                         <div class="memory-toolbar">
                             <div class="memory-toolbar-title">
                                 <div class="memory-kicker">Vector Memory</div>
@@ -471,6 +500,71 @@
                             <span id="memory-total-count">0</span>
                             <span id="memory-pinned-count">0</span>
                             <span id="memory-filtered-count">0</span>
+                        </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-dashboard" class="view-content" role="tabpanel" aria-labelledby="nav-tab-dashboard" data-testid="view-dashboard">
+                    <div class="dashboard-container">
+                        <div class="dashboard-header">
+                            <div class="dashboard-kicker">Workspace Intelligence</div>
+                            <h2 class="dashboard-title">Dashboard</h2>
+                            <button id="dashboard-refresh-btn" class="memory-btn" type="button">Refresh</button>
+                        </div>
+                        <div class="dashboard-grid">
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Sessions</div>
+                                <div id="dash-sessions" class="dashboard-card-value">—</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Messages</div>
+                                <div id="dash-messages" class="dashboard-card-value">—</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Memory Records</div>
+                                <div id="dash-memory" class="dashboard-card-value">—</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Pinned</div>
+                                <div id="dash-pinned" class="dashboard-card-value">—</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Projects</div>
+                                <div id="dash-projects" class="dashboard-card-value">—</div>
+                            </div>
+                            <div class="dashboard-card">
+                                <div class="dashboard-card-label">Context Packs</div>
+                                <div id="dash-packs" class="dashboard-card-value">—</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-row">
+                            <div class="dashboard-panel">
+                                <div class="dashboard-panel-title">Active Provider</div>
+                                <div id="dash-provider" class="dashboard-panel-value">—</div>
+                                <div id="dash-model" class="dashboard-panel-sub">—</div>
+                            </div>
+                            <div class="dashboard-panel">
+                                <div class="dashboard-panel-title">Database Size</div>
+                                <div id="dash-db-size" class="dashboard-panel-value">—</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-row">
+                            <div class="dashboard-panel dashboard-panel-wide">
+                                <div class="dashboard-panel-title">Privacy Breakdown</div>
+                                <div class="dashboard-privacy-grid">
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#22c55e"></span><span>Standard</span><span id="dash-privacy-standard" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#3b82f6"></span><span>Private</span><span id="dash-privacy-private" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#f59e0b"></span><span>Sensitive</span><span id="dash-privacy-sensitive" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#ef4444"></span><span>Sealed</span><span id="dash-privacy-sealed" class="dashboard-privacy-count">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dashboard-row">
+                            <div class="dashboard-panel dashboard-panel-wide">
+                                <div class="dashboard-panel-title">Recent Sessions</div>
+                                <div id="dash-recent-sessions" class="dashboard-recent-list">Loading…</div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -653,6 +747,40 @@
                         <div id="docs-results-list"><div class="docs-empty-msg">Search to find relevant passages.</div></div>
                     </div>
                 </section>
+
+                <section id="view-workflow" class="view-content" role="tabpanel" aria-labelledby="nav-tab-workflow" data-testid="view-workflow">
+                    <div class="workflow-container">
+                        <div class="workflow-header">
+                            <div class="workflow-kicker">Automation</div>
+                            <div class="workflow-title">Workflow Builder</div>
+                        </div>
+                        <div class="workflow-toolbar">
+                            <button id="wf-new-btn" class="stv-btn-primary" type="button">New</button>
+                            <button id="wf-load-btn" class="stv-btn-ghost" type="button">Load</button>
+                            <button id="wf-save-btn" class="stv-btn-ghost" type="button">Save</button>
+                            <button id="wf-run-btn" class="stv-btn-primary" type="button">Run</button>
+                        </div>
+                        <div id="workflow-canvas" class="workflow-canvas" style="flex: 1; min-height: 400px; border: 1px dashed rgba(148,163,184,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-dim);">
+                            <span>Workflow canvas will be rendered here by workflow_view.js</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-scheduler" class="view-content" role="tabpanel" aria-labelledby="nav-tab-scheduler" data-testid="view-scheduler">
+                    <div class="scheduler-container">
+                        <div class="scheduler-header">
+                            <div class="scheduler-kicker">Automation</div>
+                            <div class="scheduler-title">Task Scheduler</div>
+                        </div>
+                        <div class="scheduler-toolbar">
+                            <button id="sch-add-btn" class="stv-btn-primary" type="button">Add Task</button>
+                            <button id="sch-refresh-btn" class="stv-btn-ghost" type="button">Refresh</button>
+                        </div>
+                        <div id="scheduler-task-list" class="scheduler-list" style="margin-top: 12px;">
+                            <div class="scheduler-empty" style="color: var(--text-dim); padding: 20px;">Scheduled tasks will appear here.</div>
+                        </div>
+                    </div>
+                </section>
             </section>
         </main>
 
@@ -694,20 +822,625 @@
                 <button class="stv-nav-item" type="button" data-panel="sp-computer" data-settings-theme="computer">Computer</button>
                 <button class="stv-nav-item" type="button" data-panel="sp-sync" data-settings-theme="sync">Sync</button>
                 <button class="stv-nav-item" type="button" data-panel="sp-voice" data-settings-theme="voice">Voice</button>
+                <button class="stv-nav-item" type="button" data-panel="sp-privacy" data-settings-theme="privacy">Privacy</button>
             </nav>
             <div class="settings-panels">
-                <section id="sp-general" class="settings-panel settings-panel--general active" data-settings-theme="general"><h2>General</h2><label>Theme <select id="theme-select"><option value="Neurodeck">Neurodeck</option><option value="Midnight">Midnight</option></select></label><div id="theme-cards-grid"></div><button id="theme-apply-btn" type="button">Apply</button><button id="theme-reset-btn" type="button">Reset</button><label>Persona <select id="persona-select"><option>Default</option></select></label><label>Font <select id="font-select"><option>System</option></select></label><label><input id="minimize-to-tray-toggle" type="checkbox" /> Minimize to tray</label><button id="trust-safety-btn" type="button">Trust &amp; Safety</button></section>
-                <section id="sp-ai" class="settings-panel settings-panel--ai" data-settings-theme="ai"><h2>AI Model</h2><label>Provider <select id="llm-provider-select"><option value="gemini">Gemini</option><option value="ollama">Ollama</option></select></label><div id="settings-gemini-group"><input id="settings-gemini-key" aria-label="Gemini API key" /><input id="settings-gemini-model" aria-label="Gemini model" /></div><div id="settings-ollama-group"><span id="stv-ollama-label">Ollama</span><input id="settings-ollama-url" aria-label="Ollama URL" /><input id="settings-ollama-model" aria-label="Ollama model" /></div><div id="settings-kimi-group"><span id="stv-kimi-label">Kimi</span><input id="settings-kimi-key" aria-label="Kimi API key" /><input id="settings-kimi-model" aria-label="Kimi model" /><input id="settings-kimi-url" aria-label="Kimi URL" /></div><div id="settings-hf-group"><span id="stv-hf-label">Hugging Face</span><input id="settings-hf-key" aria-label="HF key" /><input id="settings-hf-model" aria-label="HF model" /><input id="settings-hf-url" aria-label="HF URL" /></div><div id="settings-openai-compat-group"><span id="stv-openai-compat-label">OpenAI Compatible</span><input id="settings-openai-compat-key" aria-label="OpenAI compatible key" /><input id="settings-openai-compat-model" aria-label="OpenAI compatible model" /><input id="settings-openai-compat-url" aria-label="OpenAI compatible URL" /></div><button id="settings-test-connection-btn" type="button">Test</button><button id="settings-save-llm-btn" type="button">Save</button><div id="settings-llm-status"></div></section>
-                <section id="sp-models" class="settings-panel settings-panel--models" data-settings-theme="models"><h2>Models</h2><div id="models-browse-grid"></div><div id="models-downloads-list"></div><div id="models-installed-list"></div></section>
-                <section id="sp-appearance" class="settings-panel settings-panel--appearance" data-settings-theme="appearance"><h2>Appearance</h2><input id="bg-url-input" aria-label="Background URL" /><input id="bg-opacity-slider" type="range" min="0" max="1" step="0.1" /><span id="bg-opacity-val"></span><label><input id="scanlines-toggle" type="checkbox" /> Scanlines</label><label><input id="flicker-toggle" type="checkbox" /> Flicker</label><div id="theme-preview-overlay"></div><input id="ct-name" aria-label="Custom theme name" /><input id="ct-bg" value="#050505" /><input id="ct-fg" value="#D9F7FF" /><input id="ct-accent" value="#00F0FF" /><input id="ct-response" value="#00FF88" /><input id="ct-warning" value="#FFB000" /><input id="ct-error" value="#FF3C5A" /><button id="ct-save-btn" type="button">Save Theme</button><div id="ct-list"></div><div id="ct-status"></div></section>
-                <section id="sp-terminal" class="settings-panel settings-panel--terminal" data-settings-theme="terminal"><h2>Terminal</h2><select id="shell-select"><option value="">Default</option><option value="custom">Custom</option></select><div id="custom-shell-group"><input id="custom-shell-input" aria-label="Custom shell" /></div><input id="term-fontsize-slider" type="range" min="10" max="28" value="16" /><span id="term-fontsize-val">16</span><input id="term-scrollback-input" value="10000" /></section>
-                <section id="sp-extensions" class="settings-panel settings-panel--extensions" data-settings-theme="extensions"><h2>Extensions</h2><div id="settings-personas-list-custom"></div><input id="settings-persona-name" aria-label="Persona name" /><textarea id="settings-persona-prompt" aria-label="Persona prompt"></textarea><button id="settings-persona-create-btn" type="button">Create</button><div id="settings-persona-status"></div><div id="marketplace-grid"></div><button id="bmad-docs-btn" type="button">Docs</button><input id="bmad-target-dir" aria-label="BMAD target directory" /><button id="bmad-install-btn" type="button">Install</button><div id="bmad-status-line"></div></section>
-                <section id="sp-memory" class="settings-panel settings-panel--memory" data-settings-theme="memory"><h2>Memory</h2><span id="vector-db-status">Stable</span><button id="memory-export-btn-settings" type="button">Export</button><div id="memory-db-status-line"></div><input id="rag-folder-input" aria-label="RAG folder" /><button id="rag-index-btn" type="button">Index</button><button id="rag-clear-btn" type="button">Clear</button><div id="rag-progress-container"><span id="rag-progress-label"></span><span id="rag-progress-pct"></span><div id="rag-progress-bar"></div></div><div id="rag-status-line"></div><span id="rag-doc-count"></span></section>
-                <section id="sp-network" class="settings-panel settings-panel--network" data-settings-theme="network"><h2>Network</h2><div id="settings-ssh-profiles-list"></div><button id="settings-clear-ssh-profiles" type="button">Clear SSH</button><div id="settings-ftp-profiles-list"></div><button id="settings-clear-ftp-profiles" type="button">Clear FTP</button><div id="settings-sftp-profiles-list"></div><button id="settings-clear-sftp-profiles" type="button">Clear SFTP</button><button id="mcp-start-btn" type="button">Start MCP</button><button id="mcp-stop-btn" type="button">Stop MCP</button><input id="mcp-port-input" aria-label="MCP port" value="13337" /><div id="mcp-status-line"></div><div id="mcp-claude-config"></div><pre id="mcp-claude-config-snippet"></pre><div id="mcp-token-row"></div><code id="mcp-token-display"></code><button id="mcp-copy-token-btn" type="button">Copy Token</button><span id="mcp-discovery-url"></span><textarea id="mcp-tool-whitelist" aria-label="MCP tool whitelist"></textarea></section>
-                <section id="sp-computer" class="settings-panel settings-panel--computer" data-settings-theme="computer"><h2>Computer</h2><label><input id="privacy-workspace-toggle" type="checkbox" /> Limit workspace</label><input id="privacy-workspace-path" aria-label="Privacy workspace path" /></section>
-                <section id="sp-sync" class="settings-panel settings-panel--sync" data-settings-theme="sync"><h2>Sync</h2><label><input id="sync-enabled-toggle" type="checkbox" /> Enabled</label><label><input id="sync-memory-toggle" type="checkbox" /> Memory</label><label><input id="sync-sessions-toggle" type="checkbox" /> Sessions</label><input id="sync-api-url-input" aria-label="Sync API URL" /><button id="sync-save-btn" type="button">Save</button><button id="sync-now-btn" type="button">Sync Now</button><div id="sync-status-line"></div><span id="sync-device-id"></span><span id="sync-last-at"></span><span id="sync-pending-count"></span><span id="sync-conflict-count"></span></section>
-                <section id="sp-voice" class="settings-panel settings-panel--voice" data-settings-theme="voice"><h2>Voice</h2><div id="tts-mode-group"><label><input id="tts-mode-off" name="tts-mode" type="radio" value="off" /> Off</label><label><input id="tts-mode-stream" name="tts-mode" type="radio" value="stream" /> Stream</label><label><input id="tts-mode-complete" name="tts-mode" type="radio" value="complete" /> Complete</label></div><input id="whisper-binary-input" aria-label="Whisper binary path" /><input id="whisper-model-input" aria-label="Whisper model path" /><select id="whisper-model-select" aria-label="Whisper model"></select><button id="whisper-save-btn" type="button">Save</button><button id="whisper-test-btn" type="button">Test</button><button id="whisper-download-btn" type="button">Download</button><div id="whisper-status-line"></div><div id="whisper-dl-progress-wrap"><span id="whisper-dl-label"></span><span id="whisper-dl-pct"></span><div id="whisper-dl-bar"></div></div></section>
-            </div>
+                <section id="sp-general" class="settings-panel settings-panel--general active" data-settings-theme="general">
+                    <h2 class="stv-section-title">General Settings</h2>
+                    <div class="stv-section-sub">Configure main system preferences, theme selection, and default agent personas.</div>
+
+                    <div class="stv-group-label">Theme Selection</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Primary Theme</span>
+                            <select id="theme-select">
+                                <option value="Neurodeck">Neurodeck</option>
+                                <option value="Midnight">Midnight</option>
+                            </select>
+                        </div>
+                        <div id="theme-cards-grid"></div>
+                        <div class="stv-action-bar">
+                            <button id="theme-apply-btn" class="stv-btn-primary" type="button">Apply Theme</button>
+                            <button id="theme-reset-btn" class="stv-btn-ghost" type="button">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Identity &amp; Typography</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Default Persona</span>
+                            <select id="persona-select">
+                                <option>Default</option>
+                            </select>
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Interface Font</span>
+                            <select id="font-select">
+                                <option>System</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">System Preferences</div>
+                    <div class="stv-card">
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Minimize to Tray</div>
+                                <div class="stv-toggle-desc">Keep the application running in the background when closing.</div>
+                            </div>
+                            <input id="minimize-to-tray-toggle" type="checkbox" />
+                        </div>
+                        <div class="stv-row" style="margin-top: 14px; margin-bottom: 0;">
+                            <span class="stv-row-label">Security Settings</span>
+                            <button id="trust-safety-btn" class="stv-btn-ghost" type="button">Trust &amp; Safety</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sp-ai" class="settings-panel settings-panel--ai" data-settings-theme="ai">
+                    <h2 class="stv-section-title">AI Model</h2>
+                    <div class="stv-section-sub">Choose your LLM provider and configure authentication keys and endpoints.</div>
+
+                    <div class="stv-group-label">LLM Provider</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Active Provider</span>
+                            <select id="llm-provider-select">
+                                <option value="gemini">Gemini</option>
+                                <option value="ollama">Ollama</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="settings-gemini-group" class="setting-field-group">
+                        <div class="stv-group-label">Gemini Settings</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">API Key</span>
+                                <input id="settings-gemini-key" type="password" placeholder="AIzaSy..." aria-label="Gemini API key" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Model Name</span>
+                                <input id="settings-gemini-model" type="text" placeholder="gemini-1.5-pro" aria-label="Gemini model" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-ollama-group" class="setting-field-group">
+                        <span id="stv-ollama-label" style="display:none"></span>
+                        <div class="stv-group-label">Ollama Settings</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">Base URL</span>
+                                <input id="settings-ollama-url" type="text" placeholder="http://localhost:11434" aria-label="Ollama URL" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Model Name</span>
+                                <input id="settings-ollama-model" type="text" placeholder="llama3" aria-label="Ollama model" />
+                            </div>
+                        </div>
+                        <div id="settings-ollama-models-section"></div>
+                    </div>
+
+                    <div id="settings-kimi-group" class="setting-field-group">
+                        <span id="stv-kimi-label" style="display:none"></span>
+                        <div class="stv-group-label">Kimi Settings</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">API Key</span>
+                                <input id="settings-kimi-key" type="password" placeholder="sk-..." aria-label="Kimi API key" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Model Name</span>
+                                <input id="settings-kimi-model" type="text" placeholder="moonshot-v1-8k" aria-label="Kimi model" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Base URL</span>
+                                <input id="settings-kimi-url" type="text" placeholder="https://api.moonshot.ai/v1" aria-label="Kimi URL" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-hf-group" class="setting-field-group">
+                        <span id="stv-hf-label" style="display:none"></span>
+                        <div class="stv-group-label">Hugging Face Settings</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">API Token</span>
+                                <input id="settings-hf-key" type="password" placeholder="hf_..." aria-label="HF key" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Model ID</span>
+                                <input id="settings-hf-model" type="text" placeholder="meta-llama/Meta-Llama-3-8B-Instruct" aria-label="HF model" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Endpoint URL</span>
+                                <input id="settings-hf-url" type="text" placeholder="https://api-inference.huggingface.co" aria-label="HF URL" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="settings-openai-compat-group" class="setting-field-group">
+                        <span id="stv-openai-compat-label" style="display:none"></span>
+                        <div class="stv-group-label">OpenAI Compatible Settings</div>
+                        <div class="stv-card">
+                            <div class="stv-row">
+                                <span class="stv-row-label">API Key</span>
+                                <input id="settings-openai-compat-key" type="password" placeholder="sk-..." aria-label="OpenAI compatible key" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Model Name</span>
+                                <input id="settings-openai-compat-model" type="text" placeholder="gpt-4o-mini" aria-label="OpenAI compatible model" />
+                            </div>
+                            <div class="stv-row">
+                                <span class="stv-row-label">Base URL</span>
+                                <input id="settings-openai-compat-url" type="text" placeholder="https://api.openai.com/v1" aria-label="OpenAI compatible URL" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stv-action-bar">
+                        <button id="settings-test-connection-btn" class="stv-btn-ghost" type="button">Test Connection</button>
+                        <button id="settings-save-llm-btn" class="stv-btn-primary" type="button">Save Settings</button>
+                    </div>
+                    <div id="settings-llm-status" class="stv-status-line"></div>
+                </section>
+
+                <section id="sp-models" class="settings-panel settings-panel--models" data-settings-theme="models">
+                    <h2 class="stv-section-title">Models</h2>
+                    <div class="stv-section-sub">Browse, download, and manage local Ollama or HuggingFace models.</div>
+                    <div id="models-browse-grid"></div>
+                    <div id="models-downloads-list"></div>
+                    <div id="models-installed-list"></div>
+                </section>
+
+                <section id="sp-appearance" class="settings-panel settings-panel--appearance" data-settings-theme="appearance">
+                    <h2 class="stv-section-title">Appearance</h2>
+                    <div class="stv-section-sub">Personalize the background image, opacity, CRT screen effects, and custom CSS variables.</div>
+
+                    <div class="stv-group-label">Background Settings</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Image URL</span>
+                            <input id="bg-url-input" type="text" placeholder="https://example.com/wallpaper.jpg" aria-label="Background URL" />
+                        </div>
+                        <div class="stv-slider-row">
+                            <span class="stv-row-label">Opacity</span>
+                            <input id="bg-opacity-slider" type="range" min="0" max="100" step="1" />
+                            <span id="bg-opacity-val" class="stv-slider-val">10%</span>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Screen Effects</div>
+                    <div class="stv-card">
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Scanlines</div>
+                                <div class="stv-toggle-desc">Overlay terminal scanlines for a retro CRT look.</div>
+                            </div>
+                            <input id="scanlines-toggle" type="checkbox" />
+                        </div>
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Screen Flicker</div>
+                                <div class="stv-toggle-desc">Subtle retro CRT phosphor refresh simulation.</div>
+                            </div>
+                            <input id="flicker-toggle" type="checkbox" />
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Theme Preview</div>
+                    <div id="theme-preview-overlay"></div>
+
+                    <div class="stv-group-label">Custom Theme Editor</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Theme Name</span>
+                            <input id="ct-name" type="text" placeholder="My Custom Theme" aria-label="Custom theme name" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Background</span>
+                            <input id="ct-bg" type="text" value="#050505" placeholder="#050505" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Foreground</span>
+                            <input id="ct-fg" type="text" value="#D9F7FF" placeholder="#D9F7FF" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Accent</span>
+                            <input id="ct-accent" type="text" value="#00F0FF" placeholder="#00F0FF" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Response</span>
+                            <input id="ct-response" type="text" value="#00FF88" placeholder="#00FF88" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Warning</span>
+                            <input id="ct-warning" type="text" value="#FFB000" placeholder="#FFB000" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Error</span>
+                            <input id="ct-error" type="text" value="#FF3C5A" placeholder="#FF3C5A" />
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="ct-save-btn" class="stv-btn-primary" type="button">Save Theme</button>
+                        </div>
+                        <div id="ct-status" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+                    <div id="ct-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                </section>
+
+                <section id="sp-terminal" class="settings-panel settings-panel--terminal" data-settings-theme="terminal">
+                    <h2 class="stv-section-title">Terminal Settings</h2>
+                    <div class="stv-section-sub">Configure terminal shells, font sizes, and scrollback history limit.</div>
+
+                    <div class="stv-group-label">Shell Configuration</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Terminal Shell</span>
+                            <select id="shell-select">
+                                <option value="">Default</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div id="custom-shell-group" class="stv-row" style="display: none;">
+                            <span class="stv-row-label">Shell Path</span>
+                            <input id="custom-shell-input" type="text" placeholder="/bin/zsh" aria-label="Custom shell" />
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Font &amp; Display</div>
+                    <div class="stv-card">
+                        <div class="stv-slider-row">
+                            <span class="stv-row-label">Font Size</span>
+                            <input id="term-fontsize-slider" type="range" min="10" max="28" value="14" />
+                            <span id="term-fontsize-val" class="stv-slider-val">14px</span>
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Scrollback Limit</span>
+                            <input id="term-scrollback-input" type="number" value="10000" aria-label="Terminal scrollback limit" />
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sp-extensions" class="settings-panel settings-panel--extensions" data-settings-theme="extensions">
+                    <h2 class="stv-section-title">Extensions</h2>
+                    <div class="stv-section-sub">Manage custom personas and install BMAD automation frameworks and plugins.</div>
+
+                    <div class="stv-group-label">Custom Personas</div>
+                    <div class="stv-card">
+                        <div id="settings-personas-list-custom" style="margin-bottom: 12px;"></div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Persona Name</span>
+                            <input id="settings-persona-name" type="text" placeholder="e.g. John" aria-label="Persona name" />
+                        </div>
+                        <div class="stv-row" style="align-items: flex-start;">
+                            <span class="stv-row-label" style="padding-top: 6px;">System Prompt</span>
+                            <textarea id="settings-persona-prompt" rows="3" placeholder="You are John, a senior developer..." aria-label="Persona prompt"></textarea>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="settings-persona-create-btn" class="stv-btn-primary" type="button">Create Persona</button>
+                        </div>
+                        <div id="settings-persona-status" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+
+                    <div class="stv-group-label">BMAD Automation Framework</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Target Directory</span>
+                            <input id="bmad-target-dir" type="text" placeholder="~/.bmad" aria-label="BMAD target directory" />
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="bmad-docs-btn" class="stv-btn-ghost" type="button">Documentation</button>
+                            <button id="bmad-install-btn" class="stv-btn-primary" type="button">Install / Update</button>
+                        </div>
+                        <div id="bmad-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+
+                    <div class="stv-group-label">Plugin Marketplace</div>
+                    <div id="marketplace-grid" class="plugin-marketplace-grid"></div>
+                </section>
+
+                <section id="sp-memory" class="settings-panel settings-panel--memory" data-settings-theme="memory">
+                    <h2 class="stv-section-title">Memory</h2>
+                    <div class="stv-section-sub">Vector DB management, RAG workspace indexing, and document analysis configuration.</div>
+
+                    <div class="stv-group-label">Vector Database</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">DB Status</span>
+                            <span id="vector-db-status" style="font-family: var(--font-mono); font-weight: 700; color: var(--response-color);">Stable</span>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="memory-export-btn-settings" class="stv-btn-primary" type="button">Export Memory JSON</button>
+                        </div>
+                        <div id="memory-db-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+
+                    <div class="stv-group-label">RAG Document Indexing</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Workspace Folder</span>
+                            <input id="rag-folder-input" type="text" placeholder="Select folder to index..." aria-label="RAG folder" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Indexed Passages</span>
+                            <span id="rag-doc-count" style="font-family: var(--font-mono); font-weight: 500;">0 chunks</span>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="rag-index-btn" class="stv-btn-primary" type="button">Index Directory</button>
+                            <button id="rag-clear-btn" class="stv-btn-ghost" type="button" style="border-color: var(--error-color); color: var(--error-color);">Clear Index</button>
+                        </div>
+                        <div id="rag-progress-container" style="display: none; margin-top: 14px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
+                                <span id="rag-progress-label">Indexing...</span>
+                                <span id="rag-progress-pct">0%</span>
+                            </div>
+                            <div class="stv-progress-bar">
+                                <div id="rag-progress-bar" class="stv-progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div id="rag-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+                </section>
+
+                <section id="sp-network" class="settings-panel settings-panel--network" data-settings-theme="network">
+                    <h2 class="stv-section-title">Network</h2>
+                    <div class="stv-section-sub">Manage saved server credentials and control the MCP Model Context Protocol daemon.</div>
+
+                    <div class="stv-group-label">Server Profiles</div>
+                    <div class="terminal-profiles-row">
+                        <div class="stv-card">
+                            <div class="stv-group-label" style="margin-top: 0;">SSH Profiles</div>
+                            <div id="settings-ssh-profiles-list" style="margin-bottom: 10px;"></div>
+                            <button id="settings-clear-ssh-profiles" class="stv-btn-ghost" type="button" style="width: 100%; border-color: var(--error-color); color: var(--error-color);">Clear SSH</button>
+                        </div>
+                        <div class="stv-card">
+                            <div class="stv-group-label" style="margin-top: 0;">FTP Profiles</div>
+                            <div id="settings-ftp-profiles-list" style="margin-bottom: 10px;"></div>
+                            <button id="settings-clear-ftp-profiles" class="stv-btn-ghost" type="button" style="width: 100%; border-color: var(--error-color); color: var(--error-color);">Clear FTP</button>
+                        </div>
+                        <div class="stv-card">
+                            <div class="stv-group-label" style="margin-top: 0;">SFTP Profiles</div>
+                            <div id="settings-sftp-profiles-list" style="margin-bottom: 10px;"></div>
+                            <button id="settings-clear-sftp-profiles" class="stv-btn-ghost" type="button" style="width: 100%; border-color: var(--error-color); color: var(--error-color);">Clear SFTP</button>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">MCP Server Daemon</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Server Port</span>
+                            <input id="mcp-port-input" type="number" value="13337" aria-label="MCP port" />
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="mcp-start-btn" class="stv-btn-primary" type="button">Start Server</button>
+                            <button id="mcp-stop-btn" class="stv-btn-ghost" type="button" style="border-color: var(--error-color); color: var(--error-color);">Stop Server</button>
+                        </div>
+                        <div id="mcp-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+
+                    <div class="stv-group-label">Claude MCP Integration</div>
+                    <div class="stv-card">
+                        <div id="mcp-claude-config" style="font-size: 0.78rem; opacity: 0.7; line-height: 1.5; margin-bottom: 8px;"></div>
+                        <pre id="mcp-claude-config-snippet" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.7rem; overflow-x: auto; border: 1px solid rgba(255,255,255,0.05);"></pre>
+                        <div id="mcp-token-row" class="stv-row" style="margin-top: 12px; margin-bottom: 0;">
+                            <span class="stv-row-label">Auth Token</span>
+                            <code id="mcp-token-display" style="font-family: var(--font-mono); font-size: 0.72rem; background: rgba(255,255,255,0.04); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></code>
+                            <button id="mcp-copy-token-btn" class="stv-btn-ghost" type="button" style="margin-left: 8px; flex-shrink: 0;">Copy</button>
+                        </div>
+                        <div class="stv-row" style="margin-top: 8px; margin-bottom: 0;">
+                            <span class="stv-row-label">Discovery URL</span>
+                            <span id="mcp-discovery-url" style="font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.55;"></span>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Tool Whitelist</div>
+                    <div class="stv-card">
+                        <div class="stv-row" style="flex-direction: column; align-items: stretch;">
+                            <span class="stv-row-label" style="margin-bottom: 6px;">Permitted Tools (comma separated)</span>
+                            <textarea id="mcp-tool-whitelist" rows="2" placeholder="e.g. read_file, write_file, execute_command" aria-label="MCP tool whitelist"></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sp-computer" class="settings-panel settings-panel--computer" data-settings-theme="computer">
+                    <h2 class="stv-section-title">Computer Use</h2>
+                    <div class="stv-section-sub">Configure agent computer use policies and workspace isolation paths.</div>
+
+                    <div class="stv-group-label">Workspace Isolation</div>
+                    <div class="stv-card">
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Limit Workspace Access</div>
+                                <div class="stv-toggle-desc">Prevent the agent from viewing or writing files outside the target directory.</div>
+                            </div>
+                            <input id="privacy-workspace-toggle" type="checkbox" />
+                        </div>
+                        <div class="stv-row" style="margin-top: 14px; margin-bottom: 0;">
+                            <span class="stv-row-label">Workspace Path</span>
+                            <input id="privacy-workspace-path" type="text" placeholder="~/.neurodeck_workspace" aria-label="Privacy workspace path" />
+                        </div>
+                    </div>
+                </section>
+
+                <section id="sp-sync" class="settings-panel settings-panel--sync" data-settings-theme="sync">
+                    <h2 class="stv-section-title">Sync</h2>
+                    <div class="stv-section-sub">Synchronize LLM chat sessions and vector memory to a cloud server.</div>
+
+                    <div class="stv-group-label">Sync Targets</div>
+                    <div class="stv-card">
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Enable Cloud Sync</div>
+                                <div class="stv-toggle-desc">Automatically upload and download changes from sync server.</div>
+                            </div>
+                            <input id="sync-enabled-toggle" type="checkbox" />
+                        </div>
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Sync Memory DB</div>
+                                <div class="stv-toggle-desc">Synchronize local facts and vector memory database.</div>
+                            </div>
+                            <input id="sync-memory-toggle" type="checkbox" />
+                        </div>
+                        <div class="stv-toggle-row">
+                            <div class="stv-toggle-info">
+                                <div class="stv-toggle-label">Sync Chat Sessions</div>
+                                <div class="stv-toggle-desc">Synchronize active and archived chat session files.</div>
+                            </div>
+                            <input id="sync-sessions-toggle" type="checkbox" />
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Sync Server Configuration</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">API Server URL</span>
+                            <input id="sync-api-url-input" type="text" placeholder="https://api.neurodeck.dev/sync" aria-label="Sync API URL" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Device ID</span>
+                            <span id="sync-device-id" style="font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.6;"></span>
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Last Synchronized</span>
+                            <span id="sync-last-at" style="font-family: var(--font-mono); font-size: 0.72rem; opacity: 0.6;">Never</span>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="sync-save-btn" class="stv-btn-primary" type="button">Save Settings</button>
+                            <button id="sync-now-btn" class="stv-btn-ghost" type="button">Sync Now</button>
+                        </div>
+                        <div id="sync-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+
+                    <div aria-hidden="true" style="display:none">
+                        <span id="sync-pending-count"></span>
+                        <span id="sync-conflict-count"></span>
+                    </div>
+                </section>
+
+                <section id="sp-voice" class="settings-panel settings-panel--voice" data-settings-theme="voice">
+                    <h2 class="stv-section-title">Voice</h2>
+                    <div class="stv-section-sub">Configure Text-to-Speech (TTS) output modes and offline Whisper Speech-to-Text (STT) paths.</div>
+
+                    <div class="stv-group-label">Text-to-Speech Mode</div>
+                    <div class="stv-card">
+                        <div id="tts-mode-group" class="tts-mode-group">
+                            <label class="tts-mode-option">
+                                <input id="tts-mode-off" name="tts-mode" type="radio" value="off" /> Off
+                            </label>
+                            <label class="tts-mode-option">
+                                <input id="tts-mode-stream" name="tts-mode" type="radio" value="stream" /> Stream
+                            </label>
+                            <label class="tts-mode-option">
+                                <input id="tts-mode-complete" name="tts-mode" type="radio" value="complete" /> Complete
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Whisper STT Configuration</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Whisper Binary</span>
+                            <input id="whisper-binary-input" type="text" placeholder="/usr/bin/whisper-cli" aria-label="Whisper binary path" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Model Path</span>
+                            <input id="whisper-model-input" type="text" placeholder="~/.cache/whisper/ggml-base.bin" aria-label="Whisper model path" />
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Pre-packaged Model</span>
+                            <select id="whisper-model-select" aria-label="Whisper model"></select>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="whisper-save-btn" class="stv-btn-primary" type="button">Save Settings</button>
+                            <button id="whisper-test-btn" class="stv-btn-ghost" type="button">Test STT</button>
+                            <button id="whisper-download-btn" class="stv-btn-ghost" type="button">Download Model</button>
+                        </div>
+                        <div id="whisper-dl-progress-wrap" style="display: none; margin-top: 14px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
+                                <span id="whisper-dl-label">Downloading...</span>
+                                <span id="whisper-dl-pct">0%</span>
+                            </div>
+                            <div class="stv-progress-bar">
+                                <div id="whisper-dl-bar" class="stv-progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div id="whisper-status-line" class="stv-status-line" style="min-height: 0;"></div>
+                    </div>
+                </section>
+
+                <section id="sp-privacy" class="settings-panel settings-panel--privacy" data-settings-theme="privacy">
+                    <h2 class="stv-section-title">Privacy &amp; Permissions</h2>
+                    <div class="stv-section-sub">Control how your memory data is classified, searched, and injected into AI context.</div>
+
+                    <div class="stv-group-label">Default Privacy Level for New Records</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">New Memory Privacy</span>
+                            <select id="privacy-default-select" aria-label="Default privacy level">
+                                <option value="standard">Standard — visible everywhere</option>
+                                <option value="private">Private — truncated search snippets</option>
+                                <option value="sensitive">Sensitive — confirmation required for RAG</option>
+                                <option value="sealed">Sealed — hidden until unlocked</option>
+                            </select>
+                        </div>
+                        <div class="stv-action-bar">
+                            <button id="privacy-default-save-btn" class="stv-btn-primary" type="button">Save Default</button>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Sealed Record Session Controls</div>
+                    <div class="stv-card">
+                        <div class="stv-row">
+                            <span class="stv-row-label">Unlock All Sealed</span>
+                            <button id="settings-unlock-sealed-btn" class="stv-btn-ghost" type="button">🔓 Unlock</button>
+                        </div>
+                        <div class="stv-row">
+                            <span class="stv-row-label">Lock All Sealed</span>
+                            <button id="settings-lock-sealed-btn" class="stv-btn-ghost" type="button">🔒 Lock</button>
+                        </div>
+                        <div id="settings-privacy-status" class="stv-status-line" style="min-height: 0; margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="stv-group-label">Privacy Breakdown</div>
+                    <div class="stv-card">
+                        <div class="dashboard-privacy-grid" style="margin-top: 0;">
+                            <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#22c55e"></span><span>Standard</span><span id="settings-privacy-standard" class="dashboard-privacy-count">—</span></div>
+                            <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#3b82f6"></span><span>Private</span><span id="settings-privacy-private" class="dashboard-privacy-count">—</span></div>
+                            <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#f59e0b"></span><span>Sensitive</span><span id="settings-privacy-sensitive" class="dashboard-privacy-count">—</span></div>
+                            <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#ef4444"></span><span>Sealed</span><span id="settings-privacy-sealed" class="dashboard-privacy-count">—</span></div>
+                        </div>
+                    </div>
+
+                    <div class="stv-group-label">Agent Permission Profiles</div>
+                    <div class="stv-card" id="permission-profiles-card">
+                        <div id="permission-profiles-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                        <div class="stv-action-bar" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+                            <button id="permission-profile-add-btn" class="stv-btn-primary" type="button">Add Profile</button>
+                        </div>
+                    </div>
+
+                    <div id="permission-profile-edit-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: var(--bg-secondary, #0f172a); border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; padding: 20px; width: 90%; max-width: 520px; max-height: 80vh; overflow-y: auto;">
+                            <h3 id="perm-edit-title" style="margin: 0 0 16px 0; font-size: 1.1rem;">Edit Permission Profile</h3>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                                <input id="perm-edit-id" type="hidden" />
+                                <label style="font-size: 0.8rem; color: var(--text-dim);">Name</label>
+                                <input id="perm-edit-name" class="stv-input" style="padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(148,163,184,0.2); background: rgba(15,23,42,0.6); color: inherit;" />
+                                <label style="font-size: 0.8rem; color: var(--text-dim);">Description</label>
+                                <input id="perm-edit-desc" class="stv-input" style="padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(148,163,184,0.2); background: rgba(15,23,42,0.6); color: inherit;" />
+                            </div>
+                            <div id="perm-edit-capabilities" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;"></div>
+                            <div class="stv-action-bar" style="justify-content: flex-end;">
+                                <button id="perm-edit-cancel" class="stv-btn-ghost" type="button">Cancel</button>
+                                <button id="perm-edit-save" class="stv-btn-primary" type="button">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                        </div>
         </div>
         <footer><button id="close-settings" type="button">Close</button></footer>
     </div>
@@ -727,15 +1460,15 @@
 </div>
 
 <div id="shortcuts-overlay" class="shortcuts-overlay hidden" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts"></div>
-<div id="ctrl-prompt-overlay" class="ctrl-prompt-overlay" aria-hidden="true">
+<div id="ctrl-prompt-overlay" class="ctrl-prompt-overlay" role="dialog" aria-modal="true" aria-label="Controller prompt" aria-hidden="true">
     <div class="ctrl-prompt-title"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Controller Prompt</span></div>
     <div class="ctrl-prompt-cat-icon"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
     <input id="ctrl-prompt-search" aria-label="Controller prompt search" />
     <input id="ctrl-prompt-input" aria-label="Controller prompt" />
 </div>
-<div id="radial-menu-overlay" class="radial-menu-overlay hidden" aria-hidden="true"></div>
+<div id="radial-menu-overlay" class="radial-menu-overlay hidden" role="dialog" aria-modal="true" aria-label="Radial menu" aria-hidden="true"></div>
 
-<div id="agent-switcher-panel" class="agent-switcher-panel hidden" role="dialog" aria-label="Agent switcher">
+<div id="agent-switcher-panel" class="agent-switcher-panel hidden" role="dialog" aria-modal="true" aria-label="Agent switcher" aria-hidden="true">
     <div class="agent-switcher-header">
         <div id="agent-switcher-title" class="agent-switcher-title">Agent Switch</div>
         <button class="agent-switcher-close" type="button" aria-label="Close agent switcher">Close</button>
@@ -744,7 +1477,7 @@
     <div id="agent-recommended-grid"></div>
 </div>
 
-<div id="history-search-overlay" class="hidden" role="dialog" aria-label="History search">
+<div id="history-search-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="History search" aria-hidden="true">
     <div class="history-search-panel">
         <div class="history-search-header"><div class="history-search-title"><svg class="nd-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>History Search</span></div></div>
         <input id="history-search-input" aria-label="History search" />
@@ -753,7 +1486,7 @@
     </div>
 </div>
 
-<div id="notif-modal" role="dialog" aria-label="Notifications">
+<div id="notif-modal" role="dialog" aria-modal="true" aria-label="Notifications" aria-hidden="true">
     <div class="notif-modal-card">
         <button id="close-notif-x" type="button" aria-label="Close notifications">Close</button>
         <div id="notifications-list"></div>
@@ -761,11 +1494,101 @@
         <button id="close-notif-btn" type="button">Close</button>
     </div>
 </div>
-<div id="collab-modal" class="hidden"><button id="close-collab-x" type="button" aria-label="Close collaboration">Close</button></div>
-<div id="transfer-modal" class="hidden"><button id="transfer-modal-close-x" type="button" aria-label="Close transfer">Close</button></div>
-<div id="game-context-panel" class="hidden"><button id="close-game-context-x" type="button" aria-label="Close game context">Close</button></div>
-<div id="computer-use-modal" class="hidden"><button id="computer-use-deny-x" type="button" aria-label="Deny computer use">Deny</button><img id="computer-preview-img" alt="Computer preview" /><div id="computer-preview-empty">No preview</div></div>
-<div id="trust-safety-modal" class="hidden"><span id="ts-active-provider"></span><div id="ts-cloud-data-card"></div><div id="ts-local-llm-card"></div><button id="close-trust-safety-btn" type="button">Close</button><button id="close-trust-safety-x" type="button" aria-label="Close trust and safety">Close</button></div>
+<div id="collab-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Collaboration" aria-hidden="true"><button id="close-collab-x" type="button" aria-label="Close collaboration">Close</button></div>
+<div id="transfer-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Transfer" aria-hidden="true"><button id="transfer-modal-close-x" type="button" aria-label="Close transfer">Close</button></div>
+<div id="game-context-panel" class="hidden" role="dialog" aria-modal="true" aria-label="Game context" aria-hidden="true"><button id="close-game-context-x" type="button" aria-label="Close game context">Close</button></div>
+<div id="computer-use-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Computer use approval" aria-hidden="true"><button id="computer-use-deny-x" type="button" aria-label="Deny computer use">Deny</button><img id="computer-preview-img" alt="Computer preview" /><div id="computer-preview-empty">No preview</div></div>
+<div id="trust-safety-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Trust and safety" aria-hidden="true">
+    <div class="trust-modal-card">
+        <header class="trust-modal-header">
+            <h2>Trust &amp; Safety</h2>
+            <button id="close-trust-safety-x" class="trust-modal-close" type="button" aria-label="Close trust and safety">×</button>
+        </header>
+        <div class="trust-modal-body">
+            <div class="trust-section">
+                <h3>Data Handling</h3>
+                <div class="trust-data-row">
+                    <div class="trust-data-badge" id="ts-provider-badge">—</div>
+                    <p class="trust-data-desc" id="ts-provider-desc">Loading provider info…</p>
+                </div>
+                <div class="trust-diagram">
+                    <div class="trust-diagram-box trust-local">
+                        <div class="trust-diagram-title">🏠 Local</div>
+                        <div class="trust-diagram-list">
+                            <div>Memory records</div>
+                            <div>Chat history</div>
+                            <div>Projects &amp; packs</div>
+                            <div>Settings</div>
+                        </div>
+                    </div>
+                    <div class="trust-diagram-arrow">→</div>
+                    <div class="trust-diagram-box trust-cloud" id="ts-cloud-box">
+                        <div class="trust-diagram-title">☁️ Cloud</div>
+                        <div class="trust-diagram-list">
+                            <div id="ts-cloud-item">LLM inference only</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trust-section">
+                <h3>Privacy Levels</h3>
+                <div class="trust-levels">
+                    <div class="trust-level-item">
+                        <span class="trust-level-dot" style="background:#22c55e"></span>
+                        <div>
+                            <div class="trust-level-name">Standard</div>
+                            <div class="trust-level-desc">Visible in search and RAG. Default for all new records.</div>
+                        </div>
+                    </div>
+                    <div class="trust-level-item">
+                        <span class="trust-level-dot" style="background:#3b82f6"></span>
+                        <div>
+                            <div class="trust-level-name">Private</div>
+                            <div class="trust-level-desc">Included in RAG but search snippets are truncated to 80 chars.</div>
+                        </div>
+                    </div>
+                    <div class="trust-level-item">
+                        <span class="trust-level-dot" style="background:#f59e0b"></span>
+                        <div>
+                            <div class="trust-level-name">Sensitive</div>
+                            <div class="trust-level-desc">Included in RAG but requires confirmation before each injection.</div>
+                        </div>
+                    </div>
+                    <div class="trust-level-item">
+                        <span class="trust-level-dot" style="background:#ef4444"></span>
+                        <div>
+                            <div class="trust-level-name">Sealed</div>
+                            <div class="trust-level-desc">Hidden from search and RAG. Must be explicitly unlocked per session.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="trust-section">
+                <h3>Sealed Record Controls</h3>
+                <div class="trust-actions">
+                    <button id="ts-unlock-all-btn" class="memory-btn" type="button">🔓 Unlock All Sealed</button>
+                    <button id="ts-lock-all-btn" class="memory-btn" type="button">🔒 Lock All Sealed</button>
+                </div>
+                <div id="ts-sealed-status" class="trust-status">Loading…</div>
+            </div>
+
+            <div class="trust-section">
+                <h3>Memory Privacy Breakdown</h3>
+                <div class="trust-privacy-grid">
+                    <div class="trust-privacy-item"><span class="trust-level-dot" style="background:#22c55e"></span><span>Standard</span><span id="ts-privacy-standard">—</span></div>
+                    <div class="trust-privacy-item"><span class="trust-level-dot" style="background:#3b82f6"></span><span>Private</span><span id="ts-privacy-private">—</span></div>
+                    <div class="trust-privacy-item"><span class="trust-level-dot" style="background:#f59e0b"></span><span>Sensitive</span><span id="ts-privacy-sensitive">—</span></div>
+                    <div class="trust-privacy-item"><span class="trust-level-dot" style="background:#ef4444"></span><span>Sealed</span><span id="ts-privacy-sealed">—</span></div>
+                </div>
+            </div>
+        </div>
+        <footer class="trust-modal-footer">
+            <button id="close-trust-safety-btn" class="stv-btn-primary" type="button">Close</button>
+        </footer>
+    </div>
+</div>
 
 <span id="latency-val" class="sr-only">--ms</span>
 <span id="token-speed" class="sr-only">--/s</span>

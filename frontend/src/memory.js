@@ -7,6 +7,94 @@ function _memEscHtml(s) {
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+async function _memLoadProjects(ctx) {
+    const listEl = document.getElementById("memory-projects-list");
+    if (!listEl) return;
+    try {
+        ctx.projects = await invoke("list_projects");
+    } catch (e) {
+        console.error("list_projects error", e);
+        ctx.projects = [];
+    }
+    listEl.innerHTML = '';
+    const allItem = document.createElement("div");
+    allItem.className = `memory-project-item${ctx.activeProjectId === '' ? ' active' : ''}`;
+    allItem.dataset.projectId = '';
+    allItem.innerHTML = `<span class="memory-project-dot" style="background:#888"></span><span class="memory-project-name">All</span>`;
+    allItem.onclick = () => { ctx.activeProjectId = ''; _memSetActiveProject(ctx); _memRenderList(ctx); };
+    listEl.appendChild(allItem);
+
+    ctx.projects.forEach(p => {
+        const item = document.createElement("div");
+        item.className = `memory-project-item${ctx.activeProjectId === p.id ? ' active' : ''}`;
+        item.dataset.projectId = p.id;
+        item.innerHTML = `<span class="memory-project-dot" style="background:${_memEscHtml(p.color || '#3b82f6')}"></span><span class="memory-project-name">${_memEscHtml(p.name)}</span>`;
+        item.onclick = () => { ctx.activeProjectId = p.id; _memSetActiveProject(ctx); _memRenderList(ctx); };
+        listEl.appendChild(item);
+    });
+}
+
+function _memSetActiveProject(ctx) {
+    document.querySelectorAll(".memory-project-item[data-project-id]").forEach(el => {
+        el.classList.toggle("active", el.dataset.projectId === (ctx.activeProjectId || ''));
+    });
+}
+
+async function _memCreateProject(ctx) {
+    const name = prompt("Project name:");
+    if (!name || !name.trim()) return;
+    try {
+        await invoke("create_project", { name: name.trim(), description: "", color: "#3b82f6" });
+        await _memLoadProjects(ctx);
+    } catch (e) { console.error("create_project error", e); }
+}
+
+// ── Context Packs ─────────────────────────────────────────────────────────────
+
+async function _memLoadPacks(ctx) {
+    const listEl = document.getElementById("memory-packs-list");
+    if (!listEl) return;
+    try {
+        ctx.packs = await invoke("list_packs");
+    } catch (e) {
+        console.error("list_packs error", e);
+        ctx.packs = [];
+    }
+    listEl.innerHTML = '';
+    const allItem = document.createElement("div");
+    allItem.className = `memory-project-item${ctx.activePackId === '' ? ' active' : ''}`;
+    allItem.dataset.packId = '';
+    allItem.innerHTML = `<span class="memory-project-dot" style="background:#888"></span><span class="memory-project-name">All</span>`;
+    allItem.onclick = () => { ctx.activePackId = ''; _memSetActivePack(ctx); _memRenderList(ctx); };
+    listEl.appendChild(allItem);
+
+    ctx.packs.forEach(p => {
+        const item = document.createElement("div");
+        item.className = `memory-project-item${ctx.activePackId === p.id ? ' active' : ''}`;
+        item.dataset.packId = p.id;
+        item.innerHTML = `<span class="memory-project-dot" style="background:${_memEscHtml(p.color || '#8b5cf6')}"></span><span class="memory-project-name">${_memEscHtml(p.name)}</span>`;
+        item.onclick = () => { ctx.activePackId = p.id; _memSetActivePack(ctx); _memRenderList(ctx); };
+        listEl.appendChild(item);
+    });
+}
+
+function _memSetActivePack(ctx) {
+    document.querySelectorAll(".memory-project-item[data-pack-id]").forEach(el => {
+        el.classList.toggle("active", el.dataset.packId === (ctx.activePackId || ''));
+    });
+}
+
+async function _memCreatePack(ctx) {
+    const name = prompt("Context Pack name:");
+    if (!name || !name.trim()) return;
+    try {
+        await invoke("create_pack", { name: name.trim(), description: "", color: "#8b5cf6" });
+        await _memLoadPacks(ctx);
+    } catch (e) { console.error("create_pack error", e); }
+}
+
 function _memNsIcon(ns) {
     const map = { chat:"💬", documents:"📄", game_notes:"🎮", fact:"📌" };
     return map[ns] || "🔹";
@@ -47,6 +135,16 @@ function _memBuildRecordCard(record, ctx) {
     const gameThumb = gameId
         ? `<img class="memory-game-thumb" src="https://cdn.cloudflare.steamstatic.com/steam/apps/${_memEscHtml(gameId)}/header.jpg" alt="Game ${_memEscHtml(gameId)}" loading="lazy" onerror="this.remove()">` : "";
 
+    const projectOptions = (ctx.projects || []).map(p =>
+        `<option value="${_memEscHtml(p.id)}"${record.project_id === p.id ? ' selected' : ''}>${_memEscHtml(p.name)}</option>`
+    ).join('');
+    const projectSelect = `<select class="mem-project-select" data-id="${_memEscHtml(record.id)}" title="Project"><option value="">—</option>${projectOptions}</select>`;
+
+    const packOptions = (ctx.packs || []).map(p =>
+        `<option value="${_memEscHtml(p.id)}"${record.pack_id === p.id ? ' selected' : ''}>${_memEscHtml(p.name)}</option>`
+    ).join('');
+    const packSelect = `<select class="mem-pack-select" data-id="${_memEscHtml(record.id)}" title="Context Pack"><option value="">—</option>${packOptions}</select>`;
+
     const card = document.createElement("div");
     card.className = `memory-record-card${isPinned ? " memory-record-pinned" : ""}`;
     card.dataset.id = record.id;
@@ -55,6 +153,7 @@ function _memBuildRecordCard(record, ctx) {
             ${nsBadge}
             <span class="memory-record-role ${_memRoleBadgeClass(role)}">${_memRoleLabel(role)}</span>
             <span class="memory-record-ts">${_memTsFromId(record.id)}</span>
+            ${projectSelect}${packSelect}
             <div class="memory-record-actions">
                 <button class="memory-icon-btn mem-pin-btn${isPinned ? " pinned" : ""}" title="${isPinned ? "Unpin" : "Pin"}" data-id="${_memEscHtml(record.id)}" data-pinned="${isPinned}">${createIcon('plusCircle', { size:13 })}</button>
                 <button class="memory-icon-btn mem-del-btn" title="Delete" data-id="${_memEscHtml(record.id)}">${createIcon('trash2', { size:13 })}</button>
@@ -87,6 +186,34 @@ function _memBuildRecordCard(record, ctx) {
         } catch(e) { console.error("delete error", e); }
     };
 
+    // Project assignment dropdown
+    const projSelectEl = card.querySelector(".mem-project-select");
+    if (projSelectEl) {
+        projSelectEl.onchange = async function() {
+            const memoryId = this.dataset.id;
+            const projectId = this.value || null;
+            try {
+                await invoke("set_memory_project", { memory_id: memoryId, project_id: projectId });
+                const rec = ctx.allRecords.find(r => r.id === memoryId);
+                if (rec) rec.project_id = projectId || undefined;
+            } catch(e) { console.error("set_memory_project error", e); }
+        };
+    }
+
+    // Pack assignment dropdown
+    const packSelectEl = card.querySelector(".mem-pack-select");
+    if (packSelectEl) {
+        packSelectEl.onchange = async function() {
+            const memoryId = this.dataset.id;
+            const packId = this.value || null;
+            try {
+                await invoke("set_memory_pack", { memory_id: memoryId, pack_id: packId });
+                const rec = ctx.allRecords.find(r => r.id === memoryId);
+                if (rec) rec.pack_id = packId || undefined;
+            } catch(e) { console.error("set_memory_pack error", e); }
+        };
+    }
+
     return card;
 }
 
@@ -105,6 +232,12 @@ function _memRenderList(ctx) {
     else if (ctx.activeFilter.startsWith("ns:")) {
         const ns = ctx.activeFilter.slice(3);
         filtered = ctx.allRecords.filter(r => (r.metadata.namespace || "chat") === ns);
+    }
+    if (ctx.activeProjectId) {
+        filtered = filtered.filter(r => r.project_id === ctx.activeProjectId);
+    }
+    if (ctx.activePackId) {
+        filtered = filtered.filter(r => r.pack_id === ctx.activePackId);
     }
     if (query) filtered = filtered.filter(r => r.content.toLowerCase().includes(query) || r.id.toLowerCase().includes(query));
     filtered.sort((a, b) => (a.metadata.pinned === "true" ? 0 : 1) - (b.metadata.pinned === "true" ? 0 : 1));
@@ -281,10 +414,20 @@ export function initMemoryView() {
         backupList:    null,
         allRecords:    [],
         activeFilter:  "all",
+        activeProjectId: "",
+        projects:      [],
+        activePackId:  "",
+        packs:         [],
     };
 
-    document.querySelector('[data-view="memory"]')?.addEventListener("click", () => setTimeout(() => _memLoad(ctx), 50));
-    if (ctx.refreshBtn) ctx.refreshBtn.onclick = () => _memLoad(ctx);
+    document.querySelector('[data-view="memory"]')?.addEventListener("click", () => setTimeout(() => { _memLoad(ctx); _memLoadProjects(ctx); _memLoadPacks(ctx); }, 50));
+    if (ctx.refreshBtn) ctx.refreshBtn.onclick = () => { _memLoad(ctx); _memLoadProjects(ctx); _memLoadPacks(ctx); };
+
+    const addProjectBtn = document.getElementById("memory-project-add-btn");
+    if (addProjectBtn) addProjectBtn.onclick = () => _memCreateProject(ctx);
+
+    const addPackBtn = document.getElementById("memory-pack-add-btn");
+    if (addPackBtn) addPackBtn.onclick = () => _memCreatePack(ctx);
 
     if (ctx.searchInput) {
         let debounce = null;

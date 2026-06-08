@@ -40,6 +40,7 @@ mod transfer;
 mod tunnel;
 mod whisper;
 mod workflow;
+mod workflow_engine;
 pub mod models;
 pub mod game;
 pub mod paths;

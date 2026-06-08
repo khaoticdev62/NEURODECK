@@ -1,8 +1,7 @@
 use crate::AppState;
 use std::sync::Mutex;
-use tauri::State;
+use crate::{State};
 
-#[tauri::command]
 pub async fn get_terminal_autocomplete(
     partial: String,
     state: State<'_, Mutex<AppState>>,

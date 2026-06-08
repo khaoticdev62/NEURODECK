@@ -1,6 +1,5 @@
 use serde::Serialize;
 use std::path::PathBuf;
-use tauri::command;
 
 fn workspace_dir() -> PathBuf {
     crate::user_config_dir().join("workspace")
@@ -44,7 +43,6 @@ pub struct FileEntry {
     pub size: u64,
 }
 
-#[command]
 pub async fn list_workspace_files(path: Option<String>) -> Result<Vec<FileEntry>, String> {
     let workspace = ensure_workspace()?;
     let target = match path {
@@ -85,7 +83,6 @@ pub async fn list_workspace_files(path: Option<String>) -> Result<Vec<FileEntry>
     Ok(entries)
 }
 
-#[command]
 pub async fn read_workspace_file(path: String) -> Result<String, String> {
     let target = sanitize_workspace_path(&path)?;
     tokio::fs::read_to_string(&target)
@@ -93,7 +90,6 @@ pub async fn read_workspace_file(path: String) -> Result<String, String> {
         .map_err(|e| format!("Cannot read '{}': {}", path, e))
 }
 
-#[command]
 pub async fn write_workspace_file(path: String, content: String) -> Result<(), String> {
     let target = sanitize_workspace_path(&path)?;
     if let Some(parent) = target.parent() {
@@ -104,7 +100,6 @@ pub async fn write_workspace_file(path: String, content: String) -> Result<(), S
         .map_err(|e| format!("Cannot write '{}': {}", path, e))
 }
 
-#[command]
 pub async fn create_workspace_file(path: String) -> Result<(), String> {
     let target = sanitize_workspace_path(&path)?;
     if let Some(parent) = target.parent() {
@@ -115,7 +110,6 @@ pub async fn create_workspace_file(path: String) -> Result<(), String> {
         .map_err(|e| format!("Cannot create '{}': {}", path, e))
 }
 
-#[command]
 pub async fn delete_workspace_file(path: String) -> Result<(), String> {
     let target = sanitize_workspace_path(&path)?;
     let meta = tokio::fs::metadata(&target).await.map_err(|e| e.to_string())?;
@@ -130,7 +124,6 @@ pub async fn delete_workspace_file(path: String) -> Result<(), String> {
     }
 }
 
-#[command]
 pub async fn rename_workspace_file(from: String, to: String) -> Result<(), String> {
     let src = sanitize_workspace_path(&from)?;
     let dst = sanitize_workspace_path(&to)?;

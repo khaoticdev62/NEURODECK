@@ -1,6 +1,6 @@
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use crate::{AppHandle};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct OllamaModel {
@@ -29,7 +29,6 @@ struct OllamaPullChunk {
     total: Option<u64>,
 }
 
-#[tauri::command]
 pub async fn ollama_list_models(base_url: String) -> Result<Vec<OllamaModel>, String> {
     let client = reqwest::Client::new();
     let url = format!("{}/api/tags", base_url.trim_end_matches('/'));
@@ -55,7 +54,6 @@ pub async fn ollama_list_models(base_url: String) -> Result<Vec<OllamaModel>, St
     Ok(parsed.models)
 }
 
-#[tauri::command]
 pub async fn ollama_pull_model(
     base_url: String,
     model: String,
@@ -138,7 +136,6 @@ pub async fn ollama_pull_model(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn ollama_delete_model(base_url: String, model: String) -> Result<(), String> {
     let client = reqwest::Client::new();
     let url = format!("{}/api/delete", base_url.trim_end_matches('/'));

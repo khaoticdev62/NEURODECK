@@ -1,4 +1,3 @@
 fn main() {
-    tauri_build::build()
+    // No-op build script — pure Electron sidecar, no Tauri build step.
 }
-

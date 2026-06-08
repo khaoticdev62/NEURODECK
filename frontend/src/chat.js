@@ -6,6 +6,7 @@ import { applyButtonIcon, createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
 import { initSlashCommands, setSlashClearHandler } from './slash-commands.js';
 import { triggerHaptic } from './haptics.js';
+import { FocusTrap } from './focus-trap.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MESSAGE REGISTRY & VIRTUALIZATION
@@ -145,6 +146,10 @@ function initChatSearch() {
     const overlay = document.createElement('div');
     overlay.id = 'chat-search-overlay';
     overlay.className = 'chat-search-overlay hidden';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Chat search');
+    overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `
         <div class="chat-search-bar">
             <span class="chat-search-icon">${createIcon('search', { size: 14 })}</span>
@@ -195,10 +200,17 @@ function initChatSearch() {
     });
 }
 
+let chatSearchFocusTrap = null;
+
 function openChatSearch() {
     initChatSearch();
     const overlay = document.getElementById('chat-search-overlay');
-    if (overlay) overlay.classList.remove('hidden');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+    if (!chatSearchFocusTrap) chatSearchFocusTrap = new FocusTrap(overlay);
+    chatSearchFocusTrap.activate();
     const input = document.getElementById('chat-search-input');
     if (input) {
         input.focus();
@@ -209,7 +221,11 @@ function openChatSearch() {
 
 export function closeChatSearch() {
     const overlay = document.getElementById('chat-search-overlay');
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    if (chatSearchFocusTrap) chatSearchFocusTrap.deactivate();
     clearSearchHighlights();
     state.chatSearch.open = false;
     state.chatSearch.query = '';

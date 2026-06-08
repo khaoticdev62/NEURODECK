@@ -30,7 +30,6 @@ fn safe_name(name: &str) -> String {
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 
-#[tauri::command]
 pub fn list_workflows() -> Result<Vec<String>, String> {
     let dir = workflows_dir();
     let entries = fs::read_dir(&dir).map_err(|e| e.to_string())?;
@@ -46,13 +45,11 @@ pub fn list_workflows() -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-#[tauri::command]
 pub fn load_workflow(name: String) -> Result<String, String> {
     let path = workflows_dir().join(format!("{}.json", safe_name(&name)));
     fs::read_to_string(&path).map_err(|e| format!("Load failed: {}", e))
 }
 
-#[tauri::command]
 pub fn save_workflow(name: String, json: String) -> Result<(), String> {
     let clean = safe_name(&name);
     if clean.is_empty() {
@@ -62,21 +59,18 @@ pub fn save_workflow(name: String, json: String) -> Result<(), String> {
     fs::write(&path, json).map_err(|e| format!("Save failed: {}", e))
 }
 
-#[tauri::command]
 pub fn delete_workflow(name: String) -> Result<(), String> {
     let path = workflows_dir().join(format!("{}.json", safe_name(&name)));
     fs::remove_file(&path).map_err(|e| format!("Delete failed: {}", e))
 }
 
 /// Export a workflow as a `.ndwf` JSON bundle (returns the JSON string).
-#[tauri::command]
 pub fn workflow_export(name: String) -> Result<String, String> {
     let path = workflows_dir().join(format!("{}.json", safe_name(&name)));
     fs::read_to_string(&path).map_err(|e| format!("Export failed: {}", e))
 }
 
 /// Import a workflow from a `.ndwf` JSON bundle. Saves to disk, returns the workflow name.
-#[tauri::command]
 pub fn workflow_import(json: String) -> Result<String, String> {
     let doc: WorkflowDoc =
         serde_json::from_str(&json).map_err(|e| format!("Invalid workflow JSON: {}", e))?;
@@ -91,7 +85,6 @@ pub fn workflow_import(json: String) -> Result<String, String> {
 
 /// Trigger a workflow run by name (used by the task scheduler).
 /// Returns the workflow JSON so the caller can execute it.
-#[tauri::command]
 pub fn workflow_run(name: String) -> Result<String, String> {
     let path = workflows_dir().join(format!("{}.json", safe_name(&name)));
     if !path.exists() {

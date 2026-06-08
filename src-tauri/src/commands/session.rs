@@ -5,14 +5,13 @@ use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Manager, State};
+use crate::{AppHandle, State};
 
 lazy_static::lazy_static! {
     static ref RE_FILE_REF: regex::Regex = regex::Regex::new(r"@file:([^\s]+)").unwrap();
     static ref RE_DISCUSS: regex::Regex = regex::Regex::new(r"^/discuss\s+(\w+)\s+(\w+)\s+(.+)$").unwrap();
 }
 
-#[tauri::command]
 pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let session = Session {
@@ -29,7 +28,6 @@ pub fn save_session(state: State<'_, Mutex<AppState>>) -> Result<String, String>
 /// Returns the session content formatted as the requested type:
 /// "markdown" | "json" | "html"
 /// Used by the frontend export dropdown (copy to clipboard or file download).
-#[tauri::command]
 pub fn export_session_content(id: String, format: String) -> Result<String, String> {
     if id.is_empty() || id.contains("..") || id.contains('/') || id.contains('\\') {
         return Err("Invalid session ID".into());
@@ -108,7 +106,6 @@ pub fn export_session_content(id: String, format: String) -> Result<String, Stri
     }
 }
 
-#[tauri::command]
 pub fn export_session_markdown(id: String) -> Result<String, String> {
     // Validate session ID to prevent path traversal
     if id.contains("..") || id.contains('/') || id.contains('\\') {
@@ -135,7 +132,6 @@ pub fn export_session_markdown(id: String) -> Result<String, String> {
     ))
 }
 
-#[tauri::command]
 pub fn load_latest_session(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<HashMap<String, serde_json::Value>, String> {
@@ -183,7 +179,6 @@ pub fn load_latest_session(
     Ok(result)
 }
 
-#[tauri::command]
 pub fn list_sessions() -> Result<Vec<String>, String> {
     let mut sessions = Vec::new();
     let dir = user_config_dir().join("sessions");
@@ -207,7 +202,6 @@ pub fn list_sessions() -> Result<Vec<String>, String> {
     Ok(sessions)
 }
 
-#[tauri::command]
 pub fn load_session_by_id(
     id: String,
     state: State<'_, Mutex<AppState>>,
@@ -243,7 +237,6 @@ pub fn load_session_by_id(
     Ok(result)
 }
 
-#[tauri::command]
 pub fn delete_session(id: String) -> Result<(), String> {
     if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
         return Err(format!("Invalid session ID: {}", id));
@@ -259,7 +252,6 @@ pub fn delete_session(id: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
 pub fn new_session(state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     let new_id = Utc::now().format("%Y%m%d-%H%M%S").to_string();
@@ -268,7 +260,6 @@ pub fn new_session(state: State<'_, Mutex<AppState>>) -> String {
     new_id
 }
 
-#[tauri::command]
 pub fn fork_session(
     base_messages: Vec<String>,
     state: State<'_, Mutex<AppState>>,
@@ -292,7 +283,6 @@ pub fn fork_session(
     Ok(new_id)
 }
 
-#[tauri::command]
 pub async fn speak_text(text: String) -> Result<(), String> {
     let sanitized: String = text
         .chars()
@@ -348,7 +338,6 @@ fn pop_complete_sentences(buf: &mut String) -> Vec<String> {
 
 /// Non-blocking TTS: fires a speak task without blocking the caller.
 /// Used for sentence-by-sentence streaming TTS on `tts_chunk` events.
-#[tauri::command]
 pub async fn speak_text_stream(text: String) -> Result<(), String> {
     let sanitized: String = text
         .chars()
@@ -386,7 +375,6 @@ pub async fn speak_text_stream(text: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
 pub async fn cancel_generation(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -508,7 +496,6 @@ fn provider_by_name(
     }
 }
 
-#[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub async fn compare_models(
     prompt: String,
@@ -702,7 +689,6 @@ async fn stream_compare_pane(
     );
 }
 
-#[tauri::command]
 pub async fn send_command(
     prompt: String,
     image_base64: Option<String>,
@@ -1326,12 +1312,10 @@ pub async fn send_command(
     Ok(())
 }
 
-#[tauri::command]
 pub fn list_sessions_meta() -> Result<Vec<SessionMeta>, String> {
     storage::list_sessions_meta(user_config_dir().join("sessions"))
 }
 
-#[tauri::command]
 pub fn rename_session(id: String, name: String) -> Result<(), String> {
     if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
         return Err(format!("Invalid session ID: {}", id));

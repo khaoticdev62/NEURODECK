@@ -12,10 +12,10 @@ use std::sync::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::bridge::EventEmitter;
-use tauri::AppHandle;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::{mpsc, oneshot};
+use crate::{AppHandle};
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -501,52 +501,47 @@ async fn send_request(
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
 /// Start (or restart) an LSP server for the given language.
-#[tauri::command]
 pub async fn lsp_start(
     language: String,
     command: String,
     args: Vec<String>,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
     app: AppHandle,
 ) -> Result<(), String> {
     let workspace = crate::user_config_dir().join("workspace");
     let root = workspace.to_string_lossy().to_string();
-    let mgr = Arc::clone(&*state);
+    let mgr = Arc::clone(&state);
     spawn_server(mgr, app, language, command, args, root).await
 }
 
 /// Stop an LSP server for the given language.
-#[tauri::command]
 pub fn lsp_stop(
     language: String,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<(), String> {
     state.lock().unwrap_or_else(|e| e.into_inner()).servers.remove(&language);
     Ok(())
 }
 
 /// List all running LSP servers and their status.
-#[tauri::command]
-pub fn lsp_list(state: tauri::State<'_, Arc<Mutex<LspManager>>>) -> Vec<LspServerInfo> {
+pub fn lsp_list(state: Arc<Mutex<LspManager>> ) -> Vec<LspServerInfo> {
     state.lock().unwrap_or_else(|e| e.into_inner()).server_list()
 }
 
 /// Get cached diagnostics for a document URI.
-#[tauri::command]
 pub fn lsp_get_diagnostics(
     uri: String,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Vec<LspDiagnostic> {
     state.lock().unwrap_or_else(|e| e.into_inner()).diagnostics_for(&uri)
 }
 
 /// Notify server that a document was opened.
-#[tauri::command]
 pub async fn lsp_open_document(
     language: String,
     uri: String,
     content: String,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -566,11 +561,10 @@ pub async fn lsp_open_document(
 }
 
 /// Notify server that a document was closed.
-#[tauri::command]
 pub async fn lsp_close_document(
     language: String,
     uri: String,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -582,13 +576,12 @@ pub async fn lsp_close_document(
 }
 
 /// Notify server of document content change (full sync).
-#[tauri::command]
 pub async fn lsp_change_document(
     language: String,
     uri: String,
     content: String,
     version: u32,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -603,13 +596,12 @@ pub async fn lsp_change_document(
 }
 
 /// Request completions at a cursor position.
-#[tauri::command]
 pub async fn lsp_get_completions(
     language: String,
     uri: String,
     line: u32,
     character: u32,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<Vec<LspCompletionItem>, String> {
     let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -660,13 +652,12 @@ pub async fn lsp_get_completions(
 }
 
 /// Request hover information at a position.
-#[tauri::command]
 pub async fn lsp_get_hover(
     language: String,
     uri: String,
     line: u32,
     character: u32,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<Option<LspHover>, String> {
     let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -717,13 +708,12 @@ pub async fn lsp_get_hover(
 }
 
 /// Request go-to-definition locations.
-#[tauri::command]
 pub async fn lsp_get_definitions(
     language: String,
     uri: String,
     line: u32,
     character: u32,
-    state: tauri::State<'_, Arc<Mutex<LspManager>>>,
+    state: Arc<Mutex<LspManager>> ,
 ) -> Result<Vec<LspLocation>, String> {
     let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -757,7 +747,6 @@ pub async fn lsp_get_definitions(
 }
 
 /// Return the catalog of well-known language servers.
-#[tauri::command]
 pub fn lsp_known_servers() -> Vec<KnownServer> {
     known_servers()
 }

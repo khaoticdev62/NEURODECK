@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
-use tauri::Emitter;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
@@ -208,7 +207,6 @@ struct HfApiFileItem {
     item_type: String,
 }
 
-#[tauri::command]
 pub async fn hf_search_models(query: String, limit: u32) -> Result<Vec<HfModelInfo>, String> {
     let client = reqwest::Client::new();
     let encoded_query = query.replace(' ', "%20");
@@ -262,7 +260,6 @@ pub async fn hf_search_models(query: String, limit: u32) -> Result<Vec<HfModelIn
     Ok(results)
 }
 
-#[tauri::command]
 pub async fn hf_get_model_info(repo_id: String) -> Result<HfModelInfo, String> {
     let client = reqwest::Client::new();
 
@@ -449,7 +446,6 @@ fn models_dir() -> PathBuf {
     crate::user_config_dir().join("models")
 }
 
-#[tauri::command]
 pub async fn hf_list_installed_models() -> Result<Vec<InstalledModel>, String> {
     let dir = models_dir();
     let mut result = Vec::new();
@@ -502,7 +498,6 @@ pub async fn hf_list_installed_models() -> Result<Vec<InstalledModel>, String> {
     Ok(result)
 }
 
-#[tauri::command]
 pub async fn hf_delete_model(repo_id: String, filename: String) -> Result<(), String> {
     let path = models_dir().join(&repo_id).join(&filename);
     if path.exists() {
@@ -520,11 +515,10 @@ pub async fn hf_delete_model(repo_id: String, filename: String) -> Result<(), St
     Ok(())
 }
 
-#[tauri::command]
 pub async fn hf_download_model(
     repo_id: String,
     filename: String,
-    app_handle: tauri::AppHandle,
+    app_handle: crate::bridge::WsBroadcaster,
 ) -> Result<String, String> {
     let download_id = format!(
         "{}_{}_{}",
@@ -583,7 +577,6 @@ pub async fn hf_download_model(
     Ok(download_id)
 }
 
-#[tauri::command]
 pub async fn hf_cancel_download(download_id: String) -> Result<(), String> {
     let tokens = CANCEL_TOKENS.lock().await;
     if let Some(token) = tokens.get(&download_id) {
@@ -596,13 +589,11 @@ pub async fn hf_cancel_download(download_id: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
 pub async fn hf_list_downloads() -> Vec<DownloadTask> {
     let downloads = DOWNLOADS.lock().await;
     downloads.values().cloned().collect()
 }
 
-#[tauri::command]
 pub async fn hf_get_steam_deck_models() -> Vec<HfModelInfo> {
     get_curated_steam_deck_models()
 }
@@ -611,7 +602,7 @@ async fn download_file(
     repo_id: &str,
     filename: &str,
     download_id: &str,
-    app_handle: tauri::AppHandle,
+    app_handle: crate::bridge::WsBroadcaster,
     cancel_token: tokio_util::sync::CancellationToken,
 ) -> Result<(), String> {
     // Update status to Downloading

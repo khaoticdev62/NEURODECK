@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 use suppaftp::{FtpError, FtpStream};
-use tauri::{AppHandle, Emitter};
+use crate::{AppHandle};
 
 const UPLOAD_EMIT_INTERVAL: u64 = 65_536; // emit every 64 KB
 
@@ -62,7 +62,6 @@ impl<R: Read> Read for ProgressReader<R> {
     }
 }
 
-#[tauri::command]
 pub async fn ftp_list_dir(
     host: String,
     port: u16,
@@ -115,7 +114,6 @@ const MAX_DOWNLOAD_SIZE_MB: u64 = 500;
 /// Emit progress every 1 MB.
 const DOWNLOAD_PROGRESS_INTERVAL: usize = 1_048_576;
 
-#[tauri::command]
 pub async fn ftp_download_file(
     app: AppHandle,
     host: String,
@@ -193,7 +191,6 @@ pub async fn ftp_download_file(
     .map_err(to_string_err)?
 }
 
-#[tauri::command]
 pub async fn ftp_upload_file(
     app: AppHandle,
     host: String,
@@ -229,7 +226,6 @@ pub async fn ftp_upload_file(
     .map_err(to_string_err)?
 }
 
-#[tauri::command]
 pub async fn ftp_test_connection(
     host: String,
     port: u16,

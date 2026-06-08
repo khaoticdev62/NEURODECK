@@ -2067,6 +2067,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 });
             }
 
+            // Register with live scheduler if running
+            let sched_guard = state.scheduler.scheduler.lock().await;
+            if let Some(s) = sched_guard.as_ref() {
+                let _ = crate::scheduler::register_task(
+                    s, &task, state.scheduler.job_map.clone(),
+                    state.broadcaster.clone(), state.app_state.clone(),
+                ).await;
+            }
+            drop(sched_guard);
+
             state.broadcaster.emit("scheduled_task_added", serde_json::json!({
                 "id":   task.id,
                 "name": task.name,
@@ -2078,7 +2088,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "id":         task.id,
                 "name":       task.name,
                 "cron":       task.cron,
-                "note":       "Live scheduler wiring requires Tauri AppHandle; task persisted to disk"
+                "note":       "Task registered with live scheduler"
             }))
         }
 
@@ -2992,13 +3002,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "toggle_scheduled_task" => {
             let id      = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
             let enabled = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
-            let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
-            let found = tasks.iter_mut().find(|t| t.id == id);
-            if let Some(t) = found {
-                t.enabled = enabled;
-                let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
-                    std::fs::write(&state.scheduler.tasks_path, s).ok()
-                });
+            let task = {
+                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let found_idx = tasks.iter().position(|t| t.id == id);
+                if let Some(idx) = found_idx {
+                    tasks[idx].enabled = enabled;
+                    let task = tasks[idx].clone();
+                    let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
+                        std::fs::write(&state.scheduler.tasks_path, s).ok()
+                    });
+                    Some(task)
+                } else {
+                    None
+                }
+            };
+            if let Some(task) = task {
+                let sched_guard = state.scheduler.scheduler.lock().await;
+                if let Some(s) = sched_guard.as_ref() {
+                    if enabled {
+                        let _ = crate::scheduler::register_task(
+                            s, &task, state.scheduler.job_map.clone(),
+                            state.broadcaster.clone(), state.app_state.clone(),
+                        ).await;
+                    } else {
+                        let _ = crate::scheduler::unregister_task(s, &id, &state.scheduler.job_map).await;
+                    }
+                }
                 Ok(serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "id": id }))
             } else {
                 Err(format!("Task '{}' not found", id))
@@ -3012,13 +3041,38 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 tasks.iter().find(|t| t.id == id).cloned()
             };
             if let Some(task) = task {
+                let goal = task.goal.clone();
                 state.broadcaster.emit("scheduled_task_started", serde_json::json!({
                     "id": task.id,
                     "name": task.name,
-                    "goal": task.goal,
+                    "goal": &goal,
                     "triggered_at": chrono::Utc::now().to_rfc3339(),
                     "manual": true,
                 }));
+                if let Some(workflow_name) = goal.strip_prefix("workflow:") {
+                    let wf_name = workflow_name.trim().to_string();
+                    if !wf_name.is_empty() {
+                        let json_result = crate::workflow::workflow_run(wf_name.clone());
+                        if let Ok(json_str) = json_result {
+                            if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
+                                let broadcaster = state.broadcaster.clone();
+                                let app_state = state.app_state.clone();
+                                broadcaster.emit("workflow_started", serde_json::json!({
+                                    "name": &wf_name,
+                                    "triggered_by": "manual_scheduler",
+                                }));
+                                tokio::spawn(async move {
+                                    let run_state = crate::workflow_engine::execute_workflow(
+                                        &wf_name, &doc, app_state, broadcaster,
+                                    ).await;
+                                    if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
+                                        tracing::warn!("Failed to save workflow run history: {}", e);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
                 Ok(serde_json::json!({ "status": "triggered", "id": id }))
             } else {
                 Err(format!("Task '{}' not found", id))

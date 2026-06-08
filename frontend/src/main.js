@@ -62,6 +62,7 @@ import {
 } from "./notifications.js";
 import { initAgentView } from "./agent.js";
 import { initMemoryView } from "./memory.js";
+import { initDashboardView } from "./dashboard.js";
 import { FocusTrap } from "./focus-trap.js";
 import { renderShortcutsOverlay, KEYBOARD_SHORTCUTS, getShortcutOverrides, saveShortcutOverride, resetShortcutOverride, getEffectiveKeys } from "./shortcuts.js";
 import { RADIAL_SEGMENTS } from "./radial.js";
@@ -1287,7 +1288,7 @@ const _GP_FOCUSABLE_SELECTORS = [
 ];
 
 function _gpCheckModalFocusable() {
-  const modals = ["notif-modal", "game-context-modal", "computer-use-modal", "transfer-modal"];
+  const modals = ["notif-modal", "game-context-panel", "computer-use-modal", "transfer-modal"];
   for (const id of modals) {
     const els = getActiveModalFocusableElements(id);
     if (els) return els;
@@ -1845,9 +1846,9 @@ function closeTopmostOverlay() {
     document.getElementById("close-notif-btn")?.click();
     closed = true;
   }
-  const gameModal = document.getElementById("game-context-modal");
+  const gameModal = document.getElementById("game-context-panel");
   if (!closed && gameModal?.classList.contains("active")) {
-    document.getElementById("close-game-context")?.click();
+    document.getElementById("close-game-context-x")?.click();
     closed = true;
   }
   const computerUseModal = document.getElementById("computer-use-modal");
@@ -1868,6 +1869,51 @@ function closeTopmostOverlay() {
   const inspectDrawer = document.getElementById("inspect-drawer");
   if (!closed && inspectDrawer && !inspectDrawer.classList.contains("collapsed")) {
     document.getElementById("inspect-close-btn")?.click();
+    closed = true;
+  }
+  const onboardingOverlay = document.getElementById("onboarding-overlay");
+  if (!closed && onboardingOverlay && !onboardingOverlay.classList.contains("hidden")) {
+    document.getElementById("ob-btn-skip")?.click();
+    closed = true;
+  }
+  const manualModal = document.getElementById("manual-modal");
+  if (!closed && manualModal?.classList.contains("active")) {
+    document.getElementById("close-manual-btn")?.click();
+    closed = true;
+  }
+  const trustSafetyModal = document.getElementById("trust-safety-modal");
+  if (!closed && trustSafetyModal && !trustSafetyModal.classList.contains("hidden")) {
+    document.getElementById("close-trust-safety-btn")?.click();
+    closed = true;
+  }
+  const collabModal = document.getElementById("collab-modal");
+  if (!closed && collabModal?.classList.contains("active")) {
+    document.getElementById("close-collab-x")?.click();
+    closed = true;
+  }
+  const agentSwitcher = document.getElementById("agent-switcher-panel");
+  if (!closed && agentSwitcher && !agentSwitcher.classList.contains("hidden")) {
+    document.querySelector(".agent-switcher-close")?.click();
+    closed = true;
+  }
+  const quickSwitcher = document.getElementById("quick-switcher-overlay");
+  if (!closed && quickSwitcher && !quickSwitcher.classList.contains("hidden")) {
+    closeQuickSwitcher();
+    closed = true;
+  }
+  const historySearch = document.getElementById("history-search-overlay");
+  if (!closed && historySearch && !historySearch.classList.contains("hidden")) {
+    closeHistorySearch();
+    closed = true;
+  }
+  const radialMenu = document.getElementById("radial-menu-overlay");
+  if (!closed && radialMenu && !radialMenu.classList.contains("hidden")) {
+    hideRadialMenu();
+    closed = true;
+  }
+  const ctrlPrompt = document.getElementById("ctrl-prompt-overlay");
+  if (!closed && ctrlPrompt?.classList.contains("active")) {
+    closeCtrlPromptOverlay();
     closed = true;
   }
   const sidebar = document.getElementById("sidebar");
@@ -2126,7 +2172,7 @@ async function _applyInitialState(initialState) {
   _initBootHealthNotification(initialState);
   initCommandPalette(); initQuickSwitcher(); initGameContextPanel();
   initTunnelClient(); initFileShare(); initBrowser();
-  initAgentView(); initMemoryView(); initRadialMenu(); initManualModal();
+  initAgentView(); initMemoryView(); initDashboardView(); initRadialMenu(); initManualModal();
   checkOnboarding();
 }
 
@@ -2309,6 +2355,9 @@ function _navTabClick(tab, navTabs) {
   updateContextualSidebar(targetViewName);
   showContextualTip(targetViewName);
   _navActivateSideEffects(targetViewName);
+  if (typeof window.announceToScreenReader === "function") {
+    window.announceToScreenReader(`Switched to ${tab.textContent} view`);
+  }
 }
 
 navTabs.forEach((tab) => {
@@ -2562,10 +2611,53 @@ const commandPaletteState = {
   query: "",
   activeIndex: 0,
   filtered: [],
+  searchResults: [],
+  searchDebounce: null,
 };
 
 const PALETTE_HISTORY_KEY = "nd_palette_history_v2";
 const PALETTE_HISTORY_MAX = 20;
+
+async function _cpRunUniversalSearch(query) {
+  if (!query || query.length < 2) {
+    commandPaletteState.searchResults = [];
+    return;
+  }
+  try {
+    const res = await invoke("universal_search", { query, limit: 10 });
+    const results = [];
+    if (res.messages) {
+      res.messages.forEach(r => results.push({ source: 'messages', ...r }));
+    }
+    if (res.memory) {
+      res.memory.forEach(r => results.push({ source: 'memory', ...r }));
+    }
+    if (res.projects) {
+      res.projects.forEach(r => results.push({ source: 'projects', ...r }));
+    }
+    commandPaletteState.searchResults = results;
+  } catch (e) {
+    console.error("universal_search error", e);
+    commandPaletteState.searchResults = [];
+  }
+}
+
+function _cpSearchResultIcon(source) {
+  if (source === 'messages') return 'messageSquare';
+  if (source === 'memory') return 'brain';
+  if (source === 'projects') return 'folder';
+  return 'search';
+}
+
+function _cpActivateSearchResult(result) {
+  if (result.source === 'messages') {
+    switchView('chat');
+  } else if (result.source === 'memory') {
+    switchView('memory');
+  } else if (result.source === 'projects') {
+    switchView('memory');
+  }
+}
 
 const GROUP_ORDER = [
   "History",
@@ -2740,10 +2832,23 @@ function getCommandPaletteFilteredActions() {
     return { action: cloned, score };
   });
 
-  return scored
+  const commandResults = scored
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((s) => s.action);
+
+  // Append universal search results as synthetic actions
+  const searchResults = (commandPaletteState.searchResults || []).map((r, idx) => ({
+    label: r.title || r.id,
+    group: "Search Results",
+    icon: _cpSearchResultIcon(r.source),
+    keywords: [r.source, r.snippet],
+    _labelMatches: [],
+    _searchResult: r,
+    run() { _cpActivateSearchResult(r); },
+  }));
+
+  return [...commandResults, ...searchResults];
 }
 
 function highlightLabel(label, matches) {
@@ -2865,6 +2970,8 @@ function closeCommandPalette() {
   commandPaletteState.query = "";
   commandPaletteState.activeIndex = 0;
   commandPaletteState.filtered = [];
+  commandPaletteState.searchResults = [];
+  clearTimeout(commandPaletteState.searchDebounce);
   if (input) input.value = "";
   if (commandPaletteFocusTrap) commandPaletteFocusTrap.deactivate();
 }
@@ -2892,6 +2999,9 @@ function runCommandPaletteActiveAction() {
   if (!action) return;
   addPaletteHistory(action.label);
   closeCommandPalette();
+  if (typeof window.announceToScreenReader === "function") {
+    window.announceToScreenReader(`Running command: ${action.label}`);
+  }
   action.run();
 }
 
@@ -2900,7 +3010,16 @@ function _cpWireInputEl(input) {
   input.addEventListener("input", () => {
     commandPaletteState.query = input.value;
     commandPaletteState.activeIndex = 0;
+    commandPaletteState.searchResults = [];
     renderCommandPalette();
+    clearTimeout(commandPaletteState.searchDebounce);
+    const q = input.value.trim();
+    if (q.length >= 2) {
+      commandPaletteState.searchDebounce = setTimeout(async () => {
+        await _cpRunUniversalSearch(q);
+        if (commandPaletteState.open) renderCommandPalette();
+      }, 150);
+    }
   });
   input.addEventListener("keydown", (event) => {
     if (event.key === "ArrowDown") { event.preventDefault(); moveCommandPaletteSelection(1); }
@@ -3055,6 +3174,8 @@ function renderQuickSwitcher() {
   }
 }
 
+let quickSwitcherFocusTrap = null;
+
 function openQuickSwitcher() {
   const overlay = document.getElementById("quick-switcher-overlay");
   if (!overlay) return;
@@ -3064,6 +3185,8 @@ function openQuickSwitcher() {
   overlay.classList.add("active");
   overlay.setAttribute("aria-hidden", "false");
   renderQuickSwitcher();
+  if (!quickSwitcherFocusTrap) quickSwitcherFocusTrap = new FocusTrap(overlay);
+  quickSwitcherFocusTrap.activate();
   // Click outside to close
   overlay.onclick = (e) => {
     if (e.target === overlay) closeQuickSwitcher();
@@ -3077,6 +3200,7 @@ function closeQuickSwitcher() {
   overlay.classList.remove("active");
   overlay.setAttribute("aria-hidden", "true");
   overlay.classList.add("hidden");
+  if (quickSwitcherFocusTrap) quickSwitcherFocusTrap.deactivate();
 }
 
 function cycleQuickSwitcher(delta) {
@@ -3593,7 +3717,7 @@ function _fsHandleTransferResponse(accept, ftCtx) {
     invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept })
       .then(() => {
         const modal = document.getElementById("transfer-modal");
-        if (modal) modal.classList.remove("active");
+        if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
         if (ftCtx.trap) ftCtx.trap.deactivate();
         state.pendingTransferId = null;
         invoke("get_active_transfers").then(renderTransfers);
@@ -3601,7 +3725,7 @@ function _fsHandleTransferResponse(accept, ftCtx) {
       .catch((err) => { console.error(`Error ${action} transfer:`, err); alert("Error: " + err); });
   } else {
     const modal = document.getElementById("transfer-modal");
-    if (modal) modal.classList.remove("active");
+    if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
     if (ftCtx.trap) ftCtx.trap.deactivate();
   }
 }
@@ -3625,6 +3749,7 @@ function _fsWireTransferModal(ftCtx) {
       modalFilename.innerText = transfer.filename;
       modalSize.innerText = formatBytes(transfer.size);
       modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
       if (!ftCtx.trap) ftCtx.trap = new FocusTrap(modal);
       ftCtx.trap.activate();
     }
@@ -4627,6 +4752,7 @@ async function requestComputerUseApproval({ action, details, target } = {}) {
   }
 
   modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
   if (!computerUseFocusTrap) computerUseFocusTrap = new FocusTrap(modal);
   computerUseFocusTrap.activate();
   setTimeout(
@@ -4646,7 +4772,7 @@ function finishComputerUseApproval(approved, approveSession = false) {
     if (toggle) toggle.checked = true;
   }
   const modal = document.getElementById("computer-use-modal");
-  if (modal) modal.classList.remove("active");
+  if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
   if (computerUseFocusTrap) computerUseFocusTrap.deactivate();
   positionComputerTargetBox(null);
   const resolve = computerUseState.pendingResolve;
@@ -4741,16 +4867,23 @@ const PROVIDER_BADGE = {
   huggingface: "🤗 HF",
 };
 
+let agentSwitcherFocusTrap = null;
+
 function toggleAgentSwitcher() {
   const panel = document.getElementById("agent-switcher-panel");
   if (!panel) return;
   const isHidden = panel.classList.contains("hidden");
   if (isHidden) {
     panel.classList.remove("hidden");
+    panel.setAttribute("aria-hidden", "false");
     renderAgentSwitcher();
     renderRecommendedModels();
+    if (!agentSwitcherFocusTrap) agentSwitcherFocusTrap = new FocusTrap(panel);
+    agentSwitcherFocusTrap.activate();
   } else {
     panel.classList.add("hidden");
+    panel.setAttribute("aria-hidden", "true");
+    if (agentSwitcherFocusTrap) agentSwitcherFocusTrap.deactivate();
   }
 }
 
@@ -4768,7 +4901,16 @@ function renderAgentSwitcher() {
     const provLabel = PROVIDER_BADGE[agent.provider] || agent.provider;
     const card = document.createElement("div");
     card.className = `agent-card${active ? " active" : ""}`;
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-pressed", String(active));
     card.addEventListener("click", () => activateAgent(agent.id));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activateAgent(agent.id);
+      }
+    });
 
     const top = document.createElement("div");
     top.className = "agent-card-top";
@@ -5190,6 +5332,7 @@ function initNotificationCenter() {
   if (notifBtn && notifModal) {
     notifBtn.onclick = () => {
       notifModal.classList.add("active");
+      notifModal.setAttribute("aria-hidden", "false");
       if (!notifFocusTrap) notifFocusTrap = new FocusTrap(notifModal);
       notifFocusTrap.activate();
       state.unreadNotifCount = 0;
@@ -5201,6 +5344,7 @@ function initNotificationCenter() {
   const dismiss = () => {
     if (notifModal) {
       notifModal.classList.remove("active");
+      notifModal.setAttribute("aria-hidden", "true");
       if (notifFocusTrap) notifFocusTrap.deactivate();
     }
   };
@@ -5374,6 +5518,7 @@ function _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallba
             .catch(() => { sessionNotesEl.value = ""; sessionNotesEl.dataset.appId = appId; });
         }
         gameModal.classList.add("active");
+        gameModal.setAttribute("aria-hidden", "false");
         if (!gcCtx.trap) gcCtx.trap = new FocusTrap(gameModal);
         gcCtx.trap.activate();
       })
@@ -5383,15 +5528,15 @@ function _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallba
 
 function initGameContextPanel() {
   const gameBadge = document.getElementById("game-badge");
-  const gameModal = document.getElementById("game-context-modal");
+  const gameModal = document.getElementById("game-context-panel");
   const closeX = document.getElementById("close-game-context-x");
-  const closeBtn = document.getElementById("close-game-context");
+  const closeBtn = document.getElementById("close-game-context-x");
   const headerImg = document.getElementById("game-context-header");
   const fallbackEl = document.getElementById("game-context-fallback");
   const fallbackNameEl = document.getElementById("game-context-fallback-name");
   const gcCtx = { trap: null };
 
-  const dismiss = () => { if (gameModal) { gameModal.classList.remove("active"); if (gcCtx.trap) gcCtx.trap.deactivate(); } };
+  const dismiss = () => { if (gameModal) { gameModal.classList.remove("active"); gameModal.setAttribute("aria-hidden", "true"); if (gcCtx.trap) gcCtx.trap.deactivate(); } };
 
   if (headerImg && fallbackEl) {
     headerImg.addEventListener("load", () => { fallbackEl.classList.remove("active"); headerImg.style.display = "block"; });

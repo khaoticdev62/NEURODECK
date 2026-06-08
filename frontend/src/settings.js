@@ -397,27 +397,44 @@ function initSettingsSidebar() {
 export function showTrustSafetyModal() {
   const tsModal = document.getElementById("trust-safety-modal");
   if (!tsModal) return;
-
-  const providerLabel = document.getElementById("ts-active-provider");
-  const cloudCard = document.getElementById("ts-cloud-data-card");
-  const localCard = document.getElementById("ts-local-llm-card");
-  
-  if (providerLabel) {
-    const activeProvider = localStorage.getItem("llmProvider") || "gemini";
-    providerLabel.innerText = activeProvider.toUpperCase();
-    
-    if (activeProvider === "ollama") {
-      if (cloudCard) cloudCard.style.display = "none";
-      if (localCard) localCard.style.display = "block";
-    } else {
-      if (cloudCard) cloudCard.style.display = "block";
-      if (localCard) localCard.style.display = "none";
-    }
-  }
-
-  tsModal.classList.add("active");
+  tsModal.classList.remove("hidden");
+  _tsLoadStats();
   if (!tsFocusTrap) tsFocusTrap = new FocusTrap(tsModal);
   tsFocusTrap.activate();
+}
+
+async function _tsLoadStats() {
+  const providerBadge = document.getElementById("ts-provider-badge");
+  const providerDesc = document.getElementById("ts-provider-desc");
+  const cloudItem = document.getElementById("ts-cloud-item");
+  try {
+    const stats = await invoke("get_dashboard_stats");
+    if (providerBadge) providerBadge.textContent = `${stats.provider || "—"} / ${stats.model || "—"}`;
+    if (providerDesc) {
+      const isLocal = stats.provider === "ollama";
+      providerDesc.textContent = isLocal
+        ? "All inference runs locally. No data leaves this device."
+        : "Prompts are sent to the cloud provider. Memory and history stay local.";
+    }
+    if (cloudItem) {
+      cloudItem.textContent = stats.provider === "ollama" ? "No cloud calls" : "LLM inference only";
+    }
+    const pb = stats.privacy_breakdown || {};
+    const els = {
+      standard: document.getElementById("ts-privacy-standard"),
+      private: document.getElementById("ts-privacy-private"),
+      sensitive: document.getElementById("ts-privacy-sensitive"),
+      sealed: document.getElementById("ts-privacy-sealed"),
+    };
+    if (els.standard) els.standard.textContent = String(pb.standard ?? 0);
+    if (els.private) els.private.textContent = String(pb.private ?? 0);
+    if (els.sensitive) els.sensitive.textContent = String(pb.sensitive ?? 0);
+    if (els.sealed) els.sealed.textContent = String(pb.sealed ?? 0);
+    const statusEl = document.getElementById("ts-sealed-status");
+    if (statusEl) statusEl.textContent = `${pb.sealed || 0} sealed records in memory.`;
+  } catch (e) {
+    console.error("Trust modal stats load failed", e);
+  }
 }
 
 function _populateLlmConfig([config, apiKey, kimiApiKey, hfApiKey, oaApiKey]) {
@@ -1024,7 +1041,16 @@ function initDocRag() {
     if (els.statusLine) els.statusLine.innerHTML = `<span style="color:var(--warning-color);">⚠️ Document RAG requires Gemini (for embeddings). Switch provider in LLM Settings.</span>`;
     els.indexBtn.disabled = true;
   }
-  invoke("get_doc_count").then(count => { if (els.docCount) els.docCount.innerText = count || 0; }).catch(() => {});
+  invoke("get_doc_count").then(count => {
+    if (els.docCount) {
+      // count may be a number, string, or object like { count: N }
+      const n = (typeof count === "object" && count !== null)
+        ? (count.count ?? count.total ?? Object.values(count)[0] ?? 0)
+        : (parseInt(count, 10) || 0);
+      els.docCount.innerText = `${n} chunk${n !== 1 ? "s" : ""}`;
+    }
+  }).catch(() => {});
+
   listen("doc_index_progress", event => {
     try {
       const data = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload;
@@ -1630,10 +1656,281 @@ function _stWireTrustSafety() {
   const tsModal = document.getElementById("trust-safety-modal");
   const closeTsBtn = document.getElementById("close-trust-safety-btn");
   const closeTsX = document.getElementById("close-trust-safety-x");
-  const closeTs = () => { if (tsModal) { tsModal.classList.remove("active"); if (tsFocusTrap) tsFocusTrap.deactivate(); } };
+  const unlockBtn = document.getElementById("ts-unlock-all-btn");
+  const lockBtn = document.getElementById("ts-lock-all-btn");
+  const closeTs = () => { if (tsModal) tsModal.classList.add("hidden"); if (tsFocusTrap) tsFocusTrap.deactivate(); };
   if (closeTsBtn) closeTsBtn.onclick = closeTs;
   if (closeTsX) closeTsX.onclick = closeTs;
-  if (tsModal) tsModal.addEventListener("click", e => { if (e.target === tsModal) { tsModal.classList.remove("active"); if (tsFocusTrap) tsFocusTrap.deactivate(); } });
+  if (tsModal) tsModal.addEventListener("click", e => { if (e.target === tsModal) closeTs(); });
+  if (unlockBtn) {
+    unlockBtn.addEventListener("click", async () => {
+      unlockBtn.disabled = true; unlockBtn.textContent = "Unlocking…";
+      try {
+        const res = await invoke("unlock_sealed_records", { ids: [] });
+        const statusEl = document.getElementById("ts-sealed-status");
+        if (statusEl) statusEl.textContent = `Unlocked ${res.unlocked || 0} sealed records.`;
+      } catch (e) { console.error(e); }
+      unlockBtn.disabled = false; unlockBtn.textContent = "🔓 Unlock All Sealed";
+    });
+  }
+  if (lockBtn) {
+    lockBtn.addEventListener("click", async () => {
+      lockBtn.disabled = true; lockBtn.textContent = "Locking…";
+      try {
+        await invoke("lock_all_sealed");
+        const statusEl = document.getElementById("ts-sealed-status");
+        if (statusEl) statusEl.textContent = "All sealed records are now locked.";
+      } catch (e) { console.error(e); }
+      lockBtn.disabled = false; lockBtn.textContent = "🔒 Lock All Sealed";
+    });
+  }
+}
+
+function _stWirePrivacyPanel() {
+  const saveDefaultBtn = document.getElementById("privacy-default-save-btn");
+  const unlockBtn = document.getElementById("settings-unlock-sealed-btn");
+  const lockBtn = document.getElementById("settings-lock-sealed-btn");
+  const statusEl = document.getElementById("settings-privacy-status");
+
+  const _loadPrivacyBreakdown = async () => {
+    try {
+      const stats = await invoke("get_dashboard_stats");
+      const pb = stats.privacy_breakdown || {};
+      const els = {
+        standard: document.getElementById("settings-privacy-standard"),
+        private: document.getElementById("settings-privacy-private"),
+        sensitive: document.getElementById("settings-privacy-sensitive"),
+        sealed: document.getElementById("settings-privacy-sealed"),
+      };
+      if (els.standard) els.standard.textContent = String(pb.standard ?? 0);
+      if (els.private) els.private.textContent = String(pb.private ?? 0);
+      if (els.sensitive) els.sensitive.textContent = String(pb.sensitive ?? 0);
+      if (els.sealed) els.sealed.textContent = String(pb.sealed ?? 0);
+    } catch (e) { console.error(e); }
+  };
+
+  // Load breakdown when privacy panel becomes active
+  document.querySelectorAll('.stv-nav-item[data-panel="sp-privacy"]').forEach(btn => {
+    btn.addEventListener("click", () => _loadPrivacyBreakdown());
+  });
+
+  if (saveDefaultBtn) {
+    saveDefaultBtn.addEventListener("click", () => {
+      const select = document.getElementById("privacy-default-select");
+      if (select) {
+        localStorage.setItem("privacy_default_level", select.value);
+        if (statusEl) statusEl.textContent = `Default privacy set to ${select.value}.`;
+      }
+    });
+    // Restore saved default
+    const saved = localStorage.getItem("privacy_default_level");
+    if (saved) {
+      const select = document.getElementById("privacy-default-select");
+      if (select) select.value = saved;
+    }
+  }
+
+  if (unlockBtn) {
+    unlockBtn.addEventListener("click", async () => {
+      unlockBtn.disabled = true;
+      try {
+        const res = await invoke("unlock_sealed_records", { ids: [] });
+        if (statusEl) statusEl.textContent = `Unlocked ${res.unlocked || 0} sealed records.`;
+        await _loadPrivacyBreakdown();
+      } catch (e) { if (statusEl) statusEl.textContent = String(e); }
+      unlockBtn.disabled = false;
+    });
+  }
+  if (lockBtn) {
+    lockBtn.addEventListener("click", async () => {
+      lockBtn.disabled = true;
+      try {
+        await invoke("lock_all_sealed");
+        if (statusEl) statusEl.textContent = "All sealed records are now locked.";
+        await _loadPrivacyBreakdown();
+      } catch (e) { if (statusEl) statusEl.textContent = String(e); }
+      lockBtn.disabled = false;
+    });
+  }
+}
+
+// ==========================================================================
+// Permission Profiles UI
+// ==========================================================================
+
+const PERM_CAPABILITIES = [
+  { key: "shell_exec", label: "Shell Execution", desc: "Run code" },
+  { key: "file_system_read", label: "File Read", desc: "Read outside workspace" },
+  { key: "file_system_write", label: "File Write", desc: "Write outside workspace" },
+  { key: "network", label: "Network", desc: "External APIs" },
+  { key: "browser", label: "Browser", desc: "Web automation" },
+  { key: "computer", label: "Computer", desc: "Desktop automation" },
+  { key: "memory_read", label: "Memory Read", desc: "Search context" },
+  { key: "memory_write", label: "Memory Write", desc: "Store context" },
+  { key: "plugin_load", label: "Plugins", desc: "Load Lua scripts" },
+];
+
+let _permProfilesCache = null;
+
+async function _stLoadPermissionProfiles() {
+  try {
+    const config = await invoke("get_config");
+    const registry = config.security?.permission_registry;
+    if (!registry) return;
+    _permProfilesCache = registry;
+    _stRenderPermissionProfiles(registry);
+  } catch (e) {
+    console.error("Failed to load permission profiles:", e);
+  }
+}
+
+function _stRenderPermissionProfiles(registry) {
+  const container = document.getElementById("permission-profiles-list");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const defaultId = registry.default_profile_id;
+  const profiles = registry.profiles || [];
+
+  profiles.forEach((profile) => {
+    const isDefault = profile.id === defaultId;
+    const grantedSet = new Set(profile.granted || []);
+    const capLabels = PERM_CAPABILITIES
+      .filter((c) => grantedSet.has(c.key))
+      .map((c) => c.label)
+      .join(", ") || "None";
+
+    const card = document.createElement("div");
+    card.style.cssText = "border: 1px solid rgba(148,163,184,0.12); border-radius: 8px; padding: 12px; background: rgba(15,23,42,0.4);";
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+        <div>
+          <div style="font-weight: 600; font-size: 0.9rem;">${_escHtml(profile.name)} ${isDefault ? '<span style="font-size:0.7rem; color:var(--response-color); margin-left:6px;">DEFAULT</span>' : ""}</div>
+          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">${_escHtml(profile.description || "")}</div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="perm-profile-edit stv-btn-ghost" data-id="${_escHtml(profile.id)}" type="button" style="padding: 2px 8px; font-size: 0.7rem;">Edit</button>
+          ${!isDefault ? `<button class="perm-profile-del stv-btn-ghost" data-id="${_escHtml(profile.id)}" type="button" style="padding: 2px 8px; font-size: 0.7rem; color: var(--error-color);">Delete</button>` : ""}
+          ${!isDefault ? `<button class="perm-profile-default stv-btn-ghost" data-id="${_escHtml(profile.id)}" type="button" style="padding: 2px 8px; font-size: 0.7rem;">Set Default</button>` : ""}
+        </div>
+      </div>
+      <div style="font-size: 0.72rem; color: var(--text-dim);">Capabilities: ${capLabels}</div>
+    `;
+    container.appendChild(card);
+  });
+
+  // Wire buttons
+  container.querySelectorAll(".perm-profile-edit").forEach((btn) => {
+    btn.onclick = () => _stOpenPermEdit(btn.dataset.id);
+  });
+  container.querySelectorAll(".perm-profile-del").forEach((btn) => {
+    btn.onclick = () => _stDeletePermProfile(btn.dataset.id);
+  });
+  container.querySelectorAll(".perm-profile-default").forEach((btn) => {
+    btn.onclick = () => _stSetDefaultPermProfile(btn.dataset.id);
+  });
+}
+
+function _escHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function _stOpenPermEdit(profileId) {
+  const registry = _permProfilesCache;
+  if (!registry) return;
+  const profile = (registry.profiles || []).find((p) => p.id === profileId);
+  if (!profile && profileId !== "__new__") return;
+
+  const modal = document.getElementById("permission-profile-edit-modal");
+  const titleEl = document.getElementById("perm-edit-title");
+  const idInput = document.getElementById("perm-edit-id");
+  const nameInput = document.getElementById("perm-edit-name");
+  const descInput = document.getElementById("perm-edit-desc");
+  const capsContainer = document.getElementById("perm-edit-capabilities");
+
+  const isNew = profileId === "__new__";
+  titleEl.textContent = isNew ? "New Permission Profile" : `Edit ${profile.name}`;
+  idInput.value = isNew ? "" : profile.id;
+  nameInput.value = isNew ? "" : profile.name;
+  descInput.value = isNew ? "" : (profile.description || "");
+
+  const grantedSet = new Set(isNew ? [] : (profile.granted || []));
+  capsContainer.innerHTML = PERM_CAPABILITIES.map((cap) => `
+    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; cursor: pointer; padding: 4px; border-radius: 4px; background: rgba(148,163,184,0.06);">
+      <input type="checkbox" class="perm-cap-checkbox" value="${cap.key}" ${grantedSet.has(cap.key) ? "checked" : ""} />
+      <span title="${cap.desc}">${cap.label}</span>
+    </label>
+  `).join("");
+
+  modal.classList.remove("hidden");
+}
+
+function _stClosePermEdit() {
+  const modal = document.getElementById("permission-profile-edit-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function _stSavePermEdit() {
+  const idInput = document.getElementById("perm-edit-id");
+  const nameInput = document.getElementById("perm-edit-name");
+  const descInput = document.getElementById("perm-edit-desc");
+  const checkboxes = document.querySelectorAll(".perm-cap-checkbox:checked");
+
+  const id = idInput.value.trim() || nameInput.value.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
+  if (!id) { alert("Profile ID is required"); return; }
+  const name = nameInput.value.trim() || id;
+  const description = descInput.value.trim();
+  const granted = Array.from(checkboxes).map((cb) => cb.value);
+
+  try {
+    await invoke("set_permission_profile", { id, name, description, granted });
+    _stClosePermEdit();
+    await _stLoadPermissionProfiles();
+  } catch (e) {
+    alert("Save failed: " + e);
+  }
+}
+
+async function _stDeletePermProfile(id) {
+  if (!confirm(`Delete permission profile "${id}"?`)) return;
+  try {
+    await invoke("delete_permission_profile", { id });
+    await _stLoadPermissionProfiles();
+  } catch (e) {
+    alert("Delete failed: " + e);
+  }
+}
+
+async function _stSetDefaultPermProfile(id) {
+  try {
+    await invoke("set_default_permission_profile", { id });
+    await _stLoadPermissionProfiles();
+  } catch (e) {
+    alert("Set default failed: " + e);
+  }
+}
+
+function _stInitPermissionProfiles() {
+  const addBtn = document.getElementById("permission-profile-add-btn");
+  const cancelBtn = document.getElementById("perm-edit-cancel");
+  const saveBtn = document.getElementById("perm-edit-save");
+
+  if (addBtn) addBtn.onclick = () => _stOpenPermEdit("__new__");
+  if (cancelBtn) cancelBtn.onclick = _stClosePermEdit;
+  if (saveBtn) saveBtn.onclick = _stSavePermEdit;
+
+  // Load when privacy panel is shown
+  document.querySelectorAll('.stv-nav-item[data-panel="sp-privacy"]').forEach((btn) => {
+    btn.addEventListener("click", () => _stLoadPermissionProfiles());
+  });
+
+  // Initial load if privacy panel is already active
+  const privacyPanel = document.getElementById("sp-privacy");
+  if (privacyPanel && privacyPanel.classList.contains("active")) {
+    _stLoadPermissionProfiles();
+  }
 }
 
 export function initSettings() {
@@ -1653,6 +1950,8 @@ export function initSettings() {
   _stWireTrustSafety();
   initCustomPersonas();
   initModelsPanel();
+  _stWirePrivacyPanel();
+  _stInitPermissionProfiles();
 }
 
 // =============================================================================

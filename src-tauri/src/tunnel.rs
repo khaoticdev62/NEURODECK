@@ -189,7 +189,6 @@ async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {
     }
 }
 
-#[tauri::command]
 pub async fn start_tunnel_server() -> Result<String, String> {
     let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap_or_else(|e| e.into_inner());
     if tx_guard.is_some() {
@@ -273,7 +272,6 @@ pub async fn start_tunnel_server() -> Result<String, String> {
     Ok("Tunnel server started successfully on 127.0.0.1:18337".to_string())
 }
 
-#[tauri::command]
 pub async fn stop_tunnel_server() -> Result<String, String> {
     let mut tx_guard = TUNNEL_SHUTDOWN_TX.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = tx_guard.take() {
@@ -290,7 +288,6 @@ pub async fn stop_tunnel_server() -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub async fn send_tunnel_request(request: String) -> Result<String, String> {
     use tokio::net::TcpStream;
 

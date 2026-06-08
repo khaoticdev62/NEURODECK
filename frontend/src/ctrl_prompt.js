@@ -1,10 +1,12 @@
 // ctrl_prompt.js — Controller Prompt Picker System
 // Extracted ES module. State is exported as live bindings for the gamepad polling loop.
 import { createIcon } from './icons.js';
+import { FocusTrap } from './focus-trap.js';
 
 // Shared overlay state (live-exported so pollGamepads can read current values)
 let ctrlPromptVisible = false;
 let ctrlPromptTemplateMode = false;
+let ctrlPromptFocusTrap = null;
 
 
 // Category color map — used by all color-coding logic
@@ -712,6 +714,8 @@ function openCtrlPromptOverlay() {
         overlay.classList.add("active");
         overlay.setAttribute("aria-hidden", "false");
     }
+    if (!ctrlPromptFocusTrap) ctrlPromptFocusTrap = new FocusTrap(overlay);
+    ctrlPromptFocusTrap.activate();
     renderCtrlPromptCats();
     renderCtrlPromptList();
     // Focus search for keyboard users
@@ -729,6 +733,7 @@ function closeCtrlPromptOverlay() {
         overlay.classList.remove("active");
         overlay.setAttribute("aria-hidden", "true");
     }
+    if (ctrlPromptFocusTrap) ctrlPromptFocusTrap.deactivate();
 }
 
 function initCtrlPromptPicker() {

@@ -5,7 +5,7 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use serde_json::Value;
-use tauri::{AppHandle, Manager, State};
+use crate::{AppHandle, LogicalPosition, LogicalSize, State, Url, WebviewUrl, WebviewWindowBuilder};
 
 lazy_static::lazy_static! {
     static ref AUTOMATION_STATE: Mutex<BrowserAutomationState> = Mutex::new(BrowserAutomationState::default());
@@ -68,7 +68,6 @@ fn get_session_tab(state: &BrowserAutomationState, session_id: &str) -> Result<A
         .ok_or_else(|| format!("Browser session '{}' not found", session_id))
 }
 
-#[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub async fn browser_open(
     app: AppHandle,
@@ -79,11 +78,10 @@ pub async fn browser_open(
     height: f64,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-    use tauri::{LogicalPosition, LogicalSize, WebviewUrl, WebviewWindowBuilder};
 
     require_browser_exec(&state, "browser-open-window")?;
     parse_http_url(&url)?;
-    let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+    let nav_url = Url(url);
 
     let main_win = app
         .get_webview_window("main")
@@ -91,8 +89,8 @@ pub async fn browser_open(
 
     let scale = main_win.scale_factor().map_err(|e| e.to_string())?;
     let inner_pos = main_win.inner_position().map_err(|e| e.to_string())?;
-    let screen_x = inner_pos.x as f64 / scale + viewport_x;
-    let screen_y = inner_pos.y as f64 / scale + viewport_y;
+    let screen_x = inner_pos.0 as f64 / scale + viewport_x;
+    let screen_y = inner_pos.1 as f64 / scale + viewport_y;
 
     if let Some(win) = app.get_webview_window("browser-view") {
         win.set_position(LogicalPosition::new(screen_x, screen_y))
@@ -104,7 +102,7 @@ pub async fn browser_open(
         return Ok(());
     }
 
-    let make_builder = |nav: tauri::Url| {
+    let make_builder = |nav: Url| {
         WebviewWindowBuilder::new(&app, "browser-view", WebviewUrl::External(nav))
             .title("NEURODECK Browser")
             .decorations(false)
@@ -127,7 +125,6 @@ pub async fn browser_open(
     Ok(())
 }
 
-#[tauri::command]
 pub fn browser_navigate(
     app: AppHandle,
     url: String,
@@ -136,13 +133,12 @@ pub fn browser_navigate(
     require_browser_exec(&state, "browser-navigate-window")?;
     if let Some(win) = app.get_webview_window("browser-view") {
         parse_http_url(&url)?;
-        let nav_url = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+        let nav_url = Url(url);
         win.navigate(nav_url).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
-#[tauri::command]
 pub fn browser_hide(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("browser-view") {
         win.hide().map_err(|e| e.to_string())?;
@@ -150,7 +146,6 @@ pub fn browser_hide(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
 pub fn browser_show(
     app: AppHandle,
     viewport_x: f64,
@@ -158,7 +153,6 @@ pub fn browser_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-    use tauri::{LogicalPosition, LogicalSize};
 
     let main_win = app
         .get_webview_window("main")
@@ -166,8 +160,8 @@ pub fn browser_show(
 
     let scale = main_win.scale_factor().map_err(|e| e.to_string())?;
     let inner_pos = main_win.inner_position().map_err(|e| e.to_string())?;
-    let screen_x = inner_pos.x as f64 / scale + viewport_x;
-    let screen_y = inner_pos.y as f64 / scale + viewport_y;
+    let screen_x = inner_pos.0 as f64 / scale + viewport_x;
+    let screen_y = inner_pos.1 as f64 / scale + viewport_y;
 
     if let Some(win) = app.get_webview_window("browser-view") {
         win.set_position(LogicalPosition::new(screen_x, screen_y))
@@ -179,7 +173,6 @@ pub fn browser_show(
     Ok(())
 }
 
-#[tauri::command]
 pub fn browser_get_url(app: AppHandle) -> String {
     app.get_webview_window("browser-view")
         .and_then(|win| win.url().ok())
@@ -187,7 +180,6 @@ pub fn browser_get_url(app: AppHandle) -> String {
         .unwrap_or_default()
 }
 
-#[tauri::command]
 pub fn browser_exec(
     app: AppHandle,
     js: String,
@@ -202,7 +194,6 @@ pub fn browser_exec(
     Ok(())
 }
 
-#[tauri::command]
 pub fn browser_open_session(
     url: String,
     state: State<'_, Mutex<crate::AppState>>,
@@ -225,7 +216,6 @@ pub fn browser_open_session(
     })
 }
 
-#[tauri::command]
 pub fn browser_navigate_session(
     session_id: String,
     url: String,
@@ -241,7 +231,6 @@ pub fn browser_navigate_session(
     })
 }
 
-#[tauri::command]
 pub fn browser_get_content(session_id: String) -> Result<String, String> {
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
@@ -249,7 +238,6 @@ pub fn browser_get_content(session_id: String) -> Result<String, String> {
     })
 }
 
-#[tauri::command]
 pub fn browser_click(
     session_id: String,
     selector: String,
@@ -264,7 +252,6 @@ pub fn browser_click(
     })
 }
 
-#[tauri::command]
 pub fn browser_fill(
     session_id: String,
     selector: String,
@@ -281,7 +268,6 @@ pub fn browser_fill(
     })
 }
 
-#[tauri::command]
 pub fn browser_screenshot(session_id: String) -> Result<String, String> {
     with_state(|state| {
         let tab = get_session_tab(state, &session_id)?;
@@ -292,7 +278,6 @@ pub fn browser_screenshot(session_id: String) -> Result<String, String> {
     })
 }
 
-#[tauri::command]
 pub fn browser_evaluate_js(
     session_id: String,
     script: String,
@@ -307,7 +292,6 @@ pub fn browser_evaluate_js(
     })
 }
 
-#[tauri::command]
 pub fn browser_close_session(
     session_id: String,
     state: State<'_, Mutex<crate::AppState>>,
@@ -322,7 +306,6 @@ pub fn browser_close_session(
     })
 }
 
-#[tauri::command]
 pub fn open_external(url: String) -> Result<(), String> {
     parse_http_url(&url)?;
     #[cfg(target_os = "windows")]
@@ -370,12 +353,11 @@ fn chunk_text(text: &str, chunk_words: usize, overlap_words: usize) -> Vec<Strin
     chunks
 }
 
-#[tauri::command]
 pub async fn browser_get_citation(url: String) -> Result<String, String> {
     parse_http_url(&url)?;
     
     let url_clone = url.clone();
-    let title = tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+    let title = tokio::task::spawn_blocking(move || -> Result<String, String> {
         with_state(|s| {
             ensure_browser(s)?;
             let browser = s.browser.as_ref().ok_or("Browser not initialized")?;
@@ -392,15 +374,14 @@ pub async fn browser_get_citation(url: String) -> Result<String, String> {
     Ok(format!("[{}]({})", title, url))
 }
 
-#[tauri::command]
 pub async fn browser_save_to_memory(
     url: String,
-    state: State<'_, Mutex<crate::AppState>>,
+    state: Arc<Mutex<crate::AppState>>,
 ) -> Result<serde_json::Value, String> {
     parse_http_url(&url)?;
 
     let url_clone = url.clone();
-    let (title, text) = tauri::async_runtime::spawn_blocking(move || -> Result<(String, String), String> {
+    let (title, text) = tokio::task::spawn_blocking(move || -> Result<(String, String), String> {
         with_state(|s| {
             ensure_browser(s)?;
             let browser = s.browser.as_ref().ok_or("Browser not initialized")?;

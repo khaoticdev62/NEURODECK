@@ -432,6 +432,25 @@ async function _agRunLoop(task, ag) {
     ag.outputEl.innerHTML = '<span class="agent-output-empty">Waiting…</span>';
     ag.codePre.textContent = "";
 
+    // Pre-flight permission check
+    try {
+        const config = await invoke("get_config");
+        const registry = config.security?.permission_registry;
+        const activeAgent = config.llm?.active_agent_id || "default";
+        if (registry) {
+            const profile = (registry.profiles || []).find((p) => p.id === activeAgent)
+                || (registry.profiles || []).find((p) => p.id === registry.default_profile_id);
+            const granted = new Set(profile?.granted || []);
+            const missing = [];
+            if (!granted.has("shell_exec")) missing.push("Shell Execution");
+            if (!granted.has("network")) missing.push("Network Access");
+            if (!granted.has("memory_read")) missing.push("Memory Read");
+            if (missing.length > 0) {
+                _agAppendLog(ag.logEl, "info", `⚠️ Agent "${profile?.name || activeAgent}" lacks: ${missing.join(", ")}. Some features may fail.`, 0);
+            }
+        }
+    } catch (e) { /* ignore permission check errors */ }
+
     for (let step = 1; step <= MAX_STEPS; step++) {
         if (ag.agentShouldStop) { _agAppendLog(ag.logEl, "info", "Agent stopped by user.", step); break; }
         ag.iterLabel.textContent = `Step ${step} / ${MAX_STEPS}`;

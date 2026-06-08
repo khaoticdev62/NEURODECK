@@ -5,6 +5,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { createIcon } from './icons.js';
 import { addNotification } from './notifications.js';
+import { FocusTrap } from './focus-trap.js';
 
 // --- PTY TERMINAL SYSTEM ---
 // let terminalSessions = []; (Moved to state.js) // list of { id, shell, term, fitAddon, containerEl }
@@ -472,6 +473,7 @@ let historySearchOpen = false;
 let historySearchResults = [];
 let historySearchSelectedIdx = -1;
 let historySearchDebounce = null;
+let historySearchFocusTrap = null;
 
 function openHistorySearch() {
     const overlay = document.getElementById("history-search-overlay");
@@ -480,6 +482,9 @@ function openHistorySearch() {
     historySearchSelectedIdx = -1;
     historySearchResults = [];
     overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    if (!historySearchFocusTrap) historySearchFocusTrap = new FocusTrap(overlay);
+    historySearchFocusTrap.activate();
     setTimeout(() => {
         const input = document.getElementById("history-search-input");
         if (input) { input.value = ""; input.focus(); }
@@ -490,10 +495,11 @@ function openHistorySearch() {
 
 function closeHistorySearch() {
     const overlay = document.getElementById("history-search-overlay");
-    if (overlay) overlay.classList.add("hidden");
+    if (overlay) { overlay.classList.add("hidden"); overlay.setAttribute("aria-hidden", "true"); }
     historySearchOpen = false;
     historySearchResults = [];
     historySearchSelectedIdx = -1;
+    if (historySearchFocusTrap) historySearchFocusTrap.deactivate();
 }
 
 function renderHistoryResults(results) {

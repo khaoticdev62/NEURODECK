@@ -1,24 +1,38 @@
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use tracing;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MemoryRecord {
     pub id: String,
     pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pack_id: Option<String>,
+    // Stored as BLOB in SQLite; serialised manually since sqlx doesn't natively map Vec<f32>.
     pub embedding: Vec<f32>,
     pub metadata: HashMap<String, String>,
 }
 
+/// In-memory + SQLite backed memory store.
+///
+/// When constructed with `from_pool`, all writes are persisted to SQLite and the
+/// in-memory Vec is kept in sync for fast cosine-similarity search.
 #[derive(Clone)]
 pub struct MemoryDB {
-    file_path: PathBuf,
+    file_path: Option<PathBuf>,
     records: Arc<Mutex<Vec<MemoryRecord>>>,
+    pool: Option<SqlitePool>,
 }
 
 impl MemoryDB {
+    // ── Legacy JSON constructor (kept for bootSelfHeal fallback) ────────────
+
     pub fn init<P: AsRef<Path>>(dir: P) -> Result<Self, String> {
         let dir_ref = dir.as_ref();
         fs::create_dir_all(dir_ref)
@@ -36,10 +50,75 @@ impl MemoryDB {
         }
 
         Ok(Self {
-            file_path,
+            file_path: Some(file_path),
             records: Arc::new(Mutex::new(records)),
+            pool: None,
         })
     }
+
+    // ── SQLite constructor (production path) ────────────────────────────────
+
+    pub async fn from_pool(pool: &SqlitePool) -> Result<Self, String> {
+        let rows: Vec<SqliteMemoryRow> = sqlx::query_as(
+            r#"
+            SELECT id, namespace, content, embedding, metadata, pinned, project_id, pack_id
+            FROM memory_records
+            ORDER BY created_at
+            "#,
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Failed to load memory from SQLite: {}", e))?;
+
+        let records: Vec<MemoryRecord> = rows.into_iter().map(|r| r.into()).collect();
+        tracing::info!("Loaded {} memory records from SQLite", records.len());
+
+        Ok(Self {
+            file_path: None,
+            records: Arc::new(Mutex::new(records)),
+            pool: Some(pool.clone()),
+        })
+    }
+
+    /// One-shot migration: imports legacy JSON records into SQLite and renames
+    /// the JSON file so the migration never runs again.
+    pub async fn migrate_json_to_sqlite(&self, pool: &SqlitePool) -> Result<usize, String> {
+        let legacy_path = match &self.file_path {
+            Some(p) => p.clone(),
+            None => return Ok(0),
+        };
+
+        if !legacy_path.exists() {
+            return Ok(0);
+        }
+
+        let data = fs::read_to_string(&legacy_path)
+            .map_err(|e| format!("Failed to read legacy memory JSON: {}", e))?;
+
+        let legacy_records: Vec<MemoryRecord> = serde_json::from_str(&data)
+            .map_err(|e| format!("Failed to parse legacy memory JSON: {}", e))?;
+
+        let count = legacy_records.len();
+        if count == 0 {
+            let _ = fs::remove_file(&legacy_path);
+            return Ok(0);
+        }
+
+        for rec in &legacy_records {
+            if let Err(e) = insert_record_sqlite(pool, rec).await {
+                tracing::warn!("Failed to migrate record {}: {}", rec.id, e);
+            }
+        }
+
+        // Rename JSON file so migration is idempotent
+        let backup = legacy_path.with_extension("json.migrated");
+        let _ = fs::rename(&legacy_path, &backup);
+        tracing::info!("Migrated {} legacy memory records to SQLite", count);
+
+        Ok(count)
+    }
+
+    // ── Public API ──────────────────────────────────────────────────────────
 
     pub fn store_message(
         &self,
@@ -53,22 +132,39 @@ impl MemoryDB {
             .lock()
             .map_err(|_| "Failed to lock memory DB")?;
 
-        // Remove existing record if ID matches
         records.retain(|r| r.id != id);
-
         records.push(MemoryRecord {
-            id,
-            content,
-            embedding,
-            metadata,
+            id: id.clone(),
+            content: content.clone(),
+            project_id: None,
+            pack_id: None,
+            embedding: embedding.clone(),
+            metadata: metadata.clone(),
         });
 
-        // Save to file
-        let serialized = serde_json::to_string_pretty(&*records)
-            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
-
-        fs::write(&self.file_path, serialized)
-            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        // Persist
+        if let Some(pool) = &self.pool {
+            let rec = MemoryRecord {
+                id,
+                content,
+                project_id: None,
+                pack_id: None,
+                embedding,
+                metadata,
+            };
+            let pool = pool.clone();
+            // Spawn fire-and-forget async write so the sync API signature is preserved.
+            tokio::spawn(async move {
+                if let Err(e) = insert_record_sqlite(&pool, &rec).await {
+                    tracing::warn!("SQLite memory write failed: {}", e);
+                }
+            });
+        } else if let Some(path) = &self.file_path {
+            let serialized = serde_json::to_string_pretty(&*records)
+                .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+            fs::write(path, serialized)
+                .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        }
 
         Ok(())
     }
@@ -91,10 +187,25 @@ impl MemoryDB {
         if records.len() == before {
             return Err(format!("Record '{}' not found", id));
         }
-        let serialized = serde_json::to_string_pretty(&*records)
-            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
-        fs::write(&self.file_path, serialized)
-            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+
+        if let Some(pool) = &self.pool {
+            let id = id.to_string();
+            let pool = pool.clone();
+            tokio::spawn(async move {
+                if let Err(e) = sqlx::query("DELETE FROM memory_records WHERE id = ?")
+                    .bind(&id)
+                    .execute(&pool)
+                    .await
+                {
+                    tracing::warn!("SQLite memory delete failed: {}", e);
+                }
+            });
+        } else if let Some(path) = &self.file_path {
+            let serialized = serde_json::to_string_pretty(&*records)
+                .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+            fs::write(path, serialized)
+                .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        }
         Ok(())
     }
 
@@ -114,14 +225,30 @@ impl MemoryDB {
         } else {
             record.metadata.remove("pinned");
         }
-        let serialized = serde_json::to_string_pretty(&*records)
-            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
-        fs::write(&self.file_path, serialized)
-            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+
+        if let Some(pool) = &self.pool {
+            let id = id.to_string();
+            let pinned_i = if pinned { 1 } else { 0 };
+            let pool = pool.clone();
+            tokio::spawn(async move {
+                if let Err(e) = sqlx::query("UPDATE memory_records SET pinned = ? WHERE id = ?")
+                    .bind(pinned_i)
+                    .bind(&id)
+                    .execute(&pool)
+                    .await
+                {
+                    tracing::warn!("SQLite memory pin update failed: {}", e);
+                }
+            });
+        } else if let Some(path) = &self.file_path {
+            let serialized = serde_json::to_string_pretty(&*records)
+                .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+            fs::write(path, serialized)
+                .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        }
         Ok(())
     }
 
-    /// Store a manually written fact with a pinned marker and no embedding.
     pub fn add_fact(&self, id: String, content: String) -> Result<(), String> {
         let mut metadata = HashMap::new();
         metadata.insert("role".to_string(), "fact".to_string());
@@ -149,15 +276,28 @@ impl MemoryDB {
         records.retain(|r| r.metadata.get("namespace").map(|v| v.as_str()) != Some(namespace));
         let removed = before - records.len();
         if removed > 0 {
-            let serialized = serde_json::to_string_pretty(&*records)
-                .map_err(|e| format!("Failed to serialize: {}", e))?;
-            fs::write(&self.file_path, serialized)
-                .map_err(|e| format!("Failed to write: {}", e))?;
+            if let Some(pool) = &self.pool {
+                let ns = namespace.to_string();
+                let pool = pool.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = sqlx::query("DELETE FROM memory_records WHERE namespace = ?")
+                        .bind(&ns)
+                        .execute(&pool)
+                        .await
+                    {
+                        tracing::warn!("SQLite namespace delete failed: {}", e);
+                    }
+                });
+            } else if let Some(path) = &self.file_path {
+                let serialized = serde_json::to_string_pretty(&*records)
+                    .map_err(|e| format!("Failed to serialize: {}", e))?;
+                fs::write(path, serialized)
+                    .map_err(|e| format!("Failed to write: {}", e))?;
+            }
         }
         Ok(removed)
     }
 
-    /// Returns a clone of all records for external export.
     pub fn export_all_records(&self) -> Result<Vec<MemoryRecord>, String> {
         let records = self
             .records
@@ -166,7 +306,6 @@ impl MemoryDB {
         Ok(records.clone())
     }
 
-    /// Imports a set of records. `merge=true` deduplicates by ID; `merge=false` replaces all.
     pub fn import_records(&self, incoming: Vec<MemoryRecord>, merge: bool) -> Result<usize, String> {
         let mut records = self
             .records
@@ -181,10 +320,27 @@ impl MemoryDB {
         } else {
             *records = incoming;
         }
-        let serialized = serde_json::to_string_pretty(&*records)
-            .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
-        fs::write(&self.file_path, serialized)
-            .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+
+        if let Some(pool) = &self.pool {
+            let pool = pool.clone();
+            let records_clone = records.clone();
+            tokio::spawn(async move {
+                if let Err(e) = sqlx::query("DELETE FROM memory_records").execute(&pool).await {
+                    tracing::warn!("SQLite memory clear failed: {}", e);
+                    return;
+                }
+                for rec in &records_clone {
+                    if let Err(e) = insert_record_sqlite(&pool, rec).await {
+                        tracing::warn!("SQLite memory import write failed: {}", e);
+                    }
+                }
+            });
+        } else if let Some(path) = &self.file_path {
+            let serialized = serde_json::to_string_pretty(&*records)
+                .map_err(|e| format!("Failed to serialize memory records: {}", e))?;
+            fs::write(path, serialized)
+                .map_err(|e| format!("Failed to write memory database file: {}", e))?;
+        }
         Ok(count)
     }
 
@@ -202,8 +358,6 @@ impl MemoryDB {
             return Ok(Vec::new());
         }
 
-        // Skip records with no embedding (e.g. manually-added facts) so they
-        // don't surface as 0.0-similarity entries and pollute RAG top-N results.
         let mut similarities: Vec<(f32, &MemoryRecord)> = records
             .iter()
             .filter(|r| !r.embedding.is_empty())
@@ -213,10 +367,8 @@ impl MemoryDB {
             })
             .collect();
 
-        // Sort by similarity descending
         similarities.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
-        // Take top limit
         let results = similarities
             .into_iter()
             .take(limit)
@@ -226,11 +378,6 @@ impl MemoryDB {
         Ok(results)
     }
 
-    /// Maximal Marginal Relevance search: retrieve `fetch` candidates by cosine
-    /// similarity, then iteratively select the `limit` results that maximize
-    /// relevance while minimising redundancy between selected chunks.
-    ///
-    /// `lambda` (0–1): 1.0 = pure relevance, 0.0 = pure diversity. Default 0.5.
     pub fn search_mmr(
         &self,
         query_embedding: &[f32],
@@ -264,7 +411,6 @@ impl MemoryDB {
         let limit = limit.min(candidates.len());
         let mut selected_indices: Vec<usize> = Vec::with_capacity(limit);
 
-        // First pick: highest relevance
         selected_indices.push(0);
 
         while selected_indices.len() < limit {
@@ -275,7 +421,6 @@ impl MemoryDB {
                 if selected_indices.contains(&i) {
                     continue;
                 }
-                // Max similarity to already-selected chunks
                 let max_red = selected_indices
                     .iter()
                     .map(|&j| cosine_similarity(&rec.embedding, &candidates[j].1.embedding))
@@ -296,6 +441,102 @@ impl MemoryDB {
             .collect())
     }
 }
+
+// ── SQLite helpers ─────────────────────────────────────────────────────────
+
+#[derive(sqlx::FromRow)]
+pub struct SqliteMemoryRow {
+    id: String,
+    namespace: String,
+    content: String,
+    project_id: Option<String>,
+    pack_id: Option<String>,
+    embedding: Option<Vec<u8>>,
+    metadata: Option<String>,
+    pinned: i32,
+}
+
+impl From<SqliteMemoryRow> for MemoryRecord {
+    fn from(row: SqliteMemoryRow) -> Self {
+        let embedding = row
+            .embedding
+            .map(|bytes| {
+                bytes
+                    .chunks_exact(4)
+                    .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let metadata = row
+            .metadata
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default();
+
+        let mut rec = MemoryRecord {
+            id: row.id,
+            content: row.content,
+            project_id: row.project_id,
+            pack_id: row.pack_id,
+            embedding,
+            metadata,
+        };
+
+        if row.pinned == 1 {
+            rec.metadata.insert("pinned".to_string(), "true".to_string());
+        }
+        rec
+    }
+}
+
+async fn insert_record_sqlite<'e, E>(executor: E, rec: &MemoryRecord) -> Result<(), String>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Sqlite>,
+{
+    let namespace = rec.metadata.get("namespace").cloned().unwrap_or_default();
+    let pinned = if rec.metadata.get("pinned") == Some(&"true".to_string()) {
+        1
+    } else {
+        0
+    };
+    let embedding_bytes: Vec<u8> = rec
+        .embedding
+        .iter()
+        .flat_map(|f| f.to_le_bytes())
+        .collect();
+    let metadata_json =
+        serde_json::to_string(&rec.metadata).map_err(|e| format!("JSON error: {}", e))?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO memory_records (id, namespace, content, project_id, pack_id, embedding, metadata, pinned)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            namespace = excluded.namespace,
+            content = excluded.content,
+            project_id = excluded.project_id,
+            pack_id = excluded.pack_id,
+            embedding = excluded.embedding,
+            metadata = excluded.metadata,
+            pinned = excluded.pinned
+        "#,
+    )
+    .bind(&rec.id)
+    .bind(&namespace)
+    .bind(&rec.content)
+    .bind(&rec.project_id)
+    .bind(&rec.pack_id)
+    .bind(&embedding_bytes)
+    .bind(&metadata_json)
+    .bind(pinned)
+    .execute(executor)
+    .await
+    .map_err(|e| format!("SQLite insert failed: {}", e))?;
+
+    Ok(())
+}
+
+// ── Math ───────────────────────────────────────────────────────────────────
 
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
@@ -318,6 +559,8 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 
     dot_product / (norm_a.sqrt() * norm_b.sqrt())
 }
+
+// ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -363,7 +606,6 @@ mod tests {
         )
         .unwrap();
 
-        // Search closest to [1.0, 0.1, 0.0] -> should be "hello world"
         let results = db.search(&[1.0, 0.1, 0.0], 1).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].id, "id1");

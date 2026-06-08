@@ -2,8 +2,8 @@ use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
+use crate::{AppHandle, State};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, State};
 
 const SPAWN_TIMEOUT_SECS: u64 = 15;
 /// Maximum lifetime for a PTY session before it is force-killed (2 hours).
@@ -213,7 +213,6 @@ fn spawn_pty_with_timeout(
         })?
 }
 
-#[tauri::command]
 pub fn pty_spawn(
     id: String,
     cols: u16,
@@ -279,7 +278,6 @@ pub fn pty_spawn(
     Ok(())
 }
 
-#[tauri::command]
 pub fn pty_write(id: String, data: String, state: State<'_, PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get_mut(&id) {
@@ -294,7 +292,6 @@ pub fn pty_write(id: String, data: String, state: State<'_, PtyState>) -> Result
     }
 }
 
-#[tauri::command]
 pub fn pty_resize(
     id: String,
     cols: u16,
@@ -318,7 +315,6 @@ pub fn pty_resize(
     }
 }
 
-#[tauri::command]
 pub fn pty_kill(id: String, state: State<'_, PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if sessions.remove(&id).is_some() {
@@ -331,7 +327,6 @@ pub fn pty_kill(id: String, state: State<'_, PtyState>) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::build_shell_candidates;
-
     #[test]
     fn empty_shell_defaults_to_platform_defaults() {
         let candidates = build_shell_candidates("");

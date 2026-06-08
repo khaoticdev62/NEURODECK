@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use tauri::{command, AppHandle, Manager};
+use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -94,21 +94,18 @@ fn delete_one(app: &AppHandle, id: &str) {
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-#[command]
 pub fn cli_list_commands(app: AppHandle) -> Result<String, String> {
     let user_cmds = load_all(&app);
     // In a full implementation, also introspect Lua _commands table here
     Ok(serde_json::to_string(&user_cmds).unwrap_or_default())
 }
 
-#[command]
 pub fn cli_create_command(def: String, app: AppHandle) -> Result<String, String> {
     let cmd: CliCommandDef = serde_json::from_str(&def).map_err(|e| e.to_string())?;
     save_one(&app, &cmd);
     Ok(cmd.id.clone())
 }
 
-#[command]
 pub fn cli_update_command(id: String, def: String, app: AppHandle) -> Result<(), String> {
     let mut cmd: CliCommandDef = serde_json::from_str(&def).map_err(|e| e.to_string())?;
     cmd.id = id;
@@ -116,13 +113,11 @@ pub fn cli_update_command(id: String, def: String, app: AppHandle) -> Result<(),
     Ok(())
 }
 
-#[command]
 pub fn cli_delete_command(id: String, app: AppHandle) -> Result<(), String> {
     delete_one(&app, &id);
     Ok(())
 }
 
-#[command]
 pub fn cli_run_command(id: String, args: String, app: AppHandle) -> Result<String, String> {
     let cmds = load_all(&app);
     let cmd = cmds
@@ -155,18 +150,15 @@ pub fn cli_run_command(id: String, args: String, app: AppHandle) -> Result<Strin
     Ok(output)
 }
 
-#[command]
 pub fn cli_list_hooks() -> Result<String, String> {
     // Stub: would introspect Lua _hooks table
     Ok("[]".to_string())
 }
 
-#[command]
 pub fn cli_toggle_hook(_id: String, _enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-#[command]
 pub fn cli_export_lua(id: String, app: AppHandle) -> Result<String, String> {
     let cmds = load_all(&app);
     let cmd = cmds
@@ -242,7 +234,6 @@ end)"#,
 
 /// Parse a Lua file containing `registerCommand(...)` blocks and return
 /// a JSON array of `CliCommandDef` structs. Also saves them to disk.
-#[command]
 pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
     // Reject path-traversal attempts
     if path.contains("..") {
@@ -353,7 +344,6 @@ fn lua_id_from_name(name: &str) -> String {
 }
 
 /// Save a command as a Lua plugin file in the plugins/ directory, then hot-reload.
-#[command]
 pub fn cli_maker_save_plugin(id: String, app: AppHandle) -> Result<String, String> {
     let lua = cli_export_lua(id.clone(), app.clone())?;
 
@@ -380,7 +370,6 @@ pub fn cli_maker_save_plugin(id: String, app: AppHandle) -> Result<String, Strin
 }
 
 /// Export a command as a standalone script (.lua / .sh / .py) to ~/scripts/.
-#[command]
 pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<String, String> {
     let cmds = load_all(&app);
     let cmd = cmds

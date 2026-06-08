@@ -26,11 +26,10 @@ pub struct DeckCodeState(pub std::sync::Mutex<(Option<ControllerProfileSchema>, 
 
 pub struct DeckCodeActiveLang(pub std::sync::Arc<std::sync::Mutex<String>>);
 
-#[tauri::command]
 pub fn deckcode_set_active_language(
-    lang_state: tauri::State<'_, DeckCodeActiveLang>,
+    lang_state: std::sync::Arc<std::sync::Mutex<String>> ,
     language_id: String,
 ) -> Result<(), String> {
-    *lang_state.0.lock().unwrap_or_else(|e| e.into_inner()) = language_id;
+    *lang_state.lock().unwrap_or_else(|e| e.into_inner()) = language_id;
     Ok(())
 }

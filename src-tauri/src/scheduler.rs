@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tauri::AppHandle;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 use crate::bridge::EventEmitter;
+use crate::{AppHandle};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,13 +44,18 @@ impl SchedulerManaged {
         }
     }
 
-    pub async fn start<E: EventEmitter>(&self, emitter: E) -> Result<(), String> {
+    pub async fn start<E: EventEmitter>(
+        &self,
+        emitter: E,
+        app_state: Arc<Mutex<crate::AppState>>,
+    ) -> Result<(), String> {
         let sched = JobScheduler::new().await.map_err(|e| e.to_string())?;
         let tasks = self.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
         for task in tasks {
             if task.enabled {
-                let _ =
-                    register_task(&sched, &task, self.job_map.clone(), emitter.clone()).await;
+                let _ = register_task(
+                    &sched, &task, self.job_map.clone(), emitter.clone(), app_state.clone(),
+                ).await;
             }
         }
         sched.start().await.map_err(|e| e.to_string())?;
@@ -97,6 +102,7 @@ pub async fn register_task<E: EventEmitter>(
     task: &ScheduledTask,
     job_map: JobMap,
     emitter: E,
+    app_state: Arc<Mutex<crate::AppState>>,
 ) -> Result<uuid::Uuid, String> {
     let cron_str = to_six_field(&task.cron);
     let task_id = task.id.clone();
@@ -105,6 +111,7 @@ pub async fn register_task<E: EventEmitter>(
 
     let job = Job::new_async(cron_str.as_str(), move |_uuid, _lock| {
         let app = emitter.clone();
+        let state = app_state.clone();
         let id = task_id.clone();
         let name = task_name.clone();
         let goal = task_goal.clone();
@@ -118,6 +125,36 @@ pub async fn register_task<E: EventEmitter>(
                     "triggered_at": chrono::Utc::now().to_rfc3339(),
                 }),
             );
+            // Trigger workflow execution if goal starts with "workflow:"
+            if let Some(workflow_name) = goal.strip_prefix("workflow:") {
+                let wf_name = workflow_name.trim().to_string();
+                if !wf_name.is_empty() {
+                    let json_result = crate::workflow::workflow_run(wf_name.clone());
+                    if let Ok(json_str) = json_result {
+                        if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
+                            let broadcaster = app.clone();
+                            let state2 = state.clone();
+                            broadcaster.emit("workflow_started", serde_json::json!({
+                                "name": &wf_name,
+                                "triggered_by": "scheduler",
+                                "task_id": &id,
+                            }));
+                            tokio::spawn(async move {
+                                let run_state = crate::workflow_engine::execute_workflow(
+                                    &wf_name, &doc, state2, broadcaster,
+                                ).await;
+                                if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
+                                    tracing::warn!("Failed to save workflow run history: {}", e);
+                                }
+                            });
+                        } else {
+                            tracing::warn!("Scheduled task '{}' references invalid workflow '{}'", name, wf_name);
+                        }
+                    } else {
+                        tracing::warn!("Scheduled task '{}' references missing workflow '{}'", name, wf_name);
+                    }
+                }
+            }
         })
     })
     .map_err(|e| e.to_string())?;
@@ -146,18 +183,17 @@ pub async fn unregister_task(
 
 // ── Tauri Commands ────────────────────────────────────────────────────────────
 
-#[tauri::command]
-pub fn list_scheduled_tasks(state: tauri::State<'_, Arc<SchedulerManaged>>) -> Vec<ScheduledTask> {
+pub fn list_scheduled_tasks(state: Arc<SchedulerManaged>) -> Vec<ScheduledTask> {
     state.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
-#[tauri::command]
 pub async fn add_scheduled_task(
-    state: tauri::State<'_, Arc<SchedulerManaged>>,
+    state: Arc<SchedulerManaged>,
     app_handle: AppHandle,
     name: String,
     cron: String,
     goal: String,
+    app_state: Arc<Mutex<crate::AppState>>,
 ) -> Result<ScheduledTask, String> {
     // Validate cron by attempting to create a dummy job
     let six_cron = to_six_field(&cron);
@@ -184,15 +220,14 @@ pub async fn add_scheduled_task(
 
     let scheduler = state.scheduler.lock().await;
     if let Some(s) = scheduler.as_ref() {
-        let _ = register_task(s, &task, state.job_map.clone(), app_handle).await;
+        let _ = register_task(s, &task, state.job_map.clone(), app_handle, app_state).await;
     }
 
     Ok(task)
 }
 
-#[tauri::command]
 pub async fn delete_scheduled_task(
-    state: tauri::State<'_, Arc<SchedulerManaged>>,
+    state: Arc<SchedulerManaged>,
     id: String,
 ) -> Result<(), String> {
     {
@@ -209,12 +244,12 @@ pub async fn delete_scheduled_task(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn toggle_scheduled_task(
-    state: tauri::State<'_, Arc<SchedulerManaged>>,
+    state: Arc<SchedulerManaged>,
     app_handle: AppHandle,
     id: String,
     enabled: bool,
+    app_state: Arc<Mutex<crate::AppState>>,
 ) -> Result<(), String> {
     let task = {
         let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
@@ -233,7 +268,7 @@ pub async fn toggle_scheduled_task(
         let scheduler = state.scheduler.lock().await;
         if let Some(s) = scheduler.as_ref() {
             if enabled {
-                let _ = register_task(s, &task, state.job_map.clone(), app_handle).await;
+                let _ = register_task(s, &task, state.job_map.clone(), app_handle, app_state).await;
             } else {
                 let _ = unregister_task(s, &id, &state.job_map).await;
             }
@@ -243,11 +278,11 @@ pub async fn toggle_scheduled_task(
     Ok(())
 }
 
-#[tauri::command]
 pub fn run_task_now(
-    state: tauri::State<'_, Arc<SchedulerManaged>>,
+    state: Arc<SchedulerManaged>,
     app_handle: AppHandle,
     id: String,
+    app_state: Arc<Mutex<crate::AppState>>,
 ) -> Result<(), String> {
     let task = {
         let tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
@@ -255,17 +290,42 @@ pub fn run_task_now(
     };
 
     if let Some(task) = task {
-        let _ = tauri::Emitter::emit(
+        let goal = task.goal.clone();
+        let _ = crate::bridge::EventEmitter::emit(
             &app_handle,
             "scheduled_task_started",
             serde_json::json!({
                 "id": task.id,
                 "name": task.name,
-                "goal": task.goal,
+                "goal": &goal,
                 "triggered_at": chrono::Utc::now().to_rfc3339(),
                 "manual": true,
             }),
         );
+        if let Some(workflow_name) = goal.strip_prefix("workflow:") {
+            let wf_name = workflow_name.trim().to_string();
+            if !wf_name.is_empty() {
+                let json_result = crate::workflow::workflow_run(wf_name.clone());
+                if let Ok(json_str) = json_result {
+                    if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
+                        let broadcaster = app_handle.clone();
+                        let state2 = app_state.clone();
+                        broadcaster.emit("workflow_started", serde_json::json!({
+                            "name": &wf_name,
+                            "triggered_by": "manual",
+                        }));
+                        tokio::spawn(async move {
+                            let run_state = crate::workflow_engine::execute_workflow(
+                                &wf_name, &doc, state2, broadcaster,
+                            ).await;
+                            if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
+                                tracing::warn!("Failed to save workflow run history: {}", e);
+                            }
+                        });
+                    }
+                }
+            }
+        }
         Ok(())
     } else {
         Err("Task not found".to_string())

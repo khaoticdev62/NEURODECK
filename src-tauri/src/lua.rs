@@ -1,6 +1,6 @@
 use mlua::{Function, Lua, Table, Value, Variadic};
 use std::path::Path;
-use tauri::{AppHandle, Emitter, Manager};
+use crate::{AppHandle};
 
 pub struct LuaEngine {
     lua: Lua,
@@ -144,7 +144,7 @@ impl LuaEngine {
                         .unwrap_or_else(|| "You are a helpful assistant.".to_string())
                 });
 
-            let response = tauri::async_runtime::block_on(async move {
+            let response = tokio::runtime::Handle::current().block_on(async move {
                 provider
                     .chat_with_image(&prompt, &system_prompt, None, None)
                     .await

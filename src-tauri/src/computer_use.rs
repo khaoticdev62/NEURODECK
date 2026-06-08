@@ -32,7 +32,6 @@ struct OcrWord {
     confidence: f32,
 }
 
-#[tauri::command]
 pub async fn computer_screenshot() -> Result<ComputerScreenshot, String> {
     let bytes = tokio::task::spawn_blocking(capture_screenshot_bytes)
         .await
@@ -44,7 +43,6 @@ pub async fn computer_screenshot() -> Result<ComputerScreenshot, String> {
     })
 }
 
-#[tauri::command]
 pub async fn computer_mouse_move(x: i32, y: i32, approved: bool) -> Result<(), String> {
     require_approval(approved)?;
     tokio::task::spawn_blocking(move || platform_mouse_move(x, y))
@@ -52,7 +50,6 @@ pub async fn computer_mouse_move(x: i32, y: i32, approved: bool) -> Result<(), S
         .map_err(|e| format!("Mouse move task failed: {e}"))?
 }
 
-#[tauri::command]
 pub async fn computer_mouse_click(button: String, approved: bool) -> Result<(), String> {
     require_approval(approved)?;
     let button = normalize_button(&button)?;
@@ -61,7 +58,6 @@ pub async fn computer_mouse_click(button: String, approved: bool) -> Result<(), 
         .map_err(|e| format!("Mouse click task failed: {e}"))?
 }
 
-#[tauri::command]
 pub async fn computer_type(text: String, approved: bool) -> Result<(), String> {
     require_approval(approved)?;
     if text.len() > 8_000 {
@@ -72,7 +68,6 @@ pub async fn computer_type(text: String, approved: bool) -> Result<(), String> {
         .map_err(|e| format!("Keyboard type task failed: {e}"))?
 }
 
-#[tauri::command]
 pub async fn computer_key(key: String, approved: bool) -> Result<(), String> {
     require_approval(approved)?;
     let key = normalize_key(&key)?;
@@ -81,7 +76,6 @@ pub async fn computer_key(key: String, approved: bool) -> Result<(), String> {
         .map_err(|e| format!("Keyboard key task failed: {e}"))?
 }
 
-#[tauri::command]
 pub async fn computer_find_text(text: String) -> Result<ComputerTextMatch, String> {
     let needle = text.trim().to_string();
     if needle.is_empty() {

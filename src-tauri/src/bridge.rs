@@ -462,12 +462,17 @@ pub async fn run_bridge_server(
     }
     let lua = Arc::new(Mutex::new(lua_engine));
 
+    // ── Auto-backup memory (clone mem_db before moving app_state) ──────────
+    let mem_db_backup = app_state.mem_db.clone();
+
     // ── Scheduler ──────────────────────────────────────────────────────────
+    let app_state_arc = Arc::new(Mutex::new(app_state));
     {
         let sched = scheduler.clone();
         let bc = broadcaster.clone();
+        let app_state_clone = app_state_arc.clone();
         tokio::spawn(async move {
-            if let Err(e) = sched.start(bc).await {
+            if let Err(e) = sched.start(bc, app_state_clone).await {
                 tracing::warn!("Failed to start task scheduler: {}", e);
             } else {
                 tracing::info!("Task scheduler started");
@@ -488,10 +493,9 @@ pub async fn run_bridge_server(
 
     // ── Auto-backup memory ─────────────────────────────────────────────────
     {
-        let app_state_backup = app_state.mem_db.clone();
         tokio::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-            if let Some(db) = app_state_backup {
+            if let Some(db) = mem_db_backup {
                 if let Ok(records) = db.export_all_records() {
                     if !records.is_empty() {
                         let _ = crate::commands::system::run_memory_backup(&db);
@@ -563,7 +567,7 @@ pub async fn run_bridge_server(
     }
 
     let server_state = ServerState {
-        app_state: Arc::new(Mutex::new(app_state)),
+        app_state: app_state_arc,
         broadcaster: broadcaster.clone(),
         pty: pty_state,
         remote: remote_state,
