@@ -2215,10 +2215,9 @@ function _chatWireExportDropdown() {
             exportMenu.classList.add("hidden"); exportBtn.setAttribute("aria-expanded", "false");
             const fmt = item.dataset.format;
             try {
-                const { invoke: inv } = await import("./neurobridge.js");
                 const sessionId = document.getElementById("chat-session-name")?.dataset?.sessionId || window.__currentSessionId || "";
                 if (!sessionId) { addNotification("Export", "Save the session first (Ctrl+S), then export.", "info"); return; }
-                const content = await inv("export_session_content", { id: sessionId, format: fmt });
+                const content = await invoke("export_session_content", { id: sessionId, format: fmt });
                 await navigator.clipboard.writeText(content);
                 addNotification("Exported", `Session copied as ${fmt.toUpperCase()} to clipboard.`, "success");
             } catch (err) { addNotification("Export Failed", String(err), "error"); }

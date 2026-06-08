@@ -1,12 +1,11 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
   clearScreen: false,
   server: {
     port: 1420,
     strictPort: true,
+    hmr: true,
   },
   envPrefix: ["VITE_"],
   build: {
@@ -16,11 +15,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // xterm.js and its addons — heavy, isolated
           if (id.includes("xterm")) return "xterm";
-          // marked.js — standalone parser
           if (id.includes("marked")) return "marked";
-          // qrcode — infrequently used
           if (id.includes("qrcode")) return "qrcode";
         },
       },
