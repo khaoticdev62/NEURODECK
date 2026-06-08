@@ -217,7 +217,7 @@
                                 <div class="ssh-panel-header">Connection</div>
                                 <div class="ssh-row-fields">
                                     <input id="ssh-host-input" class="ssh-input" aria-label="SSH host" placeholder="Host" />
-                                    <input id="ssh-port-input" class="ssh-input" aria-label="SSH port" value="22" placeholder="Port" style="width:64px;flex-shrink:0" />
+                                    <input id="ssh-port-input" class="ssh-input ssh-port-input" aria-label="SSH port" value="22" placeholder="Port" />
                                 </div>
                                 <input id="ssh-user-input" class="ssh-input" aria-label="SSH user" placeholder="User" />
                                 <select id="ssh-auth-type" class="ssh-input" aria-label="SSH auth type"><option value="password">Password</option><option value="key">Key</option></select>
@@ -254,22 +254,22 @@
                                 <div class="tunnel-section">
                                     <div class="input-row">
                                         <input id="tunnel-cmd-input" class="tunnel-text-input" aria-label="Tunnel command" placeholder="Shell command…" />
-                                        <button id="tunnel-cmd-send" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Send</button>
+                                        <button id="tunnel-cmd-send" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Send</button>
                                     </div>
                                 </div>
                                 <div class="tunnel-section">
                                     <div class="input-row">
                                         <input id="tunnel-dirpath-input" class="tunnel-text-input" aria-label="Tunnel directory path" placeholder="Directory path…" />
-                                        <button id="tunnel-dir-send" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">List Dir</button>
+                                        <button id="tunnel-dir-send" class="ssh-btn input-row-btn" type="button">List Dir</button>
                                     </div>
                                 </div>
                             </div>
                             <div class="tunnel-panel">
                                 <div class="tunnel-kicker">File Transfer</div>
                                 <h3>Send File</h3>
-                                <input id="tunnel-filepath-input" class="tunnel-text-input" aria-label="Tunnel file path" placeholder="Remote path…" style="margin-bottom:8px" />
+                                <input id="tunnel-filepath-input" class="tunnel-text-input mb-2" aria-label="Tunnel file path" placeholder="Remote path…" />
                                 <textarea id="tunnel-filecontent-input" class="tunnel-text-area" aria-label="Tunnel file content" placeholder="File content…" rows="5"></textarea>
-                                <button id="tunnel-file-send" class="ssh-btn ssh-btn-primary" type="button" style="margin-top:8px">Send File</button>
+                                <button id="tunnel-file-send" class="ssh-btn ssh-btn-primary mt-2" type="button">Send File</button>
                                 <div class="tunnel-section">
                                     <div id="tunnel-log" class="tunnel-log"></div>
                                 </div>
@@ -293,18 +293,18 @@
                         <div id="share-dropzone" class="share-dropzone" tabindex="0" role="button" aria-label="Drop files here or click to browse">Drop files here</div>
                         <div class="input-row">
                             <input id="share-filepath-input" class="tunnel-text-input" aria-label="File path to share" placeholder="File path to share…" />
-                            <button id="share-send-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Send</button>
+                            <button id="share-send-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Send</button>
                         </div>
                         <div class="input-row">
                             <input id="share-group-code-input" class="tunnel-text-input" aria-label="Share group code" placeholder="Group code…" />
-                            <button id="share-group-code-save-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Apply</button>
+                            <button id="share-group-code-save-btn" class="ssh-btn input-row-btn" type="button">Apply</button>
                         </div>
                         <div id="peer-list"></div>
                     </div>
                     <div id="share-panel-ftp" class="share-panel-section">
                         <div class="input-row">
                             <input id="ftp-host-input" class="tunnel-text-input" aria-label="FTP host" placeholder="Host" />
-                            <input id="ftp-port-input" class="tunnel-text-input" value="21" aria-label="FTP port" placeholder="Port" style="width:70px;flex-shrink:0" />
+                            <input id="ftp-port-input" class="tunnel-text-input ftp-port-input" value="21" aria-label="FTP port" placeholder="Port" />
                         </div>
                         <div class="input-row">
                             <input id="ftp-user-input" class="tunnel-text-input" aria-label="FTP user" placeholder="User" />
@@ -312,8 +312,8 @@
                         </div>
                         <input id="ftp-path-input" class="tunnel-text-input" aria-label="FTP path" placeholder="Remote path" />
                         <div class="input-row">
-                            <button id="ftp-connect-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Connect &amp; List</button>
-                            <button id="ftp-save-profile-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Save Profile</button>
+                            <button id="ftp-connect-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Connect &amp; List</button>
+                            <button id="ftp-save-profile-btn" class="ssh-btn input-row-btn" type="button">Save Profile</button>
                         </div>
                         <div id="ftp-status-text"></div><div id="ftp-cwd-label"></div>
                         <div id="ftp-file-list"></div><div id="ftp-profiles-list"></div>
@@ -321,14 +321,14 @@
                         <div class="input-row">
                             <input id="ftp-local-path-input" class="tunnel-text-input" aria-label="FTP local path" placeholder="Local path" />
                             <input id="ftp-remote-dest-input" class="tunnel-text-input" aria-label="FTP remote path" placeholder="Remote dest" />
-                            <button id="ftp-upload-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Upload</button>
+                            <button id="ftp-upload-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Upload</button>
                         </div>
                         <div id="ftp-upload-progress-wrap"><div id="ftp-upload-progress-fill"></div><span id="ftp-upload-progress-label"></span></div>
                     </div>
                     <div id="share-panel-sftp" class="share-panel-section">
                         <div class="input-row">
                             <input id="sftp-host-input" class="tunnel-text-input" aria-label="SFTP host" placeholder="Host" />
-                            <input id="sftp-port-input" class="tunnel-text-input" value="22" aria-label="SFTP port" placeholder="Port" style="width:70px;flex-shrink:0" />
+                            <input id="sftp-port-input" class="tunnel-text-input ftp-port-input" value="22" aria-label="SFTP port" placeholder="Port" />
                         </div>
                         <input id="sftp-user-input" class="tunnel-text-input" aria-label="SFTP user" placeholder="User" />
                         <select id="sftp-auth-type" class="tunnel-text-input" aria-label="SFTP auth type"><option value="password">Password</option><option value="key">Key</option></select>
@@ -336,8 +336,8 @@
                         <input id="sftp-key-path-input" class="tunnel-text-input" aria-label="SFTP key path" placeholder="Key path" />
                         <input id="sftp-path-input" class="tunnel-text-input" aria-label="SFTP path" placeholder="Remote path" />
                         <div class="input-row">
-                            <button id="sftp-connect-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Connect &amp; List</button>
-                            <button id="sftp-save-profile-btn" class="ssh-btn" type="button" style="width:auto;flex-shrink:0">Save Profile</button>
+                            <button id="sftp-connect-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Connect &amp; List</button>
+                            <button id="sftp-save-profile-btn" class="ssh-btn input-row-btn" type="button">Save Profile</button>
                         </div>
                         <div id="sftp-status-text"></div><div id="sftp-cwd-label"></div>
                         <div id="sftp-file-list"></div><div id="sftp-profiles-list"></div>
@@ -345,14 +345,14 @@
                         <div class="input-row">
                             <input id="sftp-local-path-input" class="tunnel-text-input" aria-label="SFTP local path" placeholder="Local path" />
                             <input id="sftp-remote-dest-input" class="tunnel-text-input" aria-label="SFTP remote path" placeholder="Remote dest" />
-                            <button id="sftp-upload-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Upload</button>
+                            <button id="sftp-upload-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Upload</button>
                         </div>
                     </div>
                     <div id="share-panel-torrent" class="share-panel-section">
                         <div class="torrent-kicker">Torrent Transfer</div>
                         <div class="input-row">
                             <input id="torrent-source-input" class="tunnel-text-input" aria-label="Torrent source" placeholder="Magnet link or torrent file" />
-                            <button id="torrent-add-btn" class="ssh-btn ssh-btn-primary" type="button" style="width:auto;flex-shrink:0">Add Torrent</button>
+                            <button id="torrent-add-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Add Torrent</button>
                         </div>
                     </div>
                 </section>
@@ -401,16 +401,16 @@
                         </div>
 
                         <div id="agent-toolbar-roundtable" class="agent-toolbar hidden">
-                            <select id="rt-persona-a" aria-label="Roundtable persona A"></select>
-                            <select id="rt-persona-b" aria-label="Roundtable persona B"></select>
-                            <input id="rt-topic-input" aria-label="Roundtable topic" placeholder="Topic…" />
-                            <input id="rt-rounds" type="number" aria-label="Roundtable rounds" value="3" min="1" max="20" />
+                            <select id="rt-persona-a" class="agent-select" aria-label="Roundtable persona A"></select>
+                            <select id="rt-persona-b" class="agent-select" aria-label="Roundtable persona B"></select>
+                            <input id="rt-topic-input" class="agent-input" aria-label="Roundtable topic" placeholder="Topic…" />
+                            <input id="rt-rounds" class="agent-input" type="number" aria-label="Roundtable rounds" value="3" min="1" max="20" />
                             <button id="rt-start-btn" class="agent-btn agent-btn-run" type="button">Start</button>
                             <button id="rt-stop-btn" class="agent-btn agent-btn-stop" type="button">Stop</button>
                         </div>
 
                         <div id="agent-toolbar-orchestrate" class="agent-toolbar hidden">
-                            <input id="orchestrator-goal-input" aria-label="Orchestrator goal" placeholder="Orchestration goal…" />
+                            <input id="orchestrator-goal-input" class="agent-input" aria-label="Orchestrator goal" placeholder="Orchestration goal…" />
                             <button id="orchestrator-start-btn" class="agent-btn agent-btn-run" type="button">Start</button>
                             <button id="orchestrator-status-btn" class="agent-btn" type="button">Status</button>
                             <button id="orchestrator-stop-btn" class="agent-btn agent-btn-stop" type="button">Stop</button>
@@ -430,10 +430,10 @@
                                 <div class="agent-code-display">
                                     <pre id="agent-code-content" class="agent-code"></pre>
                                 </div>
-                                <div class="agent-pane-header" style="border-top: 1px solid var(--border-color);">
+                                <div class="agent-pane-header agent-pane-divider">
                                     <span id="agent-output-title">Output</span>
                                 </div>
-                                <div id="agent-output" class="agent-log" style="padding: 8px 12px; font-size: 0.82rem;" aria-live="polite"></div>
+                                <div id="agent-output" class="agent-log agent-output-sub" aria-live="polite"></div>
                             </div>
                         </div>
                     </div>
@@ -448,7 +448,7 @@
                             </div>
                             <div id="memory-projects-list" class="memory-projects-list">
                                 <div class="memory-project-item active" data-project-id="">
-                                    <span class="memory-project-dot" style="background:#888"></span>
+                                    <span class="memory-project-dot memory-project-dot--default"></span>
                                     <span class="memory-project-name">All</span>
                                 </div>
                             </div>
@@ -459,7 +459,7 @@
                             </div>
                             <div id="memory-packs-list" class="memory-projects-list">
                                 <div class="memory-project-item active" data-pack-id="">
-                                    <span class="memory-project-dot" style="background:#888"></span>
+                                    <span class="memory-project-dot memory-project-dot--default"></span>
                                     <span class="memory-project-name">All</span>
                                 </div>
                             </div>
@@ -559,10 +559,10 @@
                             <div class="dashboard-panel dashboard-panel-wide">
                                 <div class="dashboard-panel-title">Privacy Breakdown</div>
                                 <div class="dashboard-privacy-grid">
-                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#22c55e"></span><span>Standard</span><span id="dash-privacy-standard" class="dashboard-privacy-count">—</span></div>
-                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#3b82f6"></span><span>Private</span><span id="dash-privacy-private" class="dashboard-privacy-count">—</span></div>
-                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#f59e0b"></span><span>Sensitive</span><span id="dash-privacy-sensitive" class="dashboard-privacy-count">—</span></div>
-                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot" style="background:#ef4444"></span><span>Sealed</span><span id="dash-privacy-sealed" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot dashboard-privacy-dot--standard"></span><span>Standard</span><span id="dash-privacy-standard" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot dashboard-privacy-dot--private"></span><span>Private</span><span id="dash-privacy-private" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot dashboard-privacy-dot--sensitive"></span><span>Sensitive</span><span id="dash-privacy-sensitive" class="dashboard-privacy-count">—</span></div>
+                                    <div class="dashboard-privacy-item"><span class="dashboard-privacy-dot dashboard-privacy-dot--sealed"></span><span>Sealed</span><span id="dash-privacy-sealed" class="dashboard-privacy-count">—</span></div>
                                 </div>
                             </div>
                         </div>
@@ -766,7 +766,7 @@
                             <button id="wf-save-btn" class="stv-btn-ghost" type="button">Save</button>
                             <button id="wf-run-btn" class="stv-btn-primary" type="button">Run</button>
                         </div>
-                        <div id="workflow-canvas" class="workflow-canvas" style="flex: 1; min-height: 400px; border: 1px dashed rgba(148,163,184,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-dim);">
+                        <div id="workflow-canvas" class="workflow-canvas">
                             <span>Workflow canvas will be rendered here by workflow_view.js</span>
                         </div>
                     </div>
@@ -778,7 +778,7 @@
                             <div class="scheduler-kicker">Automation</div>
                             <div class="scheduler-title">Task Scheduler</div>
                         </div>
-                        <div class="scheduler-form" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+                        <div class="scheduler-form mb-2">
                             <input id="scheduler-name-input" class="stv-input" type="text" placeholder="Task name..." aria-label="Task name" />
                             <input id="scheduler-cron-input" class="stv-input" type="text" placeholder="Cron expression: 0 9 * * MON" aria-label="Cron expression" />
                             <textarea id="scheduler-goal-input" class="stv-textarea" rows="2" placeholder="Task description or Lua snippet..." aria-label="Task goal or script"></textarea>
@@ -787,8 +787,8 @@
                             <button id="scheduler-add-btn" class="stv-btn-primary" type="button">Add Task</button>
                             <button id="sch-refresh-btn" class="stv-btn-ghost" type="button">Refresh</button>
                         </div>
-                        <div id="scheduler-task-list" class="scheduler-list" style="margin-top: 12px;">
-                            <div class="scheduler-empty" style="color: var(--text-dim); padding: 20px;">Scheduled tasks will appear here.</div>
+                        <div id="scheduler-task-list" class="scheduler-list mt-3">
+                            <div class="scheduler-empty">Scheduled tasks will appear here.</div>
                         </div>
                     </div>
                 </section>
@@ -820,15 +820,15 @@
                         <button id="git-discard-btn" class="git-btn" type="button" aria-label="Discard changes">Discard</button>
                       </div>
                       <textarea id="git-commit-msg" class="git-commit-msg" rows="3" placeholder="Commit message..." aria-label="Commit message"></textarea>
-                      <div style="display:flex;gap:6px;flex-shrink:0;">
-                        <button id="git-commit-btn" class="git-btn" type="button" style="flex:1" aria-label="Commit staged changes">Commit</button>
+                      <div class="git-commit-actions">
+                        <button id="git-commit-btn" class="git-btn git-flex-btn" type="button" aria-label="Commit staged changes">Commit</button>
                         <button id="git-ai-commit-btn" class="git-btn" type="button" aria-label="Generate commit message with AI">AI</button>
                       </div>
-                      <div class="git-pane-header" style="margin-top:10px;">Branches</div>
+                      <div class="git-pane-header mt-2">Branches</div>
                       <ul id="git-branch-list" class="git-branch-list" role="list" aria-label="Branch list"></ul>
-                      <div class="git-pane-header" style="margin-top:10px;">History</div>
+                      <div class="git-pane-header mt-2">History</div>
                       <ul id="git-history-list" class="git-history-list" role="list" aria-label="Commit history"></ul>
-                      <div class="git-pane-header" style="margin-top:10px;">Accounts</div>
+                      <div class="git-pane-header mt-2">Accounts</div>
                       <ul id="git-account-list" class="git-account-list" role="list" aria-label="Git accounts"></ul>
                     </div>
                   </div>
@@ -888,14 +888,14 @@
                           <option value="basic">Basic Auth</option>
                           <option value="apikey">API Key</option>
                         </select>
-                        <div id="api-auth-bearer" class="hidden" style="margin-top:8px;">
+                        <div id="api-auth-bearer" class="hidden mt-2">
                           <input id="api-auth-token" class="api-lab-input" type="password" placeholder="Bearer token..." aria-label="Bearer token" />
                         </div>
-                        <div id="api-auth-basic" class="hidden" style="margin-top:8px;display:flex;gap:6px;">
+                        <div id="api-auth-basic" class="api-lab-auth-row hidden mt-2">
                           <input id="api-auth-username" class="api-lab-input" type="text" placeholder="Username" aria-label="Username" />
                           <input id="api-auth-password" class="api-lab-input" type="password" placeholder="Password" aria-label="Password" />
                         </div>
-                        <div id="api-auth-apikey" class="hidden" style="margin-top:8px;display:flex;gap:6px;">
+                        <div id="api-auth-apikey" class="api-lab-auth-row hidden mt-2">
                           <input id="api-auth-key-name" class="api-lab-input" type="text" placeholder="Header name" aria-label="API key header name" />
                           <input id="api-auth-key-value" class="api-lab-input" type="password" placeholder="Key value" aria-label="API key value" />
                         </div>
@@ -905,12 +905,12 @@
                           <option value="raw">Raw JSON</option>
                           <option value="form">Form Data</option>
                         </select>
-                        <textarea id="api-body-input" class="api-lab-body-input" rows="4" placeholder='{"key": "value"}' aria-label="Request body" style="margin-top:6px;"></textarea>
+                        <textarea id="api-body-input" class="api-lab-body-input mt-1" rows="4" placeholder='{"key": "value"}' aria-label="Request body"></textarea>
                         <div id="api-form-list" class="api-lab-kv-list hidden" aria-label="Form fields"></div>
-                        <button id="api-add-form-btn" class="api-lab-btn hidden" type="button" style="margin-top:6px;">+ Field</button>
+                        <button id="api-add-form-btn" class="api-lab-btn hidden mt-1" type="button">+ Field</button>
                       </div>
                       <!-- Action buttons -->
-                      <div class="api-lab-actions" style="flex-shrink:0;">
+                      <div class="api-lab-actions">
                         <button id="api-save-request-btn" class="api-lab-btn" type="button" aria-label="Save request to collection">Save</button>
                         <button id="api-ai-generate-btn" class="api-lab-btn" type="button" aria-label="AI generate request">AI</button>
                         <button id="api-export-curl-btn" class="api-lab-btn" type="button" aria-label="Export as cURL">cURL</button>
@@ -925,7 +925,7 @@
                             <button class="api-lab-resp-tab active" role="tab" type="button" data-resp-tab="body" aria-selected="true">Body</button>
                             <button class="api-lab-resp-tab" role="tab" type="button" data-resp-tab="headers" aria-selected="false">Headers</button>
                           </div>
-                          <div style="display:flex;gap:6px;margin-left:auto;">
+                          <div class="api-lab-resp-actions">
                             <button id="api-resp-copy-btn" class="api-lab-btn" type="button" aria-label="Copy response body">Copy</button>
                             <button id="api-resp-canvas-btn" class="api-lab-btn" type="button" aria-label="Send to canvas">→ Canvas</button>
                           </div>
@@ -942,11 +942,11 @@
                     <!-- Left: command list -->
                     <div class="cli-maker-pane cli-maker-left">
                       <div class="cli-maker-header">Commands</div>
-                      <div style="display:flex;gap:6px;flex-shrink:0;">
+                      <div class="cli-toolbar-row">
                         <button id="cli-new-cmd-btn" class="cli-filter active" type="button" aria-label="New command">+ New</button>
-                        <label class="cli-filter" style="cursor:pointer;" aria-label="Import command from file">
+                        <label class="cli-filter cli-filter-label" aria-label="Import command from file">
                           Import
-                          <input id="cli-import-file-input" type="file" accept=".json,.toml,.lua" style="display:none;" aria-hidden="true" tabindex="-1" />
+                          <input id="cli-import-file-input" type="file" accept=".json,.toml,.lua" class="sr-only" aria-hidden="true" tabindex="-1" />
                         </label>
                         <button id="cli-import-btn" class="cli-filter" type="button" aria-label="Import command">↑</button>
                       </div>
@@ -973,8 +973,8 @@
                         <label class="cli-label" for="cli-cmd-desc">Description</label>
                         <input id="cli-cmd-desc" class="cli-input" type="text" placeholder="What does this command do?" aria-label="Command description" />
                       </div>
-                      <div class="cli-form-group" style="display:flex;gap:8px;">
-                        <div style="flex:1;">
+                      <div class="cli-form-group cli-form-group-row">
+                        <div class="cli-flex-field">
                           <label class="cli-label" for="cli-cmd-category">Category</label>
                           <select id="cli-cmd-category" class="cli-select" aria-label="Command category">
                             <option value="prompt">Prompt</option>
@@ -984,7 +984,7 @@
                             <option value="plugin">Plugin</option>
                           </select>
                         </div>
-                        <div style="flex:1;">
+                        <div class="cli-flex-field">
                           <label class="cli-label" for="cli-lang-select">Language</label>
                           <select id="cli-lang-select" class="cli-select" aria-label="Shell language">
                             <option value="bash">Bash</option>
@@ -1010,7 +1010,7 @@
                       <div id="cli-dynamic-fields" class="cli-dynamic-fields"></div>
                       <!-- Flags section -->
                       <div id="cli-flags-section" class="cli-section">
-                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="cli-section-header">
                           <span class="cli-label">Flags</span>
                           <button id="cli-add-flag-btn" class="cli-filter" type="button" aria-label="Add flag">+ Flag</button>
                         </div>
@@ -1018,7 +1018,7 @@
                       </div>
                       <!-- Subcommands section -->
                       <div id="cli-subcmds-section" class="cli-section">
-                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="cli-section-header">
                           <span class="cli-label">Subcommands</span>
                           <button id="cli-add-subcmd-btn" class="cli-filter" type="button" aria-label="Add subcommand">+ Sub</button>
                         </div>
@@ -1026,14 +1026,14 @@
                       </div>
                       <!-- Chain list -->
                       <div class="cli-section" id="cli-chain-section">
-                        <div class="cli-section-header" style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="cli-section-header">
                           <span class="cli-label">Chain steps</span>
                           <button id="cli-add-chain-step" class="cli-filter" type="button" aria-label="Add chain step">+ Step</button>
                         </div>
                         <div id="cli-chain-list" class="cli-chain-list"></div>
                       </div>
                       <!-- Action buttons -->
-                      <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;margin-top:auto;padding-top:10px;">
+                      <div class="cli-action-row">
                         <button id="cli-save-btn" class="cli-filter active" type="button" aria-label="Save command">Save</button>
                         <button id="cli-test-btn" class="cli-filter" type="button" aria-label="Test command">Test</button>
                         <button id="cli-export-btn" class="cli-filter" type="button" aria-label="Export as Lua">Lua</button>
@@ -1068,7 +1068,7 @@
                         <button id="orch-new-btn" class="orch-btn" type="button" aria-label="New pipeline">New</button>
                         <button id="orch-clear-btn" class="orch-btn" type="button" aria-label="Clear canvas">Clear</button>
                       </div>
-                      <div class="orch-toolbar-controls" style="margin-left:auto;">
+                      <div class="orch-toolbar-controls ml-auto">
                         <button id="orch-auto-btn" class="orch-btn" type="button" aria-label="Auto-build pipeline from goal">Auto</button>
                         <input id="orch-auto-goal" class="orch-auto-input" type="text" placeholder="Describe pipeline goal..." aria-label="Auto-build goal" />
                       </div>
@@ -1079,12 +1079,12 @@
                       <div class="orch-left-panel">
                         <div class="orch-panel-header">Pipelines</div>
                         <div id="orch-pipeline-list" class="orch-pipeline-list" role="list" aria-label="Saved pipelines"></div>
-                        <div class="orch-panel-header" style="margin-top:8px;">Log</div>
+                        <div class="orch-panel-header mt-2">Log</div>
                         <div id="orch-log" class="orch-log" aria-label="Execution log" aria-live="polite"></div>
                       </div>
                       <!-- Center: canvas + output -->
-                      <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0;">
-                        <div class="orch-canvas-wrap" style="position:relative;flex:1;overflow:hidden;">
+                      <div class="orch-canvas-col">
+                        <div class="orch-canvas-wrap">
                           <div id="orch-canvas" class="orch-canvas" aria-label="Pipeline canvas" role="region">
                             <div class="orch-canvas-empty" aria-hidden="true">
                               <div class="orch-canvas-empty-icon">⬡</div>
@@ -1132,7 +1132,7 @@
                         <!-- Tab bar -->
                         <div id="ide-tab-bar" class="ide-tab-bar" role="tablist" aria-label="Open files"></div>
                         <!-- Editor wrapper -->
-                        <div class="ide-editor-wrap" style="position:relative;flex:1;min-height:0;overflow:hidden;">
+                        <div class="ide-editor-wrap">
                           <div id="ide-line-numbers" class="ide-line-numbers" aria-hidden="true"></div>
                           <textarea id="ide-editor" class="ide-editor" spellcheck="false" autocomplete="off" autocapitalize="off"
                                     aria-label="Code editor" aria-multiline="true" role="textbox"></textarea>
