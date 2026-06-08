@@ -11,7 +11,7 @@
 - Codename: `Ptah`
 - Tag: `v1.8.0-ptah`
 - Workspace state: `manual-uncommitted`
-- Last stamped build: `2026-06-08T08:59:11Z`
+- Last stamped build: `2026-06-08T09:18:29Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---
@@ -363,6 +363,48 @@ Recommended MVP scope:
 
 ### Next Net-New Sprint (v1.5+ / Horus)
 1. Mobile Companion App (Sprint 5.2) — deferred until cloud sync auth is production-stable.
+
+---
+
+## Development Workflow — PromptFlow Integration
+
+As of v1.8.0-ptah, all development work is driven through the **Production Code Prompt System** (`production_code_prompt_system/`). This replaces ad-hoc AI prompting with a structured, repeatable, auditable workflow.
+
+### What changed
+- `promptflow.yaml` at repo root defines NEURODECK-specific config + custom sequences.
+- npm scripts added: `npm run promptflow:audit`, `npm run promptflow:security`, `npm run promptflow:release`, etc.
+- Wrapper scripts: `scripts/promptflow-run.sh` (Unix) and `scripts/promptflow-run.ps1` (Windows).
+- `AGENTS.md` updated with PromptFlow as the canonical development workflow.
+
+### Custom sequences for NEURODECK
+| Sequence | Stages | Use When |
+|---|---|---|
+| `audit-only` | 14 → 01 | Starting a new feature or refactor |
+| `security` | 14 → 03 → 13 → 12 → 04 | After security-sensitive changes |
+| `refactor` | 14 → 01 → 04 → 06 → 07 → 15 | Deep refactoring work |
+| `frontend` | 14 → 11 → 05 → 04 → 10 | UI/UX focused work |
+| `build-repair` | 14 → 08 → 09 → 10 | CI/CD or dependency issues |
+| `release-certification` | 14 → 15 | Before cutting a release tag |
+| `rust-only` | 14 → 01 → 03 → 04 → 06 → 12 → 15 | Backend-only changes |
+| `electron-only` | 14 → 01 → 11 → 05 → 04 → 10 → 15 | Frontend-only changes |
+| `pre-release` | 14 → 01 → 03 → 04 → 08 → 09 → 15 | Comprehensive pre-release gate |
+| `quick-check` | 14 → 01 → 15 | Fast sanity check |
+
+### How to use
+```bash
+# Manual mode (default) — writes prompt to file, you paste into AI tool
+npm run promptflow:audit
+
+# Or use a provider for automatic execution
+python -m promptflow run --sequence pre-release --provider openai
+
+# Review results
+npm run promptflow:report
+npm run promptflow:export   # zip the full run package
+```
+
+### Rule
+**No release is certified without a PromptFlow run.** The `release-certification` or `pre-release` sequence must output `APPROVED` or `APPROVED WITH WARNINGS` before tagging.
 
 ---
 

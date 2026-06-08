@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, shell, dialog, ipcMain, protocol, safeStorage, session } = require('electron');
+const { app, BrowserWindow, Tray, Menu, shell, dialog, ipcMain, protocol, safeStorage, session, Notification } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -382,12 +382,17 @@ function createMainWindow() {
     mainWindow = null;
   });
 
-  // C1: Validate URL protocol before opening externally — blocks javascript:, file://, etc.
+  // C1: Allowlist the only two valid app origins.
+  // Any other URL (including javascript:, file://, or external https://) is blocked
+  // and, if it looks like a web URL, opened in the OS browser instead.
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (url !== mainWindow.webContents.getURL()) {
-      event.preventDefault();
-      safeOpenExternal(url);
-    }
+    const ALLOWED_ORIGINS = [
+      'neurodeck://',
+      ...(process.env.ELECTRON_DEV ? ['http://localhost:1420'] : []),
+    ];
+    if (ALLOWED_ORIGINS.some((prefix) => url.startsWith(prefix))) return;
+    event.preventDefault();
+    safeOpenExternal(url);
   });
 
   // C2: Same validation for new window requests from renderer
@@ -461,6 +466,46 @@ app.whenReady().then(async () => {
     callback(allowed.has(permission));
   });
 
+  // H2b: Also gate direct capability checks (complements the request handler above).
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    const allowed = new Set(['notifications']);
+    return allowed.has(permission);
+  });
+
+  // H7: Content Security Policy.
+  // Injected on all responses so the renderer cannot load external scripts,
+  // fetch arbitrary hosts, or embed frames.
+  // unsafe-inline is required because the frontend uses vanilla JS/CSS without
+  // a nonce/hash system; removing it would require a larger frontend refactor.
+  const bridgeOrigin = `http://127.0.0.1:${port}`;
+  const wsBridgeOrigin = `ws://127.0.0.1:${port}`;
+  const devExtras = process.env.ELECTRON_DEV
+    ? ` http://localhost:1420 ws://localhost:1420 ws://localhost:24678`
+    : '';
+  const CSP = [
+    "default-src 'none'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    `connect-src 'self' ${bridgeOrigin} ${wsBridgeOrigin}${devExtras}`,
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "media-src 'self' blob:",
+    "worker-src 'self' blob:",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+  ].join('; ');
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [CSP],
+      },
+    });
+  });
+
   createSplashWindow();
   spawnSidecar(port);
 
@@ -494,14 +539,31 @@ ipcMain.handle('open-external', (_event, url) => {
   safeOpenExternal(url);
 });
 
+// Sanitize dialog options: only pass through known-safe properties.
+// Prevents a compromised renderer from injecting securityScopedBookmarks,
+// arbitrary defaultPath traversals, or other privileged dialog flags.
+const SAFE_SAVE_DIALOG_KEYS = new Set(['title', 'defaultPath', 'buttonLabel', 'filters', 'properties', 'message', 'nameFieldLabel', 'showsTagField']);
+const SAFE_OPEN_DIALOG_KEYS = new Set(['title', 'defaultPath', 'buttonLabel', 'filters', 'properties', 'message']);
+
+function sanitizeDialogOptions(raw, allowed) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const safe = {};
+  for (const key of allowed) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) {
+      safe[key] = raw[key];
+    }
+  }
+  return safe;
+}
+
 ipcMain.handle('show-save-dialog', async (_event, options) => {
   if (!mainWindow) return { canceled: true };
-  return dialog.showSaveDialog(mainWindow, options);
+  return dialog.showSaveDialog(mainWindow, sanitizeDialogOptions(options, SAFE_SAVE_DIALOG_KEYS));
 });
 
 ipcMain.handle('show-open-dialog', async (_event, options) => {
   if (!mainWindow) return { canceled: true };
-  return dialog.showOpenDialog(mainWindow, options);
+  return dialog.showOpenDialog(mainWindow, sanitizeDialogOptions(options, SAFE_OPEN_DIALOG_KEYS));
 });
 
 ipcMain.handle('safe-storage-available', () => {
@@ -539,7 +601,9 @@ ipcMain.handle('get-is-kiosk', () => {
 });
 
 ipcMain.handle('request-notification-permission', () => {
-  return Notification.permission;
+  // Notification.isSupported() is the correct Electron API — Notification.permission
+  // is a Web API that does not exist in the main process (Node.js context).
+  return Notification.isSupported() ? 'granted' : 'denied';
 });
 
 app.on('before-quit', () => {
