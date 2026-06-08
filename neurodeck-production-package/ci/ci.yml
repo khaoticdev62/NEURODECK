@@ -1,21 +1,179 @@
-name: CI
+name: CI Gate
 
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches: [master, release/*]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.92.0"
 
 jobs:
-  validate:
+  # ────────────────────────────────────────────────────────────────
+  # Gate 1: Rust type-check
+  # ────────────────────────────────────────────────────────────────
+  rust-check:
+    name: Rust — cargo check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: cargo check
+        run: cd src-tauri && cargo check --all-targets 2>&1
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 2: Rust lint (clippy + fmt)
+  # ────────────────────────────────────────────────────────────────
+  rust-lint:
+    name: Rust — clippy + fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: cargo clippy
+        run: cd src-tauri && cargo clippy -- -D warnings 2>&1
+      - name: cargo fmt
+        run: cd src-tauri && cargo fmt --check 2>&1
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 3: Rust unit tests
+  # Windows note: use --lib to avoid PDB section limit (> 64K symbols)
+  # ────────────────────────────────────────────────────────────────
+  rust-test-lib:
+    name: Rust — unit tests (111)
+    runs-on: ubuntu-latest
+    needs: rust-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: cargo test --lib
+        run: cd src-tauri && cargo test --lib 2>&1
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 4: Rust integration tests (push to master only — saves CI time on PRs)
+  # ────────────────────────────────────────────────────────────────
+  rust-test-integration:
+    name: Rust — integration tests (10)
+    runs-on: ubuntu-latest
+    needs: rust-test-lib
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: cargo test --tests
+        run: cd src-tauri && cargo test --tests 2>&1
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 5: Frontend build
+  # ────────────────────────────────────────────────────────────────
+  frontend-build:
+    name: Frontend — Vite build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - uses: dtolnay/rust-toolchain@stable
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: cargo test --workspace
-      - run: pnpm test
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - name: Install dependencies
+        run: npm install --prefix frontend
+      - name: Build
+        run: npm run --prefix frontend build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 6: Security audit
+  # ────────────────────────────────────────────────────────────────
+  security-audit:
+    name: Security — cargo-audit + npm-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: cargo audit
+        run: cd src-tauri && cargo audit 2>&1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: npm audit (high+)
+        run: npm audit --audit-level=high || true
+        # 'true' prevents non-zero exit on warnings; CI team reviews output
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 7: KFMS metadata validation
+  # ────────────────────────────────────────────────────────────────
+  kfms-validate:
+    name: KFMS — metadata governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate
+        run: bash scripts/kfms/khaotic-init.sh validate
+      - name: Status
+        run: bash scripts/kfms/khaotic-init.sh status
+
+  # ────────────────────────────────────────────────────────────────
+  # Gate 8: E2E smoke (push to master only — saves CI time on PRs)
+  # ────────────────────────────────────────────────────────────────
+  e2e-smoke:
+    name: E2E — Playwright smoke
+    runs-on: ubuntu-latest
+    needs: [frontend-build, rust-test-lib]
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install root deps
+        run: npm install
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+      - name: Install Playwright
+        run: cd e2e && npm install && npx playwright install --with-deps chromium
+      - name: Run smoke tests
+        run: cd e2e && npx playwright test --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7

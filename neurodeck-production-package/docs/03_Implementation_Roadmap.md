@@ -1,25 +1,94 @@
 # NEURODECK Implementation Roadmap
 
-## 0.1.0 — Foundation
-Electron shell, Rust sidecar, SQLite, runtime ping, theme load, session create/list, diagnostics.
+> **Version:** 1.8.0-ptah | **Date:** 2026-06-08
 
-## 0.2.0 — Chat Workspace
-Provider runtime, message timeline, session lifecycle, draft recovery, credential vault.
+---
 
-## 0.3.0 — Intelligence Layer
-Memory, projects, context packs, search, privacy, dashboard, model context builder.
+## Sprint History
 
-## 0.4.0 — Research + Archives
-Research Mode, knowledge export/import, intelligence release gate.
+| Sprint | Feature | Version | Status |
+|---|---|---|---|
+| 3.1 | Monaco Editor Integration (Canvas + IDE) | v1.3.0-Isis | ✅ Complete |
+| 3.2 | Whisper STT Upgrade (offline transcription) | v1.3.0-Isis | ✅ Complete |
+| 3.3 | Knowledge Graph View (D3.js force-directed) | v1.3.0-Isis | ✅ Complete |
+| 3.4 | Task Scheduler (cron-style agent runs) | v1.3.0-Isis | ✅ Complete |
+| 3.5 | Git Integration (git2 bindings, 20+ commands) | v1.3.0-Isis | ✅ Complete |
+| 4.1 | Workflow Visual Builder (node editor, `.ndwf`) | v1.3.0-Isis | ✅ Complete |
+| 4.2 | Multi-Agent Orchestrator (task decomposition) | v1.3.0-Isis | ✅ Complete |
+| 4.3 | Browser Automation (headless + embedded) | v1.3.0-Isis | ✅ Complete |
+| 4.3 | Command Palette (Ctrl+K, fuzzy search) | v1.3.0-Isis | ✅ Complete |
+| 4.4 | Plugin Marketplace (GitHub registry, install) | v1.3.0-Isis | ✅ Complete |
+| 4.5 | Desktop Computer Use (screenshot, mouse, keyboard) | v1.3.0-Isis | ✅ Complete |
+| 4.6 | Cloud Sync (encrypted, ring/AES-GCM) | v1.3.0-Isis | ✅ Complete |
+| 5.1 | Real-Time Collaborative Workspaces (LAN TCP) | v1.3.0-Isis | ✅ Complete |
+| 5.3 | Multi-LSP Client (6 language servers) | v1.3.0-Isis | ✅ Complete |
+| 5.4 | JPE Diagnostics & Manual UI | v1.4.0-Osiris | ✅ Complete |
+| 5.5 | Hermes 3 Native Integration | v1.4.0-Osiris | ✅ Complete |
+| 6.1 | Context Packs, Privacy & Dashboard (Epic 3) | v1.5.0-Horus | ✅ Complete |
+| 6.2 | Accessibility & Keyboard-First Refinements | v1.6.0-Bastet | ✅ Complete |
+| 6.3 | Browser Citation Surfaces | v1.6.0-Bastet | ✅ Complete |
+| 6.4 | Agent Permission Registry (Story 4.1) | v1.8.0-Ptah | ✅ Complete |
+| 6.5 | Bridge Dispatch Repair (Story 4.2) | v1.8.0-Ptah | ✅ Complete |
+| 6.6 | Workflow Execution Engine (Story 4.3) | v1.8.0-Ptah | ✅ Complete |
+| 6.7 | Plugin Permission Gating (Story 4.4) | v1.8.0-Ptah | ✅ Complete |
+| 7.0 | PromptFlow Integration (Production Code Prompt System) | v1.8.0-Ptah | ✅ Complete |
+| 7.1 | Production Package Hardening | v1.8.0-Ptah | 🔄 In Progress |
 
-## 0.5.0 — Automation
-Agents, workflows, permissions, automation builder.
+---
 
-## 0.6.0 — Plugins
-Plugin SDK runtime, plugin manager, marketplace foundation, plugin QA.
+## Current State
 
-## 0.7.0 — Packaging + Recovery
-AppImage, Steam Deck installer, Windows installer, portable builds, observability, support bundle.
+### Completed (v1.8.0-ptah)
+- 111 Rust unit tests passing
+- 10 integration tests passing
+- Bridge server: ~297/300 commands wired (>99% coverage)
+- 3 commands intentionally unavailable: `set_kiosk_mode`, `start_remote_server`, `stop_remote_server`
+- Frontend: 15 radial segments, 19+ views, Command Palette, all modals with FocusTrap
+- CSS: Tactical Glass theme system, no horizontal overflow at 1280×800
+- Security: 9 capabilities, deny-by-default, 3 built-in profiles
+- Workflow engine: 9 node types, headless execution, scheduler triggering, run history
+- Permission system: Runtime enforcement in agent, shell, browser, computer, memory, plugin commands
 
-## 1.0.0 — FULL SIGNAL
-All release gates pass.
+---
+
+## Next Work
+
+### Immediate (v1.8.x patch releases)
+1. **Production Package completion** — This package becomes the SSoT
+2. **Steam Deck E2E validation** — Run full test matrix on physical hardware
+3. **Windows installer signing** — Code-sign NSIS installer
+4. **AppImage CI fix** — Restore Linux automated build
+
+### Short-term (v1.9.x)
+1. **Mobile Companion App** (Sprint 5.2) — React Native/Expo, deferred from v1.5
+2. **WebSocket/CRDT collaboration hardening** — Upgrade LAN TCP to WebSocket, add CRDT
+3. **Local LLM model manager** — HuggingFace GGUF browser/downloader
+
+### Long-term (v2.0.x — KFMS resets to Anubis)
+1. **Multi-device sync** — Encrypted sync across Steam Deck + desktop + phone
+2. **Plugin marketplace v2** — In-app purchases, ratings, verified publishers
+3. **Advanced agent orchestration** — Sub-agent spawning, parallel tool use
+
+---
+
+## Release Cadence
+
+| Type | Frequency | Gate |
+|---|---|---|
+| Patch (1.8.x) | Weekly | `cargo check`, `cargo test --lib`, `npm run build` |
+| Minor (1.9.0) | Monthly | Full PromptFlow `pre-release` sequence |
+| Major (2.0.0) | Quarterly | All 12 release gates + KFMS codename reset |
+
+---
+
+## Definition of Done
+
+Every sprint work item must satisfy:
+1. `cargo check` succeeds with no new errors
+2. `cargo test --lib` passes (new tests added for new code)
+3. `npm run --prefix frontend build` succeeds
+4. Feature works at 1280×800 without horizontal overflow
+5. Controller navigation works (D-pad, A/B, L2 radial)
+6. AGENTS.md updated if conventions changed
+7. Production Package docs updated if specs changed
+8. PromptFlow audit run completed for the feature area

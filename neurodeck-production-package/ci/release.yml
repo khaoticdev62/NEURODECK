@@ -1,18 +1,250 @@
-name: Release
+name: Release Build
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Release version
-        required: true
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.92.0"
+  CARGO_BUILD_JOBS: "8"
 
 jobs:
-  release:
+  # ────────────────────────────────────────────────────────────────
+  # Pre-flight: KFMS validation + stamp
+  # ────────────────────────────────────────────────────────────────
+  validate:
+    name: Pre-flight — KFMS validate + stamp
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pnpm build && cargo build --workspace --release
-      - run: pnpm package:linux
-      - run: pnpm release:checksums
-      - run: pnpm release:verify
+      - name: Validate metadata
+        run: bash scripts/kfms/khaotic-init.sh validate
+      - name: Stamp build block
+        run: bash scripts/kfms/khaotic-init.sh stamp
+      - name: Status summary
+        run: bash scripts/kfms/khaotic-init.sh status
+
+  # ────────────────────────────────────────────────────────────────
+  # Pre-build frontend once; share across platform jobs to save 5-10 min
+  # ────────────────────────────────────────────────────────────────
+  build-frontend:
+    name: Frontend — pre-build (shared)
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - name: Restore frontend cache
+        id: frontend-cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/dist
+          key: frontend-${{ hashFiles('frontend/src/**', 'frontend/package.json', 'frontend/vite.config.*') }}
+      - name: Install + build (cache miss)
+        if: steps.frontend-cache.outputs.cache-hit != 'true'
+        run: npm install --prefix frontend && npm run --prefix frontend build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────
+  # Linux: AppImage
+  # Uses mold linker (30-40% faster link), sccache (20-40% faster Rust compile)
+  # ────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Build — Linux AppImage
+    runs-on: ubuntu-22.04
+    needs: [validate, build-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      # sccache: persistent Rust compilation cache
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+
+      # mold: faster linker for Linux
+      - name: Install mold
+        run: sudo apt-get install -y mold
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - name: Install npm deps
+        run: npm install
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Install system deps (AppImage)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf squashfs-tools libfuse2 file
+
+      - name: Build AppImage
+        env:
+          CARGO_BUILD_JOBS: ${{ env.CARGO_BUILD_JOBS }}
+        run: |
+          export RUSTFLAGS="-C linker=mold"
+          bash scripts/shell/build_appimage.sh
+
+      - name: Validate AppImage architecture
+        run: |
+          APPIMG=$(find dist -name "*.AppImage" | head -n 1)
+          [[ -z "$APPIMG" ]] && echo "::error::No AppImage found in dist/" && exit 1
+          file "$APPIMG" | grep -q "x86-64" || (echo "::error::Wrong architecture" && exit 1)
+          SIZE_MB=$(du -m "$APPIMG" | cut -f1)
+          echo "AppImage size: ${SIZE_MB}MB"
+          [[ "$SIZE_MB" -gt 1024 ]] && echo "::warning::AppImage exceeds 1GB"
+          echo "APPIMAGE_PATH=$APPIMG" >> "$GITHUB_ENV"
+
+      - name: Generate SHA256
+        run: |
+          cd dist
+          sha256sum *.AppImage > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: |
+            dist/*.AppImage
+            dist/SHA256SUMS.txt
+
+  # ────────────────────────────────────────────────────────────────
+  # Windows: NSIS installer + portable ZIP
+  # Uses sccache for Rust compile cache
+  # ────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Build — Windows NSIS + ZIP
+    runs-on: windows-latest
+    needs: [validate, build-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> "$env:GITHUB_ENV"
+          echo "SCCACHE_GHA_ENABLED=true" >> "$env:GITHUB_ENV"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - name: Install npm deps
+        run: npm install
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Build Windows installer
+        env:
+          CARGO_BUILD_JOBS: ${{ env.CARGO_BUILD_JOBS }}
+        run: .\package_release.ps1
+
+      - name: Generate SHA256
+        shell: pwsh
+        run: |
+          cd dist
+          Get-ChildItem -Filter "*.exe","*.zip" | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            "$hash  $($_.Name)"
+          } | Out-File -Encoding utf8 SHA256SUMS.txt
+          Get-Content SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/NEURODECK_*_windows_x64.*
+            dist/SHA256SUMS.txt
+
+  # ────────────────────────────────────────────────────────────────
+  # Publish: GitHub Release with all artifacts
+  # ────────────────────────────────────────────────────────────────
+  release:
+    name: Publish — GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-appimage
+          path: release-artifacts/linux/
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: release-artifacts/windows/
+
+      - name: Merge SHA256SUMS
+        run: |
+          cat release-artifacts/linux/SHA256SUMS.txt release-artifacts/windows/SHA256SUMS.txt \
+            > release-artifacts/SHA256SUMS.txt
+          echo "--- SHA256SUMS ---"
+          cat release-artifacts/SHA256SUMS.txt
+
+      - name: Extract changelog entry for this version
+        id: changelog
+        run: |
+          VERSION="${{ github.ref_name }}"
+          NOTES=$(awk "/^## \[?${VERSION}\]?/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md || echo "See CHANGELOG.md for details.")
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          name: "NEURODECK ${{ github.ref_name }}"
+          body: ${{ steps.changelog.outputs.notes }}
+          files: |
+            release-artifacts/linux/*.AppImage
+            release-artifacts/windows/NEURODECK_*_windows_x64.*
+            release-artifacts/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

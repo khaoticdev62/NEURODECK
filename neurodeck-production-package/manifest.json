@@ -1,24 +1,30 @@
 {
   "package": "NEURODECK Production Package",
-  "version": "1.0.0-blueprint",
-  "generatedAt": "2026-06-07T18:37:16Z",
-  "chapters": "1-100 complete",
+  "version": "1.8.0-ptah",
+  "generatedAt": "2026-06-08T05:00:00Z",
+  "kfms": {
+    "version": "1.8.0",
+    "codename": "Ptah",
+    "tag": "v1.8.0-ptah"
+  },
   "primaryTarget": [
-    "Steam Deck",
+    "Steam Deck LCD/OLED",
     "SteamOS Game Mode",
     "Linux x86_64",
     "Windows x64"
   ],
   "architecture": [
-    "Electron",
-    "React",
-    "TypeScript",
-    "Tailwind CSS",
-    "Rust sidecar",
-    "SQLite"
+    "Electron 36 (main + renderer)",
+    "Vanilla JavaScript (no framework)",
+    "Vite 8 (build tooling)",
+    "Rust 1.92.0 (sidecar/bridge server)",
+    "SQLite + sqlx (persistence)",
+    "Lua 5.4 via mlua (plugin runtime)"
   ],
+  "ipc": "HTTP POST + WebSocket on localhost:9477 (bridge mode — Tauri-free)",
   "documents": [
     "README.md",
+    "INDEX.md",
     "checklists/FINAL_1_0_RELEASE_CHECKLIST.md",
     "checklists/PRODUCTION_BACKLOG.md",
     "docs/00_NEURODECK_Master_PRD_SDS_Implementation_Blueprint.md",
@@ -31,5 +37,13 @@
     "docs/07_Repository_CI_CD_Setup.md",
     "docs/08_Plugin_Automation_Workflow_Spec.md",
     "docs/09_Release_Packaging_Observability.md"
+  ],
+  "scripts": [
+    "scripts/install-steamdeck.sh",
+    "scripts/launch-neurodeck.sh"
+  ],
+  "ci": [
+    "ci/ci.yml",
+    "ci/release.yml"
   ]
 }

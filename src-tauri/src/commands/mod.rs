@@ -5497,9 +5497,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
-            "Command '{}' not yet implemented in bridge mode. \
-            Bridge status: ~297 commands (>99%). \
-            Unavailable: set_kiosk_mode, start_remote_server, stop_remote_server. \
+            "Command '{}' not found in bridge dispatch table. \
+            Bridge status: ~297 commands (>99% coverage). \
+            Bridge-unavailable (Electron handles instead): set_kiosk_mode. \
             Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
         )),
