@@ -23170,3 +23170,99 @@ dialog.confirm-modal::backdrop {
 .nav-tab-row::-webkit-scrollbar {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* UI ALIGNMENT & SPACING PASS — visual audit fixes                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Dashboard: left-group wraps kicker + title so header has 2 children ── */
+.dashboard-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── SSH: disabled Disconnect button fades clearly ─────────────────────── */
+.ssh-btn-danger:disabled,
+.ssh-btn-danger[aria-disabled="true"] {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Orchestrator left panel: section divider between pipelines and log ── */
+.orch-panel-header--log {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+/* Empty state inside orchestrator pipeline list and log */
+.orch-panel-empty {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px 8px;
+  font-style: italic;
+}
+
+/* ── Docs: results section only visible after a search ──────────────────── */
+#docs-results-label.hidden,
+#docs-results-list.hidden {
+  display: none;
+}
+
+#docs-results-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 12px 0 6px;
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Content area bottom clearance for notification toast ───────────────── */
+/* All main view containers get padding-bottom so the fixed toast banner
+   (≈64px tall) never covers interactive content at the bottom of views.    */
+.agent-shell,
+.memory-shell,
+.dashboard-container,
+.orch-body,
+.workflow-container,
+.git-workspace,
+.api-lab-container,
+.ide-container,
+.graph-container,
+.docs-container {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* ── Canvas pane header: ensure "Force Resync" never wraps ─────────────── */
+.canvas-pane-action {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Workflow header: ensure kicker+title stack matches dashboard pattern ── */
+.workflow-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+/* ── Agent view panel gap consistency ───────────────────────────────────── */
+.agent-panel-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0 0 6px;
+}
+
+/* ── Ensure disabled SSH button aria-disabled also applies visually ─────── */
+button[aria-disabled="true"]:not([data-allow-aria-disabled]) {
+  pointer-events: none;
+}

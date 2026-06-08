@@ -1284,11 +1284,24 @@ const _GP_FOCUSABLE_SELECTORS = [
   "#view-docs.active #docs-search-input", "#view-docs.active #docs-search-btn",
   "#view-docs.active #docs-index-btn", "#view-docs.active #docs-clear-btn",
   "#view-docs.active .docs-remove-btn",
+  "#view-ssh.active .ssh-btn", "#view-ssh.active .ssh-profile-btn",
+  "#view-browser.active .browser-btn", "#view-browser.active #browser-url-input",
+  "#view-dashboard.active .dashboard-card",
+  "#view-prompt-lab.active .prompt-lab-btn", "#view-prompt-lab.active #prompt-lab-input",
+  "#view-remote.active .remote-btn", "#view-remote.active #remote-connect-btn",
+  "#view-workflow.active .wf-toolbar-btn", "#view-workflow.active .wf-palette-item",
+  "#view-scheduler.active .scheduler-btn", "#view-scheduler.active #scheduler-add-btn",
+  "#view-git.active .git-btn", "#view-git.active #git-commit-btn",
+  "#view-api-lab.active .api-lab-btn", "#view-api-lab.active #api-url-input",
+  "#view-cli-maker.active .cli-maker-btn", "#view-cli-maker.active #cli-run-btn",
+  "#view-graph.active .graph-btn",
+  "#view-orchestrator.active .orch-btn", "#view-orchestrator.active #orch-run-btn",
+  "#view-ide.active .ide-toolbar-btn",
   "#inspect-drawer:not(.collapsed) #inspect-close-btn",
 ];
 
 function _gpCheckModalFocusable() {
-  const modals = ["notif-modal", "game-context-panel", "computer-use-modal", "transfer-modal"];
+  const modals = ["notif-modal", "game-context-panel", "computer-use-modal", "transfer-modal", "permission-profile-edit-modal"];
   for (const id of modals) {
     const els = getActiveModalFocusableElements(id);
     if (els) return els;
@@ -2251,18 +2264,24 @@ let currentViewId = "view-chat";
 
 function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
   if (outgoing) {
+    outgoing.style.willChange = "opacity, transform";
     outgoing.classList.remove("active");
     outgoing.classList.add(`view-exit-${direction}`);
-    setTimeout(() => outgoing.classList.remove(`view-exit-${direction}`), 300);
+    setTimeout(() => {
+      outgoing.classList.remove(`view-exit-${direction}`);
+      outgoing.style.willChange = "";
+    }, 300);
     if (currentViewId === "view-ide" && typeof window._deactivateIdeView === "function") window._deactivateIdeView();
   }
   if (incoming) {
+    incoming.style.willChange = "opacity, transform";
     const enterDir = direction === "right" ? "left" : "right";
     incoming.classList.remove("view-enter-left", "view-enter-right");
     incoming.classList.add(`view-enter-${enterDir}`);
     void incoming.offsetWidth;
     incoming.classList.add("active");
     incoming.classList.remove(`view-enter-${enterDir}`);
+    setTimeout(() => { incoming.style.willChange = ""; }, 320);
   }
 }
 
@@ -2292,6 +2311,7 @@ function _navActivateSideEffects(targetViewName) {
   if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") initCliMakerView();
   if (targetViewName === "graph" && typeof initGraphView === "function") initGraphView();
   if (targetViewName === "scheduler" && typeof initSchedulerView === "function") initSchedulerView();
+  if (targetViewName === "prompt-lab" && typeof initPromptLab === "function") initPromptLab();
   if (targetViewName === "workflow") {
     import("./workflow_view.js").then((m) => {
       if (typeof m.initWorkflowView === "function") m.initWorkflowView();
@@ -4590,7 +4610,7 @@ function initPluginsManager() {
   loadPluginMarketplace();
 }
 
-function _canvasSavePluginClick() {
+async function _canvasSavePluginClick() {
   const code = document.getElementById("canvas-editor").value;
   let activeFile = window.neurodeckCanvas.activePluginFile;
   if (activeFile) {
@@ -4598,7 +4618,7 @@ function _canvasSavePluginClick() {
       .then(() => { alert(`Plugin '${activeFile}' saved successfully.`); })
       .catch((err) => { alert(`Failed to save plugin: ${err}`); });
   } else {
-    const fileNameInput = prompt("Enter filename for the new plugin (must end with .lua):", "my_plugin.lua");
+    const fileNameInput = await showPrompt("Enter filename for the new plugin (must end with .lua):", "my_plugin.lua", { title: "New Plugin" });
     if (!fileNameInput) return;
     let sanitized = fileNameInput.trim();
     if (!sanitized.endsWith(".lua")) sanitized += ".lua";
@@ -5269,9 +5289,9 @@ function _sbBuildSessionItem(session, loadSessions) {
   });
   const renameBtn = document.createElement("button");
   renameBtn.className = "session-browser-btn"; renameBtn.title = "Rename"; renameBtn.innerHTML = createIcon("pencil", { size: 12 });
-  renameBtn.addEventListener("click", (e) => {
+  renameBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
-    const newName = prompt("Rename session:", session.name || "");
+    const newName = await showPrompt("Rename session:", session.name || "", { title: "Rename Session" });
     if (newName === null) return;
     invoke("rename_session", { id: session.id, name: newName.trim() }).then(() => loadSessions()).catch((err) => addNotification("Rename Error", String(err), "error"));
   });
@@ -6258,20 +6278,485 @@ function _plBuildCtx() {
   };
 }
 
-function initPromptLab() {
-  const ctx = _plBuildCtx();
-  if (!ctx.generateBtn) return;
+const PROMPTDRIVE_SAFE_MACRO_STEPS = new Set([
+  "select_template",
+  "update_slot",
+  "execute_prompt",
+  "insert_saved_prompt",
+  "accept_suggestion",
+]);
 
-  _plInitFormulaSection(ctx);
-  _plInitHistorySection(ctx);
-  _plInitGallerySection(ctx);
-  _plInitChipsAndStrength(ctx);
-  _plInitPresetSection(ctx);
-  _plInitAiOptimize(ctx);
-  _plInitAssemblySection(ctx);
-  _plInitJpeSection(ctx);
-  _plInitOutputSection(ctx);
-  _plUpdateStrength(ctx);
+function _pdTokenCount(text) {
+  return Math.ceil((text || "").length / 4);
+}
+
+function _pdBuildComposerHtml() {
+  return `
+    <div class="prompt-lab-form promptdrive-composer">
+      <div class="prompt-lab-header promptdrive-header">
+        <div class="pl-header-title">
+          <span class="pl-header-kicker">PromptDrive</span>
+          <h3>PromptDrive Composer</h3>
+        </div>
+        <div class="promptdrive-hints" aria-label="DeckCode prompt actions">
+          <span><kbd>R4</kbd> Suggest</span>
+          <span><kbd>R5 hold</kbd> Execute</span>
+          <span><kbd>L5</kbd> Save</span>
+          <span><kbd>L5+R5</kbd> Macro</span>
+          <span><kbd>B</kbd> Close</span>
+        </div>
+      </div>
+
+      <div class="promptdrive-picker-grid">
+        <div class="promptdrive-panel">
+          <div class="pl-formula-section-header">
+            <label>Prompt Pack</label>
+            <span id="pd-pack-count" class="pl-formula-active-badge">0</span>
+          </div>
+          <div id="pd-pack-list" class="promptdrive-pack-list" role="listbox" aria-label="Prompt packs"></div>
+        </div>
+        <div class="promptdrive-panel">
+          <div class="pl-formula-section-header">
+            <label for="pd-template-search">Template</label>
+            <input id="pd-template-search" class="pl-gallery-search" type="search" placeholder="Filter templates" aria-label="Filter templates" />
+          </div>
+          <div id="pd-template-list" class="promptdrive-template-list" role="listbox" aria-label="Prompt templates"></div>
+        </div>
+      </div>
+
+      <div class="promptdrive-selected-template">
+        <div>
+          <div id="pd-template-title" class="promptdrive-template-title">Select a template</div>
+          <div id="pd-template-desc" class="promptdrive-template-desc">Choose a pack and template to start composing.</div>
+        </div>
+        <span id="pd-risk-badge" class="promptdrive-risk-badge">low</span>
+      </div>
+
+      <div class="promptdrive-slot-header">
+        <span>Slots</span>
+        <span id="pd-validation-status" class="promptdrive-validation-status">Waiting</span>
+      </div>
+      <div id="pd-slot-editor" class="promptdrive-slot-editor"></div>
+
+      <div class="promptdrive-command-row">
+        <button id="pd-preview-btn" class="pl-btn-primary" type="button">Preview</button>
+        <button id="pd-execute-btn" type="button">Execute</button>
+        <button id="pd-save-btn" type="button">Save</button>
+        <button id="pd-macro-toggle-btn" type="button">Record Macro</button>
+      </div>
+
+      <div class="promptdrive-lists">
+        <div class="promptdrive-panel promptdrive-panel-compact">
+          <div class="pl-formula-section-header">
+            <label>Saved Prompts</label>
+            <button id="pd-refresh-saved-btn" type="button">Refresh</button>
+          </div>
+          <div id="pd-saved-list" class="promptdrive-saved-list"></div>
+        </div>
+        <div class="promptdrive-panel promptdrive-panel-compact">
+          <div class="pl-formula-section-header">
+            <label>Macros</label>
+            <button id="pd-refresh-macros-btn" type="button">Refresh</button>
+          </div>
+          <div id="pd-macro-list" class="promptdrive-macro-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-lab-output">
+      <div class="pl-output-section promptdrive-suggestions-section">
+        <div class="pl-output-header">
+          <span>Ranked Suggestions</span>
+          <input id="pd-suggestion-query" class="pl-gallery-search" type="search" placeholder="Search suggestions" aria-label="Search suggestions" />
+        </div>
+        <div id="pd-suggestions" class="promptdrive-suggestions" role="listbox" aria-label="Prompt suggestions"></div>
+      </div>
+      <div class="pl-output-section promptdrive-preview-section">
+        <div class="pl-output-header">
+          <span>Live Preview</span>
+          <div class="pl-actions">
+            <span id="pd-token-counter" class="pl-token-counter">0 tokens</span>
+            <button id="pd-copy-preview-btn" type="button">Copy</button>
+            <button id="pd-send-chat-btn" type="button">Chat</button>
+          </div>
+        </div>
+        <textarea id="pd-preview" class="pl-result-textarea" placeholder="Prompt preview will appear here." readonly></textarea>
+      </div>
+    </div>`;
+}
+
+function _pdBuildCtx(container) {
+  return {
+    container,
+    packs: [],
+    templates: [],
+    selectedPackId: "",
+    selectedTemplate: null,
+    slotValues: {},
+    suggestions: [],
+    selectedSuggestionIndex: 0,
+    recordingId: null,
+    recordedSteps: [],
+    packList: document.getElementById("pd-pack-list"),
+    packCount: document.getElementById("pd-pack-count"),
+    templateSearch: document.getElementById("pd-template-search"),
+    templateList: document.getElementById("pd-template-list"),
+    templateTitle: document.getElementById("pd-template-title"),
+    templateDesc: document.getElementById("pd-template-desc"),
+    riskBadge: document.getElementById("pd-risk-badge"),
+    slotEditor: document.getElementById("pd-slot-editor"),
+    validationStatus: document.getElementById("pd-validation-status"),
+    preview: document.getElementById("pd-preview"),
+    tokenCounter: document.getElementById("pd-token-counter"),
+    suggestionQuery: document.getElementById("pd-suggestion-query"),
+    suggestionsList: document.getElementById("pd-suggestions"),
+    savedList: document.getElementById("pd-saved-list"),
+    macroList: document.getElementById("pd-macro-list"),
+    previewBtn: document.getElementById("pd-preview-btn"),
+    executeBtn: document.getElementById("pd-execute-btn"),
+    saveBtn: document.getElementById("pd-save-btn"),
+    macroToggleBtn: document.getElementById("pd-macro-toggle-btn"),
+    refreshSavedBtn: document.getElementById("pd-refresh-saved-btn"),
+    refreshMacrosBtn: document.getElementById("pd-refresh-macros-btn"),
+    copyPreviewBtn: document.getElementById("pd-copy-preview-btn"),
+    sendChatBtn: document.getElementById("pd-send-chat-btn"),
+  };
+}
+
+function _pdRecordStep(ctx, kind, payload) {
+  if (!ctx.recordingId || !PROMPTDRIVE_SAFE_MACRO_STEPS.has(kind)) return;
+  ctx.recordedSteps.push({
+    kind,
+    timestamp: new Date().toISOString(),
+    payload,
+    requires_confirmation: false,
+  });
+}
+
+function _pdSlotValuesFromTemplate(template) {
+  const values = {};
+  (template?.slots || []).forEach((slot) => {
+    values[slot.id] = slot.default || "";
+  });
+  return values;
+}
+
+function _pdRenderPacks(ctx) {
+  ctx.packList.innerHTML = "";
+  ctx.packCount.textContent = String(ctx.packs.length);
+  ctx.packs.forEach((pack) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "promptdrive-pack-card";
+    btn.classList.toggle("active", pack.id === ctx.selectedPackId);
+    btn.innerHTML = `<span>${window.sanitizeHtml(pack.title)}</span><small>${window.sanitizeHtml(pack.description || "")}</small>`;
+    btn.addEventListener("click", () => _pdSelectPack(ctx, pack.id));
+    ctx.packList.appendChild(btn);
+  });
+}
+
+function _pdRenderTemplates(ctx) {
+  const query = (ctx.templateSearch.value || "").trim().toLowerCase();
+  ctx.templateList.innerHTML = "";
+  ctx.templates
+    .filter((template) => !query || `${template.title} ${template.description} ${template.category}`.toLowerCase().includes(query))
+    .forEach((template) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "promptdrive-template-card";
+      btn.classList.toggle("active", ctx.selectedTemplate?.id === template.id);
+      btn.innerHTML =
+        `<span>${window.sanitizeHtml(template.title)}</span>` +
+        `<small>${window.sanitizeHtml(template.category)} · ${window.sanitizeHtml(template.risk_level)}</small>`;
+      btn.addEventListener("click", () => _pdSelectTemplate(ctx, template.id));
+      ctx.templateList.appendChild(btn);
+    });
+}
+
+function _pdRenderSlots(ctx) {
+  ctx.slotEditor.innerHTML = "";
+  if (!ctx.selectedTemplate) {
+    ctx.slotEditor.innerHTML = `<div class="pl-empty-text">Select a template to edit slots.</div>`;
+    return;
+  }
+  ctx.selectedTemplate.slots.forEach((slot) => {
+    const field = document.createElement("div");
+    field.className = "pl-field promptdrive-slot-field";
+    const inputId = `pd-slot-${slot.id}`;
+    const value = ctx.slotValues[slot.id] || "";
+    const control = slot.kind === "textarea"
+      ? `<textarea id="${inputId}" rows="3" data-slot-id="${slot.id}" placeholder="${window.sanitizeHtml(slot.label)}">${window.sanitizeHtml(value)}</textarea>`
+      : `<input id="${inputId}" type="text" data-slot-id="${slot.id}" value="${window.sanitizeHtml(value)}" placeholder="${window.sanitizeHtml(slot.label)}" />`;
+    field.innerHTML =
+      `<div class="pl-field-header"><label for="${inputId}">${window.sanitizeHtml(slot.label)}${slot.required ? " *" : ""}</label></div>` +
+      control +
+      `<div class="pl-chips">${(slot.suggestions || []).map((s) => `<button class="pl-chip" type="button" data-slot-id="${slot.id}" data-value="${window.sanitizeHtml(s)}">${window.sanitizeHtml(s)}</button>`).join("")}</div>`;
+    ctx.slotEditor.appendChild(field);
+  });
+  ctx.slotEditor.querySelectorAll("[data-slot-id]").forEach((el) => {
+    if (el.classList.contains("pl-chip")) return;
+    el.addEventListener("input", () => {
+      ctx.slotValues[el.dataset.slotId] = el.value;
+      _pdRecordStep(ctx, "update_slot", { slot_id: el.dataset.slotId, value: el.value });
+      _pdPreview(ctx);
+      _pdLoadSuggestions(ctx);
+    });
+  });
+  ctx.slotEditor.querySelectorAll(".pl-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const input = document.getElementById(`pd-slot-${chip.dataset.slotId}`);
+      if (!input) return;
+      input.value = chip.dataset.value;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+}
+
+async function _pdSelectPack(ctx, packId) {
+  ctx.selectedPackId = packId;
+  ctx.templates = await invoke("promptdrive_list_templates", { pack_id: packId });
+  ctx.selectedTemplate = ctx.templates[0] || null;
+  ctx.slotValues = _pdSlotValuesFromTemplate(ctx.selectedTemplate);
+  _pdRenderPacks(ctx);
+  _pdRenderTemplates(ctx);
+  _pdRenderSelectedTemplate(ctx);
+  _pdRenderSlots(ctx);
+  await _pdPreview(ctx);
+  await _pdLoadSuggestions(ctx);
+}
+
+async function _pdSelectTemplate(ctx, templateId) {
+  ctx.selectedTemplate = await invoke("promptdrive_get_template", { template_id: templateId });
+  ctx.slotValues = _pdSlotValuesFromTemplate(ctx.selectedTemplate);
+  _pdRecordStep(ctx, "select_template", { template_id: templateId });
+  _pdRenderTemplates(ctx);
+  _pdRenderSelectedTemplate(ctx);
+  _pdRenderSlots(ctx);
+  await _pdPreview(ctx);
+  await _pdLoadSuggestions(ctx);
+}
+
+function _pdRenderSelectedTemplate(ctx) {
+  const template = ctx.selectedTemplate;
+  ctx.templateTitle.textContent = template?.title || "Select a template";
+  ctx.templateDesc.textContent = template?.description || "Choose a pack and template to start composing.";
+  ctx.riskBadge.textContent = template?.risk_level || "low";
+}
+
+async function _pdPreview(ctx) {
+  if (!ctx.selectedTemplate) return null;
+  const result = await invoke("promptdrive_preview_prompt", {
+    template_id: ctx.selectedTemplate.id,
+    slot_values: ctx.slotValues,
+  });
+  ctx.validationStatus.textContent = result.valid ? "Valid" : `Missing ${result.missing_slots?.length || 0}`;
+  ctx.validationStatus.classList.toggle("valid", !!result.valid);
+  ctx.preview.value = result.rendered_prompt || "";
+  ctx.tokenCounter.textContent = `~${_pdTokenCount(ctx.preview.value)} tokens`;
+  return result;
+}
+
+function _pdRenderSuggestions(ctx) {
+  ctx.suggestionsList.innerHTML = "";
+  if (!ctx.suggestions.length) {
+    ctx.suggestionsList.innerHTML = `<div class="pl-empty-text">No suggestions yet.</div>`;
+    return;
+  }
+  ctx.suggestions.forEach((suggestion, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "promptdrive-suggestion";
+    btn.classList.toggle("active", index === ctx.selectedSuggestionIndex);
+    btn.innerHTML =
+      `<span>${window.sanitizeHtml(suggestion.label)}</span>` +
+      `<small>${window.sanitizeHtml(suggestion.source)} · ${suggestion.score.toFixed(1)}</small>`;
+    btn.addEventListener("click", () => {
+      ctx.selectedSuggestionIndex = index;
+      _pdAcceptSuggestion(ctx);
+    });
+    ctx.suggestionsList.appendChild(btn);
+  });
+}
+
+async function _pdLoadSuggestions(ctx) {
+  ctx.suggestions = await invoke("promptdrive_get_suggestions", {
+    query: ctx.suggestionQuery.value || "",
+    template_id: ctx.selectedTemplate?.id,
+  });
+  ctx.selectedSuggestionIndex = 0;
+  _pdRenderSuggestions(ctx);
+}
+
+async function _pdAcceptSuggestion(ctx) {
+  const suggestion = ctx.suggestions[ctx.selectedSuggestionIndex];
+  if (!suggestion || !ctx.selectedTemplate) return;
+  const requiredEmpty = ctx.selectedTemplate.slots.find((slot) => slot.required && !String(ctx.slotValues[slot.id] || "").trim());
+  const targetSlot = requiredEmpty || ctx.selectedTemplate.slots[0];
+  if (!targetSlot) return;
+  ctx.slotValues[targetSlot.id] = suggestion.insert_text;
+  _pdRecordStep(ctx, "accept_suggestion", { suggestion_id: suggestion.id, slot_id: targetSlot.id });
+  _pdRenderSlots(ctx);
+  await _pdPreview(ctx);
+}
+
+async function _pdExecute(ctx) {
+  const result = await _pdPreview(ctx);
+  if (!result?.valid) {
+    addNotification("PromptDrive", "Fill required slots before executing.", "error");
+    return;
+  }
+  await invoke("promptdrive_execute_prompt", {
+    template_id: ctx.selectedTemplate.id,
+    pack_id: ctx.selectedPackId,
+    slot_values: ctx.slotValues,
+  });
+  _pdRecordStep(ctx, "execute_prompt", { template_id: ctx.selectedTemplate.id, slot_values: ctx.slotValues });
+  addNotification("PromptDrive", "Prompt sent to chat stream.", "success");
+}
+
+async function _pdSavePrompt(ctx) {
+  const result = await _pdPreview(ctx);
+  if (!result?.valid || !ctx.preview.value.trim()) {
+    addNotification("PromptDrive", "Preview a valid prompt before saving.", "error");
+    return;
+  }
+  await invoke("promptdrive_save_prompt", {
+    title: ctx.selectedTemplate?.title || "PromptDrive Prompt",
+    template_id: ctx.selectedTemplate?.id,
+    pack_id: ctx.selectedPackId,
+    slot_values: ctx.slotValues,
+    prompt: ctx.preview.value,
+  });
+  await _pdLoadSavedPrompts(ctx);
+  addNotification("PromptDrive", "Prompt saved.", "success");
+}
+
+async function _pdLoadSavedPrompts(ctx) {
+  const prompts = await invoke("promptdrive_list_saved_prompts");
+  ctx.savedList.innerHTML = "";
+  if (!prompts.length) {
+    ctx.savedList.innerHTML = `<div class="pl-empty-text">No saved prompts.</div>`;
+    return;
+  }
+  prompts.forEach((prompt) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "promptdrive-saved-item";
+    btn.innerHTML = `<span>${window.sanitizeHtml(prompt.title)}</span><small>${window.sanitizeHtml(prompt.prompt.slice(0, 80))}</small>`;
+    btn.addEventListener("click", () => {
+      ctx.preview.value = prompt.prompt;
+      ctx.tokenCounter.textContent = `~${_pdTokenCount(prompt.prompt)} tokens`;
+      _pdRecordStep(ctx, "insert_saved_prompt", { saved_prompt_id: prompt.id });
+    });
+    ctx.savedList.appendChild(btn);
+  });
+}
+
+async function _pdLoadMacros(ctx) {
+  const macros = await invoke("promptdrive_list_macros");
+  ctx.macroList.innerHTML = "";
+  if (!macros.length) {
+    ctx.macroList.innerHTML = `<div class="pl-empty-text">No macros recorded.</div>`;
+    return;
+  }
+  macros.forEach((macro) => {
+    const row = document.createElement("div");
+    row.className = "promptdrive-macro-item";
+    row.innerHTML =
+      `<div><span>${window.sanitizeHtml(macro.name)}</span><small>${macro.steps.length} steps · ${window.sanitizeHtml(macro.risk_level)}</small></div>` +
+      `<button type="button" data-macro-id="${macro.id}">Replay</button>`;
+    row.querySelector("button").addEventListener("click", () => _pdReplayMacro(ctx, macro.id));
+    ctx.macroList.appendChild(row);
+  });
+}
+
+async function _pdToggleMacro(ctx) {
+  if (!ctx.recordingId) {
+    const result = await invoke("promptdrive_macro_start");
+    ctx.recordingId = result.recording_id;
+    ctx.recordedSteps = [];
+    ctx.macroToggleBtn.textContent = "Stop Macro";
+    ctx.macroToggleBtn.classList.add("recording");
+    addNotification("PromptDrive", "Macro recording started.", "info");
+    return;
+  }
+  const macro = await invoke("promptdrive_macro_stop", {
+    recording_id: ctx.recordingId,
+    name: `PromptDrive Macro ${new Date().toLocaleTimeString()}`,
+    steps: ctx.recordedSteps,
+  });
+  ctx.recordingId = null;
+  ctx.recordedSteps = [];
+  ctx.macroToggleBtn.textContent = "Record Macro";
+  ctx.macroToggleBtn.classList.remove("recording");
+  await _pdLoadMacros(ctx);
+  addNotification("PromptDrive", `Saved macro: ${macro.name}`, "success");
+}
+
+async function _pdReplayMacro(ctx, macroId) {
+  const result = await invoke("promptdrive_macro_execute", { macro_id: macroId });
+  for (const step of result.macro.steps) {
+    if (step.kind === "select_template") {
+      await _pdSelectTemplate(ctx, step.payload.template_id);
+    } else if (step.kind === "update_slot") {
+      ctx.slotValues[step.payload.slot_id] = step.payload.value || "";
+      _pdRenderSlots(ctx);
+      await _pdPreview(ctx);
+    } else if (step.kind === "accept_suggestion") {
+      await _pdAcceptSuggestion(ctx);
+    } else if (step.kind === "execute_prompt") {
+      await _pdExecute(ctx);
+    }
+  }
+  addNotification("PromptDrive", "Macro replay complete.", "success");
+}
+
+function _pdCloseDrawers() {
+  const active = document.activeElement;
+  if (active && active.blur) active.blur();
+}
+
+async function _pdInitComposer() {
+  const container = document.querySelector("#view-prompt-lab .prompt-lab-container");
+  if (!container || container.dataset.promptdriveReady === "true") return;
+  container.innerHTML = _pdBuildComposerHtml();
+  container.dataset.promptdriveReady = "true";
+  const ctx = _pdBuildCtx(container);
+  window.__promptDriveComposer = ctx;
+
+  ctx.templateSearch.addEventListener("input", () => _pdRenderTemplates(ctx));
+  ctx.suggestionQuery.addEventListener("input", () => _pdLoadSuggestions(ctx));
+  ctx.previewBtn.addEventListener("click", () => _pdPreview(ctx));
+  ctx.executeBtn.addEventListener("click", () => _pdExecute(ctx));
+  ctx.saveBtn.addEventListener("click", () => _pdSavePrompt(ctx));
+  ctx.macroToggleBtn.addEventListener("click", () => _pdToggleMacro(ctx));
+  ctx.refreshSavedBtn.addEventListener("click", () => _pdLoadSavedPrompts(ctx));
+  ctx.refreshMacrosBtn.addEventListener("click", () => _pdLoadMacros(ctx));
+  ctx.copyPreviewBtn.addEventListener("click", () => {
+    if (ctx.preview.value) navigator.clipboard.writeText(ctx.preview.value);
+  });
+  ctx.sendChatBtn.addEventListener("click", () => {
+    if (!ctx.preview.value) return;
+    document.querySelector('.nav-tab[data-view="chat"]')?.click();
+    const chatInput = document.getElementById("user-input");
+    if (chatInput) {
+      chatInput.value = ctx.preview.value;
+      chatInput.focus();
+    }
+  });
+
+  ctx.packs = await invoke("promptdrive_list_packs");
+  ctx.selectedPackId = ctx.packs[0]?.id || "";
+  _pdRenderPacks(ctx);
+  if (ctx.selectedPackId) await _pdSelectPack(ctx, ctx.selectedPackId);
+  await _pdLoadSavedPrompts(ctx);
+  await _pdLoadMacros(ctx);
+}
+
+function initPromptLab() {
+  _pdInitComposer().catch((err) => {
+    console.error("PromptDrive init failed:", err);
+    addNotification("PromptDrive", `Failed to initialize: ${err}`, "error");
+  });
 }
 
 // Onboarding Wizard Implementation
@@ -7897,6 +8382,8 @@ async function _docsRefreshFileList(ctx) {
 async function _docsRunSearch(ctx) {
   const query = ctx.searchInput.value.trim();
   if (!query) return;
+  ctx.resultsList.classList.remove("hidden");
+  ctx.resultsLabel.classList.remove("hidden");
   ctx.resultsList.innerHTML = '<div class="docs-search-spinner"></div>';
   ctx.resultsLabel.textContent = "Searching…";
   try {
@@ -7947,7 +8434,7 @@ function _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx) {
   searchBtn.addEventListener("click", () => _docsRunSearch(ctx));
   ctx.searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") _docsRunSearch(ctx); });
   indexBtn.addEventListener("click", async () => {
-    const dir = prompt("Enter absolute folder path to index:");
+    const dir = await showPrompt("Enter absolute folder path to index:", "", { title: "Index Directory" });
     if (!dir || !dir.trim()) return;
     try {
       indexBtn.disabled = true;
@@ -7993,6 +8480,32 @@ initDocsView();
 // ==========================================================================
 listen("deckcode-action", (event) => {
   const actionId = event.payload;
+  const promptDriveCtx = window.__promptDriveComposer;
+  const promptDriveActive = document.getElementById("view-prompt-lab")?.classList.contains("active");
+
+  if (promptDriveActive && promptDriveCtx && typeof actionId === "string") {
+    const normalized = actionId.toLowerCase();
+    if (normalized === "r4" || normalized.includes("r4")) {
+      _pdAcceptSuggestion(promptDriveCtx);
+      return;
+    }
+    if (normalized.includes("r5") && normalized.includes("hold")) {
+      _pdExecute(promptDriveCtx);
+      return;
+    }
+    if (normalized.includes("l5") && normalized.includes("r5")) {
+      _pdToggleMacro(promptDriveCtx);
+      return;
+    }
+    if (normalized === "l5" || normalized.includes("l5")) {
+      _pdSavePrompt(promptDriveCtx);
+      return;
+    }
+    if (normalized === "b" || normalized.endsWith(":b") || normalized.includes("cancel")) {
+      _pdCloseDrawers();
+      return;
+    }
+  }
 
   if (typeof actionId === "string" && actionId.startsWith("insert_snippet:")) {
     const snippetTemplate = actionId.substring("insert_snippet:".length);

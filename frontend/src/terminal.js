@@ -803,7 +803,10 @@ function setSshStatus(connected, text) {
     }
     if (label) label.textContent = text;
     const disconnectBtn = document.getElementById("ssh-disconnect-btn");
-    if (disconnectBtn) disconnectBtn.disabled = !connected;
+    if (disconnectBtn) {
+        disconnectBtn.disabled = !connected;
+        disconnectBtn.setAttribute("aria-disabled", String(!connected));
+    }
 }
 
 function connectSsh() {
@@ -911,7 +914,7 @@ async function promptAndSaveProfileName(type, host, user, auth_type, password) {
         addNotification("SSH Config Missing", "Enter host and username first.", "warning");
         return null;
     }
-    const name = prompt("Profile name:", `${user}@${host}`);
+    const name = await showPrompt("Profile name:", `${user}@${host}`, { title: "Save Profile" });
     if (!name) return null;
 
     if (auth_type === "password") {
@@ -992,13 +995,13 @@ function renderFtpProfilesSettings() {
 }
 
 function initFtpProfileListeners() {
-    document.getElementById("ftp-save-profile-btn")?.addEventListener("click", () => {
+    document.getElementById("ftp-save-profile-btn")?.addEventListener("click", async () => {
         const host = document.getElementById("ftp-host-input")?.value.trim();
         const port = parseInt(document.getElementById("ftp-port-input")?.value || "21", 10);
         const user = document.getElementById("ftp-user-input")?.value.trim();
         const path = document.getElementById("ftp-path-input")?.value.trim() || "/";
         if (!host || !user) { addNotification('SSH Config Missing', 'Enter host and username first.', 'warning'); return; }
-        const name = prompt("Profile name:", `${user}@${host}`);
+        const name = await showPrompt("Profile name:", `${user}@${host}`, { title: "Save FTP Profile" });
         if (!name) return;
         const profiles = getFtpProfiles();
         profiles.push({ name, host, port, user, path });
