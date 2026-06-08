@@ -1,8 +1,22 @@
 import { invoke } from "./neurobridge.js";
 
-
 let currentRepoPath = null;
 let selectedFiles = new Set();
+
+function _showLoadingBar() {
+  const workspace = document.querySelector(".git-workspace");
+  if (!workspace) return null;
+  const bar = document.createElement("div");
+  bar.className = "loading-bar";
+  bar.setAttribute("aria-hidden", "true");
+  workspace.style.position = "relative";
+  workspace.appendChild(bar);
+  return bar;
+}
+
+function _hideLoadingBar(bar) {
+  bar?.remove();
+}
 
 export function initGitView() {
   wireRepoActions();
@@ -76,6 +90,7 @@ function wireRepoActions() {
 async function openRepo(path) {
   currentRepoPath = path;
   selectedFiles.clear();
+  const bar = _showLoadingBar();
   try {
     const status = await invoke("git_open_repo", { path });
     document.getElementById("git-repo-name").textContent = path.split(/[\\/]/).pop() || path;
@@ -87,6 +102,8 @@ async function openRepo(path) {
   } catch (e) {
     addNotification('Open Repo Failed', String(e), 'error');
     currentRepoPath = null;
+  } finally {
+    _hideLoadingBar(bar);
   }
 }
 

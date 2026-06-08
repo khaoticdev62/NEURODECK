@@ -61,7 +61,13 @@ async function _dashLoad() {
         }
     } catch (e) {
         console.error('get_dashboard_stats error', e);
-        if (recentListEl) recentListEl.textContent = 'Failed to load stats.';
+        if (recentListEl) recentListEl.innerHTML = `
+            <div class="view-empty" style="padding:12px 0">
+                <div class="view-empty-icon">⚠</div>
+                <div class="view-empty-sub">Stats unavailable — is the bridge running?</div>
+            </div>`;
+        ['dash-sessions','dash-messages','dash-memory','dash-pinned','dash-projects','dash-packs']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
     }
 }
 

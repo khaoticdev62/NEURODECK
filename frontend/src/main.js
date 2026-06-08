@@ -1998,6 +1998,13 @@ sidebarCloseBtn.onclick = function () {
   sidebar.classList.add("collapsed");
 };
 
+// Keyboard activation for .history-item divs (role="button")
+sidebar.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const item = e.target.closest(".history-item");
+  if (item) { e.preventDefault(); item.click(); }
+});
+
 const inspectDrawer = document.getElementById("inspect-drawer");
 const toggleDrawerBtn = document.getElementById("toggle-drawer-btn");
 const inspectCloseBtn = document.getElementById("inspect-close-btn");

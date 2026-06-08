@@ -79,15 +79,15 @@ function _applyBgSettings() {
 function _applyCrtSettings() {
   invoke("get_config").then(cfg => {
     const toggle = document.getElementById("minimize-to-tray-toggle");
-    if (toggle) toggle.checked = cfg?.prefs?.minimize_to_tray_on_close !== false;
+    if (toggle) { toggle.checked = cfg?.prefs?.minimize_to_tray_on_close !== false; toggle.setAttribute("aria-checked", toggle.checked ? "true" : "false"); }
   }).catch(() => {});
   const scanlines = localStorage.getItem("scanlinesEnabled") === "true";
   const scanlinesToggle = document.getElementById("scanlines-toggle");
-  if (scanlinesToggle) scanlinesToggle.checked = scanlines;
+  if (scanlinesToggle) { scanlinesToggle.checked = scanlines; scanlinesToggle.setAttribute("aria-checked", scanlines ? "true" : "false"); }
   document.body.classList.toggle("crt-scanlines-disabled", !scanlines);
   const flicker = localStorage.getItem("flickerEnabled") === "true";
   const flickerToggle = document.getElementById("flicker-toggle");
-  if (flickerToggle) flickerToggle.checked = flicker;
+  if (flickerToggle) { flickerToggle.checked = flicker; flickerToggle.setAttribute("aria-checked", flicker ? "true" : "false"); }
   document.body.classList.toggle("crt-flicker-disabled", !flicker);
 }
 
@@ -144,13 +144,26 @@ function handleBgOpacitySlider() {
   applySettings();
 }
 
+function _syncToggleAria(el) {
+  if (!el) return;
+  el.setAttribute("aria-checked", el.checked ? "true" : "false");
+  const label = el.closest(".stv-toggle-row")?.querySelector(".stv-toggle-label")?.textContent || "Setting";
+  const announcer = document.getElementById("sr-announcer");
+  if (announcer) {
+    announcer.textContent = "";
+    requestAnimationFrame(() => { announcer.textContent = `${label}: ${el.checked ? "on" : "off"}`; });
+  }
+}
+
 function handleScanlinesToggle() {
   localStorage.setItem("scanlinesEnabled", this.checked ? "true" : "false");
+  _syncToggleAria(this);
   applySettings();
 }
 
 function handleFlickerToggle() {
   localStorage.setItem("flickerEnabled", this.checked ? "true" : "false");
+  _syncToggleAria(this);
   applySettings();
 }
 
@@ -456,7 +469,7 @@ function _populateLlmConfig([config, apiKey, kimiApiKey, hfApiKey, oaApiKey]) {
   set("settings-openai-compat-url", config.llm.openai_compat_base_url || "");
   const privacyToggle = $("privacy-workspace-toggle");
   const privacyPath = $("privacy-workspace-path");
-  if (privacyToggle) privacyToggle.checked = config.security?.agent_workspace_only || false;
+  if (privacyToggle) { privacyToggle.checked = config.security?.agent_workspace_only || false; privacyToggle.setAttribute("aria-checked", privacyToggle.checked ? "true" : "false"); }
   if (privacyPath) privacyPath.value = config.security?.agent_workspace_path || "~/.neurodeck_workspace";
   toggleSettingsLlmGroups(config.llm.default_provider);
 }
@@ -1336,9 +1349,9 @@ function _syncSetStatus(statusLine, text, color = "") {
 
 function _syncRenderStatus(status, els) {
   if (!status) return;
-  if (els.enabledToggle) els.enabledToggle.checked = !!status.enabled;
-  if (els.memoryToggle) els.memoryToggle.checked = status.sync_memory !== false;
-  if (els.sessionsToggle) els.sessionsToggle.checked = status.sync_sessions !== false;
+  if (els.enabledToggle) { els.enabledToggle.checked = !!status.enabled; els.enabledToggle.setAttribute("aria-checked", els.enabledToggle.checked ? "true" : "false"); }
+  if (els.memoryToggle) { els.memoryToggle.checked = status.sync_memory !== false; els.memoryToggle.setAttribute("aria-checked", els.memoryToggle.checked ? "true" : "false"); }
+  if (els.sessionsToggle) { els.sessionsToggle.checked = status.sync_sessions !== false; els.sessionsToggle.setAttribute("aria-checked", els.sessionsToggle.checked ? "true" : "false"); }
   if (els.apiUrlInput) els.apiUrlInput.value = status.api_base_url || "";
   if (els.deviceId) els.deviceId.textContent = status.device_id || "-";
   if (els.lastAt) els.lastAt.textContent = status.last_sync_at ? new Date(status.last_sync_at).toLocaleString() : "Never";
@@ -1581,7 +1594,10 @@ function _stWireAppearanceInputs() {
   const flickerToggle = document.getElementById("flicker-toggle");
   if (flickerToggle) flickerToggle.onchange = handleFlickerToggle;
   const trayToggle = document.getElementById("minimize-to-tray-toggle");
-  if (trayToggle) trayToggle.onchange = function() { invoke("set_config", { key: "prefs.minimize_to_tray_on_close", value: this.checked ? "true" : "false" }).catch(e => console.error("Failed to save tray preference:", e)); };
+  if (trayToggle) trayToggle.onchange = function() {
+    _syncToggleAria(this);
+    invoke("set_config", { key: "prefs.minimize_to_tray_on_close", value: this.checked ? "true" : "false" }).catch(e => console.error("Failed to save tray preference:", e));
+  };
   const shellSelect = document.getElementById("shell-select");
   if (shellSelect) shellSelect.onchange = handleShellSelect;
 }

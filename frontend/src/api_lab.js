@@ -236,6 +236,22 @@ function _getHeaders() {
   return headers;
 }
 
+// ── Loading bar helpers ───────────────────────────────────────────────────────
+function _showLoadingBar() {
+  const workspace = document.querySelector(".api-lab-workspace");
+  if (!workspace) return null;
+  const bar = document.createElement("div");
+  bar.className = "loading-bar";
+  bar.setAttribute("aria-hidden", "true");
+  workspace.style.position = "relative";
+  workspace.appendChild(bar);
+  return bar;
+}
+
+function _hideLoadingBar(bar) {
+  bar?.remove();
+}
+
 // ── Send request ──────────────────────────────────────────────────────────────
 async function _sendRequest() {
   const method  = document.getElementById("api-method-select")?.value || "GET";
@@ -257,6 +273,7 @@ async function _sendRequest() {
   if (headersEl) headersEl.innerHTML = "";
   document.getElementById("api-send-btn").disabled = true;
 
+  const bar = _showLoadingBar();
   const allHeaders = [..._getHeaders(), ..._getAuthHeaders()];
   const body = _getBody();
 
@@ -290,6 +307,7 @@ async function _sendRequest() {
     bodyEl.textContent = String(e);
     _lastResponse = null;
   } finally {
+    _hideLoadingBar(bar);
     document.getElementById("api-send-btn").disabled = false;
   }
 }

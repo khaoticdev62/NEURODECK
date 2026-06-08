@@ -21421,6 +21421,394 @@ button[class*="send-prompt"]:hover {
   border-color: rgba(255, 90, 106, 0.3);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* AAAA DEEP QA PASS — SPRINT 2+5: INTERACTION STATES, TOKENS, EMPTY STATES  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── New Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  --color-purple: #a78bfa;
+  --color-purple-dark: #7c3aed;
+  --color-amber: #f59e0b;
+  --color-green-bright: #00e676;
+  --color-red-bright: #ff5555;
+  --color-yellow: #ffd600;
+
+  --surface-raised: #080c10;
+  --surface-deep: #040608;
+
+  /* Z-index scale — coherent stacking layer system */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 500;
+  --z-modal: 1000;
+  --z-toast: 2000;
+  --z-tooltip: 3000;
+  --z-top: 9999;
+}
+
+/* ── Fix outline:none in :focus overriding *:focus-visible ───────────────── */
+/* These elements had :focus { outline: none } which killed keyboard rings.
+   The :focus-visible variants below restore the ring for keyboard navigation. */
+.scheduler-input:focus-visible,
+.scheduler-textarea:focus-visible,
+.wf-name-input:focus-visible,
+.wf-prop-input:focus-visible,
+.wf-prop-select:focus-visible {
+  outline: 2px solid var(--accent-color) !important;
+  outline-offset: 2px !important;
+}
+.browser-search-box input:focus-visible {
+  outline: 2px solid var(--accent-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Extend Global :active Press Feedback to missing buttons ─────────────── */
+.ssh-btn:active,
+.ssh-btn-primary:active,
+.ssh-btn-danger:active,
+.memory-btn:active,
+.memory-filter-btn:active,
+.memory-icon-btn:active,
+.memory-btn-export:active,
+.memory-btn-import:active,
+.memory-btn-backup:active,
+.memory-btn-restore:active,
+.git-btn:active,
+.api-lab-btn:active,
+.api-lab-tab:active,
+.api-lab-stab:active,
+.api-lab-resp-tab:active,
+.cli-filter:active,
+.cli-maker-btn:active,
+.ide-toolbar-btn:active,
+.orch-btn:active,
+.agent-btn-run:active,
+.agent-btn-stop:active,
+.share-inner-tab:active,
+.stv-btn-ghost:active,
+.session-browser-btn:active {
+  transform: scale(0.94) !important;
+  transition: transform var(--dur-micro) var(--ease-snap) !important;
+}
+
+/* ── :disabled / [disabled] states for all button and input families ─────── */
+.ssh-btn:disabled,
+.ssh-btn-primary:disabled,
+.ssh-btn-danger:disabled,
+.memory-btn:disabled,
+.memory-icon-btn:disabled,
+.agent-btn:disabled,
+.agent-btn-run:disabled,
+.agent-btn-stop:disabled,
+.git-btn:disabled,
+.api-lab-btn:disabled,
+.api-lab-method-select:disabled,
+.api-lab-url-input:disabled,
+.cli-input:disabled,
+.cli-select:disabled,
+.cli-textarea:disabled,
+.cli-maker-btn:disabled,
+.browser-btn:disabled,
+.browser-url-input:disabled,
+.stv-btn-primary:disabled,
+.stv-btn-ghost:disabled,
+.ide-toolbar-btn:disabled,
+.orch-btn:disabled,
+.session-browser-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── :focus-visible rings for component families missing them ────────────── */
+/* The global *:focus-visible rule provides the ring, but class-level
+   :focus rules with outline:none or border changes need explicit overrides. */
+.ssh-btn:focus-visible,
+.ssh-btn-primary:focus-visible,
+.ssh-btn-danger:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.memory-btn:focus-visible,
+.memory-filter-btn:focus-visible,
+.memory-icon-btn:focus-visible,
+.memory-btn-export:focus-visible,
+.memory-btn-import:focus-visible,
+.memory-btn-backup:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.agent-btn:focus-visible,
+.agent-btn-run:focus-visible,
+.agent-btn-stop:focus-visible,
+.agent-task-input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.git-btn:focus-visible { /* already defined but reinforce */ outline-offset: 2px; }
+
+.api-lab-btn:focus-visible,
+.api-lab-tab:focus-visible,
+.api-lab-stab:focus-visible,
+.api-lab-resp-tab:focus-visible,
+.api-lab-method-select:focus-visible,
+.api-lab-url-input:focus-visible,
+.api-lab-input:focus-visible,
+.api-lab-select:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.cli-filter:focus-visible,
+.cli-maker-btn:focus-visible,
+.cli-input:focus-visible,
+.cli-select:focus-visible,
+.cli-textarea:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.browser-btn:focus-visible,
+.browser-url-input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.share-inner-tab:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+
+.stv-btn-primary:focus-visible,
+.stv-btn-ghost:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.orch-btn:focus-visible,
+.orch-auto-input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.ide-toolbar-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.session-browser-btn:focus-visible,
+.session-browser-toggle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Settings panel inputs/selects (border-indicator focus) */
+.stv-card input:focus-visible,
+.stv-card textarea:focus-visible,
+.stv-card select:focus-visible,
+.setting-field-group input:focus-visible,
+.setting-field-group select:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* ── Missing hover transitions (removes jarring instant state changes) ────── */
+.share-inner-tab {
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+
+.memory-btn,
+.memory-btn-export,
+.memory-btn-import,
+.memory-btn-backup,
+.memory-btn-backups-toggle {
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+/* ── Empty State — Shared Utility Classes ────────────────────────────────── */
+.view-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  text-align: center;
+  flex: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.view-empty-icon {
+  font-size: 2rem;
+  opacity: 0.4;
+  line-height: 1;
+}
+
+.view-empty-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.02em;
+}
+
+.view-empty-sub {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.25);
+  line-height: 1.55;
+  max-width: 240px;
+}
+
+.view-empty-cta {
+  pointer-events: all;
+  margin-top: 6px;
+  padding: 6px 16px;
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 6px;
+  color: var(--accent-color);
+  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast);
+}
+.view-empty-cta:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+.view-empty-cta:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* ── Loading Bar — Thin Sweep Indicator ──────────────────────────────────── */
+.loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent-color) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: loading-sweep 1.2s linear infinite;
+  z-index: var(--z-raised);
+  pointer-events: none;
+}
+
+@keyframes loading-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.loading-bar.hidden { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar {
+    animation: none;
+    background: var(--accent-color);
+    opacity: 0.5;
+  }
+}
+
+/* ── Provider Badge Semantic Classes ─────────────────────────────────────── */
+.provider-badge--gemini {
+  background: rgba(66, 133, 244, 0.15);
+  border-color: rgba(66, 133, 244, 0.4);
+  color: rgba(66, 133, 244, 0.9);
+}
+
+.provider-badge--ollama {
+  background: rgba(var(--response-rgb), 0.12);
+  border-color: rgba(var(--response-rgb), 0.35);
+  color: var(--response-color);
+}
+
+.provider-badge--openai {
+  background: rgba(16, 163, 127, 0.12);
+  border-color: rgba(16, 163, 127, 0.35);
+  color: rgba(16, 163, 127, 0.9);
+}
+
+/* ── Workflow Font-Size px → rem Fix ─────────────────────────────────────── */
+.wf-edge-label-true,
+.wf-edge-label-false {
+  font-size: 0.625rem;
+}
+
+/* ── Letter-Spacing Unit Standardization ─────────────────────────────────── */
+/* All letter-spacing values should use em, not px */
+.pl-format-btn,
+.pl-formula-btn {
+  letter-spacing: 0.03em;
+}
+
+/* ── Settings Toggle Switch Styling ──────────────────────────────────────── */
+/* Visual styling for role="switch" checkboxes in the settings modal */
+input[type="checkbox"].stv-toggle-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast);
+}
+
+input[type="checkbox"].stv-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform var(--dur-fast) var(--ease-standard), background var(--dur-fast);
+}
+
+input[type="checkbox"].stv-toggle-switch:checked {
+  background: rgba(var(--accent-rgb), 0.25);
+  border-color: var(--accent-color);
+}
+
+input[type="checkbox"].stv-toggle-switch:checked::after {
+  transform: translateX(16px);
+  background: var(--accent-color);
+}
+
+input[type="checkbox"].stv-toggle-switch:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+input[type="checkbox"].stv-toggle-switch:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
 /* ── CHAT EXPORT DROPDOWN — Sprint 9.4 ────────────────────────────────────── */
 .chat-export-dropdown {
   position: relative;
