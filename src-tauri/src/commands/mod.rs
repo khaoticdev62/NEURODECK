@@ -40,6 +40,8 @@ use futures_util::StreamExt;
 /// 3. Call the command handler (may need adaptation for bridge mode)
 /// 4. Emit WebSocket events via `state.broadcaster.emit("event", payload)` for streaming
 /// 5. Return JSON result
+use std::sync::Arc;
+
 pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     match command {
         // ────────────────────────────────────────────────────────────────────
@@ -277,6 +279,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "stt": {
                     "whisper_enabled": !app_state.config.stt.whisper_binary.is_empty(),
                 },
+                "security": {
+                    "agent_workspace_only": app_state.config.security.agent_workspace_only,
+                    "agent_workspace_path": app_state.config.security.agent_workspace_path,
+                    "permission_registry": app_state.config.security.permission_registry,
+                },
             }))
         }
 
@@ -434,14 +441,45 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .ok_or("Missing 'message'")?;
             let image_base64 = args.get("image_base64").and_then(|v| v.as_str()).map(|s| s.to_string());
             let image_mime = args.get("image_mime").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let pack_id = args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Network,
+                )?;
+            }
 
             let broadcaster = state.broadcaster.clone();
             let app_state_clone = state.app_state.clone();
-            let provider_clone = {
+            let (provider_clone, mem_db, session_id, messages_len) = {
                 let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
-                app.provider.clone()
+                (
+                    app.provider.clone(),
+                    app.mem_db.clone(),
+                    app.session_id.clone(),
+                    app.messages.len(),
+                )
             };
             let message_clone = message.to_string();
+
+            // Store user message in vector DB (fire-and-forget)
+            if let Some(ref db) = mem_db {
+                let msg_id = format!("{}-{}", session_id, messages_len);
+                let mut metadata = std::collections::HashMap::new();
+                metadata.insert("role".to_string(), "user".to_string());
+                let db_clone = db.clone();
+                let prompt_clone = message_clone.clone();
+                let provider_clone2 = provider_clone.clone();
+                tokio::spawn(async move {
+                    if let Ok(embedding) = provider_clone2.generate_embedding(&prompt_clone).await {
+                        let _ = db_clone.store_message(msg_id, prompt_clone, embedding, metadata);
+                    }
+                });
+            }
 
             tokio::spawn(async move {
                 // 1. Add user message to state
@@ -451,7 +489,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
 
                 // 2. Get system prompt from active persona
-                let system_prompt = {
+                let mut system_prompt = {
                     let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
                     let active_persona = app.active_persona.clone();
                     let custom_personas = app.custom_personas.clone();
@@ -469,11 +507,79 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         })
                 };
 
+                // 3. RAG: Search memory for relevant messages with pack + privacy filters
+                if let Some(ref db) = mem_db {
+                    let rag_results = match provider_clone.generate_embedding(&message_clone).await {
+                        Ok(query_embed) => db.search(&query_embed, 10).ok(),
+                        Err(_) => {
+                            db.list_all().ok().map(|records| {
+                                let query_words: Vec<&str> = message_clone
+                                    .split_whitespace()
+                                    .filter(|w| w.len() > 3)
+                                    .collect();
+                                if query_words.is_empty() { return Vec::new(); }
+                                let mut scored: Vec<(usize, _)> = records
+                                    .into_iter()
+                                    .filter_map(|rec| {
+                                        let lower = rec.content.to_lowercase();
+                                        let hits = query_words.iter().filter(|w| lower.contains(&w.to_lowercase()[..])).count();
+                                        if hits > 0 { Some((hits, rec)) } else { None }
+                                    })
+                                    .collect();
+                                scored.sort_by(|a, b| b.0.cmp(&a.0));
+                                scored.into_iter().take(10).map(|(_, rec)| rec).collect()
+                            })
+                        }
+                    };
+
+                    if let Some(results) = rag_results {
+                        let unlock_state = {
+                            let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                            app.unlock_state.clone()
+                        };
+                        let mut filtered = Vec::new();
+                        for rec in results {
+                            // Pack filter
+                            if let Some(ref pid) = pack_id {
+                                if rec.pack_id.as_ref() != Some(pid) { continue; }
+                            }
+                            // Privacy filter
+                            let level = crate::privacy::PrivacyLevel::from_str(
+                                rec.metadata.get("privacy_level").map(|s| s.as_str()).unwrap_or("standard")
+                            );
+                            let is_unlocked = unlock_state.is_unlocked(&rec.id);
+                            if !crate::privacy::PrivacyFilter::can_inject(&level, is_unlocked) {
+                                continue;
+                            }
+                            filtered.push(rec);
+                            if filtered.len() >= 3 { break; }
+                        }
+
+                        if !filtered.is_empty() {
+                            system_prompt.push_str("\n\nRelevant past context:\n");
+                            let mut provenance_list = Vec::new();
+                            for res in &filtered {
+                                system_prompt.push_str(&format!("- {}\n", res.content));
+                                let title = res.metadata.get("title")
+                                    .or_else(|| res.metadata.get("filename"))
+                                    .map(|s| s.as_str())
+                                    .unwrap_or(if res.content.len() > 30 { &res.content[0..30] } else { &res.content });
+                                provenance_list.push(serde_json::json!({
+                                    "id": res.id,
+                                    "title": title,
+                                    "content_snippet": if res.content.len() > 100 { format!("{}...", &res.content[0..97]) } else { res.content.clone() },
+                                    "role": res.metadata.get("role").unwrap_or(&"unknown".to_string())
+                                }));
+                            }
+                            broadcaster.emit("rag_sources", serde_json::json!(provenance_list).to_string());
+                        }
+                    }
+                }
+
                 let mut full_response = String::new();
 
-                // 3. Stream response from LLM
+                // 4. Stream response from LLM
                 if let Some(ref b64) = image_base64 {
-                    // Vision path (non-streaming)
                     let mime_str = image_mime.as_deref().unwrap_or("image/png");
                     match provider_clone.chat_with_image(
                         &message_clone,
@@ -491,7 +597,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         }
                     }
                 } else {
-                    // Normal streaming path
                     let mut stream = provider_clone.stream_response(&message_clone, &system_prompt);
                     while let Some(chunk_res) = stream.next().await {
                         match chunk_res {
@@ -507,13 +612,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }
                 }
 
-                // 4. Store AI response in state
+                // 5. Store AI response in state
                 {
                     let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
                     app.messages.push(format!("AI: {}", full_response));
                 }
 
-                // 5. Signal completion
+                // 6. Signal completion
                 broadcaster.emit("command_done", serde_json::json!({ "status": "complete" }));
             });
 
@@ -533,6 +638,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "memory_add_fact" => {
             let content = args.get("content").and_then(|v| v.as_str())
                 .ok_or("Missing 'content'")?;
+
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::MemoryWrite,
+                )?;
+            }
 
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
@@ -555,6 +670,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "memory_search" => {
             let query = args.get("query").and_then(|v| v.as_str())
                 .ok_or("Missing 'query'")?;
+
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::MemoryRead,
+                )?;
+            }
 
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
@@ -901,6 +1026,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 })),
                 "timestamp": chrono::Utc::now().to_rfc3339()
             }))
+        }
+
+        "agent_exec_code" => {
+            let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?.to_string();
+            let lang = args.get("lang").and_then(|v| v.as_str()).ok_or("Missing 'lang'")?.to_string();
+            let result = crate::commands::agent::agent_exec_code(code, lang, state.app_state.clone()).await?;
+            Ok(serde_json::json!({ "output": result }))
         }
 
         "get_agent_plan" => {
@@ -1355,6 +1487,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "theme.bg_color"         => config.theme.bg_color = value.to_string(),
                 "theme.foreground_color" => config.theme.foreground_color = value.to_string(),
                 "theme.response_color"   => config.theme.response_color = value.to_string(),
+                "security.agent_workspace_only" => {
+                    config.security.agent_workspace_only = value.parse::<bool>()
+                        .map_err(|_| "Invalid boolean value".to_string())?;
+                }
+                "security.agent_workspace_path" => {
+                    config.security.agent_workspace_path = value.to_string();
+                }
+                "security.permission_registry" => {
+                    let registry: crate::permissions::PermissionRegistry = serde_json::from_str(value)
+                        .map_err(|e| format!("Invalid permission registry JSON: {}", e))?;
+                    registry.validate()?;
+                    config.security.permission_registry = registry;
+                }
                 _ => return Err(format!("Unknown or read-only config key: '{}'", key)),
             }
 
@@ -1370,6 +1515,96 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "key": key,
                 "value": value
             }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Permission Registry
+        // ────────────────────────────────────────────────────────────────────
+        "list_permission_profiles" => {
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let registry = &app_state.config.security.permission_registry;
+            Ok(serde_json::json!({
+                "profiles": registry.profiles,
+                "default_profile_id": registry.default_profile_id,
+            }))
+        }
+
+        "get_permission_profile" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let registry = &app_state.config.security.permission_registry;
+            match registry.get(id) {
+                Some(profile) => Ok(serde_json::json!(profile)),
+                None => Err(format!("Permission profile '{}' not found", id)),
+            }
+        }
+
+        "set_permission_profile" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?.to_string();
+            let name = args.get("name").and_then(|v| v.as_str())
+                .unwrap_or(&id).to_string();
+            let description = args.get("description").and_then(|v| v.as_str())
+                .unwrap_or("").to_string();
+            let granted: Vec<crate::permissions::Capability> = args.get("granted")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|v| serde_json::from_value(v.clone()).ok()).collect())
+                .unwrap_or_default();
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+            let registry = &mut config.security.permission_registry;
+
+            let mut profile = registry.get(&id).cloned().unwrap_or_else(|| {
+                crate::permissions::PermissionProfile::new(&id, &name)
+            });
+            profile.name = name;
+            profile.description = description;
+            profile.granted = granted.into_iter().collect();
+            registry.upsert(profile);
+            registry.validate()?;
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+            app_state.config = config;
+
+            Ok(serde_json::json!({ "status": "updated", "id": id }))
+        }
+
+        "delete_permission_profile" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+            let registry = &mut config.security.permission_registry;
+            registry.remove(id)?;
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+            app_state.config = config;
+
+            Ok(serde_json::json!({ "status": "deleted", "id": id }))
+        }
+
+        "set_default_permission_profile" => {
+            let id = args.get("id").and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+            let registry = &mut config.security.permission_registry;
+            registry.set_default(id)?;
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+            app_state.config = config;
+
+            Ok(serde_json::json!({ "status": "updated", "default_profile_id": id }))
         }
 
         "set_model" => {
@@ -1579,15 +1814,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Plugin System
         // ────────────────────────────────────────────────────────────────────
         "list_plugins" => {
-            match crate::plugin_mgr::list_local_plugins() {
+            // Use the async list_plugins() which parses manifests + enriches with registry.
+            match crate::plugin_mgr::list_plugins().await {
                 Ok(plugins) => {
                     let list: Vec<_> = plugins.iter().map(|p| serde_json::json!({
-                        "name":      p.name,
-                        "file_name": p.file_name,
-                        "enabled":   p.enabled,
-                        "id":        p.id,
-                        "author":    p.author,
-                        "version":   p.version
+                        "name":        p.name,
+                        "file_name":   p.file_name,
+                        "enabled":     p.enabled,
+                        "id":          p.id,
+                        "author":      p.author,
+                        "version":     p.version,
+                        "description": p.description,
+                        "tags":        p.tags,
+                        "marketplace": p.marketplace,
+                        "permissions": p.permissions,
                     })).collect();
 
                     Ok(serde_json::json!({
@@ -1597,6 +1837,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }))
                 }
                 Err(e) => Err(format!("Failed to list plugins: {}", e))
+            }
+        }
+
+        "validate_plugin" => {
+            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?.to_string();
+            match crate::plugin_mgr::validate_plugin(&file_name) {
+                Ok(report) => Ok(serde_json::to_value(&report).unwrap_or_default()),
+                Err(e) => Err(e),
             }
         }
 
@@ -1768,7 +2017,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Task Scheduler
         // ────────────────────────────────────────────────────────────────────
-        "list_scheduled" => {
+        "list_scheduled_tasks" => {
             let tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
             let list: Vec<_> = tasks.iter().map(|t| serde_json::json!({
                 "id":         t.id,
@@ -1786,7 +2035,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }))
         }
 
-        "add_scheduled" => {
+        "add_scheduled_task" => {
             let name = args.get("name").and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
             let cron = args.get("cron").and_then(|v| v.as_str())
@@ -1833,7 +2082,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }))
         }
 
-        "delete_scheduled" => {
+        "delete_scheduled_task" => {
             let id = args.get("id").and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
@@ -2439,6 +2688,41 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "screenshot_b64": "", "note": "Browser screenshot requires Tauri WebView; event emitted to UI" }))
         }
 
+        "browser_get_citation" => {
+            let url = args.get("url").and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Browser,
+                )?;
+            }
+            let citation = crate::commands::browser::browser_get_citation(url.to_string()).await?;
+            Ok(serde_json::Value::String(citation))
+        }
+
+        "browser_save_to_memory" => {
+            let url = args.get("url").and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Browser,
+                )?;
+            }
+            let res = crate::commands::browser::browser_save_to_memory(
+                url.to_string(),
+                state.app_state.clone(),
+            ).await?;
+            Ok(res)
+        }
+
         "open_external" => {
             let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
             if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -2705,7 +2989,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Scheduler toggle
         // ────────────────────────────────────────────────────────────────────
-        "toggle_scheduled" => {
+        "toggle_scheduled_task" => {
             let id      = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
             let enabled = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
             let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
@@ -2719,6 +3003,126 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             } else {
                 Err(format!("Task '{}' not found", id))
             }
+        }
+
+        "run_task_now" => {
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let task = {
+                let tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                tasks.iter().find(|t| t.id == id).cloned()
+            };
+            if let Some(task) = task {
+                state.broadcaster.emit("scheduled_task_started", serde_json::json!({
+                    "id": task.id,
+                    "name": task.name,
+                    "goal": task.goal,
+                    "triggered_at": chrono::Utc::now().to_rfc3339(),
+                    "manual": true,
+                }));
+                Ok(serde_json::json!({ "status": "triggered", "id": id }))
+            } else {
+                Err(format!("Task '{}' not found", id))
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Workflow CRUD
+        // ────────────────────────────────────────────────────────────────────
+        "list_workflows" => {
+            let names = crate::workflow::list_workflows()?;
+            Ok(serde_json::json!({ "workflows": names }))
+        }
+
+        "load_workflow" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let json = crate::workflow::load_workflow(name.to_string())?;
+            Ok(serde_json::json!({ "name": name, "json": json }))
+        }
+
+        "save_workflow" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let json = args.get("json").and_then(|v| v.as_str()).ok_or("Missing 'json'")?;
+            crate::workflow::save_workflow(name.to_string(), json.to_string())?;
+            Ok(serde_json::json!({ "status": "saved", "name": name }))
+        }
+
+        "delete_workflow" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            crate::workflow::delete_workflow(name.to_string())?;
+            Ok(serde_json::json!({ "status": "deleted", "name": name }))
+        }
+
+        "workflow_export" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let json = crate::workflow::workflow_export(name.to_string())?;
+            Ok(serde_json::json!({ "name": name, "ndwf": json }))
+        }
+
+        "workflow_import" => {
+            let json = args.get("json").and_then(|v| v.as_str()).ok_or("Missing 'json'")?;
+            let imported_name = crate::workflow::workflow_import(json.to_string())?;
+            Ok(serde_json::json!({ "status": "imported", "name": imported_name }))
+        }
+
+        "workflow_run" => {
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let json = crate::workflow::workflow_run(name.to_string())?;
+            Ok(serde_json::json!({ "name": name, "json": json }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Orchestrator
+        // ────────────────────────────────────────────────────────────────────
+        "start_orchestrated_task" => {
+            let goal = args.get("goal").and_then(|v| v.as_str()).ok_or("Missing 'goal'")?;
+            {
+                let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+                if s.running {
+                    return Err("Orchestrator is already running".to_string());
+                }
+                s.running = true;
+                s.plan = None;
+            }
+            let provider = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                Arc::clone(&app.provider)
+            };
+            let (abort_tx, mut abort_rx) = tokio::sync::oneshot::channel::<()>();
+            {
+                let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+                s.abort_tx = Some(abort_tx);
+            }
+            let state_arc = Arc::clone(&state.orchestrator.state);
+            let goal_clone = goal.to_string();
+            let bc = state.broadcaster.clone();
+            tokio::spawn(async move {
+                let _ = crate::orchestrator::_run_orchestration(
+                    goal_clone, provider, bc, state_arc, &mut abort_rx
+                ).await;
+            });
+            Ok(serde_json::json!({ "status": "started", "goal": goal }))
+        }
+
+        "get_orchestration_status" => {
+            let s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            Ok(serde_json::json!({
+                "running": s.running,
+                "goal": s.plan.as_ref().map(|p| p.goal.clone()).unwrap_or_default(),
+                "tasks": s.plan.as_ref().map(|p| p.tasks.clone()).unwrap_or_default(),
+            }))
+        }
+
+        "stop_orchestration" => {
+            let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(tx) = s.abort_tx.take() {
+                let _ = tx.send(());
+            }
+            s.running = false;
+            state.broadcaster.emit("agent_stopped", serde_json::json!({
+                "goal": s.plan.as_ref().map(|p| p.goal.clone()),
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }));
+            Ok(serde_json::json!({ "status": "stopped" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -3043,6 +3447,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let x = args.get("x").and_then(|v| v.as_i64()).ok_or("Missing 'x'")? as i32;
             let y = args.get("y").and_then(|v| v.as_i64()).ok_or("Missing 'y'")? as i32;
             let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Computer,
+                )?;
+            }
             crate::computer_use::computer_mouse_move(x, y, approved).await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "moved", "x": x, "y": y }))
@@ -3051,6 +3464,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "computer_mouse_click" => {
             let button   = args.get("button").and_then(|v| v.as_str()).unwrap_or("left").to_string();
             let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Computer,
+                )?;
+            }
             crate::computer_use::computer_mouse_click(button.clone(), approved).await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "clicked", "button": button }))
@@ -3059,6 +3481,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "computer_type" => {
             let text     = args.get("text").and_then(|v| v.as_str()).ok_or("Missing 'text'")?.to_string();
             let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Computer,
+                )?;
+            }
             crate::computer_use::computer_type(text.clone(), approved).await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "typed", "chars": text.len() }))
@@ -3067,6 +3498,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "computer_key" => {
             let key      = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?.to_string();
             let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::Computer,
+                )?;
+            }
             crate::computer_use::computer_key(key.clone(), approved).await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "pressed", "key": key }))
@@ -3111,7 +3551,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Plugin Management
         // ────────────────────────────────────────────────────────────────────
         "toggle_plugin" => {
-            let file_name = args.get("file_name").and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
+            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
             let enabled   = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
             crate::plugin_mgr::toggle_plugin(file_name.to_string(), enabled)
                 .map_err(|e| e.to_string())?;
@@ -3119,23 +3560,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "read_plugin" => {
-            let file_name = args.get("file_name").and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
+            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
             let content = crate::plugin_mgr::read_plugin(file_name.to_string())
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "file_name": file_name, "content": content }))
         }
 
         "save_plugin" => {
-            let file_name = args.get("file_name").and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
+            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
             let content   = args.get("content").and_then(|v| v.as_str()).ok_or("Missing 'content'")?;
             crate::plugin_mgr::save_plugin(file_name.to_string(), content.to_string())
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "saved", "file_name": file_name }))
-        }
-
-        // reload_plugins / install_plugin_from_registry → real implementations below
-        "_stub_reload_plugins_removed" => {
-            Ok(serde_json::json!({ "status": "stub_removed" }))
         }
 
         "fetch_plugin_registry" => {
@@ -3325,7 +3763,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let filtered: Vec<_> = all.iter().filter(|r| {
                     namespace.map(|ns| r.metadata.get("namespace").map(|v| v == ns).unwrap_or(false))
                         .unwrap_or(true)
-                }).map(|r| serde_json::json!({ "id": r.id, "content": r.content, "metadata": r.metadata }))
+                }).map(|r| serde_json::json!({ "id": r.id, "content": r.content, "metadata": r.metadata, "project_id": r.project_id, "pack_id": r.pack_id }))
                 .collect();
                 Ok(serde_json::json!({ "records": filtered, "count": filtered.len() }))
             } else {
@@ -4029,36 +4467,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "_stub_whisper_download_removed" => { Ok(serde_json::json!({ "status": "stub_removed" })) }
 
         // ────────────────────────────────────────────────────────────────────
-        // Plugin Install / Uninstall (no-AppHandle paths)
+        // Plugin Install / Uninstall / Reload (bridge-native)
         // ────────────────────────────────────────────────────────────────────
         "install_plugin" => {
             let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
             crate::plugin_mgr::install_plugin(url.clone()).await
                 .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "installed", "url": url, "note": "Restart or call reload_plugins to activate" }))
+            Ok(serde_json::json!({ "status": "installed", "url": url }))
+        }
+
+        "install_plugin_from_registry" => {
+            let plugin_id = args.get("plugin_id").or_else(|| args.get("pluginId"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
+            crate::plugin_mgr::install_plugin_from_registry(
+                plugin_id.clone(),
+                state.lua.clone(),
+                state.broadcaster.clone(),
+            ).await.map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "installed", "plugin_id": plugin_id }))
         }
 
         "uninstall_plugin" => {
-            let plugin_id = args.get("plugin_id").and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
-            // Delete file without AppHandle reload (reload requires AppHandle)
-            let dir_buf = crate::user_config_dir().join("../plugins").canonicalize()
-                .unwrap_or_else(|_| std::path::PathBuf::from("plugins"));
-            let dir = dir_buf.as_path();
-            let mut removed = false;
-            for suffix in &[".lua", ".lua.disabled", format!("{}.lua", plugin_id).as_str(), format!("{}.lua.disabled", plugin_id).as_str()] {
-                let path = dir.join(format!("{}{}", plugin_id, suffix));
-                if path.exists() { let _ = std::fs::remove_file(&path); removed = true; }
-            }
-            // Also try exact name match
-            for candidate in &[format!("{}.lua", plugin_id), format!("{}.lua.disabled", plugin_id)] {
-                let path = dir.join(candidate);
-                if path.exists() { let _ = std::fs::remove_file(&path); removed = true; }
-            }
-            if removed {
-                Ok(serde_json::json!({ "status": "uninstalled", "plugin_id": plugin_id, "note": "Restart to deactivate" }))
-            } else {
-                Err(format!("Plugin '{}' not found", plugin_id))
-            }
+            let plugin_id = args.get("plugin_id").or_else(|| args.get("pluginId"))
+                .and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
+            crate::plugin_mgr::uninstall_plugin(plugin_id.clone()).await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "uninstalled", "plugin_id": plugin_id }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -4239,37 +4673,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Reload Plugins (direct LuaEngine::load_plugins — no AppHandle)
+        // Reload Plugins — uses bridge-native reload (WsBroadcaster + Arc<Mutex<LuaEngine>>)
         // ────────────────────────────────────────────────────────────────────
         "reload_plugins" => {
-            let plugins_path = {
-                // Try project root plugins/ first, fall back to a sibling of user_config_dir
-                let candidate = std::path::PathBuf::from("plugins");
-                if candidate.exists() { candidate }
-                else { crate::user_config_dir().join("../../plugins") }
-            };
-            let lua = state.lua.lock().unwrap_or_else(|e| e.into_inner());
-            lua.load_plugins(&plugins_path).map_err(|e| e.to_string())?;
-            let cmds = lua.get_registered_commands();
-            state.broadcaster.emit("plugins_reloaded", serde_json::json!({ "commands": cmds.len() }));
-            Ok(serde_json::json!({ "status": "reloaded", "commands_registered": cmds.len() }))
-        }
-
-        // ────────────────────────────────────────────────────────────────────
-        // Install Plugin from Registry (download + skip AppHandle reload)
-        // ────────────────────────────────────────────────────────────────────
-        "install_plugin_from_registry" => {
-            let plugin_id = args.get("plugin_id").and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
-            let registry = crate::plugin_mgr::fetch_plugin_registry().await
-                .map_err(|e| e.to_string())?;
-            let plugin = registry.plugins.into_iter().find(|p| p.id == plugin_id)
-                .ok_or_else(|| format!("Plugin '{}' not in registry", plugin_id))?;
-            crate::plugin_mgr::install_plugin(plugin.download_url.clone()).await
-                .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({
-                "status": "installed", "plugin_id": plugin_id,
-                "note": "Call reload_plugins to activate without restarting"
-            }))
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent_id = app.config.llm.active_agent_id.clone();
+                crate::permissions::require_capability(
+                    &app.config.security.permission_registry,
+                    &agent_id,
+                    crate::permissions::Capability::PluginLoad,
+                )?;
+            }
+            crate::plugin_mgr::reload_plugins_bridge(
+                state.lua.clone(),
+                state.broadcaster.clone(),
+            ).await.map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "reloaded" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -4603,10 +5023,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?.to_string();
             let lang = args.get("lang").and_then(|v| v.as_str()).ok_or("Missing 'lang'")?.to_string();
 
-            let workspace_path = {
+            let (workspace_path, agent_id) = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                app.config.get_resolved_workspace()
+                let agent_id = app.config.llm.active_agent_id.clone();
+                (app.config.get_resolved_workspace(), agent_id)
             };
+
+            crate::permissions::require_capability(
+                &state.app_state.lock().unwrap_or_else(|e| e.into_inner()).config.security.permission_registry,
+                &agent_id,
+                crate::permissions::Capability::ShellExec,
+            )?;
 
             crate::security::validate_script_payload(&code, &lang, "canvas-exec", workspace_path.as_deref())?;
 
@@ -4727,6 +5154,225 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             } else {
                 Ok(serde_json::json!({ "status": "no_active_exec" }))
             }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Project Knowledge Spaces
+        // ────────────────────────────────────────────────────────────────────
+        "create_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or_else(|| "name required".to_string())?;
+            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let id = uuid::Uuid::new_v4().to_string();
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            let project = project_db.create(id, name.to_string(), description, color).await?;
+            Ok(serde_json::to_value(project).map_err(|e| e.to_string())?)
+        }
+
+        "list_projects" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            let projects = project_db.list().await?;
+            Ok(serde_json::to_value(projects).map_err(|e| e.to_string())?)
+        }
+
+        "get_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            let project = project_db.get(id).await?;
+            Ok(serde_json::to_value(project).map_err(|e| e.to_string())?)
+        }
+
+        "update_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let name = args.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            project_db.update(id, name, description, color).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "delete_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            project_db.delete(id).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "set_session_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or_else(|| "session_id required".to_string())?;
+            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            project_db.set_session_project(session_id, project_id).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "set_memory_project" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
+            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            project_db.set_memory_project(memory_id, project_id).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "get_project_sessions" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            let sessions = project_db.get_project_sessions(id).await?;
+            Ok(serde_json::to_value(sessions).map_err(|e| e.to_string())?)
+        }
+
+        "get_project_memory" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let project_db = crate::projects::ProjectDB::new(db.pool.clone());
+            let records = project_db.get_project_memory(id).await?;
+            Ok(serde_json::to_value(records).map_err(|e| e.to_string())?)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Universal Search
+        // ────────────────────────────────────────────────────────────────────
+        "universal_search" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let query = args.get("query").and_then(|v| v.as_str()).ok_or_else(|| "query required".to_string())?;
+            let limit = args.get("limit").and_then(|v| v.as_i64()).unwrap_or(20);
+            let source_filter = args.get("source_filter").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let engine = crate::search::SearchEngine::new(db.pool.clone());
+            let results = engine.universal_search(query, limit, source_filter, project_id).await?;
+            Ok(serde_json::to_value(results).map_err(|e| e.to_string())?)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Context Packs
+        // ────────────────────────────────────────────────────────────────────
+        "create_pack" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let name = args.get("name").and_then(|v| v.as_str()).ok_or_else(|| "name required".to_string())?;
+            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let privacy_level = args.get("privacy_level").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let id = uuid::Uuid::new_v4().to_string();
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            let pack = pack_db.create(id, name.to_string(), description, color, privacy_level).await?;
+            Ok(serde_json::to_value(pack).map_err(|e| e.to_string())?)
+        }
+
+        "list_packs" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            let packs = pack_db.list().await?;
+            Ok(serde_json::to_value(packs).map_err(|e| e.to_string())?)
+        }
+
+        "get_pack" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            let pack = pack_db.get(id).await?;
+            Ok(serde_json::to_value(pack).map_err(|e| e.to_string())?)
+        }
+
+        "update_pack" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let name = args.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let privacy_level = args.get("privacy_level").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            pack_db.update(id, name, description, color, privacy_level).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "delete_pack" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            pack_db.delete(id).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "set_memory_pack" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
+            let pack_id = args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            pack_db.set_memory_pack(memory_id, pack_id).await?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "get_pack_memory" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
+            let records = pack_db.get_pack_memory(id).await?;
+            Ok(serde_json::to_value(records).map_err(|e| e.to_string())?)
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Privacy
+        // ────────────────────────────────────────────────────────────────────
+        "set_memory_privacy" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
+            let level = args.get("level").and_then(|v| v.as_str()).unwrap_or("standard");
+            sqlx::query("UPDATE memory_records SET privacy_level = ? WHERE id = ?")
+                .bind(level)
+                .bind(memory_id)
+                .execute(&db.pool)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        "unlock_sealed_records" => {
+            let ids = args.get("ids").and_then(|v| v.as_array())
+                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect::<Vec<_>>())
+                .unwrap_or_default();
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                for id in &ids { app.unlock_state.unlock(id); }
+            }
+            Ok(serde_json::json!({ "unlocked": ids.len() }))
+        }
+
+        "lock_all_sealed" => {
+            {
+                let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.unlock_state.lock_all();
+            }
+            Ok(serde_json::json!({ "success": true }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // Dashboard
+        // ────────────────────────────────────────────────────────────────────
+        "get_dashboard_stats" => {
+            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let provider;
+            let model;
+            {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                provider = app.config.llm.default_provider.clone();
+                model = if provider == "gemini" {
+                    app.config.llm.gemini_model.clone()
+                } else {
+                    app.config.llm.ollama_model.clone()
+                };
+            }
+            let dashboard = crate::dashboard::DashboardDB::new(db.pool.clone(), &db.db_path);
+            let stats = dashboard.get_stats(&provider, &model).await?;
+            Ok(serde_json::to_value(stats).map_err(|e| e.to_string())?)
         }
 
         // ────────────────────────────────────────────────────────────────────

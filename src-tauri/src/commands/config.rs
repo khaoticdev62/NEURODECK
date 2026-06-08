@@ -3,7 +3,6 @@ use crate::*;
 use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri::State;
 
 fn validate_config_url(value: &str, field: &str) -> Result<(), String> {
     let parsed =
@@ -24,7 +23,6 @@ fn validate_config_url(value: &str, field: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
 pub fn set_config(
     key: String,
     value: String,
@@ -87,7 +85,6 @@ pub fn set_config(
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut config = app.config.clone();
@@ -96,7 +93,6 @@ pub fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, S
     Ok(config)
 }
 
-#[tauri::command]
 pub fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
 
@@ -109,7 +105,6 @@ pub fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Re
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_gemini_api_key() -> Result<String, String> {
     // Phase 4: OS keychain secret management
     match neurodeck_infrastructure::secrets::get_gemini_api_key() {
@@ -118,7 +113,6 @@ pub fn get_gemini_api_key() -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub fn save_hf_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     neurodeck_infrastructure::secrets::save_hf_api_key(&key)?;
@@ -130,7 +124,6 @@ pub fn save_hf_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_hf_api_key() -> Result<String, String> {
     match neurodeck_infrastructure::secrets::get_hf_api_key() {
         Ok(key) => Ok(key),
@@ -138,7 +131,6 @@ pub fn get_hf_api_key() -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub fn save_kimi_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     neurodeck_infrastructure::secrets::save_kimi_api_key(&key)?;
@@ -149,7 +141,6 @@ pub fn save_kimi_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Resu
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_kimi_api_key() -> Result<String, String> {
     match neurodeck_infrastructure::secrets::get_kimi_api_key() {
         Ok(key) => Ok(key),
@@ -157,7 +148,6 @@ pub fn get_kimi_api_key() -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub fn save_openai_compat_api_key(
     key: String,
     state: State<'_, Mutex<AppState>>,
@@ -170,13 +160,11 @@ pub fn save_openai_compat_api_key(
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_openai_compat_api_key() -> Result<String, String> {
     neurodeck_infrastructure::secrets::get_openai_compat_api_key()
         .or_else(|_| Ok(String::new()))
 }
 
-#[tauri::command]
 pub async fn test_llm_connection(
     provider: String,
     model: String,
@@ -271,7 +259,6 @@ pub async fn test_llm_connection(
     }
 }
 
-#[tauri::command]
 pub fn get_personas(state: State<'_, Mutex<AppState>>) -> Vec<String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut list: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
@@ -281,12 +268,10 @@ pub fn get_personas(state: State<'_, Mutex<AppState>>) -> Vec<String> {
     list
 }
 
-#[tauri::command]
 pub fn get_themes() -> Vec<String> {
     THEMES.iter().map(|t| t.name.clone()).collect()
 }
 
-#[tauri::command]
 pub fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     let is_valid =
@@ -299,7 +284,6 @@ pub fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
     }
 }
 
-#[tauri::command]
 pub fn list_custom_personas(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<Vec<CustomPersona>, String> {
@@ -307,7 +291,6 @@ pub fn list_custom_personas(
     Ok(app.custom_personas.clone())
 }
 
-#[tauri::command]
 pub fn add_custom_persona(
     name: String,
     prompt: String,
@@ -368,7 +351,6 @@ pub fn add_custom_persona(
     Ok(())
 }
 
-#[tauri::command]
 pub fn delete_custom_persona(
     name: String,
     state: State<'_, Mutex<AppState>>,
@@ -391,7 +373,6 @@ pub fn delete_custom_persona(
     Ok(())
 }
 
-#[tauri::command]
 pub fn set_theme(name: String) -> Option<HashMap<String, String>> {
     if let Some(t) = THEMES.iter().find(|theme| theme.name == name) {
         let mut map = HashMap::new();
@@ -415,7 +396,6 @@ pub fn set_theme(name: String) -> Option<HashMap<String, String>> {
 
 /// Persist a profile list to `./data/profiles/<key>.json`.
 /// `key` must be one of: "ssh", "ftp", "sftp"
-#[tauri::command]
 pub fn save_profiles(key: String, data: String) -> Result<(), String> {
     let allowed = ["ssh", "ftp", "sftp"];
     if !allowed.contains(&key.as_str()) {
@@ -429,7 +409,6 @@ pub fn save_profiles(key: String, data: String) -> Result<(), String> {
 
 /// Load a profile list from `./data/profiles/<key>.json`.
 /// Returns `"[]"` if the file does not exist.
-#[tauri::command]
 pub fn load_profiles(key: String) -> String {
     let allowed = ["ssh", "ftp", "sftp"];
     if !allowed.contains(&key.as_str()) {
@@ -442,7 +421,6 @@ pub fn load_profiles(key: String) -> String {
 }
 
 /// Persist custom themes to `./data/themes/custom.json`.
-#[tauri::command]
 pub fn save_custom_themes(data: String) -> Result<(), String> {
     let dir = user_config_dir().join("data/themes");
     std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create themes dir: {}", e))?;
@@ -450,38 +428,31 @@ pub fn save_custom_themes(data: String) -> Result<(), String> {
 }
 
 /// Load custom themes from disk. Returns `"[]"` if not found.
-#[tauri::command]
 pub fn load_custom_themes() -> String {
     std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
         .unwrap_or_else(|_| "[]".to_string())
 }
 
-#[tauri::command]
 pub fn save_ssh_credential(profile_name: String, password: String) -> Result<(), String> {
     neurodeck_infrastructure::secrets::save_ssh_credential(&profile_name, &password)
 }
 
-#[tauri::command]
 pub fn get_ssh_credential(profile_name: String) -> Result<String, String> {
     neurodeck_infrastructure::secrets::get_ssh_credential(&profile_name)
 }
 
-#[tauri::command]
 pub fn delete_ssh_credential(profile_name: String) -> Result<(), String> {
     neurodeck_infrastructure::secrets::delete_ssh_credential(&profile_name)
 }
 
-#[tauri::command]
 pub fn save_sftp_credential(profile_name: String, password: String) -> Result<(), String> {
     neurodeck_infrastructure::secrets::save_sftp_credential(&profile_name, &password)
 }
 
-#[tauri::command]
 pub fn get_sftp_credential(profile_name: String) -> Result<String, String> {
     neurodeck_infrastructure::secrets::get_sftp_credential(&profile_name)
 }
 
-#[tauri::command]
 pub fn delete_sftp_credential(profile_name: String) -> Result<(), String> {
     neurodeck_infrastructure::secrets::delete_sftp_credential(&profile_name)
 }

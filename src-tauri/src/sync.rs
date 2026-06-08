@@ -1,5 +1,5 @@
 use crate::memory::MemoryRecord;
-use crate::{config, storage, AppState};
+use crate::{config, storage, AppState, State};
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use pbkdf2::pbkdf2_hmac;
@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::fs;
 use std::sync::Mutex;
-use tauri::{Emitter, State};
 
 fn sync_dir() -> std::path::PathBuf {
     crate::user_config_dir().join("data/sync")
@@ -77,7 +76,6 @@ struct SessionPayload {
     messages: Vec<String>,
 }
 
-#[tauri::command]
 pub fn get_sync_status(state: State<'_, Mutex<AppState>>) -> Result<SyncStatus, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut status = load_status();
@@ -91,7 +89,6 @@ pub fn get_sync_status(state: State<'_, Mutex<AppState>>) -> Result<SyncStatus, 
     Ok(status)
 }
 
-#[tauri::command]
 pub fn configure_sync(
     request: ConfigureSyncRequest,
     state: State<'_, Mutex<AppState>>,
@@ -120,17 +117,15 @@ pub fn configure_sync(
     get_sync_status(state)
 }
 
-#[tauri::command]
 pub async fn start_sync(
-    app_handle: tauri::AppHandle,
+    app_handle: crate::bridge::WsBroadcaster,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<SyncStatus, String> {
     sync_now(app_handle, state).await
 }
 
-#[tauri::command]
 pub async fn sync_now(
-    app_handle: tauri::AppHandle,
+    app_handle: crate::bridge::WsBroadcaster,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<SyncStatus, String> {
     let (config, mem_db) = {

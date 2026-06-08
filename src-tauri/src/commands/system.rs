@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::Ordering;
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 /// ── Boot Diagnostics ─────────────────────────────────────────────────────
@@ -71,7 +70,6 @@ pub struct BootDiagnostics {
     pub pipeline: Vec<BootPipelineStep>,
 }
 
-#[tauri::command]
 pub fn get_game_context() -> HashMap<String, String> {
     let (name, app_id, is_running) = detect_game();
     let mut map = HashMap::new();
@@ -83,7 +81,6 @@ pub fn get_game_context() -> HashMap<String, String> {
     map
 }
 
-#[tauri::command]
 pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostics {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
 
@@ -441,7 +438,6 @@ pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostic
     }
 }
 
-#[tauri::command]
 pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut initial = HashMap::new();
@@ -501,7 +497,6 @@ pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, S
     initial
 }
 
-#[tauri::command]
 pub async fn execute_command(
     cmd_str: String,
     _state: State<'_, Mutex<AppState>>,
@@ -545,7 +540,6 @@ pub async fn execute_command(
 }
 
 #[cfg(debug_assertions)]
-#[tauri::command]
 pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
     crate::security::validate_script_payload(&code, "lua", "lua-exec", None)?;
 
@@ -569,7 +563,6 @@ pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), Stri
     .map_err(|e| format!("Task join error: {}", e))?
 }
 
-#[tauri::command]
 pub async fn execute_command_stream(
     cmd_str: String,
     app_handle: AppHandle,
@@ -722,7 +715,6 @@ pub async fn execute_command_stream(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn write_to_process(
     input: String,
     state: State<'_, Mutex<AppState>>,
@@ -752,7 +744,6 @@ pub async fn write_to_process(
     }
 }
 
-#[tauri::command]
 pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let tx = {
         let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -791,7 +782,6 @@ pub fn start_recording(state: Arc<Mutex<AppState>>) -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub fn set_whisper_config(
     state: State<'_, Mutex<AppState>>,
     binary: String,
@@ -844,7 +834,6 @@ pub fn set_whisper_config(
     config::save_config(&path, &config)
 }
 
-#[tauri::command]
 pub fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     let model_exists =
@@ -859,7 +848,6 @@ pub fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Valu
     })
 }
 
-#[tauri::command]
 pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let (binary, model) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -938,7 +926,6 @@ pub async fn stop_recording(state: Arc<Mutex<AppState>>) -> Result<String, Strin
 
 /// Download a GGML whisper model from HuggingFace into ~/.local/share/neurodeck/models/.
 /// Emits `whisper_download_progress` events: { done, pct, downloaded?, total?, path?, file? }
-#[tauri::command]
 pub async fn download_whisper_model(
     model: String,
     app_handle: AppHandle,
@@ -1057,7 +1044,6 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<()
     Ok(())
 }
 
-#[tauri::command]
 pub async fn install_bmad_to_dir(
     app_handle: AppHandle,
     target_dir: String,
@@ -1119,7 +1105,6 @@ pub struct MemoryRecordFrontend {
     pub metadata: std::collections::HashMap<String, String>,
 }
 
-#[tauri::command]
 pub fn memory_list_all(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<Vec<MemoryRecordFrontend>, String> {
@@ -1139,7 +1124,6 @@ pub fn memory_list_all(
         .collect())
 }
 
-#[tauri::command]
 pub fn memory_list_by_namespace(
     namespace: String,
     state: State<'_, Mutex<AppState>>,
@@ -1187,7 +1171,6 @@ pub struct GraphData {
     pub edges: Vec<GraphEdge>,
 }
 
-#[tauri::command]
 pub fn get_memory_graph_data(state: State<'_, Mutex<AppState>>) -> Result<GraphData, String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1250,7 +1233,6 @@ fn _text_similarity(a: &str, b: &str) -> f64 {
     intersection.len() as f64 / union_size as f64
 }
 
-#[tauri::command]
 pub fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1260,7 +1242,6 @@ pub fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<()
     db.delete_record(&id)
 }
 
-#[tauri::command]
 pub fn memory_pin(
     id: String,
     pinned: bool,
@@ -1274,7 +1255,6 @@ pub fn memory_pin(
     db.set_pinned(&id, pinned)
 }
 
-#[tauri::command]
 pub fn memory_add_fact(
     content: String,
     state: State<'_, Mutex<AppState>>,
@@ -1323,7 +1303,6 @@ fn memory_export_dir() -> std::path::PathBuf {
 
 /// Exports all memory records to `user_config_dir/exports/memory_TIMESTAMP.ndmem`.
 /// Returns the absolute path of the written file.
-#[tauri::command]
 pub fn memory_export(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1358,7 +1337,6 @@ pub fn memory_export(state: State<'_, Mutex<AppState>>) -> Result<String, String
 /// Imports memory records from a JSON string (`.ndmem` envelope).
 /// `merge=true` deduplicates by ID; `merge=false` replaces all records.
 /// Returns the count of records imported.
-#[tauri::command]
 pub fn memory_import_data(
     data: String,
     merge: bool,
@@ -1441,7 +1419,6 @@ pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String>
 /// Creates a timestamped backup in `user_config_dir/data/memory/backups/`.
 /// Keeps the 5 most recent backups, pruning older ones.
 /// Returns the backup file path.
-#[tauri::command]
 pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1452,7 +1429,6 @@ pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, S
 }
 
 /// Returns a list of available backups sorted newest-first.
-#[tauri::command]
 pub fn memory_list_backups(_state: State<'_, Mutex<AppState>>) -> Result<Vec<BackupInfo>, String> {
     let backup_dir = memory_backup_dir();
     if !backup_dir.exists() {
@@ -1505,7 +1481,6 @@ pub fn memory_list_backups(_state: State<'_, Mutex<AppState>>) -> Result<Vec<Bac
 }
 
 /// Restores memory from a named backup file (full replace — not a merge).
-#[tauri::command]
 pub fn memory_restore_backup(
     backup_name: String,
     state: State<'_, Mutex<AppState>>,
@@ -1536,7 +1511,6 @@ pub fn memory_restore_backup(
 
 /// Run an embedding-based MMR search over memory records.
 /// Returns up to `limit` semantically diverse results for the given `query`.
-#[tauri::command]
 pub async fn memory_search_semantic(
     query: String,
     limit: u8,
@@ -1555,7 +1529,6 @@ pub async fn memory_search_semantic(
     db.search_mmr(&embedding, n, 0.5, n * 4)
 }
 
-#[tauri::command]
 pub async fn start_oauth_flow(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
@@ -1573,7 +1546,6 @@ pub async fn start_oauth_flow(
     neurodeck_infrastructure::oauth::request_device_code(&config).await
 }
 
-#[tauri::command]
 pub async fn poll_oauth_token(
     device_code: String,
     interval: u64,
@@ -1623,7 +1595,6 @@ pub struct DiagnosticResult {
     pub tts_details: String,
 }
 
-#[tauri::command]
 pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     // 1. Check PTY access
     let pty_ok = std::panic::catch_unwind(|| {
@@ -1830,7 +1801,6 @@ pub struct ContextStats {
     pub ram_available: String,
 }
 
-#[tauri::command]
 pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
     // Scope the lock so it is released before the blocking OS RAM query below.
     let (
@@ -1968,7 +1938,6 @@ pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextSta
 }
 
 /// Explains a generated prompt in Just Plain English (JPE).
-#[tauri::command]
 pub async fn generate_jpe_explanation(
     prompt_text: String,
     state: State<'_, Mutex<AppState>>,
@@ -2004,7 +1973,6 @@ pub struct PromptSchema {
     pub format: String,
 }
 
-#[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub async fn assemble_prompt_via_lua_cmd(
     persona: String,
@@ -2030,7 +1998,6 @@ pub async fn assemble_prompt_via_lua_cmd(
     )
 }
 
-#[tauri::command]
 pub async fn optimize_raw_prompt(
     raw_text: String,
     state: State<'_, Mutex<AppState>>,
@@ -2078,7 +2045,6 @@ JSON Schema:\n\
     Ok(schema)
 }
 
-#[tauri::command]
 pub async fn generate_jpe_explanation_with_level(
     prompt_text: String,
     reading_level: String,
@@ -2117,7 +2083,6 @@ pub async fn generate_jpe_explanation_with_level(
     Ok(result.trim().to_string())
 }
 
-#[tauri::command]
 pub fn save_prompt_preset(name: String, schema_json: String) -> Result<(), String> {
     let data_dir = user_config_dir().join("data");
     let _ = std::fs::create_dir_all(&data_dir);
@@ -2138,7 +2103,6 @@ pub fn save_prompt_preset(name: String, schema_json: String) -> Result<(), Strin
     Ok(())
 }
 
-#[tauri::command]
 pub fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>, String> {
     let path = user_config_dir().join("data/prompt_presets.json");
     if !path.exists() {
@@ -2152,7 +2116,6 @@ pub fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>
 
 /// AI-powered terminal autocomplete.
 /// Takes the current terminal input buffer and returns suggested completion suffix.
-#[tauri::command]
 pub async fn shell_autocomplete(
     buffer: String,
     state: State<'_, Mutex<AppState>>,
@@ -2188,7 +2151,6 @@ pub async fn shell_autocomplete(
 
 /// Read the most recent screenshot from Steam or system Pictures directories.
 /// Returns a map with keys: `path`, `data` (base64), `mime`.
-#[tauri::command]
 pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
     let mut candidate_dirs: Vec<PathBuf> = Vec::new();
 
@@ -2317,7 +2279,6 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 
 /// AI-powered shell history search.
 /// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
-#[tauri::command]
 pub async fn search_history_ai(
     query: String,
     state: State<'_, Mutex<AppState>>,
@@ -2483,7 +2444,6 @@ fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
     }
 }
 
-#[tauri::command]
 pub async fn index_directory(
     path: String,
     app_handle: AppHandle,
@@ -2565,7 +2525,6 @@ pub async fn index_directory(
     Ok(indexed)
 }
 
-#[tauri::command]
 pub fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref db) = app.mem_db {
@@ -2575,7 +2534,6 @@ pub fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String>
     }
 }
 
-#[tauri::command]
 pub fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref db) = app.mem_db {
@@ -2591,7 +2549,6 @@ fn game_notes_path(app_id: &str) -> PathBuf {
         .join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
 }
 
-#[tauri::command]
 pub fn get_game_notes(app_id: String) -> Result<String, String> {
     let path = game_notes_path(&app_id);
     if path.exists() {
@@ -2601,7 +2558,6 @@ pub fn get_game_notes(app_id: String) -> Result<String, String> {
     }
 }
 
-#[tauri::command]
 pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
     let path = game_notes_path(&app_id);
     if let Some(parent) = path.parent() {
@@ -2610,7 +2566,6 @@ pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
     std::fs::write(&path, &content).map_err(|e| format!("Failed to write notes: {}", e))
 }
 
-#[tauri::command]
 pub async fn start_mcp_server(
     port: u16,
     state: State<'_, Mutex<AppState>>,
@@ -2648,7 +2603,6 @@ pub async fn start_mcp_server(
     }))
 }
 
-#[tauri::command]
 pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = app.mcp_abort.take() {
@@ -2661,7 +2615,6 @@ pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String
     }
 }
 
-#[tauri::command]
 pub fn get_mcp_status(
     state: State<'_, Mutex<AppState>>,
 ) -> Result<HashMap<String, String>, String> {
@@ -2688,14 +2641,12 @@ pub fn get_mcp_status(
 }
 
 /// Returns the current MCP tool whitelist.
-#[tauri::command]
 pub fn get_mcp_tool_whitelist(state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     Ok(app.mcp_tool_whitelist.clone())
 }
 
 /// Updates the MCP tool whitelist. Changes take effect on the next server start.
-#[tauri::command]
 pub fn set_mcp_tool_whitelist(
     tools: Vec<String>,
     state: State<'_, Mutex<AppState>>,
@@ -2712,7 +2663,6 @@ pub fn set_mcp_tool_whitelist(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn canvas_collab_host(
     port: u16,
     state: State<'_, Mutex<AppState>>,
@@ -2766,7 +2716,6 @@ pub async fn canvas_collab_host(
     Ok(bound_port)
 }
 
-#[tauri::command]
 pub async fn canvas_collab_join(
     addr: String,
     state: State<'_, Mutex<AppState>>,
@@ -2795,7 +2744,6 @@ pub async fn canvas_collab_join(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn canvas_collab_send(
     code: String,
     lang: String,
@@ -2828,7 +2776,6 @@ pub async fn canvas_collab_send(
     }
 }
 
-#[tauri::command]
 pub async fn canvas_collab_broadcast(
     payload: serde_json::Value,
     state: State<'_, Mutex<AppState>>,
@@ -2847,7 +2794,6 @@ pub async fn canvas_collab_broadcast(
     }
 }
 
-#[tauri::command]
 pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(abort) = s.collab_abort.take() {
@@ -2865,7 +2811,6 @@ pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
 
 /// Discover canvas collab peers on the local network via mDNS.
 /// Browses for `_neurodeck-canvas._tcp` services for ~2.5 seconds.
-#[tauri::command]
 pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
     let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
     let service_type = "_neurodeck-canvas._tcp.local.";
@@ -2909,7 +2854,6 @@ pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
     Ok(peers)
 }
 
-#[tauri::command]
 pub fn canvas_collab_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
     let s = state.lock().unwrap_or_else(|e| e.into_inner());
     let mut result = HashMap::new();
@@ -2931,7 +2875,6 @@ pub fn canvas_collab_status(state: State<'_, Mutex<AppState>>) -> HashMap<String
     result
 }
 
-#[tauri::command]
 pub fn get_lan_ip() -> String {
     match std::net::UdpSocket::bind("0.0.0.0:0") {
         Ok(sock) => {
@@ -2946,47 +2889,23 @@ pub fn get_lan_ip() -> String {
     }
 }
 
-#[tauri::command]
-pub async fn close_splashscreen(window: tauri::Window) {
-    if let Some(splashscreen) = window.get_webview_window("splashscreen") {
-        splashscreen.close().unwrap_or_default();
-    }
-    if let Some(main_window) = window.get_webview_window("main") {
-        main_window.show().unwrap_or_default();
-    }
+pub async fn close_splashscreen() {
+    // Stub: splashscreen is managed by Electron main process
 }
 
-#[tauri::command]
-pub async fn set_kiosk_mode(window: tauri::Window, enabled: bool) -> Result<(), String> {
-    let main = window
-        .get_webview_window("main")
-        .ok_or("Main window not found")?;
-    main.set_fullscreen(enabled)
-        .map_err(|e| format!("Failed to set fullscreen: {}", e))?;
-    main.set_decorations(!enabled)
-        .map_err(|e| format!("Failed to set decorations: {}", e))?;
+pub async fn set_kiosk_mode(_enabled: bool) -> Result<(), String> {
+    // Stub: window management is handled by Electron main process
     Ok(())
 }
 
-#[tauri::command]
-pub async fn get_window_mode(window: tauri::Window) -> Result<serde_json::Value, String> {
-    let main = window
-        .get_webview_window("main")
-        .ok_or("Main window not found")?;
-    let fullscreen = main
-        .is_fullscreen()
-        .map_err(|e| format!("Failed to query fullscreen: {}", e))?;
-    let decorations = main
-        .is_decorated()
-        .map_err(|e| format!("Failed to query decorations: {}", e))?;
+pub async fn get_window_mode() -> Result<serde_json::Value, String> {
     Ok(serde_json::json!({
-        "fullscreen": fullscreen,
-        "decorations": decorations,
-        "kiosk": fullscreen && !decorations,
+        "fullscreen": false,
+        "decorations": true,
+        "kiosk": false,
     }))
 }
 
-#[tauri::command]
 pub async fn dispatch_action(
     action: Intent,
     app_handle: AppHandle,
@@ -3014,7 +2933,6 @@ pub async fn dispatch_action(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn llm_oneshot(
     prompt: String,
     max_tokens: Option<u32>,

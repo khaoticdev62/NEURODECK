@@ -7,11 +7,11 @@ use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{AppHandle, State};
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
+use crate::{AppHandle, State};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Peer {
@@ -627,7 +627,7 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
     });
 
     let callbacks_clone = callbacks.clone();
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         if let Err(e) =
             neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, 42000)
                 .await
@@ -640,7 +640,7 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
     let emitter_server = emitter.clone();
     let state_server = state.clone();
     let download_dir_server = download_dir.clone();
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         let listener = match TcpListener::bind("0.0.0.0:18338").await {
             Ok(l) => l,
             Err(e) => {
@@ -655,7 +655,7 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
                     let emitter = emitter_server.clone();
                     let state = state_server.clone();
                     let download_dir = download_dir_server.clone();
-                    tauri::async_runtime::spawn(async move {
+                    tokio::spawn(async move {
                         if let Err(e) = handle_incoming_connection(
                             socket,
                             addr.ip().to_string(),
@@ -1046,7 +1046,6 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
     Ok(())
 }
 
-#[tauri::command]
 pub async fn start_file_transfer_impl<E: crate::bridge::EventEmitter>(
     peer_ip: String,
     file_path: String,
@@ -1194,17 +1193,15 @@ pub async fn start_file_transfer_impl<E: crate::bridge::EventEmitter>(
     Ok(transfer_id)
 }
 
-#[tauri::command]
 pub async fn start_file_transfer(
     peer_ip: String,
     file_path: String,
     app_handle: AppHandle,
     state: State<'_, SharedTransferState>,
 ) -> Result<String, String> {
-    start_file_transfer_impl(peer_ip, file_path, app_handle, state.inner().clone()).await
+    start_file_transfer_impl(peer_ip, file_path, app_handle, (*state).clone()).await
 }
 
-#[tauri::command]
 pub fn respond_to_transfer(
     transfer_id: String,
     accept: bool,
@@ -1219,19 +1216,16 @@ pub fn respond_to_transfer(
     }
 }
 
-#[tauri::command]
 pub fn get_discovered_peers(state: State<'_, SharedTransferState>) -> Vec<Peer> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.peers.values().map(|(p, _)| p.clone()).collect()
 }
 
-#[tauri::command]
 pub fn get_active_transfers(state: State<'_, SharedTransferState>) -> Vec<FileTransfer> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.transfers.values().cloned().collect()
 }
 
-#[tauri::command]
 pub fn cancel_transfer(
     transfer_id: String,
     state: State<'_, SharedTransferState>,
@@ -1254,7 +1248,6 @@ pub fn cancel_transfer(
     }
 }
 
-#[tauri::command]
 pub fn set_group_code(code: String, state: State<'_, SharedTransferState>) -> Result<(), String> {
     let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     s.group_code = code.trim().to_string();
@@ -1291,7 +1284,6 @@ pub fn set_group_code(code: String, state: State<'_, SharedTransferState>) -> Re
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_group_code(state: State<'_, SharedTransferState>) -> Result<String, String> {
     let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
     Ok(s.group_code.clone())

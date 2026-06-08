@@ -68,12 +68,6 @@ impl EventEmitter for WsBroadcaster {
     }
 }
 
-impl EventEmitter for tauri::AppHandle {
-    fn emit<E: serde::Serialize + Clone>(&self, event: &str, payload: E) {
-        let _ = tauri::Emitter::emit(self, event, payload);
-    }
-}
-
 impl WsBroadcaster {
     pub fn new() -> (Self, broadcast::Receiver<WsEvent>) {
         let (tx, rx) = broadcast::channel(4096);
@@ -108,6 +102,7 @@ pub struct ServerState {
     pub deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
     pub deckcode_lang: Arc<Mutex<String>>,
     pub limiter: Arc<crate::security::IpRateLimiter>,
+    pub db: Option<crate::db::DbPool>,
 }
 
 impl ServerState {
@@ -126,6 +121,7 @@ impl ServerState {
         lua: Arc<Mutex<crate::lua::LuaEngine>>,
         deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
         deckcode_lang: Arc<Mutex<String>>,
+        db: Option<crate::db::DbPool>,
     ) -> Self {
         ServerState {
             app_state: Arc::new(Mutex::new(app_state)),
@@ -141,6 +137,7 @@ impl ServerState {
             deckcode_state,
             deckcode_lang,
             limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
+            db,
         }
     }
 }
@@ -338,6 +335,13 @@ pub async fn run_bridge_server(
         .init();
     tracing::info!("Starting NEURODECK bridge server...");
 
+    // ── Database ───────────────────────────────────────────────────────────
+    let db_pool = crate::db::DbPool::open(config_root).await?;
+    tracing::info!("SQLite version: {}", db_pool.health().await?);
+
+    // ── Memory DB (SQLite-backed) ──────────────────────────────────────────
+    let mem_db = crate::memory::MemoryDB::from_pool(&db_pool.pool).await.ok();
+
     // ── Config & env ───────────────────────────────────────────────────────
     crate::load_env_file();
     let boot_self_heal = crate::self_heal::boot_self_heal(config_root, config_path);
@@ -377,6 +381,20 @@ pub async fn run_bridge_server(
     let whisper_binary = config.stt.whisper_binary.clone();
     let whisper_model = config.stt.whisper_model.clone();
 
+    // ── Memory migration (JSON → SQLite) ─────────────────────────────────
+    let mem_db = if let Some(sqlite_mem) = mem_db {
+        if let Some(legacy) = boot_self_heal.mem_db {
+            if let Ok(count) = legacy.migrate_json_to_sqlite(&db_pool.pool).await {
+                if count > 0 {
+                    tracing::info!("Migrated {} legacy memory records into SQLite", count);
+                }
+            }
+        }
+        Some(sqlite_mem)
+    } else {
+        boot_self_heal.mem_db
+    };
+
     // ── AppState ───────────────────────────────────────────────────────────
     let app_state = crate::AppState {
         provider,
@@ -384,7 +402,7 @@ pub async fn run_bridge_server(
         session_id: Utc::now().format("%Y%m%d-%H%M%S").to_string(),
         messages: Vec::new(),
         active_persona: "Default".to_string(),
-        mem_db: boot_self_heal.mem_db,
+        mem_db,
         record_child: None,
         record_stop_flag: None,
         process_stdin_tx: None,
@@ -407,6 +425,7 @@ pub async fn run_bridge_server(
         collab_mdns: None,
         canvas_exec_cancel_tx: None,
         boot_self_heal: boot_self_heal.report,
+        unlock_state: Default::default(),
     };
 
     // ── Server state ───────────────────────────────────────────────────────
@@ -420,12 +439,21 @@ pub async fn run_bridge_server(
 
     // ── Lua engine ─────────────────────────────────────────────────────────
     let lua_engine = crate::lua::LuaEngine::new_headless()?;
-    let plugins_dir = std::path::PathBuf::from("./plugins");
+    let plugins_dir = crate::plugin_mgr::plugins_dir();
     if plugins_dir.exists() {
-        if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
-            tracing::warn!("Failed to load Lua plugins: {}", e);
+        let can_load_plugins = {
+            let reg = &app_state.config.security.permission_registry;
+            let agent_id = &app_state.config.llm.active_agent_id;
+            reg.can(agent_id, crate::permissions::Capability::PluginLoad)
+        };
+        if can_load_plugins {
+            if let Err(e) = lua_engine.load_plugins(&plugins_dir) {
+                tracing::warn!("Failed to load Lua plugins: {}", e);
+            } else {
+                tracing::info!("Lua plugins loaded from {}", plugins_dir.display());
+            }
         } else {
-            tracing::info!("Lua plugins loaded from {}", plugins_dir.display());
+            tracing::warn!("Plugin loading skipped: active agent lacks 'plugin_load' capability");
         }
     }
     let lua = Arc::new(Mutex::new(lua_engine));
@@ -544,6 +572,7 @@ pub async fn run_bridge_server(
         deckcode_state,
         deckcode_lang,
         limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
+        db: Some(db_pool),
     };
 
     start_server(server_state).await

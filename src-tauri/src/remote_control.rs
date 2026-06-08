@@ -7,7 +7,7 @@ use std::sync::{
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        ConnectInfo, State,
+        ConnectInfo, State as AxumState,
     },
     response::{Html, IntoResponse},
     routing::get,
@@ -16,8 +16,8 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter, Listener, State as TauriState};
 use crate::bridge::WsBroadcaster;
+use crate::{AppHandle, State};
 
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
 #[derive(Clone)]
@@ -29,7 +29,7 @@ pub enum AppEmitter {
 impl AppEmitter {
     pub fn emit<E: serde::Serialize + Clone>(&self, event: &str, payload: E) {
         match self {
-            AppEmitter::Tauri(h) => { let _ = Emitter::emit(h, event, payload); }
+            AppEmitter::Tauri(h) => { crate::bridge::EventEmitter::emit(h, event, payload); }
             AppEmitter::Bridge(b) => b.emit(event, payload),
         }
     }
@@ -39,7 +39,7 @@ impl AppEmitter {
 /// In Tauri mode we store event IDs for unlisten();
 /// in bridge mode we store an AbortHandle for the subscriber task.
 pub enum EventListenerHandle {
-    Tauri(Vec<tauri::EventId>),
+    Tauri(Vec<u64>),
     Bridge(tokio::task::AbortHandle),
 }
 
@@ -690,7 +690,7 @@ fn generate_pin() -> String {
 
 async fn root_handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(state): State<WsAppState>,
+    AxumState(state): AxumState<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr.ip();
     if !state.limiter.is_allowed(ip) {
@@ -707,7 +707,7 @@ async fn ws_handler(
     ws: WebSocketUpgrade,
     headers: axum::http::HeaderMap,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(state): State<WsAppState>,
+    AxumState(state): AxumState<WsAppState>,
 ) -> impl IntoResponse {
     let ip = addr.ip();
 
@@ -734,7 +734,10 @@ async fn ws_handler(
     }
 
     if !valid_token {
-        let mut attempts_map = state.ip_attempts.lock().unwrap_or_else(|e| e.into_inner());
+        let mut attempts_map = match state.ip_attempts.lock() {
+            Ok(g) => g,
+            Err(e) => e.into_inner(),
+        };
         let entry = attempts_map.entry(ip).or_insert(0);
         *entry += 1;
 
@@ -940,157 +943,23 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
-#[tauri::command]
 pub async fn start_remote_server(
-    port: u16,
-    app_handle: AppHandle,
-    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
-    state: TauriState<'_, RemoteControlState>,
-    pty_state: TauriState<'_, crate::pty_manager::PtyState>,
+    _port: u16,
+    _app_handle: AppHandle,
+    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
+    _state: State<'_, RemoteControlState>,
+    _pty_state: State<'_, crate::pty_manager::PtyState>,
 ) -> Result<serde_json::Value, String> {
-    // Stop any existing server
-    {
-        let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(old) = guard.take() {
-            let _ = old.shutdown_tx.send(());
-        }
-    }
-
-    let pin = generate_pin();
-    let access_token = crate::security::generate_session_token();
-    let local_ip = get_local_ip();
-    let (broadcast_tx, _) = tokio::sync::broadcast::channel::<String>(256);
-    let connected = Arc::new(AtomicUsize::new(0));
-    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-
-    let ws_state = WsAppState {
-        pin: pin.clone(),
-        access_token: access_token.clone(),
-        broadcast_tx: broadcast_tx.clone(),
-        connected: connected.clone(),
-        emitter: AppEmitter::Tauri(app_handle.clone()),
-        ip_attempts: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
-        limiter: Arc::new(crate::security::IpRateLimiter::new(30.0, 2.0)),
-    };
-
-    let router = Router::new()
-        .route("/", get(root_handler))
-        .route("/ws", get(ws_handler))
-        .with_state(ws_state);
-
-    let bind_addr = format!("0.0.0.0:{}", port);
-    let listener = tokio::net::TcpListener::bind(&bind_addr)
-        .await
-        .map_err(|e| format!("Failed to bind port {}: {}", port, e))?;
-
-    tokio::spawn(async move {
-        axum::serve(listener, router)
-            .with_graceful_shutdown(async move {
-                let _ = shutdown_rx.await;
-            })
-            .await
-            .ok();
-    });
-
-    // Wire PTY output forwarding
-    {
-        let mut rtx = pty_state
-            .remote_tx
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        *rtx = Some(broadcast_tx.clone());
-    }
-
-    // Wire LLM streaming → WebSocket relay (Tauri mode)
-    let mut listener_ids: Vec<tauri::EventId> = Vec::new();
-
-    let btx_chunk = broadcast_tx.clone();
-    let id_chunk = app_handle.listen("stream_chunk", move |ev| {
-        let text: String = serde_json::from_str(ev.payload()).unwrap_or_default();
-        let msg = json!({"type":"chat_token","text":text,"done":false}).to_string();
-        let _ = btx_chunk.send(msg);
-    });
-    listener_ids.push(id_chunk);
-
-    let btx_done = broadcast_tx.clone();
-    let id_done = app_handle.listen("stream_done", move |_| {
-        let msg = json!({"type":"chat_token","text":"","done":true}).to_string();
-        let _ = btx_done.send(msg);
-    });
-    listener_ids.push(id_done);
-
-    let btx_err = broadcast_tx.clone();
-    let id_err = app_handle.listen("stream_error", move |ev| {
-        let msg_text: String = serde_json::from_str(ev.payload()).unwrap_or_default();
-        let msg = json!({"type":"error","message":msg_text}).to_string();
-        let _ = btx_err.send(msg);
-    });
-    listener_ids.push(id_err);
-
-    // Wire notification relay
-    let btx_notif = broadcast_tx.clone();
-    let id_notif = app_handle.listen("remote_notification_relay", move |ev| {
-        let payload: String = serde_json::from_str(ev.payload()).unwrap_or_default();
-        let _ = btx_notif.send(payload);
-    });
-    listener_ids.push(id_notif);
-
-    let event_listener = EventListenerHandle::Tauri(listener_ids);
-    let started_at = std::time::Instant::now();
-
-    // The session token is safe in the URL fragment: hash fragments are never
-    // sent to the server in HTTP requests and are not logged by proxies.
-    // They do appear in browser history — acceptable for a LAN remote control.
-    let url = format!(
-        "http://{}:{}/#pin={}&session={}",
-        local_ip, port, pin, access_token
-    );
-
-    {
-        let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-        *guard = Some(RemoteServerHandle {
-            port,
-            local_ip: local_ip.clone(),
-            pin: pin.clone(),
-            access_token: access_token.clone(),
-            broadcast_tx,
-            connected,
-            shutdown_tx,
-            started_at,
-            event_listener,
-        });
-    }
-
-    Ok(json!({
-        "port": port,
-        "ip":   local_ip,
-        "pin":  pin,
-        "url":  url,
-    }))
+    Err("Tauri remote server start is not available in pure Electron mode".to_string())
 }
 
-#[tauri::command]
 pub async fn stop_remote_server(
-    app_handle: AppHandle,
-    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
-    state: TauriState<'_, RemoteControlState>,
-    pty_state: TauriState<'_, crate::pty_manager::PtyState>,
+    _app_handle: AppHandle,
+    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
+    _state: State<'_, RemoteControlState>,
+    _pty_state: State<'_, crate::pty_manager::PtyState>,
 ) -> Result<(), String> {
-    let mut guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(handle) = guard.take() {
-        let _ = handle.shutdown_tx.send(());
-        if let EventListenerHandle::Tauri(ids) = handle.event_listener {
-            for id in ids {
-                app_handle.unlisten(id);
-            }
-        }
-    }
-    let mut rtx = pty_state
-        .remote_tx
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    *rtx = None;
-    Ok(())
+    Err("Tauri remote server stop is not available in pure Electron mode".to_string())
 }
 
 // ── Bridge-compatible commands (Electron sidecar) ─────────────────────────────
@@ -1242,10 +1111,9 @@ pub async fn stop_remote_server_bridge(
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_remote_server_info(
-    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
-    state: TauriState<'_, RemoteControlState>,
+    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
+    state: State<'_, RemoteControlState>,
 ) -> Result<serde_json::Value, String> {
     let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     Ok(match guard.as_ref() {
@@ -1272,11 +1140,10 @@ pub fn get_remote_server_info(
     })
 }
 
-#[tauri::command]
 pub fn remote_send_to_clients(
     message: String,
-    _app_state: TauriState<'_, std::sync::Mutex<crate::AppState>>,
-    state: TauriState<'_, RemoteControlState>,
+    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
+    state: State<'_, RemoteControlState>,
 ) -> Result<(), String> {
     let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref h) = *guard {
@@ -1289,12 +1156,11 @@ pub fn remote_send_to_clients(
 
 /// Relay a desktop notification to all connected remote WebSocket clients.
 /// Called from notifications.js via invoke() on every addNotification().
-#[tauri::command]
 pub fn remote_relay_notification(
     title: String,
     text: String,
     notif_type: String,
-    state: TauriState<'_, RemoteControlState>,
+    state: State<'_, RemoteControlState>,
 ) -> Result<(), String> {
     let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(ref h) = *guard {

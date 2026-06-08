@@ -2,9 +2,9 @@ use crate::config::AgentConfig;
 use crate::*;
 use futures_util::StreamExt;
 use std::process::Stdio;
-use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, State};
+use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
+use crate::AppHandle;
 
 // ─── Multi-Agent Switching ────────────────────────────────────────────────────
 
@@ -20,19 +20,16 @@ pub struct RecommendedModel {
     pub tags: Vec<String>,
 }
 
-#[tauri::command]
 pub fn list_agents(state: State<'_, Mutex<AppState>>) -> Vec<AgentConfig> {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.config.llm.agents.clone()
 }
 
-#[tauri::command]
 pub fn get_active_agent_id(state: State<'_, Mutex<AppState>>) -> String {
     let app = state.lock().unwrap_or_else(|e| e.into_inner());
     app.config.llm.active_agent_id.clone()
 }
 
-#[tauri::command]
 pub fn switch_agent(
     id: String,
     app_handle: AppHandle,
@@ -75,7 +72,6 @@ pub fn switch_agent(
     Ok(agent)
 }
 
-#[tauri::command]
 pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let id = agent.id.trim().to_string();
     if id.is_empty() {
@@ -109,7 +105,6 @@ pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Resul
     Ok(())
 }
 
-#[tauri::command]
 pub fn delete_agent(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
 
@@ -135,7 +130,6 @@ pub fn delete_agent(id: String, state: State<'_, Mutex<AppState>>) -> Result<(),
     Ok(())
 }
 
-#[tauri::command]
 pub fn get_recommended_models() -> Vec<RecommendedModel> {
     let ollama = "ollama".to_string();
     let gemini = "gemini".to_string();
@@ -378,7 +372,6 @@ pub struct AgentHistoryEntry {
 
 /// Call the LLM with the agent system prompt, collect the full response, and
 /// return the raw text. The frontend parses the JSON step from the text.
-#[tauri::command]
 pub async fn agent_step(
     task: String,
     history: Vec<AgentHistoryEntry>,
@@ -487,7 +480,6 @@ RULES:
 
 /// Apply an AI-generated inline edit to code. Sends the code + instruction to
 /// the active LLM provider via generate_oneshot and returns the modified code.
-#[tauri::command]
 pub async fn ai_edit_code(
     code: String,
     instruction: String,
@@ -512,16 +504,22 @@ pub async fn ai_edit_code(
 
 /// Execute agent-generated code in a sandboxed subprocess with a 30-second
 /// timeout. Returns stdout + stderr combined.
-#[tauri::command]
 pub async fn agent_exec_code(
     code: String,
     lang: String,
-    _state: State<'_, Mutex<AppState>>,
+    state: Arc<Mutex<AppState>>,
 ) -> Result<String, String> {
-    let workspace_path = {
-        let app = _state.lock().unwrap_or_else(|e| e.into_inner());
-        app.config.get_resolved_workspace()
+    let (workspace_path, agent_id) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        let agent_id = app.config.llm.active_agent_id.clone();
+        (app.config.get_resolved_workspace(), agent_id)
     };
+
+    crate::permissions::require_capability(
+        &state.lock().unwrap_or_else(|e| e.into_inner()).config.security.permission_registry,
+        &agent_id,
+        crate::permissions::Capability::ShellExec,
+    )?;
 
     crate::security::validate_script_payload(&code, &lang, "agent-exec", workspace_path.as_deref())?;
 
@@ -598,7 +596,6 @@ pub async fn agent_exec_code(
 /// Start streaming execution of code from the Canvas view.
 /// Emits `canvas_exec_line` for stdout/stderr lines and `canvas_exec_done`
 /// when the child exits, is cancelled, or times out.
-#[tauri::command]
 pub async fn exec_code_stream(
     code: String,
     lang: String,
@@ -711,7 +708,6 @@ pub async fn exec_code_stream(
 }
 
 /// Cancel the active streaming Canvas execution, if one exists.
-#[tauri::command]
 pub fn cancel_exec(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
