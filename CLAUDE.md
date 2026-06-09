@@ -6,17 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-NEURODECK is a desktop app (originally Tauri v2, now transitioning to an **Electron + axum bridge** architecture) that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, LSP, workflow automation, and gamepad-native navigation in one 1280×800 fullscreen window.
+NEURODECK is a desktop app built on **Electron + axum bridge** that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, LSP, workflow automation, and gamepad-native navigation in one 1280×800 fullscreen window.
 
-**Architecture shift**: `tauri.conf.json` has been deleted. The Rust backend now runs as a standalone sidecar process exposing an axum HTTP + WebSocket server on `localhost:9477`. The Electron shell loads the frontend and communicates via `neurobridge.js` instead of Tauri's `invoke()` / `listen()`. See `bridge.rs` and `neurobridge.js`.
+**Architecture**: The Rust backend runs as a standalone sidecar process (`neurodeck`/`neurodeck.exe`) exposing an axum HTTP + WebSocket server on `localhost:9477`. Electron spawns the sidecar, polls `/health`, then opens the BrowserWindow. The frontend communicates via `neurobridge.js` (HTTP fetch + WebSocket) — there is no Tauri runtime. See `bridge.rs` and `neurobridge.js`.
 
 ---
 
 ## Non-Obvious Tooling & Quirks
 
-- **Two config files exist**: `llm-term.toml` at the project root AND `src-tauri/llm-term.toml`. The Rust binary reads `src-tauri/llm-term.toml` during `cargo run` / `tauri dev` (working dir is `src-tauri/`). The root copy is what the installer deploys. Always edit both or let `config.rs` path logic handle it.
-- **`GEMINI_API_KEY` must be set as an env var** before `npm run tauri dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
-- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the dev-mode mock IPC shim has been removed. To test real commands, use `npm run tauri dev`.
+- **Two config files exist**: `llm-term.toml` at the project root AND `src-tauri/llm-term.toml`. The Rust binary reads `src-tauri/llm-term.toml` when run from `src-tauri/` (e.g. `cargo run`). The root copy is what the installer deploys. Always edit both or let `config.rs` path logic handle it.
+- **`GEMINI_API_KEY` must be set as an env var** before running the sidecar. If absent, the binary silently falls back to Ollama with no user-visible error.
+- **Vite dev standalone** (`npm run frontend:dev`) works for CSS/HTML iteration but all `invoke()` calls will fail without the sidecar. To test real commands, use `npm run dev` (starts Electron + sidecar together).
 - **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines.
 - **Rust version is pinned to 1.92.0** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
 - **suppaftp 6.x `retr_as_buffer`** returns `Cursor<Vec<u8>>` and loads the entire file into RAM. Don't use it for files > 100MB.
@@ -160,7 +160,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
 - **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and `neurobridge.js` (local). Adding a bundled npm package will bloat the Electron renderer bundle.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
-- **Never use `./data/` or `./sessions/` relative paths** in Rust — always call `user_config_dir().join("data/...")`. CWD-relative paths work in `tauri dev` but fail on read-only SteamOS installs.
+- **Never use `./data/` or `./sessions/` relative paths** in Rust — always call `user_config_dir().join("data/...")`. CWD-relative paths fail on read-only SteamOS installs.
 - **Never mutate `GEMINI_API_KEY` env var globally** — use `GeminiProvider::new_with_key(model, key)` for key injection in test/one-off paths. Mutating the env var races with concurrent `send_command` calls.
 - **Blocking commands in async Tauri handlers must use `spawn_blocking`** — `std::process::Command::output()` blocks the Tokio executor thread. Only `execute_command` and `get_context_stats` were patched; apply the same pattern to any new sync I/O.
 
@@ -182,7 +182,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Gotchas / Tribal Knowledge
 
-- **The config path `../llm-term.toml` fallback** was added because the binary's working directory during `tauri dev` is `src-tauri/`, not the project root. Four copies of `llm-term.toml` exist across the project (`root`, `src-tauri/`, `assets/`, `dist/`). Only `src-tauri/llm-term.toml` is read at runtime. This is load-bearing — don't remove the path check.
+- **The config path `../llm-term.toml` fallback** was added because the binary's working directory during `cargo run` is `src-tauri/`, not the project root. Four copies of `llm-term.toml` exist (`root`, `src-tauri/`, `assets/`, `dist/`). Only `src-tauri/llm-term.toml` is read at runtime. This is load-bearing — don't remove the path check.
 
 - **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
 
@@ -220,7 +220,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **KFMS dirty-flag filtering** — `khaotic-init.sh stamp` excludes the 4 KFMS-managed artifact files (`meta.json`, `health.json`, `CODENAME_REGISTRY.md`, `IMPLEMENTATION_PLAN.md`) from the `git status --porcelain` dirty check. Without this, every post-commit amend would mark the build as dirty on the next stamp.
 
-- **`#[tauri::command]` handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs` and imported into `lib.rs` with `use crate::commands::*`. New commands go into the most appropriate sub-module, not directly into `lib.rs`.
+- **Command handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs`. New commands go into the most appropriate sub-module, then add a `.route("/api/command_name", post(handler))` entry in `bridge.rs`'s router. Do not put new commands directly in `lib.rs`.
 
 - **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection, avoiding generic JS evaluations or hardcoded Monaco commands.
 
@@ -294,20 +294,21 @@ next:    v1.3.x → Osiris  (MINOR=3, index 3)
 ## Dev Commands
 
 ```bash
-npm run tauri dev                     # Legacy hot-reload path (Vite + Rust via Tauri) — may not work post-bridge
+npm run dev                           # Full dev mode: Electron shell + Vite HMR + Rust sidecar (auto-built)
 npm run build                         # Production build (Electron + bridge sidecar)
 
-npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without bridge sidecar)
-npm run --prefix frontend build       # Vite build only
+npm run frontend:dev                  # Frontend only (CSS/HTML — invoke() calls fail without sidecar)
+npm run frontend:build                # Vite build only
 
-cd src-tauri && cargo check           # Fast type-check
-cd src-tauri && cargo clippy          # Lint
-cd src-tauri && cargo build           # Debug build (~2min first time due to mlua vendored)
+npm run sidecar:build                 # Build Rust sidecar only (cargo build --release in src-tauri)
+npm run rust:check                    # Fast type-check (cargo check)
+npm run rust:clippy                   # Lint (cargo clippy)
+npm run rust:test                     # Rust tests
 
-# Start the bridge sidecar manually for frontend-only dev:
-NEURODECK_PORT=9477 cargo run --manifest-path src-tauri/Cargo.toml
+# Start the sidecar manually for frontend-only dev (PowerShell):
+$env:NEURODECK_PORT=9477; cargo run --manifest-path src-tauri/Cargo.toml
 
 ./install.sh                          # SteamOS deploy → ~/Applications/neurodeck/
 ./launch_gamescope.sh                 # Run in gamescope 1280×800 (Steam Deck Game Mode)
-.\package_release.ps1                 # Windows MSI packaging
+.\package_release.ps1                 # Windows MSI packaging (legacy — use electron-builder instead)
 ```
