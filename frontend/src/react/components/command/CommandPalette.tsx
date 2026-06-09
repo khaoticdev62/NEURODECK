@@ -1,0 +1,109 @@
+import type { Dispatch } from 'react';
+import { Activity, Bot, BrainCircuit, Database, FileDown, FileJson, FolderOpen, HardDrive, Search, Settings, ShieldCheck, Sparkles, Trash2, Workflow } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { starterPrompts } from '../../types/seed';
+import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
+import { Badge } from '../primitives/Badge';
+
+type ActionName = keyof Pick<NeuroDeckAppActions, 'scanProject' | 'buildProjectContext' | 'detectModels' | 'checkAiHealth' | 'refreshDiagnostics' | 'exportSession' | 'saveSession'>;
+
+type CommandItem = {
+  label: string;
+  hint: string;
+  view?: ViewId;
+  icon: LucideIcon;
+  action?: ActionName;
+  prompt?: string;
+  runPrompt?: boolean;
+};
+
+const commands: CommandItem[] = [
+  { label: 'Open Workspace', hint: 'Mission control and composer', view: 'workspace', icon: Sparkles },
+  { label: 'Open Execution Layer', hint: 'Agent runs and tool audit history', view: 'execution', icon: Workflow },
+  { label: 'Scan Project Folder', hint: 'Select a folder and detect stack, risks, scripts, and docs', icon: FolderOpen, action: 'scanProject' },
+  { label: 'Build Project Context', hint: 'Read allowlisted files and redact sensitive values', icon: FileJson, action: 'buildProjectContext' },
+  { label: 'Open Model Manager', hint: 'Local model inventory', view: 'models', icon: BrainCircuit },
+  { label: 'Detect Local Models', hint: 'Check Ollama, LM Studio, llama.cpp, and GGUF folders', icon: BrainCircuit, action: 'detectModels' },
+  { label: 'Check AI Health', hint: 'Ping local Ollama and LM Studio endpoints', icon: Activity, action: 'checkAiHealth' },
+  { label: 'Open Agent Dock', hint: 'Run specialized AI operators', view: 'agents', icon: Bot },
+  { label: 'Open Memory Vault', hint: 'Pinned project knowledge', view: 'memory', icon: Database },
+  { label: 'Open Offline Cache', hint: 'Local cache and sync queue', view: 'cache', icon: HardDrive },
+  { label: 'Export Session Markdown', hint: 'Write a local markdown export through the main process', icon: FileDown, action: 'exportSession' },
+  { label: 'Save Session JSON', hint: 'Persist messages, context, and agent run history', icon: FileJson, action: 'saveSession' },
+  { label: 'Refresh Diagnostics', hint: 'Read runtime info and recent IPC logs', icon: Activity, action: 'refreshDiagnostics' },
+  { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', view: 'settings', icon: Settings },
+  { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true }
+];
+
+export function CommandPalette({ state, dispatch, actions }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; actions: NeuroDeckAppActions }) {
+  if (!state.commandOpen) return null;
+
+  const runCommand = async (command: CommandItem) => {
+    if (command.view) dispatch({ type: 'set-view', view: command.view });
+    if (command.prompt && !command.runPrompt) dispatch({ type: 'run-starter', prompt: command.prompt });
+    if (command.prompt && command.runPrompt) {
+      dispatch({ type: 'toggle-command', open: false });
+      await actions.runAssistant(command.prompt);
+    }
+    if (command.action) {
+      dispatch({ type: 'toggle-command', open: false });
+      await actions[command.action]();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-20 backdrop-blur-sm" onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
+      <div className="no-drag w-full max-w-2xl overflow-hidden rounded-3xl border border-neuro/25 bg-[#0B1015]/95 shadow-2xl shadow-neuro/10" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
+          <Search className="h-5 w-5 text-neuro" />
+          <input
+            autoFocus
+            placeholder="Run command, open panel, execute local AI workflow..."
+            className="h-10 flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') dispatch({ type: 'toggle-command', open: false });
+              if (event.key === 'Enter') void runCommand(commands[0]);
+            }}
+          />
+          <Badge tone="accent">Ctrl K</Badge>
+        </div>
+
+        <div className="max-h-[62vh] overflow-y-auto p-3 scrollbar-thin">
+          <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">Executable Commands</p>
+          <div className="space-y-1.5">
+            {commands.map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.label}
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-neuro/30 hover:bg-neuro/[0.07]"
+                  onClick={() => void runCommand(command)}
+                >
+                  <Icon className="h-5 w-5 text-neuro" />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-slate-100">{command.label}</span>
+                    <span className="block text-xs text-slate-500">{command.hint}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="px-2 pb-2 pt-5 text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-500">Starter Actions</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {starterPrompts.map((prompt) => (
+              <button key={prompt} type="button" onClick={() => dispatch({ type: 'run-starter', prompt })} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-left text-xs text-slate-300 transition hover:border-neuro/30 hover:bg-neuro/[0.06]">
+                {prompt}
+              </button>
+            ))}
+          </div>
+
+          <button type="button" onClick={() => void actions.resetLocalState()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-danger/25 bg-danger/10 px-3 py-3 text-sm text-danger transition hover:bg-danger/15">
+            <Trash2 className="h-4 w-4" /> Reset local UI state
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #0A0D10;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(94, 235, 255, 0.08), transparent 34rem),
+    radial-gradient(circle at bottom right, rgba(124, 255, 178, 0.045), transparent 32rem),
+    #0A0D10;
+  color: #E8F4FF;
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag,
+button,
+input,
+textarea,
+select,
+a,
+[role='button'] {
+  -webkit-app-region: no-drag;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(141, 161, 179, 0.45) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(141, 161, 179, 0.35);
+  border-radius: 999px;
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(17, 22, 28, 0.96), rgba(12, 17, 22, 0.94));
+  border: 1px solid rgba(141, 161, 179, 0.14);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+}
+
+.tactical-grid {
+  background-image:
+    linear-gradient(rgba(94, 235, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 235, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
