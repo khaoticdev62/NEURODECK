@@ -413,6 +413,7 @@
                                 <div class="browser-blocked-icon">🚫</div>
                                 <div class="browser-blocked-msg">This page is blocked by the content policy.</div>
                             </div>
+                            <iframe id="browser-iframe" class="browser-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="display:none;width:100%;height:100%;border:none;background:#fff;"></iframe>
                         </div>
                     </div>
                 </section>
@@ -736,8 +737,8 @@
                             </div>
                             <div class="remote-header-right">
                                 <div id="remote-status-badge" class="remote-status-badge">
-                                    <span class="remote-status-dot"></span>
-                                    Offline
+                                    <span id="remote-status-dot" class="remote-status-dot"></span>
+                                    <span id="remote-status-text">Offline</span>
                                 </div>
                             </div>
                         </div>
@@ -750,12 +751,48 @@
                                         <button id="remote-stop-btn" class="remote-stop-btn" type="button">Stop Server</button>
                                         <button id="remote-copy-url-btn" class="remote-start-btn" type="button" title="Copy remote URL" aria-label="Copy remote URL">Copy URL</button>
                                     </div>
+                                    <div class="remote-field-row" style="margin-top:10px">
+                                        <label class="remote-field-label">Port</label>
+                                        <input id="remote-port-input" class="remote-field-input" type="number" value="9090" aria-label="Remote server port" />
+                                    </div>
+                                </div>
+                                <div class="remote-section" style="margin-top:12px;flex:1;min-height:0;display:flex;flex-direction:column">
+                                    <div class="remote-section-label">Connection Log</div>
+                                    <div id="remote-log" class="remote-log"></div>
                                 </div>
                             </div>
                             <div class="remote-panel">
-                                <div class="remote-section">
-                                    <div class="remote-section-label">QR Code</div>
-                                    <div id="remote-qr"></div>
+                                <div id="remote-qr-section" class="remote-section" style="display:none">
+                                    <div class="remote-section-label">Scan to Connect</div>
+                                    <div class="remote-qr-wrapper">
+                                        <div id="remote-qr-canvas"></div>
+                                    </div>
+                                    <div class="remote-url-row">
+                                        <span class="remote-url-label">URL:</span>
+                                        <span id="remote-url-text" class="remote-url-text"></span>
+                                    </div>
+                                    <div class="remote-url-row">
+                                        <span class="remote-url-label">PIN:</span>
+                                        <span id="remote-pin-display" class="remote-url-text"></span>
+                                    </div>
+                                    <div class="remote-url-row">
+                                        <span class="remote-url-label">IP:</span>
+                                        <span id="remote-ip-display" class="remote-url-text"></span>
+                                    </div>
+                                    <div class="remote-url-row">
+                                        <span class="remote-url-label">Port:</span>
+                                        <span id="remote-port-display" class="remote-url-text"></span>
+                                    </div>
+                                    <div id="remote-ttl-row" class="remote-url-row" style="display:none">
+                                        <span class="remote-url-label">TTL:</span>
+                                        <span id="remote-ttl-value" class="remote-url-text"></span>
+                                    </div>
+                                </div>
+                                <div id="remote-stats-row" class="remote-stats-row" style="display:none">
+                                    <div class="remote-stat">
+                                        <span class="remote-stat-number" id="remote-clients-count">0</span>
+                                        <span class="remote-stat-label">Clients</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1936,11 +1973,31 @@
 
 <div id="agent-switcher-panel" class="agent-switcher-panel hidden" role="dialog" aria-modal="true" aria-label="Agent switcher" aria-hidden="true">
     <div class="agent-switcher-header">
-        <div id="agent-switcher-title" class="agent-switcher-title">Agent Switch</div>
+        <div class="agent-switcher-tabs">
+            <button class="agent-tab active" type="button" data-atab="recommended">Recommended</button>
+            <button class="agent-tab" type="button" data-atab="custom">Custom</button>
+        </div>
         <button class="agent-switcher-close" type="button" aria-label="Close agent switcher">Close</button>
     </div>
-    <div id="agent-card-grid"></div>
-    <div id="agent-rec-grid"></div>
+    <div id="agent-tab-recommended" class="agent-tab-body">
+        <div id="agent-rec-grid"></div>
+    </div>
+    <div id="agent-tab-custom" class="agent-tab-body hidden">
+        <div id="agent-card-grid"></div>
+        <div class="agent-form-card" style="margin-top:12px;padding:12px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;background:rgba(255,255,255,0.02)">
+            <div style="font-size:0.72rem;font-weight:700;margin-bottom:10px;color:var(--accent-color)">New Agent</div>
+            <div class="agent-form-row"><label>ID</label><input id="new-agent-id" type="text" placeholder="my-agent" /></div>
+            <div class="agent-form-row"><label>Name</label><input id="new-agent-name" type="text" placeholder="Display name" /></div>
+            <div class="agent-form-row"><label>Provider</label><select id="new-agent-provider"><option value="gemini">Gemini</option><option value="ollama">Ollama</option><option value="openai">OpenAI</option><option value="openai-compat">OpenAI-Compat</option></select></div>
+            <div class="agent-form-row"><label>Model</label><input id="new-agent-model" type="text" placeholder="gemini-2.0-flash" /></div>
+            <div class="agent-form-row" id="new-agent-url-row" style="display:none"><label>Base URL</label><input id="new-agent-url" type="text" placeholder="http://localhost:11434" /></div>
+            <div class="agent-form-row"><label>Description</label><input id="new-agent-desc" type="text" placeholder="Optional description" /></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+                <button id="new-agent-save-btn" class="stv-btn-primary" type="button">Add Agent</button>
+            </div>
+            <div id="new-agent-status" class="agent-form-status"></div>
+        </div>
+    </div>
 </div>
 
 <div id="history-search-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="History search" aria-hidden="true">

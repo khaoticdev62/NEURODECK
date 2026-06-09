@@ -2132,7 +2132,7 @@ function _initSetupStateAndListeners(initialState) {
   state.activePersona = initialState.active_persona || "Default";
   state.activeProvider = initialState.provider || "gemini";
   state.activeAgentId = initialState.active_agent_id || "";
-  invoke("list_agents").then((agents) => { state.agents = agents; renderAgentSwitcher(); }).catch(() => {});
+  invoke("list_agents").then((agents) => { state.agents = Array.isArray(agents) ? agents : (agents?.agents || []); renderAgentSwitcher(); }).catch(() => {});
   listen("agent_changed", (event) => {
     const agent = event.payload;
     state.activeAgentId = agent.id;
@@ -3908,11 +3908,14 @@ function _browserRectsEqual(a, b) {
 
 async function _browserNavigateTo(raw, bCtx, urlInput, homeScreen) {
   const url = _browserParseUrlOrSearch(raw);
+  const iframe = document.getElementById("browser-iframe");
   if (url === "neurodeck://home") {
     bCtx.url = "neurodeck://home";
     if (bCtx.open) await invoke("browser_hide").catch(() => {});
     if (homeScreen) homeScreen.classList.remove("hidden");
     if (urlInput) urlInput.value = "";
+    if (iframe) iframe.style.display = "none";
+    bCtx.open = false;
     return;
   }
   bCtx.url = url;
@@ -3927,6 +3930,7 @@ async function _browserNavigateTo(raw, bCtx, urlInput, homeScreen) {
       bCtx.open = true;
       if (homeScreen) homeScreen.classList.add("hidden");
     }
+    if (iframe) { iframe.src = url; iframe.style.display = "block"; }
   } catch (e) {
     console.error("[Browser] Navigation error:", e);
     window.addNotification("Browser Error", String(e), "error");
@@ -5117,6 +5121,12 @@ document.addEventListener("change", (e) => {
   }
 });
 
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#new-agent-save-btn")) {
+    handleAddAgent();
+  }
+});
+
 function handleAddAgent() {
   const id = document.getElementById("new-agent-id")?.value.trim() || "";
   const name = document.getElementById("new-agent-name")?.value.trim() || "";
@@ -5143,7 +5153,7 @@ function handleAddAgent() {
   })
     .then(() => {
       invoke("list_agents").then((agents) => {
-        state.agents = agents;
+        state.agents = Array.isArray(agents) ? agents : (agents?.agents || []);
         renderAgentSwitcher();
         if (statusEl) {
           statusEl.className = "agent-form-status ok";

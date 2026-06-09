@@ -1687,6 +1687,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
+        "browser_hide" => {
+            state.broadcaster.emit("browser_hide_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "hidden" }))
+        }
+
+        "browser_show" => {
+            state.broadcaster.emit("browser_show_requested", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "shown" }))
+        }
+
         "open_browser" => {
             let url = args
                 .get("url")
@@ -2771,13 +2781,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .iter()
                 .map(|a| {
                     serde_json::json!({
-                        "id": a.id, "name": a.name, "model": a.model, "description": a.description
+                        "id": a.id, "name": a.name, "provider": a.provider, "model": a.model, "description": a.description
                     })
                 })
                 .collect();
-            Ok(
-                serde_json::json!({ "agents": agents, "count": agents.len(), "active_id": app_state.config.llm.active_agent_id }),
-            )
+            Ok(serde_json::json!(agents))
         }
 
         "get_active_agent_id" => {
@@ -2803,7 +2811,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
             Ok(
-                serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "model": agent.model }),
+                serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "provider": agent.provider, "model": agent.model }),
             )
         }
 
@@ -2861,15 +2869,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "deleted", "id": id }))
         }
 
-        "get_recommended_models" => Ok(serde_json::json!({
-            "models": [
-                { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true },
-                { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true },
-                { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true },
-                { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true },
-                { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false }
-            ]
-        })),
+        "get_recommended_models" => Ok(serde_json::json!([
+            { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true, "vram_mb": 0, "description": "Fast multimodal model for everyday tasks", "tags": ["recommended", "multilingual"] },
+            { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true, "vram_mb": 0, "description": "High-quality reasoning with long context", "tags": ["recommended", "long-context"] },
+            { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true, "vram_mb": 5200, "description": "Efficient local model, great for Steam Deck", "tags": ["recommended"] },
+            { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true, "vram_mb": 4800, "description": "Balanced local performance", "tags": ["recommended", "code"] },
+            { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false, "vram_mb": 4800, "description": "Conversational local model", "tags": [] }
+        ])),
 
         // ────────────────────────────────────────────────────────────────────
         // IDE / Workspace File System
