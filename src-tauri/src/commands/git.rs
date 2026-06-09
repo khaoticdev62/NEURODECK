@@ -1,4 +1,3 @@
-use crate::AppHandle;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -53,15 +52,12 @@ pub struct GitCredential {
 
 // ── Repo Discovery ─────────────────────────────────────────────────────────
 
-fn get_repos_file(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("git_repos.json")
+fn get_repos_file() -> PathBuf {
+    crate::user_config_dir().join("git_repos.json")
 }
 
-fn load_repos(app: &AppHandle) -> Vec<GitRepoInfo> {
-    let path = get_repos_file(app);
+fn load_repos() -> Vec<GitRepoInfo> {
+    let path = get_repos_file();
     if !path.exists() {
         return vec![];
     }
@@ -71,8 +67,8 @@ fn load_repos(app: &AppHandle) -> Vec<GitRepoInfo> {
         .unwrap_or_default()
 }
 
-fn save_repos(app: &AppHandle, repos: &[GitRepoInfo]) {
-    let path = get_repos_file(app);
+fn save_repos(repos: &[GitRepoInfo]) {
+    let path = get_repos_file();
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -82,8 +78,8 @@ fn save_repos(app: &AppHandle, repos: &[GitRepoInfo]) {
     );
 }
 
-fn add_recent_repo(app: &AppHandle, path_str: &str) {
-    let mut repos = load_repos(app);
+pub fn add_recent_repo(path_str: &str) {
+    let mut repos = load_repos();
     let name = Path::new(path_str)
         .file_name()
         .and_then(|n| n.to_str())
@@ -98,20 +94,17 @@ fn add_recent_repo(app: &AppHandle, path_str: &str) {
         },
     );
     repos.truncate(20);
-    save_repos(app, &repos);
+    save_repos(&repos);
 }
 
 // ── Credential Helpers ─────────────────────────────────────────────────────
 
-fn git_creds_file(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("git_credentials.json")
+fn git_creds_file() -> PathBuf {
+    crate::user_config_dir().join("data/git_credentials.json")
 }
 
-fn load_git_creds(app: &AppHandle) -> HashMap<String, GitCredential> {
-    let path = git_creds_file(app);
+fn load_git_creds() -> HashMap<String, GitCredential> {
+    let path = git_creds_file();
     if !path.exists() {
         return HashMap::new();
     }
@@ -121,8 +114,8 @@ fn load_git_creds(app: &AppHandle) -> HashMap<String, GitCredential> {
         .unwrap_or_default()
 }
 
-fn save_git_creds(app: &AppHandle, creds: &HashMap<String, GitCredential>) {
-    let path = git_creds_file(app);
+fn save_git_creds(creds: &HashMap<String, GitCredential>) {
+    let path = git_creds_file();
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -134,13 +127,13 @@ fn save_git_creds(app: &AppHandle, creds: &HashMap<String, GitCredential>) {
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-pub fn git_list_repos(app: AppHandle) -> Result<Vec<GitRepoInfo>, String> {
-    Ok(load_repos(&app))
+pub fn git_list_repos() -> Result<Vec<GitRepoInfo>, String> {
+    Ok(load_repos())
 }
 
-pub fn git_open_repo(path: String, app: AppHandle) -> Result<GitRepoStatus, String> {
+pub fn git_open_repo(path: String) -> Result<GitRepoStatus, String> {
     let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-    add_recent_repo(&app, &path);
+    add_recent_repo(&path);
 
     let head = repo.head().map_err(|e| e.to_string())?;
     let branch = head.shorthand().unwrap_or("HEAD").to_string();
@@ -189,7 +182,7 @@ pub fn git_open_repo(path: String, app: AppHandle) -> Result<GitRepoStatus, Stri
     })
 }
 
-pub fn git_clone(url: String, path: String, app: AppHandle) -> Result<(), String> {
+pub fn git_clone(url: String, path: String) -> Result<(), String> {
     let mut builder = git2::build::RepoBuilder::new();
     let mut callbacks = git2::RemoteCallbacks::new();
     callbacks.credentials(|_url, username_from_url, _allowed_types| {
@@ -201,13 +194,13 @@ pub fn git_clone(url: String, path: String, app: AppHandle) -> Result<(), String
     builder
         .clone(&url, Path::new(&path))
         .map_err(|e| e.to_string())?;
-    add_recent_repo(&app, &path);
+    add_recent_repo(&path);
     Ok(())
 }
 
-pub fn git_init(path: String, app: AppHandle) -> Result<(), String> {
+pub fn git_init(path: String) -> Result<(), String> {
     git2::Repository::init(&path).map_err(|e| e.to_string())?;
-    add_recent_repo(&app, &path);
+    add_recent_repo(&path);
     Ok(())
 }
 
@@ -552,9 +545,8 @@ pub fn git_credential_store(
     host: String,
     username: String,
     token: String,
-    app: AppHandle,
 ) -> Result<(), String> {
-    let mut creds = load_git_creds(&app);
+    let mut creds = load_git_creds();
     creds.insert(
         host.clone(),
         GitCredential {
@@ -563,33 +555,30 @@ pub fn git_credential_store(
             token,
         },
     );
-    save_git_creds(&app, &creds);
+    save_git_creds(&creds);
     Ok(())
 }
 
-pub fn git_credential_get(host: String, app: AppHandle) -> Result<Option<GitCredential>, String> {
-    let creds = load_git_creds(&app);
+pub fn git_credential_get(host: String) -> Result<Option<GitCredential>, String> {
+    let creds = load_git_creds();
     Ok(creds.get(&host).cloned())
 }
 
-pub fn git_credential_delete(host: String, app: AppHandle) -> Result<(), String> {
-    let mut creds = load_git_creds(&app);
+pub fn git_credential_delete(host: String) -> Result<(), String> {
+    let mut creds = load_git_creds();
     creds.remove(&host);
-    save_git_creds(&app, &creds);
+    save_git_creds(&creds);
     Ok(())
 }
 
 // ── SSH Keys ───────────────────────────────────────────────────────────────
 
-fn ssh_dir(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("ssh")
+fn ssh_dir() -> PathBuf {
+    crate::user_config_dir().join("ssh")
 }
 
-pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, String> {
-    let dir = ssh_dir(&app);
+pub fn git_generate_ssh_key(label: String) -> Result<String, String> {
+    let dir = ssh_dir();
     let _ = std::fs::create_dir_all(&dir);
     let key_path = dir.join(format!(
         "id_ed25519_{}",
@@ -624,8 +613,8 @@ pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, Str
     Ok(pub_key.trim().to_string())
 }
 
-pub fn git_ssh_public_keys(app: AppHandle) -> Result<Vec<String>, String> {
-    let dir = ssh_dir(&app);
+pub fn git_ssh_public_keys() -> Result<Vec<String>, String> {
+    let dir = ssh_dir();
     if !dir.exists() {
         return Ok(vec![]);
     }
@@ -646,7 +635,6 @@ pub fn git_ssh_public_keys(app: AppHandle) -> Result<Vec<String>, String> {
 
 pub async fn git_generate_commit_message(
     path: String,
-    _app: AppHandle,
     state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
 ) -> Result<String, String> {
     // Get staged diff

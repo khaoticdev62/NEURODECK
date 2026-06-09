@@ -3051,26 +3051,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "api_list_collections" => {
-            let dir = crate::user_config_dir().join("data/api_collections");
-            let mut names = Vec::new();
-            if let Ok(entries) = std::fs::read_dir(&dir) {
-                for entry in entries.flatten() {
-                    if let Some(name) = entry
-                        .file_name()
-                        .to_str()
-                        .map(|s| s.trim_end_matches(".json").to_string())
-                    {
-                        if entry
-                            .path()
-                            .extension()
-                            .map(|e| e == "json")
-                            .unwrap_or(false)
-                        {
-                            names.push(name);
-                        }
-                    }
-                }
-            }
+            let names = crate::commands::api_lab::api_list_collections()?;
             Ok(serde_json::json!({ "collections": names, "count": names.len() }))
         }
 
@@ -3078,15 +3059,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
+                .ok_or("Missing 'name'")?
+                .to_string();
             let requests = args
                 .get("requests")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'requests'")?;
-            let dir = crate::user_config_dir().join("data/api_collections");
-            std::fs::create_dir_all(&dir).ok();
-            std::fs::write(dir.join(format!("{}.json", name)), requests)
-                .map_err(|e| format!("Save failed: {}", e))?;
+                .ok_or("Missing 'requests'")?
+                .to_string();
+            crate::commands::api_lab::api_save_collection(name.clone(), requests)?;
             Ok(serde_json::json!({ "status": "saved", "name": name }))
         }
 
@@ -3094,14 +3074,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
-            let path = crate::user_config_dir()
-                .join("data/api_collections")
-                .join(format!("{}.json", name));
-            if !path.exists() {
-                return Err(format!("Collection '{}' not found", name));
-            }
-            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+                .ok_or("Missing 'name'")?
+                .to_string();
+            let content = crate::commands::api_lab::api_load_collection(name.clone())?;
             Ok(serde_json::json!({ "name": name, "requests": content }))
         }
 
@@ -3109,16 +3084,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
-            let path = crate::user_config_dir()
-                .join("data/api_collections")
-                .join(format!("{}.json", name));
-            if path.exists() {
-                std::fs::remove_file(&path).map_err(|e| e.to_string())?;
-                Ok(serde_json::json!({ "status": "deleted", "name": name }))
-            } else {
-                Err(format!("Collection '{}' not found", name))
-            }
+                .ok_or("Missing 'name'")?
+                .to_string();
+            crate::commands::api_lab::api_delete_collection(name.clone())?;
+            Ok(serde_json::json!({ "status": "deleted", "name": name }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -6250,10 +6219,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             .map_err(|e| e.to_string())?
         }
 
-        "git_init_or_clone_unreachable" => Ok(
-            serde_json::json!({ "status": "unavailable", "note": "git_init and git_clone require Tauri AppHandle for file-dialog; use the Tauri UI" }),
-        ),
-
         // ────────────────────────────────────────────────────────────────────
         // Memory Import & Graph
         // ────────────────────────────────────────────────────────────────────
@@ -8247,6 +8212,162 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map_err(|e| format!("LLM oneshot failed: {}", e))?;
             Ok(serde_json::json!({ "result": result }))
         }
+
+        // ────────────────────────────────────────────────────────────────────
+        // CLI Maker commands
+        // ────────────────────────────────────────────────────────────────────
+
+        "cli_list_commands" => {
+            let json = crate::commands::cli_maker::cli_list_commands()?;
+            Ok(serde_json::from_str(&json).unwrap_or(serde_json::json!([])))
+        }
+
+        "cli_create_command" => {
+            let def = args
+                .get("def")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'def'")?
+                .to_string();
+            let id = crate::commands::cli_maker::cli_create_command(def)?;
+            Ok(serde_json::json!({ "id": id }))
+        }
+
+        "cli_update_command" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let def = args
+                .get("def")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'def'")?
+                .to_string();
+            crate::commands::cli_maker::cli_update_command(id, def)?;
+            Ok(serde_json::json!({ "status": "updated" }))
+        }
+
+        "cli_delete_command" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            crate::commands::cli_maker::cli_delete_command(id)?;
+            Ok(serde_json::json!({ "status": "deleted" }))
+        }
+
+        "cli_run_command" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let run_args = args
+                .get("args")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let output = crate::commands::cli_maker::cli_run_command(id, run_args)?;
+            Ok(serde_json::json!({ "output": output }))
+        }
+
+        "cli_export_lua" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let lua = crate::commands::cli_maker::cli_export_lua(id)?;
+            Ok(serde_json::json!({ "lua": lua }))
+        }
+
+        "cli_import_lua" => {
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let json = crate::commands::cli_maker::cli_import_lua(path)?;
+            Ok(serde_json::from_str(&json).unwrap_or(serde_json::json!([])))
+        }
+
+        "cli_maker_save_plugin" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let path = crate::commands::cli_maker::cli_maker_save_plugin(id)?;
+            Ok(serde_json::json!({ "path": path }))
+        }
+
+        "cli_maker_export" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let format = args
+                .get("format")
+                .and_then(|v| v.as_str())
+                .unwrap_or("lua")
+                .to_string();
+            let path = crate::commands::cli_maker::cli_maker_export(id, format)?;
+            Ok(serde_json::json!({ "path": path }))
+        }
+
+        "cli_list_hooks" => {
+            let json = crate::commands::cli_maker::cli_list_hooks()?;
+            Ok(serde_json::from_str(&json).unwrap_or(serde_json::json!([])))
+        }
+
+        "cli_toggle_hook" => {
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let enabled = args
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            crate::commands::cli_maker::cli_toggle_hook(id, enabled)?;
+            Ok(serde_json::json!({ "status": "ok" }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // execute_lua — debug-only Lua execution from the UI
+        // ────────────────────────────────────────────────────────────────────
+
+        "execute_lua" => {
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?
+                .to_string();
+            crate::security::validate_script_payload(&code, "lua", "lua-exec", None)?;
+            let lua = Arc::clone(&state.lua);
+            let broadcaster = state.broadcaster.clone();
+            tokio::task::spawn_blocking(move || {
+                let engine = lua.lock().unwrap_or_else(|e| e.into_inner());
+                match engine.run_script(&code) {
+                    Ok(_) => broadcaster.emit("command_exit", serde_json::json!(0)),
+                    Err(e) => {
+                        broadcaster.emit("command_stderr", serde_json::json!(format!("{}\n", e)));
+                        broadcaster.emit("command_exit", serde_json::json!(1));
+                    }
+                }
+            })
+            .await
+            .map_err(|e| format!("Task join error: {}", e))?;
+            Ok(serde_json::json!({ "status": "ok" }))
+        }
+
+        // browser_get_url — returns the current browser URL tracked by the frontend;
+        // in Electron mode the URL state lives in the renderer, so the backend always
+        // returns empty string and the frontend ignores it gracefully.
+        "browser_get_url" => Ok(serde_json::json!({ "url": "" })),
 
         // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all

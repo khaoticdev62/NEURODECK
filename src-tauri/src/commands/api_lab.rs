@@ -1,4 +1,3 @@
-use crate::AppHandle;
 use std::path::PathBuf;
 
 // ── Data Types ─────────────────────────────────────────────────────────────
@@ -24,15 +23,12 @@ pub struct ApiResponse {
 
 // ── Persistence ────────────────────────────────────────────────────────────
 
-fn collections_dir(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("api_collections")
+fn collections_dir() -> PathBuf {
+    crate::user_config_dir().join("data/api_collections")
 }
 
-fn collection_path(app: &AppHandle, name: &str) -> PathBuf {
-    collections_dir(app).join(format!(
+fn collection_path(name: &str) -> PathBuf {
+    collections_dir().join(format!(
         "{}.json",
         name.replace(|c: char| !c.is_alphanumeric() || c.is_whitespace(), "_")
     ))
@@ -96,21 +92,21 @@ pub async fn api_request(
     })
 }
 
-pub fn api_save_collection(name: String, requests: String, app: AppHandle) -> Result<(), String> {
-    let dir = collections_dir(&app);
+pub fn api_save_collection(name: String, requests: String) -> Result<(), String> {
+    let dir = collections_dir();
     let _ = std::fs::create_dir_all(&dir);
-    let path = collection_path(&app, &name);
+    let path = collection_path(&name);
     std::fs::write(&path, requests).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-pub fn api_load_collection(name: String, app: AppHandle) -> Result<String, String> {
-    let path = collection_path(&app, &name);
+pub fn api_load_collection(name: String) -> Result<String, String> {
+    let path = collection_path(&name);
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
-pub fn api_list_collections(app: AppHandle) -> Result<Vec<String>, String> {
-    let dir = collections_dir(&app);
+pub fn api_list_collections() -> Result<Vec<String>, String> {
+    let dir = collections_dir();
     if !dir.exists() {
         return Ok(vec![]);
     }
@@ -127,8 +123,8 @@ pub fn api_list_collections(app: AppHandle) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-pub fn api_delete_collection(name: String, app: AppHandle) -> Result<(), String> {
-    let path = collection_path(&app, &name);
+pub fn api_delete_collection(name: String) -> Result<(), String> {
+    let path = collection_path(&name);
     std::fs::remove_file(&path).map_err(|e| e.to_string())?;
     Ok(())
 }

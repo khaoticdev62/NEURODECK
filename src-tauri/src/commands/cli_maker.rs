@@ -1,4 +1,3 @@
-use crate::AppHandle;
 use std::path::PathBuf;
 
 // ── Data Types ─────────────────────────────────────────────────────────────
@@ -47,22 +46,19 @@ pub struct CliHook {
 
 // ── Persistence ────────────────────────────────────────────────────────────
 
-fn cli_dir(app: &AppHandle) -> PathBuf {
-    app.path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("cli_commands")
+fn cli_dir() -> PathBuf {
+    crate::user_config_dir().join("cli_commands")
 }
 
-fn cli_path(app: &AppHandle, id: &str) -> PathBuf {
-    cli_dir(app).join(format!(
+fn cli_path(id: &str) -> PathBuf {
+    cli_dir().join(format!(
         "{}.json",
         id.replace(|c: char| !c.is_alphanumeric() || c.is_whitespace(), "_")
     ))
 }
 
-fn load_all(app: &AppHandle) -> Vec<CliCommandDef> {
-    let dir = cli_dir(app);
+fn load_all() -> Vec<CliCommandDef> {
+    let dir = cli_dir();
     if !dir.exists() {
         return vec![];
     }
@@ -80,46 +76,45 @@ fn load_all(app: &AppHandle) -> Vec<CliCommandDef> {
     cmds
 }
 
-fn save_one(app: &AppHandle, cmd: &CliCommandDef) {
-    let dir = cli_dir(app);
+fn save_one(cmd: &CliCommandDef) {
+    let dir = cli_dir();
     let _ = std::fs::create_dir_all(&dir);
-    let path = cli_path(app, &cmd.id);
+    let path = cli_path(&cmd.id);
     let _ = std::fs::write(&path, serde_json::to_string_pretty(cmd).unwrap_or_default());
 }
 
-fn delete_one(app: &AppHandle, id: &str) {
-    let path = cli_path(app, id);
+fn delete_one(id: &str) {
+    let path = cli_path(id);
     let _ = std::fs::remove_file(&path);
 }
 
 // ── Commands ───────────────────────────────────────────────────────────────
 
-pub fn cli_list_commands(app: AppHandle) -> Result<String, String> {
-    let user_cmds = load_all(&app);
-    // In a full implementation, also introspect Lua _commands table here
+pub fn cli_list_commands() -> Result<String, String> {
+    let user_cmds = load_all();
     Ok(serde_json::to_string(&user_cmds).unwrap_or_default())
 }
 
-pub fn cli_create_command(def: String, app: AppHandle) -> Result<String, String> {
+pub fn cli_create_command(def: String) -> Result<String, String> {
     let cmd: CliCommandDef = serde_json::from_str(&def).map_err(|e| e.to_string())?;
-    save_one(&app, &cmd);
+    save_one(&cmd);
     Ok(cmd.id.clone())
 }
 
-pub fn cli_update_command(id: String, def: String, app: AppHandle) -> Result<(), String> {
+pub fn cli_update_command(id: String, def: String) -> Result<(), String> {
     let mut cmd: CliCommandDef = serde_json::from_str(&def).map_err(|e| e.to_string())?;
     cmd.id = id;
-    save_one(&app, &cmd);
+    save_one(&cmd);
     Ok(())
 }
 
-pub fn cli_delete_command(id: String, app: AppHandle) -> Result<(), String> {
-    delete_one(&app, &id);
+pub fn cli_delete_command(id: String) -> Result<(), String> {
+    delete_one(&id);
     Ok(())
 }
 
-pub fn cli_run_command(id: String, args: String, app: AppHandle) -> Result<String, String> {
-    let cmds = load_all(&app);
+pub fn cli_run_command(id: String, args: String) -> Result<String, String> {
+    let cmds = load_all();
     let cmd = cmds
         .into_iter()
         .find(|c| c.id == id)
@@ -151,7 +146,6 @@ pub fn cli_run_command(id: String, args: String, app: AppHandle) -> Result<Strin
 }
 
 pub fn cli_list_hooks() -> Result<String, String> {
-    // Stub: would introspect Lua _hooks table
     Ok("[]".to_string())
 }
 
@@ -159,8 +153,8 @@ pub fn cli_toggle_hook(_id: String, _enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-pub fn cli_export_lua(id: String, app: AppHandle) -> Result<String, String> {
-    let cmds = load_all(&app);
+pub fn cli_export_lua(id: String) -> Result<String, String> {
+    let cmds = load_all();
     let cmd = cmds
         .into_iter()
         .find(|c| c.id == id)
@@ -234,8 +228,7 @@ end)"#,
 
 /// Parse a Lua file containing `registerCommand(...)` blocks and return
 /// a JSON array of `CliCommandDef` structs. Also saves them to disk.
-pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
-    // Reject path-traversal attempts
+pub fn cli_import_lua(path: String) -> Result<String, String> {
     if path.contains("..") {
         return Err("Invalid path".into());
     }
@@ -251,7 +244,6 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
         let abs_start = pos + rel;
         let after_paren = abs_start + "registerCommand(".len();
 
-        // Extract quoted name
         let Some(q1) = content[after_paren..].find('"') else {
             pos = abs_start + 1;
             continue;
@@ -263,7 +255,6 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
         };
         let name = content[name_start..name_start + q2].to_string();
 
-        // Find closing end)
         let block_end_rel = content[abs_start..].find("end)");
         let block_end = match block_end_rel {
             Some(e) => abs_start + e + "end)".len(),
@@ -274,7 +265,6 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
         };
         let body = &content[abs_start..block_end];
 
-        // Classify action by body content
         let (category, action) = if body.contains("sendPrompt(") || body.contains("template") {
             let template = lua_extract_long_string(body).unwrap_or_default();
             let use_llm = body.contains("sendPrompt(");
@@ -305,7 +295,7 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
             shortcut: None,
             radial_bind: None,
         };
-        save_one(&app, &def);
+        save_one(&def);
         defs.push(def);
 
         pos = block_end;
@@ -339,15 +329,14 @@ fn lua_id_from_name(name: &str) -> String {
     format!("imported_{:x}", h.finish())
 }
 
-/// Save a command as a Lua plugin file in the plugins/ directory, then hot-reload.
-pub fn cli_maker_save_plugin(id: String, app: AppHandle) -> Result<String, String> {
-    let lua = cli_export_lua(id.clone(), app.clone())?;
+/// Save a command as a Lua plugin file in the plugins/ directory.
+pub fn cli_maker_save_plugin(id: String) -> Result<String, String> {
+    let lua = cli_export_lua(id.clone())?;
 
-    // Find plugins directory: <user_config_dir>/plugins or adjacent to binary
     let plugins_dir = crate::user_config_dir().join("plugins");
     std::fs::create_dir_all(&plugins_dir).map_err(|e| e.to_string())?;
 
-    let cmds = load_all(&app);
+    let cmds = load_all();
     let cmd = cmds
         .into_iter()
         .find(|c| c.id == id)
@@ -366,8 +355,8 @@ pub fn cli_maker_save_plugin(id: String, app: AppHandle) -> Result<String, Strin
 }
 
 /// Export a command as a standalone script (.lua / .sh / .py) to ~/scripts/.
-pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<String, String> {
-    let cmds = load_all(&app);
+pub fn cli_maker_export(id: String, format: String) -> Result<String, String> {
+    let cmds = load_all();
     let cmd = cmds
         .into_iter()
         .find(|c| c.id == id)
@@ -417,7 +406,7 @@ pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<St
             (body, "py")
         }
         _ => {
-            let lua = cli_export_lua(id, app)?;
+            let lua = cli_export_lua(id)?;
             (lua, "lua")
         }
     };
