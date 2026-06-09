@@ -546,8 +546,80 @@ pub fn validate_macro_steps(steps: &[MacroStep]) -> Result<(), String> {
                 step.kind
             ));
         }
+        validate_macro_step_payload(step)?;
     }
     Ok(())
+}
+
+fn validate_macro_step_payload(step: &MacroStep) -> Result<(), String> {
+    let payload = step
+        .payload
+        .as_object()
+        .ok_or_else(|| format!("Macro step '{}' payload must be an object", step.kind))?;
+
+    match step.kind.as_str() {
+        "select_template" => {
+            let template_id = required_payload_string(payload, &step.kind, "template_id")?;
+            validate_lookup_id("template_id", template_id)?;
+        }
+        "update_slot" => {
+            let slot_id = required_payload_string(payload, &step.kind, "slot_id")?;
+            validate_lookup_id("slot_id", slot_id)?;
+            required_payload_string(payload, &step.kind, "value")?;
+        }
+        "execute_prompt" => {
+            let template_id = required_payload_string(payload, &step.kind, "template_id")?;
+            validate_lookup_id("template_id", template_id)?;
+            if let Some(slot_values) = payload.get("slot_values") {
+                if !slot_values.is_object() {
+                    return Err(
+                        "Macro step 'execute_prompt' field 'slot_values' must be an object"
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        "insert_saved_prompt" => {
+            let saved_prompt_id = required_payload_string(payload, &step.kind, "saved_prompt_id")?;
+            validate_lookup_id("saved_prompt_id", saved_prompt_id)?;
+            if let Some(prompt) = payload.get("prompt") {
+                if !prompt.is_string() {
+                    return Err(
+                        "Macro step 'insert_saved_prompt' field 'prompt' must be a string"
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        "accept_suggestion" => {
+            let slot_id = required_payload_string(payload, &step.kind, "slot_id")?;
+            validate_lookup_id("slot_id", slot_id)?;
+            required_payload_string(payload, &step.kind, "insert_text")?;
+            if let Some(suggestion_id) = payload.get("suggestion_id") {
+                if !suggestion_id.is_string() {
+                    return Err(
+                        "Macro step 'accept_suggestion' field 'suggestion_id' must be a string"
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+fn required_payload_string<'a>(
+    payload: &'a serde_json::Map<String, Value>,
+    kind: &str,
+    field: &str,
+) -> Result<&'a str, String> {
+    payload
+        .get(field)
+        .and_then(|v| v.as_str())
+        .filter(|v| !v.trim().is_empty())
+        .ok_or_else(|| format!("Macro step '{}' missing string field '{}'", kind, field))
 }
 
 fn is_safe_macro_step(kind: &str) -> bool {
@@ -731,6 +803,51 @@ mod tests {
         }];
         let err = validate_macro_steps(&steps).unwrap_err();
         assert!(err.contains("requires confirmation"));
+    }
+
+    #[test]
+    fn rejects_malformed_safe_macro_payloads() {
+        let cases = vec![
+            MacroStep {
+                kind: "select_template".to_string(),
+                timestamp: "1".to_string(),
+                payload: serde_json::json!({"template_id":"../secrets"}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "update_slot".to_string(),
+                timestamp: "2".to_string(),
+                payload: serde_json::json!({"slot_id":"task"}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "execute_prompt".to_string(),
+                timestamp: "3".to_string(),
+                payload: serde_json::json!({"template_id":"core.test","slot_values":["task"]}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "insert_saved_prompt".to_string(),
+                timestamp: "4".to_string(),
+                payload: serde_json::json!({"saved_prompt_id":"saved-1","prompt":false}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "accept_suggestion".to_string(),
+                timestamp: "5".to_string(),
+                payload: serde_json::json!({"slot_id":"task","suggestion_id":42}),
+                requires_confirmation: false,
+            },
+        ];
+
+        for step in cases {
+            let err = validate_macro_steps(&[step]).unwrap_err();
+            assert!(
+                err.contains("Macro step") || err.contains("Invalid template_id"),
+                "unexpected error: {}",
+                err
+            );
+        }
     }
 
     #[test]
