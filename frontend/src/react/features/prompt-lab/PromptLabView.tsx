@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Copy, Play, RotateCcw, Save, Sparkles, Square, Trash2 } from 'lucide-react';
 import {
   neurodeckApi,
+  listenBridge,
   type MacroDefinition,
   type MacroStep,
   type PromptPack,
@@ -234,6 +235,39 @@ export function PromptLabView() {
     setStatus('Macro deleted.');
   };
 
+  useEffect(() => {
+    return listenBridge('deckcode-action', (payload) => {
+      if (typeof payload !== 'string') return;
+      const actionId = payload.toLowerCase();
+
+      if (actionId.includes('r4')) {
+        if (suggestions[0]) {
+          void acceptSuggestion(suggestions[0]);
+        }
+        return;
+      }
+
+      if (actionId.includes('r5') && actionId.includes('hold')) {
+        void executePrompt();
+        return;
+      }
+
+      if (actionId.includes('l5') && actionId.includes('r5')) {
+        void toggleMacro();
+        return;
+      }
+
+      if (actionId.includes('l5')) {
+        void savePrompt();
+        return;
+      }
+
+      if (actionId === 'b' || actionId.includes('cancel')) {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      }
+    });
+  }, [acceptSuggestion, executePrompt, savePrompt, suggestions, toggleMacro]);
+
   return (
     <div data-testid="view-prompt-lab" className="active flex h-full flex-col overflow-hidden">
       <div className="mb-3 flex items-center gap-3">
@@ -253,8 +287,8 @@ export function PromptLabView() {
 
       <div className="promptdrive-composer grid min-h-0 flex-1 grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] gap-3 overflow-hidden">
         <section className="flex min-h-0 flex-col gap-3 overflow-auto rounded-2xl border border-white/10 bg-white/[0.02] p-3 scrollbar-thin">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-2 items-start gap-3">
+            <div className="min-w-0">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Prompt Packs</div>
               <div id="pd-pack-list" className="grid gap-2">
                 {packs.map((pack) => (
@@ -262,15 +296,15 @@ export function PromptLabView() {
                     key={pack.id}
                     type="button"
                     onClick={() => setSelectedPackId(pack.id)}
-                    className={`rounded-xl border px-3 py-2 text-left text-sm transition ${selectedPackId === pack.id ? 'border-neuro/40 bg-neuro/10 text-neuro' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/20'}`}
+                    className={`min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition ${selectedPackId === pack.id ? 'border-neuro/40 bg-neuro/10 text-neuro' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/20'}`}
                   >
-                    <span className="block font-medium">{pack.title}</span>
-                    <span className="block truncate text-xs text-slate-500">{pack.description}</span>
+                    <span className="block truncate font-medium">{pack.title}</span>
+                    <span className="block truncate text-xs leading-relaxed text-slate-500">{pack.description}</span>
                   </button>
                 ))}
               </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Templates</div>
               <div id="pd-template-list" className="grid gap-2">
                 {filteredTemplates.map((template) => (
@@ -278,30 +312,30 @@ export function PromptLabView() {
                     key={template.id}
                     type="button"
                     onClick={() => selectTemplate(template.id)}
-                    className={`promptdrive-template-card rounded-xl border px-3 py-2 text-left text-sm transition ${selectedTemplate?.id === template.id ? 'border-neuro/40 bg-neuro/10 text-neuro' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/20'}`}
+                    className={`promptdrive-template-card min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition ${selectedTemplate?.id === template.id ? 'border-neuro/40 bg-neuro/10 text-neuro' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/20'}`}
                   >
-                    <span className="block font-medium">{template.title}</span>
-                    <span className="block truncate text-xs text-slate-500">{template.description}</span>
+                    <span className="block truncate font-medium">{template.title}</span>
+                    <span className="block truncate text-xs leading-relaxed text-slate-500">{template.description}</span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <div id="pd-template-title" className="text-sm font-semibold text-slate-100">{selectedTemplate?.title ?? 'Select a template'}</div>
-                <div id="pd-template-desc" className="mt-1 text-xs text-slate-500">{selectedTemplate?.description ?? 'Choose a pack and template to start composing.'}</div>
+              <div className="min-w-0 flex-1">
+                <div id="pd-template-title" className="truncate text-sm font-semibold text-slate-100">{selectedTemplate?.title ?? 'Select a template'}</div>
+                <div id="pd-template-desc" className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{selectedTemplate?.description ?? 'Choose a pack and template to start composing.'}</div>
               </div>
-              <span id="pd-risk-badge" className="rounded-full border border-success/25 bg-success/10 px-2 py-1 text-xs text-success">{selectedTemplate?.risk_level ?? 'low'}</span>
+              <span id="pd-risk-badge" className="shrink-0 rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-success">{selectedTemplate?.risk_level ?? 'low'}</span>
             </div>
           </div>
 
           <div>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between gap-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Required Slots</span>
-              <span id="pd-validation-status" className={`text-xs ${valid ? 'text-success' : 'text-warning'}`}>{valid ? 'Valid' : status}</span>
+              <span id="pd-validation-status" className={`truncate text-xs ${valid ? 'text-success' : 'text-warning'}`}>{valid ? 'Valid' : status}</span>
             </div>
             <div id="pd-slot-editor" className="grid gap-2">
               {(selectedTemplate?.slots ?? []).map((slot) => (
@@ -350,8 +384,8 @@ export function PromptLabView() {
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Saved Prompts</div>
               <div id="pd-saved-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin">
                 {savedPrompts.length ? savedPrompts.map((prompt) => (
-                  <button key={prompt.id} type="button" onClick={() => setPreviewText(prompt.prompt)} className="promptdrive-saved-item rounded-lg border border-white/10 px-2 py-2 text-left text-xs text-slate-300 hover:border-white/20">
-                    <span className="block font-medium">{prompt.title}</span>
+                  <button key={prompt.id} type="button" onClick={() => setPreviewText(prompt.prompt)} className="promptdrive-saved-item min-w-0 overflow-hidden rounded-lg border border-white/10 px-2.5 py-2 text-left text-xs text-slate-300 hover:border-white/20">
+                    <span className="block truncate font-medium">{prompt.title}</span>
                     <span className="block truncate text-slate-500">{prompt.prompt}</span>
                   </button>
                 )) : <div className="text-xs text-slate-600">No saved prompts.</div>}
@@ -362,14 +396,14 @@ export function PromptLabView() {
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Macros</div>
               <div id="pd-macro-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin">
                 {macros.length ? macros.map((macro) => (
-                  <div key={macro.id} className="promptdrive-macro-item flex min-h-11 items-center justify-between gap-2 rounded-lg border border-white/10 px-2 py-2 text-xs text-slate-300">
-                    <div className="min-w-0">
+                  <div key={macro.id} className="promptdrive-macro-item flex items-center justify-between gap-2 rounded-lg border border-white/10 px-2.5 py-2 text-xs text-slate-300">
+                    <div className="min-w-0 overflow-hidden">
                       <span className="block truncate font-medium">{macro.name}</span>
-                      <small className="text-slate-500">{macro.steps.length} steps - {macro.risk_level}</small>
+                      <span className="block truncate text-slate-500">{macro.steps.length} steps · {macro.risk_level}</span>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <button type="button" onClick={() => replayMacro(macro.id)} className="min-h-10 rounded-lg border border-neuro/25 px-2 text-neuro">Replay</button>
-                      <button type="button" onClick={() => deleteMacro(macro.id)} className="min-h-10 rounded-lg border border-danger/25 px-2 text-danger"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
+                      <button type="button" onClick={() => replayMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-neuro/25 px-2.5 text-xs text-neuro">Replay</button>
+                      <button type="button" onClick={() => deleteMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-danger/25 px-2 text-danger"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
                     </div>
                   </div>
                 )) : <div className="text-xs text-slate-600">No macros recorded.</div>}
@@ -391,9 +425,9 @@ export function PromptLabView() {
             />
             <div id="pd-suggestions" className="mt-2 grid max-h-40 gap-2 overflow-auto scrollbar-thin">
               {suggestions.map((suggestion) => (
-                <button key={suggestion.id} type="button" onClick={() => acceptSuggestion(suggestion)} className="promptdrive-suggestion rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-left hover:border-neuro/30">
-                  <span className="block text-sm font-medium text-slate-100">{suggestion.label}</span>
-                  <span className="text-xs text-slate-500">{suggestion.source} - score {suggestion.score}</span>
+                <button key={suggestion.id} type="button" onClick={() => acceptSuggestion(suggestion)} className="promptdrive-suggestion min-w-0 overflow-hidden rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-left hover:border-neuro/30">
+                  <span className="block truncate text-sm font-medium text-slate-100">{suggestion.label}</span>
+                  <span className="block truncate text-xs text-slate-500">{suggestion.source} · score {suggestion.score}</span>
                 </button>
               ))}
             </div>

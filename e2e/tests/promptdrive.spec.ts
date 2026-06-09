@@ -46,3 +46,45 @@ test("PromptDrive Composer builds, previews, saves, and replays a safe macro", a
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("view-prompt-lab")).toHaveClass(/active/);
 });
+
+test("PromptDrive responds to DeckCode controller actions while active", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.navigateTo("prompt-lab");
+
+  await page.locator("#pd-slot-topic").fill("DeckCode routing");
+  await page.locator("#pd-suggestion-query").fill("rust");
+  await expect(page.locator(".promptdrive-suggestion").first()).toBeVisible();
+
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "r4");
+  });
+  await expect(page.locator("#pd-preview")).toHaveValue(/Rust ownership/);
+
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "r5 hold");
+  });
+  await expect(page.getByText("Prompt execution routed through bridge.")).toBeVisible();
+
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "l5");
+  });
+  await expect(page.locator(".promptdrive-saved-item")).toContainText("JPE Explainer");
+
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "l5+r5");
+  });
+  await expect(page.locator("#pd-macro-toggle-btn")).toHaveText("Stop Macro");
+
+  await page.locator("#pd-slot-topic").fill("Controller macro");
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "l5+r5");
+  });
+  await expect(page.locator("#pd-macro-toggle-btn")).toHaveText("Record Macro");
+  await expect(page.locator(".promptdrive-macro-item")).toContainText("1 steps");
+
+  await page.locator("#pd-suggestion-query").focus();
+  await page.evaluate(() => {
+    (window as any).__mock_emit("deckcode-action", "b");
+  });
+  await expect(page.locator("#pd-suggestion-query")).not.toBeFocused();
+});
