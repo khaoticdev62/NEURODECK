@@ -175,10 +175,23 @@ async fn health() -> &'static str {
     "NEURODECK_READY"
 }
 
+fn bridge_error_value(code: &str, message: impl Into<String>) -> Value {
+    serde_json::json!({
+        "error": {
+            "code": code,
+            "message": message.into()
+        }
+    })
+}
+
+fn bridge_error_response(status: StatusCode, code: &str, message: impl Into<String>) -> Response {
+    (status, Json(bridge_error_value(code, message))).into_response()
+}
+
 /// `POST /api/{command}` — single route for all 235 command handlers.
 ///
 /// Request body: JSON object with the named arguments.
-/// Response body: JSON value returned by the handler, or an error string.
+/// Response body: JSON value returned by the handler, or `{ error: { code, message } }`.
 async fn api_command(
     AxumState(state): AxumState<ServerState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -187,11 +200,11 @@ async fn api_command(
 ) -> Response {
     let ip = addr.ip();
     if !state.limiter.is_allowed(ip) {
-        return (
+        return bridge_error_response(
             StatusCode::TOO_MANY_REQUESTS,
+            "rate_limited",
             "Too many requests. Please try again later.",
-        )
-            .into_response();
+        );
     }
 
     // Parse body as JSON args (allow empty body → empty object)
@@ -201,15 +214,18 @@ async fn api_command(
         match serde_json::from_slice(&body) {
             Ok(v) => v,
             Err(e) => {
-                return (StatusCode::BAD_REQUEST, format!("Invalid JSON body: {}", e))
-                    .into_response();
+                return bridge_error_response(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_json",
+                    format!("Invalid JSON body: {}", e),
+                );
             }
         }
     };
 
     match dispatch_command(state, &command, args).await {
         Ok(result) => Json(result).into_response(),
-        Err(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg).into_response(),
+        Err(msg) => bridge_error_response(StatusCode::UNPROCESSABLE_ENTITY, "command_error", msg),
     }
 }
 
@@ -472,8 +488,7 @@ pub async fn run_bridge_server(
     let app_state_arc = Arc::new(Mutex::new(app_state));
 
     // ── Lua engine ─────────────────────────────────────────────────────────
-    let lua_engine =
-        crate::lua::LuaEngine::new(Arc::clone(&app_state_arc), broadcaster.clone())?;
+    let lua_engine = crate::lua::LuaEngine::new(Arc::clone(&app_state_arc), broadcaster.clone())?;
     let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
     if safe_mode {
         tracing::warn!(
@@ -629,4 +644,16 @@ pub async fn run_bridge_server(
     };
 
     start_server(server_state).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bridge_error_value_has_stable_shape() {
+        let value = bridge_error_value("command_error", "Missing 'template_id'");
+        assert_eq!(value["error"]["code"], "command_error");
+        assert_eq!(value["error"]["message"], "Missing 'template_id'");
+    }
 }

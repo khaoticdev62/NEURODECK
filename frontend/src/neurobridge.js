@@ -79,6 +79,16 @@ export async function invoke(command, args = {}) {
   });
 
   if (!res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const body = await res.json().catch(() => null);
+      const message = body?.error?.message || body?.message || `Command "${command}" failed with status ${res.status}`;
+      const error = new Error(message);
+      error.status = res.status;
+      error.code = body?.error?.code || body?.code || 'bridge_error';
+      error.details = body;
+      throw error;
+    }
     const text = await res.text().catch(() => `HTTP ${res.status}`);
     throw new Error(text || `Command "${command}" failed with status ${res.status}`);
   }
