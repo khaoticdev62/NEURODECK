@@ -6396,6 +6396,7 @@ function _pdBuildCtx(container) {
     selectedSuggestionIndex: 0,
     recordingId: null,
     recordedSteps: [],
+    replayingMacro: false,
     packList: document.getElementById("pd-pack-list"),
     packCount: document.getElementById("pd-pack-count"),
     templateSearch: document.getElementById("pd-template-search"),
@@ -6423,13 +6424,26 @@ function _pdBuildCtx(container) {
 }
 
 function _pdRecordStep(ctx, kind, payload) {
-  if (!ctx.recordingId || !PROMPTDRIVE_SAFE_MACRO_STEPS.has(kind)) return;
+  if (!ctx.recordingId || ctx.replayingMacro || !PROMPTDRIVE_SAFE_MACRO_STEPS.has(kind)) return;
   ctx.recordedSteps.push({
     kind,
     timestamp: new Date().toISOString(),
-    payload,
+    payload: JSON.parse(JSON.stringify(payload || {})),
     requires_confirmation: false,
   });
+}
+
+async function _pdApplySlotValue(ctx, slotId, value, options = {}) {
+  const normalizedValue = value == null ? "" : String(value);
+  ctx.slotValues[slotId] = normalizedValue;
+  if (options.record !== false) {
+    _pdRecordStep(ctx, "update_slot", { slot_id: slotId, value: normalizedValue });
+  }
+  _pdRenderSlots(ctx);
+  await _pdPreview(ctx);
+  if (options.loadSuggestions !== false) {
+    await _pdLoadSuggestions(ctx);
+  }
 }
 
 function _pdSlotValuesFromTemplate(template) {
@@ -6494,12 +6508,7 @@ function _pdRenderSlots(ctx) {
   });
   ctx.slotEditor.querySelectorAll("[data-slot-id]").forEach((el) => {
     if (el.classList.contains("pl-chip")) return;
-    el.addEventListener("input", () => {
-      ctx.slotValues[el.dataset.slotId] = el.value;
-      _pdRecordStep(ctx, "update_slot", { slot_id: el.dataset.slotId, value: el.value });
-      _pdPreview(ctx);
-      _pdLoadSuggestions(ctx);
-    });
+    el.addEventListener("input", () => _pdApplySlotValue(ctx, el.dataset.slotId, el.value));
   });
   ctx.slotEditor.querySelectorAll(".pl-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -6516,6 +6525,9 @@ async function _pdSelectPack(ctx, packId) {
   ctx.templates = await invoke("promptdrive_list_templates", { pack_id: packId });
   ctx.selectedTemplate = ctx.templates[0] || null;
   ctx.slotValues = _pdSlotValuesFromTemplate(ctx.selectedTemplate);
+  if (ctx.selectedTemplate) {
+    _pdRecordStep(ctx, "select_template", { template_id: ctx.selectedTemplate.id });
+  }
   _pdRenderPacks(ctx);
   _pdRenderTemplates(ctx);
   _pdRenderSelectedTemplate(ctx);
@@ -6593,7 +6605,11 @@ async function _pdAcceptSuggestion(ctx) {
   const targetSlot = requiredEmpty || ctx.selectedTemplate.slots[0];
   if (!targetSlot) return;
   ctx.slotValues[targetSlot.id] = suggestion.insert_text;
-  _pdRecordStep(ctx, "accept_suggestion", { suggestion_id: suggestion.id, slot_id: targetSlot.id });
+  _pdRecordStep(ctx, "accept_suggestion", {
+    suggestion_id: suggestion.id,
+    slot_id: targetSlot.id,
+    insert_text: suggestion.insert_text,
+  });
   _pdRenderSlots(ctx);
   await _pdPreview(ctx);
 }
@@ -6609,7 +6625,7 @@ async function _pdExecute(ctx) {
     pack_id: ctx.selectedPackId,
     slot_values: ctx.slotValues,
   });
-  _pdRecordStep(ctx, "execute_prompt", { template_id: ctx.selectedTemplate.id, slot_values: ctx.slotValues });
+  _pdRecordStep(ctx, "execute_prompt", { template_id: ctx.selectedTemplate.id, slot_values: { ...ctx.slotValues } });
   addNotification("PromptDrive", "Prompt sent to chat stream.", "success");
 }
 
@@ -6645,7 +6661,11 @@ async function _pdLoadSavedPrompts(ctx) {
     btn.addEventListener("click", () => {
       ctx.preview.value = prompt.prompt;
       ctx.tokenCounter.textContent = `~${_pdTokenCount(prompt.prompt)} tokens`;
-      _pdRecordStep(ctx, "insert_saved_prompt", { saved_prompt_id: prompt.id });
+      _pdRecordStep(ctx, "insert_saved_prompt", {
+        saved_prompt_id: prompt.id,
+        title: prompt.title,
+        prompt: prompt.prompt,
+      });
     });
     ctx.savedList.appendChild(btn);
   });
@@ -6694,18 +6714,33 @@ async function _pdToggleMacro(ctx) {
 
 async function _pdReplayMacro(ctx, macroId) {
   const result = await invoke("promptdrive_macro_execute", { macro_id: macroId });
-  for (const step of result.macro.steps) {
-    if (step.kind === "select_template") {
-      await _pdSelectTemplate(ctx, step.payload.template_id);
-    } else if (step.kind === "update_slot") {
-      ctx.slotValues[step.payload.slot_id] = step.payload.value || "";
-      _pdRenderSlots(ctx);
-      await _pdPreview(ctx);
-    } else if (step.kind === "accept_suggestion") {
-      await _pdAcceptSuggestion(ctx);
-    } else if (step.kind === "execute_prompt") {
-      await _pdExecute(ctx);
+  ctx.replayingMacro = true;
+  try {
+    for (const step of result.macro.steps) {
+      const payload = step.payload || {};
+      if (step.kind === "select_template" && payload.template_id) {
+        await _pdSelectTemplate(ctx, payload.template_id);
+      } else if (step.kind === "update_slot" && payload.slot_id) {
+        await _pdApplySlotValue(ctx, payload.slot_id, payload.value || "", { record: false });
+      } else if (step.kind === "accept_suggestion" && payload.slot_id) {
+        await _pdApplySlotValue(ctx, payload.slot_id, payload.insert_text || "", { record: false });
+      } else if (step.kind === "insert_saved_prompt") {
+        ctx.preview.value = payload.prompt || "";
+        ctx.tokenCounter.textContent = `~${_pdTokenCount(ctx.preview.value)} tokens`;
+      } else if (step.kind === "execute_prompt") {
+        if (payload.template_id && payload.template_id !== ctx.selectedTemplate?.id) {
+          await _pdSelectTemplate(ctx, payload.template_id);
+        }
+        if (payload.slot_values && typeof payload.slot_values === "object") {
+          ctx.slotValues = { ...ctx.slotValues, ...payload.slot_values };
+          _pdRenderSlots(ctx);
+          await _pdPreview(ctx);
+        }
+        await _pdExecute(ctx);
+      }
     }
+  } finally {
+    ctx.replayingMacro = false;
   }
   addNotification("PromptDrive", "Macro replay complete.", "success");
 }

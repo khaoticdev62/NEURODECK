@@ -45,6 +45,8 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
 
   const noop = async () => {};
   const listeners = new Map<string, ((payload: any) => void)[]>();
+  const savedPrompts: any[] = [];
+  const promptDriveMacros: any[] = [];
 
   const defaultConfig = {
     llm: {
@@ -161,9 +163,9 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
         return renderPromptDrivePrompt(args);
       case "promptdrive_execute_prompt":
         return { status: "streaming", validation: renderPromptDrivePrompt(args) };
-      case "promptdrive_save_prompt":
-        return {
-          id: "saved-1",
+      case "promptdrive_save_prompt": {
+        const saved = {
+          id: `saved-${savedPrompts.length + 1}`,
           title: args?.title ?? "Saved Prompt",
           prompt: args?.prompt ?? "",
           template_id: args?.template_id,
@@ -172,22 +174,38 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
           created_at: "2026-01-01T00:00:00Z",
           updated_at: "2026-01-01T00:00:00Z",
         };
+        savedPrompts.push(saved);
+        return saved;
+      }
       case "promptdrive_list_saved_prompts":
-        return [];
+        return [...savedPrompts];
       case "promptdrive_macro_start":
         return { recording_id: "draft-1", status: "recording" };
-      case "promptdrive_macro_stop":
-        return {
-          id: "macro-1",
+      case "promptdrive_macro_stop": {
+        const macro = {
+          id: `macro-${promptDriveMacros.length + 1}`,
           name: args?.name ?? "PromptDrive Macro",
           created_at: "2026-01-01T00:00:00Z",
           steps: args?.steps ?? [],
           risk_level: "low",
         };
+        promptDriveMacros.push(macro);
+        return macro;
+      }
       case "promptdrive_list_macros":
-        return [];
+        return [...promptDriveMacros];
       case "promptdrive_macro_execute":
-        return { status: "ready", safe_replay: true, macro: { id: args?.macro_id, name: "Macro", steps: [], risk_level: "low" } };
+        return {
+          status: "ready",
+          safe_replay: true,
+          macro:
+            promptDriveMacros.find((macro) => macro.id === args?.macro_id) ?? {
+              id: args?.macro_id,
+              name: "Macro",
+              steps: [],
+              risk_level: "low",
+            },
+        };
       case "promptdrive_delete_macro":
         return { status: "deleted", macro_id: args?.macro_id };
       case "promptdrive_get_suggestions":

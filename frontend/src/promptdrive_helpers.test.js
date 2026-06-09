@@ -54,4 +54,37 @@ describe("PromptDrive helper contracts", () => {
     expect(withUnsafeStep.steps).toHaveLength(1);
     expect(withUnsafeStep.steps[0].requires_confirmation).toBe(false);
   });
+
+  it("stores macro step payloads as immutable snapshots", () => {
+    const started = reducePromptDriveMacroAction(
+      { recording: false, recordingId: null, steps: [] },
+      { type: "start", recordingId: "draft-1" },
+    );
+    const payload = { slot_id: "task", value: "first draft" };
+    const recorded = reducePromptDriveMacroAction(started, {
+      type: "record_step",
+      step: { kind: "update_slot", payload },
+    });
+
+    payload.value = "mutated later";
+
+    expect(recorded.steps[0].payload).toEqual({ slot_id: "task", value: "first draft" });
+  });
+
+  it("rejects confirmation-gated macro steps even when their kind is otherwise safe", () => {
+    const started = reducePromptDriveMacroAction(
+      { recording: false, recordingId: null, steps: [] },
+      { type: "start", recordingId: "draft-1" },
+    );
+    const recorded = reducePromptDriveMacroAction(started, {
+      type: "record_step",
+      step: {
+        kind: "execute_prompt",
+        payload: { template_id: "core.jpe_explain" },
+        requires_confirmation: true,
+      },
+    });
+
+    expect(recorded.steps).toHaveLength(0);
+  });
 });

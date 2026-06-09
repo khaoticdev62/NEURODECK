@@ -47,11 +47,16 @@ export function reducePromptDriveMacroAction(state, action) {
   }
 
   if (action.type === "record_step") {
-    if (!state.recording || !PROMPTDRIVE_SAFE_MACRO_STEPS.has(action.step?.kind)) {
+    if (
+      !state.recording ||
+      action.step?.requires_confirmation ||
+      !PROMPTDRIVE_SAFE_MACRO_STEPS.has(action.step?.kind)
+    ) {
       return next;
     }
     next.steps.push({
       ...action.step,
+      payload: JSON.parse(JSON.stringify(action.step.payload || {})),
       requires_confirmation: false,
     });
     return next;
