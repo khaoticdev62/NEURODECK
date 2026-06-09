@@ -7246,6 +7246,7 @@ function _obUpdateStepUI(obs) {
 function _obInitSlide1Animations() {
   const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
   const typingEl = document.getElementById("onboarding-welcome-typing");
+  if (!typingEl) return;
   let charIdx = 0;
   function typeChar() {
     if (charIdx < welcomeText.length) {

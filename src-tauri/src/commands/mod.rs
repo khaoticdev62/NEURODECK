@@ -1670,6 +1670,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Browser Integration
         // ────────────────────────────────────────────────────────────────────
+        "browser_open" => {
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
+
+            if url.starts_with("http://") || url.starts_with("https://") {
+                state.broadcaster.emit(
+                    "browser_opened",
+                    serde_json::json!({ "url": url }),
+                );
+                Ok(serde_json::json!({ "status": "opened", "url": url }))
+            } else {
+                Err("Invalid URL format. Must start with a valid scheme (http/https)".to_string())
+            }
+        }
+
         "open_browser" => {
             let url = args
                 .get("url")
@@ -2505,10 +2522,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 })
                 .collect();
 
-            Ok(serde_json::json!({
-                "tasks": list,
-                "count": list.len()
-            }))
+            Ok(serde_json::json!(list))
         }
 
         "add_scheduled_task" => {
@@ -3384,11 +3398,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .iter()
                 .map(|s| {
                     serde_json::json!({
-                        "language": s.language, "command": s.command
+                        "language": s.language,
+                        "label": s.label,
+                        "command": s.command,
+                        "args": s.args,
+                        "install_hint": s.install_hint
                     })
                 })
                 .collect();
-            Ok(serde_json::json!({ "servers": known, "count": known.len() }))
+            Ok(serde_json::json!(known))
         }
 
         "lsp_get_diagnostics" => {
@@ -6344,18 +6362,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_discovered_peers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let peers: Vec<_> = transfer_state.peers.keys().cloned().collect();
-            Ok(serde_json::json!({ "peers": peers, "count": peers.len() }))
+            let peers: Vec<_> = transfer_state.peers.values().map(|(p, _)| p.clone()).collect();
+            Ok(serde_json::json!(peers))
         }
 
         "get_active_transfers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
             let transfers: Vec<_> = transfer_state
                 .transfers
-                .iter()
-                .map(|(k, _)| k.clone())
+                .values()
+                .cloned()
                 .collect();
-            Ok(serde_json::json!({ "transfers": transfers, "count": transfers.len() }))
+            Ok(serde_json::json!(transfers))
         }
 
         "set_group_code" => {

@@ -491,7 +491,7 @@ app.whenReady().then(async () => {
     "font-src 'self' data: https://fonts.gstatic.com",
     "media-src 'self' blob:",
     "worker-src 'self' blob:",
-    "frame-src 'none'",
+    "frame-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'none'",
