@@ -43,7 +43,7 @@ function _memSetActiveProject(ctx) {
 }
 
 async function _memCreateProject(ctx) {
-    const name = prompt("Project name:");
+    const name = await showPrompt("Project name:", "", { title: "New Project" });
     if (!name || !name.trim()) return;
     try {
         await invoke("create_project", { name: name.trim(), description: "", color: "#3b82f6" });
@@ -87,7 +87,7 @@ function _memSetActivePack(ctx) {
 }
 
 async function _memCreatePack(ctx) {
-    const name = prompt("Context Pack name:");
+    const name = await showPrompt("Context Pack name:", "", { title: "New Context Pack" });
     if (!name || !name.trim()) return;
     try {
         await invoke("create_pack", { name: name.trim(), description: "", color: "#8b5cf6" });
@@ -267,7 +267,8 @@ async function _memLoad(ctx) {
     const { refreshBtn } = ctx;
     if (refreshBtn) refreshBtn.innerHTML = `${createIcon('refreshCw', { size:13 })}`;
     try {
-        ctx.allRecords = await invoke("memory_list_all");
+        const _memRes = await invoke("memory_list_all");
+        ctx.allRecords = Array.isArray(_memRes) ? _memRes : (_memRes?.records ?? []);
     } catch(e) {
         console.error("memory_list_all error", e);
         ctx.allRecords = [];

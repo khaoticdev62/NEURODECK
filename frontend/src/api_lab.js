@@ -461,7 +461,7 @@ async function _loadCollections() {
 }
 
 async function _createCollection() {
-  const name = prompt("Collection name:");
+  const name = await showPrompt("Collection name:", "", { title: "New Collection" });
   if (!name?.trim()) return;
   try {
     await invoke("api_save_collection", { name: name.trim(), requests: "[]" });
@@ -490,7 +490,7 @@ async function _deleteCollection(name) {
 
 async function _saveRequestToCollection() {
   if (!_currentCollection) {
-    const name = prompt("Save to collection (name):");
+    const name = await showPrompt("Save to collection (name):", "", { title: "Save to Collection" });
     if (!name?.trim()) return;
     _currentCollection = name.trim();
     try {
@@ -538,8 +538,8 @@ function _renderRequestList() {
   `;
 
   reqEl.querySelectorAll(".api-req-item").forEach(el => {
-    el.addEventListener("click", e => {
-      if (e.target.classList.contains("api-req-del")) {
+    const activate = e => {
+      if (e && e.target.classList.contains("api-req-del")) {
         const idx = Number(e.target.dataset.idx);
         _currentRequests.splice(idx, 1);
         invoke("api_save_collection", { name: _currentCollection, requests: JSON.stringify(_currentRequests) }).catch(() => {});
@@ -550,7 +550,9 @@ function _renderRequestList() {
       if (!r) return;
       _currentReqIndex = Number(el.dataset.idx);
       _setFormRequest(r, false);
-    });
+    };
+    el.addEventListener("click", activate);
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } });
   });
 
   listEl.after(reqEl);

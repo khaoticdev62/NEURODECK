@@ -372,7 +372,7 @@ async function saveActiveFile() {
 }
 
 async function newFile() {
-  const name = prompt("Enter filename (with extension):", "untitled.txt");
+  const name = await showPrompt("Enter filename (with extension):", "untitled.txt", { title: "New File" });
   if (!name) return;
   const path = _s.currentPath ? `${_s.currentPath}/${name}` : name;
   try {
@@ -386,7 +386,7 @@ async function newFile() {
 }
 
 async function newFolder() {
-  const name = prompt("Enter folder name:", "new-folder");
+  const name = await showPrompt("Enter folder name:", "new-folder", { title: "New Folder" });
   if (!name) return;
   const path = _s.currentPath ? `${_s.currentPath}/${name}/.gitkeep` : `${name}/.gitkeep`;
   try {

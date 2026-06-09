@@ -163,3 +163,59 @@ function escapeHtml(text) {
 
 window.addNotification = addNotification;
 window.showConfirm = showConfirm;
+
+/**
+ * Electron-safe replacement for window.prompt().
+ * Returns the entered string, or null if the user cancelled.
+ */
+export function showPrompt(message, defaultValue = '', options = {}) {
+    const { title = 'Input', confirmText = 'OK', cancelText = 'Cancel' } = options;
+    return new Promise((resolve) => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'confirm-modal';
+        dialog.innerHTML = `
+            <div class="confirm-modal-content">
+                <h3 class="confirm-modal-title">${escapeHtml(title)}</h3>
+                <p class="confirm-modal-message">${escapeHtml(message)}</p>
+                <input class="confirm-modal-input" type="text" value="${escapeHtml(defaultValue)}" placeholder="${escapeHtml(defaultValue)}" autocomplete="off">
+                <div class="confirm-modal-actions">
+                    <button class="btn btn-secondary" id="prompt-cancel-btn">${escapeHtml(cancelText)}</button>
+                    <button class="btn btn-primary" id="prompt-ok-btn">${escapeHtml(confirmText)}</button>
+                </div>
+            </div>
+        `;
+
+        const input = dialog.querySelector('.confirm-modal-input');
+        const okBtn = dialog.querySelector('#prompt-ok-btn');
+        const cancelBtn = dialog.querySelector('#prompt-cancel-btn');
+
+        const submit = () => {
+            const val = input.value;
+            dialog.close();
+            dialog.remove();
+            resolve(val);
+        };
+
+        okBtn.addEventListener('click', submit);
+        cancelBtn.addEventListener('click', () => {
+            dialog.close();
+            dialog.remove();
+            resolve(null);
+        });
+        dialog.addEventListener('cancel', () => {
+            dialog.remove();
+            resolve(null);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); submit(); }
+            if (e.key === 'Escape') { e.preventDefault(); dialog.close(); dialog.remove(); resolve(null); }
+        });
+
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        // Select all text in input so user can type immediately
+        setTimeout(() => { input.select(); }, 50);
+    });
+}
+
+window.showPrompt = showPrompt;

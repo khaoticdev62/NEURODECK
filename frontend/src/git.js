@@ -52,9 +52,9 @@ async function loadRepoList() {
 
 function wireRepoActions() {
   document.getElementById("git-clone-btn")?.addEventListener("click", async () => {
-    const url = prompt("Git URL to clone:");
+    const url = await showPrompt("Git URL to clone:", "", { title: "Clone Repository" });
     if (!url) return;
-    const path = prompt("Clone into directory:", ".");
+    const path = await showPrompt("Clone into directory:", ".", { title: "Clone Repository" });
     if (!path) return;
     try {
       await invoke("git_clone", { url, path });
@@ -66,7 +66,7 @@ function wireRepoActions() {
   });
 
   document.getElementById("git-init-btn")?.addEventListener("click", async () => {
-    const path = prompt("Initialize repo in directory:", ".");
+    const path = await showPrompt("Initialize repo in directory:", ".", { title: "Init Repository" });
     if (!path) return;
     try {
       await invoke("git_init", { path });
@@ -78,7 +78,7 @@ function wireRepoActions() {
   });
 
   document.getElementById("git-open-btn")?.addEventListener("click", async () => {
-    const path = prompt("Path to existing repo:", ".");
+    const path = await showPrompt("Path to existing repo:", ".", { title: "Open Repository" });
     if (!path) return;
     await openRepo(path);
     await loadRepoList();

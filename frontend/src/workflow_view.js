@@ -801,7 +801,8 @@ async function _runFileOpNode(c, resolved) {
 
 async function _runMemoryNode(c, resolved) {
     const query = resolved(c.query);
-    const records = await invoke('memory_list_all');
+    const _memRes = await invoke('memory_list_all');
+    const records = Array.isArray(_memRes) ? _memRes : (_memRes?.records ?? []);
     const words = query.toLowerCase().split(/\s+/);
     return records
         .filter(r => words.some(w => (r.content || '').toLowerCase().includes(w)))

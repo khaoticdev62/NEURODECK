@@ -154,6 +154,11 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Never expose secrets through the bridge** — `generate_support_bundle` uses `redact_line()` to scrub API keys, Bearer tokens, and password lines. Any new diagnostic command must follow the same pattern.
 - **Do not add `display: none` inside Electron `webRequest.onHeadersReceived`** — it runs on every response including the bridge's HTTP/WS traffic. Only inject `Content-Security-Policy`; do not modify response bodies.
 - **Do not call `Notification.permission` in the Electron main process** — that is a Web API. Use `Notification.isSupported()` instead (Electron's class).
+- **Do not use inline `style="..."` attributes for static styling** — all visual styles must use CSS classes from `app.css` so they participate in the design-token system. Inline styles are reserved for dynamic values controlled by JavaScript (e.g., `display:none` toggles, `width:0%` progress bars).
+- **Do not use magic `z-index` values in CSS** — always use the `--z-*` token scale defined in `:root`. The scale ranges from `--z-behind` (-1) through `--z-toast-peak` (30000) and is documented in `app.css`.
+- **Do not set `will-change` statically in CSS** — it must be added dynamically via JavaScript before animations and removed after to avoid GPU memory waste. See `_navAnimateTransition()` in `main.js` for the pattern.
+- **All new modals/overlays must use `FocusTrap`** — import from `focus-trap.js` and call `.activate()` on open, `.deactivate()` on close. This ensures keyboard and gamepad navigation stays trapped.
+- **All interactive controls must have a minimum 40×40px hit target** on primary UI chrome (tabs, sidebar toggles, top-nav buttons). Use `min-width` / `min-height` so layout is not disrupted.
 
 ---
 

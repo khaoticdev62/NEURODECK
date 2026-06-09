@@ -169,9 +169,9 @@ test("radial menu overlay opens and contains all 12 view segments", async ({ pag
 
   await expect(radial).toBeVisible();
 
-  // Should have 12 segments matching the 12 views
+  // Should have 21 segments matching all views
   const segments = page.locator("#radial-menu-overlay .radial-segment");
-  await expect(segments).toHaveCount(12);
+  await expect(segments).toHaveCount(21);
 
   // Close with Escape
   await page.keyboard.press("Escape");

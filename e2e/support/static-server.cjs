@@ -37,9 +37,16 @@ const server = http.createServer((req, res) => {
       return;
     }
     res.setHeader("Content-Type", mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream");
-    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Connection", "close");
     res.end(data);
   });
+});
+
+const sockets = new Set();
+
+server.on("connection", (socket) => {
+  sockets.add(socket);
+  socket.on("close", () => sockets.delete(socket));
 });
 
 server.on("error", (err) => {
@@ -49,3 +56,14 @@ server.on("error", (err) => {
 server.listen(port, host, () => {
   process.stdout.write(`static-preview http://${host}:${port}\n`);
 });
+
+function shutdown() {
+  server.close(() => process.exit(0));
+  for (const socket of sockets) {
+    socket.destroy();
+  }
+  setTimeout(() => process.exit(0), 1000).unref();
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
