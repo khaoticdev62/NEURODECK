@@ -42,6 +42,30 @@ use serde_json::Value;
 /// 5. Return JSON result
 use std::sync::Arc;
 
+fn promptdrive_required_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, String> {
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("Missing '{}'", key))
+}
+
+fn promptdrive_slot_values(args: &Value) -> Result<Value, String> {
+    let raw_slot_values = args
+        .get("slot_values")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+    crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+    Ok(raw_slot_values)
+}
+
+fn promptdrive_macro_steps(args: &Value) -> Result<Vec<crate::promptdrive::MacroStep>, String> {
+    serde_json::from_value(
+        args.get("steps")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    )
+    .map_err(|e| format!("Invalid macro steps: {}", e))
+}
+
 pub async fn dispatch_send_command(
     state: ServerState,
     message: String,
@@ -3681,46 +3705,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "promptdrive_validate_slots" => {
-            let template_id = args
-                .get("template_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'template_id'")?;
-            let raw_slot_values = args
-                .get("slot_values")
-                .cloned()
-                .unwrap_or_else(|| serde_json::json!({}));
-            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template_id = promptdrive_required_str(&args, "template_id")?;
+            let slot_values = promptdrive_slot_values(&args)?;
             let template = crate::promptdrive::find_template(template_id)?;
+            let slot_values = crate::promptdrive::slot_map_from_value(&slot_values)?;
             let result = crate::promptdrive::validate_slots(&template, &slot_values);
             Ok(serde_json::json!(result))
         }
 
         "promptdrive_preview_prompt" => {
-            let template_id = args
-                .get("template_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'template_id'")?;
-            let raw_slot_values = args
-                .get("slot_values")
-                .cloned()
-                .unwrap_or_else(|| serde_json::json!({}));
-            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template_id = promptdrive_required_str(&args, "template_id")?;
+            let slot_values = promptdrive_slot_values(&args)?;
             let template = crate::promptdrive::find_template(template_id)?;
+            let slot_values = crate::promptdrive::slot_map_from_value(&slot_values)?;
             let result = crate::promptdrive::validate_slots(&template, &slot_values);
             Ok(serde_json::json!(result))
         }
 
         "promptdrive_execute_prompt" => {
-            let template_id = args
-                .get("template_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'template_id'")?;
-            let raw_slot_values = args
-                .get("slot_values")
-                .cloned()
-                .unwrap_or_else(|| serde_json::json!({}));
-            let slot_values = crate::promptdrive::slot_map_from_value(&raw_slot_values)?;
+            let template_id = promptdrive_required_str(&args, "template_id")?;
+            let slot_values = promptdrive_slot_values(&args)?;
             let template = crate::promptdrive::find_template(template_id)?;
+            let slot_values = crate::promptdrive::slot_map_from_value(&slot_values)?;
             let result = crate::promptdrive::validate_slots(&template, &slot_values);
             let prompt = result
                 .rendered_prompt
@@ -3756,6 +3762,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'prompt'")?
                 .to_string();
+            let slot_values = promptdrive_slot_values(&args)?;
             let saved = crate::promptdrive::PromptDriveDb::new(db.pool)
                 .save_prompt(
                     if title.is_empty() {
@@ -3769,9 +3776,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     args.get("pack_id")
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string()),
-                    args.get("slot_values")
-                        .cloned()
-                        .unwrap_or_else(|| serde_json::json!({})),
+                    slot_values,
                     prompt,
                 )
                 .await?;
@@ -3796,22 +3801,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "promptdrive_macro_stop" => {
             let db = state.db.clone().ok_or("SQLite database not initialized")?;
-            let recording_id = args
-                .get("recording_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'recording_id'")?
-                .to_string();
+            let recording_id = promptdrive_required_str(&args, "recording_id")?.to_string();
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
                 .unwrap_or("PromptDrive Macro")
                 .to_string();
-            let steps: Vec<crate::promptdrive::MacroStep> = serde_json::from_value(
-                args.get("steps")
-                    .cloned()
-                    .unwrap_or_else(|| serde_json::json!([])),
-            )
-            .map_err(|e| format!("Invalid macro steps: {}", e))?;
+            let steps = promptdrive_macro_steps(&args)?;
             let macro_def = crate::promptdrive::PromptDriveDb::new(db.pool)
                 .macro_stop(recording_id, name, steps)
                 .await?;
@@ -3820,10 +3816,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "promptdrive_macro_execute" => {
             let db = state.db.clone().ok_or("SQLite database not initialized")?;
-            let macro_id = args
-                .get("macro_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'macro_id'")?;
+            let macro_id = promptdrive_required_str(&args, "macro_id")?;
             let macro_def = crate::promptdrive::PromptDriveDb::new(db.pool)
                 .get_macro(macro_id)
                 .await?;
@@ -3844,10 +3837,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "promptdrive_delete_macro" => {
             let db = state.db.clone().ok_or("SQLite database not initialized")?;
-            let macro_id = args
-                .get("macro_id")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'macro_id'")?;
+            let macro_id = promptdrive_required_str(&args, "macro_id")?;
             crate::promptdrive::PromptDriveDb::new(db.pool)
                 .delete_macro(macro_id)
                 .await?;
@@ -8435,5 +8425,38 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn promptdrive_slot_values_rejects_non_object_payload() {
+        let args = serde_json::json!({ "slot_values": ["task", "review"] });
+        let err = promptdrive_slot_values(&args).unwrap_err();
+        assert_eq!(err, "slot_values must be an object");
+    }
+
+    #[test]
+    fn promptdrive_macro_steps_rejects_malformed_payload() {
+        let args = serde_json::json!({
+            "steps": [
+                {
+                    "kind": "update_slot",
+                    "timestamp": "2026-01-01T00:00:00Z",
+                    "payload": { "slot_id": "task" }
+                }
+            ]
+        });
+        let err = promptdrive_macro_steps(&args).unwrap_err();
+        assert!(err.contains("Invalid macro steps"));
+    }
+
+    #[test]
+    fn promptdrive_required_str_rejects_missing_fields() {
+        let err = promptdrive_required_str(&serde_json::json!({}), "macro_id").unwrap_err();
+        assert_eq!(err, "Missing 'macro_id'");
     }
 }

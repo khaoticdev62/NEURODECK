@@ -39,9 +39,8 @@ PromptDrive now has a production-grade vertical slice inside the existing NEUROD
 
 ## Remaining PromptDrive Work
 
-1. Add bridge/API coverage for malformed PromptDrive payloads.
-2. Add controller-event E2E coverage for DeckCode mappings when Composer is active.
-3. Run broader frontend/E2E suites after current unrelated workspace changes are settled.
+1. Add controller-event E2E coverage for DeckCode mappings when Composer is active.
+2. Run broader frontend/E2E suites after current unrelated workspace changes are settled.
 
 ## Follow-Up Completed After Initial Handoff
 
@@ -49,6 +48,7 @@ PromptDrive now has a production-grade vertical slice inside the existing NEUROD
 - `frontend/src/neurobridge.js` preserves readable thrown errors while attaching `status`, `code`, and `details`.
 - Macro delete/list E2E coverage now verifies the Composer list refreshes after delete.
 - React sidebar navigation test IDs were restored so E2E runner coverage can address active app views reliably.
+- Bridge/API coverage now rejects malformed PromptDrive slot-values and macro-step payloads at the command boundary.
 
 ## Current Caution
 
