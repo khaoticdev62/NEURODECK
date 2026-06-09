@@ -366,8 +366,8 @@ function createMainWindow() {
     console.error(`[webContents] crashed (killed: ${killed})`);
   });
 
-  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[renderer console] [Level ${level}] ${message} (Source: ${sourceId}:${line})`);
+  mainWindow.webContents.on('console-message', (event) => {
+    console.log(`[renderer console] [Level ${event.level}] ${event.message} (Source: ${event.sourceId}:${event.lineNumber})`);
   });
 
   mainWindow.once('ready-to-show', () => {
@@ -485,10 +485,10 @@ app.whenReady().then(async () => {
   const CSP = [
     "default-src 'none'",
     "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `connect-src 'self' ${bridgeOrigin} ${wsBridgeOrigin}${devExtras}`,
     "img-src 'self' data: blob:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     "media-src 'self' blob:",
     "worker-src 'self' blob:",
     "frame-src 'none'",

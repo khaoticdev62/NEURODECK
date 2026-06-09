@@ -6783,8 +6783,8 @@ async function checkOnboarding() {
     let geminiKey = "";
     try {
       geminiKey = await invoke("get_gemini_api_key");
-    } catch (e) {
-      console.warn("Failed to check gemini api key status on boot:", e);
+    } catch {
+      // No key configured yet — expected on first run or unconfigured installs
     }
     const hasKey = geminiKey && geminiKey.trim().length > 0;
 
