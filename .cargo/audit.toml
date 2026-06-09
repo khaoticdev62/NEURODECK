@@ -1,0 +1,8 @@
+[advisories]
+# RUSTSEC-2023-0071: Marvin Attack timing side-channel in rsa 0.9.x
+# Pulled in transitively by sqlx-macros-core → sqlx-mysql even though this
+# project only uses the sqlite feature. No patched version of rsa exists;
+# the sqlx team has not shipped a fix as of 2026-06. This crate is not used
+# for any user-facing cryptographic operations in NEURODECK — sqlx-mysql
+# is compiled only for macro type-checking. Re-evaluate when sqlx ≥ 0.9.
+ignore = ["RUSTSEC-2023-0071"]
