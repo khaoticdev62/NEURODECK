@@ -27,7 +27,13 @@ neurodeck_win_release.zip
 
 # --- Test screenshots & temporary output ---
 test-*.png
+check-*.png
 *.bak
+
+# --- Release artifacts & QA gate bundles ---
+neurodeck-workspace-ui-v*.zip
+PROMPTDRIVE_PRODUCTION_QA_RELEASE_GATE.zip
+PROMPTDRIVE_PRODUCTION_QA_RELEASE_GATE.md
 src-tauri/data/logs/
 e2e/playwright-report/
 e2e/test-results/
