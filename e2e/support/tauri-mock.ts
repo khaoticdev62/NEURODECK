@@ -56,6 +56,38 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
     },
   };
 
+  const promptDriveTemplates = [
+    {
+      id: "core.jpe_explain",
+      pack_id: "core",
+      title: "JPE Explainer",
+      description: "Explain a technical idea in Just Plain English.",
+      category: "Explain",
+      agent_hint: "technical-writer",
+      risk_level: "low",
+      slots: [
+        { id: "topic", label: "Topic", required: true, kind: "textarea", default: "", suggestions: ["Rust ownership", "SQLite migration"] },
+        { id: "audience", label: "Audience", required: true, kind: "text", default: "solo developer", suggestions: ["beginner", "technical founder"] },
+        { id: "format", label: "Output Format", required: false, kind: "text", default: "short checklist", suggestions: ["short checklist", "decision table"] },
+      ],
+      template: "Explain {{topic}} to a {{audience}}. End with {{format}}.",
+    },
+  ];
+
+  const renderPromptDrivePrompt = (args?: any) => {
+    const values = args?.slot_values ?? {};
+    const topic = values.topic ?? "";
+    const audience = values.audience ?? "solo developer";
+    const format = values.format ?? "short checklist";
+    const missing = topic.trim() ? [] : ["topic"];
+    return {
+      valid: missing.length === 0,
+      missing_slots: missing,
+      errors: [],
+      rendered_prompt: missing.length ? null : `Explain ${topic} to a ${audience}. End with ${format}.`,
+    };
+  };
+
   const defaultInvoke = async (cmd: string, args?: any) => {
     if (overrides[cmd]) {
       return await overrides[cmd](args);
@@ -118,6 +150,51 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
           torrent_count: 0,
           torrents: [],
         };
+      case "promptdrive_list_packs":
+        return [{ id: "core", title: "Core PromptDrive", description: "Production-safe templates.", templates: promptDriveTemplates }];
+      case "promptdrive_list_templates":
+        return promptDriveTemplates;
+      case "promptdrive_get_template":
+        return promptDriveTemplates.find((template) => template.id === args?.template_id) ?? promptDriveTemplates[0];
+      case "promptdrive_validate_slots":
+      case "promptdrive_preview_prompt":
+        return renderPromptDrivePrompt(args);
+      case "promptdrive_execute_prompt":
+        return { status: "streaming", validation: renderPromptDrivePrompt(args) };
+      case "promptdrive_save_prompt":
+        return {
+          id: "saved-1",
+          title: args?.title ?? "Saved Prompt",
+          prompt: args?.prompt ?? "",
+          template_id: args?.template_id,
+          pack_id: args?.pack_id,
+          slot_values: args?.slot_values ?? {},
+          created_at: "2026-01-01T00:00:00Z",
+          updated_at: "2026-01-01T00:00:00Z",
+        };
+      case "promptdrive_list_saved_prompts":
+        return [];
+      case "promptdrive_macro_start":
+        return { recording_id: "draft-1", status: "recording" };
+      case "promptdrive_macro_stop":
+        return {
+          id: "macro-1",
+          name: args?.name ?? "PromptDrive Macro",
+          created_at: "2026-01-01T00:00:00Z",
+          steps: args?.steps ?? [],
+          risk_level: "low",
+        };
+      case "promptdrive_list_macros":
+        return [];
+      case "promptdrive_macro_execute":
+        return { status: "ready", safe_replay: true, macro: { id: args?.macro_id, name: "Macro", steps: [], risk_level: "low" } };
+      case "promptdrive_delete_macro":
+        return { status: "deleted", macro_id: args?.macro_id };
+      case "promptdrive_get_suggestions":
+        return [
+          { id: "s1", label: "Rust ownership", source: "Topic", insert_text: "Rust ownership", score: 9 },
+          { id: "s2", label: "SQLite migration", source: "Topic", insert_text: "SQLite migration", score: 7 },
+        ];
       case "set_theme":
         return {
           Name: args?.name ?? "BLACKSITE",

@@ -30,6 +30,11 @@ static MIGRATIONS: &[Migration] = &[
         name: "context_packs",
         sql: include_str!("003_context_packs.sql"),
     },
+    Migration {
+        version: 4,
+        name: "promptdrive",
+        sql: include_str!("004_promptdrive.sql"),
+    },
 ];
 
 pub async fn run_all(pool: &SqlitePool) -> Result<(), sqlx::Error> {

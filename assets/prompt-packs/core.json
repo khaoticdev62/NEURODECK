@@ -1,0 +1,139 @@
+{
+  "packs": [
+    {
+      "id": "core",
+      "title": "Core PromptDrive",
+      "description": "Production-safe templates for solo-dev planning, implementation, review, and JPE explanation.",
+      "templates": [
+        {
+          "id": "core.jpe_explain",
+          "pack_id": "core",
+          "title": "JPE Explainer",
+          "description": "Explain a technical idea in Just Plain English with concrete action steps.",
+          "category": "Explain",
+          "agent_hint": "technical-writer",
+          "risk_level": "low",
+          "slots": [
+            {
+              "id": "topic",
+              "label": "Topic",
+              "required": true,
+              "kind": "textarea",
+              "default": "",
+              "suggestions": ["Rust ownership", "SQLite migration", "Electron preload security"]
+            },
+            {
+              "id": "audience",
+              "label": "Audience",
+              "required": true,
+              "kind": "text",
+              "default": "solo developer",
+              "suggestions": ["beginner", "solo developer", "technical founder"]
+            },
+            {
+              "id": "format",
+              "label": "Output Format",
+              "required": false,
+              "kind": "text",
+              "default": "short paragraphs plus checklist",
+              "suggestions": ["short paragraphs", "bullet checklist", "decision table"]
+            }
+          ],
+          "template": "Explain {{topic}} to a {{audience}} in Just Plain English. Avoid jargon, define any unavoidable technical terms, and end with {{format}}."
+        },
+        {
+          "id": "core.sprint_slice",
+          "pack_id": "core",
+          "title": "Sprint Slice Planner",
+          "description": "Convert a feature into a narrow implementation slice with acceptance checks.",
+          "category": "Planning",
+          "agent_hint": "staff-engineer",
+          "risk_level": "low",
+          "slots": [
+            {
+              "id": "feature",
+              "label": "Feature",
+              "required": true,
+              "kind": "textarea",
+              "default": "",
+              "suggestions": ["PromptDrive composer", "offline model setup", "privacy export gate"]
+            },
+            {
+              "id": "constraints",
+              "label": "Constraints",
+              "required": true,
+              "kind": "textarea",
+              "default": "solo developer, no new dependencies, keep blast radius small",
+              "suggestions": ["no new npm packages", "1280x800 Steam Deck layout", "bridge-only IPC"]
+            },
+            {
+              "id": "checks",
+              "label": "Verification",
+              "required": false,
+              "kind": "textarea",
+              "default": "unit tests, build, focused UI smoke test",
+              "suggestions": ["cargo check", "frontend build", "Playwright smoke test"]
+            }
+          ],
+          "template": "Create a vertical sprint slice for {{feature}}.\n\nConstraints:\n{{constraints}}\n\nReturn: scope, data flow, files to touch, risks, and verification plan. Verification must include {{checks}}."
+        },
+        {
+          "id": "core.security_review",
+          "pack_id": "core",
+          "title": "Security Review",
+          "description": "Review a design or diff for practical security issues.",
+          "category": "Security",
+          "agent_hint": "ciso",
+          "risk_level": "medium",
+          "slots": [
+            {
+              "id": "surface",
+              "label": "Surface",
+              "required": true,
+              "kind": "textarea",
+              "default": "",
+              "suggestions": ["bridge command", "SQLite migration", "renderer workflow"]
+            },
+            {
+              "id": "data",
+              "label": "Sensitive Data",
+              "required": false,
+              "kind": "textarea",
+              "default": "API keys, local files, prompt history, memory records",
+              "suggestions": ["API keys", "OAuth tokens", "local filesystem paths"]
+            }
+          ],
+          "template": "Review this NEURODECK surface for security issues: {{surface}}.\n\nSensitive data involved: {{data}}.\n\nLead with concrete findings. For each finding include severity, exploit path in plain English, and the smallest safe fix."
+        },
+        {
+          "id": "core.code_review",
+          "pack_id": "core",
+          "title": "Code Review",
+          "description": "Find correctness, regression, and test risks in a code change.",
+          "category": "Engineering",
+          "agent_hint": "reviewer",
+          "risk_level": "low",
+          "slots": [
+            {
+              "id": "change",
+              "label": "Change",
+              "required": true,
+              "kind": "textarea",
+              "default": "",
+              "suggestions": ["PromptDrive backend commands", "frontend composer reducer", "macro replay flow"]
+            },
+            {
+              "id": "focus",
+              "label": "Review Focus",
+              "required": false,
+              "kind": "text",
+              "default": "bugs, regressions, missing tests",
+              "suggestions": ["security", "performance", "accessibility", "state bugs"]
+            }
+          ],
+          "template": "Review this code change with focus on {{focus}}:\n\n{{change}}\n\nReturn findings first, ordered by severity, with file/line references when available. Keep summary brief."
+        }
+      ]
+    }
+  ]
+}

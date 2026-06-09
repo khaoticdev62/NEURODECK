@@ -27,6 +27,7 @@ mod privacy;
 mod dashboard;
 mod orchestrator;
 mod plugin_mgr;
+pub mod promptdrive;
 mod pty_manager;
 mod remote_control;
 mod scheduler;
@@ -98,5 +99,4 @@ pub struct AppState {
     // Privacy / sealed record unlock state
     pub(crate) unlock_state: privacy::UnlockState,
 }
-
 
