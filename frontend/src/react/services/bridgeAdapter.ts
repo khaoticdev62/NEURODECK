@@ -80,6 +80,16 @@ async function bridgeInvoke<T>(cmd: string, args?: Record<string, unknown>): Pro
   return res.json() as Promise<T>;
 }
 
+async function appInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  const runtime = window as unknown as {
+    __TAURI__?: { core?: { invoke?: <R>(command: string, payload?: Record<string, unknown>) => Promise<R> } };
+    __TAURI_INTERNALS__?: { invoke?: <R>(command: string, payload?: Record<string, unknown>) => Promise<R> };
+  };
+  const tauriInvoke = runtime.__TAURI__?.core?.invoke ?? runtime.__TAURI_INTERNALS__?.invoke;
+  if (tauriInvoke) return tauriInvoke<T>(cmd, args);
+  return bridgeInvoke<T>(cmd, args);
+}
+
 /* ── Store (bridge-backed via localStorage fallback) ─────────────────────── */
 
 const store = {
@@ -590,6 +600,133 @@ const promptLab = {
 
 /* ── Docs / Knowledge Base ───────────────────────────────────────────────── */
 
+export interface PromptSlot {
+  id: string;
+  label: string;
+  required: boolean;
+  kind: string;
+  default?: string;
+  suggestions?: string[];
+}
+
+export interface PromptTemplate {
+  id: string;
+  pack_id: string;
+  title: string;
+  description: string;
+  category: string;
+  agent_hint: string;
+  slots: PromptSlot[];
+  template: string;
+  risk_level: string;
+}
+
+export interface PromptPack {
+  id: string;
+  title: string;
+  description: string;
+  templates?: PromptTemplate[];
+}
+
+export interface PromptPreview {
+  valid: boolean;
+  missing_slots: string[];
+  errors: string[];
+  rendered_prompt: string | null;
+}
+
+export interface SavedPrompt {
+  id: string;
+  title: string;
+  prompt: string;
+  template_id?: string;
+  pack_id?: string;
+  slot_values?: Record<string, string>;
+}
+
+export interface MacroStep {
+  kind: string;
+  timestamp: string;
+  payload: Record<string, unknown>;
+  requires_confirmation?: boolean;
+}
+
+export interface MacroDefinition {
+  id: string;
+  name: string;
+  created_at: string;
+  steps: MacroStep[];
+  risk_level: string;
+}
+
+export interface Suggestion {
+  id: string;
+  label: string;
+  source: string;
+  insert_text: string;
+  score: number;
+}
+
+const promptDrive = {
+  async listPacks() {
+    return appInvoke<PromptPack[]>('promptdrive_list_packs');
+  },
+  async listTemplates(packId?: string) {
+    return appInvoke<PromptTemplate[]>('promptdrive_list_templates', { pack_id: packId });
+  },
+  async getTemplate(templateId: string) {
+    return appInvoke<PromptTemplate>('promptdrive_get_template', { template_id: templateId });
+  },
+  async previewPrompt(templateId: string, slotValues: Record<string, string>) {
+    return appInvoke<PromptPreview>('promptdrive_preview_prompt', { template_id: templateId, slot_values: slotValues });
+  },
+  async executePrompt(templateId: string, slotValues: Record<string, string>, prompt: string) {
+    return appInvoke<{ status: string; validation?: PromptPreview }>('promptdrive_execute_prompt', {
+      template_id: templateId,
+      slot_values: slotValues,
+      prompt,
+    });
+  },
+  async savePrompt(payload: {
+    title: string;
+    template_id?: string;
+    pack_id?: string;
+    slot_values: Record<string, string>;
+    prompt: string;
+  }) {
+    return appInvoke<SavedPrompt>('promptdrive_save_prompt', payload);
+  },
+  async listSavedPrompts() {
+    return appInvoke<SavedPrompt[]>('promptdrive_list_saved_prompts');
+  },
+  async macroStart() {
+    return appInvoke<{ recording_id: string; status: string }>('promptdrive_macro_start');
+  },
+  async macroStop(recordingId: string, name: string, steps: MacroStep[]) {
+    return appInvoke<MacroDefinition>('promptdrive_macro_stop', {
+      recording_id: recordingId,
+      name,
+      steps,
+    });
+  },
+  async macroExecute(macroId: string) {
+    return appInvoke<{ status: string; safe_replay: boolean; macro: MacroDefinition }>('promptdrive_macro_execute', { macro_id: macroId });
+  },
+  async listMacros() {
+    return appInvoke<MacroDefinition[]>('promptdrive_list_macros');
+  },
+  async deleteMacro(macroId: string) {
+    return appInvoke<{ status: string; macro_id: string }>('promptdrive_delete_macro', { macro_id: macroId });
+  },
+  async getSuggestions(query: string, templateId?: string, slotId?: string) {
+    return appInvoke<Suggestion[]>('promptdrive_get_suggestions', {
+      query,
+      template_id: templateId,
+      slot_id: slotId,
+    });
+  },
+};
+
 const docs = {
   async indexDirectory(path: string) {
     return bridgeInvoke<{ success: boolean; count?: number }>('index_directory', { path });
@@ -758,6 +895,7 @@ export const neurodeckApi = {
   scheduler,
   git,
   promptLab,
+  promptDrive,
   docs,
   share,
   tunnel,

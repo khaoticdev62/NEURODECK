@@ -206,8 +206,13 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
               risk_level: "low",
             },
         };
-      case "promptdrive_delete_macro":
+      case "promptdrive_delete_macro": {
+        const index = promptDriveMacros.findIndex((macro) => macro.id === args?.macro_id);
+        if (index >= 0) {
+          promptDriveMacros.splice(index, 1);
+        }
         return { status: "deleted", macro_id: args?.macro_id };
+      }
       case "promptdrive_get_suggestions":
         return [
           { id: "s1", label: "Rust ownership", source: "Topic", insert_text: "Rust ownership", score: 9 },

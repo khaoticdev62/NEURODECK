@@ -11420,6 +11420,23 @@ body.crt-flicker-disabled .crt-flicker {
   flex-shrink: 0;
 }
 
+.promptdrive-macro-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.promptdrive-macro-actions button {
+  min-width: 64px;
+  min-height: 40px;
+}
+
+.promptdrive-macro-actions [data-macro-action="delete"] {
+  border-color: rgba(var(--error-rgb), 0.35);
+  color: var(--error-color);
+}
+
 .promptdrive-suggestions-section {
   flex: 0 0 235px;
 }

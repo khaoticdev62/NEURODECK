@@ -47,6 +47,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
                     <button
                       key={item.id}
                       type="button"
+                      data-testid={`nav-tab-${item.id}`}
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
                       className={`no-drag flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition focus:outline-none focus:ring-2 focus:ring-neuro/40 ${
                         active ? 'border-neuro/35 bg-neuro/10 text-neuro shadow-focus' : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-100'

@@ -6693,8 +6693,16 @@ async function _pdLoadMacros(ctx) {
     row.className = "promptdrive-macro-item";
     row.innerHTML =
       `<div><span>${window.sanitizeHtml(macro.name)}</span><small>${macro.steps.length} steps · ${window.sanitizeHtml(macro.risk_level)}</small></div>` +
-      `<button type="button" data-macro-id="${macro.id}">Replay</button>`;
-    row.querySelector("button").addEventListener("click", () => _pdReplayMacro(ctx, macro.id));
+      `<div class="promptdrive-macro-actions">` +
+      `<button type="button" data-macro-action="replay" data-macro-id="${macro.id}">Replay</button>` +
+      `<button type="button" data-macro-action="delete" data-macro-id="${macro.id}">Delete</button>` +
+      `</div>`;
+    row
+      .querySelector('[data-macro-action="replay"]')
+      .addEventListener("click", () => _pdReplayMacro(ctx, macro.id));
+    row
+      .querySelector('[data-macro-action="delete"]')
+      .addEventListener("click", () => _pdDeleteMacro(ctx, macro.id));
     ctx.macroList.appendChild(row);
   });
 }
@@ -6753,6 +6761,12 @@ async function _pdReplayMacro(ctx, macroId) {
     ctx.replayingMacro = false;
   }
   addNotification("PromptDrive", "Macro replay complete.", "success");
+}
+
+async function _pdDeleteMacro(ctx, macroId) {
+  await invoke("promptdrive_delete_macro", { macro_id: macroId });
+  await _pdLoadMacros(ctx);
+  addNotification("PromptDrive", "Macro deleted.", "success");
 }
 
 function _pdCloseDrawers() {

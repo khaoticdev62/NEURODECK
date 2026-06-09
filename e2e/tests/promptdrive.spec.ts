@@ -39,6 +39,10 @@ test("PromptDrive Composer builds, previews, saves, and replays a safe macro", a
   await page.locator(".promptdrive-macro-item button", { hasText: "Replay" }).click();
   await expect(page.locator("#pd-preview")).toHaveValue(/SQLite migration/);
 
+  await page.locator(".promptdrive-macro-item button", { hasText: "Delete" }).click();
+  await expect(page.locator(".promptdrive-macro-item")).toHaveCount(0);
+  await expect(page.locator("#pd-macro-list")).toContainText("No macros recorded.");
+
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("view-prompt-lab")).toHaveClass(/active/);
 });
