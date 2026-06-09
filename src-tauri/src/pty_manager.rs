@@ -1,8 +1,10 @@
+#![allow(dead_code)]
+
+use crate::{AppHandle, State};
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
-use crate::{AppHandle, State};
 use std::time::{Duration, Instant};
 
 const SPAWN_TIMEOUT_SECS: u64 = 15;
@@ -157,7 +159,7 @@ fn spawn_pty_with_timeout(
             let mut child_opt: Option<Box<dyn portable_pty::Child + Send + Sync>> = None;
             for (i, candidate) in candidates.iter().enumerate() {
                 let mut cmd = CommandBuilder::new(candidate);
-                
+
                 if let Some(ref wp) = workspace_path {
                     cmd.cwd(wp);
                 }
@@ -239,8 +241,14 @@ pub fn pty_spawn(
         app.config.get_resolved_workspace()
     };
 
-    let (writer, mut reader, master, mut child) =
-        spawn_pty_with_timeout(cols, rows, candidates, args, requested_shell, workspace_path)?;
+    let (writer, mut reader, master, mut child) = spawn_pty_with_timeout(
+        cols,
+        rows,
+        candidates,
+        args,
+        requested_shell,
+        workspace_path,
+    )?;
 
     let app_handle_clone = app_handle.clone();
     let id_clone = id.clone();
@@ -273,7 +281,14 @@ pub fn pty_spawn(
     // PtySession closes the writer and master fd, which causes the old reader
     // thread's read() to return an error and exit — preventing a thread leak.
     sessions.remove(&id);
-    sessions.insert(id, PtySession { writer, master, spawned_at: Instant::now() });
+    sessions.insert(
+        id,
+        PtySession {
+            writer,
+            master,
+            spawned_at: Instant::now(),
+        },
+    );
 
     Ok(())
 }

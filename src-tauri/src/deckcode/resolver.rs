@@ -1,6 +1,6 @@
-use crate::deckcode::schema::{ControllerProfileSchema, Binding};
-use crate::deckcode::multilang_schema::MultiLangProfileSchema;
 use crate::deckcode::input::InputEvent;
+use crate::deckcode::multilang_schema::MultiLangProfileSchema;
+use crate::deckcode::schema::{Binding, ControllerProfileSchema};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
@@ -34,7 +34,12 @@ impl DeckCodeResolver {
 
     pub fn resolve(&self, event: &InputEvent, context: &ResolverContext) -> Option<Binding> {
         // System reserved check
-        if self.schema.source_inventory.system_reserved.contains(&event.source) {
+        if self
+            .schema
+            .source_inventory
+            .system_reserved
+            .contains(&event.source)
+        {
             return None;
         }
 
@@ -50,7 +55,7 @@ impl DeckCodeResolver {
                     }
                 }
             }
-            
+
             // Check explicit click/hold
             if let Some(click) = &action_set.click {
                 if let Some(src) = &click.source {
@@ -73,12 +78,13 @@ impl DeckCodeResolver {
         }
 
         // Filtering & Sorting
-        let mut valid_candidates: Vec<_> = candidates.into_iter()
+        let mut valid_candidates: Vec<_> = candidates
+            .into_iter()
             .filter(|(set_name, _binding)| {
                 // Keep if it's the global set, the active set, or an active layer
-                set_name == "global" || 
-                set_name == &context.active_set || 
-                context.active_layers.contains(set_name)
+                set_name == "global"
+                    || set_name == &context.active_set
+                    || context.active_layers.contains(set_name)
             })
             .collect();
 
@@ -98,17 +104,25 @@ impl DeckCodeResolver {
         // --- MULTILANG OVERRIDE PHASE ---
         if let Some(ml) = &self.multilang {
             let active_pack = ml.language_packs.get(&context.active_language_id);
-            
+
             // Override left_trackpad slots with the language palette
             if let Some(slot_idx) = final_binding.slot {
-                if let Some(ml_slot) = ml.left_trackpad_language_palette.iter().find(|s| s.slot == slot_idx as u32) {
+                if let Some(ml_slot) = ml
+                    .left_trackpad_language_palette
+                    .iter()
+                    .find(|s| s.slot == slot_idx as u32)
+                {
                     final_binding.emit = ml_slot.emit.clone();
                     final_binding.label = Some(ml_slot.label.clone());
                 }
             } else if let Some(source) = &final_binding.source {
                 if source.starts_with("left_trackpad.slot_") {
                     if let Ok(slot_idx) = source.replace("left_trackpad.slot_", "").parse::<u32>() {
-                        if let Some(ml_slot) = ml.left_trackpad_language_palette.iter().find(|s| s.slot == slot_idx) {
+                        if let Some(ml_slot) = ml
+                            .left_trackpad_language_palette
+                            .iter()
+                            .find(|s| s.slot == slot_idx)
+                        {
                             final_binding.emit = ml_slot.emit.clone();
                             final_binding.label = Some(ml_slot.label.clone());
                         }
@@ -123,22 +137,26 @@ impl DeckCodeResolver {
                         final_binding.emit = format!("insert_snippet:{}", snippet.template);
                     }
                 }
-            } else if final_binding.emit == "insert.comment_toggle" || final_binding.emit == "toggle.comment" {
-                 if let Some(pack) = active_pack {
-                     final_binding.emit = format!("insert_snippet:{} ${{cursor}}", pack.comment);
-                 }
-            } else if final_binding.emit == "insert.semicolon_or_line_end" || final_binding.emit == "insert.statement_end" {
-                 if let Some(pack) = active_pack {
-                     final_binding.emit = format!("insert_snippet:{}", pack.statement_end);
-                 }
+            } else if final_binding.emit == "insert.comment_toggle"
+                || final_binding.emit == "toggle.comment"
+            {
+                if let Some(pack) = active_pack {
+                    final_binding.emit = format!("insert_snippet:{} ${{cursor}}", pack.comment);
+                }
+            } else if final_binding.emit == "insert.semicolon_or_line_end"
+                || final_binding.emit == "insert.statement_end"
+            {
+                if let Some(pack) = active_pack {
+                    final_binding.emit = format!("insert_snippet:{}", pack.statement_end);
+                }
             } else if final_binding.emit == "insert.parens_pair" {
-                 final_binding.emit = "insert_snippet:(${{cursor}})".to_string();
+                final_binding.emit = "insert_snippet:(${{cursor}})".to_string();
             } else if final_binding.emit == "insert.braces_pair" {
-                 final_binding.emit = "insert_snippet:{${{cursor}}}".to_string();
+                final_binding.emit = "insert_snippet:{${{cursor}}}".to_string();
             } else if final_binding.emit == "insert.brackets_pair" {
-                 final_binding.emit = "insert_snippet:[${{cursor}}]".to_string();
+                final_binding.emit = "insert_snippet:[${{cursor}}]".to_string();
             } else if final_binding.emit == "insert.quotes_pair" {
-                 final_binding.emit = "insert_snippet:\"${{cursor}}\"".to_string();
+                final_binding.emit = "insert_snippet:\"${{cursor}}\"".to_string();
             }
         }
 

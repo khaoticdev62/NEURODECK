@@ -51,7 +51,9 @@ pub async fn list_workspace_files(path: Option<String>) -> Result<Vec<FileEntry>
     };
 
     let mut entries = vec![];
-    let mut dir = tokio::fs::read_dir(&target).await.map_err(|e| e.to_string())?;
+    let mut dir = tokio::fs::read_dir(&target)
+        .await
+        .map_err(|e| e.to_string())?;
 
     while let Ok(Some(entry)) = dir.next_entry().await {
         let meta = entry.metadata().await.map_err(|e| e.to_string())?;
@@ -72,12 +74,10 @@ pub async fn list_workspace_files(path: Option<String>) -> Result<Vec<FileEntry>
     }
 
     // Sort: directories first, then alphabetically
-    entries.sort_by(|a, b| {
-        match (a.is_dir, b.is_dir) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
+    entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
     Ok(entries)
@@ -112,7 +112,9 @@ pub async fn create_workspace_file(path: String) -> Result<(), String> {
 
 pub async fn delete_workspace_file(path: String) -> Result<(), String> {
     let target = sanitize_workspace_path(&path)?;
-    let meta = tokio::fs::metadata(&target).await.map_err(|e| e.to_string())?;
+    let meta = tokio::fs::metadata(&target)
+        .await
+        .map_err(|e| e.to_string())?;
     if meta.is_dir() {
         tokio::fs::remove_dir_all(&target)
             .await

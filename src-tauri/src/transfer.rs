@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+
+use crate::{AppHandle, State};
 use chrono::Utc;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
@@ -11,7 +14,6 @@ use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
-use crate::{AppHandle, State};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Peer {

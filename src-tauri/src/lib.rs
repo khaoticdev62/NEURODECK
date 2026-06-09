@@ -1,65 +1,62 @@
-mod autocomplete;
 mod audio_recorder;
+mod autocomplete;
 pub mod bridge;
 mod canvas_collab;
 use mdns_sd::ServiceDaemon;
 pub mod commands;
 mod computer_use;
-pub mod db;
-pub mod tauri_compat;
 pub mod config;
+mod context_packs;
+mod dashboard;
+pub mod db;
 pub mod deckcode;
 mod doc_indexer;
 mod error;
 mod ftp;
+pub mod game;
 mod hf_model_mgr;
 mod llm;
 pub mod lsp;
 mod lua;
 mod mcp;
 pub mod memory;
+pub mod models;
 mod ollama_mgr;
-mod projects;
-mod search;
-mod context_packs;
-mod permissions;
-mod privacy;
-mod dashboard;
 mod orchestrator;
+pub mod paths;
+mod permissions;
 mod plugin_mgr;
+mod privacy;
+mod projects;
 pub mod promptdrive;
+pub mod providers;
 mod pty_manager;
 mod remote_control;
 mod scheduler;
+mod search;
 mod security;
 mod self_heal;
 mod sftp;
 mod storage;
 pub mod sync;
+pub mod tauri_compat;
 mod torrent;
 mod transfer;
 mod tunnel;
 mod whisper;
 mod workflow;
 mod workflow_engine;
-pub mod models;
-pub mod game;
-pub mod paths;
-pub mod providers;
+use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider};
+use crate::memory::MemoryDB;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Mutex};
-use crate::llm::{
-    GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider,
-};
-use crate::memory::MemoryDB;
 
 // Re-exports so existing callers (crate::PERSONAS, crate::user_config_dir, etc.) keep working.
-pub(crate) use models::{CustomPersona, PERSONAS, THEMES};
 pub(crate) use game::*;
+pub(crate) use models::{CustomPersona, PERSONAS, THEMES};
 pub use paths::*;
-pub use tauri_compat::*;
 pub(crate) use providers::*;
-
+pub use tauri_compat::*;
 
 pub struct LuaState(pub Mutex<lua::LuaEngine>);
 
@@ -99,4 +96,3 @@ pub struct AppState {
     // Privacy / sealed record unlock state
     pub(crate) unlock_state: privacy::UnlockState,
 }
-

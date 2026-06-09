@@ -78,7 +78,11 @@ impl PrivacyFilter {
             PrivacyLevel::Private => Some(80),
             PrivacyLevel::Sensitive => None,
             PrivacyLevel::Sealed => {
-                if is_unlocked { None } else { None }
+                if is_unlocked {
+                    None
+                } else {
+                    None
+                }
             }
         }
     }
@@ -113,7 +117,9 @@ impl PrivacyFilter {
         match level {
             PrivacyLevel::Standard => None,
             PrivacyLevel::Private => Some("This export contains private records."),
-            PrivacyLevel::Sensitive => Some("This export contains sensitive records. Share with caution."),
+            PrivacyLevel::Sensitive => {
+                Some("This export contains sensitive records. Share with caution.")
+            }
             PrivacyLevel::Sealed => None,
         }
     }
@@ -186,9 +192,15 @@ mod tests {
 
     #[test]
     fn test_inject_and_confirm() {
-        assert!(!PrivacyFilter::requires_confirmation(&PrivacyLevel::Standard));
-        assert!(!PrivacyFilter::requires_confirmation(&PrivacyLevel::Private));
-        assert!(PrivacyFilter::requires_confirmation(&PrivacyLevel::Sensitive));
+        assert!(!PrivacyFilter::requires_confirmation(
+            &PrivacyLevel::Standard
+        ));
+        assert!(!PrivacyFilter::requires_confirmation(
+            &PrivacyLevel::Private
+        ));
+        assert!(PrivacyFilter::requires_confirmation(
+            &PrivacyLevel::Sensitive
+        ));
         assert!(!PrivacyFilter::requires_confirmation(&PrivacyLevel::Sealed));
 
         assert!(PrivacyFilter::can_inject(&PrivacyLevel::Sensitive, false));

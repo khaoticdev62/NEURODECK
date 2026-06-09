@@ -79,7 +79,11 @@ pub fn parse_workflow(json: &str) -> Result<WorkflowDoc, String> {
 // ──────────────────────────────────────────────────────────────────────────
 
 /// Substitute `{{input}}` and `{{node:ID}}` placeholders in a string.
-pub fn substitute_template(template: &str, input: &str, outputs: &HashMap<String, String>) -> String {
+pub fn substitute_template(
+    template: &str,
+    input: &str,
+    outputs: &HashMap<String, String>,
+) -> String {
     let mut result = template.replace("{{input}}", input);
     // Replace {{node:n1}} with the output of node n1
     let mut start = 0;
@@ -99,7 +103,11 @@ pub fn substitute_template(template: &str, input: &str, outputs: &HashMap<String
 }
 
 /// Recursively substitute templates in any JSON value.
-pub fn substitute_in_value(value: &mut serde_json::Value, input: &str, outputs: &HashMap<String, String>) {
+pub fn substitute_in_value(
+    value: &mut serde_json::Value,
+    input: &str,
+    outputs: &HashMap<String, String>,
+) {
     match value {
         serde_json::Value::String(s) => {
             *s = substitute_template(s, input, outputs);
@@ -149,7 +157,14 @@ pub fn eval_condition(expr: &str, input: &str) -> Result<bool, String> {
     }
 
     // Handle comparison operators (longest-match first to avoid ">=" matching as ">")
-    for (op, op_len) in [("==", 2usize), ("!=", 2), ("<=", 2), (">=", 2), ("<", 1), (">", 1)] {
+    for (op, op_len) in [
+        ("==", 2usize),
+        ("!=", 2),
+        ("<=", 2),
+        (">=", 2),
+        ("<", 1),
+        (">", 1),
+    ] {
         if let Some(pos) = find_top_level_op(trimmed, op) {
             let left = trimmed[..pos].trim();
             let right = trimmed[pos + op_len..].trim();
@@ -160,22 +175,22 @@ pub fn eval_condition(expr: &str, input: &str) -> Result<bool, String> {
                 return match op {
                     "==" => Ok((ln - rn).abs() < f64::EPSILON),
                     "!=" => Ok((ln - rn).abs() >= f64::EPSILON),
-                    "<"  => Ok(ln < rn),
-                    ">"  => Ok(ln > rn),
+                    "<" => Ok(ln < rn),
+                    ">" => Ok(ln > rn),
                     "<=" => Ok(ln <= rn),
                     ">=" => Ok(ln >= rn),
-                    _    => unreachable!(),
+                    _ => unreachable!(),
                 };
             }
             // String comparison fallback
             return match op {
                 "==" => Ok(left_val == right_val),
                 "!=" => Ok(left_val != right_val),
-                "<"  => Ok(left_val < right_val),
-                ">"  => Ok(left_val > right_val),
+                "<" => Ok(left_val < right_val),
+                ">" => Ok(left_val > right_val),
                 "<=" => Ok(left_val <= right_val),
                 ">=" => Ok(left_val >= right_val),
-                _    => unreachable!(),
+                _ => unreachable!(),
             };
         }
     }
@@ -195,7 +210,10 @@ fn preprocess_expr(expr: &str, input: &str) -> String {
     while let Some(start) = s.find("input.contains(") {
         let after = start + "input.contains(".len();
         if let Some(end) = s[after..].find(')') {
-            let arg = s[after..after + end].trim().trim_matches('"').trim_matches('\'');
+            let arg = s[after..after + end]
+                .trim()
+                .trim_matches('"')
+                .trim_matches('\'');
             let result = input.contains(arg).to_string();
             s.replace_range(start..after + end + 1, &result);
         } else {
@@ -215,7 +233,8 @@ fn preprocess_expr(expr: &str, input: &str) -> String {
         if s[i..].starts_with("input") {
             let end = i + 5;
             let before_ok = i == 0 || !bytes[i - 1].is_ascii_alphanumeric() && bytes[i - 1] != b'_';
-            let after_ok = end >= bytes.len() || !bytes[end].is_ascii_alphanumeric() && bytes[end] != b'_' && bytes[end] != b'.';
+            let after_ok = end >= bytes.len()
+                || !bytes[end].is_ascii_alphanumeric() && bytes[end] != b'_' && bytes[end] != b'.';
             if before_ok && after_ok {
                 out.push('"');
                 out.push_str(input);
@@ -248,7 +267,10 @@ fn find_top_level_op(s: &str, op: &str) -> Option<usize> {
             } else if c == ')' {
                 depth -= 1;
             } else if depth == 0 {
-                let matches = op_chars.iter().enumerate().all(|(j, &oc)| chars[i + j] == oc);
+                let matches = op_chars
+                    .iter()
+                    .enumerate()
+                    .all(|(j, &oc)| chars[i + j] == oc);
                 if matches {
                     return Some(i);
                 }
@@ -293,7 +315,9 @@ fn apply_transform(mode: &str, input: &str, _template: &str) -> String {
                 let mut chars = w.chars();
                 match chars.next() {
                     None => String::new(),
-                    Some(c) => c.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+                    Some(c) => {
+                        c.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                    }
                 }
             })
             .collect::<Vec<_>>()
@@ -344,8 +368,16 @@ async fn exec_node<E: EventEmitter>(
                 .map_err(|e| format!("LLM error: {}", e))
         }
         "shell" => {
-            let code = config.get("command").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let lang = config.get("lang").and_then(|v| v.as_str()).unwrap_or("bash").to_string();
+            let code = config
+                .get("command")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let lang = config
+                .get("lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("bash")
+                .to_string();
             if code.is_empty() {
                 return Err("Shell node has empty command".to_string());
             }
@@ -393,17 +425,18 @@ async fn exec_node<E: EventEmitter>(
             output
         }
         "file_op" => {
-            let mode = config.get("mode").and_then(|v| v.as_str()).unwrap_or("read");
+            let mode = config
+                .get("mode")
+                .and_then(|v| v.as_str())
+                .unwrap_or("read");
             let path = config.get("path").and_then(|v| v.as_str()).unwrap_or("");
             if path.is_empty() {
                 return Err("File Op node has empty path".to_string());
             }
             match mode {
-                "read" => {
-                    tokio::fs::read_to_string(path)
-                        .await
-                        .map_err(|e| format!("Read failed: {}", e))
-                }
+                "read" => tokio::fs::read_to_string(path)
+                    .await
+                    .map_err(|e| format!("Read failed: {}", e)),
                 "write" => {
                     let content = config.get("content").and_then(|v| v.as_str()).unwrap_or("");
                     tokio::fs::write(path, content)
@@ -430,7 +463,10 @@ async fn exec_node<E: EventEmitter>(
             Ok(format!("[PTY not available in headless mode] {}", cmd))
         }
         "memory" => {
-            let query = config.get("query").and_then(|v| v.as_str()).unwrap_or(input);
+            let query = config
+                .get("query")
+                .and_then(|v| v.as_str())
+                .unwrap_or(input);
             let limit = config.get("limit").and_then(|v| v.as_u64()).unwrap_or(3) as usize;
             let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app.mem_db {
@@ -446,7 +482,11 @@ async fn exec_node<E: EventEmitter>(
                                     .filter(|w| w.len() > 2)
                                     .filter(|w| lower.contains(&w.to_lowercase()[..]))
                                     .count();
-                                if hits > 0 { Some((hits, rec)) } else { None }
+                                if hits > 0 {
+                                    Some((hits, rec))
+                                } else {
+                                    None
+                                }
                             })
                             .collect();
                         scored.sort_by(|a, b| b.0.cmp(&a.0));
@@ -464,17 +504,32 @@ async fn exec_node<E: EventEmitter>(
             }
         }
         "condition" => {
-            let expr = config.get("expression").and_then(|v| v.as_str()).unwrap_or("");
-            let true_seed = config.get("trueSeed").and_then(|v| v.as_str()).unwrap_or("");
-            let false_seed = config.get("falseSeed").and_then(|v| v.as_str()).unwrap_or("");
+            let expr = config
+                .get("expression")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let true_seed = config
+                .get("trueSeed")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let false_seed = config
+                .get("falseSeed")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let is_true = eval_condition(expr, input).unwrap_or(false);
             // Return the seed for the branch that will be taken.
             // The router in execute_workflow handles edge selection.
             Ok(if is_true { true_seed } else { false_seed }.to_string())
         }
         "transform" => {
-            let mode = config.get("mode").and_then(|v| v.as_str()).unwrap_or("trim");
-            let template = config.get("template").and_then(|v| v.as_str()).unwrap_or("");
+            let mode = config
+                .get("mode")
+                .and_then(|v| v.as_str())
+                .unwrap_or("trim");
+            let template = config
+                .get("template")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             Ok(apply_transform(mode, input, template))
         }
         "output" => {
@@ -508,7 +563,11 @@ fn find_trigger_node(nodes: &[WorkflowNode]) -> Option<&WorkflowNode> {
 }
 
 /// Find outgoing edges from a node, optionally filtered by port.
-fn find_outgoing_edges<'a>(edges: &'a [WorkflowEdge], from: &str, port: Option<&str>) -> Vec<&'a WorkflowEdge> {
+fn find_outgoing_edges<'a>(
+    edges: &'a [WorkflowEdge],
+    from: &str,
+    port: Option<&str>,
+) -> Vec<&'a WorkflowEdge> {
     edges
         .iter()
         .filter(|e| e.from == from && (port.is_none() || e.from_port == port.unwrap()))
@@ -543,16 +602,19 @@ pub async fn execute_workflow<E: EventEmitter>(
     };
 
     // Execute trigger
-    let trigger_output = match exec_node(trigger, "", &state.outputs, &app_state, &broadcaster).await {
-        Ok(out) => out,
-        Err(e) => {
-            state.error = Some(format!("Trigger failed: {}", e));
-            state.running = false;
-            state.completed_at = Some(chrono::Utc::now().to_rfc3339());
-            return state;
-        }
-    };
-    state.outputs.insert(trigger.id.clone(), trigger_output.clone());
+    let trigger_output =
+        match exec_node(trigger, "", &state.outputs, &app_state, &broadcaster).await {
+            Ok(out) => out,
+            Err(e) => {
+                state.error = Some(format!("Trigger failed: {}", e));
+                state.running = false;
+                state.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                return state;
+            }
+        };
+    state
+        .outputs
+        .insert(trigger.id.clone(), trigger_output.clone());
 
     // BFS/DFS traversal starting from trigger's outgoing edges
     let mut queue: Vec<(String, String)> = Vec::new(); // (node_id, input)
@@ -580,10 +642,13 @@ pub async fn execute_workflow<E: EventEmitter>(
             Ok(out) => out,
             Err(e) => {
                 state.error = Some(format!("Node '{}' failed: {}", node_id, e));
-                broadcaster.emit("workflow_error", serde_json::json!({
-                    "node_id": node_id,
-                    "error": e
-                }));
+                broadcaster.emit(
+                    "workflow_error",
+                    serde_json::json!({
+                        "node_id": node_id,
+                        "error": e
+                    }),
+                );
                 break;
             }
         };
@@ -598,7 +663,11 @@ pub async fn execute_workflow<E: EventEmitter>(
 
         // For condition nodes, route based on expression result
         if node.node_type == "condition" {
-            let expr = node.config.get("expression").and_then(|v| v.as_str()).unwrap_or("");
+            let expr = node
+                .config
+                .get("expression")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let is_true = eval_condition(expr, &input).unwrap_or(false);
             let port = if is_true { "out-true" } else { "out-false" };
             for edge in find_outgoing_edges(&doc.edges, &node_id, Some(port)) {
@@ -615,12 +684,15 @@ pub async fn execute_workflow<E: EventEmitter>(
 
     state.running = false;
     state.completed_at = Some(chrono::Utc::now().to_rfc3339());
-    broadcaster.emit("workflow_complete", serde_json::json!({
-        "workflow_name": name,
-        "success": state.error.is_none(),
-        "outputs": state.outputs,
-        "final_output": state.final_output,
-    }));
+    broadcaster.emit(
+        "workflow_complete",
+        serde_json::json!({
+            "workflow_name": name,
+            "success": state.error.is_none(),
+            "outputs": state.outputs,
+            "final_output": state.final_output,
+        }),
+    );
     state
 }
 
@@ -650,7 +722,10 @@ pub fn list_run_history(name: &str) -> Result<Vec<WorkflowRunState>, String> {
         return Ok(Vec::new());
     }
     let mut runs = Vec::new();
-    for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
+    for entry in std::fs::read_dir(&dir)
+        .map_err(|e| e.to_string())?
+        .flatten()
+    {
         if entry.path().extension().is_some_and(|e| e == "json") {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 if let Ok(run) = serde_json::from_str::<WorkflowRunState>(&content) {
@@ -684,8 +759,14 @@ mod tests {
     fn test_substitute_input() {
         let mut outputs = HashMap::new();
         outputs.insert("n1".to_string(), "world".to_string());
-        assert_eq!(substitute_template("Hello {{input}}!", "world", &outputs), "Hello world!");
-        assert_eq!(substitute_template("Ref: {{node:n1}}", "x", &outputs), "Ref: world");
+        assert_eq!(
+            substitute_template("Hello {{input}}!", "world", &outputs),
+            "Hello world!"
+        );
+        assert_eq!(
+            substitute_template("Ref: {{node:n1}}", "x", &outputs),
+            "Ref: world"
+        );
     }
 
     #[test]

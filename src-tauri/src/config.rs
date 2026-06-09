@@ -187,7 +187,9 @@ pub struct PrefsConfig {
 
 impl Default for PrefsConfig {
     fn default() -> Self {
-        Self { minimize_to_tray_on_close: true }
+        Self {
+            minimize_to_tray_on_close: true,
+        }
     }
 }
 
@@ -265,10 +267,12 @@ impl Config {
         if self.security.agent_workspace_only {
             let raw = &self.security.agent_workspace_path;
             if raw.starts_with("~/") || raw.starts_with("~\\") {
-                crate::get_home_dir().map(|mut h| {
-                    h.push(&raw[2..]);
-                    h
-                }).or_else(|| Some(std::path::PathBuf::from(raw)))
+                crate::get_home_dir()
+                    .map(|mut h| {
+                        h.push(&raw[2..]);
+                        h
+                    })
+                    .or_else(|| Some(std::path::PathBuf::from(raw)))
             } else {
                 Some(std::path::PathBuf::from(raw))
             }

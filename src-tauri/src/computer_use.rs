@@ -177,7 +177,10 @@ fn macos_key_applescript(key: &str) -> Result<String, String> {
         }
         let escaped = key_char.replace('\\', "\\\\").replace('"', "\\\"");
         if modifier_strs.is_empty() {
-            Ok(format!("tell application \"System Events\" to keystroke \"{}\"", escaped))
+            Ok(format!(
+                "tell application \"System Events\" to keystroke \"{}\"",
+                escaped
+            ))
         } else {
             Ok(format!(
                 "tell application \"System Events\" to keystroke \"{}\" using {{{}}}",
@@ -187,7 +190,10 @@ fn macos_key_applescript(key: &str) -> Result<String, String> {
         }
     } else {
         let escaped = key.replace('\\', "\\\\").replace('"', "\\\"");
-        Ok(format!("tell application \"System Events\" to keystroke \"{}\"", escaped))
+        Ok(format!(
+            "tell application \"System Events\" to keystroke \"{}\"",
+            escaped
+        ))
     }
 }
 
@@ -281,8 +287,9 @@ fn platform_mouse_move(x: i32, y: i32) -> Result<(), String> {
         let point = CGPoint::new(x as f64, y as f64);
         let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
             .map_err(|_| MACOS_ACCESSIBILITY_ERROR.to_string())?;
-        let event = CGEvent::new_mouse_event(source, CGEventType::MouseMoved, point, CGMouseButton::Left)
-            .map_err(|_| "Failed to create mouse move event".to_string())?;
+        let event =
+            CGEvent::new_mouse_event(source, CGEventType::MouseMoved, point, CGMouseButton::Left)
+                .map_err(|_| "Failed to create mouse move event".to_string())?;
         event.post(core_graphics::event::CGEventTapLocation::HID);
         return Ok(());
     }
@@ -340,8 +347,8 @@ fn platform_mouse_click(button: &'static str) -> Result<(), String> {
             _ => (CGEventType::OtherMouseDown, CGEventType::OtherMouseUp),
         };
 
-        let event = CGEvent::new(source.clone())
-            .map_err(|_| "Failed to create event".to_string())?;
+        let event =
+            CGEvent::new(source.clone()).map_err(|_| "Failed to create event".to_string())?;
         let point = event.location();
 
         let down = CGEvent::new_mouse_event(source.clone(), down_type, point, button)
@@ -386,7 +393,10 @@ if ($null -ne $previous) { Set-Clipboard -Value $previous }
     {
         require_macos_accessibility()?;
         let escaped = text.replace('\\', "\\\\").replace('"', "\\\"");
-        let script = format!("tell application \"System Events\" to keystroke \"{}\"", escaped);
+        let script = format!(
+            "tell application \"System Events\" to keystroke \"{}\"",
+            escaped
+        );
         return run_applescript(&script);
     }
 

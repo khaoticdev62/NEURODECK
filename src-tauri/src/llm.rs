@@ -717,7 +717,9 @@ impl LlmProvider for OllamaProvider {
         let sys_str = system_prompt.to_string();
         let url = format!("{}/api/generate", self.base_url.trim_end_matches('/'));
         let model = self.model.clone();
-        let images: Vec<String> = image_base64.map(|b| vec![b.to_string()]).unwrap_or_default();
+        let images: Vec<String> = image_base64
+            .map(|b| vec![b.to_string()])
+            .unwrap_or_default();
         Box::pin(async move {
             let request_body = OllamaVisionRequest {
                 model,
@@ -823,7 +825,12 @@ struct HfResponse {
 }
 
 impl HuggingFaceProvider {
-    pub fn new(model: String, api_key: Option<String>, base_url: String, embed_model: String) -> Self {
+    pub fn new(
+        model: String,
+        api_key: Option<String>,
+        base_url: String,
+        embed_model: String,
+    ) -> Self {
         let m = if model.is_empty() {
             "meta-llama/Llama-3.2-1B-Instruct".to_string()
         } else {
@@ -1542,7 +1549,11 @@ impl OpenAICompatProvider {
         } else {
             model
         };
-        Self { base_url: url, model: m, api_key }
+        Self {
+            base_url: url,
+            model: m,
+            api_key,
+        }
     }
 
     fn auth_header(&self) -> Option<String> {
@@ -1655,10 +1666,21 @@ impl LlmProvider for OpenAICompatProvider {
         let auth = self.auth_header();
         let mut messages = Vec::new();
         if !system_prompt.is_empty() {
-            messages.push(OAMessage { role: "system".to_string(), content: system_prompt.to_string() });
+            messages.push(OAMessage {
+                role: "system".to_string(),
+                content: system_prompt.to_string(),
+            });
         }
-        messages.push(OAMessage { role: "user".to_string(), content: prompt.to_string() });
-        let body = OAChatRequest { model: self.model.clone(), messages, stream: true, max_tokens: None };
+        messages.push(OAMessage {
+            role: "user".to_string(),
+            content: prompt.to_string(),
+        });
+        let body = OAChatRequest {
+            model: self.model.clone(),
+            messages,
+            stream: true,
+            max_tokens: None,
+        };
         let client = reqwest::Client::new();
 
         let stream = async_stream::try_stream! {
@@ -1715,20 +1737,28 @@ impl LlmProvider for OpenAICompatProvider {
     ) -> Pin<Box<dyn std::future::Future<Output = Result<Vec<f32>, String>> + Send + '_>> {
         let url = format!("{}/embeddings", self.base_url);
         let auth = self.auth_header();
-        let body = OAEmbedRequest { input: text.to_string(), model: self.model.clone() };
+        let body = OAEmbedRequest {
+            input: text.to_string(),
+            model: self.model.clone(),
+        };
         let client = reqwest::Client::new();
         Box::pin(async move {
             let mut req = client.post(&url).json(&body);
             if let Some(auth_val) = auth {
                 req = req.header("Authorization", auth_val);
             }
-            let res = req.send().await.map_err(|e| format!("Embedding request failed: {}", e))?;
+            let res = req
+                .send()
+                .await
+                .map_err(|e| format!("Embedding request failed: {}", e))?;
             if !res.status().is_success() {
                 let status = res.status();
                 let err = res.text().await.unwrap_or_default();
                 return Err(format!("Embedding error ({}): {}", status, err));
             }
-            let parsed = res.json::<OAEmbedResponse>().await
+            let parsed = res
+                .json::<OAEmbedResponse>()
+                .await
                 .map_err(|e| format!("Failed to parse embedding response: {}", e))?;
             match parsed.data.and_then(|mut d| d.pop()) {
                 Some(entry) => Ok(entry.embedding),
@@ -1794,13 +1824,19 @@ impl LlmProvider for OpenAICompatProvider {
                     stream: false,
                     max_tokens: Some(2048),
                 };
-                let res = req.json(&body).send().await.map_err(|e| format!("Request failed: {}", e))?;
+                let res = req
+                    .json(&body)
+                    .send()
+                    .await
+                    .map_err(|e| format!("Request failed: {}", e))?;
                 if !res.status().is_success() {
                     let status = res.status();
                     let err = res.text().await.unwrap_or_default();
                     return Err(format!("OpenAI-compat vision error ({}): {}", status, err));
                 }
-                let parsed = res.json::<OAChatResponse>().await
+                let parsed = res
+                    .json::<OAChatResponse>()
+                    .await
                     .map_err(|e| format!("Failed to parse response: {}", e))?;
                 match parsed.choices.and_then(|mut c| c.pop()) {
                     Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
@@ -1809,17 +1845,34 @@ impl LlmProvider for OpenAICompatProvider {
             } else {
                 let mut messages = Vec::new();
                 if !sys_str.is_empty() {
-                    messages.push(OAMessage { role: "system".to_string(), content: sys_str });
+                    messages.push(OAMessage {
+                        role: "system".to_string(),
+                        content: sys_str,
+                    });
                 }
-                messages.push(OAMessage { role: "user".to_string(), content: prompt_str });
-                let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(2048) };
-                let res = req.json(&body).send().await.map_err(|e| format!("Request failed: {}", e))?;
+                messages.push(OAMessage {
+                    role: "user".to_string(),
+                    content: prompt_str,
+                });
+                let body = OAChatRequest {
+                    model,
+                    messages,
+                    stream: false,
+                    max_tokens: Some(2048),
+                };
+                let res = req
+                    .json(&body)
+                    .send()
+                    .await
+                    .map_err(|e| format!("Request failed: {}", e))?;
                 if !res.status().is_success() {
                     let status = res.status();
                     let err = res.text().await.unwrap_or_default();
                     return Err(format!("OpenAI-compat error ({}): {}", status, err));
                 }
-                let parsed = res.json::<OAChatResponse>().await
+                let parsed = res
+                    .json::<OAChatResponse>()
+                    .await
                     .map_err(|e| format!("Failed to parse response: {}", e))?;
                 match parsed.choices.and_then(|mut c| c.pop()) {
                     Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
@@ -1839,20 +1892,33 @@ impl LlmProvider for OpenAICompatProvider {
         let model = self.model.clone();
         let prompt_str = prompt.to_string();
         Box::pin(async move {
-            let messages = vec![OAMessage { role: "user".to_string(), content: prompt_str }];
-            let body = OAChatRequest { model, messages, stream: false, max_tokens: Some(max_tokens) };
+            let messages = vec![OAMessage {
+                role: "user".to_string(),
+                content: prompt_str,
+            }];
+            let body = OAChatRequest {
+                model,
+                messages,
+                stream: false,
+                max_tokens: Some(max_tokens),
+            };
             let client = reqwest::Client::new();
             let mut req = client.post(&url).json(&body);
             if let Some(auth_val) = auth {
                 req = req.header("Authorization", auth_val);
             }
-            let res = req.send().await.map_err(|e| format!("Request failed: {}", e))?;
+            let res = req
+                .send()
+                .await
+                .map_err(|e| format!("Request failed: {}", e))?;
             if !res.status().is_success() {
                 let status = res.status();
                 let err = res.text().await.unwrap_or_default();
                 return Err(format!("OpenAI-compat error ({}): {}", status, err));
             }
-            let parsed = res.json::<OAChatResponse>().await
+            let parsed = res
+                .json::<OAChatResponse>()
+                .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
             match parsed.choices.and_then(|mut c| c.pop()) {
                 Some(choice) => Ok(choice.message.and_then(|m| m.content).unwrap_or_default()),
@@ -1904,13 +1970,17 @@ mod tests {
         assert_eq!(provider.base_url, "https://hf.co");
         assert_eq!(provider.embed_model, "custom-embed");
 
-        let provider_default = HuggingFaceProvider::new("".to_string(), None, "".to_string(), "".to_string());
+        let provider_default =
+            HuggingFaceProvider::new("".to_string(), None, "".to_string(), "".to_string());
         assert_eq!(provider_default.model, "meta-llama/Llama-3.2-1B-Instruct");
         assert_eq!(
             provider_default.base_url,
             "https://api-inference.huggingface.co"
         );
-        assert_eq!(provider_default.embed_model, "sentence-transformers/all-MiniLM-L6-v2");
+        assert_eq!(
+            provider_default.embed_model,
+            "sentence-transformers/all-MiniLM-L6-v2"
+        );
     }
 
     #[test]

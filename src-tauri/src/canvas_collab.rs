@@ -6,30 +6,27 @@
 //! for joining a new session.  Legacy `{ "type": "sync" }` messages are still
 //! accepted for backward compatibility.
 
+use crate::bridge::EventEmitter;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use crate::bridge::EventEmitter;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex as AsyncMutex};
-use yrs::{
-    updates::decoder::Decode,
-    Doc, GetString, ReadTxn, Text, Transact,
-};
+use yrs::{updates::decoder::Decode, Doc, GetString, ReadTxn, Text, Transact};
 
 // ── Shared CRDT document ───────────────────────────────────────────────────────
 
 pub struct CollabDoc {
-    pub doc:  Doc,
+    pub doc: Doc,
     pub text: yrs::TextRef,
 }
 
 impl CollabDoc {
     pub fn new() -> Self {
-        let doc  = Doc::new();
+        let doc = Doc::new();
         let text = doc.get_or_insert_text("canvas");
         CollabDoc { doc, text }
     }
@@ -66,28 +63,28 @@ impl CollabDoc {
 
 pub struct CollabSession {
     pub abort_handle: tokio::task::AbortHandle,
-    pub tx:           mpsc::Sender<String>,
-    pub peer_count:   Arc<AtomicUsize>,
+    pub tx: mpsc::Sender<String>,
+    pub peer_count: Arc<AtomicUsize>,
 }
 
 // ── Host ───────────────────────────────────────────────────────────────────────
 
 pub async fn host<E: EventEmitter>(port: u16, app: E) -> Result<(u16, CollabSession), String> {
-    let addr     = format!("0.0.0.0:{}", port);
+    let addr = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr)
         .await
         .map_err(|e| format!("Bind failed on {}: {}", addr, e))?;
     let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(port);
 
     let (tx, mut rx) = mpsc::channel::<String>(256);
-    let peers:      Arc<AsyncMutex<Vec<mpsc::Sender<String>>>> = Arc::new(AsyncMutex::new(Vec::new()));
+    let peers: Arc<AsyncMutex<Vec<mpsc::Sender<String>>>> = Arc::new(AsyncMutex::new(Vec::new()));
     let peer_count: Arc<AtomicUsize> = Arc::new(AtomicUsize::new(0));
-    let crdt_doc:   Arc<AsyncMutex<CollabDoc>> = Arc::new(AsyncMutex::new(CollabDoc::new()));
+    let crdt_doc: Arc<AsyncMutex<CollabDoc>> = Arc::new(AsyncMutex::new(CollabDoc::new()));
 
     let accept_peers = Arc::clone(&peers);
     let accept_count = Arc::clone(&peer_count);
-    let relay_tx     = tx.clone();
-    let accept_crdt  = Arc::clone(&crdt_doc);
+    let relay_tx = tx.clone();
+    let accept_crdt = Arc::clone(&crdt_doc);
 
     let task = tokio::spawn(async move {
         loop {
@@ -171,9 +168,9 @@ pub async fn join<E: EventEmitter>(addr: &str, app: E) -> Result<CollabSession, 
         .map_err(|e| format!("Connect to {} failed: {}", addr, e))?;
     let _ = app.emit("canvas_collab_event", format!("peer_connected:{}", addr));
 
-    let (tx, rx)    = mpsc::channel::<String>(256);
-    let peer_count  = Arc::new(AtomicUsize::new(1));
-    let crdt_doc    = Arc::new(AsyncMutex::new(CollabDoc::new()));
+    let (tx, rx) = mpsc::channel::<String>(256);
+    let peer_count = Arc::new(AtomicUsize::new(1));
+    let crdt_doc = Arc::new(AsyncMutex::new(CollabDoc::new()));
 
     let task = tokio::spawn(run_peer_io(
         stream,
@@ -194,12 +191,12 @@ pub async fn join<E: EventEmitter>(addr: &str, app: E) -> Result<CollabSession, 
 // ── Per-peer I/O ───────────────────────────────────────────────────────────────
 
 async fn run_peer_io<E: EventEmitter>(
-    stream:         TcpStream,
-    app:            E,
-    mut rx:         mpsc::Receiver<String>,
-    inbound_relay:  Option<mpsc::Sender<String>>,
-    peer_count:     Option<Arc<AtomicUsize>>,
-    crdt_doc:       Option<Arc<AsyncMutex<CollabDoc>>>,
+    stream: TcpStream,
+    app: E,
+    mut rx: mpsc::Receiver<String>,
+    inbound_relay: Option<mpsc::Sender<String>>,
+    peer_count: Option<Arc<AtomicUsize>>,
+    crdt_doc: Option<Arc<AsyncMutex<CollabDoc>>>,
 ) {
     let (read_half, mut write_half) = stream.into_split();
     let mut lines = BufReader::new(read_half).lines();
@@ -224,10 +221,14 @@ async fn run_peer_io<E: EventEmitter>(
                                 let doc = doc_mutex.lock().await;
                                 match doc.apply_update(&bytes) {
                                     Ok(text) => Some(text),
-                                    Err(_)   => None,
+                                    Err(_) => None,
                                 }
-                            } else { None }
-                        } else { None }
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
                     }
                     // Legacy full-content sync
                     "sync" => {
@@ -235,12 +236,18 @@ async fn run_peer_io<E: EventEmitter>(
                             let doc = doc_mutex.lock().await;
                             let _ = doc.set_content(code);
                             Some(code.to_string())
-                        } else { None }
+                        } else {
+                            None
+                        }
                     }
                     _ => None,
                 }
-            } else { None }
-        } else { None };
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         // Build the event the frontend receives
         let emit_payload = if let Some(code) = merged_code {
@@ -265,7 +272,9 @@ async fn run_peer_io<E: EventEmitter>(
     write_task.abort();
     if let Some(count) = peer_count {
         count
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| Some(v.saturating_sub(1)))
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| {
+                Some(v.saturating_sub(1))
+            })
             .ok();
     }
     let _ = app.emit("canvas_collab_event", "peer_disconnected".to_string());

@@ -1,4 +1,6 @@
-use crate::llm::{GeminiProvider, HuggingFaceProvider, LlmProvider, OllamaProvider, OpenAICompatProvider};
+use crate::llm::{
+    GeminiProvider, HuggingFaceProvider, LlmProvider, OllamaProvider, OpenAICompatProvider,
+};
 use crate::*;
 use futures_util::StreamExt;
 use std::collections::HashMap;
@@ -161,8 +163,7 @@ pub fn save_openai_compat_api_key(
 }
 
 pub fn get_openai_compat_api_key() -> Result<String, String> {
-    neurodeck_infrastructure::secrets::get_openai_compat_api_key()
-        .or_else(|_| Ok(String::new()))
+    neurodeck_infrastructure::secrets::get_openai_compat_api_key().or_else(|_| Ok(String::new()))
 }
 
 pub async fn test_llm_connection(
@@ -235,8 +236,7 @@ pub async fn test_llm_connection(
                     .unwrap_or_default(),
             };
             let test_provider = OpenAICompatProvider::new(url, model, api_key);
-            let mut stream =
-                test_provider.stream_response("Say 'success' in 1 word", "");
+            let mut stream = test_provider.stream_response("Say 'success' in 1 word", "");
             let first_chunk = stream.next().await;
             match first_chunk {
                 Some(Ok(_)) => Ok("OpenAI-Compatible Connection Successful!".to_string()),
@@ -474,8 +474,15 @@ mod tests {
     fn get_themes_contains_known_themes() {
         let themes = get_themes();
         let expected = vec![
-            "BLACKSITE", "TERMINAL_GHOST", "SYNTH_GRID", "DECK_BLUE",
-            "AMBER_CRT", "CYBER_PUNK", "MATRIX", "SOLARIZED", "GLITCH_RED",
+            "BLACKSITE",
+            "TERMINAL_GHOST",
+            "SYNTH_GRID",
+            "DECK_BLUE",
+            "AMBER_CRT",
+            "CYBER_PUNK",
+            "MATRIX",
+            "SOLARIZED",
+            "GLITCH_RED",
         ];
         for name in expected {
             assert!(

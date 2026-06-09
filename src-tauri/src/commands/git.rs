@@ -1,6 +1,6 @@
+use crate::AppHandle;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -602,7 +602,9 @@ pub fn git_generate_ssh_key(label: String, app: AppHandle) -> Result<String, Str
             "-t",
             "ed25519",
             "-f",
-            key_path.to_str().ok_or("Key path contains invalid Unicode")?,
+            key_path
+                .to_str()
+                .ok_or("Key path contains invalid Unicode")?,
             "-N",
             "",
             "-C",
@@ -645,7 +647,7 @@ pub fn git_ssh_public_keys(app: AppHandle) -> Result<Vec<String>, String> {
 pub async fn git_generate_commit_message(
     path: String,
     _app: AppHandle,
-    state: std::sync::Arc<std::sync::Mutex<crate::AppState>> ,
+    state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
 ) -> Result<String, String> {
     // Get staged diff
     let diff = git_diff(path, None, None)?;

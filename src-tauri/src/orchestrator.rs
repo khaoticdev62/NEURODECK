@@ -304,45 +304,45 @@ pub async fn _run_orchestration<E: crate::bridge::EventEmitter>(
             aborted!();
             if let Ok((id, outcome)) = handle.await {
                 if let Some(task) = ready.iter().find(|t| t.id == id) {
-                match outcome {
-                    Ok(result) => {
-                        results.insert(id.clone(), result.clone());
-                        {
-                            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-                            if let Some(ref mut p) = s.plan {
-                                if let Some(pt) = p.tasks.iter_mut().find(|t| t.id == id) {
-                                    pt.status = "done".to_string();
-                                    pt.result = Some(result.clone());
+                    match outcome {
+                        Ok(result) => {
+                            results.insert(id.clone(), result.clone());
+                            {
+                                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                                if let Some(ref mut p) = s.plan {
+                                    if let Some(pt) = p.tasks.iter_mut().find(|t| t.id == id) {
+                                        pt.status = "done".to_string();
+                                        pt.result = Some(result.clone());
+                                    }
                                 }
                             }
+                            app.emit(
+                                "agent_task_done",
+                                serde_json::json!({
+                                    "id": id, "role": task.role,
+                                    "result": &result[..result.len().min(300)]
+                                }),
+                            );
                         }
-                        app.emit(
-                            "agent_task_done",
-                            serde_json::json!({
-                                "id": id, "role": task.role,
-                                "result": &result[..result.len().min(300)]
-                            }),
-                        );
-                    }
-                    Err(e) => {
-                        {
-                            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-                            if let Some(ref mut p) = s.plan {
-                                if let Some(pt) = p.tasks.iter_mut().find(|t| t.id == id) {
-                                    pt.status = "error".to_string();
-                                    pt.error = Some(e.clone());
+                        Err(e) => {
+                            {
+                                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                                if let Some(ref mut p) = s.plan {
+                                    if let Some(pt) = p.tasks.iter_mut().find(|t| t.id == id) {
+                                        pt.status = "error".to_string();
+                                        pt.error = Some(e.clone());
+                                    }
                                 }
                             }
+                            app.emit(
+                                "agent_task_done",
+                                serde_json::json!({
+                                    "id": id, "role": task.role, "error": e
+                                }),
+                            );
+                            // Continue — other agents can still finish
                         }
-                        app.emit(
-                            "agent_task_done",
-                            serde_json::json!({
-                                "id": id, "role": task.role, "error": e
-                            }),
-                        );
-                        // Continue — other agents can still finish
                     }
-                }
                 }
             }
         }

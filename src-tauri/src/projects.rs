@@ -141,12 +141,14 @@ impl ProjectDB {
                 .map_err(|e| format!("Failed to update project name: {}", e))?;
         }
         if let Some(description) = description {
-            sqlx::query("UPDATE projects SET description = ?, updated_at = datetime('now') WHERE id = ?")
-                .bind(&description)
-                .bind(id)
-                .execute(pool)
-                .await
-                .map_err(|e| format!("Failed to update project description: {}", e))?;
+            sqlx::query(
+                "UPDATE projects SET description = ?, updated_at = datetime('now') WHERE id = ?",
+            )
+            .bind(&description)
+            .bind(id)
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to update project description: {}", e))?;
         }
         if let Some(color) = color {
             sqlx::query("UPDATE projects SET color = ?, updated_at = datetime('now') WHERE id = ?")

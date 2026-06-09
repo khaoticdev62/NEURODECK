@@ -1,5 +1,5 @@
+use crate::AppHandle;
 use std::path::PathBuf;
-use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -135,7 +135,7 @@ pub fn api_delete_collection(name: String, app: AppHandle) -> Result<(), String>
 
 pub async fn api_generate_request(
     description: String,
-    state: std::sync::Arc<std::sync::Mutex<crate::AppState>> ,
+    state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
 ) -> Result<ApiRequest, String> {
     let provider = {
         let app_state = state.lock().unwrap_or_else(|e| e.into_inner());

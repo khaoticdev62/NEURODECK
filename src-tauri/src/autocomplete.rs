@@ -1,6 +1,6 @@
 use crate::AppState;
+use crate::State;
 use std::sync::Mutex;
-use crate::{State};
 
 pub async fn get_terminal_autocomplete(
     partial: String,

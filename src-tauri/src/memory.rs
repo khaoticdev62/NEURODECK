@@ -291,8 +291,7 @@ impl MemoryDB {
             } else if let Some(path) = &self.file_path {
                 let serialized = serde_json::to_string_pretty(&*records)
                     .map_err(|e| format!("Failed to serialize: {}", e))?;
-                fs::write(path, serialized)
-                    .map_err(|e| format!("Failed to write: {}", e))?;
+                fs::write(path, serialized).map_err(|e| format!("Failed to write: {}", e))?;
             }
         }
         Ok(removed)
@@ -306,7 +305,11 @@ impl MemoryDB {
         Ok(records.clone())
     }
 
-    pub fn import_records(&self, incoming: Vec<MemoryRecord>, merge: bool) -> Result<usize, String> {
+    pub fn import_records(
+        &self,
+        incoming: Vec<MemoryRecord>,
+        merge: bool,
+    ) -> Result<usize, String> {
         let mut records = self
             .records
             .lock()
@@ -325,7 +328,10 @@ impl MemoryDB {
             let pool = pool.clone();
             let records_clone = records.clone();
             tokio::spawn(async move {
-                if let Err(e) = sqlx::query("DELETE FROM memory_records").execute(&pool).await {
+                if let Err(e) = sqlx::query("DELETE FROM memory_records")
+                    .execute(&pool)
+                    .await
+                {
                     tracing::warn!("SQLite memory clear failed: {}", e);
                     return;
                 }
@@ -483,7 +489,8 @@ impl From<SqliteMemoryRow> for MemoryRecord {
         };
 
         if row.pinned == 1 {
-            rec.metadata.insert("pinned".to_string(), "true".to_string());
+            rec.metadata
+                .insert("pinned".to_string(), "true".to_string());
         }
         rec
     }
@@ -499,11 +506,7 @@ where
     } else {
         0
     };
-    let embedding_bytes: Vec<u8> = rec
-        .embedding
-        .iter()
-        .flat_map(|f| f.to_le_bytes())
-        .collect();
+    let embedding_bytes: Vec<u8> = rec.embedding.iter().flat_map(|f| f.to_le_bytes()).collect();
     let metadata_json =
         serde_json::to_string(&rec.metadata).map_err(|e| format!("JSON error: {}", e))?;
 

@@ -1,6 +1,6 @@
+use crate::AppHandle;
 use mlua::{Function, Lua, Table, Value, Variadic};
 use std::path::Path;
-use crate::{AppHandle};
 
 pub struct LuaEngine {
     lua: Lua,
@@ -170,7 +170,9 @@ impl LuaEngine {
         // Minimal print function (no Tauri event)
         let print_fn = lua.create_function(|_, args: Variadic<Value>| {
             for (i, arg) in args.into_iter().enumerate() {
-                if i > 0 { eprint!("\t"); }
+                if i > 0 {
+                    eprint!("\t");
+                }
                 match arg {
                     Value::Nil => eprint!("nil"),
                     Value::Boolean(b) => eprint!("{}", b),

@@ -39,12 +39,11 @@ static MIGRATIONS: &[Migration] = &[
 
 pub async fn run_all(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     for mig in MIGRATIONS {
-        let already_applied: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)",
-        )
-        .bind(mig.version)
-        .fetch_one(pool)
-        .await?;
+        let already_applied: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = ?)")
+                .bind(mig.version)
+                .fetch_one(pool)
+                .await?;
 
         if already_applied {
             continue;

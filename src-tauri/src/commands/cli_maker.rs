@@ -1,5 +1,5 @@
+use crate::AppHandle;
 use std::path::PathBuf;
-use crate::{AppHandle};
 
 // ── Data Types ─────────────────────────────────────────────────────────────
 
@@ -239,8 +239,7 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
     if path.contains("..") {
         return Err("Invalid path".into());
     }
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Cannot read file: {}", e))?;
+    let content = std::fs::read_to_string(&path).map_err(|e| format!("Cannot read file: {}", e))?;
 
     let mut defs: Vec<CliCommandDef> = Vec::new();
     let mut pos = 0usize;
@@ -279,16 +278,13 @@ pub fn cli_import_lua(path: String, app: AppHandle) -> Result<String, String> {
         let (category, action) = if body.contains("sendPrompt(") || body.contains("template") {
             let template = lua_extract_long_string(body).unwrap_or_default();
             let use_llm = body.contains("sendPrompt(");
-            ("prompt".to_string(), CliAction::Prompt { template, use_llm })
+            (
+                "prompt".to_string(),
+                CliAction::Prompt { template, use_llm },
+            )
         } else if body.contains("execute(") {
             let command = lua_extract_execute_arg(body).unwrap_or_default();
-            (
-                "shell".to_string(),
-                CliAction::Shell {
-                    command,
-                    cwd: None,
-                },
-            )
+            ("shell".to_string(), CliAction::Shell { command, cwd: None })
         } else {
             (
                 "plugin".to_string(),
@@ -380,7 +376,9 @@ pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<St
     let scripts_dir = {
         #[cfg(target_os = "windows")]
         let home = std::env::var("USERPROFILE")
-            .or_else(|_| std::env::var("HOMEDRIVE").and_then(|d| std::env::var("HOMEPATH").map(|p| d + &p)))
+            .or_else(|_| {
+                std::env::var("HOMEDRIVE").and_then(|d| std::env::var("HOMEPATH").map(|p| d + &p))
+            })
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|_| std::path::PathBuf::from("."));
         #[cfg(not(target_os = "windows"))]
@@ -395,10 +393,19 @@ pub fn cli_maker_export(id: String, format: String, app: AppHandle) -> Result<St
         "bash" | "sh" => {
             let body = match &cmd.action {
                 CliAction::Shell { command, cwd } => {
-                    let cd = cwd.as_deref().map(|d| format!("cd \"{d}\"\n")).unwrap_or_default();
-                    format!("#!/usr/bin/env bash\n# {}\n{}{}\n", cmd.description, cd, command)
+                    let cd = cwd
+                        .as_deref()
+                        .map(|d| format!("cd \"{d}\"\n"))
+                        .unwrap_or_default();
+                    format!(
+                        "#!/usr/bin/env bash\n# {}\n{}{}\n",
+                        cmd.description, cd, command
+                    )
                 }
-                _ => format!("#!/usr/bin/env bash\n# {}\necho \"Run: {}\"\n", cmd.description, cmd.name),
+                _ => format!(
+                    "#!/usr/bin/env bash\n# {}\necho \"Run: {}\"\n",
+                    cmd.description, cmd.name
+                ),
             };
             (body, "sh")
         }

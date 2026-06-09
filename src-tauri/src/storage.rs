@@ -72,16 +72,14 @@ pub fn list_sessions_meta<P: AsRef<Path>>(dir: P) -> Result<Vec<SessionMeta>, St
             p.is_file() && p.extension().is_some_and(|x| x == "json")
         })
         .filter_map(|entry| {
-            let session: Session = serde_json::from_str(
-                &std::fs::read_to_string(entry.path()).ok()?
-            ).ok()?;
+            let session: Session =
+                serde_json::from_str(&std::fs::read_to_string(entry.path()).ok()?).ok()?;
 
             let preview = session
                 .messages
                 .last()
                 .map(|m| {
-                    let stripped = m.trim_start_matches("User: ")
-                        .trim_start_matches("AI: ");
+                    let stripped = m.trim_start_matches("User: ").trim_start_matches("AI: ");
                     if stripped.len() > 80 {
                         format!("{}…", &stripped[..80])
                     } else {

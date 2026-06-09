@@ -1,11 +1,11 @@
 use crate::storage::{load_session, Session, SessionMeta};
 use crate::*;
+use crate::{AppHandle, State};
 use chrono::Utc;
 use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use crate::{AppHandle, State};
 
 lazy_static::lazy_static! {
     static ref RE_FILE_REF: regex::Regex = regex::Regex::new(r"@file:([^\s]+)").unwrap();
@@ -49,14 +49,13 @@ pub fn export_session_content(id: String, format: String) -> Result<String, Stri
             let date = session.created_at.format("%Y-%m-%d %H:%M UTC").to_string();
             let mut rows = String::new();
             for msg in &session.messages {
-                let (role_class, role_label, content) =
-                    if msg.starts_with("User: ") {
-                        ("user", "You", msg.trim_start_matches("User: "))
-                    } else if msg.starts_with("AI: ") {
-                        ("ai", "NEURODECK", msg.trim_start_matches("AI: "))
-                    } else {
-                        ("system", "System", msg.as_str())
-                    };
+                let (role_class, role_label, content) = if msg.starts_with("User: ") {
+                    ("user", "You", msg.trim_start_matches("User: "))
+                } else if msg.starts_with("AI: ") {
+                    ("ai", "NEURODECK", msg.trim_start_matches("AI: "))
+                } else {
+                    ("system", "System", msg.as_str())
+                };
                 let escaped = content
                     .replace('&', "&amp;")
                     .replace('<', "&lt;")
@@ -66,7 +65,8 @@ pub fn export_session_content(id: String, format: String) -> Result<String, Stri
                     r#"<div class="msg {role_class}"><span class="role">{role_label}</span><div class="body">{escaped}</div></div>"#
                 ));
             }
-            Ok(format!(r#"<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+            Ok(format!(
+                r#"<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <title>NEURODECK — {title}</title>
 <style>
   body{{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;background:#0a0d10;color:#e8f4ff}}
@@ -83,19 +83,33 @@ pub fn export_session_content(id: String, format: String) -> Result<String, Stri
 <h1>{title}</h1><p class="date">{date} · {count} messages</p>
 {rows}
 </body></html>"#,
-                title = title, date = date, count = session.messages.len(), rows = rows))
+                title = title,
+                date = date,
+                count = session.messages.len(),
+                rows = rows
+            ))
         }
         _ => {
             // Default: markdown
             let title = session.name.as_deref().unwrap_or(&session.id);
             let date = session.created_at.format("%Y-%m-%d %H:%M UTC").to_string();
-            let mut md = format!("# NEURODECK — {}\n\n**Date:** {}\n**Messages:** {}\n\n---\n\n",
-                title, date, session.messages.len());
+            let mut md = format!(
+                "# NEURODECK — {}\n\n**Date:** {}\n**Messages:** {}\n\n---\n\n",
+                title,
+                date,
+                session.messages.len()
+            );
             for msg in &session.messages {
                 if msg.starts_with("User: ") {
-                    md.push_str(&format!("**You:**\n\n{}\n\n", msg.trim_start_matches("User: ")));
+                    md.push_str(&format!(
+                        "**You:**\n\n{}\n\n",
+                        msg.trim_start_matches("User: ")
+                    ));
                 } else if msg.starts_with("AI: ") {
-                    md.push_str(&format!("**NEURODECK:**\n\n{}\n\n", msg.trim_start_matches("AI: ")));
+                    md.push_str(&format!(
+                        "**NEURODECK:**\n\n{}\n\n",
+                        msg.trim_start_matches("AI: ")
+                    ));
                 } else {
                     md.push_str(&format!("> {}\n\n", msg));
                 }
@@ -839,10 +853,8 @@ pub async fn send_command(
                 // Keyword fallback: split prompt into words and score records by
                 // how many prompt words appear in the record content.
                 db.list_all().ok().map(|records| {
-                    let query_words: Vec<&str> = prompt
-                        .split_whitespace()
-                        .filter(|w| w.len() > 3)
-                        .collect();
+                    let query_words: Vec<&str> =
+                        prompt.split_whitespace().filter(|w| w.len() > 3).collect();
                     if query_words.is_empty() {
                         return Vec::new();
                     }
@@ -854,7 +866,11 @@ pub async fn send_command(
                                 .iter()
                                 .filter(|w| lower.contains(&w.to_lowercase()[..]))
                                 .count();
-                            if hits > 0 { Some((hits, rec)) } else { None }
+                            if hits > 0 {
+                                Some((hits, rec))
+                            } else {
+                                None
+                            }
                         })
                         .collect();
                     scored.sort_by(|a, b| b.0.cmp(&a.0));
@@ -865,18 +881,24 @@ pub async fn send_command(
         if let Some(results) = rag_results {
             if !results.is_empty() {
                 system_prompt.push_str("\n\nRelevant past context:\n");
-                
+
                 // Track provenance for the frontend
                 let mut provenance_list = Vec::new();
 
                 for res in results {
                     system_prompt.push_str(&format!("- {}\n", res.content));
-                    
-                    let title = res.metadata.get("title")
+
+                    let title = res
+                        .metadata
+                        .get("title")
                         .or_else(|| res.metadata.get("filename"))
                         .map(|s| s.as_str())
-                        .unwrap_or(if res.content.len() > 30 { &res.content[0..30] } else { &res.content });
-                        
+                        .unwrap_or(if res.content.len() > 30 {
+                            &res.content[0..30]
+                        } else {
+                            &res.content
+                        });
+
                     provenance_list.push(serde_json::json!({
                         "id": res.id,
                         "title": title,
@@ -886,7 +908,10 @@ pub async fn send_command(
                 }
 
                 // Emit the provenance to the frontend so it can attach citations to the upcoming message
-                let _ = app_handle.emit("rag_sources", serde_json::json!(provenance_list).to_string());
+                let _ = app_handle.emit(
+                    "rag_sources",
+                    serde_json::json!(provenance_list).to_string(),
+                );
             }
         }
     }
@@ -1328,7 +1353,11 @@ pub fn rename_session(id: String, name: String) -> Result<(), String> {
     }
     let mut session = load_session(&file_path)?;
     let trimmed = name.trim().to_string();
-    session.name = if trimmed.is_empty() { None } else { Some(trimmed) };
+    session.name = if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed)
+    };
     let serialized = serde_json::to_string_pretty(&session)
         .map_err(|e| format!("Serialization error: {}", e))?;
     std::fs::write(&file_path, serialized)

@@ -73,7 +73,10 @@ fn config_sanitizes_api_keys_on_save() {
 
 #[test]
 fn config_handles_missing_file() {
-    let path = std::env::temp_dir().join(format!("neurodeck_nonexistent_config_{}_xyz.toml", std::process::id()));
+    let path = std::env::temp_dir().join(format!(
+        "neurodeck_nonexistent_config_{}_xyz.toml",
+        std::process::id()
+    ));
     let _ = std::fs::remove_file(&path);
 
     let loaded = load_config(&path);

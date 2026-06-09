@@ -15,7 +15,10 @@ pub struct State<'a, T: 'a> {
 
 impl<'a, T> State<'a, T> {
     pub fn new(value: Arc<T>) -> Self {
-        Self { _inner: value, _marker: std::marker::PhantomData }
+        Self {
+            _inner: value,
+            _marker: std::marker::PhantomData,
+        }
     }
     pub fn inner(&self) -> &Arc<T> {
         &self._inner
@@ -24,7 +27,9 @@ impl<'a, T> State<'a, T> {
 
 impl<'a, T> std::ops::Deref for State<'a, T> {
     type Target = T;
-    fn deref(&self) -> &T { &self._inner }
+    fn deref(&self) -> &T {
+        &self._inner
+    }
 }
 
 impl<'a, T> std::ops::DerefMut for State<'a, T> {
@@ -47,11 +52,15 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self { Error(e.to_string()) }
+    fn from(e: std::io::Error) -> Self {
+        Error(e.to_string())
+    }
 }
 
 impl From<Box<dyn std::error::Error>> for Error {
-    fn from(e: Box<dyn std::error::Error>) -> Self { Error(e.to_string()) }
+    fn from(e: Box<dyn std::error::Error>) -> Self {
+        Error(e.to_string())
+    }
 }
 
 // ── AppHandle ──────────────────────────────────────────────────────────────
@@ -105,24 +114,52 @@ impl AppHandle {
 pub struct Window;
 
 impl Window {
-    pub fn show(&self) -> Result<(), Error> { Ok(()) }
-    pub fn hide(&self) -> Result<(), Error> { Ok(()) }
-    pub fn close(&self) -> Result<(), Error> { Ok(()) }
-    pub fn set_fullscreen(&self, _v: bool) -> Result<(), Error> { Ok(()) }
-    pub fn set_decorations(&self, _v: bool) -> Result<(), Error> { Ok(()) }
-    pub fn is_fullscreen(&self) -> Result<bool, Error> { Ok(false) }
-    pub fn is_decorated(&self) -> Result<bool, Error> { Ok(true) }
-    pub fn get_webview_window(&self, _label: &str) -> Option<Window> { None }
+    pub fn show(&self) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn hide(&self) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn close(&self) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn set_fullscreen(&self, _v: bool) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn set_decorations(&self, _v: bool) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn is_fullscreen(&self) -> Result<bool, Error> {
+        Ok(false)
+    }
+    pub fn is_decorated(&self) -> Result<bool, Error> {
+        Ok(true)
+    }
+    pub fn get_webview_window(&self, _label: &str) -> Option<Window> {
+        None
+    }
     pub fn on_window_event<F: Fn(WindowEvent) + Send + 'static>(&self, _f: F) {}
-    pub fn scale_factor(&self) -> Result<f64, Error> { Ok(1.0) }
+    pub fn scale_factor(&self) -> Result<f64, Error> {
+        Ok(1.0)
+    }
     pub fn inner_position(&self) -> Result<PhysicalPosition<i32>, Error> {
         Ok(PhysicalPosition::new(0, 0))
     }
-    pub fn set_position<P: Into<Position>>(&self, _p: P) -> Result<(), Error> { Ok(()) }
-    pub fn set_size<S: Into<Size>>(&self, _s: S) -> Result<(), Error> { Ok(()) }
-    pub fn navigate(&self, _url: Url) -> Result<(), Error> { Ok(()) }
-    pub fn eval(&self, _js: &str) -> Result<(), Error> { Ok(()) }
-    pub fn url(&self) -> Result<Url, Error> { Ok(Url(String::new())) }
+    pub fn set_position<P: Into<Position>>(&self, _p: P) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn set_size<S: Into<Size>>(&self, _s: S) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn navigate(&self, _url: Url) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn eval(&self, _js: &str) -> Result<(), Error> {
+        Ok(())
+    }
+    pub fn url(&self) -> Result<Url, Error> {
+        Ok(Url(String::new()))
+    }
 }
 
 // ── Position / Size ────────────────────────────────────────────────────────
@@ -130,25 +167,43 @@ impl Window {
 #[derive(Clone, Debug)]
 pub struct LogicalPosition(pub f64, pub f64);
 impl LogicalPosition {
-    pub fn new(x: f64, y: f64) -> Self { Self(x, y) }
+    pub fn new(x: f64, y: f64) -> Self {
+        Self(x, y)
+    }
 }
-impl From<LogicalPosition> for Position { fn from(p: LogicalPosition) -> Self { Position::Logical(p) } }
+impl From<LogicalPosition> for Position {
+    fn from(p: LogicalPosition) -> Self {
+        Position::Logical(p)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct LogicalSize(pub f64, pub f64);
 impl LogicalSize {
-    pub fn new(w: f64, h: f64) -> Self { Self(w, h) }
+    pub fn new(w: f64, h: f64) -> Self {
+        Self(w, h)
+    }
 }
-impl From<LogicalSize> for Size { fn from(s: LogicalSize) -> Self { Size::Logical(s) } }
+impl From<LogicalSize> for Size {
+    fn from(s: LogicalSize) -> Self {
+        Size::Logical(s)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct PhysicalPosition<T>(pub T, pub T);
 impl<T> PhysicalPosition<T> {
-    pub fn new(x: T, y: T) -> Self { Self(x, y) }
+    pub fn new(x: T, y: T) -> Self {
+        Self(x, y)
+    }
 }
 
-pub enum Position { Logical(LogicalPosition) }
-pub enum Size { Logical(LogicalSize) }
+pub enum Position {
+    Logical(LogicalPosition),
+}
+pub enum Size {
+    Logical(LogicalSize),
+}
 
 // ── Url ────────────────────────────────────────────────────────────────────
 
@@ -157,11 +212,15 @@ pub struct Url(pub String);
 
 impl std::str::FromStr for Url {
     type Err = Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Ok(Url(s.to_string())) }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Url(s.to_string()))
+    }
 }
 
 impl std::fmt::Display for Url {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.0) }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 // ── Event ──────────────────────────────────────────────────────────────────
@@ -171,7 +230,9 @@ pub struct Event {
 }
 
 impl Event {
-    pub fn payload(&self) -> &str { &self.payload }
+    pub fn payload(&self) -> &str {
+        &self.payload
+    }
 }
 
 // ── WindowEvent ────────────────────────────────────────────────────────────
@@ -194,7 +255,9 @@ impl PathResolver {
         Ok(std::env::current_dir().unwrap_or_default())
     }
     pub fn download_dir(&self) -> Result<std::path::PathBuf, Error> {
-        Ok(std::env::current_dir().unwrap_or_default().join("Downloads"))
+        Ok(std::env::current_dir()
+            .unwrap_or_default()
+            .join("Downloads"))
     }
     pub fn app_data_dir(&self) -> Result<std::path::PathBuf, Error> {
         Ok(std::env::current_dir().unwrap_or_default())
@@ -205,13 +268,27 @@ impl PathResolver {
 
 pub struct TrayIconBuilder;
 impl TrayIconBuilder {
-    pub fn new() -> Self { Self }
-    pub fn tooltip(self, _s: &str) -> Self { self }
-    pub fn icon(self, _i: Icon) -> Self { self }
-    pub fn menu(self, _m: &Menu) -> Result<Self, Error> { Ok(self) }
-    pub fn on_menu_event<F>(self, _f: F) -> Self { self }
-    pub fn on_tray_icon_event<F>(self, _f: F) -> Self { self }
-    pub fn build(self, _app: &AppHandle) -> Result<(), Error> { Ok(()) }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn tooltip(self, _s: &str) -> Self {
+        self
+    }
+    pub fn icon(self, _i: Icon) -> Self {
+        self
+    }
+    pub fn menu(self, _m: &Menu) -> Result<Self, Error> {
+        Ok(self)
+    }
+    pub fn on_menu_event<F>(self, _f: F) -> Self {
+        self
+    }
+    pub fn on_tray_icon_event<F>(self, _f: F) -> Self {
+        self
+    }
+    pub fn build(self, _app: &AppHandle) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 pub struct TrayIconEvent;
@@ -226,29 +303,55 @@ impl Menu {
 
 pub struct MenuItem;
 impl MenuItem {
-    pub fn with_id(_app: &AppHandle, _id: &str, _text: &str, _enabled: bool, _acc: Option<&str>) -> Result<MenuItem, Error> {
+    pub fn with_id(
+        _app: &AppHandle,
+        _id: &str,
+        _text: &str,
+        _enabled: bool,
+        _acc: Option<&str>,
+    ) -> Result<MenuItem, Error> {
         Ok(MenuItem)
     }
 }
 
 pub struct PredefinedMenuItem;
 impl PredefinedMenuItem {
-    pub fn separator(_app: &AppHandle) -> Result<MenuItem, Error> { Ok(MenuItem) }
+    pub fn separator(_app: &AppHandle) -> Result<MenuItem, Error> {
+        Ok(MenuItem)
+    }
 }
 
 // ── WebviewWindowBuilder / WebviewUrl ──────────────────────────────────────
 
 pub struct WebviewWindowBuilder;
 impl WebviewWindowBuilder {
-    pub fn new(_app: &AppHandle, _label: &str, _url: WebviewUrl) -> Self { Self }
-    pub fn title(self, _s: &str) -> Self { self }
-    pub fn decorations(self, _v: bool) -> Self { self }
-    pub fn position(self, _x: f64, _y: f64) -> Self { self }
-    pub fn inner_size(self, _w: f64, _h: f64) -> Self { self }
-    pub fn skip_taskbar(self, _v: bool) -> Self { self }
-    pub fn user_agent(self, _s: &str) -> Self { self }
-    pub fn parent(self, _p: &Window) -> Result<Self, Error> { Ok(self) }
-    pub fn build(self) -> Result<Window, Error> { Ok(Window) }
+    pub fn new(_app: &AppHandle, _label: &str, _url: WebviewUrl) -> Self {
+        Self
+    }
+    pub fn title(self, _s: &str) -> Self {
+        self
+    }
+    pub fn decorations(self, _v: bool) -> Self {
+        self
+    }
+    pub fn position(self, _x: f64, _y: f64) -> Self {
+        self
+    }
+    pub fn inner_size(self, _w: f64, _h: f64) -> Self {
+        self
+    }
+    pub fn skip_taskbar(self, _v: bool) -> Self {
+        self
+    }
+    pub fn user_agent(self, _s: &str) -> Self {
+        self
+    }
+    pub fn parent(self, _p: &Window) -> Result<Self, Error> {
+        Ok(self)
+    }
+    pub fn build(self) -> Result<Window, Error> {
+        Ok(Window)
+    }
 }
 
 pub enum WebviewUrl {
@@ -273,7 +376,7 @@ pub mod async_runtime {
 // ── Re-export module-level items commonly used ─────────────────────────────
 
 pub mod tray {
-    pub use super::{TrayIconBuilder, TrayIconEvent, MouseButton};
+    pub use super::{MouseButton, TrayIconBuilder, TrayIconEvent};
 }
 
 pub mod menu {

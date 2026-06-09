@@ -128,12 +128,14 @@ impl PackDB {
         let pool = &*self.pool;
 
         if let Some(name) = name {
-            sqlx::query("UPDATE context_packs SET name = ?, updated_at = datetime('now') WHERE id = ?")
-                .bind(&name)
-                .bind(id)
-                .execute(pool)
-                .await
-                .map_err(|e| format!("Failed to update pack name: {}", e))?;
+            sqlx::query(
+                "UPDATE context_packs SET name = ?, updated_at = datetime('now') WHERE id = ?",
+            )
+            .bind(&name)
+            .bind(id)
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to update pack name: {}", e))?;
         }
         if let Some(description) = description {
             sqlx::query("UPDATE context_packs SET description = ?, updated_at = datetime('now') WHERE id = ?")
@@ -144,12 +146,14 @@ impl PackDB {
                 .map_err(|e| format!("Failed to update pack description: {}", e))?;
         }
         if let Some(color) = color {
-            sqlx::query("UPDATE context_packs SET color = ?, updated_at = datetime('now') WHERE id = ?")
-                .bind(&color)
-                .bind(id)
-                .execute(pool)
-                .await
-                .map_err(|e| format!("Failed to update pack color: {}", e))?;
+            sqlx::query(
+                "UPDATE context_packs SET color = ?, updated_at = datetime('now') WHERE id = ?",
+            )
+            .bind(&color)
+            .bind(id)
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to update pack color: {}", e))?;
         }
         if let Some(privacy_level) = privacy_level {
             sqlx::query("UPDATE context_packs SET privacy_level = ?, updated_at = datetime('now') WHERE id = ?")

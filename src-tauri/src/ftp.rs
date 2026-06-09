@@ -1,6 +1,8 @@
+#![allow(dead_code)]
+
+use crate::AppHandle;
 use std::io::{Read, Write};
 use suppaftp::{FtpError, FtpStream};
-use crate::{AppHandle};
 
 const UPLOAD_EMIT_INTERVAL: u64 = 65_536; // emit every 64 KB
 
@@ -157,7 +159,8 @@ pub async fn ftp_download_file(
                     if n == 0 {
                         break;
                     }
-                    file.write_all(&buf[..n]).map_err(FtpError::ConnectionError)?;
+                    file.write_all(&buf[..n])
+                        .map_err(FtpError::ConnectionError)?;
                     bytes_received += n;
                     if bytes_received >= next_emit {
                         let _ = app_clone.emit(

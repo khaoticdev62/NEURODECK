@@ -113,7 +113,9 @@ pub fn load_builtin_packs() -> Result<Vec<PromptPack>, String> {
     let mut packs = Vec::new();
 
     if dir.exists() {
-        for entry in fs::read_dir(&dir).map_err(|e| format!("Failed to read prompt packs: {}", e))? {
+        for entry in
+            fs::read_dir(&dir).map_err(|e| format!("Failed to read prompt packs: {}", e))?
+        {
             let entry = entry.map_err(|e| format!("Failed to read prompt pack entry: {}", e))?;
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) != Some("json") {
@@ -121,8 +123,7 @@ pub fn load_builtin_packs() -> Result<Vec<PromptPack>, String> {
             }
             let raw = fs::read_to_string(&path)
                 .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
-            let parsed: PackFile = serde_json::from_str(&raw)
-                .map_err(|e| format!("Invalid prompt pack {}: {}", path.display(), e))?;
+            let parsed = parse_pack_file(&raw, &path.display().to_string())?;
             packs.extend(parsed.packs);
         }
     }
@@ -147,6 +148,7 @@ pub fn validate_packs(packs: &[PromptPack]) -> Result<(), String> {
         if pack.id.trim().is_empty() {
             return Err("Prompt pack id cannot be empty".to_string());
         }
+        validate_lookup_id("pack_id", &pack.id)?;
         if !pack_ids.insert(pack.id.clone()) {
             return Err(format!("Duplicate prompt pack id: {}", pack.id));
         }
@@ -154,6 +156,8 @@ pub fn validate_packs(packs: &[PromptPack]) -> Result<(), String> {
             if template.id.trim().is_empty() {
                 return Err(format!("Prompt pack {} has an empty template id", pack.id));
             }
+            validate_lookup_id("template_id", &template.id)?;
+            validate_lookup_id("template pack_id", &template.pack_id)?;
             if template.pack_id != pack.id {
                 return Err(format!(
                     "Template {} declares pack_id {}, expected {}",
@@ -168,8 +172,12 @@ pub fn validate_packs(packs: &[PromptPack]) -> Result<(), String> {
                 if slot.id.trim().is_empty() {
                     return Err(format!("Template {} has an empty slot id", template.id));
                 }
+                validate_lookup_id("slot_id", &slot.id)?;
                 if !slot_ids.insert(slot.id.clone()) {
-                    return Err(format!("Template {} has duplicate slot {}", template.id, slot.id));
+                    return Err(format!(
+                        "Template {} has duplicate slot {}",
+                        template.id, slot.id
+                    ));
                 }
             }
         }
@@ -178,7 +186,29 @@ pub fn validate_packs(packs: &[PromptPack]) -> Result<(), String> {
     Ok(())
 }
 
+fn parse_pack_file(raw: &str, source: &str) -> Result<PackFile, String> {
+    serde_json::from_str(raw).map_err(|e| format!("Invalid prompt pack {}: {}", source, e))
+}
+
+fn validate_lookup_id(field: &str, value: &str) -> Result<(), String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(format!("{} cannot be empty", field));
+    }
+    if trimmed.len() > 128 {
+        return Err(format!("{} is too long", field));
+    }
+    if !trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+    {
+        return Err(format!("Invalid {} '{}'", field, value));
+    }
+    Ok(())
+}
+
 pub fn find_template(template_id: &str) -> Result<PromptTemplate, String> {
+    validate_lookup_id("template_id", template_id)?;
     load_builtin_packs()?
         .into_iter()
         .flat_map(|p| p.templates)
@@ -187,6 +217,9 @@ pub fn find_template(template_id: &str) -> Result<PromptTemplate, String> {
 }
 
 pub fn list_templates(pack_id: Option<&str>) -> Result<Vec<PromptTemplate>, String> {
+    if let Some(id) = pack_id {
+        validate_lookup_id("pack_id", id)?;
+    }
     let mut templates = load_builtin_packs()?
         .into_iter()
         .filter(|p| pack_id.map(|id| id == p.id).unwrap_or(true))
@@ -286,7 +319,11 @@ pub fn suggestions(query: &str, template_id: Option<&str>) -> Result<Vec<Suggest
         }
     }
 
-    results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results.truncate(8);
     Ok(results)
 }
@@ -516,7 +553,11 @@ pub fn validate_macro_steps(steps: &[MacroStep]) -> Result<(), String> {
 fn is_safe_macro_step(kind: &str) -> bool {
     matches!(
         kind,
-        "select_template" | "update_slot" | "execute_prompt" | "insert_saved_prompt" | "accept_suggestion"
+        "select_template"
+            | "update_slot"
+            | "execute_prompt"
+            | "insert_saved_prompt"
+            | "accept_suggestion"
     )
 }
 
@@ -586,16 +627,57 @@ mod tests {
                 id: "a".to_string(),
                 title: "A".to_string(),
                 description: "A".to_string(),
-                templates: vec![PromptTemplate { pack_id: "a".to_string(), ..template.clone() }],
+                templates: vec![PromptTemplate {
+                    pack_id: "a".to_string(),
+                    ..template.clone()
+                }],
             },
             PromptPack {
                 id: "b".to_string(),
                 title: "B".to_string(),
                 description: "B".to_string(),
-                templates: vec![PromptTemplate { pack_id: "b".to_string(), ..template }],
+                templates: vec![PromptTemplate {
+                    pack_id: "b".to_string(),
+                    ..template
+                }],
             },
         ];
-        assert!(validate_packs(&packs).unwrap_err().contains("Duplicate prompt template id"));
+        assert!(validate_packs(&packs)
+            .unwrap_err()
+            .contains("Duplicate prompt template id"));
+    }
+
+    #[test]
+    fn rejects_malformed_pack_json_without_panic() {
+        let err = parse_pack_file("{ this is not json", "bad-pack.json").unwrap_err();
+        assert!(err.contains("Invalid prompt pack bad-pack.json"));
+    }
+
+    #[test]
+    fn rejects_path_like_pack_and_template_ids() {
+        let template = test_template();
+        let packs = vec![PromptPack {
+            id: "../secrets".to_string(),
+            title: "Bad".to_string(),
+            description: "Bad".to_string(),
+            templates: vec![PromptTemplate {
+                pack_id: "../secrets".to_string(),
+                ..template
+            }],
+        }];
+
+        assert!(validate_packs(&packs)
+            .unwrap_err()
+            .contains("Invalid pack_id"));
+        assert!(list_templates(Some("../assets/prompt-packs"))
+            .unwrap_err()
+            .contains("Invalid pack_id"));
+        assert!(find_template("..\\secret")
+            .unwrap_err()
+            .contains("Invalid template_id"));
+        assert!(suggestions("", Some("../../core.jpe_explain"))
+            .unwrap_err()
+            .contains("Invalid template_id"));
     }
 
     #[test]
@@ -606,12 +688,21 @@ mod tests {
     }
 
     #[test]
+    fn rejects_non_object_slot_payloads() {
+        let err = slot_map_from_value(&serde_json::json!(["task", "review"])).unwrap_err();
+        assert_eq!(err, "slot_values must be an object");
+    }
+
+    #[test]
     fn renders_prompt_with_defaults() {
         let mut values = HashMap::new();
         values.insert("task".to_string(), "review code".to_string());
         let result = validate_slots(&test_template(), &values);
         assert!(result.valid);
-        assert_eq!(result.rendered_prompt.unwrap(), "Do review code in a concise tone.");
+        assert_eq!(
+            result.rendered_prompt.unwrap(),
+            "Do review code in a concise tone."
+        );
     }
 
     #[test]
@@ -628,6 +719,18 @@ mod tests {
             requires_confirmation: true,
         }];
         assert!(validate_macro_steps(&steps).is_err());
+    }
+
+    #[test]
+    fn rejects_confirmation_gated_macro_steps() {
+        let steps = vec![MacroStep {
+            kind: "execute_prompt".to_string(),
+            timestamp: "2026-01-01T00:00:00Z".to_string(),
+            payload: serde_json::json!({"template_id":"core.test"}),
+            requires_confirmation: true,
+        }];
+        let err = validate_macro_steps(&steps).unwrap_err();
+        assert!(err.contains("requires confirmation"));
     }
 
     #[test]
@@ -649,5 +752,53 @@ mod tests {
         validate_macro_steps(&steps).unwrap();
         assert_eq!(steps[0].kind, "select_template");
         assert_eq!(steps[1].kind, "update_slot");
+    }
+
+    #[tokio::test]
+    async fn persists_safe_macro_steps_for_replay_in_order() {
+        let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::raw_sql(include_str!("db/migrations/004_promptdrive.sql"))
+            .execute(&pool)
+            .await
+            .unwrap();
+        let db = PromptDriveDb::new(pool);
+        let recording_id = db.macro_start().await.unwrap();
+        let steps = vec![
+            MacroStep {
+                kind: "select_template".to_string(),
+                timestamp: "1".to_string(),
+                payload: serde_json::json!({"template_id":"core.test"}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "execute_prompt".to_string(),
+                timestamp: "2".to_string(),
+                payload: serde_json::json!({"template_id":"core.test","slot_values":{"task":"review"}}),
+                requires_confirmation: false,
+            },
+            MacroStep {
+                kind: "insert_saved_prompt".to_string(),
+                timestamp: "3".to_string(),
+                payload: serde_json::json!({"saved_prompt_id":"saved-1"}),
+                requires_confirmation: false,
+            },
+        ];
+
+        let saved = db
+            .macro_stop(recording_id, "Replay Smoke".to_string(), steps)
+            .await
+            .unwrap();
+        assert_eq!(saved.risk_level, "medium");
+
+        let replay = db.get_macro(&saved.id).await.unwrap();
+        let kinds = replay
+            .steps
+            .iter()
+            .map(|step| step.kind.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            kinds,
+            vec!["select_template", "execute_prompt", "insert_saved_prompt"]
+        );
     }
 }

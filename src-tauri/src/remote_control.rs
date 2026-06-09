@@ -4,6 +4,8 @@ use std::sync::{
     Arc,
 };
 
+use crate::bridge::WsBroadcaster;
+use crate::{AppHandle, State};
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -16,8 +18,6 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
-use crate::bridge::WsBroadcaster;
-use crate::{AppHandle, State};
 
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
 #[derive(Clone)]
@@ -29,7 +29,9 @@ pub enum AppEmitter {
 impl AppEmitter {
     pub fn emit<E: serde::Serialize + Clone>(&self, event: &str, payload: E) {
         match self {
-            AppEmitter::Tauri(h) => { crate::bridge::EventEmitter::emit(h, event, payload); }
+            AppEmitter::Tauri(h) => {
+                crate::bridge::EventEmitter::emit(h, event, payload);
+            }
             AppEmitter::Bridge(b) => b.emit(event, payload),
         }
     }
@@ -780,11 +782,15 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
                 if let Ok(msg) = serde_json::from_str::<Value>(&txt) {
                     if msg["type"] == "auth" {
                         // Constant-length string comparison to resist timing attacks.
-                        let pin_ok = msg["pin"].as_str()
+                        let pin_ok = msg["pin"]
+                            .as_str()
                             .map(|p| constant_time_eq(p.as_bytes(), ws_state.pin.as_bytes()))
                             .unwrap_or(false);
-                        let session_ok = msg["session"].as_str()
-                            .map(|s| constant_time_eq(s.as_bytes(), ws_state.access_token.as_bytes()))
+                        let session_ok = msg["session"]
+                            .as_str()
+                            .map(|s| {
+                                constant_time_eq(s.as_bytes(), ws_state.access_token.as_bytes())
+                            })
                             .unwrap_or(false);
                         if pin_ok && session_ok {
                             let _ = sender
@@ -926,10 +932,9 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
             }
         }
         Some("approve") => {
-            if let (Some(req_id), Some(approved)) = (
-                msg["request_id"].as_str(),
-                msg["approved"].as_bool(),
-            ) {
+            if let (Some(req_id), Some(approved)) =
+                (msg["request_id"].as_str(), msg["approved"].as_bool())
+            {
                 emitter.emit(
                     "remote_approval_response",
                     json!({"request_id": req_id, "approved": approved}).to_string(),
@@ -974,7 +979,10 @@ pub async fn start_remote_server_bridge(
 ) -> Result<serde_json::Value, String> {
     // Stop any existing server
     {
-        let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = remote_state
+            .handle
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if let Some(old) = guard.take() {
             let _ = old.shutdown_tx.send(());
             if let EventListenerHandle::Bridge(abort) = old.event_listener {
@@ -1069,7 +1077,10 @@ pub async fn start_remote_server_bridge(
     );
 
     {
-        let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = remote_state
+            .handle
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         *guard = Some(RemoteServerHandle {
             port,
             local_ip: local_ip.clone(),
@@ -1096,7 +1107,10 @@ pub async fn stop_remote_server_bridge(
     remote_state: Arc<RemoteControlState>,
     pty_state: Arc<crate::pty_manager::PtyState>,
 ) -> Result<(), String> {
-    let mut guard = remote_state.handle.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = remote_state
+        .handle
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
         if let EventListenerHandle::Bridge(abort) = handle.event_listener {

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 use crate::bridge::EventEmitter;
-use crate::{AppHandle};
+use crate::AppHandle;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,8 +54,13 @@ impl SchedulerManaged {
         for task in tasks {
             if task.enabled {
                 let _ = register_task(
-                    &sched, &task, self.job_map.clone(), emitter.clone(), app_state.clone(),
-                ).await;
+                    &sched,
+                    &task,
+                    self.job_map.clone(),
+                    emitter.clone(),
+                    app_state.clone(),
+                )
+                .await;
             }
         }
         sched.start().await.map_err(|e| e.to_string())?;
@@ -134,24 +139,41 @@ pub async fn register_task<E: EventEmitter>(
                         if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
                             let broadcaster = app.clone();
                             let state2 = state.clone();
-                            broadcaster.emit("workflow_started", serde_json::json!({
-                                "name": &wf_name,
-                                "triggered_by": "scheduler",
-                                "task_id": &id,
-                            }));
+                            broadcaster.emit(
+                                "workflow_started",
+                                serde_json::json!({
+                                    "name": &wf_name,
+                                    "triggered_by": "scheduler",
+                                    "task_id": &id,
+                                }),
+                            );
                             tokio::spawn(async move {
                                 let run_state = crate::workflow_engine::execute_workflow(
-                                    &wf_name, &doc, state2, broadcaster,
-                                ).await;
-                                if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
+                                    &wf_name,
+                                    &doc,
+                                    state2,
+                                    broadcaster,
+                                )
+                                .await;
+                                if let Err(e) =
+                                    crate::workflow_engine::save_run_history(&wf_name, &run_state)
+                                {
                                     tracing::warn!("Failed to save workflow run history: {}", e);
                                 }
                             });
                         } else {
-                            tracing::warn!("Scheduled task '{}' references invalid workflow '{}'", name, wf_name);
+                            tracing::warn!(
+                                "Scheduled task '{}' references invalid workflow '{}'",
+                                name,
+                                wf_name
+                            );
                         }
                     } else {
-                        tracing::warn!("Scheduled task '{}' references missing workflow '{}'", name, wf_name);
+                        tracing::warn!(
+                            "Scheduled task '{}' references missing workflow '{}'",
+                            name,
+                            wf_name
+                        );
                     }
                 }
             }
@@ -160,7 +182,10 @@ pub async fn register_task<E: EventEmitter>(
     .map_err(|e| e.to_string())?;
 
     let job_id = scheduler.add(job).await.map_err(|e| e.to_string())?;
-    job_map.lock().unwrap_or_else(|e| e.into_inner()).insert(task.id.clone(), job_id);
+    job_map
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(task.id.clone(), job_id);
     Ok(job_id)
 }
 
@@ -176,7 +201,10 @@ pub async fn unregister_task(
     };
     if let Some(uuid) = uuid {
         scheduler.remove(&uuid).await.map_err(|e| e.to_string())?;
-        job_map.lock().unwrap_or_else(|e| e.into_inner()).remove(task_id);
+        job_map
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(task_id);
     }
     Ok(())
 }
@@ -184,7 +212,11 @@ pub async fn unregister_task(
 // ── Tauri Commands ────────────────────────────────────────────────────────────
 
 pub fn list_scheduled_tasks(state: Arc<SchedulerManaged>) -> Vec<ScheduledTask> {
-    state.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    state
+        .tasks
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
 }
 
 pub async fn add_scheduled_task(
@@ -226,10 +258,7 @@ pub async fn add_scheduled_task(
     Ok(task)
 }
 
-pub async fn delete_scheduled_task(
-    state: Arc<SchedulerManaged>,
-    id: String,
-) -> Result<(), String> {
+pub async fn delete_scheduled_task(state: Arc<SchedulerManaged>, id: String) -> Result<(), String> {
     {
         let mut tasks = state.tasks.lock().unwrap_or_else(|e| e.into_inner());
         tasks.retain(|t| t.id != id);
@@ -310,15 +339,24 @@ pub fn run_task_now(
                     if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
                         let broadcaster = app_handle.clone();
                         let state2 = app_state.clone();
-                        let _ = broadcaster.emit("workflow_started", serde_json::json!({
-                            "name": &wf_name,
-                            "triggered_by": "manual",
-                        }));
+                        let _ = broadcaster.emit(
+                            "workflow_started",
+                            serde_json::json!({
+                                "name": &wf_name,
+                                "triggered_by": "manual",
+                            }),
+                        );
                         tokio::spawn(async move {
                             let run_state = crate::workflow_engine::execute_workflow(
-                                &wf_name, &doc, state2, broadcaster,
-                            ).await;
-                            if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
+                                &wf_name,
+                                &doc,
+                                state2,
+                                broadcaster,
+                            )
+                            .await;
+                            if let Err(e) =
+                                crate::workflow_engine::save_run_history(&wf_name, &run_state)
+                            {
                                 tracing::warn!("Failed to save workflow run history: {}", e);
                             }
                         });

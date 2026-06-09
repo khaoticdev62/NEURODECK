@@ -305,7 +305,11 @@ async fn call_tool(
                 .enumerate()
                 .map(|(i, r)| {
                     let role = r.metadata.get("role").map(|s| s.as_str()).unwrap_or("msg");
-                    let pinned = r.metadata.get("pinned").map(|s| s == "true").unwrap_or(false);
+                    let pinned = r
+                        .metadata
+                        .get("pinned")
+                        .map(|s| s == "true")
+                        .unwrap_or(false);
                     format!(
                         "[{}] {} ({}{}) — {}",
                         i + 1,
@@ -372,12 +376,18 @@ async fn call_tool(
 
             let (program, prog_args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
                 "python" | "python3" => {
-                    if cfg!(target_os = "windows") { ("python", vec!["-c", code]) }
-                    else { ("python3", vec!["-c", code]) }
+                    if cfg!(target_os = "windows") {
+                        ("python", vec!["-c", code])
+                    } else {
+                        ("python3", vec!["-c", code])
+                    }
                 }
                 "bash" | "sh" => {
-                    if cfg!(target_os = "windows") { ("powershell", vec!["-Command", code]) }
-                    else { ("bash", vec!["-c", code]) }
+                    if cfg!(target_os = "windows") {
+                        ("powershell", vec!["-Command", code])
+                    } else {
+                        ("bash", vec!["-c", code])
+                    }
                 }
                 "javascript" | "js" | "node" => ("node", vec!["-e", code]),
                 other => return Err(format!("Unsupported language: {}", other)),
@@ -400,11 +410,15 @@ async fn call_tool(
                             let stderr = String::from_utf8_lossy(&out.stderr).to_string();
                             let mut combined = stdout;
                             if !stderr.is_empty() {
-                                if !combined.is_empty() { combined.push('\n'); }
+                                if !combined.is_empty() {
+                                    combined.push('\n');
+                                }
                                 combined.push_str("[stderr]\n");
                                 combined.push_str(&stderr);
                             }
-                            if combined.is_empty() { combined = "(no output)".to_string(); }
+                            if combined.is_empty() {
+                                combined = "(no output)".to_string();
+                            }
                             combined
                         }
                         Err(e) => format!("Failed to spawn '{}': {}", prog_owned, e),
@@ -423,22 +437,38 @@ async fn call_tool(
         }
 
         "read_file" => {
-            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
+            let path_str = args["path"]
+                .as_str()
+                .ok_or("Missing required arg: 'path'")?;
             let safe_path = sanitize_mcp_path(path_str)?;
-            let content = std::fs::read_to_string(safe_path)
-                .map_err(|e| format!("Cannot read '{}': {}", path_str, crate::security::sanitize_error_for_frontend(&e.to_string())))?;
+            let content = std::fs::read_to_string(safe_path).map_err(|e| {
+                format!(
+                    "Cannot read '{}': {}",
+                    path_str,
+                    crate::security::sanitize_error_for_frontend(&e.to_string())
+                )
+            })?;
             Ok(json!({ "content": [{ "type": "text", "text": content }] }))
         }
 
         "write_file" => {
-            let path_str = args["path"].as_str().ok_or("Missing required arg: 'path'")?;
-            let content = args["content"].as_str().ok_or("Missing required arg: 'content'")?;
+            let path_str = args["path"]
+                .as_str()
+                .ok_or("Missing required arg: 'path'")?;
+            let content = args["content"]
+                .as_str()
+                .ok_or("Missing required arg: 'content'")?;
             let safe_path = sanitize_mcp_path(path_str)?;
             if let Some(parent) = safe_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            std::fs::write(safe_path, content)
-                .map_err(|e| format!("Cannot write '{}': {}", path_str, crate::security::sanitize_error_for_frontend(&e.to_string())))?;
+            std::fs::write(safe_path, content).map_err(|e| {
+                format!(
+                    "Cannot write '{}': {}",
+                    path_str,
+                    crate::security::sanitize_error_for_frontend(&e.to_string())
+                )
+            })?;
             Ok(json!({
                 "content": [{ "type": "text", "text": format!("Wrote {} bytes to '{}'.", content.len(), path_str) }]
             }))
@@ -766,7 +796,10 @@ pub async fn start(
         .await
         .map_err(|e| format!("MCP server bind failed on {}: {}", addr, e))?;
 
-    let bound_port = listener.local_addr().map(|a| a.port()).unwrap_or(config.port);
+    let bound_port = listener
+        .local_addr()
+        .map(|a| a.port())
+        .unwrap_or(config.port);
 
     let task = tokio::spawn(async move {
         while let Ok((stream, _peer)) = listener.accept().await {

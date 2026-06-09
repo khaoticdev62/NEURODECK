@@ -1,6 +1,6 @@
+use crate::AppHandle;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use crate::{AppHandle};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct OllamaModel {

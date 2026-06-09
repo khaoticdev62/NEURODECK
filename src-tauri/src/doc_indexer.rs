@@ -1,8 +1,8 @@
 use crate::memory::MemoryRecord;
 use crate::AppState;
+use crate::State;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use crate::{State};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DocSearchResult {

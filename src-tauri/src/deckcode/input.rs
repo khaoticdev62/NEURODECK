@@ -1,8 +1,8 @@
-use std::time::Instant;
-use gilrs::{Gilrs, Event, EventType, Button, Axis};
+use crate::deckcode::activator::ActivatorType;
+use gilrs::{Axis, Button, Event, EventType, Gilrs};
 use std::thread;
 use std::time::Duration;
-use crate::deckcode::activator::ActivatorType;
+use std::time::Instant;
 
 #[derive(Debug, Clone)]
 pub struct InputEvent {
@@ -23,24 +23,26 @@ pub fn start_input_daemon(tx: std::sync::mpsc::Sender<InputEvent>) {
         };
 
         loop {
-            while let Some(Event { id: _, event, time: _, .. }) = gilrs.next_event() {
+            while let Some(Event {
+                id: _,
+                event,
+                time: _,
+                ..
+            }) = gilrs.next_event()
+            {
                 let input_event = match event {
-                    EventType::ButtonPressed(button, _) => {
-                        Some(InputEvent {
-                            source: button_to_string(button),
-                            event_type: ActivatorType::Press,
-                            value: None,
-                            timestamp: Instant::now(),
-                        })
-                    }
-                    EventType::ButtonReleased(button, _) => {
-                        Some(InputEvent {
-                            source: button_to_string(button),
-                            event_type: ActivatorType::Release,
-                            value: None,
-                            timestamp: Instant::now(),
-                        })
-                    }
+                    EventType::ButtonPressed(button, _) => Some(InputEvent {
+                        source: button_to_string(button),
+                        event_type: ActivatorType::Press,
+                        value: None,
+                        timestamp: Instant::now(),
+                    }),
+                    EventType::ButtonReleased(button, _) => Some(InputEvent {
+                        source: button_to_string(button),
+                        event_type: ActivatorType::Release,
+                        value: None,
+                        timestamp: Instant::now(),
+                    }),
                     EventType::AxisChanged(axis, value, _) => {
                         Some(InputEvent {
                             source: axis_to_string(axis),

@@ -9,13 +9,13 @@ use std::sync::{
     Arc, Mutex,
 };
 
+use crate::bridge::EventEmitter;
+use crate::AppHandle;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::bridge::EventEmitter;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::{mpsc, oneshot};
-use crate::{AppHandle};
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -114,7 +114,8 @@ pub fn known_servers() -> Vec<KnownServer> {
             label: "Lua Language Server".into(),
             command: "lua-language-server".into(),
             args: vec![],
-            install_hint: "brew install lua-language-server  /  scoop install lua-language-server".into(),
+            install_hint: "brew install lua-language-server  /  scoop install lua-language-server"
+                .into(),
         },
         KnownServer {
             language: "c".into(),
@@ -316,10 +317,7 @@ pub async fn spawn_server<E: EventEmitter>(
 
             if is_response {
                 if let Some(id) = msg["id"].as_u64() {
-                    let result = msg
-                        .get("result")
-                        .cloned()
-                        .unwrap_or(Value::Null);
+                    let result = msg.get("result").cloned().unwrap_or(Value::Null);
                     let mut p = pending_r.lock().unwrap_or_else(|e| e.into_inner());
                     if let Some(tx) = p.remove(&id) {
                         let _ = tx.send(result);
@@ -329,10 +327,7 @@ pub async fn spawn_server<E: EventEmitter>(
                 match method {
                     "textDocument/publishDiagnostics" => {
                         if let Some(params) = msg.get("params") {
-                            let uri = params["uri"]
-                                .as_str()
-                                .unwrap_or("")
-                                .to_string();
+                            let uri = params["uri"].as_str().unwrap_or("").to_string();
                             let diags: Vec<LspDiagnostic> = params
                                 .get("diagnostics")
                                 .and_then(|v| serde_json::from_value(v.clone()).ok())
@@ -365,7 +360,11 @@ pub async fn spawn_server<E: EventEmitter>(
         _reader_abort: reader_handle.abort_handle(),
     };
 
-    manager.lock().unwrap_or_else(|e| e.into_inner()).servers.insert(language.clone(), state);
+    manager
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .servers
+        .insert(language.clone(), state);
 
     // ── Initialize handshake ─────────────────────────────────────────────────
     let id = next_id.fetch_add(1, Ordering::SeqCst);
@@ -408,7 +407,10 @@ pub async fn spawn_server<E: EventEmitter>(
     let body = serde_json::to_string(&init_msg).map_err(|e| e.to_string())?;
     let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
     let (init_tx, init_rx) = oneshot::channel();
-    pending.lock().unwrap_or_else(|e| e.into_inner()).insert(id, init_tx);
+    pending
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, init_tx);
     stdin_tx.send(frame).map_err(|e| e.to_string())?;
 
     // Complete handshake asynchronously so this command returns quickly.
@@ -428,16 +430,25 @@ pub async fn spawn_server<E: EventEmitter>(
                         let _ = stdin_tx2.send(frame);
                     }
                     Err(e) => {
-                        manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "error");
+                        manager2
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .mark_status(&lang2, "error");
                         let _ = app2.emit("lsp:error", json!({ "language": lang2, "message": format!("Serialize error: {e}") }));
                         return;
                     }
                 }
-                manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "ready");
+                manager2
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .mark_status(&lang2, "ready");
                 let _ = app2.emit("lsp:ready", json!({ "language": lang2 }));
             }
             _ => {
-                manager2.lock().unwrap_or_else(|e| e.into_inner()).mark_status(&lang2, "error");
+                manager2
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .mark_status(&lang2, "error");
                 let _ = app2.emit(
                     "lsp:error",
                     json!({ "language": lang2, "message": "Initialize timed out" }),
@@ -459,9 +470,9 @@ fn take_channels(
     Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
     Arc<AtomicU64>,
 )> {
-    mgr.servers.get(language).map(|s| {
-        (s.stdin_tx.clone(), s.pending.clone(), s.next_id.clone())
-    })
+    mgr.servers
+        .get(language)
+        .map(|s| (s.stdin_tx.clone(), s.pending.clone(), s.next_id.clone()))
 }
 
 fn send_notification(
@@ -489,7 +500,10 @@ async fn send_request(
     let frame = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
 
     let (tx, rx) = oneshot::channel();
-    pending.lock().unwrap_or_else(|e| e.into_inner()).insert(id, tx);
+    pending
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, tx);
     stdin_tx.send(frame).map_err(|e| e.to_string())?;
 
     tokio::time::timeout(std::time::Duration::from_secs(timeout_secs), rx)
@@ -505,7 +519,7 @@ pub async fn lsp_start(
     language: String,
     command: String,
     args: Vec<String>,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
     app: AppHandle,
 ) -> Result<(), String> {
     let workspace = crate::user_config_dir().join("workspace");
@@ -515,25 +529,29 @@ pub async fn lsp_start(
 }
 
 /// Stop an LSP server for the given language.
-pub fn lsp_stop(
-    language: String,
-    state: Arc<Mutex<LspManager>> ,
-) -> Result<(), String> {
-    state.lock().unwrap_or_else(|e| e.into_inner()).servers.remove(&language);
+pub fn lsp_stop(language: String, state: Arc<Mutex<LspManager>>) -> Result<(), String> {
+    state
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .servers
+        .remove(&language);
     Ok(())
 }
 
 /// List all running LSP servers and their status.
-pub fn lsp_list(state: Arc<Mutex<LspManager>> ) -> Vec<LspServerInfo> {
-    state.lock().unwrap_or_else(|e| e.into_inner()).server_list()
+pub fn lsp_list(state: Arc<Mutex<LspManager>>) -> Vec<LspServerInfo> {
+    state
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .server_list()
 }
 
 /// Get cached diagnostics for a document URI.
-pub fn lsp_get_diagnostics(
-    uri: String,
-    state: Arc<Mutex<LspManager>> ,
-) -> Vec<LspDiagnostic> {
-    state.lock().unwrap_or_else(|e| e.into_inner()).diagnostics_for(&uri)
+pub fn lsp_get_diagnostics(uri: String, state: Arc<Mutex<LspManager>>) -> Vec<LspDiagnostic> {
+    state
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .diagnostics_for(&uri)
 }
 
 /// Notify server that a document was opened.
@@ -541,7 +559,7 @@ pub async fn lsp_open_document(
     language: String,
     uri: String,
     content: String,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -564,7 +582,7 @@ pub async fn lsp_open_document(
 pub async fn lsp_close_document(
     language: String,
     uri: String,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -581,7 +599,7 @@ pub async fn lsp_change_document(
     uri: String,
     content: String,
     version: u32,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<(), String> {
     let channels = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
         .ok_or_else(|| format!("LSP '{}' not running", language))?;
@@ -601,10 +619,11 @@ pub async fn lsp_get_completions(
     uri: String,
     line: u32,
     character: u32,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<Vec<LspCompletionItem>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
-        .ok_or_else(|| format!("LSP '{}' not running", language))?;
+    let (stdin_tx, pending, next_id) =
+        take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
+            .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(
         stdin_tx,
@@ -657,10 +676,11 @@ pub async fn lsp_get_hover(
     uri: String,
     line: u32,
     character: u32,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<Option<LspHover>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
-        .ok_or_else(|| format!("LSP '{}' not running", language))?;
+    let (stdin_tx, pending, next_id) =
+        take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
+            .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(
         stdin_tx,
@@ -687,9 +707,11 @@ pub async fn lsp_get_hover(
         } else if let Some(arr) = c.as_array() {
             arr.iter()
                 .filter_map(|e| {
-                    e.as_str()
-                        .map(|s| s.to_string())
-                        .or_else(|| e.get("value").and_then(|v| v.as_str()).map(|s| s.to_string()))
+                    e.as_str().map(|s| s.to_string()).or_else(|| {
+                        e.get("value")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string())
+                    })
                 })
                 .collect::<Vec<_>>()
                 .join("\n---\n")
@@ -713,10 +735,11 @@ pub async fn lsp_get_definitions(
     uri: String,
     line: u32,
     character: u32,
-    state: Arc<Mutex<LspManager>> ,
+    state: Arc<Mutex<LspManager>>,
 ) -> Result<Vec<LspLocation>, String> {
-    let (stdin_tx, pending, next_id) = take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
-        .ok_or_else(|| format!("LSP '{}' not running", language))?;
+    let (stdin_tx, pending, next_id) =
+        take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
+            .ok_or_else(|| format!("LSP '{}' not running", language))?;
 
     let result = send_request(
         stdin_tx,

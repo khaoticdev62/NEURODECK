@@ -144,7 +144,11 @@ pub(crate) fn detect_running_game_linux() -> Option<(String, String)> {
                 }
             }
             // Match basename against known game executables
-            let basename = exe_link.file_stem().unwrap_or_default().to_string_lossy().to_lowercase();
+            let basename = exe_link
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
             for (app_id, exe_name) in &exe_map {
                 if basename == exe_name.to_lowercase() {
                     return Some((String::new(), app_id.to_string()));
@@ -186,7 +190,8 @@ pub(crate) fn detect_running_game_sysinfo() -> Option<(String, String)> {
 
     let exe_map = game_exe_map();
     let s = System::new_with_specifics(
-        RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_exe(sysinfo::UpdateKind::Always)),
+        RefreshKind::nothing()
+            .with_processes(ProcessRefreshKind::nothing().with_exe(sysinfo::UpdateKind::Always)),
     );
 
     for process in s.processes().values() {
@@ -194,8 +199,7 @@ pub(crate) fn detect_running_game_sysinfo() -> Option<(String, String)> {
         for (app_id, exe_name) in &exe_map {
             let exe_lower = exe_name.to_lowercase();
             #[cfg(target_os = "windows")]
-            let matches = proc_name == format!("{}.exe", exe_lower)
-                || proc_name == exe_lower;
+            let matches = proc_name == format!("{}.exe", exe_lower) || proc_name == exe_lower;
             #[cfg(not(target_os = "windows"))]
             let matches = proc_name == exe_lower;
 

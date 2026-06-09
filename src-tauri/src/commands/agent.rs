@@ -1,10 +1,10 @@
 use crate::config::AgentConfig;
+use crate::AppHandle;
 use crate::*;
 use futures_util::StreamExt;
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
-use crate::AppHandle;
 
 // ─── Multi-Agent Switching ────────────────────────────────────────────────────
 
@@ -516,12 +516,22 @@ pub async fn agent_exec_code(
     };
 
     crate::permissions::require_capability(
-        &state.lock().unwrap_or_else(|e| e.into_inner()).config.security.permission_registry,
+        &state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .config
+            .security
+            .permission_registry,
         &agent_id,
         crate::permissions::Capability::ShellExec,
     )?;
 
-    crate::security::validate_script_payload(&code, &lang, "agent-exec", workspace_path.as_deref())?;
+    crate::security::validate_script_payload(
+        &code,
+        &lang,
+        "agent-exec",
+        workspace_path.as_deref(),
+    )?;
 
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
@@ -553,11 +563,11 @@ pub async fn agent_exec_code(
             cmd.args(args_owned.iter().map(|s| s.as_str()).collect::<Vec<_>>())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
-            
+
             if let Some(wp) = workspace_path {
                 cmd.current_dir(wp);
             }
-            
+
             let output = cmd.output();
 
             match output {
@@ -607,7 +617,12 @@ pub async fn exec_code_stream(
         app.config.get_resolved_workspace()
     };
 
-    crate::security::validate_script_payload(&code, &lang, "canvas-exec", workspace_path.as_deref())?;
+    crate::security::validate_script_payload(
+        &code,
+        &lang,
+        "canvas-exec",
+        workspace_path.as_deref(),
+    )?;
 
     let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
         "python" | "python3" => {
@@ -651,13 +666,12 @@ pub async fn exec_code_stream(
         cmd.args(&args_owned)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        
+
         if let Some(wp) = workspace_path {
             cmd.current_dir(wp);
         }
 
-        let mut child = match cmd.spawn()
-        {
+        let mut child = match cmd.spawn() {
             Ok(child) => child,
             Err(e) => {
                 emit_canvas_exec_line(

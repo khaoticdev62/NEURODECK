@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use crate::{
+    AppHandle, LogicalPosition, LogicalSize, State, Url, WebviewUrl, WebviewWindowBuilder,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption;
 use headless_chrome::{Browser, LaunchOptionsBuilder, Tab};
 use serde_json::Value;
-use crate::{AppHandle, LogicalPosition, LogicalSize, State, Url, WebviewUrl, WebviewWindowBuilder};
 
 lazy_static::lazy_static! {
     static ref AUTOMATION_STATE: Mutex<BrowserAutomationState> = Mutex::new(BrowserAutomationState::default());
@@ -78,7 +80,6 @@ pub async fn browser_open(
     height: f64,
     state: State<'_, Mutex<crate::AppState>>,
 ) -> Result<(), String> {
-
     require_browser_exec(&state, "browser-open-window")?;
     parse_http_url(&url)?;
     let nav_url = Url(url);
@@ -153,7 +154,6 @@ pub fn browser_show(
     width: f64,
     height: f64,
 ) -> Result<(), String> {
-
     let main_win = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
@@ -355,7 +355,7 @@ fn chunk_text(text: &str, chunk_words: usize, overlap_words: usize) -> Vec<Strin
 
 pub async fn browser_get_citation(url: String) -> Result<String, String> {
     parse_http_url(&url)?;
-    
+
     let url_clone = url.clone();
     let title = tokio::task::spawn_blocking(move || -> Result<String, String> {
         with_state(|s| {
@@ -364,8 +364,13 @@ pub async fn browser_get_citation(url: String) -> Result<String, String> {
             let tab = browser.new_tab().map_err(|e| e.to_string())?;
             tab.navigate_to(&url_clone).map_err(|e| e.to_string())?;
             tab.wait_until_navigated().map_err(|e| e.to_string())?;
-            let title_val = tab.evaluate("document.title", false).map_err(|e| e.to_string())?;
-            Ok(title_val.value.and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_else(|| url_clone.clone()))
+            let title_val = tab
+                .evaluate("document.title", false)
+                .map_err(|e| e.to_string())?;
+            Ok(title_val
+                .value
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_else(|| url_clone.clone()))
         })
     })
     .await
@@ -388,13 +393,23 @@ pub async fn browser_save_to_memory(
             let tab = browser.new_tab().map_err(|e| e.to_string())?;
             tab.navigate_to(&url_clone).map_err(|e| e.to_string())?;
             tab.wait_until_navigated().map_err(|e| e.to_string())?;
-            
-            let title_val = tab.evaluate("document.title", false).map_err(|e| e.to_string())?;
-            let text_val = tab.evaluate("document.body.innerText", false).map_err(|e| e.to_string())?;
-            
-            let title = title_val.value.and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_else(|| url_clone.clone());
-            let text = text_val.value.and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_default();
-            
+
+            let title_val = tab
+                .evaluate("document.title", false)
+                .map_err(|e| e.to_string())?;
+            let text_val = tab
+                .evaluate("document.body.innerText", false)
+                .map_err(|e| e.to_string())?;
+
+            let title = title_val
+                .value
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_else(|| url_clone.clone());
+            let text = text_val
+                .value
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_default();
+
             Ok((title, text))
         })
     })
@@ -409,7 +424,7 @@ pub async fn browser_save_to_memory(
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         (app.provider.clone(), app.mem_db.clone())
     };
-    
+
     let db = mem_db.ok_or("Memory database not initialized")?;
 
     let chunks = chunk_text(&text, 512, 64);

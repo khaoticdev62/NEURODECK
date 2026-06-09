@@ -1,6 +1,6 @@
-use base64::Engine as _;
 use crate::llm::GeminiProvider;
 use crate::*;
+use base64::Engine as _;
 use neurodeck_core::ipc::{Intent, StatePatch};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -1328,8 +1328,7 @@ pub fn memory_export(state: State<'_, Mutex<AppState>>) -> Result<String, String
     let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
     let filename = format!("memory_{}.ndmem", ts);
     let dest = export_dir.join(&filename);
-    std::fs::write(&dest, json)
-        .map_err(|e| format!("Failed to write export file: {}", e))?;
+    std::fs::write(&dest, json).map_err(|e| format!("Failed to write export file: {}", e))?;
 
     Ok(dest.to_string_lossy().into_owned())
 }
@@ -1349,14 +1348,13 @@ pub fn memory_import_data(
     let db = mem_db.ok_or("Memory database not initialized")?;
 
     // Accept either a bare Vec<MemoryRecord> or an NdmemEnvelope
-    let records: Vec<crate::memory::MemoryRecord> = if let Ok(env) =
-        serde_json::from_str::<NdmemEnvelope>(&data)
-    {
-        env.records
-    } else {
-        serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data)
-            .map_err(|e| format!("Invalid .ndmem file: {}", e))?
-    };
+    let records: Vec<crate::memory::MemoryRecord> =
+        if let Ok(env) = serde_json::from_str::<NdmemEnvelope>(&data) {
+            env.records
+        } else {
+            serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data)
+                .map_err(|e| format!("Invalid .ndmem file: {}", e))?
+        };
 
     if records.is_empty() {
         return Ok(0);
@@ -1375,8 +1373,7 @@ pub fn memory_import_data(
 pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String> {
     let records = db.export_all_records()?;
     let backup_dir = memory_backup_dir();
-    std::fs::create_dir_all(&backup_dir)
-        .map_err(|e| format!("Cannot create backup dir: {}", e))?;
+    std::fs::create_dir_all(&backup_dir).map_err(|e| format!("Cannot create backup dir: {}", e))?;
 
     let envelope = NdmemEnvelope {
         ndmem_version: "1.0".into(),
@@ -1390,19 +1387,13 @@ pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String>
     let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
     let filename = format!("backup_{}.ndmem", ts);
     let dest = backup_dir.join(&filename);
-    std::fs::write(&dest, &json)
-        .map_err(|e| format!("Failed to write backup: {}", e))?;
+    std::fs::write(&dest, &json).map_err(|e| format!("Failed to write backup: {}", e))?;
 
     // Prune: keep only the 5 most recent backups
     if let Ok(entries) = std::fs::read_dir(&backup_dir) {
         let mut files: Vec<std::path::PathBuf> = entries
             .flatten()
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .map(|x| x == "ndmem")
-                    .unwrap_or(false)
-            })
+            .filter(|e| e.path().extension().map(|x| x == "ndmem").unwrap_or(false))
             .map(|e| e.path())
             .collect();
         files.sort();
@@ -1437,12 +1428,7 @@ pub fn memory_list_backups(_state: State<'_, Mutex<AppState>>) -> Result<Vec<Bac
     let mut infos: Vec<BackupInfo> = std::fs::read_dir(&backup_dir)
         .map_err(|e| format!("Cannot read backup dir: {}", e))?
         .flatten()
-        .filter(|e| {
-            e.path()
-                .extension()
-                .map(|x| x == "ndmem")
-                .unwrap_or(false)
-        })
+        .filter(|e| e.path().extension().map(|x| x == "ndmem").unwrap_or(false))
         .filter_map(|e| {
             let path = e.path();
             let name = path.file_name()?.to_string_lossy().into_owned();
@@ -1493,8 +1479,8 @@ pub fn memory_restore_backup(
     if !backup_path.exists() {
         return Err(format!("Backup '{}' not found", backup_name));
     }
-    let data = std::fs::read_to_string(&backup_path)
-        .map_err(|e| format!("Cannot read backup: {}", e))?;
+    let data =
+        std::fs::read_to_string(&backup_path).map_err(|e| format!("Cannot read backup: {}", e))?;
     // Delegate to import_data with merge=false (full replace)
     let mem_db = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -2578,7 +2564,11 @@ pub async fn start_mcp_server(
                 app.mcp_port
             ));
         }
-        (app.provider.clone(), app.mcp_tool_whitelist.clone(), app.mem_db.clone())
+        (
+            app.provider.clone(),
+            app.mcp_tool_whitelist.clone(),
+            app.mem_db.clone(),
+        )
     };
 
     let config = mcp::McpServerConfig {
@@ -2623,7 +2613,10 @@ pub fn get_mcp_status(
     if app.mcp_abort.is_some() {
         result.insert("running".to_string(), "true".to_string());
         result.insert("port".to_string(), app.mcp_port.to_string());
-        result.insert("url".to_string(), format!("http://127.0.0.1:{}", app.mcp_port));
+        result.insert(
+            "url".to_string(),
+            format!("http://127.0.0.1:{}", app.mcp_port),
+        );
         result.insert(
             "discovery".to_string(),
             format!("http://127.0.0.1:{}/.well-known/mcp", app.mcp_port),
@@ -2679,7 +2672,10 @@ pub async fn canvas_collab_host(
         s.collab_peer_count = None;
         if let Some(daemon) = s.collab_mdns.take() {
             let hostname = crate::transfer::get_hostname();
-            let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+            let _ = daemon.unregister(&format!(
+                "neurodeck-{}._neurodeck-canvas._tcp.local.",
+                hostname.replace(" ", "-")
+            ));
         }
     }
 
@@ -2805,7 +2801,10 @@ pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
     s.collab_peer_count = None;
     if let Some(daemon) = s.collab_mdns.take() {
         let hostname = crate::transfer::get_hostname();
-        let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+        let _ = daemon.unregister(&format!(
+            "neurodeck-{}._neurodeck-canvas._tcp.local.",
+            hostname.replace(" ", "-")
+        ));
     }
 }
 
@@ -2824,11 +2823,15 @@ pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
                 let hostname = info.get_hostname().to_string();
                 let port = info.get_port();
                 let props = info.get_properties();
-                let display_name = props.get_property_val_str("hostname")
+                let display_name = props
+                    .get_property_val_str("hostname")
                     .unwrap_or(&hostname)
                     .to_string();
                 // Extract IP address from hostname or use a heuristic
-                let ip = info.get_addresses().iter().next()
+                let ip = info
+                    .get_addresses()
+                    .iter()
+                    .next()
                     .map(|a| a.to_string())
                     .unwrap_or_else(|| {
                         // Fallback: try to resolve .local hostname
@@ -2987,10 +2990,7 @@ fn collect_log_tail(path: &Path, max_lines: usize) -> Vec<String> {
     };
     let lines: Vec<&str> = content.lines().collect();
     let start = lines.len().saturating_sub(max_lines);
-    lines[start..]
-        .iter()
-        .map(|l| redact_line(l))
-        .collect()
+    lines[start..].iter().map(|l| redact_line(l)).collect()
 }
 
 #[derive(serde::Serialize)]
@@ -3062,7 +3062,10 @@ pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBun
         .join("infra/meta/meta.json");
     if let Ok(meta_str) = std::fs::read_to_string(&meta_path) {
         if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-            let version = meta_val.get("version").and_then(|v| v.as_str()).unwrap_or("unknown");
+            let version = meta_val
+                .get("version")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
             let codename = meta_val
                 .pointer("/codename/name")
                 .and_then(|v| v.as_str())
@@ -3079,13 +3082,26 @@ pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBun
     buf.push_str("## CONFIG SUMMARY (secrets redacted)\n");
     {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        buf.push_str(&format!("Provider:     {}\n", app.config.llm.default_provider));
+        buf.push_str(&format!(
+            "Provider:     {}\n",
+            app.config.llm.default_provider
+        ));
         buf.push_str(&format!("Gemini model: {}\n", app.config.llm.gemini_model));
         buf.push_str(&format!("Ollama model: {}\n", app.config.llm.ollama_model));
-        buf.push_str(&format!("Ollama URL:   {}\n", app.config.llm.ollama_base_url));
+        buf.push_str(&format!(
+            "Ollama URL:   {}\n",
+            app.config.llm.ollama_base_url
+        ));
         // Gemini key is stored in the OS keychain — check env var as proxy
         let key_env = std::env::var("GEMINI_API_KEY").is_ok();
-        buf.push_str(&format!("Gemini key:   {}\n", if key_env { "[SET via env]" } else { "[keychain or unset]" }));
+        buf.push_str(&format!(
+            "Gemini key:   {}\n",
+            if key_env {
+                "[SET via env]"
+            } else {
+                "[keychain or unset]"
+            }
+        ));
     }
     buf.push('\n');
     sections.push("config".to_string());
@@ -3172,7 +3188,9 @@ pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBun
 
     // ── Write bundle ─────────────────────────────────────────────────────────
     std::fs::write(&bundle_path, &buf).map_err(|e| format!("write bundle: {}", e))?;
-    let size_bytes = std::fs::metadata(&bundle_path).map(|m| m.len()).unwrap_or(0);
+    let size_bytes = std::fs::metadata(&bundle_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
 
     Ok(SupportBundleResult {
         path: bundle_path.to_string_lossy().to_string(),
@@ -3261,7 +3279,11 @@ pub fn get_system_health(state: Arc<Mutex<AppState>>) -> SystemHealthReport {
         std::fs::read_to_string(&meta_path)
             .ok()
             .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-            .and_then(|v| v.get("version").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .and_then(|v| {
+                v.get("version")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            })
             .unwrap_or_else(|| "unknown".to_string())
     };
 
@@ -3269,7 +3291,10 @@ pub fn get_system_health(state: Arc<Mutex<AppState>>) -> SystemHealthReport {
         issues.push("Running in safe mode — plugins are disabled".to_string());
     }
 
-    let status = if issues.iter().any(|i| i.contains("database") || i.contains("critical")) {
+    let status = if issues
+        .iter()
+        .any(|i| i.contains("database") || i.contains("critical"))
+    {
         "critical"
     } else if issues.is_empty() {
         "healthy"

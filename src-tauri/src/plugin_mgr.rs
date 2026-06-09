@@ -44,15 +44,17 @@ impl PluginManifest {
         let mut m = PluginManifest::default();
         for line in source.lines().take(40) {
             let line = line.trim();
-            if !line.starts_with("--") { break; }
+            if !line.starts_with("--") {
+                break;
+            }
             let rest = line.trim_start_matches('-').trim();
             if let Some(kv) = rest.strip_prefix('@') {
                 let (key, val) = kv.split_once(' ').unwrap_or((kv, ""));
                 let val = val.trim().to_string();
                 match key.to_ascii_lowercase().as_str() {
-                    "name"        => m.name = Some(val),
-                    "version"     => m.version = Some(val),
-                    "author"      => m.author = Some(val),
+                    "name" => m.name = Some(val),
+                    "version" => m.version = Some(val),
+                    "author" => m.author = Some(val),
                     "description" => m.description = Some(val),
                     "permissions" => {
                         m.permissions = val.split(',').map(|s| s.trim().to_string()).collect();
@@ -111,9 +113,15 @@ pub fn validate_plugin(file_name: &str) -> Result<PluginQaReport, String> {
     let mut errors = Vec::new();
 
     let manifest = PluginManifest::parse(&source);
-    if manifest.name.is_none()     { warnings.push("Missing @name annotation".into()); }
-    if manifest.version.is_none()  { warnings.push("Missing @version annotation".into()); }
-    if manifest.author.is_none()   { warnings.push("Missing @author annotation".into()); }
+    if manifest.name.is_none() {
+        warnings.push("Missing @name annotation".into());
+    }
+    if manifest.version.is_none() {
+        warnings.push("Missing @version annotation".into());
+    }
+    if manifest.author.is_none() {
+        warnings.push("Missing @author annotation".into());
+    }
 
     for pattern in UNSAFE_PATTERNS {
         if source.contains(pattern) {
@@ -123,11 +131,19 @@ pub fn validate_plugin(file_name: &str) -> Result<PluginQaReport, String> {
 
     // Size guard: > 512 KB is abnormal for a Lua plugin
     if source.len() > 512 * 1024 {
-        errors.push(format!("Plugin is too large: {} bytes (max 512 KB)", source.len()));
+        errors.push(format!(
+            "Plugin is too large: {} bytes (max 512 KB)",
+            source.len()
+        ));
     }
 
     let passed = errors.is_empty();
-    Ok(PluginQaReport { file_name: file_name.to_string(), passed, warnings, errors })
+    Ok(PluginQaReport {
+        file_name: file_name.to_string(),
+        passed,
+        warnings,
+        errors,
+    })
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -179,9 +195,15 @@ pub async fn list_plugins() -> Result<Vec<PluginInfo>, String> {
             if let Some(meta) = by_file.get(&plugin.file_name) {
                 plugin.id = Some(meta.id.clone());
                 // Prefer manifest-parsed values; fall back to registry values.
-                if plugin.author.is_none()  { plugin.author      = Some(meta.author.clone()); }
-                if plugin.version.is_none() { plugin.version     = Some(meta.version.clone()); }
-                if plugin.description.is_none() { plugin.description = Some(meta.description.clone()); }
+                if plugin.author.is_none() {
+                    plugin.author = Some(meta.author.clone());
+                }
+                if plugin.version.is_none() {
+                    plugin.version = Some(meta.version.clone());
+                }
+                if plugin.description.is_none() {
+                    plugin.description = Some(meta.description.clone());
+                }
                 plugin.tags = meta.tags.clone();
                 plugin.marketplace = true;
             }
@@ -368,8 +390,7 @@ pub fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
     let dir = plugins_dir();
 
     let mut list = Vec::new();
-    let entries =
-        fs::read_dir(&dir).map_err(|e| format!("Failed to read plugins dir: {}", e))?;
+    let entries = fs::read_dir(&dir).map_err(|e| format!("Failed to read plugins dir: {}", e))?;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -421,7 +442,11 @@ fn write_audit_entry(plugin: &str, action: &str) {
     if let Some(parent) = log_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+    {
         let ts = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ");
         let _ = writeln!(f, "{} plugin={} action={}", ts, plugin, action);
     }

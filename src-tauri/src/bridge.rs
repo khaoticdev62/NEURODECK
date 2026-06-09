@@ -10,13 +10,13 @@
 //! ## Port
 //! Binds to `127.0.0.1:9477` by default.  Override with the `NEURODECK_PORT` env var.
 
-use std::sync::{Arc, Mutex};
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        Path, State as AxumState, ConnectInfo,
+        ConnectInfo, Path, State as AxumState,
     },
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -57,7 +57,11 @@ impl EventEmitter for WsBroadcaster {
         let val = match serde_json::to_value(&payload) {
             Ok(v) => v,
             Err(e) => {
-                tracing::warn!("WsBroadcaster: failed to serialize payload for '{}': {}", event, e);
+                tracing::warn!(
+                    "WsBroadcaster: failed to serialize payload for '{}': {}",
+                    event,
+                    e
+                );
                 return;
             }
         };
@@ -99,7 +103,12 @@ pub struct ServerState {
     pub orchestrator: Arc<crate::orchestrator::OrchestratorManaged>,
     pub lsp: Arc<Mutex<crate::lsp::LspManager>>,
     pub lua: Arc<Mutex<crate::lua::LuaEngine>>,
-    pub deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
+    pub deckcode_state: Arc<
+        Mutex<(
+            Option<crate::deckcode::schema::ControllerProfileSchema>,
+            Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>,
+        )>,
+    >,
     pub deckcode_lang: Arc<Mutex<String>>,
     pub limiter: Arc<crate::security::IpRateLimiter>,
     pub db: Option<crate::db::DbPool>,
@@ -119,7 +128,12 @@ impl ServerState {
         orchestrator: Arc<crate::orchestrator::OrchestratorManaged>,
         lsp: Arc<Mutex<crate::lsp::LspManager>>,
         lua: Arc<Mutex<crate::lua::LuaEngine>>,
-        deckcode_state: Arc<Mutex<(Option<crate::deckcode::schema::ControllerProfileSchema>, Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>)>>,
+        deckcode_state: Arc<
+            Mutex<(
+                Option<crate::deckcode::schema::ControllerProfileSchema>,
+                Option<crate::deckcode::multilang_schema::MultiLangProfileSchema>,
+            )>,
+        >,
         deckcode_lang: Arc<Mutex<String>>,
         db: Option<crate::db::DbPool>,
     ) -> Self {
@@ -148,11 +162,7 @@ impl ServerState {
 
 /// Dispatch a single command by name, returning a JSON result.
 /// This is the single-entry-point equivalent of Tauri's `generate_handler![]`.
-async fn dispatch_command(
-    state: ServerState,
-    command: &str,
-    args: Value,
-) -> Result<Value, String> {
+async fn dispatch_command(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     crate::commands::dispatch(state, command, args).await
 }
 
@@ -177,7 +187,11 @@ async fn api_command(
 ) -> Response {
     let ip = addr.ip();
     if !state.limiter.is_allowed(ip) {
-        return (StatusCode::TOO_MANY_REQUESTS, "Too many requests. Please try again later.").into_response();
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many requests. Please try again later.",
+        )
+            .into_response();
     }
 
     // Parse body as JSON args (allow empty body → empty object)
@@ -187,10 +201,7 @@ async fn api_command(
         match serde_json::from_slice(&body) {
             Ok(v) => v,
             Err(e) => {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    format!("Invalid JSON body: {}", e),
-                )
+                return (StatusCode::BAD_REQUEST, format!("Invalid JSON body: {}", e))
                     .into_response();
             }
         }
@@ -216,7 +227,11 @@ async fn ws_handler(
 ) -> Response {
     let ip = addr.ip();
     if !state.limiter.is_allowed(ip) {
-        return (StatusCode::TOO_MANY_REQUESTS, "Too many requests. Please try again later.").into_response();
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many requests. Please try again later.",
+        )
+            .into_response();
     }
     let rx = state.broadcaster.0.subscribe();
     ws.on_upgrade(move |socket| handle_socket(socket, rx))
@@ -243,18 +258,13 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<WsEven
                     "event": "__lag__",
                     "payload": { "dropped": n }
                 });
-                let _ = socket
-                    .send(Message::Text(notice.to_string().into()))
-                    .await;
+                let _ = socket.send(Message::Text(notice.to_string().into())).await;
             }
         }
     }
 }
 
-async fn cors_middleware(
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Response {
+async fn cors_middleware(req: axum::extract::Request, next: axum::middleware::Next) -> Response {
     let method = req.method().clone();
     let origin = req.headers().get("origin").cloned();
 
@@ -264,11 +274,23 @@ async fn cors_middleware(
         if let Some(origin_val) = origin {
             headers.insert("access-control-allow-origin", origin_val);
         } else {
-            headers.insert("access-control-allow-origin", axum::http::HeaderValue::from_static("*"));
+            headers.insert(
+                "access-control-allow-origin",
+                axum::http::HeaderValue::from_static("*"),
+            );
         }
-        headers.insert("access-control-allow-methods", axum::http::HeaderValue::from_static("POST, GET, OPTIONS"));
-        headers.insert("access-control-allow-headers", axum::http::HeaderValue::from_static("Content-Type"));
-        headers.insert("access-control-max-age", axum::http::HeaderValue::from_static("86400"));
+        headers.insert(
+            "access-control-allow-methods",
+            axum::http::HeaderValue::from_static("POST, GET, OPTIONS"),
+        );
+        headers.insert(
+            "access-control-allow-headers",
+            axum::http::HeaderValue::from_static("Content-Type"),
+        );
+        headers.insert(
+            "access-control-max-age",
+            axum::http::HeaderValue::from_static("86400"),
+        );
         return response;
     }
 
@@ -277,7 +299,10 @@ async fn cors_middleware(
     if let Some(origin_val) = origin {
         headers.insert("access-control-allow-origin", origin_val);
     } else {
-        headers.insert("access-control-allow-origin", axum::http::HeaderValue::from_static("*"));
+        headers.insert(
+            "access-control-allow-origin",
+            axum::http::HeaderValue::from_static("*"),
+        );
     }
     response
 }
@@ -307,10 +332,13 @@ pub async fn start_server(state: ServerState) -> anyhow::Result<()> {
     println!("NEURODECK_READY:{}", port);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
     Ok(())
 }
-
 
 /// Run NEURODECK as a pure HTTP + WebSocket bridge server (no Tauri WebView).
 /// Used for headless backends, Electron wrappers, or external client control.
@@ -441,7 +469,9 @@ pub async fn run_bridge_server(
     let lua_engine = crate::lua::LuaEngine::new_headless()?;
     let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
     if safe_mode {
-        tracing::warn!("SAFE MODE active — plugin loading is disabled (NEURODECK_SAFE_MODE is set)");
+        tracing::warn!(
+            "SAFE MODE active — plugin loading is disabled (NEURODECK_SAFE_MODE is set)"
+        );
     }
     let plugins_dir = crate::plugin_mgr::plugins_dir();
     if !safe_mode && plugins_dir.exists() {
@@ -516,13 +546,15 @@ pub async fn run_bridge_server(
     );
 
     // ── DeckCode input daemon (Linux/Steam Deck) ───────────────────────────
-    let deckcode_schema_path = std::path::PathBuf::from("assets/deckcode/deckcode-controller-profile.schema.json");
+    let deckcode_schema_path =
+        std::path::PathBuf::from("assets/deckcode/deckcode-controller-profile.schema.json");
     let deckcode_schema_path = if deckcode_schema_path.exists() {
         deckcode_schema_path
     } else {
         std::path::PathBuf::from("deckcode-controller-profile.schema.json")
     };
-    let deckcode_multilang_path = std::path::PathBuf::from("assets/deckcode/deckcode-multilang-code-entry.profile.json");
+    let deckcode_multilang_path =
+        std::path::PathBuf::from("assets/deckcode/deckcode-multilang-code-entry.profile.json");
     let deckcode_multilang_path = if deckcode_multilang_path.exists() {
         deckcode_multilang_path
     } else {
@@ -530,18 +562,26 @@ pub async fn run_bridge_server(
     };
 
     let mut loaded_schema: Option<crate::deckcode::schema::ControllerProfileSchema> = None;
-    let mut loaded_multilang: Option<crate::deckcode::multilang_schema::MultiLangProfileSchema> = None;
+    let mut loaded_multilang: Option<crate::deckcode::multilang_schema::MultiLangProfileSchema> =
+        None;
 
-    if let Ok(schema) = crate::deckcode::load_schema(deckcode_schema_path.to_str().unwrap_or_default()) {
+    if let Ok(schema) =
+        crate::deckcode::load_schema(deckcode_schema_path.to_str().unwrap_or_default())
+    {
         loaded_schema = Some(schema);
         tracing::info!("Loaded DeckCode Controller Profile");
     }
-    if let Ok(ml_schema) = crate::deckcode::load_multilang_profile(deckcode_multilang_path.to_str().unwrap_or_default()) {
+    if let Ok(ml_schema) = crate::deckcode::load_multilang_profile(
+        deckcode_multilang_path.to_str().unwrap_or_default(),
+    ) {
         loaded_multilang = Some(ml_schema);
         tracing::info!("Loaded DeckCode MultiLang Profile");
     }
 
-    let deckcode_state = Arc::new(Mutex::new((loaded_schema.clone(), loaded_multilang.clone())));
+    let deckcode_state = Arc::new(Mutex::new((
+        loaded_schema.clone(),
+        loaded_multilang.clone(),
+    )));
     let deckcode_lang = Arc::new(Mutex::new("plain_text".to_string()));
 
     // Start DeckCode input daemon + resolver if schema loaded
@@ -558,7 +598,8 @@ pub async fn run_bridge_server(
             let mut context = crate::deckcode::resolver::ResolverContext::default();
 
             while let Ok(event) = rx.recv() {
-                context.active_language_id = dc_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
+                context.active_language_id =
+                    dc_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
                 if let Some(binding) = resolver.resolve(&event, &context) {
                     crate::deckcode::dispatch::dispatch_action(&dc_emitter, &binding);
                 }

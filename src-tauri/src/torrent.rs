@@ -458,8 +458,12 @@ fn parse_torrent_source(input: &str) -> Result<ParsedTorrentSource, String> {
     }
 
     let file_path = sanitize_torrent_path(input)?;
-    let bytes = std::fs::read(&file_path)
-        .map_err(|e| format!("Failed to read torrent file: {}", crate::security::sanitize_error_for_frontend(&e.to_string())))?;
+    let bytes = std::fs::read(&file_path).map_err(|e| {
+        format!(
+            "Failed to read torrent file: {}",
+            crate::security::sanitize_error_for_frontend(&e.to_string())
+        )
+    })?;
     if (bytes.len() as u64) > MAX_TORRENT_FILE_BYTES {
         return Err(
             "Torrent file is too large. Refusing to ingest files above 32 MiB.".to_string(),
@@ -491,9 +495,12 @@ fn extract_magnet_info_hash(magnet: &Magnet) -> Option<String> {
 
 fn normalized_path_for_check(path: &Path) -> Result<PathBuf, String> {
     if path.exists() {
-        return path
-            .canonicalize()
-            .map_err(|e| format!("Failed to resolve path: {}", crate::security::sanitize_error_for_frontend(&e.to_string())));
+        return path.canonicalize().map_err(|e| {
+            format!(
+                "Failed to resolve path: {}",
+                crate::security::sanitize_error_for_frontend(&e.to_string())
+            )
+        });
     }
 
     let parent = path
@@ -636,9 +643,7 @@ impl ParsedTorrentSource {
     }
 }
 
-pub async fn torrent_get_status(
-    state: &TorrentState,
-) -> Result<TorrentClientStatus, String> {
+pub async fn torrent_get_status(state: &TorrentState) -> Result<TorrentClientStatus, String> {
     let guard = state.inner.lock().await;
     let torrents = guard.list().await?;
     Ok(TorrentClientStatus {
@@ -653,10 +658,7 @@ pub async fn torrent_list(state: &TorrentState) -> Result<Vec<TorrentSnapshot>, 
     guard.list().await
 }
 
-pub async fn torrent_add(
-    state: &TorrentState,
-    source: String,
-) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_add(state: &TorrentState, source: String) -> Result<TorrentSnapshot, String> {
     let mut guard = state.inner.lock().await;
     guard.add_source(&source).await
 }
@@ -670,32 +672,22 @@ pub async fn torrent_remove(
     guard.remove(&id, delete_data.unwrap_or(false)).await
 }
 
-pub async fn torrent_pause(
-    state: &TorrentState,
-    id: String,
-) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_pause(state: &TorrentState, id: String) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.pause(&id).await
 }
 
-pub async fn torrent_resume(
-    state: &TorrentState,
-    id: String,
-) -> Result<TorrentSnapshot, String> {
+pub async fn torrent_resume(state: &TorrentState, id: String) -> Result<TorrentSnapshot, String> {
     let guard = state.inner.lock().await;
     guard.resume(&id).await
 }
 
-pub async fn torrent_pause_all(
-    state: &TorrentState,
-) -> Result<Vec<TorrentSnapshot>, String> {
+pub async fn torrent_pause_all(state: &TorrentState) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.pause_all().await
 }
 
-pub async fn torrent_resume_all(
-    state: &TorrentState,
-) -> Result<Vec<TorrentSnapshot>, String> {
+pub async fn torrent_resume_all(state: &TorrentState) -> Result<Vec<TorrentSnapshot>, String> {
     let guard = state.inner.lock().await;
     guard.resume_all().await
 }
@@ -720,10 +712,7 @@ pub async fn torrent_open_download_root(state: &TorrentState) -> Result<(), Stri
     open_path_in_shell(&root, false)
 }
 
-pub async fn torrent_open_save_path(
-    state: &TorrentState,
-    id: String,
-) -> Result<(), String> {
+pub async fn torrent_open_save_path(state: &TorrentState, id: String) -> Result<(), String> {
     let guard = state.inner.lock().await;
     let root = guard.download_root.clone();
     let save_path = guard.save_path_for_id(&id).await?;

@@ -66,10 +66,11 @@ impl DashboardDB {
             .await
             .map_err(|e| e.to_string())?;
 
-        let memory_pinned: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM memory_records WHERE pinned = 1")
-            .fetch_one(pool)
-            .await
-            .map_err(|e| e.to_string())?;
+        let memory_pinned: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM memory_records WHERE pinned = 1")
+                .fetch_one(pool)
+                .await
+                .map_err(|e| e.to_string())?;
 
         let projects_total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM projects")
             .fetch_one(pool)
@@ -85,18 +86,24 @@ impl DashboardDB {
             .fetch_one(pool)
             .await
             .map_err(|e| e.to_string())?;
-        let private: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'private'")
-            .fetch_one(pool)
-            .await
-            .map_err(|e| e.to_string())?;
-        let sensitive: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'sensitive'")
-            .fetch_one(pool)
-            .await
-            .map_err(|e| e.to_string())?;
-        let sealed: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'sealed'")
-            .fetch_one(pool)
-            .await
-            .map_err(|e| e.to_string())?;
+        let private: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'private'",
+        )
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        let sensitive: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'sensitive'",
+        )
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        let sealed: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM memory_records WHERE privacy_level = 'sealed'",
+        )
+        .fetch_one(pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
         let recent_sessions: Vec<RecentSession> = sqlx::query_as(
             r#"

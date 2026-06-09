@@ -83,7 +83,10 @@ impl SearchEngine {
                 messages = rows
                     .into_iter()
                     .filter(|r: &SearchRow| {
-                        project_id.as_ref().map(|p| r.project_id.as_ref() == Some(p)).unwrap_or(true)
+                        project_id
+                            .as_ref()
+                            .map(|p| r.project_id.as_ref() == Some(p))
+                            .unwrap_or(true)
                     })
                     .map(|r| r.into_result())
                     .collect();
@@ -119,7 +122,10 @@ impl SearchEngine {
                 memory = rows
                     .into_iter()
                     .filter(|r: &SearchRow| {
-                        project_id.as_ref().map(|p| r.project_id.as_ref() == Some(p)).unwrap_or(true)
+                        project_id
+                            .as_ref()
+                            .map(|p| r.project_id.as_ref() == Some(p))
+                            .unwrap_or(true)
                     })
                     .map(|r| r.into_result())
                     .collect();
@@ -265,11 +271,21 @@ mod tests {
         sqlx::query("INSERT INTO search_index (content, source_table, source_id) VALUES ('Rust Project A project about rust', 'projects', 'p1')")
             .execute(&pool).await.unwrap();
 
-        let results = engine.universal_search("rust", 10, None, None).await.unwrap();
-        assert!(!results.messages.is_empty() || !results.memory.is_empty() || !results.projects.is_empty());
+        let results = engine
+            .universal_search("rust", 10, None, None)
+            .await
+            .unwrap();
+        assert!(
+            !results.messages.is_empty()
+                || !results.memory.is_empty()
+                || !results.projects.is_empty()
+        );
 
         // Test source filter
-        let mem_only = engine.universal_search("rust", 10, Some("memory".to_string()), None).await.unwrap();
+        let mem_only = engine
+            .universal_search("rust", 10, Some("memory".to_string()), None)
+            .await
+            .unwrap();
         assert_eq!(mem_only.messages.len(), 0);
         assert!(!mem_only.memory.is_empty());
     }
