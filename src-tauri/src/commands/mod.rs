@@ -19,8 +19,8 @@ pub use session::*;
 pub use system::*;
 
 use crate::bridge::ServerState;
-use serde_json::Value;
 use futures_util::StreamExt;
+use serde_json::Value;
 
 /// Unified command dispatcher for bridge server (HTTP API).
 /// Routes command names to their handlers and returns JSON results.
@@ -129,7 +129,11 @@ pub async fn dispatch_send_command(
                                 .iter()
                                 .filter(|w| lower.contains(&w.to_lowercase()[..]))
                                 .count();
-                            if hits > 0 { Some((hits, rec)) } else { None }
+                            if hits > 0 {
+                                Some((hits, rec))
+                            } else {
+                                None
+                            }
                         })
                         .collect();
                     scored.sort_by(|a, b| b.0.cmp(&a.0));
@@ -187,7 +191,10 @@ pub async fn dispatch_send_command(
                             "role": res.metadata.get("role").unwrap_or(&"unknown".to_string())
                         }));
                     }
-                    broadcaster.emit("rag_sources", serde_json::json!(provenance_list).to_string());
+                    broadcaster.emit(
+                        "rag_sources",
+                        serde_json::json!(provenance_list).to_string(),
+                    );
                 }
             }
         }
@@ -205,7 +212,10 @@ pub async fn dispatch_send_command(
                     broadcaster.emit("command_token", serde_json::json!({ "token": response }));
                 }
                 Err(e) => {
-                    broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                    broadcaster.emit(
+                        "command_error",
+                        serde_json::json!({ "error": e.to_string() }),
+                    );
                     return;
                 }
             }
@@ -218,7 +228,10 @@ pub async fn dispatch_send_command(
                         broadcaster.emit("command_token", serde_json::json!({ "token": chunk }));
                     }
                     Err(e) => {
-                        broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                        broadcaster.emit(
+                            "command_error",
+                            serde_json::json!({ "error": e.to_string() }),
+                        );
                         return;
                     }
                 }
@@ -244,15 +257,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // System & Status
         // ────────────────────────────────────────────────────────────────────
-        "health" => {
-            Ok(serde_json::json!({
-                "status": "ready",
-                "version": "1.7.1-sekhmet",
-                "mode": "bridge_server",
-                "endpoint": "http://127.0.0.1:9477",
-                "api_version": "1.0",
-            }))
-        }
+        "health" => Ok(serde_json::json!({
+            "status": "ready",
+            "version": env!("CARGO_PKG_VERSION"),
+            "codename": "Ptah",
+            "tag": concat!("v", env!("CARGO_PKG_VERSION"), "-ptah"),
+            "mode": "bridge_server",
+            "endpoint": "http://127.0.0.1:9477",
+            "api_version": "1.0",
+        })),
 
         "get_system_info" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -300,14 +313,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "list_sessions" => {
-            let sessions = crate::commands::session::list_sessions()
-                .map_err(|e| e.to_string())?;
+            let sessions = crate::commands::session::list_sessions().map_err(|e| e.to_string())?;
             Ok(serde_json::json!(sessions))
         }
 
         "list_sessions_meta" => {
-            let meta = crate::commands::session::list_sessions_meta()
-                .map_err(|e| e.to_string())?;
+            let meta = crate::commands::session::list_sessions_meta().map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(meta).map_err(|e| e.to_string())?)
         }
 
@@ -350,7 +361,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "load_session_by_id" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") {
                 return Err(format!("Invalid session ID: {}", id));
             }
@@ -376,13 +390,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "delete_session" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             crate::commands::session::delete_session(id.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "id": id }))
         }
 
         "fork_session" => {
-            let base_messages = args.get("base_messages")
+            let base_messages = args
+                .get("base_messages")
                 .and_then(|v| v.as_array())
                 .ok_or("Missing 'base_messages'")?
                 .iter()
@@ -398,23 +416,41 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "rename_session" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+
             crate::commands::session::rename_session(id.to_string(), name.to_string())?;
             Ok(serde_json::Value::Null)
         }
 
         "export_session_content" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let format_val = args.get("format").and_then(|v| v.as_str()).ok_or("Missing 'format'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+            let format_val = args
+                .get("format")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'format'")?;
 
-            let content = crate::commands::session::export_session_content(id.to_string(), format_val.to_string())?;
+            let content = crate::commands::session::export_session_content(
+                id.to_string(),
+                format_val.to_string(),
+            )?;
             Ok(serde_json::json!(content))
         }
 
         "export_session_markdown" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
 
             let path = crate::commands::session::export_session_markdown(id.to_string())?;
             Ok(serde_json::json!(path))
@@ -439,7 +475,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "load_session" => {
-            let session_id = args.get("session_id").and_then(|v| v.as_str())
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'session_id'")?;
 
             let path = crate::user_config_dir()
@@ -489,7 +527,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_personas" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let mut persona_names: Vec<String> = crate::PERSONAS.iter().map(|p| p.0.clone()).collect();
+            let mut persona_names: Vec<String> =
+                crate::PERSONAS.iter().map(|p| p.0.clone()).collect();
             for persona in &app_state.custom_personas {
                 if !persona_names.contains(&persona.name) {
                     persona_names.push(persona.name.clone());
@@ -499,7 +538,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_persona" => {
-            let name = args.get("name").and_then(|v| v.as_str())
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -515,12 +556,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // PTY Terminal Management
         // ────────────────────────────────────────────────────────────────────
         "pty_spawn" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .unwrap_or(&format!("pty_{}", chrono::Utc::now().timestamp()))
                 .to_string();
             let cols = args.get("cols").and_then(|v| v.as_u64()).unwrap_or(80) as u16;
             let rows = args.get("rows").and_then(|v| v.as_u64()).unwrap_or(24) as u16;
-            let _shell = args.get("shell").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let _shell = args
+                .get("shell")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let _args_list = args.get("args").and_then(|v| v.as_array()).map(|arr| {
                 arr.iter()
                     .filter_map(|v| v.as_str().map(|s| s.to_string()))
@@ -530,11 +576,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let broadcaster = state.broadcaster.clone();
 
             // Emit session created event
-            broadcaster.emit("pty_session_created", serde_json::json!({
-                "id": id,
-                "cols": cols,
-                "rows": rows
-            }));
+            broadcaster.emit(
+                "pty_session_created",
+                serde_json::json!({
+                    "id": id,
+                    "cols": cols,
+                    "rows": rows
+                }),
+            );
 
             // In bridge mode, PTY output events will be emitted by the underlying
             // PTY reader thread. The main app loop or event subscription should
@@ -552,18 +601,24 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "pty_write" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
-            let data = args.get("data").and_then(|v| v.as_str())
+            let data = args
+                .get("data")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'data'")?;
 
             let mut sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(session) = sessions.get_mut(id) {
                 use std::io::Write;
-                session.writer
+                session
+                    .writer
                     .write_all(data.as_bytes())
                     .map_err(|e| format!("Failed to write to PTY: {}", e))?;
-                session.writer
+                session
+                    .writer
                     .flush()
                     .map_err(|e| format!("Failed to flush PTY: {}", e))?;
 
@@ -578,12 +633,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "pty_kill" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let mut sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
             if sessions.remove(id).is_some() {
-                state.broadcaster.emit("pty_killed", serde_json::json!({ "id": id }));
+                state
+                    .broadcaster
+                    .emit("pty_killed", serde_json::json!({ "id": id }));
                 Ok(serde_json::json!({
                     "status": "killed",
                     "id": id
@@ -598,11 +657,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "pty_resize" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
-            let cols = args.get("cols").and_then(|v| v.as_u64())
+            let cols = args
+                .get("cols")
+                .and_then(|v| v.as_u64())
                 .ok_or("Missing 'cols'")? as u16;
-            let rows = args.get("rows").and_then(|v| v.as_u64())
+            let rows = args
+                .get("rows")
+                .and_then(|v| v.as_u64())
                 .ok_or("Missing 'rows'")? as u16;
 
             // Verify session exists
@@ -612,11 +677,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 // For now, acknowledge the resize request but don't perform it
                 // TODO: Implement proper PTY resize via ioctl once dependencies are available
 
-                state.broadcaster.emit("pty_resize_requested", serde_json::json!({
-                    "id": id,
-                    "cols": cols,
-                    "rows": rows
-                }));
+                state.broadcaster.emit(
+                    "pty_resize_requested",
+                    serde_json::json!({
+                        "id": id,
+                        "cols": cols,
+                        "rows": rows
+                    }),
+                );
 
                 Ok(serde_json::json!({
                     "status": "resize_requested",
@@ -634,11 +702,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // LLM & Chat Commands (Streaming)
         // ────────────────────────────────────────────────────────────────────
         "send_command" => {
-            let message = args.get("message").and_then(|v| v.as_str())
+            let message = args
+                .get("message")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'message'")?;
-            let image_base64 = args.get("image_base64").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let image_mime = args.get("image_mime").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let pack_id = args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let image_base64 = args
+                .get("image_base64")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let image_mime = args
+                .get("image_mime")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let pack_id = args
+                .get("pack_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -706,27 +785,35 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
                 // 3. RAG: Search memory for relevant messages with pack + privacy filters
                 if let Some(ref db) = mem_db {
-                    let rag_results = match provider_clone.generate_embedding(&message_clone).await {
+                    let rag_results = match provider_clone.generate_embedding(&message_clone).await
+                    {
                         Ok(query_embed) => db.search(&query_embed, 10).ok(),
-                        Err(_) => {
-                            db.list_all().ok().map(|records| {
-                                let query_words: Vec<&str> = message_clone
-                                    .split_whitespace()
-                                    .filter(|w| w.len() > 3)
-                                    .collect();
-                                if query_words.is_empty() { return Vec::new(); }
-                                let mut scored: Vec<(usize, _)> = records
-                                    .into_iter()
-                                    .filter_map(|rec| {
-                                        let lower = rec.content.to_lowercase();
-                                        let hits = query_words.iter().filter(|w| lower.contains(&w.to_lowercase()[..])).count();
-                                        if hits > 0 { Some((hits, rec)) } else { None }
-                                    })
-                                    .collect();
-                                scored.sort_by(|a, b| b.0.cmp(&a.0));
-                                scored.into_iter().take(10).map(|(_, rec)| rec).collect()
-                            })
-                        }
+                        Err(_) => db.list_all().ok().map(|records| {
+                            let query_words: Vec<&str> = message_clone
+                                .split_whitespace()
+                                .filter(|w| w.len() > 3)
+                                .collect();
+                            if query_words.is_empty() {
+                                return Vec::new();
+                            }
+                            let mut scored: Vec<(usize, _)> = records
+                                .into_iter()
+                                .filter_map(|rec| {
+                                    let lower = rec.content.to_lowercase();
+                                    let hits = query_words
+                                        .iter()
+                                        .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                                        .count();
+                                    if hits > 0 {
+                                        Some((hits, rec))
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect();
+                            scored.sort_by(|a, b| b.0.cmp(&a.0));
+                            scored.into_iter().take(10).map(|(_, rec)| rec).collect()
+                        }),
                     };
 
                     if let Some(results) = rag_results {
@@ -738,18 +825,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         for rec in results {
                             // Pack filter
                             if let Some(ref pid) = pack_id {
-                                if rec.pack_id.as_ref() != Some(pid) { continue; }
+                                if rec.pack_id.as_ref() != Some(pid) {
+                                    continue;
+                                }
                             }
                             // Privacy filter
                             let level = crate::privacy::PrivacyLevel::from_str(
-                                rec.metadata.get("privacy_level").map(|s| s.as_str()).unwrap_or("standard")
+                                rec.metadata
+                                    .get("privacy_level")
+                                    .map(|s| s.as_str())
+                                    .unwrap_or("standard"),
                             );
                             let is_unlocked = unlock_state.is_unlocked(&rec.id);
                             if !crate::privacy::PrivacyFilter::can_inject(&level, is_unlocked) {
                                 continue;
                             }
                             filtered.push(rec);
-                            if filtered.len() >= 3 { break; }
+                            if filtered.len() >= 3 {
+                                break;
+                            }
                         }
 
                         if !filtered.is_empty() {
@@ -757,10 +851,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                             let mut provenance_list = Vec::new();
                             for res in &filtered {
                                 system_prompt.push_str(&format!("- {}\n", res.content));
-                                let title = res.metadata.get("title")
+                                let title = res
+                                    .metadata
+                                    .get("title")
                                     .or_else(|| res.metadata.get("filename"))
                                     .map(|s| s.as_str())
-                                    .unwrap_or(if res.content.len() > 30 { &res.content[0..30] } else { &res.content });
+                                    .unwrap_or(if res.content.len() > 30 {
+                                        &res.content[0..30]
+                                    } else {
+                                        &res.content
+                                    });
                                 provenance_list.push(serde_json::json!({
                                     "id": res.id,
                                     "title": title,
@@ -768,7 +868,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                                     "role": res.metadata.get("role").unwrap_or(&"unknown".to_string())
                                 }));
                             }
-                            broadcaster.emit("rag_sources", serde_json::json!(provenance_list).to_string());
+                            broadcaster.emit(
+                                "rag_sources",
+                                serde_json::json!(provenance_list).to_string(),
+                            );
                         }
                     }
                 }
@@ -778,18 +881,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 // 4. Stream response from LLM
                 if let Some(ref b64) = image_base64 {
                     let mime_str = image_mime.as_deref().unwrap_or("image/png");
-                    match provider_clone.chat_with_image(
-                        &message_clone,
-                        &system_prompt,
-                        Some(b64),
-                        Some(mime_str),
-                    ).await {
+                    match provider_clone
+                        .chat_with_image(&message_clone, &system_prompt, Some(b64), Some(mime_str))
+                        .await
+                    {
                         Ok(response) => {
                             full_response = response.clone();
-                            broadcaster.emit("command_token", serde_json::json!({ "token": response }));
+                            broadcaster
+                                .emit("command_token", serde_json::json!({ "token": response }));
                         }
                         Err(e) => {
-                            broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                            broadcaster.emit(
+                                "command_error",
+                                serde_json::json!({ "error": e.to_string() }),
+                            );
                             return;
                         }
                     }
@@ -799,10 +904,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         match chunk_res {
                             Ok(chunk) => {
                                 full_response.push_str(&chunk);
-                                broadcaster.emit("command_token", serde_json::json!({ "token": chunk }));
+                                broadcaster
+                                    .emit("command_token", serde_json::json!({ "token": chunk }));
                             }
                             Err(e) => {
-                                broadcaster.emit("command_error", serde_json::json!({ "error": e.to_string() }));
+                                broadcaster.emit(
+                                    "command_error",
+                                    serde_json::json!({ "error": e.to_string() }),
+                                );
                                 return;
                             }
                         }
@@ -833,7 +942,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Memory Management (RAG/Vector DB)
         // ────────────────────────────────────────────────────────────────────
         "memory_add_fact" => {
-            let content = args.get("content").and_then(|v| v.as_str())
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'content'")?;
 
             {
@@ -865,7 +976,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "memory_search" => {
-            let query = args.get("query").and_then(|v| v.as_str())
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'query'")?;
 
             {
@@ -882,10 +995,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             if let Some(ref db) = app_state.mem_db {
                 match db.list_all() {
                     Ok(records) => {
-                        let query_words: Vec<&str> = query
-                            .split_whitespace()
-                            .filter(|w| w.len() > 3)
-                            .collect();
+                        let query_words: Vec<&str> =
+                            query.split_whitespace().filter(|w| w.len() > 3).collect();
 
                         let mut results: Vec<(usize, _)> = records
                             .into_iter()
@@ -895,7 +1006,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                                     .iter()
                                     .filter(|w| lower.contains(&w.to_lowercase()[..]))
                                     .count();
-                                if hits > 0 { Some((hits, rec)) } else { None }
+                                if hits > 0 {
+                                    Some((hits, rec))
+                                } else {
+                                    None
+                                }
                             })
                             .collect();
 
@@ -903,11 +1018,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         let top_3: Vec<_> = results
                             .into_iter()
                             .take(3)
-                            .map(|(_, rec)| serde_json::json!({
-                                "id": rec.id,
-                                "content": rec.content,
-                                "metadata": rec.metadata
-                            }))
+                            .map(|(_, rec)| {
+                                serde_json::json!({
+                                    "id": rec.id,
+                                    "content": rec.content,
+                                    "metadata": rec.metadata
+                                })
+                            })
                             .collect();
 
                         Ok(serde_json::json!({
@@ -916,7 +1033,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                             "count": top_3.len()
                         }))
                     }
-                    Err(e) => Err(format!("Memory search error: {}", e))
+                    Err(e) => Err(format!("Memory search error: {}", e)),
                 }
             } else {
                 Err("Memory database not initialized".to_string())
@@ -961,7 +1078,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Utility & Diagnostics
         // ────────────────────────────────────────────────────────────────────
         "execute_command_sync" => {
-            let cmd = args.get("command").and_then(|v| v.as_str())
+            let cmd = args
+                .get("command")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'command'")?;
 
             tokio::task::spawn_blocking({
@@ -985,7 +1104,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                             let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
                             (stdout, stderr, out.status.code().unwrap_or(-1))
                         }
-                        Err(e) => (String::new(), e.to_string(), -1)
+                        Err(e) => (String::new(), e.to_string(), -1),
                     }
                 }
             })
@@ -1004,25 +1123,42 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "test_connection" => {
             let (provider, provider_name) = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                (app_state.provider.clone(), app_state.config.llm.default_provider.clone())
+                (
+                    app_state.provider.clone(),
+                    app_state.config.llm.default_provider.clone(),
+                )
             };
             let broadcaster = state.broadcaster.clone();
 
             tokio::spawn(async move {
-                match provider.chat_with_image("ping", "You are a helpful assistant. Reply with 'pong'.", None, None).await {
+                match provider
+                    .chat_with_image(
+                        "ping",
+                        "You are a helpful assistant. Reply with 'pong'.",
+                        None,
+                        None,
+                    )
+                    .await
+                {
                     Ok(response) => {
-                        broadcaster.emit("connection_test", serde_json::json!({
-                            "status": "success",
-                            "provider": provider_name,
-                            "response": response
-                        }));
+                        broadcaster.emit(
+                            "connection_test",
+                            serde_json::json!({
+                                "status": "success",
+                                "provider": provider_name,
+                                "response": response
+                            }),
+                        );
                     }
                     Err(e) => {
-                        broadcaster.emit("connection_test", serde_json::json!({
-                            "status": "failed",
-                            "provider": provider_name,
-                            "error": e.to_string()
-                        }));
+                        broadcaster.emit(
+                            "connection_test",
+                            serde_json::json!({
+                                "status": "failed",
+                                "provider": provider_name,
+                                "error": e.to_string()
+                            }),
+                        );
                     }
                 }
             });
@@ -1035,7 +1171,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_doc_count" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let count = app_state.mem_db.as_ref()
+            let count = app_state
+                .mem_db
+                .as_ref()
                 .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
                 .unwrap_or(0);
 
@@ -1064,19 +1202,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_agent_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
 
             let (running, task_count, tasks) = {
                 if let Some(ref plan) = orch_state.plan {
                     (
                         orch_state.running,
                         plan.tasks.len(),
-                        plan.tasks.iter().map(|t| serde_json::json!({
-                            "id": t.id,
-                            "role": t.role,
-                            "status": t.status,
-                            "result": t.result
-                        })).collect::<Vec<_>>()
+                        plan.tasks
+                            .iter()
+                            .map(|t| {
+                                serde_json::json!({
+                                    "id": t.id,
+                                    "role": t.role,
+                                    "status": t.status,
+                                    "result": t.result
+                                })
+                            })
+                            .collect::<Vec<_>>(),
                     )
                 } else {
                     (orch_state.running, 0, vec![])
@@ -1110,10 +1257,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Agent & Orchestration
         // ────────────────────────────────────────────────────────────────────
         "start_agent" => {
-            let goal = args.get("goal").and_then(|v| v.as_str())
+            let goal = args
+                .get("goal")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'goal'")?;
 
-            let mut orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if orch_state.running {
                 return Err("Agent already running".to_string());
             }
@@ -1138,11 +1291,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             orch_state.plan = Some(plan);
 
             let broadcaster = state.broadcaster.clone();
-            broadcaster.emit("agent_started", serde_json::json!({
-                "goal": goal,
-                "task_id": task.id,
-                "timestamp": chrono::Utc::now().to_rfc3339()
-            }));
+            broadcaster.emit(
+                "agent_started",
+                serde_json::json!({
+                    "goal": goal,
+                    "task_id": task.id,
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                }),
+            );
 
             Ok(serde_json::json!({
                 "status": "started",
@@ -1153,7 +1309,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "stop_agent" => {
-            let mut orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if !orch_state.running {
                 return Ok(serde_json::json!({
                     "status": "idle",
@@ -1170,10 +1330,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let plan_goal = orch_state.plan.as_ref().map(|p| p.goal.clone());
 
             let broadcaster = state.broadcaster.clone();
-            broadcaster.emit("agent_stopped", serde_json::json!({
-                "goal": plan_goal,
-                "timestamp": chrono::Utc::now().to_rfc3339()
-            }));
+            broadcaster.emit(
+                "agent_stopped",
+                serde_json::json!({
+                    "goal": plan_goal,
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                }),
+            );
 
             Ok(serde_json::json!({
                 "status": "stopped",
@@ -1183,7 +1346,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "agent_step" => {
-            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
 
             if !orch_state.running {
                 return Ok(serde_json::json!({
@@ -1195,17 +1362,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
 
             // Count completed tasks
-            let (total_tasks, completed_tasks, current_task) = if let Some(ref plan) = orch_state.plan {
-                let total = plan.tasks.len();
-                let completed = plan.tasks.iter().filter(|t| t.status == "done").count();
-                let curr = plan.tasks.iter()
-                    .find(|t| t.status == "running")
-                    .map(|t| (&t.id, &t.role, &t.goal));
+            let (total_tasks, completed_tasks, current_task) =
+                if let Some(ref plan) = orch_state.plan {
+                    let total = plan.tasks.len();
+                    let completed = plan.tasks.iter().filter(|t| t.status == "done").count();
+                    let curr = plan
+                        .tasks
+                        .iter()
+                        .find(|t| t.status == "running")
+                        .map(|t| (&t.id, &t.role, &t.goal));
 
-                (total, completed, curr)
-            } else {
-                (0, 0, None)
-            };
+                    (total, completed, curr)
+                } else {
+                    (0, 0, None)
+                };
 
             Ok(serde_json::json!({
                 "step": completed_tasks,
@@ -1226,14 +1396,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "agent_exec_code" => {
-            let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?.to_string();
-            let lang = args.get("lang").and_then(|v| v.as_str()).ok_or("Missing 'lang'")?.to_string();
-            let result = crate::commands::agent::agent_exec_code(code, lang, state.app_state.clone()).await?;
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?
+                .to_string();
+            let lang = args
+                .get("lang")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'lang'")?
+                .to_string();
+            let result =
+                crate::commands::agent::agent_exec_code(code, lang, state.app_state.clone())
+                    .await?;
             Ok(serde_json::json!({ "output": result }))
         }
 
         "get_agent_plan" => {
-            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
 
             if let Some(ref plan) = orch_state.plan {
                 Ok(serde_json::json!({
@@ -1283,16 +1467,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "transfer_cancel" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let mut transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
 
             // Remove transfer by key (id)
             if let Some(_cancelled) = transfer_state.transfers.remove(id) {
-                state.broadcaster.emit("transfer_cancelled", serde_json::json!({
-                    "id": id
-                }));
+                state.broadcaster.emit(
+                    "transfer_cancelled",
+                    serde_json::json!({
+                        "id": id
+                    }),
+                );
 
                 Ok(serde_json::json!({
                     "status": "cancelled",
@@ -1307,14 +1496,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "transfer_group_code" => {
-            let action = args.get("action").and_then(|v| v.as_str())
-                .unwrap_or("get");
+            let action = args.get("action").and_then(|v| v.as_str()).unwrap_or("get");
 
             let mut transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
 
             match action {
                 "set" => {
-                    let code = args.get("code").and_then(|v| v.as_str())
+                    let code = args
+                        .get("code")
+                        .and_then(|v| v.as_str())
                         .ok_or("Missing 'code' for set action")?;
                     transfer_state.group_code = code.to_string();
 
@@ -1337,7 +1527,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         "status": "cleared"
                     }))
                 }
-                _ => Err(format!("Unknown action: {}. Use 'get', 'set', or 'clear'", action))
+                _ => Err(format!(
+                    "Unknown action: {}. Use 'get', 'set', or 'clear'",
+                    action
+                )),
             }
         }
 
@@ -1345,16 +1538,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Lua Scripting & Plugin System
         // ────────────────────────────────────────────────────────────────────
         "run_lua" => {
-            let code = args.get("code").and_then(|v| v.as_str())
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'code'")?;
 
             let lua_engine = state.lua.lock().unwrap_or_else(|e| e.into_inner());
             match lua_engine.run_script(code) {
                 Ok(_) => {
-                    state.broadcaster.emit("lua_executed", serde_json::json!({
-                        "status": "success",
-                        "length": code.len()
-                    }));
+                    state.broadcaster.emit(
+                        "lua_executed",
+                        serde_json::json!({
+                            "status": "success",
+                            "length": code.len()
+                        }),
+                    );
 
                     Ok(serde_json::json!({
                         "status": "executed",
@@ -1362,9 +1560,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }))
                 }
                 Err(e) => {
-                    state.broadcaster.emit("lua_error", serde_json::json!({
-                        "error": e.clone()
-                    }));
+                    state.broadcaster.emit(
+                        "lua_error",
+                        serde_json::json!({
+                            "error": e.clone()
+                        }),
+                    );
 
                     Err(format!("Lua execution error: {}", e))
                 }
@@ -1382,18 +1583,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "call_lua_command" => {
-            let name = args.get("name").and_then(|v| v.as_str())
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
-            let args_str = args.get("args").and_then(|v| v.as_str())
-                .unwrap_or("");
+            let args_str = args.get("args").and_then(|v| v.as_str()).unwrap_or("");
 
             let lua_engine = state.lua.lock().unwrap_or_else(|e| e.into_inner());
             match lua_engine.call_command(name, args_str) {
                 Ok(Some(result)) => {
-                    state.broadcaster.emit("lua_command_result", serde_json::json!({
-                        "command": name,
-                        "result": result
-                    }));
+                    state.broadcaster.emit(
+                        "lua_command_result",
+                        serde_json::json!({
+                            "command": name,
+                            "result": result
+                        }),
+                    );
 
                     Ok(serde_json::json!({
                         "status": "success",
@@ -1401,19 +1606,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         "result": result
                     }))
                 }
-                Ok(None) => {
-                    Ok(serde_json::json!({
-                        "status": "executed",
-                        "command": name,
-                        "result": null,
-                        "message": "Command executed but returned nil"
-                    }))
-                }
+                Ok(None) => Ok(serde_json::json!({
+                    "status": "executed",
+                    "command": name,
+                    "result": null,
+                    "message": "Command executed but returned nil"
+                })),
                 Err(e) => {
-                    state.broadcaster.emit("lua_error", serde_json::json!({
-                        "command": name,
-                        "error": e.clone()
-                    }));
+                    state.broadcaster.emit(
+                        "lua_error",
+                        serde_json::json!({
+                            "command": name,
+                            "error": e.clone()
+                        }),
+                    );
 
                     Err(format!("Lua command error: {}", e))
                 }
@@ -1445,9 +1651,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "save_game_notes" => {
-            let _game_id = args.get("game_id").and_then(|v| v.as_str())
+            let _game_id = args
+                .get("game_id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'game_id'")?;
-            let _notes = args.get("notes").and_then(|v| v.as_str())
+            let _notes = args
+                .get("notes")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'notes'")?;
 
             // Game notes storage would go to user_config_dir/data/game_notes/
@@ -1461,15 +1671,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Browser Integration
         // ────────────────────────────────────────────────────────────────────
         "open_browser" => {
-            let url = args.get("url").and_then(|v| v.as_str())
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'url'")?;
 
             // In bridge mode, we can't actually open a browser window
             // But we can validate the URL and return a placeholder response
             if url.starts_with("http://") || url.starts_with("https://") {
-                state.broadcaster.emit("browser_opened", serde_json::json!({
-                    "url": url
-                }));
+                state.broadcaster.emit(
+                    "browser_opened",
+                    serde_json::json!({
+                        "url": url
+                    }),
+                );
 
                 Ok(serde_json::json!({
                     "status": "opened",
@@ -1490,7 +1705,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "browser_back" => {
-            state.broadcaster.emit("browser_back_requested", serde_json::json!({}));
+            state
+                .broadcaster
+                .emit("browser_back_requested", serde_json::json!({}));
 
             Ok(serde_json::json!({
                 "status": "back_requested",
@@ -1499,7 +1716,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "browser_forward" => {
-            state.broadcaster.emit("browser_forward_requested", serde_json::json!({}));
+            state
+                .broadcaster
+                .emit("browser_forward_requested", serde_json::json!({}));
 
             Ok(serde_json::json!({
                 "status": "forward_requested",
@@ -1512,9 +1731,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_context_stats" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let orch_state = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let orch_state = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
 
-            let memory_count = app_state.mem_db.as_ref()
+            let memory_count = app_state
+                .mem_db
+                .as_ref()
                 .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
                 .unwrap_or(0);
 
@@ -1542,30 +1767,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }))
         }
 
-        "list_features" => {
-            Ok(serde_json::json!({
-                "features": vec![
-                    "chat", "memory", "terminal", "file_transfer", "agent",
-                    "lua_scripting", "session_management", "diagnostics"
-                ],
-                "count": 8
-            }))
-        }
+        "list_features" => Ok(serde_json::json!({
+            "features": vec![
+                "chat", "memory", "terminal", "file_transfer", "agent",
+                "lua_scripting", "session_management", "diagnostics"
+            ],
+            "count": 8
+        })),
 
-        "get_version" => {
-            Ok(serde_json::json!({
-                "version": "1.7.1",
-                "codename": "bastet",
-                "tag": "v1.7.1-sekhmet",
-                "bridge_api_version": "1.0",
-                "commands_implemented": 295
-            }))
-        }
+        "get_version" => Ok(serde_json::json!({
+            "version": env!("CARGO_PKG_VERSION"),
+            "codename": "Ptah",
+            "tag": concat!("v", env!("CARGO_PKG_VERSION"), "-ptah"),
+            "bridge_api_version": "1.0",
+        })),
 
         "debug_info" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
 
-            let workspace = app_state.config.get_resolved_workspace()
+            let workspace = app_state
+                .config
+                .get_resolved_workspace()
                 .map(|p| p.display().to_string())
                 .unwrap_or_else(|| "unknown".to_string());
 
@@ -1607,10 +1829,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             app_state.messages.clear();
             app_state.active_persona = "Default".to_string();
 
-            state.broadcaster.emit("session_reset", serde_json::json!({
-                "old_id": old_id,
-                "new_id": app_state.session_id
-            }));
+            state.broadcaster.emit(
+                "session_reset",
+                serde_json::json!({
+                    "old_id": old_id,
+                    "new_id": app_state.session_id
+                }),
+            );
 
             Ok(serde_json::json!({
                 "status": "reset",
@@ -1623,9 +1848,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Configuration Updates
         // ────────────────────────────────────────────────────────────────────
         "set_config" => {
-            let key = args.get("key").and_then(|v| v.as_str())
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'key'")?;
-            let value = args.get("value").and_then(|v| v.as_str())
+            let value = args
+                .get("value")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'value'")?;
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1633,17 +1862,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
             match key {
                 "llm.default_provider" => config.llm.default_provider = value.to_string(),
-                "llm.ollama_model"     => config.llm.ollama_model = value.to_string(),
-                "llm.gemini_model"     => config.llm.gemini_model = value.to_string(),
-                "llm.ollama_base_url"  => {
-                    let parsed = reqwest::Url::parse(value)
-                        .map_err(|e| format!("Invalid URL: {}", e))?;
+                "llm.ollama_model" => config.llm.ollama_model = value.to_string(),
+                "llm.gemini_model" => config.llm.gemini_model = value.to_string(),
+                "llm.ollama_base_url" => {
+                    let parsed =
+                        reqwest::Url::parse(value).map_err(|e| format!("Invalid URL: {}", e))?;
                     if !matches!(parsed.scheme(), "http" | "https") {
                         return Err("ollama_base_url must use http or https".to_string());
                     }
                     config.llm.ollama_base_url = value.to_string();
                 }
-                "llm.openai_compat_model"    => config.llm.openai_compat_model = value.to_string(),
+                "llm.openai_compat_model" => config.llm.openai_compat_model = value.to_string(),
                 "llm.openai_compat_base_url" => {
                     if !value.is_empty() {
                         let parsed = reqwest::Url::parse(value)
@@ -1654,21 +1883,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }
                     config.llm.openai_compat_base_url = value.to_string();
                 }
-                "theme.primary_color"    => config.theme.primary_color = value.to_string(),
-                "theme.secondary_color"  => config.theme.secondary_color = value.to_string(),
-                "theme.bg_color"         => config.theme.bg_color = value.to_string(),
+                "theme.primary_color" => config.theme.primary_color = value.to_string(),
+                "theme.secondary_color" => config.theme.secondary_color = value.to_string(),
+                "theme.bg_color" => config.theme.bg_color = value.to_string(),
                 "theme.foreground_color" => config.theme.foreground_color = value.to_string(),
-                "theme.response_color"   => config.theme.response_color = value.to_string(),
+                "theme.response_color" => config.theme.response_color = value.to_string(),
                 "security.agent_workspace_only" => {
-                    config.security.agent_workspace_only = value.parse::<bool>()
+                    config.security.agent_workspace_only = value
+                        .parse::<bool>()
                         .map_err(|_| "Invalid boolean value".to_string())?;
                 }
                 "security.agent_workspace_path" => {
                     config.security.agent_workspace_path = value.to_string();
                 }
                 "security.permission_registry" => {
-                    let registry: crate::permissions::PermissionRegistry = serde_json::from_str(value)
-                        .map_err(|e| format!("Invalid permission registry JSON: {}", e))?;
+                    let registry: crate::permissions::PermissionRegistry =
+                        serde_json::from_str(value)
+                            .map_err(|e| format!("Invalid permission registry JSON: {}", e))?;
                     registry.validate()?;
                     config.security.permission_registry = registry;
                 }
@@ -1702,7 +1933,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_permission_profile" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let registry = &app_state.config.security.permission_registry;
@@ -1713,24 +1946,39 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_permission_profile" => {
-            let id = args.get("id").and_then(|v| v.as_str())
-                .ok_or("Missing 'id'")?.to_string();
-            let name = args.get("name").and_then(|v| v.as_str())
-                .unwrap_or(&id).to_string();
-            let description = args.get("description").and_then(|v| v.as_str())
-                .unwrap_or("").to_string();
-            let granted: Vec<crate::permissions::Capability> = args.get("granted")
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or(&id)
+                .to_string();
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let granted: Vec<crate::permissions::Capability> = args
+                .get("granted")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().filter_map(|v| serde_json::from_value(v.clone()).ok()).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| serde_json::from_value(v.clone()).ok())
+                        .collect()
+                })
                 .unwrap_or_default();
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let mut config = app_state.config.clone();
             let registry = &mut config.security.permission_registry;
 
-            let mut profile = registry.get(&id).cloned().unwrap_or_else(|| {
-                crate::permissions::PermissionProfile::new(&id, &name)
-            });
+            let mut profile = registry
+                .get(&id)
+                .cloned()
+                .unwrap_or_else(|| crate::permissions::PermissionProfile::new(&id, &name));
             profile.name = name;
             profile.description = description;
             profile.granted = granted.into_iter().collect();
@@ -1746,7 +1994,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "delete_permission_profile" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1763,7 +2013,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_default_permission_profile" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1780,7 +2032,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_model" => {
-            let model = args.get("model").and_then(|v| v.as_str())
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'model'")?;
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1807,10 +2061,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_provider" => {
-            let provider = args.get("provider").and_then(|v| v.as_str())
+            let provider = args
+                .get("provider")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'provider'")?;
 
-            if !matches!(provider, "gemini" | "ollama" | "openai_compat" | "huggingface" | "kimi") {
+            if !matches!(
+                provider,
+                "gemini" | "ollama" | "openai_compat" | "huggingface" | "kimi"
+            ) {
                 return Err(format!("Unknown provider '{}'. Valid: gemini, ollama, openai_compat, huggingface, kimi", provider));
             }
 
@@ -1826,11 +2085,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             app_state.provider = crate::create_provider(&config);
 
             let active_model = match provider {
-                "gemini"       => config.llm.gemini_model.clone(),
-                "huggingface"  => config.llm.hf_model.clone(),
-                "kimi"         => config.llm.kimi_model.clone(),
-                "openai_compat"=> config.llm.openai_compat_model.clone(),
-                _              => config.llm.ollama_model.clone(),
+                "gemini" => config.llm.gemini_model.clone(),
+                "huggingface" => config.llm.hf_model.clone(),
+                "kimi" => config.llm.kimi_model.clone(),
+                "openai_compat" => config.llm.openai_compat_model.clone(),
+                _ => config.llm.ollama_model.clone(),
             };
 
             Ok(serde_json::json!({
@@ -1844,7 +2103,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Memory CRUD (delete, pin, list, clear)
         // ────────────────────────────────────────────────────────────────────
         "memory_delete" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -1860,7 +2121,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "memory_pin" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
             let pinned = args.get("pinned").and_then(|v| v.as_bool()).unwrap_or(true);
 
@@ -1883,17 +2146,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
-                let all = db.list_all().map_err(|e| format!("Memory list error: {}", e))?;
+                let all = db
+                    .list_all()
+                    .map_err(|e| format!("Memory list error: {}", e))?;
                 let total = all.len();
                 let page: Vec<_> = all
                     .into_iter()
                     .skip(offset)
                     .take(limit)
-                    .map(|rec| serde_json::json!({
-                        "id":       rec.id,
-                        "content":  rec.content,
-                        "metadata": rec.metadata
-                    }))
+                    .map(|rec| {
+                        serde_json::json!({
+                            "id":       rec.id,
+                            "content":  rec.content,
+                            "metadata": rec.metadata
+                        })
+                    })
                     .collect();
 
                 Ok(serde_json::json!({
@@ -1912,10 +2179,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             // Delete every non-pinned record from the memory DB
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
-                let all = db.list_all().map_err(|e| format!("Memory clear error: {}", e))?;
+                let all = db
+                    .list_all()
+                    .map_err(|e| format!("Memory clear error: {}", e))?;
                 let mut deleted = 0usize;
                 for rec in &all {
-                    let pinned = rec.metadata.get("pinned").map(|v| v == "true").unwrap_or(false);
+                    let pinned = rec
+                        .metadata
+                        .get("pinned")
+                        .map(|v| v == "true")
+                        .unwrap_or(false);
                     if !pinned {
                         let _ = db.delete_record(&rec.id);
                         deleted += 1;
@@ -1940,7 +2213,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let total = app_state.messages.len();
-            let page: Vec<_> = app_state.messages
+            let page: Vec<_> = app_state
+                .messages
                 .iter()
                 .skip(offset)
                 .take(limit)
@@ -1989,18 +2263,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             // Use the async list_plugins() which parses manifests + enriches with registry.
             match crate::plugin_mgr::list_plugins().await {
                 Ok(plugins) => {
-                    let list: Vec<_> = plugins.iter().map(|p| serde_json::json!({
-                        "name":        p.name,
-                        "file_name":   p.file_name,
-                        "enabled":     p.enabled,
-                        "id":          p.id,
-                        "author":      p.author,
-                        "version":     p.version,
-                        "description": p.description,
-                        "tags":        p.tags,
-                        "marketplace": p.marketplace,
-                        "permissions": p.permissions,
-                    })).collect();
+                    let list: Vec<_> = plugins
+                        .iter()
+                        .map(|p| {
+                            serde_json::json!({
+                                "name":        p.name,
+                                "file_name":   p.file_name,
+                                "enabled":     p.enabled,
+                                "id":          p.id,
+                                "author":      p.author,
+                                "version":     p.version,
+                                "description": p.description,
+                                "tags":        p.tags,
+                                "marketplace": p.marketplace,
+                                "permissions": p.permissions,
+                            })
+                        })
+                        .collect();
 
                     Ok(serde_json::json!({
                         "plugins": list,
@@ -2008,13 +2287,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         "enabled": list.iter().filter(|p| p["enabled"].as_bool().unwrap_or(false)).count()
                     }))
                 }
-                Err(e) => Err(format!("Failed to list plugins: {}", e))
+                Err(e) => Err(format!("Failed to list plugins: {}", e)),
             }
         }
 
         "validate_plugin" => {
-            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?.to_string();
+            let file_name = args
+                .get("file_name")
+                .or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'file_name'")?
+                .to_string();
             match crate::plugin_mgr::validate_plugin(&file_name) {
                 Ok(report) => Ok(serde_json::to_value(&report).unwrap_or_default()),
                 Err(e) => Err(e),
@@ -2039,7 +2322,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_open_repo" => {
-            let path = args.get("path").and_then(|v| v.as_str())
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'path'")?
                 .to_string();
 
@@ -2053,8 +2338,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let mut dirty = false;
                 let mut opts = git2::StatusOptions::new();
                 opts.include_untracked(true);
-                for entry in repo.statuses(Some(&mut opts))
-                    .map_err(|e| e.to_string())?.iter()
+                for entry in repo
+                    .statuses(Some(&mut opts))
+                    .map_err(|e| e.to_string())?
+                    .iter()
                 {
                     if entry.status() != git2::Status::CURRENT {
                         dirty = true;
@@ -2093,7 +2380,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_status" => {
-            let path = args.get("path").and_then(|v| v.as_str())
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'path'")?
                 .to_string();
 
@@ -2101,7 +2390,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let repo = git2::Repository::open(&path)
                     .map_err(|e| format!("Cannot open repo: {}", e))?;
                 let mut opts = git2::StatusOptions::new();
-                opts.include_untracked(true).renames_head_to_index(true).renames_index_to_workdir(true);
+                opts.include_untracked(true)
+                    .renames_head_to_index(true)
+                    .renames_index_to_workdir(true);
 
                 let statuses = repo.statuses(Some(&mut opts)).map_err(|e| e.to_string())?;
                 let mut files = Vec::new();
@@ -2109,7 +2400,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 for entry in statuses.iter() {
                     let st = entry.status();
                     let fpath = entry.path().unwrap_or("?").to_string();
-                    let old_path = entry.head_to_index()
+                    let old_path = entry
+                        .head_to_index()
                         .and_then(|d| d.old_file().path())
                         .map(|p| p.to_string_lossy().to_string());
 
@@ -2150,7 +2442,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_log" => {
-            let path = args.get("path").and_then(|v| v.as_str())
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'path'")?
                 .to_string();
             let max_count = args.get("max_count").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
@@ -2190,16 +2484,26 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Task Scheduler
         // ────────────────────────────────────────────────────────────────────
         "list_scheduled_tasks" => {
-            let tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner()).clone();
-            let list: Vec<_> = tasks.iter().map(|t| serde_json::json!({
-                "id":         t.id,
-                "name":       t.name,
-                "cron":       t.cron,
-                "goal":       t.goal,
-                "enabled":    t.enabled,
-                "last_run":   t.last_run,
-                "created_at": t.created_at
-            })).collect();
+            let tasks = state
+                .scheduler
+                .tasks
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
+            let list: Vec<_> = tasks
+                .iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "id":         t.id,
+                        "name":       t.name,
+                        "cron":       t.cron,
+                        "goal":       t.goal,
+                        "enabled":    t.enabled,
+                        "last_run":   t.last_run,
+                        "created_at": t.created_at
+                    })
+                })
+                .collect();
 
             Ok(serde_json::json!({
                 "tasks": list,
@@ -2208,52 +2512,72 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "add_scheduled_task" => {
-            let name = args.get("name").and_then(|v| v.as_str())
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
-            let cron = args.get("cron").and_then(|v| v.as_str())
+            let cron = args
+                .get("cron")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'cron'")?;
-            let goal = args.get("goal").and_then(|v| v.as_str())
+            let goal = args
+                .get("goal")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'goal'")?;
 
             // Validate cron by parsing (5-field or 6-field)
             let parts: Vec<&str> = cron.split_whitespace().collect();
             if parts.len() != 5 && parts.len() != 6 {
-                return Err("cron must be 5-field (min hr dom mon dow) or 6-field (sec min hr dom mon dow)".to_string());
+                return Err(
+                    "cron must be 5-field (min hr dom mon dow) or 6-field (sec min hr dom mon dow)"
+                        .to_string(),
+                );
             }
 
             let task = crate::scheduler::ScheduledTask {
-                id:         uuid::Uuid::new_v4().to_string(),
-                name:       name.to_string(),
-                cron:       cron.to_string(),
-                goal:       goal.to_string(),
-                enabled:    true,
-                last_run:   None,
+                id: uuid::Uuid::new_v4().to_string(),
+                name: name.to_string(),
+                cron: cron.to_string(),
+                goal: goal.to_string(),
+                enabled: true,
+                last_run: None,
                 created_at: chrono::Utc::now().to_rfc3339(),
             };
 
             {
-                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let mut tasks = state
+                    .scheduler
+                    .tasks
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 tasks.push(task.clone());
-                let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
-                    std::fs::write(&state.scheduler.tasks_path, s).ok()
-                });
+                let _ = serde_json::to_string_pretty(&*tasks)
+                    .ok()
+                    .and_then(|s| std::fs::write(&state.scheduler.tasks_path, s).ok());
             }
 
             // Register with live scheduler if running
             let sched_guard = state.scheduler.scheduler.lock().await;
             if let Some(s) = sched_guard.as_ref() {
                 let _ = crate::scheduler::register_task(
-                    s, &task, state.scheduler.job_map.clone(),
-                    state.broadcaster.clone(), state.app_state.clone(),
-                ).await;
+                    s,
+                    &task,
+                    state.scheduler.job_map.clone(),
+                    state.broadcaster.clone(),
+                    state.app_state.clone(),
+                )
+                .await;
             }
             drop(sched_guard);
 
-            state.broadcaster.emit("scheduled_task_added", serde_json::json!({
-                "id":   task.id,
-                "name": task.name,
-                "cron": task.cron
-            }));
+            state.broadcaster.emit(
+                "scheduled_task_added",
+                serde_json::json!({
+                    "id":   task.id,
+                    "name": task.name,
+                    "cron": task.cron
+                }),
+            );
 
             Ok(serde_json::json!({
                 "status":     "added",
@@ -2265,18 +2589,24 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "delete_scheduled_task" => {
-            let id = args.get("id").and_then(|v| v.as_str())
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
             let removed = {
-                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let mut tasks = state
+                    .scheduler
+                    .tasks
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 let before = tasks.len();
                 tasks.retain(|t| t.id != id);
                 let removed = tasks.len() < before;
                 if removed {
-                    let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
-                        std::fs::write(&state.scheduler.tasks_path, s).ok()
-                    });
+                    let _ = serde_json::to_string_pretty(&*tasks)
+                        .ok()
+                        .and_then(|s| std::fs::write(&state.scheduler.tasks_path, s).ok());
                 }
                 removed
             };
@@ -2302,7 +2632,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_os_info" => {
-            let os   = std::env::consts::OS;
+            let os = std::env::consts::OS;
             let arch = std::env::consts::ARCH;
             let hostname = std::env::var("HOSTNAME")
                 .or_else(|_| std::env::var("COMPUTERNAME"))
@@ -2321,12 +2651,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             #[cfg(target_os = "linux")]
             {
                 let status = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
-                let rss_kb = status.lines()
+                let rss_kb = status
+                    .lines()
                     .find(|l| l.starts_with("VmRSS:"))
                     .and_then(|l| l.split_whitespace().nth(1))
                     .and_then(|v| v.parse::<u64>().ok())
                     .unwrap_or(0);
-                let vm_kb = status.lines()
+                let vm_kb = status
+                    .lines()
                     .find(|l| l.starts_with("VmSize:"))
                     .and_then(|l| l.split_whitespace().nth(1))
                     .and_then(|v| v.parse::<u64>().ok())
@@ -2372,7 +2704,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let mut backups = Vec::new();
             if let Ok(entries) = std::fs::read_dir(&backup_dir) {
                 for entry in entries.flatten() {
-                    if let (Ok(meta), Some(fname)) = (entry.metadata(), entry.file_name().to_str().map(|s| s.to_string())) {
+                    if let (Ok(meta), Some(fname)) = (
+                        entry.metadata(),
+                        entry.file_name().to_str().map(|s| s.to_string()),
+                    ) {
                         if meta.is_file() {
                             backups.push(serde_json::json!({
                                 "name": fname, "size_bytes": meta.len()
@@ -2395,9 +2730,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "memory_restore_backup" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let backup_path = crate::user_config_dir().join("data/memory/backups").join(name);
-            if !backup_path.exists() { return Err(format!("Backup '{}' not found", name)); }
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let backup_path = crate::user_config_dir()
+                .join("data/memory/backups")
+                .join(name);
+            if !backup_path.exists() {
+                return Err(format!("Backup '{}' not found", name));
+            }
             let dest = crate::user_config_dir().join("data/memory/memory.json");
             std::fs::copy(&backup_path, &dest).map_err(|e| format!("Restore failed: {}", e))?;
             Ok(serde_json::json!({ "status": "restored", "name": name }))
@@ -2408,10 +2750,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "list_agents" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let agents: Vec<_> = app_state.config.llm.agents.iter().map(|a| serde_json::json!({
-                "id": a.id, "name": a.name, "model": a.model, "description": a.description
-            })).collect();
-            Ok(serde_json::json!({ "agents": agents, "count": agents.len(), "active_id": app_state.config.llm.active_agent_id }))
+            let agents: Vec<_> = app_state
+                .config
+                .llm
+                .agents
+                .iter()
+                .map(|a| {
+                    serde_json::json!({
+                        "id": a.id, "name": a.name, "model": a.model, "description": a.description
+                    })
+                })
+                .collect();
+            Ok(
+                serde_json::json!({ "agents": agents, "count": agents.len(), "active_id": app_state.config.llm.active_agent_id }),
+            )
         }
 
         "get_active_agent_id" => {
@@ -2420,28 +2772,55 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "switch_agent" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let agent = app_state.config.llm.agents.iter().find(|a| a.id == id)
-                .cloned().ok_or_else(|| format!("Agent '{}' not found", id))?;
+            let agent = app_state
+                .config
+                .llm
+                .agents
+                .iter()
+                .find(|a| a.id == id)
+                .cloned()
+                .ok_or_else(|| format!("Agent '{}' not found", id))?;
             app_state.config.llm.active_agent_id = id.to_string();
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "model": agent.model }))
+            Ok(
+                serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "model": agent.model }),
+            )
         }
 
         "add_agent" => {
-            let name  = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let model = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?;
-            let description = args.get("description").and_then(|v| v.as_str()).unwrap_or("");
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model'")?;
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let provider_name = args.get("provider").and_then(|v| v.as_str()).unwrap_or("gemini");
-            let base_url      = args.get("base_url").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let provider_name = args
+                .get("provider")
+                .and_then(|v| v.as_str())
+                .unwrap_or("gemini");
+            let base_url = args
+                .get("base_url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let agent = crate::config::AgentConfig {
-                id:          uuid::Uuid::new_v4().to_string(),
-                name:        name.to_string(),
-                provider:    provider_name.to_string(),
-                model:       model.to_string(),
+                id: uuid::Uuid::new_v4().to_string(),
+                name: name.to_string(),
+                provider: provider_name.to_string(),
+                model: model.to_string(),
                 base_url,
                 embed_model: String::new(),
                 description: description.to_string(),
@@ -2453,27 +2832,30 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "delete_agent" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let before = app_state.config.llm.agents.len();
             app_state.config.llm.agents.retain(|a| a.id != id);
-            if app_state.config.llm.agents.len() == before { return Err(format!("Agent '{}' not found", id)); }
+            if app_state.config.llm.agents.len() == before {
+                return Err(format!("Agent '{}' not found", id));
+            }
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "id": id }))
         }
 
-        "get_recommended_models" => {
-            Ok(serde_json::json!({
-                "models": [
-                    { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true },
-                    { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true },
-                    { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true },
-                    { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true },
-                    { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false }
-                ]
-            }))
-        }
+        "get_recommended_models" => Ok(serde_json::json!({
+            "models": [
+                { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true },
+                { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true },
+                { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true },
+                { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true },
+                { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false }
+            ]
+        })),
 
         // ────────────────────────────────────────────────────────────────────
         // IDE / Workspace File System
@@ -2481,7 +2863,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "list_workspace_files" => {
             let workspace = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                args.get("path").and_then(|v| v.as_str()).map(|s| std::path::PathBuf::from(s))
+                args.get("path")
+                    .and_then(|v| v.as_str())
+                    .map(|s| std::path::PathBuf::from(s))
                     .or_else(|| app_state.config.get_resolved_workspace())
                     .ok_or("No workspace path configured or provided")?
             };
@@ -2489,7 +2873,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let mut files = Vec::new();
                 if let Ok(rd) = std::fs::read_dir(&workspace) {
                     for e in rd.flatten() {
-                        if let (Ok(meta), Some(name)) = (e.metadata(), e.file_name().to_str().map(|s| s.to_string())) {
+                        if let (Ok(meta), Some(name)) =
+                            (e.metadata(), e.file_name().to_str().map(|s| s.to_string()))
+                        {
                             files.push(serde_json::json!({
                                 "name": name,
                                 "path": e.path().display().to_string(),
@@ -2500,51 +2886,90 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }
                 }
                 files
-            }).await.map_err(|e| e.to_string())?;
+            })
+            .await
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "files": entries, "count": entries.len() }))
         }
 
         "read_workspace_file" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
-            let content = tokio::fs::read_to_string(path).await.map_err(|e| format!("Read failed: {}", e))?;
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?;
+            let content = tokio::fs::read_to_string(path)
+                .await
+                .map_err(|e| format!("Read failed: {}", e))?;
             Ok(serde_json::json!({ "path": path, "content": content, "bytes": content.len() }))
         }
 
         "write_workspace_file" => {
-            let path    = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
-            let content = args.get("content").and_then(|v| v.as_str()).ok_or("Missing 'content'")?;
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?;
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?;
             if let Some(parent) = std::path::Path::new(path).parent() {
-                tokio::fs::create_dir_all(parent).await.map_err(|e| e.to_string())?;
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| e.to_string())?;
             }
-            tokio::fs::write(path, content).await.map_err(|e| format!("Write failed: {}", e))?;
+            tokio::fs::write(path, content)
+                .await
+                .map_err(|e| format!("Write failed: {}", e))?;
             Ok(serde_json::json!({ "status": "written", "path": path, "bytes": content.len() }))
         }
 
         "create_workspace_file" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?;
             let p = std::path::Path::new(path);
             if let Some(parent) = p.parent() {
-                tokio::fs::create_dir_all(parent).await.map_err(|e| e.to_string())?;
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| e.to_string())?;
             }
-            tokio::fs::File::create(path).await.map_err(|e| format!("Create failed: {}", e))?;
+            tokio::fs::File::create(path)
+                .await
+                .map_err(|e| format!("Create failed: {}", e))?;
             Ok(serde_json::json!({ "status": "created", "path": path }))
         }
 
         "delete_workspace_file" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?;
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?;
             let p = std::path::Path::new(path);
             if p.is_dir() {
-                tokio::fs::remove_dir_all(path).await.map_err(|e| format!("Delete failed: {}", e))?;
+                tokio::fs::remove_dir_all(path)
+                    .await
+                    .map_err(|e| format!("Delete failed: {}", e))?;
             } else {
-                tokio::fs::remove_file(path).await.map_err(|e| format!("Delete failed: {}", e))?;
+                tokio::fs::remove_file(path)
+                    .await
+                    .map_err(|e| format!("Delete failed: {}", e))?;
             }
             Ok(serde_json::json!({ "status": "deleted", "path": path }))
         }
 
         "rename_workspace_file" => {
-            let from = args.get("from").and_then(|v| v.as_str()).ok_or("Missing 'from'")?;
-            let to   = args.get("to").and_then(|v| v.as_str()).ok_or("Missing 'to'")?;
-            tokio::fs::rename(from, to).await.map_err(|e| format!("Rename failed: {}", e))?;
+            let from = args
+                .get("from")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'from'")?;
+            let to = args
+                .get("to")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'to'")?;
+            tokio::fs::rename(from, to)
+                .await
+                .map_err(|e| format!("Rename failed: {}", e))?;
             Ok(serde_json::json!({ "status": "renamed", "from": from, "to": to }))
         }
 
@@ -2552,24 +2977,35 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // API Lab
         // ────────────────────────────────────────────────────────────────────
         "api_request" => {
-            let method  = args.get("method").and_then(|v| v.as_str()).unwrap_or("GET").to_uppercase();
-            let url     = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
+            let method = args
+                .get("method")
+                .and_then(|v| v.as_str())
+                .unwrap_or("GET")
+                .to_uppercase();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
             let headers = args.get("headers").cloned().unwrap_or_default();
-            let body    = args.get("body").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let body = args
+                .get("body")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let url_str = url.to_string();
             let method_str = method.clone();
 
             let result = tokio::task::spawn_blocking(move || {
                 let client = reqwest::blocking::Client::builder()
                     .timeout(std::time::Duration::from_secs(30))
-                    .build().map_err(|e| e.to_string())?;
+                    .build()
+                    .map_err(|e| e.to_string())?;
 
                 let mut req = match method_str.as_str() {
-                    "POST"   => client.post(&url_str),
-                    "PUT"    => client.put(&url_str),
+                    "POST" => client.post(&url_str),
+                    "PUT" => client.put(&url_str),
                     "DELETE" => client.delete(&url_str),
-                    "PATCH"  => client.patch(&url_str),
-                    _        => client.get(&url_str),
+                    "PATCH" => client.patch(&url_str),
+                    _ => client.get(&url_str),
                 };
                 if let Some(hdrs) = headers.as_object() {
                     for (k, v) in hdrs {
@@ -2578,12 +3014,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         }
                     }
                 }
-                if let Some(b) = body { req = req.body(b); }
+                if let Some(b) = body {
+                    req = req.body(b);
+                }
                 let resp = req.send().map_err(|e| e.to_string())?;
                 let status = resp.status().as_u16();
                 let body = resp.text().unwrap_or_default();
-                Ok::<_, String>(serde_json::json!({ "status": status, "body": body, "url": url_str }))
-            }).await.map_err(|e| e.to_string())?;
+                Ok::<_, String>(
+                    serde_json::json!({ "status": status, "body": body, "url": url_str }),
+                )
+            })
+            .await
+            .map_err(|e| e.to_string())?;
 
             result
         }
@@ -2593,8 +3035,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let mut names = Vec::new();
             if let Ok(entries) = std::fs::read_dir(&dir) {
                 for entry in entries.flatten() {
-                    if let Some(name) = entry.file_name().to_str().map(|s| s.trim_end_matches(".json").to_string()) {
-                        if entry.path().extension().map(|e| e == "json").unwrap_or(false) {
+                    if let Some(name) = entry
+                        .file_name()
+                        .to_str()
+                        .map(|s| s.trim_end_matches(".json").to_string())
+                    {
+                        if entry
+                            .path()
+                            .extension()
+                            .map(|e| e == "json")
+                            .unwrap_or(false)
+                        {
                             names.push(name);
                         }
                     }
@@ -2604,8 +3055,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "api_save_collection" => {
-            let name     = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let requests = args.get("requests").and_then(|v| v.as_str()).ok_or("Missing 'requests'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let requests = args
+                .get("requests")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'requests'")?;
             let dir = crate::user_config_dir().join("data/api_collections");
             std::fs::create_dir_all(&dir).ok();
             std::fs::write(dir.join(format!("{}.json", name)), requests)
@@ -2614,16 +3071,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "api_load_collection" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let path = crate::user_config_dir().join("data/api_collections").join(format!("{}.json", name));
-            if !path.exists() { return Err(format!("Collection '{}' not found", name)); }
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let path = crate::user_config_dir()
+                .join("data/api_collections")
+                .join(format!("{}.json", name));
+            if !path.exists() {
+                return Err(format!("Collection '{}' not found", name));
+            }
             let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "name": name, "requests": content }))
         }
 
         "api_delete_collection" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let path = crate::user_config_dir().join("data/api_collections").join(format!("{}.json", name));
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let path = crate::user_config_dir()
+                .join("data/api_collections")
+                .join(format!("{}.json", name));
             if path.exists() {
                 std::fs::remove_file(&path).map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "deleted", "name": name }))
@@ -2636,11 +3105,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // FTP (spawn_blocking — suppaftp is sync)
         // ────────────────────────────────────────────────────────────────────
         "ftp_list_dir" => {
-            let host     = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port     = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
-            let user     = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
-            let password = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let path     = args.get("path").and_then(|v| v.as_str()).unwrap_or("/").to_string();
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("anonymous")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .unwrap_or("/")
+                .to_string();
 
             tokio::task::spawn_blocking(move || {
                 use suppaftp::FtpStream;
@@ -2651,25 +3136,46 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let raw = stream.list(None).map_err(|e| e.to_string())?;
                 stream.quit().ok();
 
-                let entries: Vec<_> = raw.iter().filter_map(|line| {
-                    let parts: Vec<&str> = line.split_whitespace().collect();
-                    if parts.len() < 9 { return None; }
-                    let name = parts[8..].join(" ");
-                    if name == "." || name == ".." { return None; }
-                    let is_dir = parts[0].starts_with('d');
-                    let size: u64 = parts[4].parse().unwrap_or(0);
-                    Some(serde_json::json!({ "name": name, "is_dir": is_dir, "size": size }))
-                }).collect();
+                let entries: Vec<_> = raw
+                    .iter()
+                    .filter_map(|line| {
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.len() < 9 {
+                            return None;
+                        }
+                        let name = parts[8..].join(" ");
+                        if name == "." || name == ".." {
+                            return None;
+                        }
+                        let is_dir = parts[0].starts_with('d');
+                        let size: u64 = parts[4].parse().unwrap_or(0);
+                        Some(serde_json::json!({ "name": name, "is_dir": is_dir, "size": size }))
+                    })
+                    .collect();
 
                 Ok(serde_json::json!({ "path": path, "entries": entries, "count": entries.len() }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "ftp_test_connection" => {
-            let host     = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port     = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
-            let user     = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
-            let password = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("anonymous")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
 
             tokio::task::spawn_blocking(move || {
                 use suppaftp::FtpStream;
@@ -2683,12 +3189,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "ftp_download_file" => {
-            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
-            let user        = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
-            let password    = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
-            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("anonymous")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let remote_path = args
+                .get("remote_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'remote_path'")?
+                .to_string();
+            let local_path = args
+                .get("local_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'local_path'")?
+                .to_string();
 
             tokio::task::spawn_blocking(move || {
                 use suppaftp::FtpStream;
@@ -2718,12 +3244,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "ftp_upload_file" => {
-            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
-            let user        = args.get("user").and_then(|v| v.as_str()).unwrap_or("anonymous").to_string();
-            let password    = args.get("password").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
-            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(21) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("anonymous")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let local_path = args
+                .get("local_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'local_path'")?
+                .to_string();
+            let remote_path = args
+                .get("remote_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'remote_path'")?
+                .to_string();
 
             tokio::task::spawn_blocking(move || {
                 use suppaftp::FtpStream;
@@ -2751,19 +3297,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "torrent_add" => {
-            let source = args.get("source").and_then(|v| v.as_str()).ok_or("Missing 'source' (magnet URI or infohash)")?;
+            let source = args
+                .get("source")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'source' (magnet URI or infohash)")?;
             let res = crate::torrent::torrent_add(&state.torrent, source.to_string()).await?;
             Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_pause" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let res = crate::torrent::torrent_pause(&state.torrent, id.to_string()).await?;
             Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
 
         "torrent_resume" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let res = crate::torrent::torrent_resume(&state.torrent, id.to_string()).await?;
             Ok(serde_json::to_value(res).unwrap_or(serde_json::Value::Null))
         }
@@ -2789,13 +3344,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "torrent_open_save_path" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             crate::torrent::torrent_open_save_path(&state.torrent, id.to_string()).await?;
             Ok(serde_json::json!({ "status": "ok" }))
         }
 
         "torrent_remove" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let delete_data = args.get("deleteData").and_then(|v| v.as_bool());
             crate::torrent::torrent_remove(&state.torrent, id.to_string(), delete_data).await?;
             Ok(serde_json::json!({ "status": "removed", "id": id }))
@@ -2806,41 +3367,83 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "lsp_list" => {
             let lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
-            let servers: Vec<_> = lsp.server_list().iter().map(|s| serde_json::json!({
-                "language": s.language, "command": s.command
-            })).collect();
+            let servers: Vec<_> = lsp
+                .server_list()
+                .iter()
+                .map(|s| {
+                    serde_json::json!({
+                        "language": s.language, "command": s.command
+                    })
+                })
+                .collect();
             Ok(serde_json::json!({ "servers": servers, "count": servers.len() }))
         }
 
         "lsp_known_servers" => {
-            let known: Vec<_> = crate::lsp::known_servers().iter().map(|s| serde_json::json!({
-                "language": s.language, "command": s.command
-            })).collect();
+            let known: Vec<_> = crate::lsp::known_servers()
+                .iter()
+                .map(|s| {
+                    serde_json::json!({
+                        "language": s.language, "command": s.command
+                    })
+                })
+                .collect();
             Ok(serde_json::json!({ "servers": known, "count": known.len() }))
         }
 
         "lsp_get_diagnostics" => {
-            let uri = args.get("uri").and_then(|v| v.as_str()).ok_or("Missing 'uri'")?;
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?;
             let lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
             let diags = lsp.diagnostics_for(uri);
             Ok(serde_json::json!({ "uri": uri, "diagnostics": diags, "count": diags.len() }))
         }
 
         "lsp_stop" => {
-            let language = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?;
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?;
             let mut lsp = state.lsp.lock().unwrap_or_else(|e| e.into_inner());
             lsp.mark_status(language, "stopped");
             Ok(serde_json::json!({ "status": "stopped", "language": language }))
         }
 
         "lsp_start" => {
-            let language = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?.to_string();
-            let command  = args.get("command").and_then(|v| v.as_str()).ok_or("Missing 'command'")?.to_string();
-            let args_vec: Vec<String> = args.get("args").and_then(|v| v.as_array())
-                .map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let command = args
+                .get("command")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'command'")?
+                .to_string();
+            let args_vec: Vec<String> = args
+                .get("args")
+                .and_then(|v| v.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect()
+                })
                 .unwrap_or_default();
-            let workspace_root = crate::user_config_dir().join("workspace").to_string_lossy().to_string();
-            crate::lsp::spawn_server(state.lsp.clone(), state.broadcaster.clone(), language, command, args_vec, workspace_root).await?;
+            let workspace_root = crate::user_config_dir()
+                .join("workspace")
+                .to_string_lossy()
+                .to_string();
+            crate::lsp::spawn_server(
+                state.lsp.clone(),
+                state.broadcaster.clone(),
+                language,
+                command,
+                args_vec,
+                workspace_root,
+            )
+            .await?;
             Ok(serde_json::json!({ "status": "started" }))
         }
 
@@ -2848,30 +3451,56 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Browser Extended
         // ────────────────────────────────────────────────────────────────────
         "browser_navigate" => {
-            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
-            state.broadcaster.emit("browser_navigate_requested", serde_json::json!({ "url": url }));
-            Ok(serde_json::json!({ "status": "navigate_requested", "url": url, "note": "Browser navigation requires Tauri WebView; event emitted to UI" }))
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
+            state.broadcaster.emit(
+                "browser_navigate_requested",
+                serde_json::json!({ "url": url }),
+            );
+            Ok(
+                serde_json::json!({ "status": "navigate_requested", "url": url, "note": "Browser navigation requires Tauri WebView; event emitted to UI" }),
+            )
         }
 
         "browser_exec" | "browser_evaluate_js" => {
-            let script = args.get("script").or_else(|| args.get("js"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'script' or 'js'")?;
-            state.broadcaster.emit("browser_exec_requested", serde_json::json!({ "script": script }));
-            Ok(serde_json::json!({ "status": "exec_requested", "note": "Browser JS execution requires Tauri WebView; event emitted to UI" }))
+            let script = args
+                .get("script")
+                .or_else(|| args.get("js"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'script' or 'js'")?;
+            state.broadcaster.emit(
+                "browser_exec_requested",
+                serde_json::json!({ "script": script }),
+            );
+            Ok(
+                serde_json::json!({ "status": "exec_requested", "note": "Browser JS execution requires Tauri WebView; event emitted to UI" }),
+            )
         }
 
         "browser_get_content" => {
-            state.broadcaster.emit("browser_get_content_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "content": "", "note": "Browser content retrieval requires Tauri WebView; event emitted to UI" }))
+            state
+                .broadcaster
+                .emit("browser_get_content_requested", serde_json::json!({}));
+            Ok(
+                serde_json::json!({ "content": "", "note": "Browser content retrieval requires Tauri WebView; event emitted to UI" }),
+            )
         }
 
         "browser_screenshot" => {
-            state.broadcaster.emit("browser_screenshot_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "screenshot_b64": "", "note": "Browser screenshot requires Tauri WebView; event emitted to UI" }))
+            state
+                .broadcaster
+                .emit("browser_screenshot_requested", serde_json::json!({}));
+            Ok(
+                serde_json::json!({ "screenshot_b64": "", "note": "Browser screenshot requires Tauri WebView; event emitted to UI" }),
+            )
         }
 
         "browser_get_citation" => {
-            let url = args.get("url").and_then(|v| v.as_str())
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'url'")?;
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -2887,7 +3516,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "browser_save_to_memory" => {
-            let url = args.get("url").and_then(|v| v.as_str())
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'url'")?;
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -2901,12 +3532,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let res = crate::commands::browser::browser_save_to_memory(
                 url.to_string(),
                 state.app_state.clone(),
-            ).await?;
+            )
+            .await?;
             Ok(res)
         }
 
         "open_external" => {
-            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?;
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?;
             if !url.starts_with("http://") && !url.starts_with("https://") {
                 return Err("URL must start with a valid scheme (http/https)".to_string());
             }
@@ -2917,7 +3552,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
             #[cfg(target_os = "windows")]
             {
-                let _ = std::process::Command::new("cmd").args(["/c", "start", url]).spawn();
+                let _ = std::process::Command::new("cmd")
+                    .args(["/c", "start", url])
+                    .spawn();
             }
             #[cfg(target_os = "macos")]
             {
@@ -2940,27 +3577,40 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "configure_sync" => {
-            let enabled      = args.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
-            let api_base_url = args.get("api_base_url").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let enabled = args
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let api_base_url = args
+                .get("api_base_url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
 
             if enabled && api_base_url.trim().is_empty() {
                 return Err("api_base_url required when enabling sync".to_string());
             }
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            app_state.config.sync.enabled      = enabled;
+            app_state.config.sync.enabled = enabled;
             app_state.config.sync.api_base_url = api_base_url.clone();
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "configured", "enabled": enabled, "api_base_url": api_base_url }))
+            Ok(
+                serde_json::json!({ "status": "configured", "enabled": enabled, "api_base_url": api_base_url }),
+            )
         }
 
         "sync_now" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if !app_state.config.sync.enabled || app_state.config.sync.api_base_url.trim().is_empty() {
+            if !app_state.config.sync.enabled
+                || app_state.config.sync.api_base_url.trim().is_empty()
+            {
                 return Err("Sync not configured. Use configure_sync first.".to_string());
             }
-            Ok(serde_json::json!({ "status": "sync_initiated", "note": "Full sync requires AppHandle; initiate from Tauri frontend" }))
+            Ok(
+                serde_json::json!({ "status": "sync_initiated", "note": "Full sync requires AppHandle; initiate from Tauri frontend" }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -3037,7 +3687,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 prompt,
                 None,
                 None,
-                args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                args.get("pack_id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string()),
             )
             .await?;
             Ok(serde_json::json!({
@@ -3062,10 +3714,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let saved = crate::promptdrive::PromptDriveDb::new(db.pool)
                 .save_prompt(
-                    if title.is_empty() { "Untitled Prompt".to_string() } else { title },
-                    args.get("template_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                    args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                    args.get("slot_values").cloned().unwrap_or_else(|| serde_json::json!({})),
+                    if title.is_empty() {
+                        "Untitled Prompt".to_string()
+                    } else {
+                        title
+                    },
+                    args.get("template_id")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
+                    args.get("pack_id")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
+                    args.get("slot_values")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::json!({})),
                     prompt,
                 )
                 .await?;
@@ -3101,7 +3763,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .unwrap_or("PromptDrive Macro")
                 .to_string();
             let steps: Vec<crate::promptdrive::MacroStep> = serde_json::from_value(
-                args.get("steps").cloned().unwrap_or_else(|| serde_json::json!([])),
+                args.get("steps")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!([])),
             )
             .map_err(|e| format!("Invalid macro steps: {}", e))?;
             let macro_def = crate::promptdrive::PromptDriveDb::new(db.pool)
@@ -3154,44 +3818,66 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "save_prompt_preset" => {
-            let name        = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let schema_json = args.get("schema_json").and_then(|v| v.as_str()).ok_or("Missing 'schema_json'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let schema_json = args
+                .get("schema_json")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'schema_json'")?;
             let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
 
             let mut presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path).ok()
+                std::fs::read_to_string(&presets_path)
+                    .ok()
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default();
             presets.insert(name.to_string(), schema_json.to_string());
-            std::fs::write(&presets_path, serde_json::to_string_pretty(&presets).unwrap_or_default())
-                .map_err(|e| format!("Save failed: {}", e))?;
+            std::fs::write(
+                &presets_path,
+                serde_json::to_string_pretty(&presets).unwrap_or_default(),
+            )
+            .map_err(|e| format!("Save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved", "name": name }))
         }
 
         "load_prompt_presets" => {
             let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
             let presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path).ok()
+                std::fs::read_to_string(&presets_path)
+                    .ok()
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default();
             Ok(serde_json::json!({ "presets": presets, "count": presets.len() }))
         }
 
         "delete_prompt_preset" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
             let mut presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path).ok()
+                std::fs::read_to_string(&presets_path)
+                    .ok()
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default();
-            if presets.remove(name).is_none() { return Err(format!("Preset '{}' not found", name)); }
-            std::fs::write(&presets_path, serde_json::to_string_pretty(&presets).unwrap_or_default())
-                .map_err(|e| e.to_string())?;
+            if presets.remove(name).is_none() {
+                return Err(format!("Preset '{}' not found", name));
+            }
+            std::fs::write(
+                &presets_path,
+                serde_json::to_string_pretty(&presets).unwrap_or_default(),
+            )
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "name": name }))
         }
 
         "generate_jpe_explanation" => {
-            let topic = args.get("topic").and_then(|v| v.as_str())
+            let topic = args
+                .get("topic")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'topic'")?;
             let broadcaster = state.broadcaster.clone();
             let provider = {
@@ -3200,25 +3886,42 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             };
             let prompt = format!(
                 "Explain '{}' in Just Plain English (JPE). Use simple analogies, no jargon, \
-                and make it understandable to a complete beginner in 2-3 short paragraphs.", topic
+                and make it understandable to a complete beginner in 2-3 short paragraphs.",
+                topic
             );
             let topic_clone = topic.to_string();
             tokio::spawn(async move {
-                let mut stream = provider.stream_response(&prompt, "You are a clear technical writer who explains complex topics simply.");
+                let mut stream = provider.stream_response(
+                    &prompt,
+                    "You are a clear technical writer who explains complex topics simply.",
+                );
                 let mut full = String::new();
                 while let Some(chunk) = stream.next().await {
                     match chunk {
-                        Ok(t) => { full.push_str(&t); broadcaster.emit("jpe_token", serde_json::json!({ "token": t })); }
-                        Err(e) => { broadcaster.emit("jpe_error", serde_json::json!({ "error": e.to_string() })); return; }
+                        Ok(t) => {
+                            full.push_str(&t);
+                            broadcaster.emit("jpe_token", serde_json::json!({ "token": t }));
+                        }
+                        Err(e) => {
+                            broadcaster
+                                .emit("jpe_error", serde_json::json!({ "error": e.to_string() }));
+                            return;
+                        }
                     }
                 }
-                broadcaster.emit("jpe_done", serde_json::json!({ "topic": topic_clone, "explanation": full }));
+                broadcaster.emit(
+                    "jpe_done",
+                    serde_json::json!({ "topic": topic_clone, "explanation": full }),
+                );
             });
             Ok(serde_json::json!({ "status": "streaming", "topic": topic }))
         }
 
         "shell_autocomplete" => {
-            let partial = args.get("partial").and_then(|v| v.as_str()).ok_or("Missing 'partial'")?;
+            let partial = args
+                .get("partial")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'partial'")?;
             let broadcaster = state.broadcaster.clone();
             let provider = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -3230,11 +3933,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             );
             let partial_clone = partial.to_string();
             tokio::spawn(async move {
-                match provider.chat_with_image(&prompt, "You are a shell expert.", None, None).await {
-                    Ok(completion) => broadcaster.emit("shell_autocomplete_result", serde_json::json!({
-                        "partial": partial_clone, "completion": completion.trim().to_string()
-                    })),
-                    Err(e) => broadcaster.emit("shell_autocomplete_error", serde_json::json!({ "error": e.to_string() })),
+                match provider
+                    .chat_with_image(&prompt, "You are a shell expert.", None, None)
+                    .await
+                {
+                    Ok(completion) => broadcaster.emit(
+                        "shell_autocomplete_result",
+                        serde_json::json!({
+                            "partial": partial_clone, "completion": completion.trim().to_string()
+                        }),
+                    ),
+                    Err(e) => broadcaster.emit(
+                        "shell_autocomplete_error",
+                        serde_json::json!({ "error": e.to_string() }),
+                    ),
                 }
             });
             Ok(serde_json::json!({ "status": "streaming", "partial": partial }))
@@ -3245,27 +3957,31 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "speak_text" | "speak_text_stream" => {
             let text = args.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            state.broadcaster.emit("speak_text_requested", serde_json::json!({ "text": text }));
-            Ok(serde_json::json!({ "status": "requested", "text": text, "note": "TTS requires espeak/system audio; event emitted to UI" }))
+            state
+                .broadcaster
+                .emit("speak_text_requested", serde_json::json!({ "text": text }));
+            Ok(
+                serde_json::json!({ "status": "requested", "text": text, "note": "TTS requires espeak/system audio; event emitted to UI" }),
+            )
         }
 
-        "start_recording" => {
-            match system::start_recording(state.app_state.clone()) {
-                Ok(msg) => Ok(serde_json::Value::String(msg)),
-                Err(e) => Err(e),
-            }
-        }
+        "start_recording" => match system::start_recording(state.app_state.clone()) {
+            Ok(msg) => Ok(serde_json::Value::String(msg)),
+            Err(e) => Err(e),
+        },
 
-        "stop_recording" => {
-            match system::stop_recording(state.app_state.clone()).await {
-                Ok(text) => Ok(serde_json::Value::String(text)),
-                Err(e) => Err(e),
-            }
-        }
+        "stop_recording" => match system::stop_recording(state.app_state.clone()).await {
+            Ok(text) => Ok(serde_json::Value::String(text)),
+            Err(e) => Err(e),
+        },
 
         "transcribe_audio_whisper" => {
-            state.broadcaster.emit("recording_stop_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "requested", "transcript": "", "note": "STT stop requires system audio pipeline; event emitted to UI" }))
+            state
+                .broadcaster
+                .emit("recording_stop_requested", serde_json::json!({}));
+            Ok(
+                serde_json::json!({ "status": "requested", "transcript": "", "note": "STT stop requires system audio pipeline; event emitted to UI" }),
+            )
         }
 
         "get_whisper_status" => {
@@ -3281,7 +3997,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Git Extended (branches)
         // ────────────────────────────────────────────────────────────────────
         "git_branch_list" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let mut branches = Vec::new();
@@ -3300,40 +4020,80 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_branch_create" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
-                let repo   = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-                let head   = repo.head().map_err(|e| e.to_string())?;
-                let commit = repo.find_commit(head.target().ok_or("HEAD has no target")?)
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let head = repo.head().map_err(|e| e.to_string())?;
+                let commit = repo
+                    .find_commit(head.target().ok_or("HEAD has no target")?)
                     .map_err(|e| e.to_string())?;
-                repo.branch(&name, &commit, false).map_err(|e| e.to_string())?;
+                repo.branch(&name, &commit, false)
+                    .map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "created", "branch": name }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_branch_checkout" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
-                let repo   = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-                let branch = repo.find_branch(&name, git2::BranchType::Local).map_err(|e| e.to_string())?;
-                let obj    = branch.get().peel(git2::ObjectType::Commit).map_err(|e| e.to_string())?;
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let branch = repo
+                    .find_branch(&name, git2::BranchType::Local)
+                    .map_err(|e| e.to_string())?;
+                let obj = branch
+                    .get()
+                    .peel(git2::ObjectType::Commit)
+                    .map_err(|e| e.to_string())?;
                 repo.checkout_tree(&obj, None).map_err(|e| e.to_string())?;
-                repo.set_head(&format!("refs/heads/{}", name)).map_err(|e| e.to_string())?;
+                repo.set_head(&format!("refs/heads/{}", name))
+                    .map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "checked_out", "branch": name }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_branch_delete" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-                let mut branch = repo.find_branch(&name, git2::BranchType::Local).map_err(|e| e.to_string())?;
+                let mut branch = repo
+                    .find_branch(&name, git2::BranchType::Local)
+                    .map_err(|e| e.to_string())?;
                 branch.delete().map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "deleted", "branch": name }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -3341,16 +4101,29 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_deckcode_state" => {
             let (schema, bindings) = {
-                let dc = state.deckcode_state.lock().unwrap_or_else(|e| e.into_inner());
+                let dc = state
+                    .deckcode_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 (dc.0.clone(), dc.1.clone())
             };
-            let lang = state.deckcode_lang.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            let lang = state
+                .deckcode_lang
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
             Ok(serde_json::json!({ "schema": schema, "bindings": bindings, "language": lang }))
         }
 
         "set_deckcode_lang" => {
-            let lang = args.get("language").and_then(|v| v.as_str()).ok_or("Missing 'language'")?;
-            let mut l = state.deckcode_lang.lock().unwrap_or_else(|e| e.into_inner());
+            let lang = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?;
+            let mut l = state
+                .deckcode_lang
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             *l = lang.to_string();
             Ok(serde_json::json!({ "status": "set", "language": lang }))
         }
@@ -3359,17 +4132,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Scheduler toggle
         // ────────────────────────────────────────────────────────────────────
         "toggle_scheduled_task" => {
-            let id      = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
-            let enabled = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
+            let enabled = args
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .ok_or("Missing 'enabled'")?;
             let task = {
-                let mut tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let mut tasks = state
+                    .scheduler
+                    .tasks
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 let found_idx = tasks.iter().position(|t| t.id == id);
                 if let Some(idx) = found_idx {
                     tasks[idx].enabled = enabled;
                     let task = tasks[idx].clone();
-                    let _ = serde_json::to_string_pretty(&*tasks).ok().and_then(|s| {
-                        std::fs::write(&state.scheduler.tasks_path, s).ok()
-                    });
+                    let _ = serde_json::to_string_pretty(&*tasks)
+                        .ok()
+                        .and_then(|s| std::fs::write(&state.scheduler.tasks_path, s).ok());
                     Some(task)
                 } else {
                     None
@@ -3380,34 +4163,51 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 if let Some(s) = sched_guard.as_ref() {
                     if enabled {
                         let _ = crate::scheduler::register_task(
-                            s, &task, state.scheduler.job_map.clone(),
-                            state.broadcaster.clone(), state.app_state.clone(),
-                        ).await;
+                            s,
+                            &task,
+                            state.scheduler.job_map.clone(),
+                            state.broadcaster.clone(),
+                            state.app_state.clone(),
+                        )
+                        .await;
                     } else {
-                        let _ = crate::scheduler::unregister_task(s, &id, &state.scheduler.job_map).await;
+                        let _ = crate::scheduler::unregister_task(s, &id, &state.scheduler.job_map)
+                            .await;
                     }
                 }
-                Ok(serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "id": id }))
+                Ok(
+                    serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "id": id }),
+                )
             } else {
                 Err(format!("Task '{}' not found", id))
             }
         }
 
         "run_task_now" => {
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or("Missing 'id'")?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'id'")?;
             let task = {
-                let tasks = state.scheduler.tasks.lock().unwrap_or_else(|e| e.into_inner());
+                let tasks = state
+                    .scheduler
+                    .tasks
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 tasks.iter().find(|t| t.id == id).cloned()
             };
             if let Some(task) = task {
                 let goal = task.goal.clone();
-                state.broadcaster.emit("scheduled_task_started", serde_json::json!({
-                    "id": task.id,
-                    "name": task.name,
-                    "goal": &goal,
-                    "triggered_at": chrono::Utc::now().to_rfc3339(),
-                    "manual": true,
-                }));
+                state.broadcaster.emit(
+                    "scheduled_task_started",
+                    serde_json::json!({
+                        "id": task.id,
+                        "name": task.name,
+                        "goal": &goal,
+                        "triggered_at": chrono::Utc::now().to_rfc3339(),
+                        "manual": true,
+                    }),
+                );
                 if let Some(workflow_name) = goal.strip_prefix("workflow:") {
                     let wf_name = workflow_name.trim().to_string();
                     if !wf_name.is_empty() {
@@ -3416,16 +4216,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                             if let Ok(doc) = crate::workflow_engine::parse_workflow(&json_str) {
                                 let broadcaster = state.broadcaster.clone();
                                 let app_state = state.app_state.clone();
-                                broadcaster.emit("workflow_started", serde_json::json!({
-                                    "name": &wf_name,
-                                    "triggered_by": "manual_scheduler",
-                                }));
+                                broadcaster.emit(
+                                    "workflow_started",
+                                    serde_json::json!({
+                                        "name": &wf_name,
+                                        "triggered_by": "manual_scheduler",
+                                    }),
+                                );
                                 tokio::spawn(async move {
                                     let run_state = crate::workflow_engine::execute_workflow(
-                                        &wf_name, &doc, app_state, broadcaster,
-                                    ).await;
-                                    if let Err(e) = crate::workflow_engine::save_run_history(&wf_name, &run_state) {
-                                        tracing::warn!("Failed to save workflow run history: {}", e);
+                                        &wf_name,
+                                        &doc,
+                                        app_state,
+                                        broadcaster,
+                                    )
+                                    .await;
+                                    if let Err(e) = crate::workflow_engine::save_run_history(
+                                        &wf_name, &run_state,
+                                    ) {
+                                        tracing::warn!(
+                                            "Failed to save workflow run history: {}",
+                                            e
+                                        );
                                     }
                                 });
                             }
@@ -3447,38 +4259,59 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "load_workflow" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let json = crate::workflow::load_workflow(name.to_string())?;
             Ok(serde_json::json!({ "name": name, "json": json }))
         }
 
         "save_workflow" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-            let json = args.get("json").and_then(|v| v.as_str()).ok_or("Missing 'json'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
+            let json = args
+                .get("json")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'json'")?;
             crate::workflow::save_workflow(name.to_string(), json.to_string())?;
             Ok(serde_json::json!({ "status": "saved", "name": name }))
         }
 
         "delete_workflow" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             crate::workflow::delete_workflow(name.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "name": name }))
         }
 
         "workflow_export" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let json = crate::workflow::workflow_export(name.to_string())?;
             Ok(serde_json::json!({ "name": name, "ndwf": json }))
         }
 
         "workflow_import" => {
-            let json = args.get("json").and_then(|v| v.as_str()).ok_or("Missing 'json'")?;
+            let json = args
+                .get("json")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'json'")?;
             let imported_name = crate::workflow::workflow_import(json.to_string())?;
             Ok(serde_json::json!({ "status": "imported", "name": imported_name }))
         }
 
         "workflow_run" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let json_str = crate::workflow::workflow_run(name.to_string())?;
             let doc = crate::workflow_engine::parse_workflow(&json_str)
                 .map_err(|e| format!("Failed to parse workflow: {}", e))?;
@@ -3491,8 +4324,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
             tokio::spawn(async move {
                 let run_state = crate::workflow_engine::execute_workflow(
-                    &name_owned, &doc, app_state, broadcaster,
-                ).await;
+                    &name_owned,
+                    &doc,
+                    app_state,
+                    broadcaster,
+                )
+                .await;
                 if let Err(e) = crate::workflow_engine::save_run_history(&name_owned, &run_state) {
                     tracing::warn!("Failed to save workflow run history: {}", e);
                 }
@@ -3502,7 +4339,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_workflow_history" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let runs = crate::workflow_engine::list_run_history(name)
                 .map_err(|e| format!("Failed to list history: {}", e))?;
             Ok(serde_json::json!({ "name": name, "runs": runs }))
@@ -3512,9 +4352,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Orchestrator
         // ────────────────────────────────────────────────────────────────────
         "start_orchestrated_task" => {
-            let goal = args.get("goal").and_then(|v| v.as_str()).ok_or("Missing 'goal'")?;
+            let goal = args
+                .get("goal")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'goal'")?;
             {
-                let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+                let mut s = state
+                    .orchestrator
+                    .state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 if s.running {
                     return Err("Orchestrator is already running".to_string());
                 }
@@ -3527,7 +4374,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             };
             let (abort_tx, mut abort_rx) = tokio::sync::oneshot::channel::<()>();
             {
-                let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+                let mut s = state
+                    .orchestrator
+                    .state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 s.abort_tx = Some(abort_tx);
             }
             let state_arc = Arc::clone(&state.orchestrator.state);
@@ -3535,14 +4386,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let bc = state.broadcaster.clone();
             tokio::spawn(async move {
                 let _ = crate::orchestrator::_run_orchestration(
-                    goal_clone, provider, bc, state_arc, &mut abort_rx
-                ).await;
+                    goal_clone,
+                    provider,
+                    bc,
+                    state_arc,
+                    &mut abort_rx,
+                )
+                .await;
             });
             Ok(serde_json::json!({ "status": "started", "goal": goal }))
         }
 
         "get_orchestration_status" => {
-            let s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let s = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             Ok(serde_json::json!({
                 "running": s.running,
                 "goal": s.plan.as_ref().map(|p| p.goal.clone()).unwrap_or_default(),
@@ -3551,15 +4411,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "stop_orchestration" => {
-            let mut s = state.orchestrator.state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut s = state
+                .orchestrator
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(tx) = s.abort_tx.take() {
                 let _ = tx.send(());
             }
             s.running = false;
-            state.broadcaster.emit("agent_stopped", serde_json::json!({
-                "goal": s.plan.as_ref().map(|p| p.goal.clone()),
-                "timestamp": chrono::Utc::now().to_rfc3339()
-            }));
+            state.broadcaster.emit(
+                "agent_stopped",
+                serde_json::json!({
+                    "goal": s.plan.as_ref().map(|p| p.goal.clone()),
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                }),
+            );
             Ok(serde_json::json!({ "status": "stopped" }))
         }
 
@@ -3572,7 +4439,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_theme" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             if let Some(t) = crate::THEMES.iter().find(|t| t.name == name) {
                 Ok(serde_json::json!({
                     "Name": t.name,
@@ -3600,7 +4470,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "save_custom_themes" => {
-            let data = args.get("data").and_then(|v| v.as_str()).ok_or("Missing 'data'")?;
+            let data = args
+                .get("data")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'data'")?;
             let dir = crate::user_config_dir().join("data/themes");
             std::fs::create_dir_all(&dir).ok();
             std::fs::write(dir.join("custom.json"), data)
@@ -3609,8 +4482,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "load_custom_themes" => {
-            let data = std::fs::read_to_string(crate::user_config_dir().join("data/themes/custom.json"))
-                .unwrap_or_else(|_| "[]".to_string());
+            let data =
+                std::fs::read_to_string(crate::user_config_dir().join("data/themes/custom.json"))
+                    .unwrap_or_else(|_| "[]".to_string());
             Ok(serde_json::json!({ "themes": data }))
         }
 
@@ -3619,38 +4493,75 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "list_custom_personas" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let personas: Vec<_> = app_state.custom_personas.iter().map(|p| serde_json::json!({
-                "name": p.name, "prompt": p.prompt
-            })).collect();
+            let personas: Vec<_> = app_state
+                .custom_personas
+                .iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "name": p.name, "prompt": p.prompt
+                    })
+                })
+                .collect();
             Ok(serde_json::json!(personas))
         }
 
         "add_custom_persona" => {
-            let name   = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.trim().to_string();
-            let prompt = args.get("prompt").and_then(|v| v.as_str()).ok_or("Missing 'prompt'")?.trim().to_string();
-            if name.is_empty() || prompt.is_empty() { return Err("Name and prompt cannot be empty".to_string()); }
-            if name.len() > 30 { return Err("Persona name must be under 30 characters".to_string()); }
-            if crate::PERSONAS.iter().any(|p| p.0.to_lowercase() == name.to_lowercase()) {
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .trim()
+                .to_string();
+            let prompt = args
+                .get("prompt")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'prompt'")?
+                .trim()
+                .to_string();
+            if name.is_empty() || prompt.is_empty() {
+                return Err("Name and prompt cannot be empty".to_string());
+            }
+            if name.len() > 30 {
+                return Err("Persona name must be under 30 characters".to_string());
+            }
+            if crate::PERSONAS
+                .iter()
+                .any(|p| p.0.to_lowercase() == name.to_lowercase())
+            {
                 return Err(format!("'{}' clashes with a built-in persona", name));
             }
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if app_state.custom_personas.iter().any(|p| p.name.to_lowercase() == name.to_lowercase()) {
+            if app_state
+                .custom_personas
+                .iter()
+                .any(|p| p.name.to_lowercase() == name.to_lowercase())
+            {
                 return Err(format!("Persona '{}' already exists", name));
             }
-            app_state.custom_personas.push(crate::CustomPersona { name: name.clone(), prompt });
-            let json = serde_json::to_string_pretty(&app_state.custom_personas).map_err(|e| e.to_string())?;
+            app_state.custom_personas.push(crate::CustomPersona {
+                name: name.clone(),
+                prompt,
+            });
+            let json = serde_json::to_string_pretty(&app_state.custom_personas)
+                .map_err(|e| e.to_string())?;
             std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
                 .map_err(|e| format!("Save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "added", "name": name }))
         }
 
         "delete_custom_persona" => {
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?;
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let before = app_state.custom_personas.len();
             app_state.custom_personas.retain(|p| p.name != name);
-            if app_state.custom_personas.len() == before { return Err(format!("Persona '{}' not found", name)); }
-            let json = serde_json::to_string_pretty(&app_state.custom_personas).map_err(|e| e.to_string())?;
+            if app_state.custom_personas.len() == before {
+                return Err(format!("Persona '{}' not found", name));
+            }
+            let json = serde_json::to_string_pretty(&app_state.custom_personas)
+                .map_err(|e| e.to_string())?;
             std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
                 .map_err(|e| format!("Save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "deleted", "name": name }))
@@ -3660,9 +4571,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Profiles (SSH/FTP/SFTP saved connections)
         // ────────────────────────────────────────────────────────────────────
         "save_profiles" => {
-            let key  = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
-            let data = args.get("data").and_then(|v| v.as_str()).ok_or("Missing 'data'")?;
-            if !matches!(key, "ssh" | "ftp" | "sftp") { return Err(format!("Invalid key '{}'. Use ssh, ftp, or sftp", key)); }
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
+            let data = args
+                .get("data")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'data'")?;
+            if !matches!(key, "ssh" | "ftp" | "sftp") {
+                return Err(format!("Invalid key '{}'. Use ssh, ftp, or sftp", key));
+            }
             let dir = crate::user_config_dir().join("data/profiles");
             std::fs::create_dir_all(&dir).ok();
             std::fs::write(dir.join(format!("{}.json", key)), data)
@@ -3671,11 +4590,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "load_profiles" => {
-            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
-            if !matches!(key, "ssh" | "ftp" | "sftp") { return Err(format!("Invalid key '{}'", key)); }
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
+            if !matches!(key, "ssh" | "ftp" | "sftp") {
+                return Err(format!("Invalid key '{}'", key));
+            }
             let data = std::fs::read_to_string(
-                crate::user_config_dir().join("data/profiles").join(format!("{}.json", key))
-            ).unwrap_or_else(|_| "[]".to_string());
+                crate::user_config_dir()
+                    .join("data/profiles")
+                    .join(format!("{}.json", key)),
+            )
+            .unwrap_or_else(|_| "[]".to_string());
             Ok(serde_json::json!({ "key": key, "profiles": data }))
         }
 
@@ -3686,8 +4613,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             if app_state.mcp_abort.is_some() {
                 result.insert("running".to_string(), "true".to_string());
                 result.insert("port".to_string(), app_state.mcp_port.to_string());
-                result.insert("url".to_string(), format!("http://127.0.0.1:{}", app_state.mcp_port));
-                result.insert("discovery".to_string(), format!("http://127.0.0.1:{}/.well-known/mcp", app_state.mcp_port));
+                result.insert(
+                    "url".to_string(),
+                    format!("http://127.0.0.1:{}", app_state.mcp_port),
+                );
+                result.insert(
+                    "discovery".to_string(),
+                    format!("http://127.0.0.1:{}/.well-known/mcp", app_state.mcp_port),
+                );
                 if let Some(tok) = &app_state.mcp_token {
                     result.insert("token".to_string(), tok.clone());
                 }
@@ -3704,12 +4637,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "set_mcp_tool_whitelist" => {
-            let tools: Vec<String> = args.get("tools").and_then(|v| v.as_array())
+            let tools: Vec<String> = args
+                .get("tools")
+                .and_then(|v| v.as_array())
                 .ok_or("Missing 'tools' array")?
-                .iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect();
-            let known: std::collections::HashSet<&str> = crate::mcp::ALL_TOOLS.iter().copied().collect();
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect();
+            let known: std::collections::HashSet<&str> =
+                crate::mcp::ALL_TOOLS.iter().copied().collect();
             for t in &tools {
-                if !known.contains(t.as_str()) { return Err(format!("Unknown tool: '{}'", t)); }
+                if !known.contains(t.as_str()) {
+                    return Err(format!("Unknown tool: '{}'", t));
+                }
             }
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             app_state.mcp_tool_whitelist = tools.clone();
@@ -3721,9 +4661,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let (provider, whitelist, mem_db) = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 if app.mcp_abort.is_some() {
-                    return Err(format!("MCP server is already running on port {}. Stop it first.", app.mcp_port));
+                    return Err(format!(
+                        "MCP server is already running on port {}. Stop it first.",
+                        app.mcp_port
+                    ));
                 }
-                (app.provider.clone(), app.mcp_tool_whitelist.clone(), app.mem_db.clone())
+                (
+                    app.provider.clone(),
+                    app.mcp_tool_whitelist.clone(),
+                    app.mem_db.clone(),
+                )
             };
             let config = crate::mcp::McpServerConfig {
                 provider,
@@ -3731,8 +4678,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 mem_db,
                 port,
             };
-            let (bound_port, abort_handle, token) = crate::mcp::start(config).await
-                .map_err(|e| e.to_string())?;
+            let (bound_port, abort_handle, token) =
+                crate::mcp::start(config).await.map_err(|e| e.to_string())?;
             {
                 let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app.mcp_abort = Some(abort_handle);
@@ -3763,8 +4710,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "canvas_collab_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let peers = app_state.collab_peer_count.as_ref()
-                .map(|c| c.load(std::sync::atomic::Ordering::SeqCst)).unwrap_or(0);
+            let peers = app_state
+                .collab_peer_count
+                .as_ref()
+                .map(|c| c.load(std::sync::atomic::Ordering::SeqCst))
+                .unwrap_or(0);
             Ok(serde_json::json!({
                 "active": app_state.collab_abort.is_some(),
                 "mode":   app_state.collab_mode.clone().unwrap_or_else(|| "idle".to_string()),
@@ -3775,38 +4725,54 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "canvas_collab_stop" => {
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some(abort) = app_state.collab_abort.take() { abort.abort(); }
+            if let Some(abort) = app_state.collab_abort.take() {
+                abort.abort();
+            }
             app_state.collab_tx = None;
             app_state.collab_mode = None;
             app_state.collab_addr = None;
             app_state.collab_peer_count = None;
             if let Some(daemon) = app_state.collab_mdns.take() {
                 let hostname = crate::transfer::get_hostname();
-                let _ = daemon.unregister(&format!("neurodeck-{}._neurodeck-canvas._tcp.local.", hostname.replace(" ", "-")));
+                let _ = daemon.unregister(&format!(
+                    "neurodeck-{}._neurodeck-canvas._tcp.local.",
+                    hostname.replace(" ", "-")
+                ));
             }
             Ok(serde_json::json!({ "status": "stopped" }))
         }
 
         "discover_canvas_peers" => {
-            let peers = crate::commands::system::discover_canvas_peers()
-                .map_err(|e| e.to_string())?;
+            let peers =
+                crate::commands::system::discover_canvas_peers().map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "peers": peers, "count": peers.len() }))
         }
 
         "canvas_collab_send" => {
-            let code   = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?;
-            let lang   = args.get("lang").and_then(|v| v.as_str()).unwrap_or("html");
-            let sender = args.get("sender").and_then(|v| v.as_str()).unwrap_or("bridge");
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?;
+            let lang = args.get("lang").and_then(|v| v.as_str()).unwrap_or("html");
+            let sender = args
+                .get("sender")
+                .and_then(|v| v.as_str())
+                .unwrap_or("bridge");
             let tx = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app_state.collab_tx.clone()
             };
             if let Some(tx) = tx {
                 let payload = serde_json::json!({ "type": "code_update", "code": code, "lang": lang, "sender": sender });
-                tx.send(payload.to_string()).await.map_err(|_| "Collab channel closed".to_string())?;
+                tx.send(payload.to_string())
+                    .await
+                    .map_err(|_| "Collab channel closed".to_string())?;
                 Ok(serde_json::json!({ "status": "sent" }))
             } else {
-                Err("No active collab session. Use canvas_collab_host or canvas_collab_join first.".to_string())
+                Err(
+                    "No active collab session. Use canvas_collab_host or canvas_collab_join first."
+                        .to_string(),
+                )
             }
         }
 
@@ -3817,7 +4783,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 app_state.collab_tx.clone()
             };
             if let Some(tx) = tx {
-                tx.send(payload_val.to_string()).await.map_err(|_| "Collab channel closed".to_string())?;
+                tx.send(payload_val.to_string())
+                    .await
+                    .map_err(|_| "Collab channel closed".to_string())?;
                 Ok(serde_json::json!({ "status": "broadcast" }))
             } else {
                 Err("No active collab session".to_string())
@@ -3835,7 +4803,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "get_lan_ip" => {
             let ip = std::net::UdpSocket::bind("0.0.0.0:0")
                 .ok()
-                .and_then(|s| { s.connect("8.8.8.8:80").ok()?; s.local_addr().ok() })
+                .and_then(|s| {
+                    s.connect("8.8.8.8:80").ok()?;
+                    s.local_addr().ok()
+                })
                 .map(|a| a.ip().to_string())
                 .unwrap_or_else(|| "unknown".to_string());
             Ok(serde_json::json!({ "ip": ip }))
@@ -3847,10 +4818,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "ollama_list_models" => {
             let base_url = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                args.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string())
+                args.get("base_url")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
                     .unwrap_or_else(|| app_state.config.llm.ollama_base_url.clone())
             };
-            let models = crate::ollama_mgr::ollama_list_models(base_url).await
+            let models = crate::ollama_mgr::ollama_list_models(base_url)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "models": models, "count": models.len() }))
         }
@@ -3858,33 +4832,50 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "ollama_delete_model" => {
             let base_url = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                args.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string())
+                args.get("base_url")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
                     .unwrap_or_else(|| app_state.config.llm.ollama_base_url.clone())
             };
-            let model = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?.to_string();
-            crate::ollama_mgr::ollama_delete_model(base_url, model.clone()).await
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model'")?
+                .to_string();
+            crate::ollama_mgr::ollama_delete_model(base_url, model.clone())
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "model": model }))
         }
 
         // ollama_pull_model implemented below with streaming broadcaster
-        "ollama_pull_model_stub_removed" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "ollama_pull_model requires Tauri AppHandle for streaming progress events; use the Tauri UI" }))
-        }
+        "ollama_pull_model_stub_removed" => Ok(
+            serde_json::json!({ "status": "unavailable", "note": "ollama_pull_model requires Tauri AppHandle for streaming progress events; use the Tauri UI" }),
+        ),
 
         // ────────────────────────────────────────────────────────────────────
         // Computer Use (requires explicit user approval)
         // ────────────────────────────────────────────────────────────────────
         "computer_screenshot" => {
-            let shot = crate::computer_use::computer_screenshot().await
+            let shot = crate::computer_use::computer_screenshot()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "mime": shot.mime, "base64": shot.base64 }))
         }
 
         "computer_mouse_move" => {
-            let x = args.get("x").and_then(|v| v.as_i64()).ok_or("Missing 'x'")? as i32;
-            let y = args.get("y").and_then(|v| v.as_i64()).ok_or("Missing 'y'")? as i32;
-            let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            let x = args
+                .get("x")
+                .and_then(|v| v.as_i64())
+                .ok_or("Missing 'x'")? as i32;
+            let y = args
+                .get("y")
+                .and_then(|v| v.as_i64())
+                .ok_or("Missing 'y'")? as i32;
+            let approved = args
+                .get("approved")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 let agent_id = app.config.llm.active_agent_id.clone();
@@ -3894,14 +4885,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::Computer,
                 )?;
             }
-            crate::computer_use::computer_mouse_move(x, y, approved).await
+            crate::computer_use::computer_mouse_move(x, y, approved)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "moved", "x": x, "y": y }))
         }
 
         "computer_mouse_click" => {
-            let button   = args.get("button").and_then(|v| v.as_str()).unwrap_or("left").to_string();
-            let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            let button = args
+                .get("button")
+                .and_then(|v| v.as_str())
+                .unwrap_or("left")
+                .to_string();
+            let approved = args
+                .get("approved")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 let agent_id = app.config.llm.active_agent_id.clone();
@@ -3911,14 +4910,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::Computer,
                 )?;
             }
-            crate::computer_use::computer_mouse_click(button.clone(), approved).await
+            crate::computer_use::computer_mouse_click(button.clone(), approved)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "clicked", "button": button }))
         }
 
         "computer_type" => {
-            let text     = args.get("text").and_then(|v| v.as_str()).ok_or("Missing 'text'")?.to_string();
-            let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'text'")?
+                .to_string();
+            let approved = args
+                .get("approved")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 let agent_id = app.config.llm.active_agent_id.clone();
@@ -3928,14 +4935,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::Computer,
                 )?;
             }
-            crate::computer_use::computer_type(text.clone(), approved).await
+            crate::computer_use::computer_type(text.clone(), approved)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "typed", "chars": text.len() }))
         }
 
         "computer_key" => {
-            let key      = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?.to_string();
-            let approved = args.get("approved").and_then(|v| v.as_bool()).unwrap_or(false);
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?
+                .to_string();
+            let approved = args
+                .get("approved")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 let agent_id = app.config.llm.active_agent_id.clone();
@@ -3945,14 +4960,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::Computer,
                 )?;
             }
-            crate::computer_use::computer_key(key.clone(), approved).await
+            crate::computer_use::computer_key(key.clone(), approved)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "pressed", "key": key }))
         }
 
         "computer_find_text" => {
-            let text = args.get("text").and_then(|v| v.as_str()).ok_or("Missing 'text'")?.to_string();
-            let result = crate::computer_use::computer_find_text(text).await
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'text'")?
+                .to_string();
+            let result = crate::computer_use::computer_find_text(text)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
         }
@@ -3961,12 +4982,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Remote Control Server
         // ────────────────────────────────────────────────────────────────────
         "get_remote_server_info" => {
-            let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+            let guard = state
+                .remote
+                .handle
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             match guard.as_ref() {
                 Some(h) => {
                     let connected = h.connected.load(std::sync::atomic::Ordering::Relaxed);
-                    let elapsed   = h.started_at.elapsed().as_secs();
-                    let ttl_rem   = 900u64.saturating_sub(elapsed);
+                    let elapsed = h.started_at.elapsed().as_secs();
+                    let ttl_rem = 900u64.saturating_sub(elapsed);
                     Ok(serde_json::json!({
                         "running":                true,
                         "port":                   h.port,
@@ -3976,7 +5001,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         "ttl_seconds_remaining":  ttl_rem
                     }))
                 }
-                None => Ok(serde_json::json!({ "running": false }))
+                None => Ok(serde_json::json!({ "running": false })),
             }
         }
 
@@ -3989,33 +5014,51 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Plugin Management
         // ────────────────────────────────────────────────────────────────────
         "toggle_plugin" => {
-            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
-            let enabled   = args.get("enabled").and_then(|v| v.as_bool()).ok_or("Missing 'enabled'")?;
+            let file_name = args
+                .get("file_name")
+                .or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'file_name'")?;
+            let enabled = args
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .ok_or("Missing 'enabled'")?;
             crate::plugin_mgr::toggle_plugin(file_name.to_string(), enabled)
                 .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "file_name": file_name }))
+            Ok(
+                serde_json::json!({ "status": if enabled { "enabled" } else { "disabled" }, "file_name": file_name }),
+            )
         }
 
         "read_plugin" => {
-            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
-            let content = crate::plugin_mgr::read_plugin(file_name.to_string())
-                .map_err(|e| e.to_string())?;
+            let file_name = args
+                .get("file_name")
+                .or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'file_name'")?;
+            let content =
+                crate::plugin_mgr::read_plugin(file_name.to_string()).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "file_name": file_name, "content": content }))
         }
 
         "save_plugin" => {
-            let file_name = args.get("file_name").or_else(|| args.get("fileName"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'file_name'")?;
-            let content   = args.get("content").and_then(|v| v.as_str()).ok_or("Missing 'content'")?;
+            let file_name = args
+                .get("file_name")
+                .or_else(|| args.get("fileName"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'file_name'")?;
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?;
             crate::plugin_mgr::save_plugin(file_name.to_string(), content.to_string())
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "saved", "file_name": file_name }))
         }
 
         "fetch_plugin_registry" => {
-            let registry = crate::plugin_mgr::fetch_plugin_registry().await
+            let registry = crate::plugin_mgr::fetch_plugin_registry()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(registry).map_err(|e| e.to_string())?)
         }
@@ -4024,37 +5067,70 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Git Extended Operations (spawn_blocking)
         // ────────────────────────────────────────────────────────────────────
         "git_stage" => {
-            let path  = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let files: Vec<String> = args.get("files").and_then(|v| v.as_array())
-                .unwrap_or(&vec![]).iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let files: Vec<String> = args
+                .get("files")
+                .and_then(|v| v.as_array())
+                .unwrap_or(&vec![])
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect();
             tokio::task::spawn_blocking(move || {
                 use std::path::Path;
-                let repo  = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let mut idx = repo.index().map_err(|e| e.to_string())?;
-                for f in &files { idx.add_path(Path::new(f)).map_err(|e| e.to_string())?; }
+                for f in &files {
+                    idx.add_path(Path::new(f)).map_err(|e| e.to_string())?;
+                }
                 idx.write().map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "staged", "files": files }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_unstage" => {
-            let path  = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let files: Vec<String> = args.get("files").and_then(|v| v.as_array())
-                .unwrap_or(&vec![]).iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let files: Vec<String> = args
+                .get("files")
+                .and_then(|v| v.as_array())
+                .unwrap_or(&vec![])
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect();
             tokio::task::spawn_blocking(move || {
                 use std::path::Path;
-                let repo  = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-                let head  = repo.head().map_err(|e| e.to_string())?;
-                let head_tree = repo.find_commit(head.target().ok_or("HEAD has no target".to_string())?)
-                    .map_err(|e| e.to_string())?.tree().map_err(|e| e.to_string())?;
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let head = repo.head().map_err(|e| e.to_string())?;
+                let head_tree = repo
+                    .find_commit(head.target().ok_or("HEAD has no target".to_string())?)
+                    .map_err(|e| e.to_string())?
+                    .tree()
+                    .map_err(|e| e.to_string())?;
                 let mut idx = repo.index().map_err(|e| e.to_string())?;
                 for f in &files {
                     idx.remove_path(Path::new(f)).ok();
                     if let Ok(e) = head_tree.get_path(Path::new(f)) {
                         let entry = git2::IndexEntry {
-                            ctime: git2::IndexTime::new(0, 0), mtime: git2::IndexTime::new(0, 0),
-                            dev: 0, ino: 0, mode: e.filemode() as u32, uid: 0, gid: 0,
-                            file_size: 0, id: e.id(), flags: 0, flags_extended: 0,
+                            ctime: git2::IndexTime::new(0, 0),
+                            mtime: git2::IndexTime::new(0, 0),
+                            dev: 0,
+                            ino: 0,
+                            mode: e.filemode() as u32,
+                            uid: 0,
+                            gid: 0,
+                            file_size: 0,
+                            id: e.id(),
+                            flags: 0,
+                            flags_extended: 0,
                             path: f.as_bytes().to_vec(),
                         };
                         idx.add(&entry).ok();
@@ -4062,49 +5138,106 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
                 idx.write().map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "unstaged", "files": files }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_commit" => {
-            let path    = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let message = args.get("message").and_then(|v| v.as_str()).ok_or("Missing 'message'")?.to_string();
-            let author_name  = args.get("author_name").and_then(|v| v.as_str()).unwrap_or("NEURODECK Bridge").to_string();
-            let author_email = args.get("author_email").and_then(|v| v.as_str()).unwrap_or("bridge@neurodeck.local").to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let message = args
+                .get("message")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'message'")?
+                .to_string();
+            let author_name = args
+                .get("author_name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("NEURODECK Bridge")
+                .to_string();
+            let author_email = args
+                .get("author_email")
+                .and_then(|v| v.as_str())
+                .unwrap_or("bridge@neurodeck.local")
+                .to_string();
             tokio::task::spawn_blocking(move || {
-                let repo   = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let mut idx = repo.index().map_err(|e| e.to_string())?;
                 let tree_oid = idx.write_tree().map_err(|e| e.to_string())?;
-                let tree   = repo.find_tree(tree_oid).map_err(|e| e.to_string())?;
-                let sig    = git2::Signature::now(&author_name, &author_email).map_err(|e| e.to_string())?;
-                let parent = repo.head().ok().and_then(|h| h.target()).and_then(|oid| repo.find_commit(oid).ok());
+                let tree = repo.find_tree(tree_oid).map_err(|e| e.to_string())?;
+                let sig =
+                    git2::Signature::now(&author_name, &author_email).map_err(|e| e.to_string())?;
+                let parent = repo
+                    .head()
+                    .ok()
+                    .and_then(|h| h.target())
+                    .and_then(|oid| repo.find_commit(oid).ok());
                 let parents: Vec<&git2::Commit> = parent.as_ref().into_iter().collect();
-                let sha = repo.commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
+                let sha = repo
+                    .commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
                     .map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "committed", "sha": sha.to_string() }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_push" => {
-            let path   = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let remote = args.get("remote").and_then(|v| v.as_str()).unwrap_or("origin").to_string();
-            let branch = args.get("branch").and_then(|v| v.as_str()).unwrap_or("main").to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let remote = args
+                .get("remote")
+                .and_then(|v| v.as_str())
+                .unwrap_or("origin")
+                .to_string();
+            let branch = args
+                .get("branch")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main")
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let mut r = repo.find_remote(&remote).map_err(|e| e.to_string())?;
                 let mut cb = git2::RemoteCallbacks::new();
-                cb.credentials(|_url, user, _| git2::Cred::ssh_key_from_agent(user.unwrap_or("git")));
+                cb.credentials(|_url, user, _| {
+                    git2::Cred::ssh_key_from_agent(user.unwrap_or("git"))
+                });
                 let mut opts = git2::PushOptions::new();
                 opts.remote_callbacks(cb);
-                r.push(&[format!("refs/heads/{}:refs/heads/{}", branch, branch)], Some(&mut opts))
-                    .map_err(|e| e.to_string())?;
+                r.push(
+                    &[format!("refs/heads/{}:refs/heads/{}", branch, branch)],
+                    Some(&mut opts),
+                )
+                .map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "pushed", "remote": remote, "branch": branch }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_pull" | "git_fetch" => {
-            let path   = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let remote = args.get("remote").and_then(|v| v.as_str()).unwrap_or("origin").to_string();
-            let branch = args.get("branch").and_then(|v| v.as_str()).unwrap_or("main").to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let remote = args
+                .get("remote")
+                .and_then(|v| v.as_str())
+                .unwrap_or("origin")
+                .to_string();
+            let branch = args
+                .get("branch")
+                .and_then(|v| v.as_str())
+                .unwrap_or("main")
+                .to_string();
             let is_pull = command == "git_pull";
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
@@ -4120,7 +5253,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_diff" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let head_tree = repo.head().ok()
@@ -4141,53 +5278,103 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_remote_list" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
-                let repo    = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let remotes = repo.remotes().map_err(|e| e.to_string())?;
-                let list: Vec<_> = remotes.iter().flatten().map(|name| {
-                    let url = repo.find_remote(name).ok()
-                        .and_then(|r| r.url().map(|u| u.to_string()))
-                        .unwrap_or_default();
-                    serde_json::json!({ "name": name, "url": url })
-                }).collect();
+                let list: Vec<_> = remotes
+                    .iter()
+                    .flatten()
+                    .map(|name| {
+                        let url = repo
+                            .find_remote(name)
+                            .ok()
+                            .and_then(|r| r.url().map(|u| u.to_string()))
+                            .unwrap_or_default();
+                        serde_json::json!({ "name": name, "url": url })
+                    })
+                    .collect();
                 Ok(serde_json::json!({ "remotes": list, "count": list.len() }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_remote_add" => {
-            let path   = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let name   = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
-            let url    = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 repo.remote(&name, &url).map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "added", "name": name, "url": url }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_remote_remove" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 repo.remote_delete(&name).map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "removed", "name": name }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_discard" => {
-            let path  = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let files: Vec<String> = args.get("files").and_then(|v| v.as_array())
-                .unwrap_or(&vec![]).iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let files: Vec<String> = args
+                .get("files")
+                .and_then(|v| v.as_array())
+                .unwrap_or(&vec![])
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect();
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let mut opts = git2::build::CheckoutBuilder::new();
-                for f in &files { opts.path(f); }
+                for f in &files {
+                    opts.path(f);
+                }
                 opts.force();
-                repo.checkout_head(Some(&mut opts)).map_err(|e| e.to_string())?;
+                repo.checkout_head(Some(&mut opts))
+                    .map_err(|e| e.to_string())?;
                 Ok(serde_json::json!({ "status": "discarded", "files": files }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -4211,21 +5398,42 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "memory_search_semantic" => {
             // Semantic search requires embeddings — fall back to keyword search in bridge mode
-            let query = args.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?;
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'query'")?;
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
                 let all = db.list_all().map_err(|e| e.to_string())?;
                 let qwords: Vec<_> = query.split_whitespace().collect();
-                let mut results: Vec<_> = all.into_iter().filter_map(|r| {
-                    let lower = r.content.to_lowercase();
-                    let hits = qwords.iter().filter(|w| lower.contains(&w.to_lowercase()[..])).count();
-                    if hits > 0 { Some((hits, r)) } else { None }
-                }).collect();
+                let mut results: Vec<_> = all
+                    .into_iter()
+                    .filter_map(|r| {
+                        let lower = r.content.to_lowercase();
+                        let hits = qwords
+                            .iter()
+                            .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                            .count();
+                        if hits > 0 {
+                            Some((hits, r))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
                 results.sort_by(|a, b| b.0.cmp(&a.0));
-                let top: Vec<_> = results.into_iter().take(5).map(|(score, r)| serde_json::json!({
-                    "id": r.id, "content": r.content, "metadata": r.metadata, "score": score
-                })).collect();
-                Ok(serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }))
+                let top: Vec<_> = results
+                    .into_iter()
+                    .take(5)
+                    .map(|(score, r)| {
+                        serde_json::json!({
+                            "id": r.id, "content": r.content, "metadata": r.metadata, "score": score
+                        })
+                    })
+                    .collect();
+                Ok(
+                    serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }),
+                )
             } else {
                 Err("Memory database not initialized".to_string())
             }
@@ -4235,19 +5443,26 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Document Indexing
         // ────────────────────────────────────────────────────────────────────
         // index_directory → real broadcaster implementation below
-        "_stub_index_directory_removed" => {
-            Ok(serde_json::json!({ "status": "stub_removed" }))
-        }
+        "_stub_index_directory_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
 
         "clear_doc_index" => {
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref mut db) = app_state.mem_db {
                 let all = db.list_all().map_err(|e| e.to_string())?;
-                let doc_ids: Vec<_> = all.iter()
-                    .filter(|r| r.metadata.get("source").map(|v| v == "doc").unwrap_or(false))
-                    .map(|r| r.id.clone()).collect();
+                let doc_ids: Vec<_> = all
+                    .iter()
+                    .filter(|r| {
+                        r.metadata
+                            .get("source")
+                            .map(|v| v == "doc")
+                            .unwrap_or(false)
+                    })
+                    .map(|r| r.id.clone())
+                    .collect();
                 let count = doc_ids.len();
-                for id in &doc_ids { let _ = db.delete_record(id); }
+                for id in &doc_ids {
+                    let _ = db.delete_record(id);
+                }
                 Ok(serde_json::json!({ "status": "cleared", "deleted": count }))
             } else {
                 Err("Memory database not initialized".to_string())
@@ -4258,15 +5473,26 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Game Notes
         // ────────────────────────────────────────────────────────────────────
         "get_game_notes" => {
-            let app_id = args.get("app_id").and_then(|v| v.as_str()).ok_or("Missing 'app_id'")?;
-            let path = crate::user_config_dir().join("data/game_notes").join(format!("{}.txt", app_id));
+            let app_id = args
+                .get("app_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'app_id'")?;
+            let path = crate::user_config_dir()
+                .join("data/game_notes")
+                .join(format!("{}.txt", app_id));
             let content = std::fs::read_to_string(&path).unwrap_or_default();
             Ok(serde_json::json!({ "app_id": app_id, "content": content }))
         }
 
         "save_game_note" => {
-            let app_id  = args.get("app_id").and_then(|v| v.as_str()).ok_or("Missing 'app_id'")?;
-            let content = args.get("content").and_then(|v| v.as_str()).ok_or("Missing 'content'")?;
+            let app_id = args
+                .get("app_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'app_id'")?;
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?;
             let dir = crate::user_config_dir().join("data/game_notes");
             std::fs::create_dir_all(&dir).ok();
             std::fs::write(dir.join(format!("{}.txt", app_id)), content)
@@ -4286,11 +5512,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app_state.config.llm.google_client_id.clone()
             };
-            if client_id.trim().is_empty() { return Err("google_client_id not configured. Set it via set_config key=llm.google_client_id".to_string()); }
+            if client_id.trim().is_empty() {
+                return Err("google_client_id not configured. Set it via set_config key=llm.google_client_id".to_string());
+            }
             let cfg = neurodeck_infrastructure::oauth::OAuthConfig {
-                client_id, ..Default::default()
+                client_id,
+                ..Default::default()
             };
-            let result = neurodeck_infrastructure::oauth::request_device_code(&cfg).await
+            let result = neurodeck_infrastructure::oauth::request_device_code(&cfg)
+                .await
                 .map_err(|e| format!("OAuth device code request failed: {}", e))?;
             Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
         }
@@ -4300,11 +5530,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app_state.config.llm.google_client_id.clone()
             };
-            let device_code = args.get("device_code").and_then(|v| v.as_str()).ok_or("Missing 'device_code'")?.to_string();
-            let interval    = args.get("interval").and_then(|v| v.as_u64()).unwrap_or(5);
-            let cfg = neurodeck_infrastructure::oauth::OAuthConfig { client_id, ..Default::default() };
-            let token = neurodeck_infrastructure::oauth::poll_for_token(&cfg, &device_code, interval).await
-                .map_err(|e| format!("OAuth poll failed: {}", e))?;
+            let device_code = args
+                .get("device_code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'device_code'")?
+                .to_string();
+            let interval = args.get("interval").and_then(|v| v.as_u64()).unwrap_or(5);
+            let cfg = neurodeck_infrastructure::oauth::OAuthConfig {
+                client_id,
+                ..Default::default()
+            };
+            let token =
+                neurodeck_infrastructure::oauth::poll_for_token(&cfg, &device_code, interval)
+                    .await
+                    .map_err(|e| format!("OAuth poll failed: {}", e))?;
             Ok(serde_json::json!({ "token": token }))
         }
 
@@ -4312,7 +5551,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Onboarding Diagnostics
         // ────────────────────────────────────────────────────────────────────
         "run_onboarding_diagnostics" => {
-            let result = crate::commands::run_onboarding_diagnostics().await
+            let result = crate::commands::run_onboarding_diagnostics()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
         }
@@ -4321,58 +5561,88 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Secure Credential Storage (OS Keychain via neurodeck_infrastructure)
         // ────────────────────────────────────────────────────────────────────
         "save_gemini_api_key" => {
-            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
             neurodeck_infrastructure::secrets::save_gemini_api_key(key)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved", "note": "Key stored in OS keychain" }))
         }
 
         "save_hf_api_key" => {
-            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
             neurodeck_infrastructure::secrets::save_hf_api_key(key)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved" }))
         }
 
         "save_kimi_api_key" => {
-            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
             neurodeck_infrastructure::secrets::save_kimi_api_key(key)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved" }))
         }
 
         "save_openai_compat_api_key" => {
-            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key'")?;
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'key'")?;
             neurodeck_infrastructure::secrets::save_openai_compat_api_key(key)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved" }))
         }
 
         "save_ssh_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
-            let pass = args.get("password").and_then(|v| v.as_str()).ok_or("Missing 'password'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
+            let pass = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'password'")?;
             neurodeck_infrastructure::secrets::save_ssh_credential(name, pass)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved", "profile": name }))
         }
 
         "get_ssh_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
             let cred = neurodeck_infrastructure::secrets::get_ssh_credential(name)
                 .map_err(|e| format!("Keychain read failed: {}", e))?;
             Ok(serde_json::json!({ "profile": name, "password": cred }))
         }
 
         "delete_ssh_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
             neurodeck_infrastructure::secrets::delete_ssh_credential(name)
                 .map_err(|e| format!("Keychain delete failed: {}", e))?;
             Ok(serde_json::json!({ "status": "deleted", "profile": name }))
         }
 
         "save_sftp_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
-            let pass = args.get("password").and_then(|v| v.as_str()).ok_or("Missing 'password'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
+            let pass = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'password'")?;
             neurodeck_infrastructure::secrets::save_sftp_credential(name, pass)
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "saved", "profile": name }))
@@ -4382,9 +5652,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // HuggingFace Model Management
         // ────────────────────────────────────────────────────────────────────
         "hf_search_models" => {
-            let query = args.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?.to_string();
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'query'")?
+                .to_string();
             let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as u32;
-            let models = crate::hf_model_mgr::hf_search_models(query, limit).await
+            let models = crate::hf_model_mgr::hf_search_models(query, limit)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(models).map_err(|e| e.to_string())?)
         }
@@ -4395,29 +5670,49 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "hf_get_model_info" => {
-            let repo_id = args.get("repo_id").and_then(|v| v.as_str()).ok_or("Missing 'repo_id'")?.to_string();
-            let info = crate::hf_model_mgr::hf_get_model_info(repo_id).await
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'repo_id'")?
+                .to_string();
+            let info = crate::hf_model_mgr::hf_get_model_info(repo_id)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(info).map_err(|e| e.to_string())?)
         }
 
         "hf_list_installed_models" => {
-            let models = crate::hf_model_mgr::hf_list_installed_models().await
+            let models = crate::hf_model_mgr::hf_list_installed_models()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(models).map_err(|e| e.to_string())?)
         }
 
         "hf_delete_model" => {
-            let repo_id  = args.get("repo_id").and_then(|v| v.as_str()).ok_or("Missing 'repo_id'")?.to_string();
-            let filename = args.get("filename").and_then(|v| v.as_str()).ok_or("Missing 'filename'")?.to_string();
-            crate::hf_model_mgr::hf_delete_model(repo_id.clone(), filename.clone()).await
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'repo_id'")?
+                .to_string();
+            let filename = args
+                .get("filename")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'filename'")?
+                .to_string();
+            crate::hf_model_mgr::hf_delete_model(repo_id.clone(), filename.clone())
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "repo_id": repo_id, "filename": filename }))
         }
 
         "hf_cancel_download" => {
-            let id = args.get("download_id").and_then(|v| v.as_str()).ok_or("Missing 'download_id'")?.to_string();
-            crate::hf_model_mgr::hf_cancel_download(id.clone()).await
+            let id = args
+                .get("download_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'download_id'")?
+                .to_string();
+            crate::hf_model_mgr::hf_cancel_download(id.clone())
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "cancelled", "download_id": id }))
         }
@@ -4433,20 +5728,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Tunnel Server
         // ────────────────────────────────────────────────────────────────────
         "start_tunnel_server" => {
-            let result = crate::tunnel::start_tunnel_server().await
+            let result = crate::tunnel::start_tunnel_server()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "started", "info": result }))
         }
 
         "stop_tunnel_server" => {
-            let result = crate::tunnel::stop_tunnel_server().await
+            let result = crate::tunnel::stop_tunnel_server()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "stopped", "info": result }))
         }
 
         "send_tunnel_request" => {
-            let request = args.get("request").and_then(|v| v.as_str()).ok_or("Missing 'request'")?.to_string();
-            let result = crate::tunnel::send_tunnel_request(request).await
+            let request = args
+                .get("request")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'request'")?
+                .to_string();
+            let result = crate::tunnel::send_tunnel_request(request)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "sent", "response": result }))
         }
@@ -4481,14 +5783,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_sftp_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
             let cred = neurodeck_infrastructure::secrets::get_sftp_credential(name)
                 .map_err(|e| format!("Keychain read failed: {}", e))?;
             Ok(serde_json::json!({ "profile": name, "password": cred }))
         }
 
         "delete_sftp_credential" => {
-            let name = args.get("profile_name").and_then(|v| v.as_str()).ok_or("Missing 'profile_name'")?;
+            let name = args
+                .get("profile_name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'profile_name'")?;
             neurodeck_infrastructure::secrets::delete_sftp_credential(name)
                 .map_err(|e| format!("Keychain delete failed: {}", e))?;
             Ok(serde_json::json!({ "status": "deleted", "profile": name }))
@@ -4498,29 +5806,57 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Prompt Engineering (LLM calls)
         // ────────────────────────────────────────────────────────────────────
         "optimize_raw_prompt" => {
-            let raw_text = args.get("raw_text").and_then(|v| v.as_str()).ok_or("Missing 'raw_text'")?;
-            if raw_text.trim().is_empty() { return Err("Input draft cannot be empty".to_string()); }
+            let raw_text = args
+                .get("raw_text")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'raw_text'")?;
+            if raw_text.trim().is_empty() {
+                return Err("Input draft cannot be empty".to_string());
+            }
             let provider = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app.provider.clone()
             };
-            let system = "You are an expert prompt engineer. Return ONLY a valid JSON object with keys: \
+            let system =
+                "You are an expert prompt engineer. Return ONLY a valid JSON object with keys: \
                 persona, task, context, tone, constraints, format. No markdown, no explanation.";
-            let result = provider.chat_with_image(raw_text, system, None, None).await
+            let result = provider
+                .chat_with_image(raw_text, system, None, None)
+                .await
                 .map_err(|e| e.to_string())?;
-            let cleaned = result.trim().trim_start_matches("```json").trim_start_matches("```")
-                .trim_end_matches("```").trim();
+            let cleaned = result
+                .trim()
+                .trim_start_matches("```json")
+                .trim_start_matches("```")
+                .trim_end_matches("```")
+                .trim();
             let parsed: serde_json::Value = serde_json::from_str(cleaned)
                 .unwrap_or_else(|_| serde_json::json!({ "raw": result }));
             Ok(parsed)
         }
 
         "generate_jpe_explanation_with_level" => {
-            let topic = args.get("topic").and_then(|v| v.as_str()).ok_or("Missing 'topic'")?;
-            let level = args.get("level").and_then(|v| v.as_str()).unwrap_or("intermediate");
+            let topic = args
+                .get("topic")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'topic'")?;
+            let level = args
+                .get("level")
+                .and_then(|v| v.as_str())
+                .unwrap_or("intermediate");
             let broadcaster = state.broadcaster.clone();
-            let provider = { state.app_state.lock().unwrap_or_else(|e| e.into_inner()).provider.clone() };
-            let prompt = format!("Explain '{}' for a {} audience in Just Plain English. Use analogies, be concise.", topic, level);
+            let provider = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .provider
+                    .clone()
+            };
+            let prompt = format!(
+                "Explain '{}' for a {} audience in Just Plain English. Use analogies, be concise.",
+                topic, level
+            );
             let topic_c = topic.to_string();
             let level_c = level.to_string();
             tokio::spawn(async move {
@@ -4528,33 +5864,96 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let mut full = String::new();
                 while let Some(chunk) = s.next().await {
                     match chunk {
-                        Ok(t) => { full.push_str(&t); broadcaster.emit("jpe_token", serde_json::json!({ "token": t })); }
-                        Err(e) => { broadcaster.emit("jpe_error", serde_json::json!({ "error": e.to_string() })); return; }
+                        Ok(t) => {
+                            full.push_str(&t);
+                            broadcaster.emit("jpe_token", serde_json::json!({ "token": t }));
+                        }
+                        Err(e) => {
+                            broadcaster
+                                .emit("jpe_error", serde_json::json!({ "error": e.to_string() }));
+                            return;
+                        }
                     }
                 }
-                broadcaster.emit("jpe_done", serde_json::json!({ "topic": topic_c, "level": level_c, "explanation": full }));
+                broadcaster.emit(
+                    "jpe_done",
+                    serde_json::json!({ "topic": topic_c, "level": level_c, "explanation": full }),
+                );
             });
             Ok(serde_json::json!({ "status": "streaming", "topic": topic, "level": level }))
         }
 
         "assemble_prompt_via_lua_cmd" => {
-            let persona     = args.get("persona").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let task        = args.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let context     = args.get("context").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let tone        = args.get("tone").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let constraints = args.get("constraints").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let format_str  = args.get("format").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let examples    = args.get("examples").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let formula     = args.get("formula").and_then(|v| v.as_str()).unwrap_or("AIDA").to_string();
+            let persona = args
+                .get("persona")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let task = args
+                .get("task")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let context = args
+                .get("context")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let tone = args
+                .get("tone")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let constraints = args
+                .get("constraints")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let format_str = args
+                .get("format")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let examples = args
+                .get("examples")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let formula = args
+                .get("formula")
+                .and_then(|v| v.as_str())
+                .unwrap_or("AIDA")
+                .to_string();
             let lua = state.lua.lock().unwrap_or_else(|e| e.into_inner());
-            let result = lua.assemble_prompt(&persona, &task, &context, &tone, &constraints, &format_str, &examples, &formula)
+            let result = lua
+                .assemble_prompt(
+                    &persona,
+                    &task,
+                    &context,
+                    &tone,
+                    &constraints,
+                    &format_str,
+                    &examples,
+                    &formula,
+                )
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "prompt": result }))
         }
 
         "search_history_ai" => {
-            let query = args.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?.to_string();
-            let provider = { state.app_state.lock().unwrap_or_else(|e| e.into_inner()).provider.clone() };
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'query'")?
+                .to_string();
+            let provider = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .provider
+                    .clone()
+            };
 
             let mut history: Vec<String> = Vec::new();
             let mut candidate_paths: Vec<std::path::PathBuf> = Vec::new();
@@ -4564,8 +5963,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 candidate_paths.push(h.join(".zsh_history"));
             }
             if let Ok(appdata) = std::env::var("APPDATA") {
-                candidate_paths.push(std::path::PathBuf::from(&appdata)
-                    .join("Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt"));
+                candidate_paths.push(
+                    std::path::PathBuf::from(&appdata).join(
+                        "Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt",
+                    ),
+                );
             }
             for path in &candidate_paths {
                 if let Ok(content) = std::fs::read_to_string(path) {
@@ -4574,21 +5976,34 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
 
             if history.is_empty() {
-                return Ok(serde_json::json!({ "results": [], "query": query, "note": "No shell history found" }));
+                return Ok(
+                    serde_json::json!({ "results": [], "query": query, "note": "No shell history found" }),
+                );
             }
 
-            let history_text = history.iter().take(300).cloned().collect::<Vec<_>>().join("\n");
+            let history_text = history
+                .iter()
+                .take(300)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n");
             let prompt = format!("Search this shell history for commands related to '{}'. Return a JSON array of the top 10 matching commands, most relevant first.\n\nHistory:\n{}", query, history_text);
 
             let result = provider.chat_with_image(&prompt, "You are a shell command search assistant. Return ONLY a JSON array of strings.", None, None).await
                 .map_err(|e| e.to_string())?;
-            let cleaned = result.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+            let cleaned = result
+                .trim()
+                .trim_start_matches("```json")
+                .trim_start_matches("```")
+                .trim_end_matches("```")
+                .trim();
             let parsed: Vec<String> = serde_json::from_str(cleaned).unwrap_or_default();
             Ok(serde_json::json!({ "results": parsed, "query": query }))
         }
 
         "read_last_screenshot" => {
-            let info = crate::commands::read_last_screenshot().await
+            let info = crate::commands::read_last_screenshot()
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(info).map_err(|e| e.to_string())?)
         }
@@ -4597,7 +6012,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // API Lab Extended
         // ────────────────────────────────────────────────────────────────────
         "api_curl_import" => {
-            let curl = args.get("curl").and_then(|v| v.as_str()).ok_or("Missing 'curl'")?.to_string();
+            let curl = args
+                .get("curl")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'curl'")?
+                .to_string();
             let req = crate::commands::api_curl_import(curl).map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(req).map_err(|e| e.to_string())?)
         }
@@ -4608,24 +6027,42 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Git AI & Credentials
         // ────────────────────────────────────────────────────────────────────
         "git_generate_commit_message" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let provider = { state.app_state.lock().unwrap_or_else(|e| e.into_inner()).provider.clone() };
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let provider = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .provider
+                    .clone()
+            };
 
             let diff = tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
-                let head_tree = repo.head().ok()
+                let head_tree = repo
+                    .head()
+                    .ok()
                     .and_then(|h| h.target())
                     .and_then(|oid| repo.find_commit(oid).ok())
                     .and_then(|c| c.tree().ok());
-                let diff = repo.diff_tree_to_workdir_with_index(head_tree.as_ref(), None)
+                let diff = repo
+                    .diff_tree_to_workdir_with_index(head_tree.as_ref(), None)
                     .map_err(|e| e.to_string())?;
                 let mut out = String::new();
                 let _ = diff.print(git2::DiffFormat::Patch, |_d, _h, line| {
-                    if let Ok(s) = std::str::from_utf8(line.content()) { out.push_str(s); }
+                    if let Ok(s) = std::str::from_utf8(line.content()) {
+                        out.push_str(s);
+                    }
                     true
                 });
                 Ok::<_, String>(out.chars().take(3000).collect::<String>())
-            }).await.map_err(|e| e.to_string())?;
+            })
+            .await
+            .map_err(|e| e.to_string())?;
 
             let diff_text = diff.map_err(|e| e.to_string())?;
             let prompt = format!("Generate a concise git commit message for this diff (Conventional Commits format):\n\n{}", diff_text);
@@ -4635,25 +6072,47 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_credential_store" => {
-            let host     = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?;
-            let username = args.get("username").and_then(|v| v.as_str()).ok_or("Missing 'username'")?;
-            let token    = args.get("token").and_then(|v| v.as_str()).ok_or("Missing 'token'")?;
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?;
+            let username = args
+                .get("username")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'username'")?;
+            let token = args
+                .get("token")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'token'")?;
             let creds_path = crate::user_config_dir().join("data/git_credentials.json");
             let mut creds: std::collections::HashMap<String, serde_json::Value> =
-                std::fs::read_to_string(&creds_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-            creds.insert(host.to_string(), serde_json::json!({ "host": host, "username": username, "token": token }));
-            std::fs::write(&creds_path, serde_json::to_string_pretty(&creds).unwrap_or_default())
-                .map_err(|e| format!("Save failed: {}", e))?;
+                std::fs::read_to_string(&creds_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
+            creds.insert(
+                host.to_string(),
+                serde_json::json!({ "host": host, "username": username, "token": token }),
+            );
+            std::fs::write(
+                &creds_path,
+                serde_json::to_string_pretty(&creds).unwrap_or_default(),
+            )
+            .map_err(|e| format!("Save failed: {}", e))?;
             Ok(serde_json::json!({ "status": "stored", "host": host }))
         }
 
         "git_credential_get" => {
-            let host = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?;
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?;
             let creds_path = crate::user_config_dir().join("data/git_credentials.json");
             let creds: std::collections::HashMap<String, serde_json::Value> =
-                std::fs::read_to_string(&creds_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+                std::fs::read_to_string(&creds_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
             if let Some(cred) = creds.get(host) {
                 Ok(cred.clone())
             } else {
@@ -4662,81 +6121,144 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_credential_delete" => {
-            let host = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?;
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?;
             let creds_path = crate::user_config_dir().join("data/git_credentials.json");
             let mut creds: std::collections::HashMap<String, serde_json::Value> =
-                std::fs::read_to_string(&creds_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-            if creds.remove(host).is_none() { return Err(format!("No credential for '{}'", host)); }
-            std::fs::write(&creds_path, serde_json::to_string_pretty(&creds).unwrap_or_default())
-                .map_err(|e| e.to_string())?;
+                std::fs::read_to_string(&creds_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
+            if creds.remove(host).is_none() {
+                return Err(format!("No credential for '{}'", host));
+            }
+            std::fs::write(
+                &creds_path,
+                serde_json::to_string_pretty(&creds).unwrap_or_default(),
+            )
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "host": host }))
         }
 
         "git_init" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             tokio::task::spawn_blocking(move || {
                 git2::Repository::init(&path).map_err(|e| e.to_string())?;
                 let repos_path = crate::user_config_dir().join("git_repos.json");
-                let name = std::path::Path::new(&path).file_name()
-                    .and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
-                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+                let name = std::path::Path::new(&path)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
                 repos.retain(|r| r["path"].as_str() != Some(path.as_str()));
                 repos.insert(0, serde_json::json!({ "path": path, "name": name }));
                 repos.truncate(20);
-                let _ = std::fs::write(&repos_path, serde_json::to_string_pretty(&repos).unwrap_or_default());
+                let _ = std::fs::write(
+                    &repos_path,
+                    serde_json::to_string_pretty(&repos).unwrap_or_default(),
+                );
                 Ok(serde_json::json!({ "status": "initialized", "path": path }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
         "git_clone" => {
-            let url  = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?
+                .to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             let broadcaster = state.broadcaster.clone();
-            let url_c = url.clone(); let path_c = path.clone();
+            let url_c = url.clone();
+            let path_c = path.clone();
             tokio::task::spawn_blocking(move || {
-                broadcaster.emit("git_clone_started", serde_json::json!({ "url": url_c, "path": path_c }));
+                broadcaster.emit(
+                    "git_clone_started",
+                    serde_json::json!({ "url": url_c, "path": path_c }),
+                );
                 let mut builder = git2::build::RepoBuilder::new();
                 let mut cb = git2::RemoteCallbacks::new();
-                cb.credentials(|_url, user, _| git2::Cred::ssh_key_from_agent(user.unwrap_or("git")));
+                cb.credentials(|_url, user, _| {
+                    git2::Cred::ssh_key_from_agent(user.unwrap_or("git"))
+                });
                 let mut fopts = git2::FetchOptions::new();
                 fopts.remote_callbacks(cb);
                 builder.fetch_options(fopts);
-                builder.clone(&url_c, std::path::Path::new(&path_c)).map_err(|e| e.to_string())?;
+                builder
+                    .clone(&url_c, std::path::Path::new(&path_c))
+                    .map_err(|e| e.to_string())?;
                 let repos_path = crate::user_config_dir().join("git_repos.json");
-                let name = std::path::Path::new(&path_c).file_name()
-                    .and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
-                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+                let name = std::path::Path::new(&path_c)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let mut repos: Vec<serde_json::Value> = std::fs::read_to_string(&repos_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default();
                 repos.retain(|r| r["path"].as_str() != Some(path_c.as_str()));
                 repos.insert(0, serde_json::json!({ "path": path_c, "name": name }));
                 repos.truncate(20);
-                let _ = std::fs::write(&repos_path, serde_json::to_string_pretty(&repos).unwrap_or_default());
+                let _ = std::fs::write(
+                    &repos_path,
+                    serde_json::to_string_pretty(&repos).unwrap_or_default(),
+                );
                 Ok(serde_json::json!({ "status": "cloned", "url": url_c, "path": path_c }))
-            }).await.map_err(|e| e.to_string())?
+            })
+            .await
+            .map_err(|e| e.to_string())?
         }
 
-        "git_init_or_clone_unreachable" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "git_init and git_clone require Tauri AppHandle for file-dialog; use the Tauri UI" }))
-        }
+        "git_init_or_clone_unreachable" => Ok(
+            serde_json::json!({ "status": "unavailable", "note": "git_init and git_clone require Tauri AppHandle for file-dialog; use the Tauri UI" }),
+        ),
 
         // ────────────────────────────────────────────────────────────────────
         // Memory Import & Graph
         // ────────────────────────────────────────────────────────────────────
         "memory_import_data" => {
-            let data = args.get("data").and_then(|v| v.as_str()).ok_or("Missing 'data'")?;
-            let records: Vec<crate::memory::MemoryRecord> = serde_json::from_str(data)
-                .map_err(|e| format!("Invalid memory JSON: {}", e))?;
+            let data = args
+                .get("data")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'data'")?;
+            let records: Vec<crate::memory::MemoryRecord> =
+                serde_json::from_str(data).map_err(|e| format!("Invalid memory JSON: {}", e))?;
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
                 let mut imported = 0usize;
                 for rec in &records {
-                    if db.store_message(rec.id.clone(), rec.content.clone(), rec.embedding.clone(), rec.metadata.clone()).is_ok() {
+                    if db
+                        .store_message(
+                            rec.id.clone(),
+                            rec.content.clone(),
+                            rec.embedding.clone(),
+                            rec.metadata.clone(),
+                        )
+                        .is_ok()
+                    {
                         imported += 1;
                     }
                 }
-                Ok(serde_json::json!({ "status": "imported", "imported": imported, "total": records.len() }))
+                Ok(
+                    serde_json::json!({ "status": "imported", "imported": imported, "total": records.len() }),
+                )
             } else {
                 Err("Memory database not initialized".to_string())
             }
@@ -4746,10 +6268,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
                 let all = db.list_all().map_err(|e| e.to_string())?;
-                let nodes: Vec<_> = all.iter().map(|r| serde_json::json!({
-                    "id": r.id, "label": r.content.chars().take(60).collect::<String>(),
-                    "role": r.metadata.get("role").cloned().unwrap_or_default()
-                })).collect();
+                let nodes: Vec<_> = all
+                    .iter()
+                    .map(|r| {
+                        serde_json::json!({
+                            "id": r.id, "label": r.content.chars().take(60).collect::<String>(),
+                            "role": r.metadata.get("role").cloned().unwrap_or_default()
+                        })
+                    })
+                    .collect();
                 Ok(serde_json::json!({ "nodes": nodes, "edges": [], "count": nodes.len() }))
             } else {
                 Err("Memory database not initialized".to_string())
@@ -4768,27 +6295,48 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Write to / Kill running process
         // ────────────────────────────────────────────────────────────────────
         // write_to_process / kill_process → final stubs below
-        "_stub_process_removed" => { Ok(serde_json::json!({ "status": "stub_removed" })) }
+        "_stub_process_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
 
         // ────────────────────────────────────────────────────────────────────
         // Transfer Extended (require AppHandle for events — stubs)
         // ────────────────────────────────────────────────────────────────────
         "start_file_transfer" => {
-            let peer_ip   = args.get("peer_ip").and_then(|v| v.as_str()).ok_or("Missing 'peer_ip'")?.to_string();
-            let file_path = args.get("file_path").and_then(|v| v.as_str()).ok_or("Missing 'file_path'")?.to_string();
+            let peer_ip = args
+                .get("peer_ip")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'peer_ip'")?
+                .to_string();
+            let file_path = args
+                .get("file_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'file_path'")?
+                .to_string();
             let transfer_id = crate::transfer::start_file_transfer_impl(
-                peer_ip, file_path, state.broadcaster.clone(), state.transfer.clone()
-            ).await?;
+                peer_ip,
+                file_path,
+                state.broadcaster.clone(),
+                state.transfer.clone(),
+            )
+            .await?;
             Ok(serde_json::json!({ "status": "started", "transfer_id": transfer_id }))
         }
 
         "respond_to_transfer" => {
-            let transfer_id = args.get("transfer_id").and_then(|v| v.as_str()).ok_or("Missing 'transfer_id'")?.to_string();
-            let accept = args.get("accept").and_then(|v| v.as_bool()).unwrap_or(false);
+            let transfer_id = args
+                .get("transfer_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'transfer_id'")?
+                .to_string();
+            let accept = args
+                .get("accept")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             let mut s = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(tx) = s.accept_txs.remove(&transfer_id) {
                 let _ = tx.send(accept);
-                Ok(serde_json::json!({ "status": "responded", "transfer_id": transfer_id, "accept": accept }))
+                Ok(
+                    serde_json::json!({ "status": "responded", "transfer_id": transfer_id, "accept": accept }),
+                )
             } else {
                 Err("No pending transfer response channel found".to_string())
             }
@@ -4802,12 +6350,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_active_transfers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let transfers: Vec<_> = transfer_state.transfers.iter().map(|(k, _)| k.clone()).collect();
+            let transfers: Vec<_> = transfer_state
+                .transfers
+                .iter()
+                .map(|(k, _)| k.clone())
+                .collect();
             Ok(serde_json::json!({ "transfers": transfers, "count": transfers.len() }))
         }
 
         "set_group_code" => {
-            let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?;
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?;
             let mut ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
             ts.group_code = code.to_string();
             Ok(serde_json::json!({ "status": "set", "code": code }))
@@ -4822,67 +6377,210 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // SFTP (calls public async fns — no AppHandle needed)
         // ────────────────────────────────────────────────────────────────────
         "sftp_test_connection" => {
-            let host      = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port      = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
-            let user      = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
-            let auth_type = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
-            let password  = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let key_path  = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let result = crate::sftp::sftp_test_connection(host, port, user, auth_type, password, key_path).await
-                .map_err(|e| e.to_string())?;
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'user'")?
+                .to_string();
+            let auth_type = args
+                .get("auth_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("password")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let key_path = args
+                .get("key_path")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let result =
+                crate::sftp::sftp_test_connection(host, port, user, auth_type, password, key_path)
+                    .await
+                    .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "connected", "cwd": result }))
         }
 
         "sftp_list_dir" => {
-            let host      = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port      = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
-            let user      = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
-            let auth_type = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
-            let password  = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let key_path  = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let path      = args.get("path").and_then(|v| v.as_str()).unwrap_or("/").to_string();
-            let entries = crate::sftp::sftp_list_dir(host, port, user, auth_type, password, key_path, path.clone()).await
-                .map_err(|e| e.to_string())?;
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'user'")?
+                .to_string();
+            let auth_type = args
+                .get("auth_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("password")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let key_path = args
+                .get("key_path")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .unwrap_or("/")
+                .to_string();
+            let entries = crate::sftp::sftp_list_dir(
+                host,
+                port,
+                user,
+                auth_type,
+                password,
+                key_path,
+                path.clone(),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "path": path, "entries": entries, "count": entries.len() }))
         }
 
         "sftp_download_file" => {
-            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
-            let user        = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
-            let auth_type   = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
-            let password    = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let key_path    = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
-            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
-            crate::sftp::sftp_download_file(host, port, user, auth_type, password, key_path, remote_path.clone(), local_path.clone()).await
-                .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "downloaded", "remote_path": remote_path, "local_path": local_path }))
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'user'")?
+                .to_string();
+            let auth_type = args
+                .get("auth_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("password")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let key_path = args
+                .get("key_path")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let remote_path = args
+                .get("remote_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'remote_path'")?
+                .to_string();
+            let local_path = args
+                .get("local_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'local_path'")?
+                .to_string();
+            crate::sftp::sftp_download_file(
+                host,
+                port,
+                user,
+                auth_type,
+                password,
+                key_path,
+                remote_path.clone(),
+                local_path.clone(),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(
+                serde_json::json!({ "status": "downloaded", "remote_path": remote_path, "local_path": local_path }),
+            )
         }
 
         "sftp_upload_file" => {
-            let host        = args.get("host").and_then(|v| v.as_str()).ok_or("Missing 'host'")?.to_string();
-            let port        = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
-            let user        = args.get("user").and_then(|v| v.as_str()).ok_or("Missing 'user'")?.to_string();
-            let auth_type   = args.get("auth_type").and_then(|v| v.as_str()).unwrap_or("password").to_string();
-            let password    = args.get("password").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let key_path    = args.get("key_path").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let local_path  = args.get("local_path").and_then(|v| v.as_str()).ok_or("Missing 'local_path'")?.to_string();
-            let remote_path = args.get("remote_path").and_then(|v| v.as_str()).ok_or("Missing 'remote_path'")?.to_string();
-            crate::sftp::sftp_upload_file(host, port, user, auth_type, password, key_path, local_path.clone(), remote_path.clone()).await
-                .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "uploaded", "local_path": local_path, "remote_path": remote_path }))
+            let host = args
+                .get("host")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'host'")?
+                .to_string();
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'user'")?
+                .to_string();
+            let auth_type = args
+                .get("auth_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("password")
+                .to_string();
+            let password = args
+                .get("password")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let key_path = args
+                .get("key_path")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let local_path = args
+                .get("local_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'local_path'")?
+                .to_string();
+            let remote_path = args
+                .get("remote_path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'remote_path'")?
+                .to_string();
+            crate::sftp::sftp_upload_file(
+                host,
+                port,
+                user,
+                auth_type,
+                password,
+                key_path,
+                local_path.clone(),
+                remote_path.clone(),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(
+                serde_json::json!({ "status": "uploaded", "local_path": local_path, "remote_path": remote_path }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
         // LLM Connection Test
         // ────────────────────────────────────────────────────────────────────
         "test_llm_connection" => {
-            let provider = args.get("provider").and_then(|v| v.as_str()).ok_or("Missing 'provider'")?.to_string();
-            let model    = args.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let url      = args.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let key      = args.get("key").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let result = crate::commands::test_llm_connection(provider, model, url, key).await
+            let provider = args
+                .get("provider")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'provider'")?
+                .to_string();
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let key = args
+                .get("key")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let result = crate::commands::test_llm_connection(provider, model, url, key)
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "ok", "message": result }))
         }
@@ -4891,44 +6589,68 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Whisper Configuration
         // ────────────────────────────────────────────────────────────────────
         "set_whisper_config" => {
-            let binary = args.get("binary").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let model  = args.get("model").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let binary = args
+                .get("binary")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             app_state.config.stt.whisper_binary = binary.clone();
-            app_state.config.stt.whisper_model  = model.clone();
+            app_state.config.stt.whisper_model = model.clone();
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "updated", "binary": binary, "model": model }))
         }
 
         // download_whisper_model → real broadcaster implementation below
-        "_stub_whisper_download_removed" => { Ok(serde_json::json!({ "status": "stub_removed" })) }
+        "_stub_whisper_download_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
 
         // ────────────────────────────────────────────────────────────────────
         // Plugin Install / Uninstall / Reload (bridge-native)
         // ────────────────────────────────────────────────────────────────────
         "install_plugin" => {
-            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
-            crate::plugin_mgr::install_plugin(url.clone()).await
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?
+                .to_string();
+            crate::plugin_mgr::install_plugin(url.clone())
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "installed", "url": url }))
         }
 
         "install_plugin_from_registry" => {
-            let plugin_id = args.get("plugin_id").or_else(|| args.get("pluginId"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
+            let plugin_id = args
+                .get("plugin_id")
+                .or_else(|| args.get("pluginId"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'plugin_id'")?
+                .to_string();
             crate::plugin_mgr::install_plugin_from_registry(
                 plugin_id.clone(),
                 state.lua.clone(),
                 state.broadcaster.clone(),
-            ).await.map_err(|e| e.to_string())?;
+            )
+            .await
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "installed", "plugin_id": plugin_id }))
         }
 
         "uninstall_plugin" => {
-            let plugin_id = args.get("plugin_id").or_else(|| args.get("pluginId"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'plugin_id'")?.to_string();
-            crate::plugin_mgr::uninstall_plugin(plugin_id.clone()).await
+            let plugin_id = args
+                .get("plugin_id")
+                .or_else(|| args.get("pluginId"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'plugin_id'")?
+                .to_string();
+            crate::plugin_mgr::uninstall_plugin(plugin_id.clone())
+                .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "uninstalled", "plugin_id": plugin_id }))
         }
@@ -4939,10 +6661,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "ollama_pull_model" => {
             let base_url = {
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                args.get("base_url").and_then(|v| v.as_str()).map(|s| s.to_string())
+                args.get("base_url")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
                     .unwrap_or_else(|| app_state.config.llm.ollama_base_url.clone())
             };
-            let model    = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?.to_string();
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model'")?
+                .to_string();
             let broadcaster = state.broadcaster.clone();
             let url = format!("{}/api/pull", base_url.trim_end_matches('/'));
             let model_c = model.clone();
@@ -4953,25 +6681,50 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     Ok(mut resp) => {
                         while let Ok(Some(chunk)) = resp.chunk().await {
                             if let Ok(s) = std::str::from_utf8(&chunk) {
-                                broadcaster.emit("ollama_pull_progress", serde_json::json!({ "model": model_c, "data": s }));
+                                broadcaster.emit(
+                                    "ollama_pull_progress",
+                                    serde_json::json!({ "model": model_c, "data": s }),
+                                );
                             }
                         }
-                        broadcaster.emit("ollama_pull_done", serde_json::json!({ "model": model_c }));
+                        broadcaster
+                            .emit("ollama_pull_done", serde_json::json!({ "model": model_c }));
                     }
-                    Err(e) => broadcaster.emit("ollama_pull_error", serde_json::json!({ "model": model_c, "error": e.to_string() }))
+                    Err(e) => broadcaster.emit(
+                        "ollama_pull_error",
+                        serde_json::json!({ "model": model_c, "error": e.to_string() }),
+                    ),
                 }
             });
-            Ok(serde_json::json!({ "status": "streaming", "model": model, "note": "Monitor WebSocket for ollama_pull_progress events" }))
+            Ok(
+                serde_json::json!({ "status": "streaming", "model": model, "note": "Monitor WebSocket for ollama_pull_progress events" }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
         // HuggingFace Download (streaming via broadcaster)
         // ────────────────────────────────────────────────────────────────────
         "hf_download_model" => {
-            let repo_id  = args.get("repo_id").and_then(|v| v.as_str()).ok_or("Missing 'repo_id'")?.to_string();
-            let filename = args.get("filename").and_then(|v| v.as_str()).ok_or("Missing 'filename'")?.to_string();
+            let repo_id = args
+                .get("repo_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'repo_id'")?
+                .to_string();
+            let filename = args
+                .get("filename")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'filename'")?
+                .to_string();
             let broadcaster = state.broadcaster.clone();
-            let download_id = format!("{}_{}", repo_id.replace('/', "_"), uuid::Uuid::new_v4().to_string().chars().take(8).collect::<String>());
+            let download_id = format!(
+                "{}_{}",
+                repo_id.replace('/', "_"),
+                uuid::Uuid::new_v4()
+                    .to_string()
+                    .chars()
+                    .take(8)
+                    .collect::<String>()
+            );
             let dl_id = download_id.clone();
             let repo_c = repo_id.clone();
             let file_c = filename.clone();
@@ -4981,9 +6734,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 match client.get(&url).send().await {
                     Ok(resp) => {
                         let total = resp.content_length().unwrap_or(0);
-                        broadcaster.emit("hf_download_started", serde_json::json!({ "download_id": dl_id, "total_bytes": total }));
+                        broadcaster.emit(
+                            "hf_download_started",
+                            serde_json::json!({ "download_id": dl_id, "total_bytes": total }),
+                        );
                         let dest = crate::user_config_dir().join("data/models").join(&file_c);
-                        std::fs::create_dir_all(dest.parent().unwrap_or(std::path::Path::new("."))).ok();
+                        std::fs::create_dir_all(dest.parent().unwrap_or(std::path::Path::new(".")))
+                            .ok();
                         if let Ok(bytes) = resp.bytes().await {
                             if std::fs::write(&dest, &bytes).is_ok() {
                                 broadcaster.emit("hf_download_done", serde_json::json!({ "download_id": dl_id, "path": dest.display().to_string() }));
@@ -4992,34 +6749,61 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                             }
                         }
                     }
-                    Err(e) => broadcaster.emit("hf_download_error", serde_json::json!({ "download_id": dl_id, "error": e.to_string() }))
+                    Err(e) => broadcaster.emit(
+                        "hf_download_error",
+                        serde_json::json!({ "download_id": dl_id, "error": e.to_string() }),
+                    ),
                 }
             });
-            Ok(serde_json::json!({ "status": "downloading", "download_id": download_id, "repo_id": repo_id, "filename": filename }))
+            Ok(
+                serde_json::json!({ "status": "downloading", "download_id": download_id, "repo_id": repo_id, "filename": filename }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
         // Git SSH Key Generation
         // ────────────────────────────────────────────────────────────────────
         "git_generate_ssh_key" => {
-            let label = args.get("label").and_then(|v| v.as_str()).unwrap_or("neurodeck").to_string();
+            let label = args
+                .get("label")
+                .and_then(|v| v.as_str())
+                .unwrap_or("neurodeck")
+                .to_string();
             let ssh_dir = crate::user_config_dir().join("data/ssh_keys");
             std::fs::create_dir_all(&ssh_dir).ok();
             let key_path = ssh_dir.join(format!("{}_rsa", label));
             let key_path_str = key_path.display().to_string();
             let result = tokio::task::spawn_blocking(move || {
                 std::process::Command::new("ssh-keygen")
-                    .args(["-t", "rsa", "-b", "4096", "-C", &label, "-f", &key_path_str, "-N", ""])
+                    .args([
+                        "-t",
+                        "rsa",
+                        "-b",
+                        "4096",
+                        "-C",
+                        &label,
+                        "-f",
+                        &key_path_str,
+                        "-N",
+                        "",
+                    ])
                     .output()
-            }).await.map_err(|e| e.to_string())?;
+            })
+            .await
+            .map_err(|e| e.to_string())?;
             match result {
                 Ok(out) if out.status.success() => {
                     let pub_path = format!("{}.pub", key_path.display());
                     let pub_key = std::fs::read_to_string(&pub_path).unwrap_or_default();
-                    Ok(serde_json::json!({ "status": "generated", "private_key_path": key_path.display().to_string(), "public_key": pub_key.trim().to_string() }))
+                    Ok(
+                        serde_json::json!({ "status": "generated", "private_key_path": key_path.display().to_string(), "public_key": pub_key.trim().to_string() }),
+                    )
                 }
-                Ok(out) => Err(format!("ssh-keygen failed: {}", String::from_utf8_lossy(&out.stderr))),
-                Err(e) => Err(format!("ssh-keygen not available: {}", e))
+                Ok(out) => Err(format!(
+                    "ssh-keygen failed: {}",
+                    String::from_utf8_lossy(&out.stderr)
+                )),
+                Err(e) => Err(format!("ssh-keygen not available: {}", e)),
             }
         }
 
@@ -5028,7 +6812,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let mut keys = Vec::new();
             if let Ok(entries) = std::fs::read_dir(&ssh_dir) {
                 for entry in entries.flatten() {
-                    if entry.path().extension().map(|e| e == "pub").unwrap_or(false) {
+                    if entry
+                        .path()
+                        .extension()
+                        .map(|e| e == "pub")
+                        .unwrap_or(false)
+                    {
                         if let Ok(content) = std::fs::read_to_string(entry.path()) {
                             keys.push(content.trim().to_string());
                         }
@@ -5042,15 +6831,37 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // API Lab — AI Request Generation
         // ────────────────────────────────────────────────────────────────────
         "api_generate_request" => {
-            let description = args.get("description").and_then(|v| v.as_str()).ok_or("Missing 'description'")?;
-            let provider = { state.app_state.lock().unwrap_or_else(|e| e.into_inner()).provider.clone() };
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'description'")?;
+            let provider = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .provider
+                    .clone()
+            };
             let prompt = format!(
                 "Generate an HTTP API request for: '{}'\n\
                 Return ONLY a JSON object with keys: method (GET/POST/PUT/DELETE), url, headers (object), body (string or null). No markdown.", description
             );
-            let result = provider.chat_with_image(&prompt, "You are an API expert. Return only JSON.", None, None).await
+            let result = provider
+                .chat_with_image(
+                    &prompt,
+                    "You are an API expert. Return only JSON.",
+                    None,
+                    None,
+                )
+                .await
                 .map_err(|e| e.to_string())?;
-            let cleaned = result.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+            let cleaned = result
+                .trim()
+                .trim_start_matches("```json")
+                .trim_start_matches("```")
+                .trim_end_matches("```")
+                .trim();
             let parsed: serde_json::Value = serde_json::from_str(cleaned)
                 .unwrap_or_else(|_| serde_json::json!({ "raw": result }));
             Ok(parsed)
@@ -5061,11 +6872,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_boot_diagnostics" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let memory_count = app_state.mem_db.as_ref()
-                .and_then(|db| db.export_all_records().ok().map(|r| r.len())).unwrap_or(0);
+            let memory_count = app_state
+                .mem_db
+                .as_ref()
+                .and_then(|db| db.export_all_records().ok().map(|r| r.len()))
+                .unwrap_or(0);
             let plugins = crate::plugin_mgr::list_local_plugins().unwrap_or_default();
             Ok(serde_json::json!({
-                "version":       "1.7.1-sekhmet",
+                "version":       concat!(env!("CARGO_PKG_VERSION"), "-ptah"),
                 "provider":      app_state.config.llm.default_provider,
                 "model":         if app_state.config.llm.default_provider == "gemini" { &app_state.config.llm.gemini_model } else { &app_state.config.llm.ollama_model },
                 "memory_ready":  app_state.mem_db.is_some(),
@@ -5082,9 +6896,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Model Comparison (parallel LLM calls)
         // ────────────────────────────────────────────────────────────────────
         "compare_models" => {
-            let prompt     = args.get("prompt").and_then(|v| v.as_str()).ok_or("Missing 'prompt'")?;
-            let model_a    = args.get("model_a").and_then(|v| v.as_str()).ok_or("Missing 'model_a'")?;
-            let model_b    = args.get("model_b").and_then(|v| v.as_str()).ok_or("Missing 'model_b'")?;
+            let prompt = args
+                .get("prompt")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'prompt'")?;
+            let model_a = args
+                .get("model_a")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model_a'")?;
+            let model_b = args
+                .get("model_b")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model_b'")?;
             let provider_name = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app.config.llm.default_provider.clone()
@@ -5096,18 +6919,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             tokio::spawn(async move {
                 for (model_name, label) in [(&model_a_c, "a"), (&model_b_c, "b")] {
                     let provider = if provider_name == "gemini" {
-                        Box::new(crate::llm::GeminiProvider::new(model_name.clone())) as Box<dyn crate::llm::LlmProvider>
+                        Box::new(crate::llm::GeminiProvider::new(model_name.clone()))
+                            as Box<dyn crate::llm::LlmProvider>
                     } else {
-                        Box::new(crate::llm::OllamaProvider::new(model_name.clone(), "http://localhost:11434".to_string(), "".to_string())) as Box<dyn crate::llm::LlmProvider>
+                        Box::new(crate::llm::OllamaProvider::new(
+                            model_name.clone(),
+                            "http://localhost:11434".to_string(),
+                            "".to_string(),
+                        )) as Box<dyn crate::llm::LlmProvider>
                     };
                     match provider.chat_with_image(&prompt_c, "You are a helpful assistant.", None, None).await {
                         Ok(resp) => broadcaster.emit("compare_result", serde_json::json!({ "model": model_name, "label": label, "response": resp })),
                         Err(e)   => broadcaster.emit("compare_error",  serde_json::json!({ "model": model_name, "label": label, "error": e.to_string() })),
                     }
                 }
-                broadcaster.emit("compare_done", serde_json::json!({ "models": [model_a_c, model_b_c] }));
+                broadcaster.emit(
+                    "compare_done",
+                    serde_json::json!({ "models": [model_a_c, model_b_c] }),
+                );
             });
-            Ok(serde_json::json!({ "status": "streaming", "note": "Watch WebSocket for compare_result events" }))
+            Ok(
+                serde_json::json!({ "status": "streaming", "note": "Watch WebSocket for compare_result events" }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -5123,10 +6956,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::PluginLoad,
                 )?;
             }
-            crate::plugin_mgr::reload_plugins_bridge(
-                state.lua.clone(),
-                state.broadcaster.clone(),
-            ).await.map_err(|e| e.to_string())?;
+            crate::plugin_mgr::reload_plugins_bridge(state.lua.clone(), state.broadcaster.clone())
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "reloaded" }))
         }
 
@@ -5134,7 +6966,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Document Index (broadcaster for progress instead of AppHandle)
         // ────────────────────────────────────────────────────────────────────
         "index_directory" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
             let broadcaster = state.broadcaster.clone();
             let (provider, mem_db) = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -5142,17 +6978,38 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             };
             let db = mem_db.ok_or("Memory database not initialized")?;
             let dir = std::path::PathBuf::from(&path);
-            if !dir.is_dir() { return Err(format!("'{}' is not a directory", path)); }
+            if !dir.is_dir() {
+                return Err(format!("'{}' is not a directory", path));
+            }
 
             tokio::spawn(async move {
                 let mut files: Vec<std::path::PathBuf> = Vec::new();
                 fn collect(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>, limit: usize) {
-                    if out.len() >= limit { return; }
+                    if out.len() >= limit {
+                        return;
+                    }
                     if let Ok(entries) = std::fs::read_dir(dir) {
                         for e in entries.flatten() {
                             let p = e.path();
-                            if p.is_dir() { collect(&p, out, limit); }
-                            else if matches!(p.extension().and_then(|x| x.to_str()), Some("txt"|"md"|"rs"|"py"|"js"|"ts"|"json"|"toml"|"yaml"|"yml"|"html"|"css")) {
+                            if p.is_dir() {
+                                collect(&p, out, limit);
+                            } else if matches!(
+                                p.extension().and_then(|x| x.to_str()),
+                                Some(
+                                    "txt"
+                                        | "md"
+                                        | "rs"
+                                        | "py"
+                                        | "js"
+                                        | "ts"
+                                        | "json"
+                                        | "toml"
+                                        | "yaml"
+                                        | "yml"
+                                        | "html"
+                                        | "css"
+                                )
+                            ) {
                                 out.push(p);
                             }
                         }
@@ -5160,7 +7017,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
                 collect(&dir, &mut files, 500);
                 let total = files.len();
-                broadcaster.emit("doc_index_progress", serde_json::json!({ "indexed": 0, "total": total }));
+                broadcaster.emit(
+                    "doc_index_progress",
+                    serde_json::json!({ "indexed": 0, "total": total }),
+                );
 
                 let mut indexed = 0usize;
                 for file in &files {
@@ -5178,16 +7038,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         Ok(e) => e,
                         Err(_) => vec![],
                     };
-                    let _ = db.store_message(id, content.chars().take(4000).collect(), embedding, meta);
+                    let _ =
+                        db.store_message(id, content.chars().take(4000).collect(), embedding, meta);
                     indexed += 1;
                     if indexed % 10 == 0 {
-                        broadcaster.emit("doc_index_progress", serde_json::json!({ "indexed": indexed, "total": total }));
+                        broadcaster.emit(
+                            "doc_index_progress",
+                            serde_json::json!({ "indexed": indexed, "total": total }),
+                        );
                     }
                 }
-                broadcaster.emit("doc_index_done", serde_json::json!({ "indexed": indexed, "total": total }));
+                broadcaster.emit(
+                    "doc_index_done",
+                    serde_json::json!({ "indexed": indexed, "total": total }),
+                );
             });
 
-            Ok(serde_json::json!({ "status": "indexing", "path": path, "note": "Monitor WebSocket for doc_index_progress events" }))
+            Ok(
+                serde_json::json!({ "status": "indexing", "path": path, "note": "Monitor WebSocket for doc_index_progress events" }),
+            )
         }
 
         "get_indexed_docs" => {
@@ -5217,7 +7086,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "search_docs_semantic" => {
-            let query = args.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?.to_string();
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'query'")?
+                .to_string();
             let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
             let (mem_db, provider) = {
@@ -5248,7 +7121,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         })
                         .take(limit)
                         .map(|r| {
-                            let file = r.metadata.get("path")
+                            let file = r
+                                .metadata
+                                .get("path")
                                 .or_else(|| r.metadata.get("file"))
                                 .cloned()
                                 .unwrap_or_default();
@@ -5277,12 +7152,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
                 let na: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
                 let nb: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-                if na == 0.0 || nb == 0.0 { 0.0 } else { dot / (na * nb) }
+                if na == 0.0 || nb == 0.0 {
+                    0.0
+                } else {
+                    dot / (na * nb)
+                }
             };
 
             let mut scored: Vec<(f32, _)> = docs_records
                 .into_iter()
-                .map(|r| { let s = cosine(&embedding, &r.embedding); (s, r) })
+                .map(|r| {
+                    let s = cosine(&embedding, &r.embedding);
+                    (s, r)
+                })
                 .collect();
             scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -5290,7 +7172,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .into_iter()
                 .take(limit)
                 .map(|(score, r)| {
-                    let file = r.metadata.get("path")
+                    let file = r
+                        .metadata
+                        .get("path")
                         .or_else(|| r.metadata.get("file"))
                         .cloned()
                         .unwrap_or_default();
@@ -5306,8 +7190,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "remove_indexed_doc" => {
-            let file_path = args.get("filePath").or_else(|| args.get("file_path"))
-                .and_then(|v| v.as_str()).ok_or("Missing 'filePath'")?.to_string();
+            let file_path = args
+                .get("filePath")
+                .or_else(|| args.get("file_path"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'filePath'")?
+                .to_string();
             let mem_db = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app.mem_db.clone()
@@ -5322,7 +7210,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let is_doc = r.metadata.get("source").map(|s| s.as_str()) == Some("doc")
                     || r.metadata.get("namespace").map(|s| s.as_str()) == Some("docs");
                 let path_val = r.metadata.get("path").or_else(|| r.metadata.get("file"));
-                let matches = path_val.map(|p| p.as_str() == file_path.as_str()).unwrap_or(false);
+                let matches = path_val
+                    .map(|p| p.as_str() == file_path.as_str())
+                    .unwrap_or(false);
                 if is_doc && matches {
                     let _ = db.delete_record(&r.id);
                     removed += 1;
@@ -5335,10 +7225,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Whisper Model Download (broadcaster for progress)
         // ────────────────────────────────────────────────────────────────────
         "download_whisper_model" => {
-            const VALID_MODELS: &[&str] = &["tiny.en", "base.en", "small.en", "medium.en", "tiny", "base", "small", "medium"];
-            let model = args.get("model").and_then(|v| v.as_str()).ok_or("Missing 'model'")?.to_string();
+            const VALID_MODELS: &[&str] = &[
+                "tiny.en",
+                "base.en",
+                "small.en",
+                "medium.en",
+                "tiny",
+                "base",
+                "small",
+                "medium",
+            ];
+            let model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'model'")?
+                .to_string();
             if !VALID_MODELS.contains(&model.as_str()) {
-                return Err(format!("Unknown model '{}'. Valid: {}", model, VALID_MODELS.join(", ")));
+                return Err(format!(
+                    "Unknown model '{}'. Valid: {}",
+                    model,
+                    VALID_MODELS.join(", ")
+                ));
             }
             let broadcaster = state.broadcaster.clone();
             let model_c = model.clone();
@@ -5353,8 +7260,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     return;
                 }
 
-                let url = format!("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{}.bin", model_c);
-                broadcaster.emit("whisper_download_progress", serde_json::json!({ "pct": 0, "model": model_c }));
+                let url = format!(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{}.bin",
+                    model_c
+                );
+                broadcaster.emit(
+                    "whisper_download_progress",
+                    serde_json::json!({ "pct": 0, "model": model_c }),
+                );
                 let client = reqwest::Client::new();
                 match client.get(&url).send().await {
                     Ok(resp) => {
@@ -5366,28 +7279,45 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                                         "done": true, "pct": 100, "path": target.display().to_string(), "bytes": bytes.len()
                                     }));
                                 } else {
-                                    broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": "Write failed" }));
+                                    broadcaster.emit(
+                                        "whisper_download_progress",
+                                        serde_json::json!({ "error": "Write failed" }),
+                                    );
                                 }
                             }
-                            Err(e) => broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": e.to_string() }))
+                            Err(e) => broadcaster.emit(
+                                "whisper_download_progress",
+                                serde_json::json!({ "error": e.to_string() }),
+                            ),
                         }
                     }
-                    Err(e) => broadcaster.emit("whisper_download_progress", serde_json::json!({ "error": e.to_string() }))
+                    Err(e) => broadcaster.emit(
+                        "whisper_download_progress",
+                        serde_json::json!({ "error": e.to_string() }),
+                    ),
                 }
             });
-            Ok(serde_json::json!({ "status": "downloading", "model": model, "note": "Monitor WebSocket for whisper_download_progress events" }))
+            Ok(
+                serde_json::json!({ "status": "downloading", "model": model, "note": "Monitor WebSocket for whisper_download_progress events" }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
         // BMAD Install (use bundled _bmad/ or assets/ directory)
         // ────────────────────────────────────────────────────────────────────
         "install_bmad_to_dir" => {
-            let target_dir = args.get("target_dir").and_then(|v| v.as_str()).ok_or("Missing 'target_dir'")?;
+            let target_dir = args
+                .get("target_dir")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'target_dir'")?;
             let target = std::path::Path::new(target_dir);
-            if !target.exists() { return Err(format!("Target directory does not exist: {}", target_dir)); }
+            if !target.exists() {
+                return Err(format!("Target directory does not exist: {}", target_dir));
+            }
 
             // Look for _bmad or assets/bmad-bundle relative to project root
-            let source = ["_bmad", "assets/bmad-bundle", "../_bmad"].iter()
+            let source = ["_bmad", "assets/bmad-bundle", "../_bmad"]
+                .iter()
                 .map(std::path::PathBuf::from)
                 .find(|p| p.exists())
                 .ok_or("BMAD bundle not found. Ensure _bmad/ exists at the project root.")?;
@@ -5398,24 +7328,40 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let mut count = 0;
                 for entry in std::fs::read_dir(src)?.flatten() {
                     let dest_path = dst.join(entry.file_name());
-                    if entry.path().is_dir() { count += copy_dir(&entry.path(), &dest_path)?; }
-                    else { std::fs::copy(&entry.path(), &dest_path)?; count += 1; }
+                    if entry.path().is_dir() {
+                        count += copy_dir(&entry.path(), &dest_path)?;
+                    } else {
+                        std::fs::copy(&entry.path(), &dest_path)?;
+                        count += 1;
+                    }
                 }
                 Ok(count)
             }
             let count = copy_dir(&source, &target.join("_bmad"))
                 .map_err(|e| format!("Copy failed: {}", e))?;
 
-            state.broadcaster.emit("bmad_install_progress", serde_json::json!({ "stage": "done", "files": count, "target": target_dir }));
-            Ok(serde_json::json!({ "status": "installed", "target": target_dir, "files_copied": count }))
+            state.broadcaster.emit(
+                "bmad_install_progress",
+                serde_json::json!({ "stage": "done", "files": count, "target": target_dir }),
+            );
+            Ok(
+                serde_json::json!({ "status": "installed", "target": target_dir, "files_copied": count }),
+            )
         }
 
         // ────────────────────────────────────────────────────────────────────
         // Remote Control Send (via broadcast_tx — no AppHandle needed)
         // ────────────────────────────────────────────────────────────────────
         "remote_send_to_clients" => {
-            let message = args.get("message").and_then(|v| v.as_str()).ok_or("Missing 'message'")?;
-            let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+            let message = args
+                .get("message")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'message'")?;
+            let guard = state
+                .remote
+                .handle
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(ref h) = *guard {
                 let _ = h.broadcast_tx.send(message.to_string());
                 Ok(serde_json::json!({ "status": "sent", "message_len": message.len() }))
@@ -5426,12 +7372,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "remote_relay_notification" => {
             let payload = args.get("payload").cloned().unwrap_or(args.clone());
-            let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+            let guard = state
+                .remote
+                .handle
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(ref h) = *guard {
-                let _ = h.broadcast_tx.send(serde_json::json!({ "type": "notification", "data": payload }).to_string());
+                let _ = h.broadcast_tx.send(
+                    serde_json::json!({ "type": "notification", "data": payload }).to_string(),
+                );
                 Ok(serde_json::json!({ "status": "relayed" }))
             } else {
-                Ok(serde_json::json!({ "status": "no_clients", "note": "Remote server not running" }))
+                Ok(
+                    serde_json::json!({ "status": "no_clients", "note": "Remote server not running" }),
+                )
             }
         }
 
@@ -5445,7 +7399,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 state.broadcaster.clone(),
                 state.remote.clone(),
                 state.pty.clone(),
-            ).await?;
+            )
+            .await?;
             Ok(result)
         }
 
@@ -5453,13 +7408,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             crate::remote_control::stop_remote_server_bridge(
                 state.remote.clone(),
                 state.pty.clone(),
-            ).await?;
+            )
+            .await?;
             Ok(serde_json::json!({ "status": "stopped" }))
         }
 
         "queue_agent_approval_request" => {
-            let action_type = args.get("action_type").and_then(|v| v.as_str()).unwrap_or("action").to_string();
-            let description = args.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let action_type = args
+                .get("action_type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("action")
+                .to_string();
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             let request_id = format!("{:016x}", rand::random::<u64>());
             let timestamp = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -5472,11 +7436,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 timestamp,
             };
             {
-                let mut guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+                let mut guard = state
+                    .remote
+                    .pending_approvals
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 guard.push(approval);
             }
             {
-                let guard = state.remote.handle.lock().unwrap_or_else(|e| e.into_inner());
+                let guard = state
+                    .remote
+                    .handle
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
                 if let Some(ref h) = *guard {
                     let msg = serde_json::json!({
                         "type": "agent_approval_request",
@@ -5484,7 +7456,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         "action_type": action_type,
                         "description": description,
                         "timestamp": timestamp,
-                    }).to_string();
+                    })
+                    .to_string();
                     let _ = h.broadcast_tx.send(msg);
                 }
             }
@@ -5492,13 +7465,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_pending_approvals" => {
-            let guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+            let guard = state
+                .remote
+                .pending_approvals
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             Ok(serde_json::json!({"approvals": *guard}))
         }
 
         "resolve_agent_approval" => {
-            let request_id = args.get("request_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let mut guard = state.remote.pending_approvals.lock().unwrap_or_else(|e| e.into_inner());
+            let request_id = args
+                .get("request_id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let mut guard = state
+                .remote
+                .pending_approvals
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             guard.retain(|a| a.request_id != request_id);
             Ok(serde_json::json!({"ok": true}))
         }
@@ -5507,13 +7492,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(9733) as u16;
             {
                 let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                if let Some(abort) = app.collab_abort.take() { abort.abort(); }
+                if let Some(abort) = app.collab_abort.take() {
+                    abort.abort();
+                }
                 app.collab_tx = None;
                 app.collab_mode = None;
                 app.collab_addr = None;
                 app.collab_peer_count = None;
             }
-            let (bound_port, session) = crate::canvas_collab::host(port, state.broadcaster.clone()).await?;
+            let (bound_port, session) =
+                crate::canvas_collab::host(port, state.broadcaster.clone()).await?;
             {
                 let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app.collab_abort = Some(session.abort_handle);
@@ -5526,10 +7514,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "canvas_collab_join" => {
-            let addr = args.get("addr").and_then(|v| v.as_str()).ok_or("Missing 'addr'")?.to_string();
+            let addr = args
+                .get("addr")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'addr'")?
+                .to_string();
             {
                 let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                if let Some(abort) = app.collab_abort.take() { abort.abort(); }
+                if let Some(abort) = app.collab_abort.take() {
+                    abort.abort();
+                }
                 app.collab_tx = None;
                 app.collab_mode = None;
                 app.collab_addr = None;
@@ -5547,26 +7541,33 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "joined" }))
         }
 
-        "set_kiosk_mode" => {
-            Ok(serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; bridge mode has no WebView" }))
-        }
+        "set_kiosk_mode" => Ok(
+            serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; bridge mode has no WebView" }),
+        ),
 
-        "get_window_mode" => {
-            Ok(serde_json::json!({ "fullscreen": false, "decorations": true, "kiosk": false, "note": "Bridge mode has no window" }))
-        }
+        "get_window_mode" => Ok(
+            serde_json::json!({ "fullscreen": false, "decorations": true, "kiosk": false, "note": "Bridge mode has no window" }),
+        ),
 
-        "close_splashscreen" => {
-            Ok(serde_json::json!({ "status": "no_splashscreen", "note": "Bridge mode has no splashscreen" }))
-        }
+        "close_splashscreen" => Ok(
+            serde_json::json!({ "status": "no_splashscreen", "note": "Bridge mode has no splashscreen" }),
+        ),
 
         "dispatch_action" => {
-            let action_id = args.get("action").and_then(|v| v.as_str()).ok_or("Missing 'action'")?.to_string();
+            let action_id = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'action'")?
+                .to_string();
             state.broadcaster.emit("deckcode-action", action_id);
             Ok(serde_json::json!({ "status": "dispatched" }))
         }
 
         "write_to_process" => {
-            let input = args.get("input").and_then(|v| v.as_str()).ok_or("Missing 'input'")?;
+            let input = args
+                .get("input")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'input'")?;
             if input.len() > 32 * 1024 {
                 return Err("Input exceeds 32KB".to_string());
             }
@@ -5575,7 +7576,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 app.process_stdin_tx.clone()
             };
             if let Some(tx) = tx {
-                tx.send(input.to_string()).await.map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
+                tx.send(input.to_string())
+                    .await
+                    .map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
                 Ok(serde_json::json!({ "status": "written" }))
             } else {
                 Err("No active process running to write to".to_string())
@@ -5599,8 +7602,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Canvas Code Execution (bridge-native, streams via WebSocket)
         // ────────────────────────────────────────────────────────────────────
         "exec_code_stream" => {
-            let code = args.get("code").and_then(|v| v.as_str()).ok_or("Missing 'code'")?.to_string();
-            let lang = args.get("lang").and_then(|v| v.as_str()).ok_or("Missing 'lang'")?.to_string();
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?
+                .to_string();
+            let lang = args
+                .get("lang")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'lang'")?
+                .to_string();
 
             let (workspace_path, agent_id) = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -5609,12 +7620,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             };
 
             crate::permissions::require_capability(
-                &state.app_state.lock().unwrap_or_else(|e| e.into_inner()).config.security.permission_registry,
+                &state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .security
+                    .permission_registry,
                 &agent_id,
                 crate::permissions::Capability::ShellExec,
             )?;
 
-            crate::security::validate_script_payload(&code, &lang, "canvas-exec", workspace_path.as_deref())?;
+            crate::security::validate_script_payload(
+                &code,
+                &lang,
+                "canvas-exec",
+                workspace_path.as_deref(),
+            )?;
 
             let (program, args_vec): (String, Vec<String>) = match lang.to_lowercase().as_str() {
                 "python" | "python3" => {
@@ -5626,13 +7648,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
                 "bash" | "sh" | "shell" => {
                     if cfg!(target_os = "windows") {
-                        ("powershell".to_string(), vec!["-Command".to_string(), code.clone()])
+                        (
+                            "powershell".to_string(),
+                            vec!["-Command".to_string(), code.clone()],
+                        )
                     } else {
                         ("bash".to_string(), vec!["-c".to_string(), code.clone()])
                     }
                 }
-                "powershell" => ("powershell".to_string(), vec!["-Command".to_string(), code.clone()]),
-                "javascript" | "js" | "node" => ("node".to_string(), vec!["-e".to_string(), code.clone()]),
+                "powershell" => (
+                    "powershell".to_string(),
+                    vec!["-Command".to_string(), code.clone()],
+                ),
+                "javascript" | "js" | "node" => {
+                    ("node".to_string(), vec!["-e".to_string(), code.clone()])
+                }
                 _ => return Err(format!("Unsupported language: {lang}")),
             };
 
@@ -5658,7 +7688,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let start = std::time::Instant::now();
 
                 let mut cmd = tokio::process::Command::new(&program);
-                cmd.args(&args_vec).stdout(Stdio::piped()).stderr(Stdio::piped());
+                cmd.args(&args_vec)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped());
                 if let Some(ref wp) = workspace_path {
                     cmd.current_dir(wp);
                 }
@@ -5674,12 +7706,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
                 let Some(stdout) = child.stdout.take() else {
                     let _ = child.kill().await;
-                    broadcaster.emit("canvas_exec_done", serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }));
+                    broadcaster.emit(
+                        "canvas_exec_done",
+                        serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }),
+                    );
                     return;
                 };
                 let Some(stderr) = child.stderr.take() else {
                     let _ = child.kill().await;
-                    broadcaster.emit("canvas_exec_done", serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }));
+                    broadcaster.emit(
+                        "canvas_exec_done",
+                        serde_json::json!({ "exit_code": -1, "duration_ms": 0u64 }),
+                    );
                     return;
                 };
 
@@ -5688,13 +7726,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let stdout_task = tokio::spawn(async move {
                     let mut lines = BufReader::new(stdout).lines();
                     while let Ok(Some(line)) = lines.next_line().await {
-                        b1.emit("canvas_exec_line", serde_json::json!({ "stream": "stdout", "line": line }));
+                        b1.emit(
+                            "canvas_exec_line",
+                            serde_json::json!({ "stream": "stdout", "line": line }),
+                        );
                     }
                 });
                 let stderr_task = tokio::spawn(async move {
                     let mut lines = BufReader::new(stderr).lines();
                     while let Ok(Some(line)) = lines.next_line().await {
-                        b2.emit("canvas_exec_line", serde_json::json!({ "stream": "stderr", "line": line }));
+                        b2.emit(
+                            "canvas_exec_line",
+                            serde_json::json!({ "stream": "stderr", "line": line }),
+                        );
                     }
                 });
 
@@ -5713,10 +7757,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 };
 
                 let _ = tokio::join!(stdout_task, stderr_task);
-                broadcaster.emit("canvas_exec_done", serde_json::json!({
-                    "exit_code": exit_code,
-                    "duration_ms": start.elapsed().as_millis() as u64
-                }));
+                broadcaster.emit(
+                    "canvas_exec_done",
+                    serde_json::json!({
+                        "exit_code": exit_code,
+                        "duration_ms": start.elapsed().as_millis() as u64
+                    }),
+                );
             });
 
             Ok(serde_json::json!({ "status": "started" }))
@@ -5739,79 +7786,155 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Project Knowledge Spaces
         // ────────────────────────────────────────────────────────────────────
         "create_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or_else(|| "name required".to_string())?;
-            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "name required".to_string())?;
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let color = args
+                .get("color")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let id = uuid::Uuid::new_v4().to_string();
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
-            let project = project_db.create(id, name.to_string(), description, color).await?;
+            let project = project_db
+                .create(id, name.to_string(), description, color)
+                .await?;
             Ok(serde_json::to_value(project).map_err(|e| e.to_string())?)
         }
 
         "list_projects" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             let projects = project_db.list().await?;
             Ok(serde_json::to_value(projects).map_err(|e| e.to_string())?)
         }
 
         "get_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             let project = project_db.get(id).await?;
             Ok(serde_json::to_value(project).map_err(|e| e.to_string())?)
         }
 
         "update_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
-            let name = args.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let color = args
+                .get("color")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             project_db.update(id, name, description, color).await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "delete_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             project_db.delete(id).await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "set_session_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or_else(|| "session_id required".to_string())?;
-            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "session_id required".to_string())?;
+            let project_id = args
+                .get("project_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
-            project_db.set_session_project(session_id, project_id).await?;
+            project_db
+                .set_session_project(session_id, project_id)
+                .await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "set_memory_project" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
-            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args
+                .get("memory_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "memory_id required".to_string())?;
+            let project_id = args
+                .get("project_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             project_db.set_memory_project(memory_id, project_id).await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "get_project_sessions" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             let sessions = project_db.get_project_sessions(id).await?;
             Ok(serde_json::to_value(sessions).map_err(|e| e.to_string())?)
         }
 
         "get_project_memory" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let project_db = crate::projects::ProjectDB::new(db.pool.clone());
             let records = project_db.get_project_memory(id).await?;
             Ok(serde_json::to_value(records).map_err(|e| e.to_string())?)
@@ -5821,13 +7944,27 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Universal Search
         // ────────────────────────────────────────────────────────────────────
         "universal_search" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let query = args.get("query").and_then(|v| v.as_str()).ok_or_else(|| "query required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let query = args
+                .get("query")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "query required".to_string())?;
             let limit = args.get("limit").and_then(|v| v.as_i64()).unwrap_or(20);
-            let source_filter = args.get("source_filter").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let project_id = args.get("project_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let source_filter = args
+                .get("source_filter")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let project_id = args
+                .get("project_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let engine = crate::search::SearchEngine::new(db.pool.clone());
-            let results = engine.universal_search(query, limit, source_filter, project_id).await?;
+            let results = engine
+                .universal_search(query, limit, source_filter, project_id)
+                .await?;
             Ok(serde_json::to_value(results).map_err(|e| e.to_string())?)
         }
 
@@ -5835,64 +7972,131 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Context Packs
         // ────────────────────────────────────────────────────────────────────
         "create_pack" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let name = args.get("name").and_then(|v| v.as_str()).ok_or_else(|| "name required".to_string())?;
-            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let privacy_level = args.get("privacy_level").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "name required".to_string())?;
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let color = args
+                .get("color")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let privacy_level = args
+                .get("privacy_level")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let id = uuid::Uuid::new_v4().to_string();
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
-            let pack = pack_db.create(id, name.to_string(), description, color, privacy_level).await?;
+            let pack = pack_db
+                .create(id, name.to_string(), description, color, privacy_level)
+                .await?;
             Ok(serde_json::to_value(pack).map_err(|e| e.to_string())?)
         }
 
         "list_packs" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
             let packs = pack_db.list().await?;
             Ok(serde_json::to_value(packs).map_err(|e| e.to_string())?)
         }
 
         "get_pack" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
             let pack = pack_db.get(id).await?;
             Ok(serde_json::to_value(pack).map_err(|e| e.to_string())?)
         }
 
         "update_pack" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
-            let name = args.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let description = args.get("description").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let color = args.get("color").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let privacy_level = args.get("privacy_level").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let description = args
+                .get("description")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let color = args
+                .get("color")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let privacy_level = args
+                .get("privacy_level")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
-            pack_db.update(id, name, description, color, privacy_level).await?;
+            pack_db
+                .update(id, name, description, color, privacy_level)
+                .await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "delete_pack" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
             pack_db.delete(id).await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "set_memory_pack" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
-            let pack_id = args.get("pack_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args
+                .get("memory_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "memory_id required".to_string())?;
+            let pack_id = args
+                .get("pack_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
             pack_db.set_memory_pack(memory_id, pack_id).await?;
             Ok(serde_json::json!({ "success": true }))
         }
 
         "get_pack_memory" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let id = args.get("id").and_then(|v| v.as_str()).ok_or_else(|| "id required".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let id = args
+                .get("id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "id required".to_string())?;
             let pack_db = crate::context_packs::PackDB::new(db.pool.clone());
             let records = pack_db.get_pack_memory(id).await?;
             Ok(serde_json::to_value(records).map_err(|e| e.to_string())?)
@@ -5902,9 +8106,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Privacy
         // ────────────────────────────────────────────────────────────────────
         "set_memory_privacy" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
-            let memory_id = args.get("memory_id").and_then(|v| v.as_str()).ok_or_else(|| "memory_id required".to_string())?;
-            let level = args.get("level").and_then(|v| v.as_str()).unwrap_or("standard");
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
+            let memory_id = args
+                .get("memory_id")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "memory_id required".to_string())?;
+            let level = args
+                .get("level")
+                .and_then(|v| v.as_str())
+                .unwrap_or("standard");
             sqlx::query("UPDATE memory_records SET privacy_level = ? WHERE id = ?")
                 .bind(level)
                 .bind(memory_id)
@@ -5915,12 +8128,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "unlock_sealed_records" => {
-            let ids = args.get("ids").and_then(|v| v.as_array())
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect::<Vec<_>>())
+            let ids = args
+                .get("ids")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                        .collect::<Vec<_>>()
+                })
                 .unwrap_or_default();
             {
                 let mut app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                for id in &ids { app.unlock_state.unlock(id); }
+                for id in &ids {
+                    app.unlock_state.unlock(id);
+                }
             }
             Ok(serde_json::json!({ "unlocked": ids.len() }))
         }
@@ -5937,7 +8158,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Dashboard
         // ────────────────────────────────────────────────────────────────────
         "get_dashboard_stats" => {
-            let db = state.db.as_ref().ok_or_else(|| "Database not available".to_string())?;
+            let db = state
+                .db
+                .as_ref()
+                .ok_or_else(|| "Database not available".to_string())?;
             let provider;
             let model;
             {
@@ -5981,14 +8205,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // LLM Utilities
         // ────────────────────────────────────────────────────────────────────
         "llm_oneshot" => {
-            let prompt = args.get("prompt").and_then(|v| v.as_str())
+            let prompt = args
+                .get("prompt")
+                .and_then(|v| v.as_str())
                 .ok_or("Missing 'prompt'")?;
-            let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(512) as u32;
+            let max_tokens = args
+                .get("max_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(512) as u32;
             let provider = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 Arc::clone(&app.provider)
             };
-            let result = provider.generate_oneshot(prompt, max_tokens).await
+            let result = provider
+                .generate_oneshot(prompt, max_tokens)
+                .await
                 .map_err(|e| format!("LLM oneshot failed: {}", e))?;
             Ok(serde_json::json!({ "result": result }))
         }
