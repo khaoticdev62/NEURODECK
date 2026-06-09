@@ -465,8 +465,15 @@ pub async fn run_bridge_server(
     let orchestrator = Arc::new(crate::orchestrator::OrchestratorManaged::new());
     let lsp = Arc::new(Mutex::new(crate::lsp::LspManager::new()));
 
+    // ── Auto-backup memory (clone mem_db before wrapping app_state) ────────
+    let mem_db_backup = app_state.mem_db.clone();
+
+    // Wrap app_state in Arc before Lua engine so it can be shared with Lua globals
+    let app_state_arc = Arc::new(Mutex::new(app_state));
+
     // ── Lua engine ─────────────────────────────────────────────────────────
-    let lua_engine = crate::lua::LuaEngine::new_headless()?;
+    let lua_engine =
+        crate::lua::LuaEngine::new(Arc::clone(&app_state_arc), broadcaster.clone())?;
     let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
     if safe_mode {
         tracing::warn!(
@@ -476,8 +483,9 @@ pub async fn run_bridge_server(
     let plugins_dir = crate::plugin_mgr::plugins_dir();
     if !safe_mode && plugins_dir.exists() {
         let can_load_plugins = {
-            let reg = &app_state.config.security.permission_registry;
-            let agent_id = &app_state.config.llm.active_agent_id;
+            let app = app_state_arc.lock().unwrap_or_else(|e| e.into_inner());
+            let reg = &app.config.security.permission_registry;
+            let agent_id = &app.config.llm.active_agent_id;
             reg.can(agent_id, crate::permissions::Capability::PluginLoad)
         };
         if can_load_plugins {
@@ -492,11 +500,7 @@ pub async fn run_bridge_server(
     }
     let lua = Arc::new(Mutex::new(lua_engine));
 
-    // ── Auto-backup memory (clone mem_db before moving app_state) ──────────
-    let mem_db_backup = app_state.mem_db.clone();
-
     // ── Scheduler ──────────────────────────────────────────────────────────
-    let app_state_arc = Arc::new(Mutex::new(app_state));
     {
         let sched = scheduler.clone();
         let bc = broadcaster.clone();

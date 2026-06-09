@@ -1,133 +1,20 @@
-use crate::config::AgentConfig;
-use crate::AppHandle;
 use crate::*;
 use futures_util::StreamExt;
+use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
 
-// ─── Multi-Agent Switching ────────────────────────────────────────────────────
-
-#[derive(serde::Serialize, Clone, Debug)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct RecommendedModel {
     pub provider: String,
     pub model: String,
     pub name: String,
-    pub tier: String, // "fast" | "balanced" | "smart" | "local-fast" | "local-balanced"
-    pub vram_mb: u32, // 0 for cloud models
+    pub tier: String,
+    pub vram_mb: u32,
     pub steam_deck_ok: bool,
     pub description: String,
     pub tags: Vec<String>,
-}
-
-pub fn list_agents(state: State<'_, Mutex<AppState>>) -> Vec<AgentConfig> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    app.config.llm.agents.clone()
-}
-
-pub fn get_active_agent_id(state: State<'_, Mutex<AppState>>) -> String {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    app.config.llm.active_agent_id.clone()
-}
-
-pub fn switch_agent(
-    id: String,
-    app_handle: AppHandle,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<AgentConfig, String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    let agent = app
-        .config
-        .llm
-        .agents
-        .iter()
-        .find(|a| a.id == id)
-        .cloned()
-        .ok_or_else(|| format!("Agent '{}' not found", id))?;
-
-    app.provider = provider_from_agent(&agent);
-    app.config.llm.active_agent_id = id.clone();
-    // Keep legacy single-provider fields in sync for get_context_stats
-    app.config.llm.default_provider = agent.provider.clone();
-    if agent.provider == "gemini" {
-        app.config.llm.gemini_model = agent.model.clone();
-    } else if agent.provider == "huggingface" {
-        app.config.llm.hf_model = agent.model.clone();
-        app.config.llm.hf_base_url = agent.base_url.clone();
-    } else if agent.provider == "kimi" {
-        app.config.llm.kimi_model = agent.model.clone();
-        app.config.llm.kimi_base_url = agent.base_url.clone();
-    } else {
-        app.config.llm.ollama_model = agent.model.clone();
-        app.config.llm.ollama_base_url = agent.base_url.clone();
-    }
-
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-
-    app_handle
-        .emit("agent_changed", &agent)
-        .map_err(|e| e.to_string())?;
-    Ok(agent)
-}
-
-pub fn add_agent(agent: AgentConfig, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let id = agent.id.trim().to_string();
-    if id.is_empty() {
-        return Err("Agent ID cannot be empty".into());
-    }
-    if !id
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
-    {
-        return Err("Agent ID may only contain letters, numbers, hyphens, and underscores".into());
-    }
-    if agent.name.trim().is_empty() {
-        return Err("Agent name cannot be empty".into());
-    }
-    if agent.provider != "gemini"
-        && agent.provider != "ollama"
-        && agent.provider != "huggingface"
-        && agent.provider != "kimi"
-    {
-        return Err("Provider must be 'gemini', 'ollama', 'huggingface', or 'kimi'".into());
-    }
-
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    if app.config.llm.agents.iter().any(|a| a.id == id) {
-        return Err(format!("Agent '{}' already exists", id));
-    }
-
-    app.config.llm.agents.push(AgentConfig { id, ..agent });
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-    Ok(())
-}
-
-pub fn delete_agent(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    let initial = app.config.llm.agents.len();
-    app.config.llm.agents.retain(|a| a.id != id);
-    if app.config.llm.agents.len() == initial {
-        return Err(format!("Agent '{}' not found", id));
-    }
-
-    // Fall back to first remaining agent if we deleted the active one
-    if app.config.llm.active_agent_id == id {
-        app.config.llm.active_agent_id = app
-            .config
-            .llm
-            .agents
-            .first()
-            .map(|a| a.id.clone())
-            .unwrap_or_default();
-    }
-
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-    Ok(())
 }
 
 pub fn get_recommended_models() -> Vec<RecommendedModel> {

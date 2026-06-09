@@ -46,7 +46,7 @@ mod tunnel;
 mod whisper;
 mod workflow;
 mod workflow_engine;
-use crate::llm::{GeminiProvider, HuggingFaceProvider, KimiProvider, LlmProvider, OllamaProvider};
+use crate::llm::{KimiProvider, LlmProvider};
 use crate::memory::MemoryDB;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Mutex};

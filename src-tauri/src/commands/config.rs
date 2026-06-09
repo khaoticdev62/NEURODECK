@@ -4,7 +4,6 @@ use crate::llm::{
 use crate::*;
 use futures_util::StreamExt;
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 fn validate_config_url(value: &str, field: &str) -> Result<(), String> {
     let parsed =
@@ -25,105 +24,12 @@ fn validate_config_url(value: &str, field: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn set_config(
-    key: String,
-    value: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut config = app.config.clone();
-
-    match key.as_str() {
-        "llm.default_provider" => config.llm.default_provider = value,
-        "llm.ollama_model" => config.llm.ollama_model = value,
-        "llm.gemini_model" => config.llm.gemini_model = value,
-        "llm.ollama_base_url" => {
-            validate_config_url(&value, "llm.ollama_base_url")?;
-            config.llm.ollama_base_url = value;
-        }
-        "llm.hf_model" => config.llm.hf_model = value,
-        "llm.hf_api_key" => return Err(
-            "llm.hf_api_key can no longer be set via generic config updates; use save_hf_api_key"
-                .to_string(),
-        ),
-        "llm.hf_base_url" => {
-            validate_config_url(&value, "llm.hf_base_url")?;
-            config.llm.hf_base_url = value;
-        }
-        "llm.kimi_model" => config.llm.kimi_model = value,
-        "llm.kimi_base_url" => {
-            validate_config_url(&value, "llm.kimi_base_url")?;
-            config.llm.kimi_base_url = value;
-        }
-        "prefs.minimize_to_tray_on_close" => {
-            config.prefs.minimize_to_tray_on_close = value == "true";
-        }
-        "llm.openai_compat_model" => config.llm.openai_compat_model = value,
-        "llm.openai_compat_base_url" => {
-            if !value.is_empty() {
-                validate_config_url(&value, "llm.openai_compat_base_url")?;
-            }
-            config.llm.openai_compat_base_url = value;
-        }
-        "llm.google_client_id" => config.llm.google_client_id = value,
-        "sync.api_base_url" => {
-            validate_config_url(&value, "sync.api_base_url")?;
-            config.sync.api_base_url = value;
-        }
-        "theme.primary_color" => config.theme.primary_color = value,
-        "theme.secondary_color" => config.theme.secondary_color = value,
-        "theme.bg_color" => config.theme.bg_color = value,
-        "theme.foreground_color" => config.theme.foreground_color = value,
-        "theme.response_color" => config.theme.response_color = value,
-        _ => return Err(format!("Unknown config key: {}", key)),
-    }
-
-    let path = get_config_path();
-    config::save_config(&path, &config)?;
-
-    // Update state and recreate provider
-    app.config = config.clone();
-    app.provider = create_provider(&config);
-    Ok(())
-}
-
-pub fn get_config(state: State<'_, Mutex<AppState>>) -> Result<config::Config, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut config = app.config.clone();
-    config.llm.hf_api_key.clear();
-    config.llm.kimi_base_url.clear();
-    Ok(config)
-}
-
-pub fn save_gemini_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    // Phase 4: OS keychain secret management
-    neurodeck_infrastructure::secrets::save_gemini_api_key(&key)?;
-
-    // Keep it in env for legacy provider compat during transition
-    std::env::set_var("GEMINI_API_KEY", &key);
-    app.provider = create_provider(&app.config);
-    Ok(())
-}
-
 pub fn get_gemini_api_key() -> Result<String, String> {
     // Phase 4: OS keychain secret management
     match neurodeck_infrastructure::secrets::get_gemini_api_key() {
         Ok(key) => Ok(key),
         Err(_) => Ok(std::env::var("GEMINI_API_KEY").unwrap_or_default()), // fallback to env
     }
-}
-
-pub fn save_hf_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    neurodeck_infrastructure::secrets::save_hf_api_key(&key)?;
-    std::env::set_var("HF_API_KEY", &key);
-    app.config.llm.hf_api_key.clear();
-    app.provider = create_provider(&app.config);
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-    Ok(())
 }
 
 pub fn get_hf_api_key() -> Result<String, String> {
@@ -133,33 +39,11 @@ pub fn get_hf_api_key() -> Result<String, String> {
     }
 }
 
-pub fn save_kimi_api_key(key: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    neurodeck_infrastructure::secrets::save_kimi_api_key(&key)?;
-    std::env::set_var("KIMI_API_KEY", &key);
-    app.provider = create_provider(&app.config);
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-    Ok(())
-}
-
 pub fn get_kimi_api_key() -> Result<String, String> {
     match neurodeck_infrastructure::secrets::get_kimi_api_key() {
         Ok(key) => Ok(key),
         Err(_) => Ok(std::env::var("KIMI_API_KEY").unwrap_or_default()),
     }
-}
-
-pub fn save_openai_compat_api_key(
-    key: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    neurodeck_infrastructure::secrets::save_openai_compat_api_key(&key)?;
-    app.provider = create_provider(&app.config);
-    let path = get_config_path();
-    config::save_config(&path, &app.config)?;
-    Ok(())
 }
 
 pub fn get_openai_compat_api_key() -> Result<String, String> {
@@ -259,118 +143,8 @@ pub async fn test_llm_connection(
     }
 }
 
-pub fn get_personas(state: State<'_, Mutex<AppState>>) -> Vec<String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut list: Vec<String> = PERSONAS.iter().map(|p| p.0.clone()).collect();
-    for cp in &app.custom_personas {
-        list.push(cp.name.clone());
-    }
-    list
-}
-
 pub fn get_themes() -> Vec<String> {
     THEMES.iter().map(|t| t.name.clone()).collect()
-}
-
-pub fn set_persona(name: String, state: State<'_, Mutex<AppState>>) -> String {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let is_valid =
-        PERSONAS.iter().any(|p| p.0 == name) || app.custom_personas.iter().any(|p| p.name == name);
-    if is_valid {
-        app.active_persona = name.clone();
-        format!("Persona set to {}", name)
-    } else {
-        "Persona not found".to_string()
-    }
-}
-
-pub fn list_custom_personas(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<CustomPersona>, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(app.custom_personas.clone())
-}
-
-pub fn add_custom_persona(
-    name: String,
-    prompt: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let name_trimmed = name.trim().to_string();
-    let prompt_trimmed = prompt.trim().to_string();
-
-    if name_trimmed.is_empty() || prompt_trimmed.is_empty() {
-        return Err("Name and prompt cannot be empty".to_string());
-    }
-
-    if name_trimmed.len() > 30 {
-        return Err("Persona name must be under 30 characters".to_string());
-    }
-
-    if !name_trimmed
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == ' ' || c == '_' || c == '-')
-    {
-        return Err(
-            "Persona name can only contain letters, numbers, spaces, underscores, and hyphens"
-                .to_string(),
-        );
-    }
-
-    if PERSONAS
-        .iter()
-        .any(|p| p.0.to_lowercase() == name_trimmed.to_lowercase())
-    {
-        return Err(format!(
-            "Persona '{}' clashes with a built-in persona",
-            name_trimmed
-        ));
-    }
-
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    if app
-        .custom_personas
-        .iter()
-        .any(|p| p.name.to_lowercase() == name_trimmed.to_lowercase())
-    {
-        return Err(format!("Persona '{}' already exists", name_trimmed));
-    }
-
-    app.custom_personas.push(CustomPersona {
-        name: name_trimmed,
-        prompt: prompt_trimmed,
-    });
-
-    let json_data = serde_json::to_string_pretty(&app.custom_personas)
-        .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
-
-    std::fs::write(user_config_dir().join("data/personas.json"), json_data)
-        .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
-
-    Ok(())
-}
-
-pub fn delete_custom_persona(
-    name: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    let initial_len = app.custom_personas.len();
-    app.custom_personas.retain(|p| p.name != name);
-
-    if app.custom_personas.len() == initial_len {
-        return Err(format!("Custom persona '{}' not found", name));
-    }
-
-    let json_data = serde_json::to_string_pretty(&app.custom_personas)
-        .map_err(|e| format!("Failed to serialize custom personas: {}", e))?;
-
-    std::fs::write(user_config_dir().join("data/personas.json"), json_data)
-        .map_err(|e| format!("Failed to save custom personas file: {}", e))?;
-
-    Ok(())
 }
 
 pub fn set_theme(name: String) -> Option<HashMap<String, String>> {

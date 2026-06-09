@@ -3508,6 +3508,57 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::Value::String(citation))
         }
 
+        // ── Headless browser session commands (spawn_blocking — headless_chrome is sync) ──
+
+        "browser_open_session" => {
+            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let app_state = state.app_state.clone();
+            let session_id = tokio::task::spawn_blocking(move || {
+                crate::commands::browser::browser_open_session(url, app_state)
+            }).await.map_err(|e| e.to_string())??;
+            Ok(serde_json::json!({ "session_id": session_id }))
+        }
+
+        "browser_navigate_session" => {
+            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
+            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let app_state = state.app_state.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::commands::browser::browser_navigate_session(session_id, url, app_state)
+            }).await.map_err(|e| e.to_string())??;
+            Ok(serde_json::json!({ "status": "navigated" }))
+        }
+
+        "browser_click" => {
+            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
+            let selector = args.get("selector").and_then(|v| v.as_str()).ok_or("Missing 'selector'")?.to_string();
+            let app_state = state.app_state.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::commands::browser::browser_click(session_id, selector, app_state)
+            }).await.map_err(|e| e.to_string())??;
+            Ok(serde_json::json!({ "status": "clicked" }))
+        }
+
+        "browser_fill" => {
+            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
+            let selector = args.get("selector").and_then(|v| v.as_str()).ok_or("Missing 'selector'")?.to_string();
+            let value = args.get("value").and_then(|v| v.as_str()).ok_or("Missing 'value'")?.to_string();
+            let app_state = state.app_state.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::commands::browser::browser_fill(session_id, selector, value, app_state)
+            }).await.map_err(|e| e.to_string())??;
+            Ok(serde_json::json!({ "status": "filled" }))
+        }
+
+        "browser_close_session" => {
+            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
+            let app_state = state.app_state.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::commands::browser::browser_close_session(session_id, app_state)
+            }).await.map_err(|e| e.to_string())??;
+            Ok(serde_json::json!({ "status": "closed" }))
+        }
+
         "browser_save_to_memory" => {
             let url = args
                 .get("url")
@@ -6624,6 +6675,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             crate::plugin_mgr::install_plugin_from_registry(
                 plugin_id.clone(),
                 state.lua.clone(),
+                state.app_state.clone(),
                 state.broadcaster.clone(),
             )
             .await
@@ -6945,9 +6997,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     crate::permissions::Capability::PluginLoad,
                 )?;
             }
-            crate::plugin_mgr::reload_plugins_bridge(state.lua.clone(), state.broadcaster.clone())
-                .await
-                .map_err(|e| e.to_string())?;
+            crate::plugin_mgr::reload_plugins_bridge(
+                state.lua.clone(),
+                state.app_state.clone(),
+                state.broadcaster.clone(),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "reloaded" }))
         }
 

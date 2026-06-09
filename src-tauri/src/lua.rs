@@ -1,21 +1,25 @@
-use crate::AppHandle;
 use mlua::{Function, Lua, Table, Value, Variadic};
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 pub struct LuaEngine {
     lua: Lua,
 }
 
 impl LuaEngine {
-    pub fn new(app_handle: AppHandle) -> mlua::Result<Self> {
+    /// Bridge-mode constructor — all Lua globals are fully functional.
+    /// Uses `app_state` for state mutations and `broadcaster` for frontend events.
+    pub fn new(
+        app_state: Arc<Mutex<crate::AppState>>,
+        broadcaster: crate::bridge::WsBroadcaster,
+    ) -> mlua::Result<Self> {
         let lua = Lua::new();
 
-        // Initialize commands and hooks tables
         lua.globals().set("_commands", lua.create_table()?)?;
         lua.globals().set("_hooks", lua.create_table()?)?;
 
-        // 1. print(...) override to stream stdout to the frontend
-        let app_handle_print = app_handle.clone();
+        // 1. print(...) — streams stdout to the frontend via broadcaster
+        let bc_print = broadcaster.clone();
         let print_fn = lua.create_function(move |_, args: Variadic<Value>| {
             let mut parts = Vec::new();
             for arg in args {
@@ -35,13 +39,12 @@ impl LuaEngine {
                 parts.push(s);
             }
             let output = parts.join("\t");
-            // Emit to frontend using the existing command output stream
-            let _ = app_handle_print.emit("command_stdout", output);
+            bc_print.emit("command_stdout", serde_json::json!(output));
             Ok(())
         })?;
         lua.globals().set("print", print_fn)?;
 
-        // 2. execute(cmd) function to execute terminal commands
+        // 2. execute(cmd) — runs a shell command, returns combined stdout+stderr
         let execute_fn = lua.create_function(move |_, cmd_str: String| {
             crate::security::validate_terminal_command(&cmd_str, "lua-execute")
                 .map_err(mlua::Error::external)?;
@@ -75,7 +78,7 @@ impl LuaEngine {
         })?;
         lua.globals().set("execute", execute_fn)?;
 
-        // 3. registerCommand(name, callback) function
+        // 3. registerCommand(name, callback)
         let register_cmd_fn =
             lua.create_function(move |lua, (name, func): (String, Function)| {
                 let commands: Table = lua.globals().get("_commands")?;
@@ -84,7 +87,7 @@ impl LuaEngine {
             })?;
         lua.globals().set("registerCommand", register_cmd_fn)?;
 
-        // 4. registerHook(event, callback) function
+        // 4. registerHook(event, callback)
         let register_hook_fn =
             lua.create_function(move |lua, (event, func): (String, Function)| {
                 let hooks: Table = lua.globals().get("_hooks")?;
@@ -102,16 +105,16 @@ impl LuaEngine {
             })?;
         lua.globals().set("registerHook", register_hook_fn)?;
 
-        // 5. setPersona(name) function to set the active persona of the S-Term application
-        let app_handle_persona = app_handle.clone();
+        // 5. setPersona(name) — mutates active persona in AppState
+        let app_state_persona = Arc::clone(&app_state);
+        let bc_persona = broadcaster.clone();
         let set_persona_fn = lua.create_function(move |_, name: String| {
-            let state = app_handle_persona.state::<std::sync::Mutex<crate::AppState>>();
-            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut app = app_state_persona.lock().unwrap_or_else(|e| e.into_inner());
             let is_valid = crate::PERSONAS.iter().any(|p| p.0 == name)
                 || app.custom_personas.iter().any(|p| p.name == name);
             if is_valid {
                 app.active_persona = name.clone();
-                let _ = app_handle_persona.emit("persona_changed", name.clone());
+                bc_persona.emit("persona_changed", serde_json::json!(name));
                 Ok(true)
             } else {
                 Ok(false)
@@ -119,12 +122,11 @@ impl LuaEngine {
         })?;
         lua.globals().set("setPersona", set_persona_fn)?;
 
-        // 6. sendPrompt(prompt) function to execute prompts against active LLM provider
-        let app_handle_prompt = app_handle.clone();
+        // 6. sendPrompt(prompt) — synchronous LLM call (blocks the Lua thread)
+        let app_state_prompt = Arc::clone(&app_state);
         let send_prompt_fn = lua.create_function(move |_, prompt: String| {
-            let state = app_handle_prompt.state::<std::sync::Mutex<crate::AppState>>();
             let (provider, active_persona, custom_personas) = {
-                let app = state.lock().unwrap_or_else(|e| e.into_inner());
+                let app = app_state_prompt.lock().unwrap_or_else(|e| e.into_inner());
                 (
                     app.provider.clone(),
                     app.active_persona.clone(),
@@ -156,38 +158,6 @@ impl LuaEngine {
             }
         })?;
         lua.globals().set("sendPrompt", send_prompt_fn)?;
-
-        Ok(Self { lua })
-    }
-
-    /// Create a headless Lua engine (for bridge server mode without Tauri events).
-    /// This version skips Tauri event emitting and works without an AppHandle.
-    pub fn new_headless() -> mlua::Result<Self> {
-        let lua = Lua::new();
-        lua.globals().set("_commands", lua.create_table()?)?;
-        lua.globals().set("_hooks", lua.create_table()?)?;
-
-        // Minimal print function (no Tauri event)
-        let print_fn = lua.create_function(|_, args: Variadic<Value>| {
-            for (i, arg) in args.into_iter().enumerate() {
-                if i > 0 {
-                    eprint!("\t");
-                }
-                match arg {
-                    Value::Nil => eprint!("nil"),
-                    Value::Boolean(b) => eprint!("{}", b),
-                    Value::Integer(i) => eprint!("{}", i),
-                    Value::Number(n) => eprint!("{}", n),
-                    Value::String(s) => eprint!("{}", s.to_str().unwrap_or("")),
-                    Value::Table(_) => eprint!("[table]"),
-                    Value::Function(_) => eprint!("[function]"),
-                    _ => eprint!("[value]"),
-                }
-            }
-            eprintln!();
-            Ok(())
-        })?;
-        lua.globals().set("print", print_fn)?;
 
         Ok(Self { lua })
     }

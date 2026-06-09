@@ -268,6 +268,7 @@ pub async fn install_plugin(url: String) -> Result<(), String> {
 pub async fn install_plugin_from_registry(
     plugin_id: String,
     lua: std::sync::Arc<std::sync::Mutex<crate::lua::LuaEngine>>,
+    app_state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
     broadcaster: crate::bridge::WsBroadcaster,
 ) -> Result<(), String> {
     validate_plugin_id(&plugin_id)?;
@@ -289,7 +290,7 @@ pub async fn install_plugin_from_registry(
     validate_marketplace_download_url(&parsed_url)?;
     download_plugin_file(&parsed_url, &plugin.lua_file, plugin.sha256.as_deref()).await?;
     write_audit_entry(&plugin.lua_file, "installed_from_registry");
-    reload_plugins_bridge(lua, broadcaster).await
+    reload_plugins_bridge(lua, app_state, broadcaster).await
 }
 
 pub async fn uninstall_plugin(plugin_id: String) -> Result<(), String> {
@@ -349,12 +350,14 @@ pub fn save_plugin(file_name: String, content: String) -> Result<(), String> {
 /// This is the production reload path for the bridge architecture.
 pub async fn reload_plugins_bridge(
     lua: std::sync::Arc<std::sync::Mutex<crate::lua::LuaEngine>>,
+    app_state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
     broadcaster: crate::bridge::WsBroadcaster,
 ) -> Result<(), String> {
     broadcaster.emit("plugin_reload_start", ());
     let dir = plugins_dir();
+    let bc = broadcaster.clone();
     let result: Result<(), String> = tokio::task::spawn_blocking(move || {
-        let new_engine = crate::lua::LuaEngine::new_headless()
+        let new_engine = crate::lua::LuaEngine::new(app_state, bc)
             .map_err(|e| format!("Failed to create new Lua engine: {}", e))?;
         new_engine.load_plugins(&dir)?;
         let mut engine = lua
