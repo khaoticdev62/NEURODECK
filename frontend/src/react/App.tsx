@@ -1,22 +1,41 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
+import { wallpaperManager } from './features/settings/wallpaperManager';
 import { CommandPalette } from './components/command/CommandPalette';
 import { PrimarySidebar } from './components/layout/PrimarySidebar';
 import { SecondaryRail } from './components/layout/SecondaryRail';
 import { TitleBar } from './components/layout/TitleBar';
 import { Badge } from './components/primitives/Badge';
-import { themes } from './types/seed';
+import { fontOptions, themes } from './types/seed';
 import { AgentsView } from './features/agents/AgentsView';
+import { ApiLabView } from './features/api-lab/ApiLabView';
+import { BrowserView } from './features/browser/BrowserView';
 import { CacheView } from './features/cache/CacheView';
+import { CanvasView } from './features/canvas/CanvasView';
+import { CliMakerView } from './features/cli-maker/CliMakerView';
 import { DiagnosticsView } from './features/diagnostics/DiagnosticsView';
+import { DocsView } from './features/docs/DocsView';
 import { ExecutionView } from './features/execution/ExecutionView';
+import { GitView } from './features/git/GitView';
+import { GraphView } from './features/graph/GraphView';
+import { IDEView } from './features/ide/IDEView';
 import { MemoryView } from './features/memory/MemoryView';
 import { ModelsView } from './features/models/ModelsView';
+import { OrchestratorView } from './features/orchestrator/OrchestratorView';
 import { PluginsView } from './features/plugins/PluginsView';
 import { ProjectView } from './features/project/ProjectView';
+import { PromptLabView } from './features/prompt-lab/PromptLabView';
+import { RemoteView } from './features/remote/RemoteView';
+import { SchedulerView } from './features/scheduler/SchedulerView';
 import { SessionsView } from './features/sessions/SessionsView';
 import { SettingsView } from './features/settings/SettingsView';
+import { ShareView } from './features/share/ShareView';
+import { TorrentView } from './features/torrent/TorrentView';
+import { SSHView } from './features/ssh/SSHView';
+import { TerminalView } from './features/terminal/TerminalView';
+import { TunnelView } from './features/tunnel/TunnelView';
+import { FontManagerView } from './features/fonts/FontManagerView';
 import { WorkspaceView } from './features/workspace/WorkspaceView';
 import { neurodeckApi } from './services/bridgeAdapter';
 import { useNeuroDeckState } from './state/useNeuroDeckState';
@@ -224,6 +243,14 @@ export default function App() {
     resetLocalState
   };
 
+  // Initialize wallpaper manager and restore saved background on mount
+  useEffect(() => {
+    wallpaperManager.init();
+    const saved = localStorage.getItem('bgUrl');
+    if (saved) wallpaperManager.start(saved);
+    return () => wallpaperManager.destroy();
+  }, []);
+
   useEffect(() => {
     void checkAiHealth();
   }, [checkAiHealth]);
@@ -244,7 +271,7 @@ export default function App() {
       if (event.key === 'Escape') dispatch({ type: 'toggle-command', open: false });
       if (!event.ctrlKey && !event.metaKey && !event.altKey) return;
       const numberToView: Record<string, ViewId> = {
-        '1': 'workspace', '2': 'execution', '3': 'project', '4': 'models', '5': 'agents', '6': 'memory', '7': 'sessions', '8': 'cache', '9': 'plugins', '0': 'settings', d: 'diagnostics', D: 'diagnostics'
+        '1': 'workspace', '2': 'execution', '3': 'agents', '4': 'memory', '5': 'project', '6': 'models', '7': 'cache', '8': 'plugins', '9': 'sessions', '0': 'settings', d: 'diagnostics', D: 'diagnostics'
       };
       const view = numberToView[event.key];
       if (view) dispatch({ type: 'set-view', view });
@@ -253,17 +280,30 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [dispatch, runAssistant]);
 
+  const activeFont = useMemo(() => fontOptions.find((f) => f.id === state.selectedFont) ?? fontOptions[0], [state.selectedFont]);
+
   const shellStyle = {
     backgroundColor: activeTheme.background,
     color: activeTheme.text,
-    '--tw-shadow-color': activeTheme.glow
+    '--tw-shadow-color': activeTheme.glow,
+    '--font-body': activeFont.family,
   } as CSSProperties & Record<string, string>;
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--font-body', activeFont.family);
+  }, [activeFont]);
 
   return (
     <div
       className={`flex h-full flex-col overflow-hidden tactical-grid ${state.deckMode ? 'text-[15px]' : ''}`}
       style={shellStyle}
     >
+      {/* Fixed background layers — managed by wallpaperManager */}
+      <div className="app-background-container" aria-hidden="true">
+        <img id="app-background-image" className="app-background-image" alt="" src="" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+        <canvas id="app-background-canvas" className="app-background-canvas" />
+        <div id="app-background-css" className="app-background-css" />
+      </div>
       <TitleBar subtitle={`${state.selectedPersona} • ${state.selectedProvider} • ${state.selectedTheme}`} />
       {state.busyLabel && (
         <div className="pointer-events-none fixed left-1/2 top-14 z-50 -translate-x-1/2 rounded-full border border-neuro/25 bg-[#071016]/95 px-4 py-2 shadow-2xl shadow-neuro/10">
@@ -301,6 +341,24 @@ export default function App() {
             {state.activeView === 'plugins' && <PluginsView state={state} dispatch={dispatch} />}
             {state.activeView === 'diagnostics' && <DiagnosticsView state={state} actions={appActions} />}
             {state.activeView === 'settings' && <SettingsView state={state} dispatch={dispatch} actions={appActions} />}
+            {state.activeView === 'canvas' && <CanvasView />}
+            {state.activeView === 'terminal' && <TerminalView />}
+            {state.activeView === 'ssh' && <SSHView />}
+            {state.activeView === 'ide' && <IDEView />}
+            {state.activeView === 'git' && <GitView />}
+            {state.activeView === 'api-lab' && <ApiLabView />}
+            {state.activeView === 'cli-maker' && <CliMakerView />}
+            {state.activeView === 'browser' && <BrowserView />}
+            {state.activeView === 'tunnel' && <TunnelView />}
+            {state.activeView === 'share' && <ShareView />}
+            {state.activeView === 'torrent' && <TorrentView />}
+            {state.activeView === 'remote' && <RemoteView />}
+            {state.activeView === 'docs' && <DocsView />}
+            {state.activeView === 'prompt-lab' && <PromptLabView />}
+            {state.activeView === 'graph' && <GraphView />}
+            {state.activeView === 'scheduler' && <SchedulerView />}
+            {state.activeView === 'orchestrator' && <OrchestratorView />}
+            {state.activeView === 'fonts' && <FontManagerView state={state} dispatch={dispatch} />}
           </div>
         </main>
         <SecondaryRail state={state} selectors={selectors} />

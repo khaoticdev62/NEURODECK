@@ -3,6 +3,7 @@ import { BrainCircuit, FileArchive, FileDown, Gamepad2, Palette, RefreshCcw, Rot
 import { themes } from '../../types/seed';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
+import { LiveWallpaperPanel } from './LiveWallpaperPanel';
 import type { AIProvider, NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ThemeName } from '../../types/neurodeck';
 
 const providers: Array<{ id: AIProvider; label: string; description: string }> = [
@@ -80,6 +81,12 @@ export function SettingsView({ state, dispatch, actions }: { state: NeuroDeckSta
             <button type="button" onClick={() => void actions.exportDiagnosticsBundle()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-neuro/25 hover:text-neuro">
               <FileArchive className="h-4 w-4" /> Export Diagnostics Bundle
             </button>
+          </div>
+        </Panel>
+
+        <Panel eyebrow="Appearance" title="Live Wallpaper">
+          <div className="p-4">
+            <LiveWallpaperPanel />
           </div>
         </Panel>
 
