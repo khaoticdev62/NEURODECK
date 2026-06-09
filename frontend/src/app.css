@@ -3016,6 +3016,12 @@ body::before {
   flex-direction: column;
   overflow: hidden !important;
 }
+.settings-panel--models #models-tab-hf-browser.active {
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+  padding: 0;
+}
 .settings-panel--appearance {
   --settings-panel-accent: 255, 112, 214;
 }
@@ -7619,6 +7625,52 @@ body.crt-flicker-disabled .crt-flicker {
   opacity: 0;
   pointer-events: none;
   display: none !important;
+}
+
+#browser-content {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.browser-home-search-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  margin-bottom: 28px;
+}
+
+.browser-home-search-input {
+  flex: 1;
+  height: 40px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.32) 100%);
+  border: 1px solid var(--border-color);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: var(--fg-color);
+  padding: 0 14px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: border-color var(--dur-fast) var(--ease-standard);
+}
+
+.browser-home-search-input:focus-visible {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2), inset 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.browser-blocked-icon {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+}
+
+.browser-blocked-msg {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* General hidden utility just in case */
@@ -15808,6 +15860,8 @@ button.tab-btn:active,
   border: none;
   display: block;
   background: #fff;
+  flex: 1;
+  min-height: 0;
 }
 
 .hf-browser-status {

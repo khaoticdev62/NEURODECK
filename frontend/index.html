@@ -302,7 +302,8 @@
                             <input id="share-group-code-input" class="tunnel-text-input" aria-label="Share group code" placeholder="Group code…" />
                             <button id="share-group-code-save-btn" class="ssh-btn input-row-btn" type="button">Apply</button>
                         </div>
-                        <div id="peer-list"></div>
+                        <div id="share-peers-list" class="share-peers-list" aria-label="Discovered peers" aria-live="polite"></div>
+                        <div id="share-transfers-list" class="share-transfers-list" aria-label="Active transfers" aria-live="polite"></div>
                     </div>
                     <div id="share-panel-ftp" class="share-panel-section">
                         <div class="input-row">
@@ -335,8 +336,8 @@
                         </div>
                         <input id="sftp-user-input" class="tunnel-text-input" aria-label="SFTP user" placeholder="User" />
                         <select id="sftp-auth-type" class="tunnel-text-input" aria-label="SFTP auth type"><option value="password">Password</option><option value="key">Key</option></select>
-                        <input id="sftp-pass-input" class="tunnel-text-input" type="password" aria-label="SFTP password" placeholder="Password" />
-                        <input id="sftp-key-path-input" class="tunnel-text-input" aria-label="SFTP key path" placeholder="Key path" />
+                        <div id="sftp-pass-group"><input id="sftp-pass-input" class="tunnel-text-input" type="password" aria-label="SFTP password" placeholder="Password" /></div>
+                        <div id="sftp-key-path-group"><input id="sftp-key-path-input" class="tunnel-text-input" aria-label="SFTP key path" placeholder="Key path" /></div>
                         <input id="sftp-path-input" class="tunnel-text-input" aria-label="SFTP path" placeholder="Remote path" />
                         <div class="input-row">
                             <button id="sftp-connect-btn" class="ssh-btn ssh-btn-primary input-row-btn" type="button">Connect &amp; List</button>
@@ -382,8 +383,37 @@
                             <button id="browser-save-memory-btn" class="browser-btn save-memory-btn" type="button" title="Save to Memory" aria-label="Save page to memory">💾</button>
                             <button id="browser-copy-citation-btn" class="browser-btn copy-citation-btn" type="button" title="Copy Citation" aria-label="Copy Markdown citation">📄</button>
                         </div>
-                        <div class="browser-home-kicker">Home</div>
-                        <div id="browser-content"></div>
+                        <div id="browser-content">
+                            <div id="browser-home-screen" class="browser-home-screen">
+                                <div class="browser-home-search-row">
+                                    <input id="browser-home-search-input" class="browser-home-search-input" aria-label="Home search" placeholder="Search or enter URL…" />
+                                    <button id="browser-home-search-btn" class="browser-btn go-btn" type="button" aria-label="Go">Go</button>
+                                </div>
+                                <div class="speed-dial-grid" role="list" aria-label="Quick links">
+                                    <button class="speed-dial-card" type="button" data-url="https://huggingface.co/models" role="listitem" aria-label="Open HuggingFace models">
+                                        <span class="sd-icon">🤗</span>
+                                        <span class="sd-label">HuggingFace</span>
+                                    </button>
+                                    <button class="speed-dial-card" type="button" data-url="https://github.com" role="listitem" aria-label="Open GitHub">
+                                        <span class="sd-icon">🐙</span>
+                                        <span class="sd-label">GitHub</span>
+                                    </button>
+                                    <button class="speed-dial-card" type="button" data-url="https://ollama.com/library" role="listitem" aria-label="Open Ollama library">
+                                        <span class="sd-icon">🦙</span>
+                                        <span class="sd-label">Ollama</span>
+                                    </button>
+                                    <button class="speed-dial-card" type="button" data-url="https://docs.anthropic.com" role="listitem" aria-label="Open Anthropic docs">
+                                        <span class="sd-icon">🧠</span>
+                                        <span class="sd-label">Anthropic</span>
+                                    </button>
+                                </div>
+                                <button id="browser-download-model-btn" class="browser-btn save-memory-btn" type="button" disabled aria-label="Download detected model">Download Model</button>
+                            </div>
+                            <div id="browser-blocked-screen" class="browser-blocked-screen" style="display:none" aria-live="polite">
+                                <div class="browser-blocked-icon">🚫</div>
+                                <div class="browser-blocked-msg">This page is blocked by the content policy.</div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -1381,6 +1411,7 @@
                         <button class="stv-sub-tab active" data-models-tab="browser" type="button">Browse</button>
                         <button class="stv-sub-tab" data-models-tab="installed" type="button">Installed</button>
                         <button class="stv-sub-tab" data-models-tab="downloads" type="button">Downloads</button>
+                        <button class="stv-sub-tab" data-models-tab="hf-browser" type="button">HF Browser</button>
                     </div>
 
                     <div id="models-tab-browser" class="models-tab-panel active">
@@ -1404,6 +1435,22 @@
 
                     <div id="models-tab-downloads" class="models-tab-panel">
                         <div id="models-downloads-list"></div>
+                    </div>
+
+                    <div id="models-tab-hf-browser" class="models-tab-panel hf-browser-panel">
+                        <div class="hf-browser-toolbar">
+                            <div class="hf-browser-nav">
+                                <button id="hf-browser-back" class="hf-browser-btn" type="button" aria-label="Back">&#9664;</button>
+                                <button id="hf-browser-forward" class="hf-browser-btn" type="button" aria-label="Forward">&#9654;</button>
+                                <button id="hf-browser-refresh" class="hf-browser-btn" type="button" aria-label="Refresh">&#8635;</button>
+                                <button id="hf-browser-home" class="hf-browser-btn" type="button" aria-label="HF Home">Home</button>
+                            </div>
+                            <input id="hf-browser-url" class="hf-browser-url-input" type="url" aria-label="HuggingFace URL" placeholder="https://huggingface.co/models" />
+                            <button id="hf-browser-go" class="hf-browser-btn" type="button" aria-label="Go">Go</button>
+                            <button id="hf-browser-download" class="hf-browser-btn" type="button" disabled aria-label="Download detected model">Download</button>
+                        </div>
+                        <div id="hf-browser-status" class="hf-browser-status" aria-live="polite"></div>
+                        <iframe id="hf-browser-iframe" class="hf-browser-iframe" src="https://huggingface.co/models" title="HuggingFace Model Browser" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                     </div>
                 </section>
 
@@ -1893,7 +1940,7 @@
         <button class="agent-switcher-close" type="button" aria-label="Close agent switcher">Close</button>
     </div>
     <div id="agent-card-grid"></div>
-    <div id="agent-recommended-grid"></div>
+    <div id="agent-rec-grid"></div>
 </div>
 
 <div id="history-search-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="History search" aria-hidden="true">
