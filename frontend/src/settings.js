@@ -397,6 +397,7 @@ export function activateSettingsPanel(panelId, themeName) {
     modalCard.dataset.settingsTheme = resolvedTheme;
   }
   localStorage.setItem("settingsActivePanel", resolvedPanelId);
+  if (resolvedPanelId === "sp-models") refreshModelsPanel();
 }
 
 function initSettingsSidebar() {
@@ -552,6 +553,12 @@ async function _refreshThemeCards() {
   customThemes.forEach(t => {
     allCards.push({ name: t.name, bg: t.background, fg: t.foreground, accent: t.accent, tc: { Background: t.background, Foreground: t.foreground, Accent: t.accent, Response: t.response, Warning: t.warning, Error: t.error } });
   });
+
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect) {
+    const currentVal = themeSelect.value || savedTheme;
+    themeSelect.innerHTML = allCards.map(c => `<option value="${c.name}" ${c.name === currentVal ? 'selected' : ''}>${c.name}</option>`).join("");
+  }
 
   grid.innerHTML = allCards.map(c => `
     <div class="onboarding-theme-card ${c.name === savedTheme ? "active" : ""}" data-name="${c.name}" role="button" tabindex="0">

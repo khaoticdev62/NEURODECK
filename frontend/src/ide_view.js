@@ -146,6 +146,13 @@ function renderFileTree(currentPath) {
   dirLi.textContent = currentPath || "workspace";
   ul.appendChild(dirLi);
 
+  if (_s.files.length === 0) {
+    const emptyLi = document.createElement("li");
+    emptyLi.className = "ide-tree-item ide-tree-empty";
+    emptyLi.innerHTML = `<span class="ide-tree-icon">📂</span> <span class="ide-tree-label" style="opacity:0.5">No files in workspace</span>`;
+    ul.appendChild(emptyLi);
+  }
+
   for (const entry of _s.files) {
     const li = document.createElement("li");
     li.className = "ide-tree-item";

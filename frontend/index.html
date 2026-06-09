@@ -1376,9 +1376,35 @@
                 <section id="sp-models" class="settings-panel settings-panel--models" data-settings-theme="models">
                     <h2 class="stv-section-title">Models</h2>
                     <div class="stv-section-sub">Browse, download, and manage local Ollama or HuggingFace models.</div>
-                    <div id="models-browse-grid"></div>
-                    <div id="models-downloads-list"></div>
-                    <div id="models-installed-list"></div>
+
+                    <div class="stv-sub-tabs">
+                        <button class="stv-sub-tab active" data-models-tab="browser" type="button">Browse</button>
+                        <button class="stv-sub-tab" data-models-tab="installed" type="button">Installed</button>
+                        <button class="stv-sub-tab" data-models-tab="downloads" type="button">Downloads</button>
+                    </div>
+
+                    <div id="models-tab-browser" class="models-tab-panel active">
+                        <div class="models-search-bar">
+                            <input id="models-search-input" type="search" placeholder="Search HuggingFace models…" aria-label="Search models" />
+                            <button id="models-search-btn" class="stv-btn-primary" type="button">Search</button>
+                        </div>
+                        <div class="models-filter-chips">
+                            <button class="filter-chip active" data-filter="steam-deck" type="button">Steam Deck</button>
+                            <button class="filter-chip" data-filter="1b" type="button">1B</button>
+                            <button class="filter-chip" data-filter="3b" type="button">3B</button>
+                            <button class="filter-chip" data-filter="7b" type="button">7B</button>
+                            <button class="filter-chip" data-filter="all" type="button">All</button>
+                        </div>
+                        <div id="models-browse-grid" class="models-grid"></div>
+                    </div>
+
+                    <div id="models-tab-installed" class="models-tab-panel">
+                        <div id="models-installed-list"></div>
+                    </div>
+
+                    <div id="models-tab-downloads" class="models-tab-panel">
+                        <div id="models-downloads-list"></div>
+                    </div>
                 </section>
 
                 <section id="sp-appearance" class="settings-panel settings-panel--appearance" data-settings-theme="appearance">
@@ -1525,7 +1551,13 @@
                     </div>
 
                     <div class="stv-group-label">Plugin Marketplace</div>
-                    <div id="marketplace-grid" class="plugin-marketplace-grid"></div>
+                    <div class="marketplace-toolbar">
+                        <input id="plugin-marketplace-search" type="search" placeholder="Search plugins…" aria-label="Search marketplace" />
+                        <select id="plugin-marketplace-tag" aria-label="Filter by tag"><option value="">All Tags</option></select>
+                        <button id="plugin-marketplace-refresh-btn" class="stv-btn-ghost" type="button">Refresh</button>
+                    </div>
+                    <div id="plugin-marketplace-status" class="stv-status-line stv-status-zero"></div>
+                    <div id="plugin-marketplace-grid" class="plugin-marketplace-grid"></div>
                 </section>
 
                 <section id="sp-memory" class="settings-panel settings-panel--memory" data-settings-theme="memory">
