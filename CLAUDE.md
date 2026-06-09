@@ -77,35 +77,41 @@ The heavy logic modules have been extracted from `main.js` into ES modules:
 ### Rust Module Responsibilities
 | Module | What It Owns |
 |---|---|
-| `lib.rs` | All command handler registration, `AppState`, themes, personas, game detection, voice I/O |
+| `lib.rs` | `AppState`, themes, personas, game detection, voice I/O; re-exports `paths::*`, `tauri_compat::*` |
 | `bridge.rs` | **axum HTTP + WebSocket server** on `127.0.0.1:9477` — `POST /api/{cmd}` routes all commands, `GET /ws` streams events, `GET /health` is the readiness probe |
 | `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
-| `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
+| `lua.rs` | mlua runtime; constructor: `new(app_state: Arc<Mutex<AppState>>, broadcaster: WsBroadcaster)`; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona`, `sendPrompt` |
 | `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
 | `memory.rs` | Cosine-similarity vector DB; persists to `user_config_dir()/data/memory/` |
-| `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
+| `ftp.rs` | FTP utility types and `ftp_list_dir`/`ftp_test_connection`; all FTP ops are inlined in the bridge dispatch — do NOT add AppHandle here |
 | `sftp.rs` | SFTP via SSH subprocess (`ssh`/`sftp` CLI); wraps `std::process::Command` in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
 | `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
 | `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
 | `sync.rs` | Cross-device encrypted sync over HTTPS |
-| `autocomplete.rs` | Terminal autocomplete — command/path/history suggestions for the PTY |
+| `autocomplete.rs` | Terminal autocomplete — command/path/history suggestions for the PTY (inlined in dispatch) |
 | `computer_use.rs` | Screenshot capture and computer-use tool support (base64 image encoding) |
-| `doc_indexer.rs` | Document indexer — crawls files/URLs into `MemoryRecord` embeddings for RAG |
+| `doc_indexer.rs` | Namespace placeholder — all doc index operations are inlined in bridge dispatch |
 | `hf_model_mgr.rs` | HuggingFace model manager — download/list/delete local GGUF/ONNX models |
 | `lsp.rs` | LSP client manager — one stdio JSON-RPC language server per language; publishes `lsp:diagnostics` events |
 | `ollama_mgr.rs` | Ollama model lifecycle — pull, list, delete models via the Ollama REST API |
 | `orchestrator.rs` | Multi-step LLM orchestration — chained prompts with tool dispatch and state |
-| `plugin_mgr.rs` | Plugin lifecycle manager — load/unload/reload Lua plugins at runtime |
-| `remote_control.rs` | UDP remote control server — accept remote keystrokes/commands over LAN |
+| `plugin_mgr.rs` | Plugin lifecycle manager — `reload_plugins_bridge(lua, app_state, broadcaster)` and `install_plugin_from_registry(id, lua, app_state, broadcaster)` |
+| `remote_control.rs` | UDP remote control server — accept remote keystrokes/commands over LAN; use `start_remote_server_bridge` (bridge-compatible, no AppHandle) |
 | `scheduler.rs` | Cron scheduler via `tokio-cron-scheduler` — persist and fire timed Lua/workflow jobs |
 | `workflow.rs` | Workflow runner — DAG step executor integrated with the scheduler |
+| `tauri_compat.rs` | **Legacy stub only** — provides fake `AppHandle`, `State<'_>`, `PathResolver` so residual dead-code compiles. Do NOT use these types in new code. Use `Arc<Mutex<AppState>>` + `WsBroadcaster` instead. |
 | `commands/` | Sub-module split: `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs`, `api_lab.rs`, `cli_maker.rs`, `git.rs`, `ide.rs` |
 | `deckcode/` | DeckCode input orchestration: schema parsing (`schema.rs`, `multilang_schema.rs`), raw input loop (`input.rs`), bindings mapping (`resolver.rs`), and frontend IPC dispatch (`dispatch.rs`) |
 
-### New `commands/` Sub-Modules
+### `commands/` Sub-Modules
 | Sub-module | What It Owns |
 |---|---|
+| `session.rs` | Session utilities only: `export_session_content`, `export_session_markdown`, `list_sessions`, `list_sessions_meta`, `delete_session`, `rename_session`. All LLM dispatch (send_command, RAG, streaming) is inlined in `mod.rs`. |
+| `config.rs` | Read-only config helpers (no State params): `get_gemini_api_key`, `get_hf_api_key`, `get_kimi_api_key`, `get_openai_compat_api_key`, `test_llm_connection`, `get_themes`, `set_theme`, `save_profiles`, `load_profiles`, `save_custom_themes`, `load_custom_themes`, SSH/SFTP credential helpers |
+| `agent.rs` | Agent execution: `agent_exec_code(code, lang, Arc<Mutex<AppState>>)` — the live entry point. Also `get_recommended_models`. Other agent functions with `State<'_>` params are dead code. |
+| `system.rs` | System commands — most are inlined in dispatch; live called functions are `discover_canvas_peers()`, `generate_support_bundle(Arc<Mutex<AppState>>)`, `get_system_health(Arc<Mutex<AppState>>)` |
+| `browser.rs` | Headless Chrome session management — `browser_open_session`, `browser_navigate_session`, `browser_click`, `browser_fill`, `browser_evaluate_js`, `browser_close_session`, `browser_get_citation`, `browser_save_to_memory`. All use `Arc<Mutex<AppState>>` (no AppHandle). Called from dispatch via `spawn_blocking`. |
 | `api_lab.rs` | Interactive API Lab — save/run HTTP request presets, view response history |
 | `cli_maker.rs` | CLI Maker — generate CLI argument schemas and command templates |
 | `git.rs` | Git commands — status, diff, log, commit, branch, stash via `git` subprocess |
@@ -127,7 +133,7 @@ A workspace crate (`neurodeck_infrastructure`) providing platform services. Used
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
-Memory context injection is live in `send_command` (commands/session.rs): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
+Memory context injection is inlined in the `"send_command"` match arm in `commands/mod.rs`: every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-3 relevant records, and prepends them to the LLM context. This requires the Gemini API key to be set — if Ollama is active, embedding generation may fail silently and RAG is skipped.
 
 **RAG search skips zero-embedding records** — facts added via `memory_add_fact` are stored with an empty embedding vector. `MemoryDB::search()` filters them out before similarity ranking so they don't crowd out real context at 0.0 similarity.
 
@@ -141,11 +147,13 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Rules
 
-- **Every new backend command** must be: (1) defined as an `async fn` in a `commands/` sub-module, (2) registered in `bridge.rs`'s router via `.route("/api/command_name", post(...))`. The Tauri `generate_handler![]` macro is no longer used — the bridge routes directly.
-- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Tauri's WebView doesn't always pick up the change without a rebuild.
-- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
+- **Every new backend command** must be: (1) a handler function in a `commands/` sub-module using `Arc<Mutex<AppState>>` (NOT `State<'_>`), (2) a match arm in the `dispatch()` function in `commands/mod.rs`. Do NOT use `tauri_compat::State<'_>` or `tauri_compat::AppHandle` in new code — they are stubs that compile but panic or silently no-op at runtime.
+- **New Lua globals** must use `Arc<Mutex<AppState>>` captured into closures, never `.state::<T>()` on the compat AppHandle — that call panics. See the `setPersona` global in `lua.rs` as the reference pattern.
+- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but the WebView doesn't always pick up the change without a rebuild.
+- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `lib.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` dispatch arms in `mod.rs` to match what the settings modal JS expects.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. The backend now auto-evicts via `sessions.remove(&id)` before insert, but the rule still stands — double-spawning without kill leaves a brief reader-thread overlap that can emit duplicate output events.
 - **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
+- **Headless Chrome** (`commands/browser.rs`): all browser session functions are synchronous and must be called via `spawn_blocking` from dispatch. See the `browser_open_session` dispatch arm as the reference pattern.
 - **All persistent data paths** must use `user_config_dir()` (defined in `lib.rs`) — never `./data/` or `./sessions/` relative paths. CWD-relative paths fail silently on read-only SteamOS install paths.
 - **Window size**: all new views must fit within 1280×800. The flex column layout in `.view-container` is `position: absolute; top: 0; left: 0; width: 100%; height: 100%`. Use `overflow: hidden` on view roots and scroll internally.
 
@@ -153,16 +161,17 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Hard Constraints / Anti-Patterns
 
+- **Do not use `State<'_>` or `AppHandle` from `tauri_compat` in new code** — these are dead stubs. `AppHandle.emit()` is a no-op. `AppHandle.state::<T>()` panics with "Tauri managed state is not available in pure Electron mode". Use `Arc<Mutex<AppState>>` + `WsBroadcaster` instead.
 - **Do not add `display: flex` to `#view-*` ID rules in app.css** — kills tab switching (see CSS Specificity Trap above).
 - **Do not call `pty_spawn` without a preceding `pty_kill`** for the same session ID.
 - **Do not load the full FTP file into a `Vec<u8>` for files that could be large** — `retr_as_buffer` is for small files only. Stream to disk for anything user-selectable.
-- **Do not use `unwrap()` in Tauri command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
+- **Do not use `unwrap()` in axum command handlers** — panics crash the backend process. Use `map_err(|e| e.to_string())?`.
 - **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
 - **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and `neurobridge.js` (local). Adding a bundled npm package will bloat the Electron renderer bundle.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `lib.rs` that checks for `../llm-term.toml` first.
 - **Never use `./data/` or `./sessions/` relative paths** in Rust — always call `user_config_dir().join("data/...")`. CWD-relative paths fail on read-only SteamOS installs.
-- **Never mutate `GEMINI_API_KEY` env var globally** — use `GeminiProvider::new_with_key(model, key)` for key injection in test/one-off paths. Mutating the env var races with concurrent `send_command` calls.
-- **Blocking commands in async Tauri handlers must use `spawn_blocking`** — `std::process::Command::output()` blocks the Tokio executor thread. Only `execute_command` and `get_context_stats` were patched; apply the same pattern to any new sync I/O.
+- **Never mutate `GEMINI_API_KEY` env var globally** — use `GeminiProvider::new_with_key(model, key)` for key injection in test/one-off paths. Mutating the env var races with concurrent send_command calls on other threads.
+- **Blocking I/O in async handlers must use `spawn_blocking`** — `std::process::Command::output()` blocks the Tokio executor thread. Apply to any new sync I/O or headless Chrome call.
 
 ---
 
@@ -188,7 +197,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **Canvas Python/Bash "run" does nothing** — the Run button for non-HTML canvas languages shows a "run hint" message but does not execute code. The Agent tab is what actually runs Python/Bash. This is intentional-ish but confusing — it's flagged in `ANTIGRAVITY_HANDOFF.md` as a must-fix.
 
-- **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
+- **LLM dispatch is a single inlined match arm** — the `"send_command"` arm in `commands/mod.rs` owns the full chat pipeline: RAG context injection, game context, persona system prompt, streaming, memory storage, and Lua hook dispatch. There is no `session::send_command` function anymore. `execute_command_stream` is the older non-RAG streaming path; always use the `"send_command"` dispatch arm for new LLM features.
 
 - **Voice STT returns raw audio via `arecord`** — the `stop_recording` command returns transcribed text, but the transcription quality depends on whether `espeak`/`arecord` are installed. On Windows, `start_recording` returns a mock string. The STT path does NOT currently use Whisper or any AI model — it's system-tool-limited.
 
@@ -206,7 +215,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **Onboarding wizard** (`#onboarding-modal`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
 
-- **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and `app_handle.emit()`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
+- **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. The `STermWarpinatorCallbacks` struct wires the gRPC callbacks to `AppState` and the `WsBroadcaster`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 
 - **`GeminiProvider::new_with_key(model, key)`** — added constructor that stores the API key directly on the struct, bypassing global env var lookup. Use this for any one-off or test invocation where you need a specific key without touching `GEMINI_API_KEY`. The default `new()` constructor still reads from env/keychain.
 
@@ -220,7 +229,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **KFMS dirty-flag filtering** — `khaotic-init.sh stamp` excludes the 4 KFMS-managed artifact files (`meta.json`, `health.json`, `CODENAME_REGISTRY.md`, `IMPLEMENTATION_PLAN.md`) from the `git status --porcelain` dirty check. Without this, every post-commit amend would mark the build as dirty on the next stamp.
 
-- **Command handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs`. New commands go into the most appropriate sub-module, then add a `.route("/api/command_name", post(handler))` entry in `bridge.rs`'s router. Do not put new commands directly in `lib.rs`.
+- **Command handlers live in `commands/` sub-modules** — `session.rs`, `config.rs`, `system.rs`, `agent.rs`, `browser.rs` are re-exported via `commands/mod.rs`. New commands go into the most appropriate sub-module as a function taking `Arc<Mutex<AppState>>`, then add a match arm in `commands/mod.rs`'s `dispatch()`. Do NOT use `tauri_compat` types in new functions.
 
 - **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection, avoiding generic JS evaluations or hardcoded Monaco commands.
 
@@ -238,13 +247,15 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 - **`computer_use.rs` captures screenshots as base64** — used by the agent's computer-use tool to pass screen state to the LLM. Does not perform OCR or UI tree extraction natively; the LLM interprets the image directly.
 
-- **`doc_indexer.rs` generates embeddings on ingest** — when indexing a file or URL, it calls `provider.generate_embedding()` and stores a `MemoryRecord` with a real embedding vector. Requires a live Gemini API key. Without it, the record is stored with a zero-vector and RAG search skips it.
+- **`doc_indexer.rs` is a placeholder** — all indexing operations (`get_indexed_docs`, `search_docs_semantic`, `remove_indexed_doc`, `index_directory`) are inlined in the `commands/mod.rs` dispatch. Do not add Tauri-pattern functions back to this file.
 
 - **Production CI workflows** — `.github/workflows/production-ci.yml` and `production-release.yml` are new. CI runs lint, typecheck, Rust `cargo check`, and build. Release workflow builds Windows MSI and Linux AppImage artifacts.
 
 - **`radial.js` is now a standalone module** — the radial menu segment registry was extracted from `main.js`. Add new views to the radial menu by registering them in `radial.js`'s segment array, not in `main.js`.
 
 - **`settings.js` owns all settings UI** — all settings modal logic (read, write, reset, theme preview, LLM config) lives in `settings.js`. `main.js` only mounts the modal; it does not duplicate settings logic.
+
+- **`LuaEngine::new(app_state, broadcaster)`** — the single constructor. Takes `Arc<Mutex<AppState>>` and `WsBroadcaster`; registers all 6 globals (`print`, `execute`, `registerCommand`, `registerHook`, `setPersona`, `sendPrompt`). There is no `new_headless()` anymore. Called from `bridge.rs` after `app_state_arc` is constructed, and from `plugin_mgr::reload_plugins_bridge`.
 
 ---
 
@@ -257,8 +268,8 @@ Version governance for this project. One Egyptian god codename per MINOR version
 REGISTRY[MINOR] = codename
 tag format      = v{semver}-{codename_lower}
 
-current: v1.2.x → Ra     (MINOR=2, index 2)
-next:    v1.3.x → Osiris  (MINOR=3, index 3)
+current: v1.8.x → Ptah    (MINOR=8, index 8)
+next:    v1.9.x → Thoth   (MINOR=9, index 9)
 ```
 
 ### Key Files
@@ -284,8 +295,8 @@ next:    v1.3.x → Osiris  (MINOR=3, index 3)
 - `verify-telemetry.yml` — verifies `health.json` presence, all 5 checks true, no version/codename drift from `meta.json`
 
 ### Rules When Bumping Versions
-- **PATCH bump** (1.1.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
-- **MINOR bump** (1.2.0): update `meta.json` with new version, `codename.name = "Ra"`, `registry_index = 2`, `minor_line = 2`, `tag = "v1.2.0-ra"`. Update `health.json` version/codename to match.
+- **PATCH bump** (1.8.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
+- **MINOR bump** (1.9.0): update `meta.json` with new version, `codename.name = "Thoth"`, `registry_index = 9`, `minor_line = 9`, `tag = "v1.9.0-thoth"`. Update `health.json` version/codename to match.
 - **MAJOR bump** (2.0.0): all codenames reset to index 0 → Anubis.
 - Loose files at the root: run `sweep` before committing to keep the root clean.
 
