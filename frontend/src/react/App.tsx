@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { wallpaperManager } from './features/settings/wallpaperManager';
 import { CommandPalette } from './components/command/CommandPalette';
+import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { PrimarySidebar } from './components/layout/PrimarySidebar';
 import { SecondaryRail } from './components/layout/SecondaryRail';
 import { TitleBar } from './components/layout/TitleBar';
@@ -47,6 +48,15 @@ function makeUserMessage(content: string): AIMessage {
 
 export default function App() {
   const { state, dispatch, resetLocalState, selectors } = useNeuroDeckState();
+
+  useEffect(() => {
+    const loader = document.getElementById('boot-loader');
+    if (loader) {
+      const t = setTimeout(() => { loader.classList.add('done'); }, 100);
+      const t2 = setTimeout(() => { loader.remove(); }, 700);
+      return () => { clearTimeout(t); clearTimeout(t2); };
+    }
+  }, []);
   const activeTheme = themes.find((theme) => theme.name === state.selectedTheme) ?? themes[0];
   const selectedModel = state.models.find((model) => model.id === state.selectedModelId) ?? state.models[0];
   const modelName = state.selectedProvider === 'offline-draft' ? 'NeuroDraft' : selectedModel?.name ?? 'default';
@@ -293,8 +303,20 @@ export default function App() {
     document.documentElement.style.setProperty('--font-body', activeFont.family);
   }, [activeFont]);
 
+  if (!state.hydrated) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center" style={{ backgroundColor: activeTheme.background }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neuro/30 border-t-neuro" />
+          <p className="text-sm text-slate-500">Loading NEURODECK...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
+      id="app-shell"
       className={`flex h-full flex-col overflow-hidden tactical-grid ${state.deckMode ? 'text-[15px]' : ''}`}
       style={shellStyle}
     >
@@ -364,6 +386,7 @@ export default function App() {
         <SecondaryRail state={state} selectors={selectors} />
       </div>
       <CommandPalette state={state} dispatch={dispatch} actions={appActions} />
+      <OnboardingModal />
     </div>
   );
 }

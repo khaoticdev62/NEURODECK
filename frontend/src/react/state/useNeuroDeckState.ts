@@ -12,6 +12,7 @@ const initialState: NeuroDeckState = {
   selectedPersona: 'Developer',
   selectedProvider: 'offline-draft',
   selectedModelId: 'neurodraft-local',
+  selectedFont: 'inter',
   composerValue: '',
   busyLabel: null,
   activeProject: null,
@@ -92,6 +93,8 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
       return { ...state, selectedProvider: action.provider };
     case 'set-selected-model':
       return { ...state, selectedModelId: action.id };
+    case 'set-font':
+      return { ...state, selectedFont: action.font };
     case 'set-composer':
       return { ...state, composerValue: action.value };
     case 'run-starter':

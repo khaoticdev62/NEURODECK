@@ -83,6 +83,7 @@ export class WallpaperManager {
     if (this.canvas) this.canvas.style.opacity = '0';
     const img = document.getElementById('app-background-image') as HTMLElement | null;
     if (img) img.style.opacity = '0';
+    document.body.classList.remove('wallpaper-active');
   }
 
   start(rawType: string) {
@@ -121,6 +122,7 @@ export class WallpaperManager {
     } else {
       if (cv) { cv.style.opacity = opacity; this.setupCanvas(type); this.animationFrameId = requestAnimationFrame(this.loop); }
     }
+    document.body.classList.add('wallpaper-active');
   }
 
   setOpacity(pct: number) {

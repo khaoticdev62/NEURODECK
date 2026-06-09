@@ -1,6 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type ViewId = 'workspace' | 'execution' | 'project' | 'models' | 'agents' | 'memory' | 'sessions' | 'cache' | 'plugins' | 'diagnostics' | 'settings';
+export type ViewId =
+  | 'workspace' | 'execution' | 'agents' | 'memory'
+  | 'canvas' | 'terminal' | 'ssh' | 'ide' | 'git' | 'api-lab' | 'cli-maker'
+  | 'browser' | 'tunnel' | 'share' | 'remote' | 'torrent'
+  | 'project' | 'docs' | 'prompt-lab' | 'graph' | 'sessions'
+  | 'scheduler' | 'orchestrator'
+  | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
+  | 'fonts';
 export type ThemeName = 'Blacksite' | 'Tactical Glass' | 'Ghost Terminal' | 'Hologrid' | 'Minimal Ops' | 'Night Watch' | 'Broadcast';
 export type AgentStatus = 'idle' | 'thinking' | 'blocked' | 'complete';
 export type ModelStatus = 'ready' | 'indexed' | 'missing' | 'disabled';
@@ -18,6 +25,7 @@ export interface NavItem {
   description: string;
   icon: LucideIcon;
   shortcut: string;
+  section?: string;
 }
 
 export interface ThemeTokenSet {
@@ -291,6 +299,16 @@ export interface AppError {
   action?: string;
 }
 
+export type FontCategory = 'Sans Serif' | 'Serif' | 'Monospace' | 'Sci-Fi' | 'Display';
+
+export interface FontOption {
+  id: string;
+  name: string;
+  family: string;
+  category: FontCategory;
+  weights: number[];
+}
+
 export interface NeuroDeckState {
   hydrated: boolean;
   activeView: ViewId;
@@ -300,6 +318,7 @@ export interface NeuroDeckState {
   selectedPersona: string;
   selectedProvider: AIProvider;
   selectedModelId: string;
+  selectedFont: string;
   composerValue: string;
   busyLabel: string | null;
   activeProject: ProjectScanResult | null;
@@ -372,6 +391,7 @@ export type NeuroDeckAction =
   | { type: 'set-persona'; persona: string }
   | { type: 'set-provider'; provider: AIProvider }
   | { type: 'set-selected-model'; id: string }
+  | { type: 'set-font'; font: string }
   | { type: 'set-composer'; value: string }
   | { type: 'run-starter'; prompt: string }
   | { type: 'toggle-agent'; id: string }

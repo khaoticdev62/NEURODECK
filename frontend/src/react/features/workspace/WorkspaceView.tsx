@@ -1,124 +1,177 @@
 import type { Dispatch } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { BrainCircuit, Database, FileJson, FolderOpen, Gauge, HardDrive, SendHorizontal, Sparkles, Workflow } from 'lucide-react';
+import {
+  BrainCircuit, FileJson, FolderOpen, Gauge, HardDrive, Hash,
+  Mic, Paperclip, ScanLine, SendHorizontal, Sparkles, Target,
+  Wand2, Zap
+} from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckSelectors, NeuroDeckState } from '../../types/neurodeck';
 import { Badge } from '../../components/primitives/Badge';
 import { MetricCard } from '../../components/primitives/MetricCard';
-import { Panel } from '../../components/primitives/Panel';
+
+const CHAT_STARTERS = [
+  { icon: Zap, label: 'Explain RAG', hint: 'How retrieval-augmented generation works' },
+  { icon: Wand2, label: 'Rust Handler', hint: 'Async Axum endpoint with error handling' },
+  { icon: Target, label: 'Game Mechanic', hint: 'Unique roguelike system design concept' },
+  { icon: Hash, label: 'Code Review', hint: 'Find bugs and performance issues in pasted code' },
+  { icon: Sparkles, label: 'Sprint Planning', hint: 'Break scope into tasks for a solo-dev AI app' },
+  { icon: BrainCircuit, label: 'Debug Help', hint: 'Paste your error for AI-assisted diagnosis' },
+];
 
 export function WorkspaceView({ state, dispatch, selectors, actions }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; selectors: NeuroDeckSelectors; actions: NeuroDeckAppActions }) {
   const healthReady = state.aiHealth.filter((item) => item.available).length;
+  const hasOnlyWelcome = state.messages.length === 1 && state.messages[0]?.id === 'system-welcome';
+  const showWelcome = state.messages.length === 0 || hasOnlyWelcome;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      {/* Session Header */}
+      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Session</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="text-xs text-slate-400">{state.activeProject?.name || 'Welcome session'}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge tone="accent">{state.selectedProvider}</Badge>
+          <span className="text-xs text-slate-500">{selectors.messageCount} msgs</span>
+        </div>
+      </div>
+
+      {/* Metrics Row */}
+      <section className="grid gap-2 md:grid-cols-4">
         <MetricCard icon={BrainCircuit} label="Models" value={selectors.readyModels} hint="available locally" />
         <MetricCard icon={Gauge} label="Latency" value={`${state.telemetry.latencyMs}ms`} hint="last AI response" />
-        <MetricCard icon={Workflow} label="Runs" value={selectors.completedRuns} hint="agent completions" />
+        <MetricCard icon={Sparkles} label="Runs" value={selectors.completedRuns} hint="agent completions" />
         <MetricCard icon={HardDrive} label="Cache" value={`${state.telemetry.cacheHealth}%`} hint="offline readiness" />
       </section>
 
-      <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_380px]">
-        <Panel eyebrow="Workspace" title="Local AI Execution Console" className="min-h-0 overflow-hidden">
-          <div className="flex h-full min-h-[440px] flex-col">
-            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-              <div className="rounded-3xl border border-neuro/20 bg-neuro/[0.045] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Badge tone="accent">v5 Execution Layer</Badge>
-                    <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-50">Run local AI. Attach project context. Keep the renderer boxed in.</h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                      NEURODECK v5 adds local AI adapters, project-context snapshots, agent run orchestration, health checks, and session saves through secure Electron IPC.
-                    </p>
-                  </div>
-                  <Sparkles className="hidden h-10 w-10 text-neuro md:block" />
-                </div>
+      {/* Chat Area */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+        {/* Messages Scroll Area */}
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+          {showWelcome ? (
+            <div className="flex flex-col items-center py-8 text-center">
+              {/* Logo */}
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-neuro/20 bg-neuro/10">
+                <Sparkles className="h-8 w-8 text-neuro" />
               </div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-50">NEURODECK</h1>
+              <p className="mt-1 text-sm text-slate-500">AI-native terminal OS. Ask anything.</p>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-4">
-                <ActionCard icon={FolderOpen} title="Scan Project" body="Detect stack, scripts, docs, tests, risks." onClick={() => void actions.scanProject()} primary />
-                <ActionCard icon={FileJson} title="Build Context" body="Read allowlisted files and redact secrets." onClick={() => void actions.buildProjectContext()} />
-                <ActionCard icon={BrainCircuit} title="AI Health" body="Check Ollama, LM Studio, and fallback." onClick={() => void actions.checkAiHealth()} />
-                <ActionCard icon={HardDrive} title="Save Session" body="Persist chat and run history as JSON." onClick={() => void actions.saveSession()} />
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {state.messages.map((message) => (
-                  <article key={message.id} className={`rounded-2xl border p-4 ${message.role === 'user' ? 'border-neuro/25 bg-neuro/[0.055]' : 'border-white/10 bg-white/[0.035]'}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <Badge tone={message.role === 'user' ? 'accent' : 'neutral'}>{message.role}</Badge>
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-slate-600">{message.provider ?? 'local'} {message.latencyMs ? `• ${message.latencyMs}ms` : ''}</span>
-                    </div>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">{message.content}</p>
-                  </article>
-                ))}
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {starterPrompts.map((prompt) => (
-                  <button key={prompt} type="button" onClick={() => dispatch({ type: 'run-starter', prompt })} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left text-sm text-slate-300 transition hover:border-neuro/30 hover:bg-neuro/[0.06]">
-                    {prompt}
+              {/* Starter Grid */}
+              <div className="mt-6 grid w-full max-w-2xl gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {CHAT_STARTERS.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => dispatch({ type: 'run-starter', prompt: s.hint })}
+                    className="rounded-xl border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-neuro/30 hover:bg-neuro/[0.06]"
+                  >
+                    <s.icon className="h-4 w-4 text-neuro" />
+                    <p className="mt-2 text-xs font-medium text-slate-200">{s.label}</p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-slate-600">{s.hint}</p>
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="border-t border-white/10 p-3">
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <Badge tone="accent">{state.selectedProvider}</Badge>
-                <Badge tone={state.projectContext ? 'success' : 'warning'}>{state.projectContext ? 'context attached' : 'no context'}</Badge>
-                <Badge tone={healthReady > 1 ? 'success' : 'neutral'}>{healthReady} provider(s) ready</Badge>
-                <span>Ctrl/Cmd + Enter runs the prompt.</span>
-              </div>
-              <div className="flex items-end gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 focus-within:border-neuro/40 focus-within:shadow-focus">
-                <textarea
-                  value={state.composerValue}
-                  onChange={(event) => dispatch({ type: 'set-composer', value: event.target.value })}
-                  placeholder="Ask NEURODECK to build, audit, refactor, document, or plan..."
-                  className="max-h-32 min-h-12 flex-1 resize-none bg-transparent text-sm leading-6 text-slate-100 outline-none placeholder:text-slate-600"
-                />
-                <button type="button" onClick={() => void actions.runAssistant()} className="inline-flex h-10 items-center gap-2 rounded-xl bg-neuro px-4 text-sm font-semibold text-blacksite transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-neuro/40">
-                  Run <SendHorizontal className="h-4 w-4" />
-                </button>
+              {/* Quick Actions */}
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <ActionChip icon={FolderOpen} label="Scan Project" onClick={() => void actions.scanProject()} />
+                <ActionChip icon={FileJson} label="Build Context" onClick={() => void actions.buildProjectContext()} />
+                <ActionChip icon={BrainCircuit} label="AI Health" onClick={() => void actions.checkAiHealth()} />
+                <ActionChip icon={HardDrive} label="Save Session" onClick={() => void actions.saveSession()} />
               </div>
             </div>
-          </div>
-        </Panel>
+          ) : (
+            <div className="space-y-3">
+              {state.messages.map((message) => (
+                <article
+                  key={message.id}
+                  className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                >
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                    message.role === 'user' ? 'bg-neuro/20 text-neuro' : 'bg-white/10 text-slate-400'
+                  }`}>
+                    {message.role === 'user' ? 'U' : 'AI'}
+                  </div>
+                  <div className={`max-w-[80%] rounded-2xl border px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'border-neuro/25 bg-neuro/[0.08]'
+                      : 'border-white/10 bg-white/[0.04]'
+                  }`}>
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        {message.role}
+                      </span>
+                      <span className="text-[10px] text-slate-600">
+                        {message.provider ?? 'local'} {message.latencyMs ? `• ${message.latencyMs}ms` : ''}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{message.content}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <Panel eyebrow="Execution Context" title="Current Stack">
-          <div className="space-y-3 p-4">
-            <ContextRow label="Project" value={state.activeProject?.name ?? 'No project attached'} tone={state.activeProject ? 'success' : 'warning'} />
-            <ContextRow label="Context" value={state.projectContext?.summary ?? 'Context not built'} tone={state.projectContext ? 'success' : 'neutral'} />
-            <ContextRow label="Provider" value={`${state.selectedProvider} / ${state.selectedModelId}`} tone="success" />
-            <ContextRow label="Models" value={state.modelDetection?.summary ?? 'Detection not run'} tone={state.modelDetection ? 'success' : 'neutral'} />
-            <ContextRow label="Export" value={state.lastExportPath ? 'Export/save ready' : 'No export yet'} tone={state.lastExportPath ? 'success' : 'neutral'} />
-            <ContextRow label="Messages" value={`${selectors.messageCount} message(s)`} tone="neutral" />
+        {/* Input Bar */}
+        <div className="border-t border-white/10 p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <Badge tone="accent">{state.selectedProvider}</Badge>
+            <Badge tone={state.projectContext ? 'success' : 'warning'}>{state.projectContext ? 'context attached' : 'no context'}</Badge>
+            <Badge tone={healthReady > 1 ? 'success' : 'neutral'}>{healthReady} provider(s) ready</Badge>
+            <span className="ml-auto">Ctrl/Cmd + Enter to send</span>
           </div>
-        </Panel>
+          <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 focus-within:border-neuro/40 focus-within:shadow-focus">
+            <div className="flex gap-1 pb-2 pl-2">
+              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Attach file">
+                <Paperclip className="h-4 w-4" />
+              </button>
+              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Voice input">
+                <Mic className="h-4 w-4" />
+              </button>
+              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Screenshot">
+                <ScanLine className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              value={state.composerValue}
+              onChange={(event) => dispatch({ type: 'set-composer', value: event.target.value })}
+              onKeyDown={(event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                  event.preventDefault();
+                  void actions.runAssistant();
+                }
+              }}
+              placeholder="Enter command or type message..."
+              className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-slate-100 outline-none placeholder:text-slate-600"
+              rows={1}
+            />
+            <button
+              type="button"
+              onClick={() => void actions.runAssistant()}
+              className="mb-0.5 inline-flex h-9 items-center gap-1.5 rounded-xl bg-neuro px-3 text-sm font-semibold text-blacksite transition hover:brightness-110"
+            >
+              <SendHorizontal className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function ActionCard({ icon: Icon, title, body, onClick, primary = false }: { icon: LucideIcon; title: string; body: string; onClick: () => void; primary?: boolean }) {
+function ActionChip({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className={`rounded-2xl border p-4 text-left transition ${primary ? 'border-neuro/25 bg-neuro/[0.07] hover:bg-neuro/[0.11]' : 'border-white/10 bg-white/[0.035] hover:border-neuro/30 hover:bg-neuro/[0.06]'}`}>
-      <Icon className="h-5 w-5 text-neuro" />
-      <h3 className="mt-3 font-semibold text-slate-100">{title}</h3>
-      <p className="mt-1 text-xs leading-5 text-slate-500">{body}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400 transition hover:border-neuro/30 hover:text-slate-200"
+    >
+      <Icon className="h-3.5 w-3.5" /> {label}
     </button>
-  );
-}
-
-function ContextRow({ label, value, tone }: { label: string; value: string; tone: 'success' | 'warning' | 'neutral' }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs uppercase tracking-[0.2em] text-slate-600">{label}</span>
-        <Badge tone={tone}>{tone}</Badge>
-      </div>
-      <p className="mt-2 text-sm text-slate-300">{value}</p>
-    </div>
   );
 }

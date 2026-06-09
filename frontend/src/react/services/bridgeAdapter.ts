@@ -402,6 +402,345 @@ const diagnostics = {
   },
 };
 
+/* ── Terminal / PTY ──────────────────────────────────────────────────────── */
+
+const terminal = {
+  async spawn(sessionId: string = 'main_pty_session', shell?: string) {
+    return bridgeInvoke<{ success: boolean }>('pty_spawn', { session_id: sessionId, shell });
+  },
+  async kill(sessionId: string = 'main_pty_session') {
+    return bridgeInvoke<{ success: boolean }>('pty_kill', { session_id: sessionId });
+  },
+  async write(sessionId: string, data: string) {
+    return bridgeInvoke<{ success: boolean }>('pty_write', { session_id: sessionId, data });
+  },
+  async resize(sessionId: string, cols: number, rows: number) {
+    return bridgeInvoke<{ success: boolean }>('pty_resize', { session_id: sessionId, cols, rows });
+  },
+  async listSessions() {
+    return bridgeInvoke<string[]>('get_pty_sessions');
+  },
+};
+
+/* ── Browser ─────────────────────────────────────────────────────────────── */
+
+const browser = {
+  async open(url: string) {
+    return bridgeInvoke<{ success: boolean }>('browser_open', { url });
+  },
+  async navigate(url: string) {
+    return bridgeInvoke<{ success: boolean }>('browser_navigate', { url });
+  },
+  async back() {
+    return bridgeInvoke<{ success: boolean }>('browser_back');
+  },
+  async forward() {
+    return bridgeInvoke<{ success: boolean }>('browser_forward');
+  },
+  async getUrl() {
+    return bridgeInvoke<{ url: string }>('get_browser_url');
+  },
+  async hide() {
+    return bridgeInvoke<{ success: boolean }>('browser_hide');
+  },
+  async show() {
+    return bridgeInvoke<{ success: boolean }>('browser_show');
+  },
+  async getContent() {
+    return bridgeInvoke<{ content: string }>('browser_get_content');
+  },
+  async saveToMemory() {
+    return bridgeInvoke<{ success: boolean }>('browser_save_to_memory');
+  },
+};
+
+/* ── Remote Control ──────────────────────────────────────────────────────── */
+
+const remote = {
+  async start(port: number = 9090) {
+    return bridgeInvoke<{ success: boolean; url?: string; pin?: string }>('start_remote_server', { port });
+  },
+  async stop() {
+    return bridgeInvoke<{ success: boolean }>('stop_remote_server');
+  },
+  async getInfo() {
+    return bridgeInvoke<{ running: boolean; url?: string; clients?: number }>('get_remote_server_info');
+  },
+};
+
+/* ── Canvas / Code Execution ─────────────────────────────────────────────── */
+
+export type CodeLang = 'python' | 'bash' | 'powershell' | 'javascript' | 'js' | 'html';
+
+const canvas = {
+  async execStream(code: string, lang: CodeLang) {
+    return bridgeInvoke<{ success: boolean; exec_id?: string }>('exec_code_stream', { code, lang });
+  },
+  async cancelExec() {
+    return bridgeInvoke<{ success: boolean }>('cancel_exec');
+  },
+};
+
+/* ── Scheduler ───────────────────────────────────────────────────────────── */
+
+export interface ScheduledTask {
+  id: string;
+  name: string;
+  cron: string;
+  goal: string;
+  enabled: boolean;
+  last_run?: string;
+  next_run?: string;
+}
+
+const scheduler = {
+  async listTasks(): Promise<ScheduledTask[]> {
+    return bridgeInvoke<ScheduledTask[]>('list_scheduled_tasks');
+  },
+  async addTask(task: Omit<ScheduledTask, 'id'>): Promise<ScheduledTask> {
+    return bridgeInvoke<ScheduledTask>('add_scheduled_task', task);
+  },
+  async deleteTask(id: string) {
+    return bridgeInvoke<{ success: boolean }>('delete_scheduled_task', { id });
+  },
+  async toggleTask(id: string) {
+    return bridgeInvoke<{ success: boolean; enabled: boolean }>('toggle_scheduled_task', { id });
+  },
+  async runTaskNow(id: string) {
+    return bridgeInvoke<{ success: boolean }>('run_task_now', { id });
+  },
+};
+
+/* ── Git ─────────────────────────────────────────────────────────────────── */
+
+export interface GitRepo {
+  path: string;
+  name: string;
+}
+
+export interface GitBranch {
+  name: string;
+  current: boolean;
+}
+
+export interface GitCommit {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export interface GitFile {
+  path: string;
+  status: 'staged' | 'unstaged' | 'untracked';
+}
+
+const git = {
+  async listRepos(): Promise<GitRepo[]> {
+    return bridgeInvoke<GitRepo[]>('git_list_repos');
+  },
+  async openRepo(path: string) {
+    return bridgeInvoke<{ success: boolean }>('git_open_repo', { path });
+  },
+  async status() {
+    return bridgeInvoke<{ staged: GitFile[]; unstaged: GitFile[]; untracked: GitFile[] }>('git_status');
+  },
+  async log(limit: number = 50) {
+    return bridgeInvoke<GitCommit[]>('git_log', { limit });
+  },
+  async branchList() {
+    return bridgeInvoke<GitBranch[]>('git_branch_list');
+  },
+  async branchCreate(name: string) {
+    return bridgeInvoke<{ success: boolean }>('git_branch_create', { name });
+  },
+  async branchCheckout(name: string) {
+    return bridgeInvoke<{ success: boolean }>('git_branch_checkout', { name });
+  },
+  async stage(files: string[]) {
+    return bridgeInvoke<{ success: boolean }>('git_stage', { files });
+  },
+  async unstage(files: string[]) {
+    return bridgeInvoke<{ success: boolean }>('git_unstage', { files });
+  },
+  async commit(message: string) {
+    return bridgeInvoke<{ success: boolean; hash?: string }>('git_commit', { message });
+  },
+  async diff(file?: string) {
+    return bridgeInvoke<{ diff: string }>('git_diff', { file });
+  },
+  async push(remote?: string, branch?: string) {
+    return bridgeInvoke<{ success: boolean }>('git_push', { remote, branch });
+  },
+  async pull(remote?: string, branch?: string) {
+    return bridgeInvoke<{ success: boolean }>('git_pull', { remote, branch });
+  },
+};
+
+/* ── Prompt Lab ──────────────────────────────────────────────────────────── */
+
+const promptLab = {
+  async generateJPE(prompt: string, level: 'grade8' | 'college' | 'expert' = 'college') {
+    return bridgeInvoke<{ explanation: string }>('generate_jpe_explanation_with_level', { prompt, level });
+  },
+  async optimizePrompt(prompt: string) {
+    return bridgeInvoke<{ optimized: string }>('optimize_raw_prompt', { prompt });
+  },
+};
+
+/* ── Docs / Knowledge Base ───────────────────────────────────────────────── */
+
+const docs = {
+  async indexDirectory(path: string) {
+    return bridgeInvoke<{ success: boolean; count?: number }>('index_directory', { path });
+  },
+  async getIndexedDocs() {
+    return bridgeInvoke<{ docs: Array<{ id: string; title: string; path: string }> }>('get_indexed_docs');
+  },
+  async searchDocs(query: string) {
+    return bridgeInvoke<{ results: Array<{ id: string; title: string; snippet: string; score: number }> }>('search_docs_semantic', { query });
+  },
+  async clearIndex() {
+    return bridgeInvoke<{ success: boolean }>('clear_doc_index');
+  },
+};
+
+/* ── Share / Transfer ────────────────────────────────────────────────────── */
+
+const share = {
+  async getPeers() {
+    return bridgeInvoke<Array<{ id: string; name: string; address: string }>>('get_discovered_peers');
+  },
+  async getActiveTransfers() {
+    return bridgeInvoke<Array<{ id: string; filename: string; progress: number; status: string }>>('get_active_transfers');
+  },
+  async startTransfer(filePath: string, peerId?: string) {
+    return bridgeInvoke<{ success: boolean; transfer_id?: string }>('start_file_transfer', { file_path: filePath, peer_id: peerId });
+  },
+};
+
+/* ── Tunnel ──────────────────────────────────────────────────────────────── */
+
+const tunnel = {
+  async start() {
+    return bridgeInvoke<{ success: boolean }>('start_tunnel_server');
+  },
+  async stop() {
+    return bridgeInvoke<{ success: boolean }>('stop_tunnel_server');
+  },
+  async sendRequest(command: string) {
+    return bridgeInvoke<{ output: string }>('send_tunnel_request', { command });
+  },
+};
+
+/* ── API Lab ─────────────────────────────────────────────────────────────── */
+
+export interface ApiRequest {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+export interface ApiResponse {
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+}
+
+const apiLab = {
+  async sendRequest(req: ApiRequest): Promise<ApiResponse> {
+    return bridgeInvoke<ApiResponse>('api_request', req);
+  },
+  async listCollections() {
+    return bridgeInvoke<string[]>('api_list_collections');
+  },
+  async saveCollection(name: string, requests: ApiRequest[]) {
+    return bridgeInvoke<{ success: boolean }>('api_save_collection', { name, requests });
+  },
+  async importCurl(curl: string) {
+    return bridgeInvoke<ApiRequest>('api_curl_import', { curl });
+  },
+};
+
+/* ── Workflow / Orchestrator ─────────────────────────────────────────────── */
+
+const workflow = {
+  async list() {
+    return bridgeInvoke<Array<{ id: string; name: string }>>('list_workflows');
+  },
+  async load(id: string) {
+    return bridgeInvoke<{ workflow: unknown }>('load_workflow', { id });
+  },
+  async save(id: string, name: string, workflow: unknown) {
+    return bridgeInvoke<{ success: boolean }>('save_workflow', { id, name, workflow });
+  },
+  async delete(id: string) {
+    return bridgeInvoke<{ success: boolean }>('delete_workflow', { id });
+  },
+  async run(id: string, inputs?: Record<string, unknown>) {
+    return bridgeInvoke<{ run_id: string; status: string }>('workflow_run', { id, inputs });
+  },
+};
+
+const orchestrator = {
+  async startTask(goal: string) {
+    return bridgeInvoke<{ task_id: string }>('start_orchestrated_task', { goal });
+  },
+  async getStatus(taskId: string) {
+    return bridgeInvoke<{ status: string; steps: unknown[] }>('get_orchestration_status', { task_id: taskId });
+  },
+  async stop(taskId: string) {
+    return bridgeInvoke<{ success: boolean }>('stop_orchestration', { task_id: taskId });
+  },
+};
+
+/* ── SSH Credentials ─────────────────────────────────────────────────────── */
+
+const ssh = {
+  async saveCredential(host: string, user: string, password?: string, keyPath?: string) {
+    return bridgeInvoke<{ success: boolean }>('save_ssh_credential', { host, user, password, key_path: keyPath });
+  },
+  async getCredential(host: string) {
+    return bridgeInvoke<{ user?: string; has_key?: boolean }>('get_ssh_credential', { host });
+  },
+};
+
+/* ── Torrent ─────────────────────────────────────────────────────────────── */
+
+export interface TorrentItem {
+  id: string;
+  name: string;
+  progress: number;
+  status: 'downloading' | 'seeding' | 'paused' | 'queued' | 'checking' | 'error';
+  size: string;
+  downloadSpeed: string;
+  uploadSpeed: string;
+  peers: number;
+}
+
+const torrent = {
+  async list(): Promise<TorrentItem[]> {
+    return bridgeInvoke<TorrentItem[]>('torrent_list');
+  },
+  async add(magnetOrPath: string) {
+    return bridgeInvoke<{ success: boolean; id?: string }>('torrent_add', { source: magnetOrPath });
+  },
+  async pause(id: string) {
+    return bridgeInvoke<{ success: boolean }>('torrent_pause', { id });
+  },
+  async resume(id: string) {
+    return bridgeInvoke<{ success: boolean }>('torrent_resume', { id });
+  },
+  async remove(id: string) {
+    return bridgeInvoke<{ success: boolean }>('torrent_remove', { id });
+  },
+  async getStatus() {
+    return bridgeInvoke<{ active: number; total: number; download_speed: string; upload_speed: string }>('torrent_get_status');
+  },
+};
+
 /* ── Exported API surface (matches v6 neurodeckApi exactly) ──────────────── */
 
 export const neurodeckApi = {
@@ -412,4 +751,19 @@ export const neurodeckApi = {
   agents,
   sessions,
   diagnostics,
+  terminal,
+  browser,
+  remote,
+  canvas,
+  scheduler,
+  git,
+  promptLab,
+  docs,
+  share,
+  tunnel,
+  apiLab,
+  workflow,
+  orchestrator,
+  ssh,
+  torrent,
 };
