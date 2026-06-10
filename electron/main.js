@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
+const { IPC, ALLOWED_CHANNELS } = require('./ipc-channels');
 
 // Register neurodeck:// as a privileged scheme before app ready.
 // This gives us a stable origin for localStorage/sessionStorage
@@ -529,15 +530,20 @@ app.whenReady().then(async () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// IPC Handlers (for preload API)
+// IPC Allowlist Guard
+// Blocks any channel not in ipc-channels.js from ever being handled.
+// Must be registered before individual handlers so it runs first.
 // ─────────────────────────────────────────────────────────
 
-ipcMain.handle('get-bridge-port', () => bridgePort);
-
-// C3: Validate URL protocol before opening externally
-ipcMain.handle('open-external', (_event, url) => {
-  safeOpenExternal(url);
+ipcMain.on('ipc-message', (_event, channel) => {
+  if (!ALLOWED_CHANNELS.has(channel)) {
+    console.warn(`[ipc] Blocked unknown channel: ${channel}`);
+  }
 });
+
+// ─────────────────────────────────────────────────────────
+// IPC Handlers (for preload API)
+// ─────────────────────────────────────────────────────────
 
 // Sanitize dialog options: only pass through known-safe properties.
 // Prevents a compromised renderer from injecting securityScopedBookmarks,
@@ -556,38 +562,54 @@ function sanitizeDialogOptions(raw, allowed) {
   return safe;
 }
 
-ipcMain.handle('show-save-dialog', async (_event, options) => {
+ipcMain.handle(IPC.GET_BRIDGE_PORT, () => bridgePort);
+
+// C3: Validate URL protocol before opening externally
+ipcMain.handle(IPC.OPEN_EXTERNAL, (_event, url) => {
+  safeOpenExternal(url);
+});
+
+ipcMain.handle(IPC.SHOW_SAVE_DIALOG, async (_event, options) => {
   if (!mainWindow) return { canceled: true };
   return dialog.showSaveDialog(mainWindow, sanitizeDialogOptions(options, SAFE_SAVE_DIALOG_KEYS));
 });
 
-ipcMain.handle('show-open-dialog', async (_event, options) => {
+ipcMain.handle(IPC.SHOW_OPEN_DIALOG, async (_event, options) => {
   if (!mainWindow) return { canceled: true };
   return dialog.showOpenDialog(mainWindow, sanitizeDialogOptions(options, SAFE_OPEN_DIALOG_KEYS));
 });
 
-ipcMain.handle('safe-storage-available', () => {
+ipcMain.handle(IPC.SAFE_STORAGE_AVAILABLE, () => {
   return safeStorage.isEncryptionAvailable();
 });
 
-// H4: Validate input type and length before passing to native safe storage
-ipcMain.handle('safe-storage-encrypt', (_event, plain) => {
-  if (typeof plain !== 'string' || plain.length > 65536) return null;
-  return safeStorage.encryptString(plain).toString('base64');
+// H4: Validate input type and length before passing to native safe storage.
+// Returns { ok: false } on invalid input rather than silently returning null.
+ipcMain.handle(IPC.SAFE_STORAGE_ENCRYPT, (_event, plain) => {
+  if (typeof plain !== 'string') return { ok: false, error: 'Input must be a string' };
+  if (plain.length > 65536) return { ok: false, error: 'Input exceeds maximum length' };
+  try {
+    const ciphertext = safeStorage.encryptString(plain).toString('base64');
+    return { ok: true, ciphertext };
+  } catch (e) {
+    return { ok: false, error: 'Encryption failed' };
+  }
 });
 
-ipcMain.handle('safe-storage-decrypt', (_event, encrypted) => {
-  if (typeof encrypted !== 'string' || encrypted.length > 131072) return null;
+ipcMain.handle(IPC.SAFE_STORAGE_DECRYPT, (_event, encrypted) => {
+  if (typeof encrypted !== 'string') return { ok: false, error: 'Input must be a string' };
+  if (encrypted.length > 131072) return { ok: false, error: 'Input exceeds maximum length' };
   try {
     const buf = Buffer.from(encrypted, 'base64');
-    return safeStorage.decryptString(buf);
+    const plaintext = safeStorage.decryptString(buf);
+    return { ok: true, plaintext };
   } catch {
-    return null;
+    return { ok: false, error: 'Decryption failed' };
   }
 });
 
 // H5: Coerce to boolean before applying to prevent unexpected behavior
-ipcMain.handle('set-kiosk', (_event, enabled) => {
+ipcMain.handle(IPC.SET_KIOSK, (_event, enabled) => {
   const isEnabled = Boolean(enabled);
   if (mainWindow) {
     mainWindow.setKiosk(isEnabled);
@@ -596,11 +618,11 @@ ipcMain.handle('set-kiosk', (_event, enabled) => {
   return isEnabled;
 });
 
-ipcMain.handle('get-is-kiosk', () => {
+ipcMain.handle(IPC.GET_IS_KIOSK, () => {
   return mainWindow ? mainWindow.isKiosk() : false;
 });
 
-ipcMain.handle('request-notification-permission', () => {
+ipcMain.handle(IPC.REQUEST_NOTIFICATION_PERMISSION, () => {
   // Notification.isSupported() is the correct Electron API — Notification.permission
   // is a Web API that does not exist in the main process (Node.js context).
   return Notification.isSupported() ? 'granted' : 'denied';

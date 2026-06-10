@@ -1,5 +1,7 @@
 # Application Audit Map
 
+> **Updated:** 2026-06-10 — v6 React frontend migration reflected. Sections marked **[v6]** cover the React layer; unmarked sections remain accurate for the Electron/Rust layers.
+
 ## App Overview
 
 NEURODECK is an Electron 36 + Rust sidecar desktop application built for Steam Deck and desktop Linux/Windows. It combines an AI chat workspace, PTY terminal, canvas editor, agent execution loop, vector memory, plugin system, file/network tooling, and handheld-native navigation into a single fullscreen shell.
@@ -14,14 +16,16 @@ The Electron shell acts as a thin, secure wrapper: it manages the window, OS int
 |---|---|
 | Desktop shell | Electron 36 |
 | Sidecar (backend) | Rust 1.92.0 |
-| Frontend | Vite + vanilla JavaScript (ES modules) |
+| Frontend **[v6]** | React 19 + TypeScript + Vite 8 + Tailwind CSS 4 |
+| IPC bridge **[v6]** | `neurobridge.js` HTTP POST + WebSocket to Rust sidecar |
+| State management **[v6]** | `useNeuroDeckState` reducer + `NeuroDeckSelectors` |
+| Design tokens **[v6]** | CSS custom properties (`--nd-*`) mapped to Tailwind `nd.*` colors |
 | UI terminal | xterm.js |
 | Scripting | Lua 5.4 via mlua (vendored) |
 | AI providers | Gemini, Ollama, HuggingFace, Kimi |
 | Networking | FTP, SFTP, LAN tunnel, P2P transfer, canvas collab |
 | Testing | Vitest (unit), Rust tests (integration), Playwright (E2E) |
 | Packaging | electron-builder — Windows NSIS, Linux AppImage/deb, macOS DMG |
-| State | Shared singleton `state.js` in frontend |
 
 ---
 
@@ -139,25 +143,34 @@ Also exposed: `window.NEURODECK_PORT` (string) — synchronous bridge port for `
 
 ---
 
-## Routes / Views
+## Routes / Views **[v6]**
 
-NEURODECK does not use HTTP page routing. Navigation is a tab/view system inside one fullscreen Electron window.
+NEURODECK does not use HTTP page routing. Navigation is a `ViewId` union type managed by `useNeuroDeckState` reducer.
 
-Primary views:
-
-- Chat
-- Canvas
-- Terminal
-- SSH
-- Tunnel
-- Browser
-- Agent
-- Memory
-- Share
-- Remote
-- PromptLab
-- Docs
-- Settings
+| View ID | Component | Section |
+|---|---|---|
+| `workspace` | `WorkspaceView` | Core |
+| `terminal` | `TerminalView` | Core |
+| `canvas` | `CanvasView` | Core |
+| `agents` | `AgentsView` | Core |
+| `memory` | `MemoryView` | Core |
+| `prompt-lab` | `PromptLabView` | Core |
+| `browser` | `BrowserView` | Tools |
+| `docs` | `DocsView` | Tools |
+| `share` | `ShareView` | Tools |
+| `tunnel` | `TunnelView` | Tools |
+| `remote` | `RemoteView` | Tools |
+| `ssh` | `SSHView` | Tools |
+| `models` | `ModelsView` | System |
+| `plugins` | `PluginsView` | System |
+| `sessions` | `SessionsView` | System |
+| `settings` | `SettingsView` | System |
+| `diagnostics` | `DiagnosticsView` | System |
+| `security` | `SecurityView` | Security & Ops |
+| `themes` | `ThemesView` | Security & Ops |
+| `exports` | `ExportsView` | Security & Ops |
+| `maintenance` | `MaintenanceView` | Security & Ops |
+| `recovery` | `RecoveryView` | Security & Ops |
 
 ---
 
@@ -223,37 +236,54 @@ Notable backend command groups:
 
 ---
 
-## Major Components
+## Major Components **[v6]**
 
+### Electron Layer
 | Component | File | Purpose |
 |---|---|---|
-| Electron main | `electron/main.js` | Window, sidecar lifecycle, IPC, security |
-| Electron preload | `electron/preload.js` | contextBridge API surface |
-| Frontend entry | `frontend/src/main.js` | UI composition, routing, event wiring |
-| Bridge client | `frontend/src/neurobridge.js` | HTTP/WebSocket sidecar communication |
-| Shared state | `frontend/src/state.js` | Mutable singleton state object |
-| Chat | `frontend/src/chat.js` | Chat rendering, streaming, virtualization |
-| Terminal | `frontend/src/terminal.js` | PTY, SSH, SFTP/FTP terminals |
-| Canvas | `frontend/src/canvas.js` | Monaco editor, live preview, collab |
-| Agent | `frontend/src/agent.js` | Autonomous agent loop |
-| Memory | `frontend/src/memory.js` | Vector memory UI |
-| Settings | `frontend/src/settings.js` | Settings management |
-| Shortcuts | `frontend/src/shortcuts.js` | Keyboard + gamepad shortcut bindings |
-| LSP client | `frontend/src/lsp_client.js` | LSP server config, document sync, diagnostics UI |
-| Rust sidecar lib | `src-tauri/src/lib.rs` | AppState, all Tauri/bridge command handlers |
-| LLM providers | `src-tauri/src/llm.rs` | Gemini streaming, Ollama, embedding |
-| PTY manager | `src-tauri/src/pty_manager.rs` | Shell session lifecycle |
-| Memory store | `src-tauri/src/memory.rs` | Cosine-similarity vector DB |
-| Security | `src-tauri/src/security.rs` | Command injection prevention, rate limiting |
+| Main process | `electron/main.js` | Window, sidecar lifecycle, IPC, security |
+| IPC channel registry | `electron/ipc-channels.js` | Channel name constants + allowlist |
+| Preload | `electron/preload.js` | contextBridge API surface |
+
+### React Component Registry
+**Foundation:** `Badge`, `Button`, `IconButton`, `Panel`, `DeckButtonHint`
+
+**Layout:** `TitleBar` (TopStatusBar with live chips), `PrimarySidebar`, `SecondaryRail`
+
+**Workspace:** `ChatViewport`, `InputConsole`, `ResponseCard`
+
+**Cards:** `AgentCard`, `ModelCard`, `PluginCard`, `SessionCard`, `TelemetryWidget`
+
+**Systems:** `MemoryPanel`, `DiagnosticsPanel`
+
+**Overlay:** `CommandPalette`, `SettingsView`
+
+### Rust Sidecar
+| Module | Purpose |
+|---|---|
+| `lib.rs` | `AppState`, personas, themes, game detection |
+| `bridge.rs` | axum HTTP + WebSocket server on `127.0.0.1:9477` |
+| `llm.rs` | Gemini streaming SSE, Ollama inference, `generate_embedding` |
+| `promptdrive.rs` | PromptDrive packs, templates, slots, macros, suggestions |
+| `pty_manager.rs` | PTY sessions via `portable-pty` |
+| `memory.rs` | Cosine-similarity vector DB |
+| `commands/` | session, config, system, agent, browser, api_lab, cli_maker, git, ide |
+| `deckcode/` | DeckCode schema parsing, input loop, bindings resolver, IPC dispatch |
 
 ---
 
-## Shared Libraries and Utilities
+## Shared Libraries and Utilities **[v6]**
 
-- `frontend/src/icons.js` — Lucide SVG icon factory
-- `frontend/src/notifications.js` — Toast rendering and badge management
-- `frontend/src/focus-trap.js` — Keyboard accessibility focus trap
-- `frontend/src/haptics.js` — Gamepad vibration feedback
+| Module | Purpose |
+|---|---|
+| `frontend/src/neurobridge.js` | Drop-in `@tauri-apps/api` replacement — HTTP + WebSocket IPC |
+| `frontend/src/react/services/bridgeAdapter.ts` | Typed React service layer over neurobridge |
+| `frontend/src/react/state/useNeuroDeckState.ts` | Central reducer + selectors + dispatch |
+| `frontend/src/react/utils/autocomplete/` | Trie + fuzzy client-side autocomplete engine |
+| `frontend/src/react/utils/controller/action-registry.ts` | ActionId enum + Steam Deck default bindings |
+| `frontend/src/react/utils/agents/default-agents.ts` | 5 default agent definitions |
+| `electron/ipc-channels.js` | IPC channel name constants + allowed-channel set |
+| `frontend/src/react/types/electron.d.ts` | TypeScript declarations for `window.electronAPI` |
 
 ---
 

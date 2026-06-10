@@ -1,10 +1,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const { IPC } = require('./ipc-channels');
 
 // Expose a minimal API for Electron-specific features.
 // Core invoke/listen goes through neurobridge.js (fetch + WebSocket to localhost).
+// All channel names come from ipc-channels.js so they can't drift.
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Platform info
+  // Platform info (synchronous — read from env, no IPC needed)
   platform: process.platform,
   versions: {
     app: process.env.npm_package_version || '1.8.0',
@@ -14,24 +16,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Expose the bridge port chosen by the main process so neurobridge.js can use it
-  getBridgePort: () => ipcRenderer.invoke('get-bridge-port'),
+  getBridgePort: () => ipcRenderer.invoke(IPC.GET_BRIDGE_PORT),
 
   // Shell / OS integrations
-  openExternal: (url) => ipcRenderer.invoke('open-external', url),
-  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
-  showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
+  openExternal: (url) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
+  showSaveDialog: (options) => ipcRenderer.invoke(IPC.SHOW_SAVE_DIALOG, options),
+  showOpenDialog: (options) => ipcRenderer.invoke(IPC.SHOW_OPEN_DIALOG, options),
 
   // Safe storage (OS keychain wrapper)
-  safeStorageEncrypt: (plain) => ipcRenderer.invoke('safe-storage-encrypt', plain),
-  safeStorageDecrypt: (encrypted) => ipcRenderer.invoke('safe-storage-decrypt', encrypted),
-  isSafeStorageAvailable: () => ipcRenderer.invoke('safe-storage-available'),
+  // Returns { ok: true, ciphertext } or { ok: false, error }
+  safeStorageEncrypt: (plain) => ipcRenderer.invoke(IPC.SAFE_STORAGE_ENCRYPT, plain),
+  // Returns { ok: true, plaintext } or { ok: false, error }
+  safeStorageDecrypt: (encrypted) => ipcRenderer.invoke(IPC.SAFE_STORAGE_DECRYPT, encrypted),
+  isSafeStorageAvailable: () => ipcRenderer.invoke(IPC.SAFE_STORAGE_AVAILABLE),
 
   // Window control
-  setKiosk: (enabled) => ipcRenderer.invoke('set-kiosk', enabled),
-  getIsKiosk: () => ipcRenderer.invoke('get-is-kiosk'),
+  setKiosk: (enabled) => ipcRenderer.invoke(IPC.SET_KIOSK, enabled),
+  getIsKiosk: () => ipcRenderer.invoke(IPC.GET_IS_KIOSK),
 
   // Notifications
-  requestNotificationPermission: () => ipcRenderer.invoke('request-notification-permission'),
+  requestNotificationPermission: () => ipcRenderer.invoke(IPC.REQUEST_NOTIFICATION_PERMISSION),
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap
