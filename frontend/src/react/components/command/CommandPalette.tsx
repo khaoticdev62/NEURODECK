@@ -31,11 +31,11 @@ function fuzzyScore(query: string, text: string): number {
   return score;
 }
 
-function highlightMatch(text: string, query: string): (string | JSX.Element)[] {
+function highlightMatch(text: string, query: string): (string | React.JSX.Element)[] {
   if (!query.trim()) return [text];
   const q = query.toLowerCase();
   const t = text.toLowerCase();
-  const result: (string | JSX.Element)[] = [];
+  const result: (string | React.JSX.Element)[] = [];
   let lastIndex = 0;
   for (let i = 0; i < t.length; i++) {
     const sub = t.slice(i, i + q.length);

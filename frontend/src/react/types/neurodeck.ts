@@ -204,6 +204,7 @@ export interface AIProviderHealth {
   endpoint: string;
   detail: string;
   checkedAt: string;
+  latencyMs?: number;
 }
 
 export interface AIChatPayload {
@@ -369,6 +370,7 @@ export interface SavedSessionPayload {
 }
 
 export type SaveSessionResponse = { ok: true; file: string } | { ok: false; error: string };
+export type SessionExportResponse = { ok: true; file: string } | { ok: false; error: string };
 
 export interface NeuroDeckAppActions {
   scanProject: () => Promise<void>;

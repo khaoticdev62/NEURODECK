@@ -1,10 +1,17 @@
+import { useEffect, useState } from 'react';
 import { CheckCircle2, KeyRound, RefreshCcw, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
+import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function SecurityView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
   const report = state.diagnostics;
+  const [geminiSet, setGeminiSet] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void neurodeckApi.diagnostics.geminiKeyStatus().then((r) => setGeminiSet(r.set));
+  }, []);
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
@@ -29,7 +36,10 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
         {/* API Credential Status */}
         <Panel eyebrow="Credentials" title="API Key Status">
           <div className="space-y-3 p-4">
-            <CredentialRow label="Gemini API Key" status="keychain" />
+            <CredentialRow
+              label="Gemini API Key"
+              status={geminiSet === null ? 'optional' : geminiSet ? 'keychain' : 'missing'}
+            />
             <CredentialRow label="HuggingFace Token" status="keychain" />
             <CredentialRow label="OpenAI Compat Key" status="optional" />
             <p className="text-[11px] leading-5 text-nd-text-muted/70">

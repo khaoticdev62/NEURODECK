@@ -100,7 +100,7 @@ function InfoCard({ title, items, empty = 'Nothing detected.', tone = 'neutral' 
   );
 }
 
-function Checklist({ title, items }: { title: string; items: Record<string, boolean>; readyCount?: number }) {
+function Checklist({ title, items }: { title: string; items: object; readyCount?: number }) {
   return (
     <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
       <h3 className="font-semibold text-nd-text">{title}</h3>

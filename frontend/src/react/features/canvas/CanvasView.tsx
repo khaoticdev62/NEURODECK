@@ -15,6 +15,7 @@ const DEFAULT_CODE: Record<CodeLang, string> = {
   html: '<!-- Try editing this HTML -->>\n<div style="padding: 20px; color: #5EEBFF;">\n  <h1>Hello NEURODECK</h1>\n  <p>Edit and click Run to preview</p>\n</div>',
   python: '# Python code execution\nprint("Hello from NEURODECK Canvas")\nfor i in range(3):\n    print(f"Line {i+1}")',
   javascript: '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
+  js: '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
   bash: '#!/bin/bash\necho "Hello from NEURODECK Canvas"\nls -la',
   powershell: '# PowerShell\nWrite-Host "Hello from NEURODECK Canvas"\nGet-Date',
 };

@@ -1,23 +1,90 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp, Users } from 'lucide-react';
+import {
+  Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp,
+  FolderOpen, ArrowUpRight, Copy, Info
+} from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { TorrentItem } from '../../services/bridgeAdapter';
 
+function formatBytes(bytes?: number) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let scaled = value;
+  let unitIndex = 0;
+  while (scaled >= 1024 && unitIndex < units.length - 1) {
+    scaled /= 1024;
+    unitIndex += 1;
+  }
+  const precision = scaled >= 100 || unitIndex === 0 ? 0 : scaled >= 10 ? 1 : 2;
+  return `${scaled.toFixed(precision)} ${units[unitIndex]}`;
+}
+
+function formatRate(bps?: number) {
+  return `${formatBytes(bps)}/s`;
+}
+
+function formatEta(seconds?: number | null) {
+  if (seconds === null || seconds === undefined) return '—';
+  const totalSeconds = Number(seconds);
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+  if (totalSeconds === 0) return 'done';
+  if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
+  if (totalSeconds < 3600) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const secs = Math.round(totalSeconds % 60);
+    return secs ? `${minutes}m ${secs}s` : `${minutes}m`;
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function torrentStatusKey(entry: TorrentItem) {
+  if (!entry) return 'unknown';
+  if (entry.completed && entry.paused) return 'paused-complete';
+  if (entry.completed) return 'completed';
+  if (entry.paused) return 'paused';
+  if (!entry.metadata_known) return 'metadata';
+  if (entry.status === 'waiting' && Number(entry.peers || 0) === 0) return 'stalled';
+  if (entry.status === 'waiting') return 'waiting';
+  return entry.status || 'running';
+}
+
+function torrentStatusLabel(entry: TorrentItem) {
+  switch (torrentStatusKey(entry)) {
+    case 'paused-complete': return 'paused complete';
+    case 'completed': return 'completed';
+    case 'paused': return 'paused';
+    case 'metadata': return 'fetching metadata';
+    case 'waiting': return 'waiting for peers';
+    case 'stalled': return 'stalled';
+    case 'running':
+    default: return 'downloading';
+  }
+}
+
+function torrentStatusColor(entry: TorrentItem) {
+  const key = torrentStatusKey(entry);
+  if (key === 'completed') return 'text-nd-success';
+  if (key === 'paused' || key === 'paused-complete') return 'text-nd-text-muted';
+  if (key === 'stalled' || key === 'metadata') return 'text-nd-warning';
+  return 'text-nd-accent';
+}
+
 export function TorrentView() {
   const [torrents, setTorrents] = useState<TorrentItem[]>([]);
-  const [status, setStatus] = useState<{ active: number; total: number; download_speed: string; upload_speed: string } | null>(null);
+  const [downloadRoot, setDownloadRoot] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [list, stat] = await Promise.all([
-        neurodeckApi.torrent.list(),
-        neurodeckApi.torrent.getStatus(),
-      ]);
-      setTorrents(list);
-      setStatus(stat);
+      const status = await neurodeckApi.torrent.getStatus();
+      setTorrents(status.torrents || []);
+      setDownloadRoot(status.download_root || '');
     } catch (_) { /* ignore */ }
     setLoading(false);
   }, []);
@@ -41,7 +108,7 @@ export function TorrentView() {
 
   const toggleTorrent = async (t: TorrentItem) => {
     try {
-      if (t.status === 'paused') await neurodeckApi.torrent.resume(t.id);
+      if (t.paused) await neurodeckApi.torrent.resume(t.id);
       else await neurodeckApi.torrent.pause(t.id);
       await load();
     } catch (_) { /* ignore */ }
@@ -54,15 +121,7 @@ export function TorrentView() {
     } catch (_) { /* ignore */ }
   };
 
-  const statusColor = (s: TorrentItem['status']) => {
-    switch (s) {
-      case 'downloading': return 'text-nd-success';
-      case 'seeding': return 'text-nd-accent';
-      case 'paused': return 'text-nd-text0';
-      case 'error': return 'text-nd-danger';
-      default: return 'text-nd-warning';
-    }
-  };
+  const selected = torrents.find((t) => t.id === selectedId) || null;
 
   return (
     <div className="flex h-full flex-col">
@@ -72,21 +131,19 @@ export function TorrentView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Torrent</h2>
-          <p className="text-xs text-nd-text0">BitTorrent downloads</p>
+          <p className="text-xs text-nd-text-muted">BitTorrent downloads</p>
         </div>
-        {status && (
-          <div className="flex items-center gap-3 text-xs text-nd-text0">
-            <span className="flex items-center gap-1"><ArrowDown className="h-3.5 w-3.5 text-nd-success" /> {status.download_speed}</span>
-            <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {status.upload_speed}</span>
-            <span>{status.active}/{status.total} active</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3 text-xs text-nd-text-muted">
+          <span className="flex items-center gap-1"><ArrowDown className="h-3.5 w-3.5 text-nd-success" /> {formatRate(torrents.reduce((sum, t) => sum + (t.download_rate_bps || 0), 0))}</span>
+          <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}</span>
+          <span>{torrents.filter((t) => !t.paused && !t.completed).length}/{torrents.length} active</span>
+        </div>
         <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="mb-4 flex gap-2">
+      <div className="mb-3 flex gap-2">
         <input
           type="text"
           value={input}
@@ -100,45 +157,124 @@ export function TorrentView() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto space-y-2">
-        {torrents.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
-            <Magnet className="h-10 w-10 mb-3" />
-            <p className="text-sm">No torrents active</p>
-            <p className="text-xs mt-1">Add a magnet link or torrent file to start downloading</p>
-          </div>
-        )}
-        {torrents.map((t) => (
-          <div key={t.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-nd-text/90">{t.name}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text0">
-                  <span className={statusColor(t.status)}>{t.status}</span>
-                  <span>{t.size}</span>
-                  <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> {t.downloadSpeed}</span>
-                  <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> {t.uploadSpeed}</span>
-                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {t.peers}</span>
+      <div className="flex min-h-0 flex-1 gap-3">
+        {/* Torrent list */}
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-auto">
+          {torrents.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
+              <Magnet className="h-10 w-10 mb-3" />
+              <p className="text-sm">No torrents active</p>
+              <p className="text-xs mt-1">Add a magnet link or torrent file to start downloading</p>
+            </div>
+          )}
+          {torrents.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
+              className={`rounded-xl border p-3 text-left transition ${
+                selectedId === t.id
+                  ? 'border-nd-accent/30 bg-nd-accent/[0.04]'
+                  : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/20'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-nd-text/90">{t.name || t.id}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text-muted">
+                    <span className={torrentStatusColor(t)}>{torrentStatusLabel(t)}</span>
+                    <span>{t.peers} peers · {t.trackers} trackers</span>
+                    <span>{formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleTorrent(t); }}
+                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent"
+                  >
+                    {t.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeTorrent(t.id); }}
+                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => toggleTorrent(t)} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent">
-                  {t.status === 'paused' ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                </button>
-                <button type="button" onClick={() => removeTorrent(t.id)} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={`h-full rounded-full transition-all ${t.completed ? 'bg-nd-success' : 'bg-nd-accent'}`}
+                  style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between text-[10px] text-nd-text-muted/60">
+                <span>{t.progress_pct?.toFixed(1) ?? 0}% · {t.pieces_done}/{t.pieces_total} pieces</span>
+                <span>ETA {formatEta(t.eta_seconds)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Inspector */}
+        {selected && (
+          <div className="hidden w-80 shrink-0 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 lg:flex">
+            <h3 className="text-sm font-semibold text-nd-text">Torrent Inspector</h3>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
+                <p className="truncate text-xs font-medium text-nd-text/90">{selected.name || selected.id}</p>
+                <p className="text-[10px] text-nd-text-muted">{selected.source_kind?.toUpperCase()} · {selected.source_display || selected.source_value}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className={`text-xs ${torrentStatusColor(selected)}`}>{torrentStatusLabel(selected)}</span>
+                  <span className="text-xs font-semibold text-nd-text">{(selected.progress_pct || 0).toFixed(1)}%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <InspectorRow label="Progress" value={`${(selected.progress_pct || 0).toFixed(1)}%`} />
+                <InspectorRow label="Pieces" value={`${selected.pieces_done}/${selected.pieces_total}`} />
+                <InspectorRow label="Peers" value={String(selected.peers)} />
+                <InspectorRow label="Trackers" value={String(selected.trackers)} />
+                <InspectorRow label="Downloaded" value={formatBytes(selected.downloaded_bytes)} />
+                <InspectorRow label="Uploaded" value={formatBytes(selected.uploaded_bytes)} />
+                <InspectorRow label="Remaining" value={formatBytes(selected.bytes_remaining)} />
+                <InspectorRow label="ETA" value={formatEta(selected.eta_seconds)} />
+                <InspectorRow label="Info Hash" value={selected.info_hash || '—'} />
+              </div>
+
+              <div className="flex flex-wrap gap-1">
+                <MiniBtn icon={Copy} label="Copy Hash" onClick={() => navigator.clipboard.writeText(selected.info_hash || '')} />
+                <MiniBtn icon={FolderOpen} label="Open Root" onClick={() => neurodeckApi.torrent.openDownloadRoot().catch(() => {})} />
+                <MiniBtn icon={ArrowUpRight} label="Reveal" onClick={() => neurodeckApi.torrent.openSavePath(selected.id).catch(() => {})} />
               </div>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className={`h-full rounded-full transition-all ${t.status === 'error' ? 'bg-nd-danger' : t.status === 'paused' ? 'text-nd-text-muted/40' : 'bg-nd-success'}`}
-                style={{ width: `${t.progress}%` }}
-              />
-            </div>
           </div>
-        ))}
+        )}
       </div>
     </div>
+  );
+}
+
+function InspectorRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-nd-text-muted">{label}</span>
+      <span className="font-mono text-nd-text/80 truncate max-w-[140px]" title={value}>{value}</span>
+    </div>
+  );
+}
+
+function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[10px] text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text"
+      title={label}
+    >
+      <Icon className="h-3 w-3" /> {label}
+    </button>
   );
 }

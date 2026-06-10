@@ -85,7 +85,7 @@ export function listenBridge(event: string, handler: (payload: unknown) => void)
   };
 }
 
-async function bridgeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+async function bridgeInvoke<T>(cmd: string, args?: unknown): Promise<T> {
   const res = await fetch(`${BRIDGE_ORIGIN}/api/${cmd}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -310,7 +310,7 @@ const agents = {
         id: `agent-${Date.now()}`,
         agentId: payload.agentId,
         agentName: payload.agentName,
-        status: result.error ? 'failed' : 'complete',
+        status: (result.error ? 'failed' : 'complete') as import('../types/neurodeck').AIRunStatus,
         startedAt: new Date().toISOString(),
         finishedAt: new Date().toISOString(),
         provider: payload.provider,
@@ -428,6 +428,49 @@ const diagnostics = {
       return { ok: false, error: String(e) };
     }
   },
+  async memoryUsage(): Promise<{ rss_mb: number }> {
+    try {
+      return await bridgeInvoke<{ rss_mb: number }>('get_memory_usage');
+    } catch (_) {
+      return { rss_mb: 0 };
+    }
+  },
+  async geminiKeyStatus(): Promise<{ set: boolean }> {
+    try {
+      const key = await bridgeInvoke<string>('get_gemini_api_key');
+      return { set: !!key };
+    } catch (_) {
+      return { set: false };
+    }
+  },
+  async contextStats(): Promise<{ message_count: number; total_tokens: number }> {
+    try {
+      return await bridgeInvoke<{ message_count: number; total_tokens: number }>('get_context_stats');
+    } catch (_) {
+      return { message_count: 0, total_tokens: 0 };
+    }
+  },
+};
+
+/* ── Voice / STT ─────────────────────────────────────────────────────────── */
+
+const voice = {
+  async start(): Promise<{ ok: boolean }> {
+    try {
+      await bridgeInvoke<string>('start_recording');
+      return { ok: true };
+    } catch (_) {
+      return { ok: false };
+    }
+  },
+  async stop(): Promise<{ transcript: string }> {
+    try {
+      const result = await bridgeInvoke<string>('stop_recording');
+      return { transcript: typeof result === 'string' ? result : '' };
+    } catch (_) {
+      return { transcript: '' };
+    }
+  },
 };
 
 /* ── Terminal / PTY ──────────────────────────────────────────────────────── */
@@ -482,6 +525,65 @@ const browser = {
   },
 };
 
+/* ── IDE / Workspace Files ───────────────────────────────────────────────── */
+
+const ide = {
+  async listWorkspaceFiles(path?: string) {
+    return bridgeInvoke<{ files: Array<{ name: string; path: string; is_dir: boolean; size: number }>; count: number }>('list_workspace_files', path ? { path } : undefined);
+  },
+  async readWorkspaceFile(path: string) {
+    return bridgeInvoke<{ path: string; content: string; bytes: number }>('read_workspace_file', { path });
+  },
+  async writeWorkspaceFile(path: string, content: string) {
+    return bridgeInvoke<{ status: string; path: string; bytes: number }>('write_workspace_file', { path, content });
+  },
+  async createWorkspaceFile(path: string) {
+    return bridgeInvoke<{ status: string; path: string }>('create_workspace_file', { path });
+  },
+  async deleteWorkspaceFile(path: string) {
+    return bridgeInvoke<{ status: string }>('delete_workspace_file', { path });
+  },
+};
+
+/* ── Plugins ─────────────────────────────────────────────────────────────── */
+
+export interface PluginInfo {
+  name: string;
+  file_name: string;
+  enabled: boolean;
+  id: string | null;
+  author: string | null;
+  version: string | null;
+  description: string | null;
+  tags: string[];
+  marketplace: boolean;
+  permissions: string[];
+}
+
+const plugins = {
+  async list() {
+    return bridgeInvoke<{ plugins: PluginInfo[]; count: number; enabled: number }>('list_plugins');
+  },
+  async toggle(fileName: string, enabled: boolean) {
+    return bridgeInvoke<{ status: string; file_name: string }>('toggle_plugin', { file_name: fileName, enabled });
+  },
+  async validate(fileName: string) {
+    return bridgeInvoke<{ file_name: string; passed: boolean; warnings: string[]; errors: string[] }>('validate_plugin', { file_name: fileName });
+  },
+  async installFromUrl(url: string) {
+    return bridgeInvoke<{ status: string; url: string }>('install_plugin', { url });
+  },
+  async installFromRegistry(pluginId: string) {
+    return bridgeInvoke<{ status: string; plugin_id: string }>('install_plugin_from_registry', { plugin_id: pluginId });
+  },
+  async uninstall(pluginId: string) {
+    return bridgeInvoke<{ status: string; plugin_id: string }>('uninstall_plugin', { plugin_id: pluginId });
+  },
+  async reload() {
+    return bridgeInvoke<{ status: string }>('reload_plugins');
+  },
+};
+
 /* ── Remote Control ──────────────────────────────────────────────────────── */
 
 const remote = {
@@ -492,7 +594,7 @@ const remote = {
     return bridgeInvoke<{ success: boolean }>('stop_remote_server');
   },
   async getInfo() {
-    return bridgeInvoke<{ running: boolean; url?: string; clients?: number }>('get_remote_server_info');
+    return bridgeInvoke<{ running: boolean; url?: string; clients?: number; pin?: string; ip?: string; port?: number; ttl_seconds_remaining?: number }>('get_remote_server_info');
   },
 };
 
@@ -692,19 +794,19 @@ export interface Suggestion {
 
 const promptDrive = {
   async listPacks() {
-    return appInvoke<PromptPack[]>('promptdrive_list_packs');
+    return bridgeInvoke<PromptPack[]>('promptdrive_list_packs');
   },
   async listTemplates(packId?: string) {
-    return appInvoke<PromptTemplate[]>('promptdrive_list_templates', { pack_id: packId });
+    return bridgeInvoke<PromptTemplate[]>('promptdrive_list_templates', { pack_id: packId });
   },
   async getTemplate(templateId: string) {
-    return appInvoke<PromptTemplate>('promptdrive_get_template', { template_id: templateId });
+    return bridgeInvoke<PromptTemplate>('promptdrive_get_template', { template_id: templateId });
   },
   async previewPrompt(templateId: string, slotValues: Record<string, string>) {
-    return appInvoke<PromptPreview>('promptdrive_preview_prompt', { template_id: templateId, slot_values: slotValues });
+    return bridgeInvoke<PromptPreview>('promptdrive_preview_prompt', { template_id: templateId, slot_values: slotValues });
   },
   async executePrompt(templateId: string, slotValues: Record<string, string>, prompt: string) {
-    return appInvoke<{ status: string; validation?: PromptPreview }>('promptdrive_execute_prompt', {
+    return bridgeInvoke<{ status: string; validation?: PromptPreview }>('promptdrive_execute_prompt', {
       template_id: templateId,
       slot_values: slotValues,
       prompt,
@@ -717,32 +819,32 @@ const promptDrive = {
     slot_values: Record<string, string>;
     prompt: string;
   }) {
-    return appInvoke<SavedPrompt>('promptdrive_save_prompt', payload);
+    return bridgeInvoke<SavedPrompt>('promptdrive_save_prompt', payload);
   },
   async listSavedPrompts() {
-    return appInvoke<SavedPrompt[]>('promptdrive_list_saved_prompts');
+    return bridgeInvoke<SavedPrompt[]>('promptdrive_list_saved_prompts');
   },
   async macroStart() {
-    return appInvoke<{ recording_id: string; status: string }>('promptdrive_macro_start');
+    return bridgeInvoke<{ recording_id: string; status: string }>('promptdrive_macro_start');
   },
   async macroStop(recordingId: string, name: string, steps: MacroStep[]) {
-    return appInvoke<MacroDefinition>('promptdrive_macro_stop', {
+    return bridgeInvoke<MacroDefinition>('promptdrive_macro_stop', {
       recording_id: recordingId,
       name,
       steps,
     });
   },
   async macroExecute(macroId: string) {
-    return appInvoke<{ status: string; safe_replay: boolean; macro: MacroDefinition }>('promptdrive_macro_execute', { macro_id: macroId });
+    return bridgeInvoke<{ status: string; safe_replay: boolean; macro: MacroDefinition }>('promptdrive_macro_execute', { macro_id: macroId });
   },
   async listMacros() {
-    return appInvoke<MacroDefinition[]>('promptdrive_list_macros');
+    return bridgeInvoke<MacroDefinition[]>('promptdrive_list_macros');
   },
   async deleteMacro(macroId: string) {
-    return appInvoke<{ status: string; macro_id: string }>('promptdrive_delete_macro', { macro_id: macroId });
+    return bridgeInvoke<{ status: string; macro_id: string }>('promptdrive_delete_macro', { macro_id: macroId });
   },
   async getSuggestions(query: string, templateId?: string, slotId?: string) {
-    return appInvoke<Suggestion[]>('promptdrive_get_suggestions', {
+    return bridgeInvoke<Suggestion[]>('promptdrive_get_suggestions', {
       query,
       template_id: templateId,
       slot_id: slotId,
@@ -872,12 +974,35 @@ const ssh = {
 export interface TorrentItem {
   id: string;
   name: string;
-  progress: number;
-  status: 'downloading' | 'seeding' | 'paused' | 'queued' | 'checking' | 'error';
-  size: string;
-  downloadSpeed: string;
-  uploadSpeed: string;
+  source_kind: string;
+  source_display: string;
+  source_value: string;
+  status: string;
+  progress_pct: number;
+  pieces_done: number;
+  pieces_total: number;
   peers: number;
+  trackers: number;
+  paused: boolean;
+  completed: boolean;
+  metadata_known: boolean;
+  download_root: string;
+  save_path: string | null;
+  added_at_utc: string;
+  info_hash: string;
+  download_rate_bps: number;
+  upload_rate_bps: number;
+  downloaded_bytes?: number;
+  uploaded_bytes?: number;
+  bytes_remaining?: number;
+  eta_seconds?: number | null;
+  ratio?: number | null;
+}
+
+export interface TorrentClientStatus {
+  download_root: string;
+  torrent_count: number;
+  torrents: TorrentItem[];
 }
 
 const torrent = {
@@ -896,23 +1021,34 @@ const torrent = {
   async remove(id: string) {
     return bridgeInvoke<{ success: boolean }>('torrent_remove', { id });
   },
-  async getStatus() {
-    return bridgeInvoke<{ active: number; total: number; download_speed: string; upload_speed: string }>('torrent_get_status');
+  async getStatus(): Promise<TorrentClientStatus> {
+    return bridgeInvoke<TorrentClientStatus>('torrent_get_status');
+  },
+  async openDownloadRoot() {
+    return bridgeInvoke<{ status: string }>('torrent_open_download_root');
+  },
+  async openSavePath(id: string) {
+    return bridgeInvoke<{ status: string }>('torrent_open_save_path', { id });
   },
 };
 
 /* ── Exported API surface (matches v6 neurodeckApi exactly) ──────────────── */
+
+export { bridgeInvoke };
 
 export const neurodeckApi = {
   store,
   projects,
   models,
   ai,
+  voice,
   agents,
   sessions,
   diagnostics,
   terminal,
   browser,
+  ide,
+  plugins,
   remote,
   canvas,
   scheduler,

@@ -12,6 +12,7 @@
     "test:coverage": "node ./node_modules/vitest/vitest.mjs run --coverage"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "esbuild": "^0.28.0",
     "happy-dom": "^20.9.0",
     "prettier": "^3.8.3",

@@ -96,7 +96,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
               <WifiOff className="h-4 w-4 text-nd-success" />
             </div>
           ) : (
-            <WifiOff className="h-4 w-4 text-nd-success" title="Offline Ready" />
+            <WifiOff className="h-4 w-4 text-nd-success" />
           )}
         </div>
         <button

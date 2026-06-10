@@ -16,14 +16,14 @@ import type {
   ProjectContextSnapshot,
   ProjectScanResult,
   SavedSessionPayload,
-  SaveSessionResponse
+  SaveSessionResponse,
+  SessionExportResponse,
 } from './types/neurodeck';
 
 type NeuroDeckStoreResult = { ok: boolean; updatedAt?: string; reason?: string };
 type ProjectScanResponse = { canceled: true } | { canceled: false; project?: ProjectScanResult; error?: string };
 type ProjectContextResponse = { ok: true; context: ProjectContextSnapshot } | { ok: false; error: string };
 type ModelDetectionResponse = { ok: true; detection: ModelDetectionResult } | { ok: false; error: string };
-type SessionExportResponse = { ok: true; file: string } | { ok: false; error: string };
 
 declare global {
   interface Window {

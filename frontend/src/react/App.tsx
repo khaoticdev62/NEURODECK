@@ -519,7 +519,7 @@ export default function App() {
             {state.activeView === 'memory' && renderView('memory', <MemoryView state={state} dispatch={dispatch} />)}
             {state.activeView === 'sessions' && renderView('sessions', <SessionsView state={state} actions={appActions} />)}
             {state.activeView === 'cache' && renderView('cache', <CacheView state={state} />)}
-            {state.activeView === 'plugins' && renderView('plugins', <PluginsView state={state} dispatch={dispatch} />)}
+            {state.activeView === 'plugins' && renderView('plugins', <PluginsView />)}
             {state.activeView === 'diagnostics' && renderView('diagnostics', <DiagnosticsView state={state} actions={appActions} />)}
             {state.activeView === 'settings' && renderView('settings', <SettingsView state={state} dispatch={dispatch} actions={appActions} />)}
             {state.activeView === 'canvas' && renderView('canvas', <CanvasView />)}
