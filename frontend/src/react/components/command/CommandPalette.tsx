@@ -82,8 +82,6 @@ const commands: CommandItem[] = [
   { label: 'Open Model Manager', hint: 'Local model inventory', view: 'models', icon: BrainCircuit },
   { label: 'Detect Local Models', hint: 'Check Ollama, LM Studio, llama.cpp, and GGUF folders', icon: BrainCircuit, action: 'detectModels' },
   { label: 'Check AI Health', hint: 'Ping local Ollama and LM Studio endpoints', icon: Activity, action: 'checkAiHealth' },
-  { label: 'Open Agent Dock', hint: 'Run specialized AI operators', view: 'agents', icon: Bot },
-  { label: 'Open Memory Vault', hint: 'Pinned project knowledge', view: 'memory', icon: Database },
   { label: 'Open Offline Cache', hint: 'Local cache and sync queue', view: 'cache', icon: HardDrive },
   { label: 'Export Session Markdown', hint: 'Write a local markdown export through the main process', icon: FileDown, action: 'exportSession' },
   { label: 'Save Session JSON', hint: 'Persist messages, context, and agent run history', icon: FileJson, action: 'saveSession' },
@@ -263,7 +261,7 @@ export function CommandPalette({
               const isSelected = index === selectedIndex;
               return (
                 <button
-                  key={command.label}
+                  key={`cmd-${index}`}
                   type="button"
                   id={`cmd-${index}`}
                   data-cmd-index={index}

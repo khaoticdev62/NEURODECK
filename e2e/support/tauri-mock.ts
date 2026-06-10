@@ -146,12 +146,84 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
           pending_count: 0,
           conflict_count: 0,
         };
+      case "get_memory_usage":
+        return { rss_mb: 256 };
+      case "get_context_stats":
+        return { message_count: 0, total_tokens: 0 };
+      case "start_recording":
+        return "Recording started";
+      case "stop_recording":
+        return "Mock transcript";
+      case "list_workspace_files":
+        return { files: [], count: 0 };
+      case "read_workspace_file":
+        return { path: args?.path ?? "", content: "", bytes: 0 };
+      case "write_workspace_file":
+        return { status: "ok", path: args?.path ?? "", bytes: 0 };
+      case "create_workspace_file":
+        return { status: "ok", path: args?.path ?? "" };
+      case "delete_workspace_file":
+        return { status: "ok" };
+      case "list_plugins":
+        return { plugins: [], count: 0, enabled: 0 };
+      case "toggle_plugin":
+        return { status: "ok", file_name: args?.file_name ?? "" };
+      case "validate_plugin":
+        return { file_name: args?.file_name ?? "", passed: true, warnings: [], errors: [] };
+      case "install_plugin":
+        return { status: "ok", url: args?.url ?? "" };
+      case "install_plugin_from_registry":
+        return { status: "ok", plugin_id: args?.plugin_id ?? "" };
+      case "uninstall_plugin":
+        return { status: "ok", plugin_id: args?.plugin_id ?? "" };
+      case "reload_plugins":
+        return { status: "ok" };
+      case "remote_get_info":
+        return { running: false };
+      case "remote_start":
+        return { running: true, url: "http://localhost:9090", pin: "1234", port: 9090, ip: "127.0.0.1", ttl_seconds_remaining: 3600 };
+      case "remote_stop":
+        return { running: false };
       case "torrent_get_status":
         return {
           download_root: "C:/tmp/torrents",
           torrent_count: 0,
           torrents: [],
         };
+      case "torrent_add":
+        return { status: "ok" };
+      case "torrent_pause":
+        return { status: "ok" };
+      case "torrent_resume":
+        return { status: "ok" };
+      case "torrent_remove":
+        return { status: "ok" };
+      case "scheduler_list_tasks":
+        return [];
+      case "scheduler_add_task":
+        return { id: `task-${Date.now()}` };
+      case "scheduler_delete_task":
+        return { status: "ok" };
+      case "scheduler_toggle_task":
+        return { status: "ok" };
+      case "scheduler_run_task_now":
+        return { status: "ok" };
+      case "browser_navigate":
+        return { status: "ok" };
+      case "browser_back":
+        return { status: "ok" };
+      case "browser_forward":
+        return { status: "ok" };
+      case "browser_hide":
+        return { status: "ok" };
+      case "browser_show":
+        return { status: "ok" };
+      case "browser_get_url":
+        return { url: "https://example.com" };
+      case "browser_save_to_memory":
+        return { status: "ok" };
+      case "read_last_screenshot":
+        return { base64: "" };
       case "promptdrive_list_packs":
         return [{ id: "core", title: "Core PromptDrive", description: "Production-safe templates.", templates: promptDriveTemplates }];
       case "promptdrive_list_templates":

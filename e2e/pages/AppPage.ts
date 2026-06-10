@@ -18,6 +18,9 @@ export class AppPage {
   readonly navTabPromptLab: Locator;
   readonly navTabRemote: Locator;
   readonly navTabDocs: Locator;
+  readonly navTabIde: Locator;
+  readonly navTabPlugins: Locator;
+  readonly navTabTorrent: Locator;
 
   // Navigation — Security & Ops
   readonly navTabSecurity: Locator;
@@ -39,6 +42,9 @@ export class AppPage {
   readonly viewPromptLab: Locator;
   readonly viewRemote: Locator;
   readonly viewDocs: Locator;
+  readonly viewIde: Locator;
+  readonly viewPlugins: Locator;
+  readonly viewTorrent: Locator;
 
   // Views — Security & Ops
   readonly viewSecurity: Locator;
@@ -72,6 +78,9 @@ export class AppPage {
     this.navTabPromptLab = page.getByTestId("nav-tab-prompt-lab");
     this.navTabRemote = page.getByTestId("nav-tab-remote");
     this.navTabDocs = page.getByTestId("nav-tab-docs");
+    this.navTabIde = page.getByTestId("nav-tab-ide");
+    this.navTabPlugins = page.getByTestId("nav-tab-plugins");
+    this.navTabTorrent = page.getByTestId("nav-tab-torrent");
 
     this.navTabSecurity    = page.getByTestId("nav-tab-security");
     this.navTabThemes      = page.getByTestId("nav-tab-themes");
@@ -91,6 +100,9 @@ export class AppPage {
     this.viewPromptLab = page.getByTestId("view-prompt-lab");
     this.viewRemote = page.getByTestId("view-remote");
     this.viewDocs = page.getByTestId("view-docs");
+    this.viewIde = page.getByTestId("view-ide");
+    this.viewPlugins = page.getByTestId("view-plugins");
+    this.viewTorrent = page.getByTestId("view-torrent");
 
     this.viewSecurity    = page.getByTestId("view-security");
     this.viewThemes      = page.getByTestId("view-themes");
@@ -137,7 +149,8 @@ export class AppPage {
   }
 
   async openCommandPalette() {
-    await this.page.keyboard.press("Control+K");
+    // Click the title-bar button instead of Control+K because Chromium intercepts Ctrl+K
+    await this.commandPaletteBtn.click();
     await expect(this.commandPaletteOverlay).toHaveClass(/active/);
   }
 
