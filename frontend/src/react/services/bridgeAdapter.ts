@@ -536,6 +536,34 @@ const browser = {
     if (window.electronAPI?.browserSaveToMemory) return window.electronAPI.browserSaveToMemory();
     return { success: false };
   },
+  async reload() {
+    if (window.electronAPI?.browserReload) return window.electronAPI.browserReload();
+    return { success: false };
+  },
+  async zoomIn() {
+    if (window.electronAPI?.browserZoomIn) return window.electronAPI.browserZoomIn();
+    return { zoomLevel: 0 };
+  },
+  async zoomOut() {
+    if (window.electronAPI?.browserZoomOut) return window.electronAPI.browserZoomOut();
+    return { zoomLevel: 0 };
+  },
+  async zoomReset() {
+    if (window.electronAPI?.browserZoomReset) return window.electronAPI.browserZoomReset();
+    return { zoomLevel: 0 };
+  },
+  async find(text: string) {
+    if (window.electronAPI?.browserFind) return window.electronAPI.browserFind(text);
+    return { success: false };
+  },
+  async stopFind() {
+    if (window.electronAPI?.browserStopFind) return window.electronAPI.browserStopFind();
+    return { success: false };
+  },
+  onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void) {
+    if (window.electronAPI?.onBrowserEvent) return window.electronAPI.onBrowserEvent(callback);
+    return () => {};
+  },
 };
 
 /* ── IDE / Workspace Files ───────────────────────────────────────────────── */

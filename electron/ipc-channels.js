@@ -41,6 +41,12 @@ const IPC = Object.freeze({
   BROWSER_SET_BOUNDS: 'browser-set-bounds',
   BROWSER_GET_CONTENT: 'browser-get-content',
   BROWSER_SAVE_TO_MEMORY: 'browser-save-to-memory',
+  BROWSER_RELOAD: 'browser-reload',
+  BROWSER_ZOOM_IN: 'browser-zoom-in',
+  BROWSER_ZOOM_OUT: 'browser-zoom-out',
+  BROWSER_ZOOM_RESET: 'browser-zoom-reset',
+  BROWSER_FIND: 'browser-find',
+  BROWSER_STOP_FIND: 'browser-stop-find',
 });
 
 /** All channels that may be handled in main.js. */

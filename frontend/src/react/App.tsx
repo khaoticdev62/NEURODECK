@@ -83,6 +83,13 @@ export default function App() {
     });
   }, [state.activeView]);
 
+  // Defensive: hide browser native overlay when switching away from browser tab
+  useEffect(() => {
+    if (state.activeView !== 'browser') {
+      neurodeckApi.browser.hide();
+    }
+  }, [state.activeView]);
+
   const scanProject = useCallback(async () => {
     dispatch({ type: 'set-busy', label: 'Scanning selected project folder…' });
     const response = await neurodeckApi.projects.selectAndScan();

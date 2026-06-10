@@ -78,12 +78,19 @@ interface ElectronAPI {
   browserNavigate(url: string): Promise<{ success: boolean }>;
   browserBack(): Promise<{ success: boolean }>;
   browserForward(): Promise<{ success: boolean }>;
+  browserReload(): Promise<{ success: boolean }>;
   browserGetUrl(): Promise<{ url: string }>;
   browserHide(): Promise<{ success: boolean }>;
   browserShow(): Promise<{ success: boolean }>;
   browserSetBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<{ success: boolean }>;
   browserGetContent(): Promise<{ content: string }>;
   browserSaveToMemory(): Promise<{ success: boolean; note?: string }>;
+  browserZoomIn(): Promise<{ zoomLevel: number }>;
+  browserZoomOut(): Promise<{ zoomLevel: number }>;
+  browserZoomReset(): Promise<{ zoomLevel: number }>;
+  browserFind(text: string): Promise<{ success: boolean }>;
+  browserStopFind(): Promise<{ success: boolean }>;
+  onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void): () => void;
 }
 
 declare global {

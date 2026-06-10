@@ -23,6 +23,12 @@ const IPC = Object.freeze({
   BROWSER_SET_BOUNDS: 'browser-set-bounds',
   BROWSER_GET_CONTENT: 'browser-get-content',
   BROWSER_SAVE_TO_MEMORY: 'browser-save-to-memory',
+  BROWSER_RELOAD: 'browser-reload',
+  BROWSER_ZOOM_IN: 'browser-zoom-in',
+  BROWSER_ZOOM_OUT: 'browser-zoom-out',
+  BROWSER_ZOOM_RESET: 'browser-zoom-reset',
+  BROWSER_FIND: 'browser-find',
+  BROWSER_STOP_FIND: 'browser-stop-find',
 });
 
 // Expose a minimal API for Electron-specific features.
@@ -66,12 +72,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserNavigate: (url) => ipcRenderer.invoke(IPC.BROWSER_NAVIGATE, url),
   browserBack: () => ipcRenderer.invoke(IPC.BROWSER_BACK),
   browserForward: () => ipcRenderer.invoke(IPC.BROWSER_FORWARD),
+  browserReload: () => ipcRenderer.invoke(IPC.BROWSER_RELOAD),
   browserGetUrl: () => ipcRenderer.invoke(IPC.BROWSER_GET_URL),
   browserHide: () => ipcRenderer.invoke(IPC.BROWSER_HIDE),
   browserShow: () => ipcRenderer.invoke(IPC.BROWSER_SHOW),
   browserSetBounds: (bounds) => ipcRenderer.invoke(IPC.BROWSER_SET_BOUNDS, bounds),
   browserGetContent: () => ipcRenderer.invoke(IPC.BROWSER_GET_CONTENT),
   browserSaveToMemory: () => ipcRenderer.invoke(IPC.BROWSER_SAVE_TO_MEMORY),
+  browserZoomIn: () => ipcRenderer.invoke(IPC.BROWSER_ZOOM_IN),
+  browserZoomOut: () => ipcRenderer.invoke(IPC.BROWSER_ZOOM_OUT),
+  browserZoomReset: () => ipcRenderer.invoke(IPC.BROWSER_ZOOM_RESET),
+  browserFind: (text) => ipcRenderer.invoke(IPC.BROWSER_FIND, text),
+  browserStopFind: () => ipcRenderer.invoke(IPC.BROWSER_STOP_FIND),
+
+  // Listen for browser events from main process
+  onBrowserEvent: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('browser-event', handler);
+    return () => ipcRenderer.removeListener('browser-event', handler);
+  },
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

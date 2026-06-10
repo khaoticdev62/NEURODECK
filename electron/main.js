@@ -637,6 +637,13 @@ ipcMain.handle(IPC.REQUEST_NOTIFICATION_PERMISSION, () => {
 // Standard Chrome User-Agent — hides "Electron" to avoid UA-based blocking
 const CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
 
+// Forwards browser navigation events to all renderer processes so the UI can update
+function broadcastBrowserEvent(event, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('browser-event', { event, payload });
+  }
+}
+
 function ensureBrowserView() {
   if (browserView) return;
   if (!mainWindow) return;
@@ -646,6 +653,7 @@ function ensureBrowserView() {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
+      backgroundThrottling: false,
     },
   });
   // Mask Electron in User-Agent so sites like Reddit/Facebook don't block us
@@ -672,6 +680,60 @@ function ensureBrowserView() {
     const allowed = new Set(['notifications', 'fullscreen', 'clipboard-sanitized-write']);
     callback(allowed.has(permission));
   });
+  // Handle new-window / target="_blank" links by opening in the same view
+  browserView.webContents.setWindowOpenHandler(({ url }) => {
+    browserView.webContents.loadURL(url);
+    return { action: 'deny' };
+  });
+  // Handle downloads
+  browserView.webContents.session.on('will-download', (event, item, webContents) => {
+    console.log(`[browser] download started: ${item.getFilename()} (${item.getTotalBytes()} bytes)`);
+    item.setSavePath(path.join(app.getPath('downloads'), item.getFilename()));
+    item.once('done', (event, state) => {
+      if (state === 'completed') {
+        console.log(`[browser] download complete: ${item.getSavePath()}`);
+      } else {
+        console.log(`[browser] download failed: ${state}`);
+      }
+    });
+  });
+  // Forward navigation events to the renderer so the address bar updates
+  browserView.webContents.on('did-navigate', (event, url) => {
+    broadcastBrowserEvent('did-navigate', { url });
+  });
+  browserView.webContents.on('did-navigate-in-page', (event, url, isMainFrame) => {
+    if (isMainFrame) broadcastBrowserEvent('did-navigate', { url });
+  });
+  // Forward history state changes so back/forward buttons can update
+  browserView.webContents.on('did-finish-load', () => {
+    broadcastBrowserEvent('history-state', {
+      canGoBack: browserView.webContents.navigationHistory.canGoBack(),
+      canGoForward: browserView.webContents.navigationHistory.canGoForward(),
+    });
+  });
+  // Basic context menu (right-click)
+  browserView.webContents.on('context-menu', (event, params) => {
+    const menu = new Menu();
+    if (params.linkURL) {
+      menu.append(new MenuItem({ label: 'Open Link', click: () => browserView.webContents.loadURL(params.linkURL) }));
+      menu.append(new MenuItem({ label: 'Copy Link Address', click: () => require('electron').clipboard.writeText(params.linkURL) }));
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+    if (params.hasImageContents) {
+      menu.append(new MenuItem({ label: 'Copy Image', click: () => browserView.webContents.copyImageAt(params.x, params.y) }));
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+    if (params.selectionText) {
+      menu.append(new MenuItem({ label: 'Copy', click: () => browserView.webContents.copy() }));
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+    menu.append(new MenuItem({ label: 'Back', enabled: browserView.webContents.navigationHistory.canGoBack(), click: () => browserView.webContents.navigationHistory.goBack() }));
+    menu.append(new MenuItem({ label: 'Forward', enabled: browserView.webContents.navigationHistory.canGoForward(), click: () => browserView.webContents.navigationHistory.goForward() }));
+    menu.append(new MenuItem({ label: 'Reload', click: () => browserView.webContents.reload() }));
+    menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(new MenuItem({ label: 'Inspect Element', click: () => browserView.webContents.inspectElement(params.x, params.y) }));
+    menu.popup({ window: mainWindow });
+  });
   mainWindow.contentView.addChildView(browserView);
   browserView.setBounds(browserBounds);
 }
@@ -688,6 +750,7 @@ ipcMain.handle(IPC.BROWSER_OPEN, (_event, url) => {
   if (browserView) {
     browserView.webContents.loadURL(url);
     browserView.setVisible(true);
+    browserView.webContents.focus();
     syncBrowserViewBounds();
     return { success: true };
   }
@@ -697,6 +760,7 @@ ipcMain.handle(IPC.BROWSER_OPEN, (_event, url) => {
 ipcMain.handle(IPC.BROWSER_NAVIGATE, (_event, url) => {
   if (browserView) {
     browserView.webContents.loadURL(url);
+    browserView.webContents.focus();
     return { success: true };
   }
   return { success: false };
@@ -713,6 +777,14 @@ ipcMain.handle(IPC.BROWSER_BACK, () => {
 ipcMain.handle(IPC.BROWSER_FORWARD, () => {
   if (browserView && browserView.webContents.navigationHistory.canGoForward()) {
     browserView.webContents.navigationHistory.goForward();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_RELOAD, () => {
+  if (browserView) {
+    browserView.webContents.reload();
     return { success: true };
   }
   return { success: false };
@@ -736,6 +808,7 @@ ipcMain.handle(IPC.BROWSER_HIDE, () => {
 ipcMain.handle(IPC.BROWSER_SHOW, () => {
   if (browserView) {
     browserView.setVisible(true);
+    browserView.webContents.focus();
     syncBrowserViewBounds();
     return { success: true };
   }
@@ -767,6 +840,48 @@ ipcMain.handle(IPC.BROWSER_GET_CONTENT, async () => {
 ipcMain.handle(IPC.BROWSER_SAVE_TO_MEMORY, () => {
   // TODO: extract page title + visible text and send to bridge /memory/store
   return { success: false, note: 'Not yet implemented' };
+});
+
+ipcMain.handle(IPC.BROWSER_ZOOM_IN, () => {
+  if (browserView) {
+    const level = browserView.webContents.getZoomLevel();
+    browserView.webContents.setZoomLevel(level + 0.5);
+    return { zoomLevel: level + 0.5 };
+  }
+  return { zoomLevel: 0 };
+});
+
+ipcMain.handle(IPC.BROWSER_ZOOM_OUT, () => {
+  if (browserView) {
+    const level = browserView.webContents.getZoomLevel();
+    browserView.webContents.setZoomLevel(level - 0.5);
+    return { zoomLevel: level - 0.5 };
+  }
+  return { zoomLevel: 0 };
+});
+
+ipcMain.handle(IPC.BROWSER_ZOOM_RESET, () => {
+  if (browserView) {
+    browserView.webContents.setZoomLevel(0);
+    return { zoomLevel: 0 };
+  }
+  return { zoomLevel: 0 };
+});
+
+ipcMain.handle(IPC.BROWSER_FIND, (_event, text) => {
+  if (browserView && text) {
+    browserView.webContents.findInPage(text, { findNext: false });
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_STOP_FIND, () => {
+  if (browserView) {
+    browserView.webContents.stopFindInPage('clearSelection');
+    return { success: true };
+  }
+  return { success: false };
 });
 
 app.on('before-quit', () => {
