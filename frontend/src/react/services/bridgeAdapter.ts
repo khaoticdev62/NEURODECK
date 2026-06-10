@@ -854,16 +854,33 @@ const promptDrive = {
 
 const docs = {
   async indexDirectory(path: string) {
-    return bridgeInvoke<{ success: boolean; count?: number }>('index_directory', { path });
+    const res = await bridgeInvoke<{ status: string }>('index_directory', { path });
+    return { success: res.status === 'indexing', count: undefined };
   },
   async getIndexedDocs() {
-    return bridgeInvoke<{ docs: Array<{ id: string; title: string; path: string }> }>('get_indexed_docs');
+    const paths = await bridgeInvoke<string[]>('get_indexed_docs');
+    return {
+      docs: paths.map((p, i) => ({
+        id: `doc-${i}`,
+        title: p.replace(/\\/g, '/').split('/').pop() || p,
+        path: p,
+      })),
+    };
   },
   async searchDocs(query: string) {
-    return bridgeInvoke<{ results: Array<{ id: string; title: string; snippet: string; score: number }> }>('search_docs_semantic', { query });
+    const raw = await bridgeInvoke<Array<{ file: string; snippet: string; score: number }>>('search_docs_semantic', { query });
+    return {
+      results: raw.map((r, i) => ({
+        id: `result-${i}`,
+        title: r.file.replace(/\\/g, '/').split('/').pop() || r.file,
+        snippet: r.snippet,
+        score: r.score,
+      })),
+    };
   },
   async clearIndex() {
-    return bridgeInvoke<{ success: boolean }>('clear_doc_index');
+    const res = await bridgeInvoke<{ status: string }>('clear_doc_index');
+    return { success: res.status === 'cleared' };
   },
 };
 

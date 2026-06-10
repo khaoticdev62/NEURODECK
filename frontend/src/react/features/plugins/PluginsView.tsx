@@ -32,6 +32,7 @@ export function PluginsView() {
   const toggle = async (fileName: string, enabled: boolean) => {
     try {
       await neurodeckApi.plugins.toggle(fileName, !enabled);
+      await neurodeckApi.plugins.reload();
       await load();
     } catch (e) {
       setError(`Toggle failed: ${e}`);
@@ -42,6 +43,7 @@ export function PluginsView() {
     if (!window.confirm(`Uninstall plugin '${pluginId}'?`)) return;
     try {
       await neurodeckApi.plugins.uninstall(pluginId);
+      await neurodeckApi.plugins.reload();
       await load();
     } catch (e) {
       setError(`Uninstall failed: ${e}`);

@@ -257,12 +257,17 @@ pub fn toggle_plugin(file_name: String, enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn install_plugin(url: String) -> Result<(), String> {
+pub async fn install_plugin(
+    url: String,
+    lua: std::sync::Arc<std::sync::Mutex<crate::lua::LuaEngine>>,
+    app_state: std::sync::Arc<std::sync::Mutex<crate::AppState>>,
+    broadcaster: crate::bridge::WsBroadcaster,
+) -> Result<(), String> {
     let parsed_url = reqwest::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
     let file_name = file_name_from_url(&parsed_url)?;
     download_plugin_file(&parsed_url, &file_name, None).await?;
     write_audit_entry(&file_name, "installed_from_url");
-    Ok(())
+    reload_plugins_bridge(lua, app_state, broadcaster).await
 }
 
 pub async fn install_plugin_from_registry(

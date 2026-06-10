@@ -1,5 +1,19 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const { IPC } = require('./ipc-channels');
+
+// NOTE: Sandbox=true preload scripts cannot require() relative files.
+// Keep these constants in sync with electron/ipc-channels.js
+const IPC = Object.freeze({
+  GET_BRIDGE_PORT: 'get-bridge-port',
+  OPEN_EXTERNAL: 'open-external',
+  SHOW_SAVE_DIALOG: 'show-save-dialog',
+  SHOW_OPEN_DIALOG: 'show-open-dialog',
+  SAFE_STORAGE_AVAILABLE: 'safe-storage-available',
+  SAFE_STORAGE_ENCRYPT: 'safe-storage-encrypt',
+  SAFE_STORAGE_DECRYPT: 'safe-storage-decrypt',
+  SET_KIOSK: 'set-kiosk',
+  GET_IS_KIOSK: 'get-is-kiosk',
+  REQUEST_NOTIFICATION_PERMISSION: 'request-notification-permission',
+});
 
 // Expose a minimal API for Electron-specific features.
 // Core invoke/listen goes through neurobridge.js (fetch + WebSocket to localhost).

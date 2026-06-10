@@ -14,7 +14,7 @@ export function MemoryView({ state, dispatch }: { state: NeuroDeckState; dispatc
   }, [query, state.memories]);
 
   return (
-    <Panel eyebrow="Memory Vault" title="Local-First Recall" className="memory-shell h-full overflow-hidden">
+    <Panel eyebrow="Memory Vault" title="Local-First Recall" className="memory-shell !flex-col h-full overflow-hidden">
       <div className="memory-kicker px-4 pt-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Memory</div>
       <div className="memory-search-shell px-4 pt-3">
         <input
@@ -26,7 +26,7 @@ export function MemoryView({ state, dispatch }: { state: NeuroDeckState; dispatc
           className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
         />
       </div>
-      <div className="grid gap-4 overflow-y-auto p-4 scrollbar-thin lg:grid-cols-3">
+      <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin lg:grid-cols-3">
         {filtered.map((memory) => (
           <article key={memory.id} className={`rounded-3xl border p-4 transition ${memory.pinned ? 'border-nd-accent/30 bg-nd-accent/[0.055]' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
             <div className="flex items-start justify-between gap-3">

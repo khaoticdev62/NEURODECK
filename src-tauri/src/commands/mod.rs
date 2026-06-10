@@ -4893,12 +4893,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let connected = h.connected.load(std::sync::atomic::Ordering::Relaxed);
                     let elapsed = h.started_at.elapsed().as_secs();
                     let ttl_rem = 900u64.saturating_sub(elapsed);
+                    let url = format!("http://{}:{}/#pin={}&session={}", h.local_ip, h.port, h.pin, h.access_token);
                     Ok(serde_json::json!({
                         "running":                true,
                         "port":                   h.port,
                         "ip":                     h.local_ip,
                         "pin":                    h.pin,
-                        "connected":              connected,
+                        "url":                    url,
+                        "clients":                connected,
                         "ttl_seconds_remaining":  ttl_rem
                     }))
                 }
@@ -6493,7 +6495,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'url'")?
                 .to_string();
-            crate::plugin_mgr::install_plugin(url.clone())
+            crate::plugin_mgr::install_plugin(
+                url.clone(),
+                state.lua.clone(),
+                state.app_state.clone(),
+                state.broadcaster.clone(),
+            )
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "installed", "url": url }))

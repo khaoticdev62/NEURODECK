@@ -284,10 +284,15 @@ impl LuaEngine {
             let path = entry.path();
             if path.is_file() && path.extension().is_some_and(|ext| ext == "lua") {
                 eprintln!("[neurodeck] loading plugin: {}", path.display());
-                let code = std::fs::read_to_string(&path)
-                    .map_err(|e| format!("Failed to read script file {}: {}", path.display(), e))?;
-                self.run_script(&code)
-                    .map_err(|e| format!("Failed to load plugin {}: {}", path.display(), e))?;
+                match std::fs::read_to_string(&path) {
+                    Ok(code) => {
+                        if let Err(e) = self.run_script(&code) {
+                            eprintln!("[Lua Error] Failed to load plugin {}: {}", path.display(), e);
+                            continue;
+                        }
+                    }
+                    Err(e) => eprintln!("[Lua Error] Cannot read plugin {}: {}", path.display(), e),
+                }
             }
         }
         Ok(())

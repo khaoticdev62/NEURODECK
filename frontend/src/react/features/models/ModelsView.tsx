@@ -8,8 +8,8 @@ import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../..
 export function ModelsView({ state, dispatch, actions }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; actions: NeuroDeckAppActions }) {
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
-      <Panel eyebrow="Model Manager" title="Local Runtime Inventory" className="min-h-0 overflow-hidden">
-        <div className="grid gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-2">
+      <Panel eyebrow="Model Manager" title="Local Runtime Inventory" className="flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-2">
           {state.models.map((model) => (
             <ModelCard
               key={model.id}
@@ -24,8 +24,8 @@ export function ModelsView({ state, dispatch, actions }: { state: NeuroDeckState
         </div>
       </Panel>
 
-      <Panel eyebrow="Runtime Probe" title="Native Detection">
-        <div className="space-y-3 p-4">
+      <Panel eyebrow="Runtime Probe" title="Native Detection" className="flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4 scrollbar-thin">
           <button
             type="button"
             onClick={() => void actions.detectModels()}
