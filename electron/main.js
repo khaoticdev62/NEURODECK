@@ -501,12 +501,21 @@ app.whenReady().then(async () => {
   ].join('; ');
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [CSP],
-      },
-    });
+    // Only inject CSP for the app's own pages — external sites loaded in the
+    // browser WebContentsView must not receive our restrictive CSP.
+    const isAppUrl = details.url.startsWith('neurodeck://') ||
+                     details.url.startsWith('http://localhost:1420') ||
+                     details.url.startsWith('http://127.0.0.1:1420');
+    if (isAppUrl) {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [CSP],
+        },
+      });
+    } else {
+      callback({ responseHeaders: details.responseHeaders });
+    }
   });
 
   createSplashWindow();
