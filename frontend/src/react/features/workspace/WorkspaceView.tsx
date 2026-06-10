@@ -29,13 +29,13 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
       {/* Session Header */}
       <div className="flex items-center justify-between rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="chat-session-kicker text-xs font-semibold uppercase tracking-wider text-nd-text0">Active Session</span>
+          <span className="chat-session-kicker text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Active Session</span>
           <span className="h-1.5 w-1.5 rounded-full bg-nd-success" />
           <span className="text-xs text-nd-text-muted">{state.activeProject?.name || 'Welcome session'}</span>
         </div>
         <div className="flex items-center gap-3">
           <Badge tone="accent">{state.selectedProvider}</Badge>
-          <span className="text-xs text-nd-text0">{selectors.messageCount} msgs</span>
+          <span className="text-xs text-nd-text-muted">{selectors.messageCount} msgs</span>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
                 <Sparkles className="h-8 w-8 text-nd-accent" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-nd-text">NEURODECK</h1>
-              <p className="mt-1 text-sm text-nd-text0">AI-native terminal OS. Ask anything.</p>
+              <p className="mt-1 text-sm text-nd-text-muted">AI-native terminal OS. Ask anything.</p>
 
               {/* Starter Grid */}
               <div className="mt-6 grid w-full max-w-2xl gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +102,7 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
                       : 'border-nd-text-muted/15 bg-nd-surface/50'
                   }`}>
                     <div className="mb-1 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text0">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
                         {message.role}
                       </span>
                       <span className="text-[10px] text-nd-text-muted/70">
@@ -119,7 +119,7 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
 
         {/* Input Bar */}
         <div className="border-t border-nd-text-muted/15 p-3">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-nd-text0">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-nd-text-muted">
             <Badge tone="accent">{state.selectedProvider}</Badge>
             <Badge tone={state.projectContext ? 'success' : 'warning'}>{state.projectContext ? 'context attached' : 'no context'}</Badge>
             <Badge tone={healthReady > 1 ? 'success' : 'neutral'}>{healthReady} provider(s) ready</Badge>
@@ -127,13 +127,13 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
           </div>
           <div className="flex items-end gap-2 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2 focus-within:border-nd-accent/40 focus-within:shadow-focus">
             <div className="flex gap-1 pb-2 pl-2">
-              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Attach file">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text/80" title="Attach file">
                 <Paperclip className="h-4 w-4" />
               </button>
-              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Voice input">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text/80" title="Voice input">
                 <Mic className="h-4 w-4" />
               </button>
-              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Screenshot">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text/80" title="Screenshot">
                 <ScanLine className="h-4 w-4" />
               </button>
             </div>

@@ -59,9 +59,9 @@ export function BrowserView() {
           <Globe className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="browser-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Browser</div>
+          <div className="browser-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Browser</div>
           <h2 className="text-lg font-semibold text-nd-text">Browser</h2>
-          <p className="text-xs text-nd-text0">Embedded web browser</p>
+          <p className="text-xs text-nd-text-muted">Embedded web browser</p>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export function BrowserView() {
         <button type="button" onClick={() => navigate('https://example.com')} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <Home className="h-4 w-4" />
         </button>
-        <span className="browser-home-kicker rounded-full border border-nd-text-muted/15 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-nd-text0">Home</span>
+        <span className="browser-home-kicker rounded-full border border-nd-text-muted/15 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-nd-text-muted">Home</span>
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
           <input
             id="browser-url-input"
@@ -115,7 +115,7 @@ export function BrowserView() {
       </div>
       {!visible && (
         <div className="flex flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
-          <p className="text-sm text-nd-text0">Browser hidden. Click the eye icon to show.</p>
+          <p className="text-sm text-nd-text-muted">Browser hidden. Click the eye icon to show.</p>
         </div>
       )}
     </div>

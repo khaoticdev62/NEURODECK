@@ -79,7 +79,7 @@ export function GitView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Git</h2>
-          <p className="text-xs text-nd-text0">Repository management</p>
+          <p className="text-xs text-nd-text-muted">Repository management</p>
         </div>
         <button type="button" onClick={loadStatus} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -91,7 +91,7 @@ export function GitView() {
         <div className="flex w-64 flex-col gap-3 overflow-auto">
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Staged</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Staged</span>
               <button type="button" onClick={unstageAll} className="text-[10px] text-nd-accent hover:underline">Unstage all</button>
             </div>
             {staged.map((f) => <FileItem key={f.path} file={f} icon={FilePlus} color="text-nd-success" />)}
@@ -100,7 +100,7 @@ export function GitView() {
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Unstaged</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Unstaged</span>
               <button type="button" onClick={stageAll} className="text-[10px] text-nd-accent hover:underline">Stage all</button>
             </div>
             {unstaged.map((f) => <FileItem key={f.path} file={f} icon={CircleDot} color="text-nd-warning" />)}
@@ -108,8 +108,8 @@ export function GitView() {
           </div>
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Untracked</span>
-            {untracked.map((f) => <FileItem key={f.path} file={f} icon={FileMinus} color="text-nd-text0" />)}
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Untracked</span>
+            {untracked.map((f) => <FileItem key={f.path} file={f} icon={FileMinus} color="text-nd-text-muted" />)}
             {!untracked.length && <p className="py-2 text-center text-xs text-nd-text-muted/70">No untracked files</p>}
           </div>
         </div>
@@ -147,10 +147,10 @@ export function GitView() {
           )}
 
           <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Recent Commits</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Recent Commits</span>
             <div className="mt-2 space-y-2">
               {commits.map((c) => (
-                <div key={c.hash} className="rounded-lg border border-nd-text-muted/8 bg-nd-surface/30 p-2">
+                <div key={c.hash} className="rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 p-2">
                   <p className="text-xs font-medium text-nd-text/90">{c.message}</p>
                   <div className="mt-1 flex gap-2 text-[10px] text-nd-text-muted/70">
                     <span className="font-mono">{c.hash.slice(0, 7)}</span>
@@ -166,7 +166,7 @@ export function GitView() {
 
         {/* Right: Branches */}
         <div className="w-48 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Branches</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Branches</span>
           <div className="mt-2 space-y-1">
             {branches.map((b) => (
               <button

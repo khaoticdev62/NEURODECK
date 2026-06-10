@@ -102,7 +102,7 @@ export function LiveWallpaperPanel() {
           <button
             type="button"
             onClick={clearBackground}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-nd-text-muted/15 text-nd-text0 transition hover:border-danger/40 hover:text-nd-danger"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-nd-text-muted/15 text-nd-text-muted transition hover:border-nd-danger/40 hover:text-nd-danger"
             aria-label="Remove background"
           >
             <X className="h-3.5 w-3.5" />
@@ -111,13 +111,13 @@ export function LiveWallpaperPanel() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/35 p-1" role="tablist">
+      <div className="flex gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-1" role="tablist">
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'live'}
           onClick={() => setActiveTab('live')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'live' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text0 hover:text-nd-text/80'}`}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'live' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
         >
           <MonitorPlay className="h-3.5 w-3.5" />
           Live Animated
@@ -127,7 +127,7 @@ export function LiveWallpaperPanel() {
           role="tab"
           aria-selected={activeTab === 'static'}
           onClick={() => setActiveTab('static')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'static' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text0 hover:text-nd-text/80'}`}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'static' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
         >
           <ImageIcon className="h-3.5 w-3.5" />
           HD Photos

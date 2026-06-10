@@ -57,7 +57,7 @@ export function SettingsView({
               key={key}
               type="button"
               data-panel={`sp-${key}`}
-              className={`stv-nav-item flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition ${activePanel === key ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-text-muted/20 hover:bg-nd-surface/55'}`}
+              className={`stv-nav-item flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition ${activePanel === key ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text/80 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'}`}
               onClick={() => selectPanel(key)}
             >
               <span>{label}</span>
@@ -98,7 +98,7 @@ export function SettingsView({
                       <div className="flex items-center gap-2"><BrainCircuit className="h-4 w-4 text-nd-accent" /><span className="font-semibold text-nd-text">{provider.label}</span></div>
                       <Badge tone={health?.available ? 'success' : provider.id === 'offline-draft' ? 'success' : 'warning'}>{health?.available ? 'ready' : 'cold'}</Badge>
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-nd-text0">{provider.description}</p>
+                    <p className="mt-2 text-xs leading-5 text-nd-text-muted">{provider.description}</p>
                     {health && <p className="mt-2 text-xs text-nd-text-muted/70">{health.detail}</p>}
                   </button>
                 );
@@ -155,8 +155,8 @@ export function SettingsView({
         <div id="sp-memory" className={`settings-panel ${activePanel === 'memory' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
           <Panel eyebrow="Privacy" title="Local State">
             <div className="p-4">
-              <p className="mb-3 text-xs leading-5 text-nd-text0">Settings, project scan summary, redacted project context, AI messages, agent runs, and UI state persist locally under the Electron userData folder.</p>
-              <button type="button" onClick={() => void actions.resetLocalState()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-danger/25 bg-nd-danger/10 px-3 py-2 text-sm font-semibold text-nd-danger transition hover:bg-danger/15">
+              <p className="mb-3 text-xs leading-5 text-nd-text-muted">Settings, project scan summary, redacted project context, AI messages, agent runs, and UI state persist locally under the Electron userData folder.</p>
+              <button type="button" onClick={() => void actions.resetLocalState()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15">
                 <RotateCcw className="h-4 w-4" /> Reset stored UI state
               </button>
             </div>

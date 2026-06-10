@@ -19,7 +19,7 @@ export function PlaceholderView({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-nd-text">{title}</h2>
-          <p className="text-xs text-nd-text0">{description}</p>
+          <p className="text-xs text-nd-text-muted">{description}</p>
         </div>
       </div>
       <div className="flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-6">

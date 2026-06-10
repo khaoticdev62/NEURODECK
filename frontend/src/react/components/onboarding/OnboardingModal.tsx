@@ -83,7 +83,7 @@ export function OnboardingModal() {
       <div className="no-drag w-full max-w-lg overflow-hidden rounded-3xl border border-nd-accent/20 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10">
         {/* Header */}
         <div className="relative border-b border-nd-text-muted/15 px-6 py-5">
-          <button type="button" onClick={dismiss} className="absolute right-4 top-4 rounded-lg p-1.5 text-nd-text0 transition hover:bg-nd-surface/50 hover:text-nd-text/90">
+          <button type="button" onClick={dismiss} className="absolute right-4 top-4 rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text/90">
             <X className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export function OnboardingModal() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-nd-text">Welcome to NEURODECK</h2>
-              <p className="text-xs text-nd-text0">v6 — Local-first AI workstation OS</p>
+              <p className="text-xs text-nd-text-muted">v6 — Local-first AI workstation OS</p>
             </div>
           </div>
         </div>
@@ -100,8 +100,8 @@ export function OnboardingModal() {
         {/* Diagnostics */}
         <div className="px-6 py-4">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">System Checks</span>
-            <span className="text-xs text-nd-text0">{passed}/{total} passed</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">System Checks</span>
+            <span className="text-xs text-nd-text-muted">{passed}/{total} passed</span>
           </div>
           <div className="space-y-2">
             {checks.map((check) => (
