@@ -24,24 +24,24 @@ export function OrchestratorView() {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-          <Layers className="h-5 w-5 text-neuro" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+          <Layers className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-50">Orchestrator</h2>
-          <p className="text-xs text-slate-500">Visual workflow automation builder</p>
+          <h2 className="text-lg font-semibold text-nd-text">Orchestrator</h2>
+          <p className="text-xs text-nd-text0">Visual workflow automation builder</p>
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${running ? 'border-danger/30 bg-danger/10 text-danger' : 'border-success/30 bg-success/10 text-success'}`}>
+          <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}>
             {running ? <><Square className="h-4 w-4" /> Stop</> : <><Play className="h-4 w-4" /> Run</>}
           </button>
-          <button type="button" className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-400 hover:bg-white/[0.04]">
+          <button type="button" className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50">
             <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+      <div className="relative min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
         <svg className="h-full w-full" viewBox="0 0 300 550">
           {/* Connections */}
           <line x1="100" y1="80" x2="100" y2="120" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />

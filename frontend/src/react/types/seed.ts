@@ -12,9 +12,9 @@ export const STORE_KEY = 'neurodeck:v6:state';
 
 export const navItems: NavItem[] = [
   // ── Mission Control ──
-  { id: 'workspace', label: 'Workspace', description: 'AI console and chat', icon: LayoutDashboard, shortcut: '1', section: 'Mission Control' },
+  { id: 'chat', label: 'Chat', description: 'AI console and chat', icon: LayoutDashboard, shortcut: '1', section: 'Mission Control' },
   { id: 'execution', label: 'Execution', description: 'AI runs and audit trail', icon: Workflow, shortcut: '2', section: 'Mission Control' },
-  { id: 'agents', label: 'Agents', description: 'Specialized task operators', icon: Bot, shortcut: '3', section: 'Mission Control' },
+  { id: 'agent', label: 'Agent', description: 'Specialized task operator', icon: Bot, shortcut: '3', section: 'Mission Control' },
   { id: 'memory', label: 'Memory', description: 'Local-first knowledge vault', icon: Database, shortcut: '4', section: 'Mission Control' },
 
   // ── Dev Tools ──

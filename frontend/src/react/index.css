@@ -2,18 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEURODECK v6 — Design Token System
+   All theme-aware colors flow through CSS custom properties injected at
+   runtime by App.tsx. No hardcoded theme colors below the :root defaults.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
   color-scheme: dark;
-  background: #0A0D10;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Typography */
   --font-body: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
-  --accent-color: #5EEBFF;
-  --accent-rgb: 94, 235, 255;
+
+  /* Runtime theme tokens — overwritten by App.tsx on theme change */
+  --nd-bg: #0A0D10;
+  --nd-surface: #11161C;
+  --nd-surface-raised: #161D25;
+  --nd-accent: #5EEBFF;
+  --nd-accent-rgb: 94, 235, 255;
+  --nd-success: #7CFFB2;
+  --nd-warning: #FFC857;
+  --nd-danger: #FF5A6A;
+  --nd-text: #E8F4FF;
+  --nd-text-muted: #8DA1B3;
+  --nd-glow: rgba(94, 235, 255, 0.18);
+
+  /* Response color for wallpapers / legacy compatibility */
   --response-color: #7CFFB2;
+
+  /* Z-index scale */
+  --z-wallpaper: 0;
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-tooltip: 60;
 }
 
 html,
@@ -25,14 +55,12 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(94, 235, 255, 0.08), transparent 34rem),
-    radial-gradient(circle at bottom right, rgba(124, 255, 178, 0.045), transparent 32rem),
-    #0A0D10;
-  color: #E8F4FF;
+  background: var(--nd-bg);
+  color: var(--nd-text);
   font-family: var(--font-body);
 }
 
+/* Drag regions for Electron frameless window */
 .drag-region {
   -webkit-app-region: drag;
 }
@@ -47,9 +75,10 @@ a,
   -webkit-app-region: no-drag;
 }
 
+/* Scrollbar theming */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(141, 161, 179, 0.45) transparent;
+  scrollbar-color: color-mix(in srgb, var(--nd-text-muted) 35%, transparent) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -58,36 +87,90 @@ a,
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(141, 161, 179, 0.35);
+  background: color-mix(in srgb, var(--nd-text-muted) 30%, transparent);
   border-radius: 999px;
 }
 
-.glass-panel {
-  background: linear-gradient(180deg, rgba(17, 22, 28, 0.96), rgba(12, 17, 22, 0.94));
-  border: 1px solid rgba(141, 161, 179, 0.14);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Glass Panel System — v2
+   Multi-layer glass with ambient light reflection, depth shadows, and
+   dynamic theming via CSS custom properties.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%),
+    linear-gradient(135deg, var(--nd-surface) 0%, var(--nd-bg) 100%);
+  background-blend-mode: overlay;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.2),
+    0 4px 16px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.glass-panel-elevated {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%),
+    linear-gradient(135deg, var(--nd-surface-raised) 0%, var(--nd-surface) 100%);
+  background-blend-mode: overlay;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 16%, transparent);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.25),
+    0 8px 24px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.glass-panel-flat {
+  background: var(--nd-surface);
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 10%, transparent);
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tactical Grid — uses dynamic accent color
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 .tactical-grid {
   background-image:
-    linear-gradient(rgba(94, 235, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(94, 235, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--nd-accent) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--nd-accent) 3.5%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
-  }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Focus & Glow Utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.focus-ring {
+  outline: none;
 }
 
-/* ── Live Wallpaper Backgrounds ─────────────────────────────────────────── */
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nd-accent) 25%, transparent);
+}
 
-/* When wallpaper is active, make body and app shell transparent so the
-   wallpaper layers are visible through the UI chrome. */
+.glow-border {
+  box-shadow: 0 0 0 1px var(--nd-accent), 0 0 12px var(--nd-glow);
+}
+
+.glow-border-subtle {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nd-accent) 50%, transparent),
+              0 0 8px var(--nd-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Live Wallpaper Backgrounds
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 body.wallpaper-active {
   background: transparent !important;
 }
@@ -100,7 +183,7 @@ body.wallpaper-active #app-shell {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-wallpaper);
   overflow: hidden;
 }
 
@@ -128,7 +211,7 @@ body.wallpaper-active #app-shell {
 .app-background-css.css-nebula {
   background:
     radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(var(--accent-rgb), 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(var(--nd-accent-rgb), 0.25) 0%, transparent 50%),
     #050505;
   background-size: 200% 200%;
   animation: nebula-drift 20s ease infinite alternate;
@@ -143,7 +226,7 @@ body.wallpaper-active #app-shell {
   background: linear-gradient(
     125deg,
     rgba(0, 255, 136, 0.15) 0%,
-    rgba(var(--accent-rgb), 0.15) 40%,
+    rgba(var(--nd-accent-rgb), 0.15) 40%,
     rgba(168, 85, 247, 0.1) 70%,
     #050505 100%
   );
@@ -155,4 +238,17 @@ body.wallpaper-active #app-shell {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility — Reduced Motion
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
 }

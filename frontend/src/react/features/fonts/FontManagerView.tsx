@@ -28,12 +28,12 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-          <Type className="h-5 w-5 text-neuro" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+          <Type className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-50">Font Manager</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-semibold text-nd-text">Font Manager</h2>
+          <p className="text-xs text-nd-text-muted">
             {fontOptions.length} typefaces available • Active: <span style={{ fontFamily: fontOptions.find((f) => f.id === state.selectedFont)?.family }}>{fontOptions.find((f) => f.id === state.selectedFont)?.name}</span>
           </p>
         </div>
@@ -41,17 +41,17 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
 
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-          <Search className="h-4 w-4 text-slate-500" />
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
+          <Search className="h-4 w-4 text-nd-text-muted" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search fonts..."
-            className="flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
+            className="flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
           />
           {search && (
-            <button type="button" onClick={() => setSearch('')} className="text-slate-500 hover:text-slate-300">
+            <button type="button" onClick={() => setSearch('')} className="text-nd-text-muted hover:text-nd-text/80">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -61,7 +61,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
           <button
             type="button"
             onClick={() => setCategory('All')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === 'All' ? 'bg-neuro/10 text-neuro' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === 'All' ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
           >
             All
           </button>
@@ -70,7 +70,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === c ? 'bg-neuro/10 text-neuro' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === c ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
             >
               {c}
             </button>
@@ -90,28 +90,28 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               onClick={() => applyFont(font.id)}
               className={`relative flex flex-col rounded-2xl border p-4 text-left transition ${
                 isActive
-                  ? 'border-neuro/40 bg-neuro/[0.08] shadow-focus'
-                  : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+                  ? 'border-nd-accent/40 bg-nd-accent/[0.08] shadow-focus'
+                  : 'border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'
               }`}
             >
               {isActive && (
-                <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-neuro text-blacksite">
+                <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent text-blacksite">
                   <Check className="h-3.5 w-3.5" />
                 </div>
               )}
 
               <div className="mb-3 flex items-center gap-2">
-                <span className="rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-500">
+                <span className="rounded-md border border-nd-text-muted/15 bg-nd-surface/50 px-1.5 py-0.5 text-[10px] text-nd-text-muted">
                   {font.category}
                 </span>
-                <span className="text-[10px] text-slate-600">{font.weights.length} weights</span>
+                <span className="text-[10px] text-nd-text-muted/70">{font.weights.length} weights</span>
               </div>
 
-              <p className="text-sm font-semibold text-slate-200">{font.name}</p>
+              <p className="text-sm font-semibold text-nd-text/90">{font.name}</p>
 
-              <div className="mt-3 flex-1 rounded-xl border border-white/5 bg-black/20 p-3">
+              <div className="mt-3 flex-1 rounded-xl border border-nd-text-muted/8 bg-nd-surface/40 p-3">
                 <p
-                  className="text-lg leading-relaxed text-slate-300"
+                  className="text-lg leading-relaxed text-nd-text/80"
                   style={{ fontFamily: font.family }}
                 >
                   {preview}
@@ -119,11 +119,11 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               </div>
 
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-[10px] text-slate-600">{font.family.split(',')[0].replace(/"/g, '')}</span>
+                <span className="text-[10px] text-nd-text-muted/70">{font.family.split(',')[0].replace(/"/g, '')}</span>
                 {isActive ? (
-                  <span className="text-xs font-medium text-neuro">Active</span>
+                  <span className="text-xs font-medium text-nd-accent">Active</span>
                 ) : (
-                  <span className="text-xs text-slate-600">Click to apply</span>
+                  <span className="text-xs text-nd-text-muted/70">Click to apply</span>
                 )}
               </div>
             </button>
@@ -131,7 +131,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
         })}
 
         {filtered.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 text-slate-600">
+          <div className="col-span-full flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
             <Type className="h-10 w-10 mb-3" />
             <p className="text-sm">No fonts match your search</p>
           </div>

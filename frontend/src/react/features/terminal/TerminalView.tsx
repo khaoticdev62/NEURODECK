@@ -117,28 +117,29 @@ export function TerminalView() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-          <Terminal className="h-5 w-5 text-neuro" />
+    <div className="terminal-container flex h-full flex-col">
+      <div id="terminal-tabs-list" className="terminal-tabs-list mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+          <Terminal className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-50">Terminal</h2>
-          <p className="text-xs text-slate-500">PTY shell sessions</p>
+          <div className="terminal-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Terminal</div>
+          <h2 className="text-lg font-semibold text-nd-text">Terminal</h2>
+          <p className="text-xs text-nd-text0">PTY shell sessions</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${connected ? 'bg-success' : 'bg-danger'}`} />
-          <span className="text-xs text-slate-500">{connected ? 'Connected' : 'Disconnected'}</span>
+          <div className={`h-2 w-2 rounded-full ${connected ? 'bg-nd-success' : 'bg-nd-danger'}`} />
+          <span className="text-xs text-nd-text0">{connected ? 'Connected' : 'Disconnected'}</span>
         </div>
-        <button type="button" onClick={reconnect} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100" title="Reconnect">
+        <button type="button" onClick={reconnect} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text" title="Reconnect">
           <RefreshCw className="h-4 w-4" />
         </button>
-        <button type="button" onClick={killSession} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/[0.04] hover:text-danger" title="Kill Session">
+        <button type="button" onClick={killSession} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger" title="Kill Session">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-2">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/60 p-2">
         <div ref={containerRef} className="h-full w-full" />
       </div>
     </div>

@@ -5,7 +5,7 @@ import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState } from '.
 
 const initialState: NeuroDeckState = {
   hydrated: false,
-  activeView: 'workspace',
+  activeView: 'chat',
   commandOpen: false,
   deckMode: false,
   selectedTheme: 'Blacksite',
@@ -98,7 +98,7 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
     case 'set-composer':
       return { ...state, composerValue: action.value };
     case 'run-starter':
-      return { ...state, composerValue: action.prompt, activeView: 'workspace', commandOpen: false };
+      return { ...state, composerValue: action.prompt, activeView: 'chat', commandOpen: false };
     case 'toggle-agent':
       return {
         ...state,

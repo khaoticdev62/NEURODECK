@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 
 export type ViewId =
-  | 'workspace' | 'execution' | 'agents' | 'memory'
+  | 'chat' | 'workspace' | 'execution' | 'agent' | 'agents' | 'memory'
   | 'canvas' | 'terminal' | 'ssh' | 'ide' | 'git' | 'api-lab' | 'cli-maker'
   | 'browser' | 'tunnel' | 'share' | 'remote' | 'torrent'
   | 'project' | 'docs' | 'prompt-lab' | 'graph' | 'sessions'

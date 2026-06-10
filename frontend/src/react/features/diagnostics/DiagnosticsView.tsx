@@ -11,10 +11,10 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
       <Panel eyebrow="Diagnostics" title="Runtime Health">
         <div className="space-y-3 p-4">
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            <button type="button" onClick={() => void actions.refreshDiagnostics()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neuro/25 bg-neuro/10 px-3 py-2 text-sm font-semibold text-neuro transition hover:bg-neuro/15">
+            <button type="button" onClick={() => void actions.refreshDiagnostics()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
               <RefreshCcw className="h-4 w-4" /> Refresh Diagnostics
             </button>
-            <button type="button" onClick={() => void actions.exportDiagnosticsBundle()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-neuro/25 hover:text-neuro">
+            <button type="button" onClick={() => void actions.exportDiagnosticsBundle()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
               <FileArchive className="h-4 w-4" /> Export Bundle
             </button>
           </div>
@@ -31,16 +31,16 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
               <RuntimeRow label="Store" value={diagnostics.storeFile} wrap />
               <RuntimeRow label="Exports" value={diagnostics.exportsDir} wrap />
               {diagnostics.diagnosticsDir && <RuntimeRow label="Diagnostics" value={diagnostics.diagnosticsDir} wrap />}
-              <div className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-xs text-success">
+              <div className="rounded-xl border border-success/20 bg-nd-success/10 px-3 py-2 text-xs text-nd-success">
                 <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> v6 hardening active</div>
-                <p className="mt-1 text-success/80">IPC payload validation, migration metadata, safe errors, and sanitized diagnostics are enabled.</p>
+                <p className="mt-1 text-nd-success/80">IPC payload validation, migration metadata, safe errors, and sanitized diagnostics are enabled.</p>
               </div>
             </div>
           ) : (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-5 text-center">
-              <Activity className="mx-auto h-10 w-10 text-neuro" />
-              <h3 className="mt-4 font-semibold text-slate-100">No diagnostics loaded</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">Refresh to read Electron runtime data and recent main-process events.</p>
+            <div className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-5 text-center">
+              <Activity className="mx-auto h-10 w-10 text-nd-accent" />
+              <h3 className="mt-4 font-semibold text-nd-text">No diagnostics loaded</h3>
+              <p className="mt-2 text-sm leading-6 text-nd-text-muted">Refresh to read Electron runtime data and recent main-process events.</p>
             </div>
           )}
         </div>
@@ -51,9 +51,9 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
           {!state.diagnosticLogs.length && (
             <div className="flex h-full items-center justify-center">
               <div className="max-w-md text-center">
-                <TerminalSquare className="mx-auto h-12 w-12 text-neuro" />
-                <h3 className="mt-4 text-xl font-semibold text-slate-50">Logs are quiet</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">Run a project scan, model detection, export, or diagnostics refresh to populate the event trail.</p>
+                <TerminalSquare className="mx-auto h-12 w-12 text-nd-accent" />
+                <h3 className="mt-4 text-xl font-semibold text-nd-text">Logs are quiet</h3>
+                <p className="mt-2 text-sm leading-6 text-nd-text-muted">Run a project scan, model detection, export, or diagnostics refresh to populate the event trail.</p>
               </div>
             </div>
           )}
@@ -68,9 +68,9 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
 
 function RuntimeRow({ label, value, wrap = false }: { label: string; value: string; wrap?: boolean }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-xs">
-      <p className="uppercase tracking-[0.2em] text-slate-600">{label}</p>
-      <p className={`mt-1 text-slate-300 ${wrap ? 'break-all' : ''}`}>{value}</p>
+    <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 text-xs">
+      <p className="uppercase tracking-[0.2em] text-nd-text-muted/70">{label}</p>
+      <p className={`mt-1 text-nd-text/80 ${wrap ? 'break-all' : ''}`}>{value}</p>
     </div>
   );
 }
@@ -79,17 +79,17 @@ function LogCard({ log }: { log: DiagnosticLog }) {
   const Icon = log.level === 'error' ? AlertTriangle : log.level === 'warning' ? AlertTriangle : CheckCircle2;
   const tone: 'danger' | 'warning' | 'success' = log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'success';
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+    <article className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
       <div className="flex items-start gap-3">
-        <Icon className={`mt-0.5 h-5 w-5 ${tone === 'danger' ? 'text-danger' : tone === 'warning' ? 'text-warning' : 'text-success'}`} />
+        <Icon className={`mt-0.5 h-5 w-5 ${tone === 'danger' ? 'text-nd-danger' : tone === 'warning' ? 'text-nd-warning' : 'text-nd-success'}`} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={tone}>{log.level}</Badge>
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-600">{log.scope}</span>
-            <span className="text-xs text-slate-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-nd-text-muted/70">{log.scope}</span>
+            <span className="text-xs text-nd-text-muted/70">{new Date(log.timestamp).toLocaleTimeString()}</span>
           </div>
-          <h3 className="mt-2 font-semibold text-slate-100">{log.message}</h3>
-          {log.details && <pre className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-black/25 p-3 text-xs text-slate-500">{JSON.stringify(log.details, null, 2)}</pre>}
+          <h3 className="mt-2 font-semibold text-nd-text">{log.message}</h3>
+          {log.details && <pre className="mt-3 overflow-x-auto rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text">{JSON.stringify(log.details, null, 2)}</pre>}
         </div>
       </div>
     </article>

@@ -77,49 +77,57 @@ export function CanvasView() {
   }, [htmlBlob]);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-          <Paintbrush className="h-5 w-5 text-neuro" />
+    <div className="canvas-container flex h-full flex-col">
+      <div className="canvas-toolbar mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+          <Paintbrush className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-50">Canvas</h2>
-          <p className="text-xs text-slate-500">Live code editor and execution</p>
+          <div className="canvas-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Canvas</div>
+          <h2 className="text-lg font-semibold text-nd-text">Canvas</h2>
+          <p className="text-xs text-nd-text-muted">Live code editor and execution</p>
         </div>
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as CodeLang)}
-          className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none"
+          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
         >
           {LANG_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-        <button type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-sm font-medium text-success hover:bg-success/20 disabled:opacity-50">
+        <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-success/20 disabled:opacity-50">
           {running ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
           Run
         </button>
-        <button type="button" onClick={copyCode} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100">
+        <button id="canvas-copy-btn" type="button" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <Copy className="h-4 w-4" />
         </button>
-        <button type="button" onClick={clear} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100">
+        <button id="canvas-clear-btn" type="button" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <Trash2 className="h-4 w-4" />
+        </button>
+        <button id="canvas-ai-edit-btn" type="button" onClick={() => setOutput((prev) => prev || 'AI edit queued...')} className="rounded-lg border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+          AI Edit
+        </button>
+        <button id="canvas-collab-btn" type="button" onClick={() => setOutput((prev) => prev || 'Collab ready...')} className="rounded-lg border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+          Collab
         </button>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-          <div className="border-b border-white/10 px-3 py-2 text-xs font-medium text-slate-500">Editor</div>
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
+          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">Editor</div>
           <textarea
+            id="canvas-monaco"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck={false}
-            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm text-slate-200 outline-none"
+            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm text-nd-text/90 outline-none"
           />
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-          <div className="border-b border-white/10 px-3 py-2 text-xs font-medium text-slate-500">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
+          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">
             {lang === 'html' ? 'Preview' : 'Output'}
           </div>
           {lang === 'html' ? (
@@ -133,9 +141,9 @@ export function CanvasView() {
           ) : (
             <pre
               ref={outputRef}
-              className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm text-slate-300"
+              className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm text-nd-text/80"
             >
-              {output || <span className="text-slate-600">Output will appear here...</span>}
+              {output || <span className="text-nd-text-muted/70">Output will appear here...</span>}
             </pre>
           )}
         </div>

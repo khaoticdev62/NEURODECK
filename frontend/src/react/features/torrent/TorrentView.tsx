@@ -56,32 +56,32 @@ export function TorrentView() {
 
   const statusColor = (s: TorrentItem['status']) => {
     switch (s) {
-      case 'downloading': return 'text-success';
-      case 'seeding': return 'text-neuro';
-      case 'paused': return 'text-slate-500';
-      case 'error': return 'text-danger';
-      default: return 'text-warning';
+      case 'downloading': return 'text-nd-success';
+      case 'seeding': return 'text-nd-accent';
+      case 'paused': return 'text-nd-text0';
+      case 'error': return 'text-nd-danger';
+      default: return 'text-nd-warning';
     }
   };
 
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-          <Magnet className="h-5 w-5 text-neuro" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+          <Magnet className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-slate-50">Torrent</h2>
-          <p className="text-xs text-slate-500">BitTorrent downloads</p>
+          <h2 className="text-lg font-semibold text-nd-text">Torrent</h2>
+          <p className="text-xs text-nd-text0">BitTorrent downloads</p>
         </div>
         {status && (
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="flex items-center gap-1"><ArrowDown className="h-3.5 w-3.5 text-success" /> {status.download_speed}</span>
-            <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-neuro" /> {status.upload_speed}</span>
+          <div className="flex items-center gap-3 text-xs text-nd-text0">
+            <span className="flex items-center gap-1"><ArrowDown className="h-3.5 w-3.5 text-nd-success" /> {status.download_speed}</span>
+            <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {status.upload_speed}</span>
             <span>{status.active}/{status.total} active</span>
           </div>
         )}
-        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-white/10 p-2 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100">
+        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -93,27 +93,27 @@ export function TorrentView() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
           placeholder="Magnet link or .torrent file path..."
-          className="flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none focus:border-neuro/40"
+          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
         />
-        <button type="button" onClick={addTorrent} disabled={loading} className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 px-4 py-2 text-sm font-medium text-success hover:bg-success/20 disabled:opacity-50">
+        <button type="button" onClick={addTorrent} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
           <Plus className="h-4 w-4" /> Add
         </button>
       </div>
 
       <div className="flex-1 overflow-auto space-y-2">
         {torrents.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-600">
+          <div className="flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
             <Magnet className="h-10 w-10 mb-3" />
             <p className="text-sm">No torrents active</p>
             <p className="text-xs mt-1">Add a magnet link or torrent file to start downloading</p>
           </div>
         )}
         {torrents.map((t) => (
-          <div key={t.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+          <div key={t.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-200">{t.name}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <p className="truncate text-sm font-medium text-nd-text/90">{t.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text0">
                   <span className={statusColor(t.status)}>{t.status}</span>
                   <span>{t.size}</span>
                   <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> {t.downloadSpeed}</span>
@@ -122,17 +122,17 @@ export function TorrentView() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={() => toggleTorrent(t)} className="rounded-lg p-2 text-slate-400 hover:bg-white/[0.04] hover:text-neuro">
+                <button type="button" onClick={() => toggleTorrent(t)} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent">
                   {t.status === 'paused' ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                 </button>
-                <button type="button" onClick={() => removeTorrent(t.id)} className="rounded-lg p-2 text-slate-400 hover:bg-white/[0.04] hover:text-danger">
+                <button type="button" onClick={() => removeTorrent(t.id)} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
-                className={`h-full rounded-full transition-all ${t.status === 'error' ? 'bg-danger' : t.status === 'paused' ? 'bg-slate-600' : 'bg-success'}`}
+                className={`h-full rounded-full transition-all ${t.status === 'error' ? 'bg-nd-danger' : t.status === 'paused' ? 'text-nd-text-muted/40' : 'bg-nd-success'}`}
                 style={{ width: `${t.progress}%` }}
               />
             </div>

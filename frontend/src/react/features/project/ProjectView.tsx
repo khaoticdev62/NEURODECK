@@ -11,11 +11,11 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
     return (
       <Panel eyebrow="Project Scanner" title="No Project Attached" className="h-full overflow-hidden">
         <div className="flex h-full items-center justify-center p-6">
-          <div className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.035] p-8 text-center">
-            <FolderOpen className="mx-auto h-12 w-12 text-neuro" />
-            <h2 className="mt-5 text-2xl font-semibold text-slate-50">Attach a project folder</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">NEURODECK will read top-level signals locally: package manager, scripts, frameworks, docs, tests, file counts, and basic release risks.</p>
-            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-neuro px-4 py-2 text-sm font-semibold text-blacksite transition hover:brightness-110">
+          <div className="max-w-xl rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-8 text-center">
+            <FolderOpen className="mx-auto h-12 w-12 text-nd-accent" />
+            <h2 className="mt-5 text-2xl font-semibold text-nd-text">Attach a project folder</h2>
+            <p className="mt-3 text-sm leading-6 text-nd-text-muted">NEURODECK will read top-level signals locally: package manager, scripts, frameworks, docs, tests, file counts, and basic release risks.</p>
+            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent px-4 py-2 text-sm font-semibold text-blacksite transition hover:brightness-110">
               <ScanLine className="h-4 w-4" /> Select Folder
             </button>
           </div>
@@ -39,14 +39,14 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
       <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_380px]">
         <Panel eyebrow="Project Scanner" title={project.name} className="min-h-0 overflow-hidden">
           <div className="h-full overflow-y-auto p-4 scrollbar-thin">
-            <div className="rounded-3xl border border-neuro/20 bg-neuro/[0.045] p-5">
+            <div className="rounded-3xl border border-nd-accent/20 bg-nd-accent/[0.045] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <Badge tone="accent">Scanned locally</Badge>
-                  <h2 className="mt-4 text-xl font-semibold text-slate-50">{project.path}</h2>
-                  <p className="mt-2 text-sm text-slate-400">Scanned at {new Date(project.scannedAt).toLocaleString()}</p>
+                  <h2 className="mt-4 text-xl font-semibold text-nd-text">{project.path}</h2>
+                  <p className="mt-2 text-sm text-nd-text-muted">Scanned at {new Date(project.scannedAt).toLocaleString()}</p>
                 </div>
-                <button type="button" onClick={() => void actions.scanProject()} className="rounded-xl border border-neuro/25 bg-neuro/10 px-3 py-2 text-sm font-semibold text-neuro transition hover:bg-neuro/15">
+                <button type="button" onClick={() => void actions.scanProject()} className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
                   Rescan
                 </button>
               </div>
@@ -68,15 +68,15 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
 
         <Panel eyebrow="Release Gate" title="What NEURODECK Thinks">
           <div className="space-y-3 p-4">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <CheckCircle2 className="h-6 w-6 text-success" />
-              <h3 className="mt-3 font-semibold text-slate-100">Local scan completed</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">This scan intentionally avoids network calls and skips heavy folders like node_modules, .git, dist, build, and release.</p>
+            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
+              <CheckCircle2 className="h-6 w-6 text-nd-success" />
+              <h3 className="mt-3 font-semibold text-nd-text">Local scan completed</h3>
+              <p className="mt-2 text-sm leading-6 text-nd-text-muted">This scan intentionally avoids network calls and skips heavy folders like node_modules, .git, dist, build, and release.</p>
             </div>
-            <button type="button" onClick={() => void actions.buildProjectContext()} className="w-full rounded-xl border border-neuro/25 bg-neuro/10 px-3 py-2 text-sm font-semibold text-neuro transition hover:bg-neuro/15">
+            <button type="button" onClick={() => void actions.buildProjectContext()} className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
               Build AI context snapshot
             </button>
-            <button type="button" onClick={() => void actions.exportSession()} className="w-full rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-neuro/25 hover:text-neuro">
+            <button type="button" onClick={() => void actions.exportSession()} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
               Export project scan notes
             </button>
           </div>
@@ -88,13 +88,13 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
 
 function InfoCard({ title, items, empty = 'Nothing detected.', tone = 'neutral' }: { title: string; items: string[]; empty?: string; tone?: 'accent' | 'success' | 'danger' | 'neutral' }) {
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+    <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-slate-100">{title}</h3>
+        <h3 className="font-semibold text-nd-text">{title}</h3>
         <Badge tone={tone}>{items.length}</Badge>
       </div>
-      <ul className="mt-4 space-y-2 text-sm text-slate-400">
-        {(items.length ? items : [empty]).map((item) => <li key={item} className="rounded-xl border border-white/10 bg-black/15 px-3 py-2">{item}</li>)}
+      <ul className="mt-4 space-y-2 text-sm text-nd-text-muted">
+        {(items.length ? items : [empty]).map((item) => <li key={item} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">{item}</li>)}
       </ul>
     </article>
   );
@@ -102,12 +102,12 @@ function InfoCard({ title, items, empty = 'Nothing detected.', tone = 'neutral' 
 
 function Checklist({ title, items }: { title: string; items: Record<string, boolean>; readyCount?: number }) {
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
-      <h3 className="font-semibold text-slate-100">{title}</h3>
+    <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
+      <h3 className="font-semibold text-nd-text">{title}</h3>
       <div className="mt-4 space-y-2">
         {Object.entries(items).map(([label, ready]) => (
-          <div key={label} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/15 px-3 py-2 text-sm">
-            <span className="capitalize text-slate-400">{label.replace(/([A-Z])/g, ' $1')}</span>
+          <div key={label} className="flex items-center justify-between rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 text-sm">
+            <span className="capitalize text-nd-text-muted">{label.replace(/([A-Z])/g, ' $1')}</span>
             <Badge tone={ready ? 'success' : 'warning'}>{ready ? 'yes' : 'missing'}</Badge>
           </div>
         ))}

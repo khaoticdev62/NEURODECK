@@ -80,19 +80,19 @@ export function OnboardingModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="no-drag w-full max-w-lg overflow-hidden rounded-3xl border border-neuro/20 bg-[#0B1015]/95 shadow-2xl shadow-neuro/10">
+      <div className="no-drag w-full max-w-lg overflow-hidden rounded-3xl border border-nd-accent/20 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10">
         {/* Header */}
-        <div className="relative border-b border-white/10 px-6 py-5">
-          <button type="button" onClick={dismiss} className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200">
+        <div className="relative border-b border-nd-text-muted/15 px-6 py-5">
+          <button type="button" onClick={dismiss} className="absolute right-4 top-4 rounded-lg p-1.5 text-nd-text0 transition hover:bg-nd-surface/50 hover:text-nd-text/90">
             <X className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-neuro/20 bg-neuro/10">
-              <Rocket className="h-5 w-5 text-neuro" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+              <Rocket className="h-5 w-5 text-nd-accent" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-50">Welcome to NEURODECK</h2>
-              <p className="text-xs text-slate-500">v6 — Local-first AI workstation OS</p>
+              <h2 className="text-lg font-semibold text-nd-text">Welcome to NEURODECK</h2>
+              <p className="text-xs text-nd-text0">v6 — Local-first AI workstation OS</p>
             </div>
           </div>
         </div>
@@ -100,27 +100,27 @@ export function OnboardingModal() {
         {/* Diagnostics */}
         <div className="px-6 py-4">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">System Checks</span>
-            <span className="text-xs text-slate-500">{passed}/{total} passed</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">System Checks</span>
+            <span className="text-xs text-nd-text0">{passed}/{total} passed</span>
           </div>
           <div className="space-y-2">
             {checks.map((check) => (
-              <div key={check.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
+              <div key={check.id} className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5">
                 <check.icon className={`h-4 w-4 shrink-0 ${
-                  check.status === 'pass' ? 'text-success' :
-                  check.status === 'fail' ? 'text-danger' :
-                  check.status === 'running' ? 'text-neuro animate-pulse' :
-                  'text-slate-600'
+                  check.status === 'pass' ? 'text-nd-success' :
+                  check.status === 'fail' ? 'text-nd-danger' :
+                  check.status === 'running' ? 'text-nd-accent animate-pulse' :
+                  'text-nd-text-muted/70'
                 }`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-200">{check.label}</span>
-                    {check.status === 'pass' && <CheckCircle2 className="h-4 w-4 text-success" />}
-                    {check.status === 'fail' && <Circle className="h-4 w-4 text-danger" />}
-                    {check.status === 'running' && <Loader2 className="h-4 w-4 animate-spin text-neuro" />}
-                    {check.status === 'pending' && <Circle className="h-4 w-4 text-slate-600" />}
+                    <span className="text-sm text-nd-text/90">{check.label}</span>
+                    {check.status === 'pass' && <CheckCircle2 className="h-4 w-4 text-nd-success" />}
+                    {check.status === 'fail' && <Circle className="h-4 w-4 text-nd-danger" />}
+                    {check.status === 'running' && <Loader2 className="h-4 w-4 animate-spin text-nd-accent" />}
+                    {check.status === 'pending' && <Circle className="h-4 w-4 text-nd-text-muted/70" />}
                   </div>
-                  {check.detail && <p className="text-[11px] text-slate-600">{check.detail}</p>}
+                  {check.detail && <p className="text-[11px] text-nd-text-muted/70">{check.detail}</p>}
                 </div>
               </div>
             ))}
@@ -128,9 +128,9 @@ export function OnboardingModal() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/10 px-6 py-4">
+        <div className="border-t border-nd-text-muted/15 px-6 py-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-nd-text-muted/70">
               {passed === total
                 ? 'All systems ready. You are cleared for launch.'
                 : 'Some checks failed. You can still proceed.'}
@@ -138,7 +138,7 @@ export function OnboardingModal() {
             <button
               type="button"
               onClick={dismiss}
-              className="inline-flex items-center gap-2 rounded-xl bg-neuro px-5 py-2.5 text-sm font-semibold text-blacksite transition hover:brightness-110"
+              className="inline-flex items-center gap-2 rounded-xl bg-nd-accent px-5 py-2.5 text-sm font-semibold text-nd-bg transition hover:brightness-110"
             >
               Get Started
             </button>

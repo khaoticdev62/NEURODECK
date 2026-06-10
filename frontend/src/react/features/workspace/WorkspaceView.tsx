@@ -25,17 +25,17 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
   const showWelcome = state.messages.length === 0 || hasOnlyWelcome;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="workspace-container flex h-full min-h-0 flex-col gap-3">
       {/* Session Header */}
-      <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
+      <div className="flex items-center justify-between rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Session</span>
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          <span className="text-xs text-slate-400">{state.activeProject?.name || 'Welcome session'}</span>
+          <span className="chat-session-kicker text-xs font-semibold uppercase tracking-wider text-nd-text0">Active Session</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-nd-success" />
+          <span className="text-xs text-nd-text-muted">{state.activeProject?.name || 'Welcome session'}</span>
         </div>
         <div className="flex items-center gap-3">
           <Badge tone="accent">{state.selectedProvider}</Badge>
-          <span className="text-xs text-slate-500">{selectors.messageCount} msgs</span>
+          <span className="text-xs text-nd-text0">{selectors.messageCount} msgs</span>
         </div>
       </div>
 
@@ -48,17 +48,17 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
       </section>
 
       {/* Chat Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
         {/* Messages Scroll Area */}
         <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
           {showWelcome ? (
             <div className="flex flex-col items-center py-8 text-center">
               {/* Logo */}
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-neuro/20 bg-neuro/10">
-                <Sparkles className="h-8 w-8 text-neuro" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10">
+                <Sparkles className="h-8 w-8 text-nd-accent" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-50">NEURODECK</h1>
-              <p className="mt-1 text-sm text-slate-500">AI-native terminal OS. Ask anything.</p>
+              <h1 className="text-2xl font-bold tracking-tight text-nd-text">NEURODECK</h1>
+              <p className="mt-1 text-sm text-nd-text0">AI-native terminal OS. Ask anything.</p>
 
               {/* Starter Grid */}
               <div className="mt-6 grid w-full max-w-2xl gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -67,11 +67,11 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
                     key={s.label}
                     type="button"
                     onClick={() => dispatch({ type: 'run-starter', prompt: s.hint })}
-                    className="rounded-xl border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-neuro/30 hover:bg-neuro/[0.06]"
+                    className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.06]"
                   >
-                    <s.icon className="h-4 w-4 text-neuro" />
-                    <p className="mt-2 text-xs font-medium text-slate-200">{s.label}</p>
-                    <p className="mt-0.5 text-[11px] leading-4 text-slate-600">{s.hint}</p>
+                    <s.icon className="h-4 w-4 text-nd-accent" />
+                    <p className="mt-2 text-xs font-medium text-nd-text/90">{s.label}</p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-nd-text-muted/70">{s.hint}</p>
                   </button>
                 ))}
               </div>
@@ -89,27 +89,27 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
               {state.messages.map((message) => (
                 <article
                   key={message.id}
-                  className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  className={`message ${message.role} flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
                 >
                   <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                    message.role === 'user' ? 'bg-neuro/20 text-neuro' : 'bg-white/10 text-slate-400'
+                    message.role === 'user' ? 'bg-nd-accent/20 text-nd-accent' : 'bg-nd-surface/40 text-nd-text-muted'
                   }`}>
                     {message.role === 'user' ? 'U' : 'AI'}
                   </div>
                   <div className={`max-w-[80%] rounded-2xl border px-4 py-3 ${
                     message.role === 'user'
-                      ? 'border-neuro/25 bg-neuro/[0.08]'
-                      : 'border-white/10 bg-white/[0.04]'
+                      ? 'border-nd-accent/25 bg-nd-accent/[0.08]'
+                      : 'border-nd-text-muted/15 bg-nd-surface/50'
                   }`}>
                     <div className="mb-1 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text0">
                         {message.role}
                       </span>
-                      <span className="text-[10px] text-slate-600">
+                      <span className="text-[10px] text-nd-text-muted/70">
                         {message.provider ?? 'local'} {message.latencyMs ? `• ${message.latencyMs}ms` : ''}
                       </span>
                     </div>
-                    <p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{message.content}</p>
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-nd-text/90">{message.content}</p>
                   </div>
                 </article>
               ))}
@@ -118,42 +118,49 @@ export function WorkspaceView({ state, dispatch, selectors, actions }: { state: 
         </div>
 
         {/* Input Bar */}
-        <div className="border-t border-white/10 p-3">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <div className="border-t border-nd-text-muted/15 p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-nd-text0">
             <Badge tone="accent">{state.selectedProvider}</Badge>
             <Badge tone={state.projectContext ? 'success' : 'warning'}>{state.projectContext ? 'context attached' : 'no context'}</Badge>
             <Badge tone={healthReady > 1 ? 'success' : 'neutral'}>{healthReady} provider(s) ready</Badge>
             <span className="ml-auto">Ctrl/Cmd + Enter to send</span>
           </div>
-          <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 focus-within:border-neuro/40 focus-within:shadow-focus">
+          <div className="flex items-end gap-2 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2 focus-within:border-nd-accent/40 focus-within:shadow-focus">
             <div className="flex gap-1 pb-2 pl-2">
-              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Attach file">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Attach file">
                 <Paperclip className="h-4 w-4" />
               </button>
-              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Voice input">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Voice input">
                 <Mic className="h-4 w-4" />
               </button>
-              <button type="button" className="rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" title="Screenshot">
+              <button type="button" className="rounded-lg p-1.5 text-nd-text0 hover:bg-nd-surface/50 hover:text-nd-text/80" title="Screenshot">
                 <ScanLine className="h-4 w-4" />
               </button>
             </div>
             <textarea
+              id="user-input"
               value={state.composerValue}
               onChange={(event) => dispatch({ type: 'set-composer', value: event.target.value })}
               onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void actions.runAssistant(event.currentTarget.value);
+                  return;
+                }
+                if (event.key === 'Enter' && event.shiftKey) return;
                 if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
                   event.preventDefault();
-                  void actions.runAssistant();
+                  void actions.runAssistant(event.currentTarget.value);
                 }
               }}
               placeholder="Enter command or type message..."
-              className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-slate-100 outline-none placeholder:text-slate-600"
+              className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text outline-none placeholder:text-nd-text-muted/70"
               rows={1}
             />
             <button
               type="button"
               onClick={() => void actions.runAssistant()}
-              className="mb-0.5 inline-flex h-9 items-center gap-1.5 rounded-xl bg-neuro px-3 text-sm font-semibold text-blacksite transition hover:brightness-110"
+              className="mb-0.5 inline-flex h-9 items-center gap-1.5 rounded-xl bg-nd-accent px-3 text-sm font-semibold text-nd-bg transition hover:brightness-110"
             >
               <SendHorizontal className="h-4 w-4" />
             </button>
@@ -169,7 +176,7 @@ function ActionChip({ icon: Icon, label, onClick }: { icon: LucideIcon; label: s
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400 transition hover:border-neuro/30 hover:text-slate-200"
+      className="flex items-center gap-1.5 rounded-full border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-1.5 text-xs text-nd-text-muted transition hover:border-nd-accent/30 hover:text-nd-text/90"
     >
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>

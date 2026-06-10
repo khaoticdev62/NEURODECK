@@ -622,8 +622,9 @@ export interface PromptSlot {
   id: string;
   label: string;
   required: boolean;
-  kind: string;
+  kind: 'text' | 'textarea' | 'select' | 'file' | 'multi';
   default?: string;
+  options?: string[];
   suggestions?: string[];
 }
 
@@ -637,6 +638,10 @@ export interface PromptTemplate {
   slots: PromptSlot[];
   template: string;
   risk_level: string;
+  intent?: string;
+  role?: string;
+  autocomplete_terms?: string[];
+  requires_confirmation?: boolean;
 }
 
 export interface PromptPack {

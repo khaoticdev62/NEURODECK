@@ -79,12 +79,12 @@ export function LiveWallpaperPanel() {
   return (
     <div className="flex flex-col gap-4">
       {/* Opacity + clear row */}
-      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-        <SlidersHorizontal className="h-4 w-4 shrink-0 text-neuro" />
+      <div className="flex items-center gap-3 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-nd-accent" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-center justify-between">
-            <label htmlFor="wallpaper-opacity" className="text-xs font-semibold text-slate-300">Opacity</label>
-            <span className="text-xs tabular-nums text-slate-400">{opacity}%</span>
+            <label htmlFor="wallpaper-opacity" className="text-xs font-semibold text-nd-text/80">Opacity</label>
+            <span className="text-xs tabular-nums text-nd-text-muted">{opacity}%</span>
           </div>
           <input
             id="wallpaper-opacity"
@@ -94,7 +94,7 @@ export function LiveWallpaperPanel() {
             step={1}
             value={opacity}
             onChange={(e) => handleOpacity(Number(e.target.value))}
-            className="h-1.5 w-full cursor-pointer accent-neuro"
+            className="h-1.5 w-full cursor-pointer accent-nd-accent"
             aria-label="Background opacity"
           />
         </div>
@@ -102,7 +102,7 @@ export function LiveWallpaperPanel() {
           <button
             type="button"
             onClick={clearBackground}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-500 transition hover:border-danger/40 hover:text-danger"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-nd-text-muted/15 text-nd-text0 transition hover:border-danger/40 hover:text-nd-danger"
             aria-label="Remove background"
           >
             <X className="h-3.5 w-3.5" />
@@ -111,13 +111,13 @@ export function LiveWallpaperPanel() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 rounded-xl border border-white/10 bg-white/[0.025] p-1" role="tablist">
+      <div className="flex gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/35 p-1" role="tablist">
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'live'}
           onClick={() => setActiveTab('live')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'live' ? 'bg-neuro/15 text-neuro' : 'text-slate-500 hover:text-slate-300'}`}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'live' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text0 hover:text-nd-text/80'}`}
         >
           <MonitorPlay className="h-3.5 w-3.5" />
           Live Animated
@@ -127,7 +127,7 @@ export function LiveWallpaperPanel() {
           role="tab"
           aria-selected={activeTab === 'static'}
           onClick={() => setActiveTab('static')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'static' ? 'bg-neuro/15 text-neuro' : 'text-slate-500 hover:text-slate-300'}`}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${activeTab === 'static' ? 'bg-nd-accent/15 text-nd-accent' : 'text-nd-text0 hover:text-nd-text/80'}`}
         >
           <ImageIcon className="h-3.5 w-3.5" />
           HD Photos
@@ -141,15 +141,15 @@ export function LiveWallpaperPanel() {
           <button
             type="button"
             onClick={() => applyBackground('')}
-            className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-neuro ${selectedBg === '' ? 'border-neuro/50 ring-1 ring-neuro/30' : 'border-white/10 hover:border-white/20'}`}
+            className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent ${selectedBg === '' ? 'border-nd-accent/50 ring-1 ring-nd-accent/30' : 'border-nd-text-muted/15 hover:border-nd-text-muted/20'}`}
             aria-pressed={selectedBg === ''}
           >
             <div className="flex h-16 w-full items-center justify-center rounded-t-xl bg-[#050505]">
-              <Layers className="h-5 w-5 text-slate-600" />
+              <Layers className="h-5 w-5 text-nd-text-muted/70" />
             </div>
             <div className="px-2 pb-2">
-              <p className="text-[11px] font-semibold leading-tight text-slate-300">None</p>
-              <p className="text-[10px] leading-tight text-slate-600">Solid black — battery saver</p>
+              <p className="text-[11px] font-semibold leading-tight text-nd-text/80">None</p>
+              <p className="text-[10px] leading-tight text-nd-text-muted/70">Solid black — battery saver</p>
             </div>
           </button>
 
@@ -158,7 +158,7 @@ export function LiveWallpaperPanel() {
               key={bg.id}
               type="button"
               onClick={() => applyBackground(`live:${bg.id}`)}
-              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-neuro ${selectedBg === `live:${bg.id}` ? 'border-neuro/50 ring-1 ring-neuro/30' : 'border-white/10 hover:border-white/20'}`}
+              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent ${selectedBg === `live:${bg.id}` ? 'border-nd-accent/50 ring-1 ring-nd-accent/30' : 'border-nd-text-muted/15 hover:border-nd-text-muted/20'}`}
               aria-pressed={selectedBg === `live:${bg.id}`}
             >
               <div
@@ -167,8 +167,8 @@ export function LiveWallpaperPanel() {
                 aria-hidden="true"
               />
               <div className="px-2 pb-2">
-                <p className="text-[11px] font-semibold leading-tight text-slate-300">{bg.name}</p>
-                <p className="text-[10px] leading-tight text-slate-600">{bg.desc}</p>
+                <p className="text-[11px] font-semibold leading-tight text-nd-text/80">{bg.name}</p>
+                <p className="text-[10px] leading-tight text-nd-text-muted/70">{bg.desc}</p>
               </div>
             </button>
           ))}
@@ -183,7 +183,7 @@ export function LiveWallpaperPanel() {
               key={bg.id}
               type="button"
               onClick={() => applyBackground(bg.url)}
-              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-neuro ${selectedBg === bg.url ? 'border-neuro/50 ring-1 ring-neuro/30' : 'border-white/10 hover:border-white/20'}`}
+              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent ${selectedBg === bg.url ? 'border-nd-accent/50 ring-1 ring-nd-accent/30' : 'border-nd-text-muted/15 hover:border-nd-text-muted/20'}`}
               aria-pressed={selectedBg === bg.url}
             >
               <div
@@ -192,8 +192,8 @@ export function LiveWallpaperPanel() {
                 aria-hidden="true"
               />
               <div className="px-2 pb-2">
-                <p className="text-[11px] font-semibold leading-tight text-slate-300">{bg.name}</p>
-                <p className="text-[10px] leading-tight text-slate-600">{bg.desc}</p>
+                <p className="text-[11px] font-semibold leading-tight text-nd-text/80">{bg.name}</p>
+                <p className="text-[10px] leading-tight text-nd-text-muted/70">{bg.desc}</p>
               </div>
             </button>
           ))}
