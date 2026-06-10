@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, Database, FileDown, FileJson, FolderOpen, Globe, HardDrive, Lock, Paintbrush, Radio, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, Trash2, Workflow } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, Database, Download, FileDown, FileJson, FolderOpen, Globe, HardDrive, Lock, Paintbrush, Palette, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, Trash2, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
@@ -90,7 +90,14 @@ const commands: CommandItem[] = [
   { label: 'Refresh Diagnostics', hint: 'Read runtime info and recent IPC logs', icon: Activity, action: 'refreshDiagnostics' },
   { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', view: 'settings', icon: Settings },
   { label: 'Appearance', hint: 'Open settings on the appearance panel', settingsPanel: 'appearance', icon: Settings },
-  { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true }
+  { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true },
+
+  // Security & Ops
+  { label: 'Open Security Center',  hint: 'Hardening checklist, credential status, audit log',  view: 'security',    icon: ShieldCheck },
+  { label: 'Open Theme Manager',    hint: 'Browse and apply themes with live preview',           view: 'themes',      icon: Palette     },
+  { label: 'Open Export Manager',   hint: 'Session and diagnostics exports',                     view: 'exports',     icon: Download    },
+  { label: 'Open Maintenance',      hint: 'Version info, health probes, system actions',         view: 'maintenance', icon: Wrench      },
+  { label: 'Open Recovery Center',  hint: 'Error recovery, event log, reset options',            view: 'recovery',    icon: RotateCcw   },
 ];
 
 export function CommandPalette({

@@ -1,10 +1,10 @@
 import {
   Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock,
-  Code, Code2, Command, Database, FileCode, FileText, FlaskConical,
+  Code, Code2, Command, Database, Download, FileCode, FileText, FlaskConical,
   FolderOpen, Gauge, GitBranch, Globe, HardDrive, History, Layers,
-  LayoutDashboard, Lightbulb, Lock, Magnet, Network, Paintbrush, Plug, Radio,
-  Server, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare,
-  Type, Webhook, Wrench, Workflow
+  LayoutDashboard, Lightbulb, Lock, Magnet, Network, Paintbrush, Palette,
+  Plug, Radio, RotateCcw, Server, Settings, Share2, ShieldCheck, Sparkles,
+  Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow
 } from 'lucide-react';
 import type { Agent, AIMessage, CacheEntry, FontOption, LocalModel, MemoryItem, NavItem, PluginCard, PromptTemplate, SessionNode, ThemeTokenSet } from '../types/neurodeck';
 
@@ -48,9 +48,16 @@ export const navItems: NavItem[] = [
   { id: 'models', label: 'Models', description: 'Local model inventory', icon: BrainCircuit, shortcut: '6', section: 'System' },
   { id: 'cache', label: 'Offline', description: 'Cache and sync health', icon: HardDrive, shortcut: '7', section: 'System' },
   { id: 'plugins', label: 'Plugins', description: 'Tools and extensions', icon: Plug, shortcut: '8', section: 'System' },
-  { id: 'diagnostics', label: 'Diagnostics', description: 'IPC logs and runtime health', icon: Activity, shortcut: 'D', section: 'System' },
-  { id: 'settings', label: 'Settings', description: 'Theme, Deck mode, privacy', icon: Settings, shortcut: '0', section: 'System' },
-  { id: 'fonts', label: 'Fonts', description: 'Typography and font manager', icon: Type, shortcut: '', section: 'System' }
+  { id: 'diagnostics',  label: 'Diagnostics',  description: 'IPC logs and runtime health',         icon: Activity,    shortcut: 'D', section: 'System' },
+  { id: 'settings',     label: 'Settings',     description: 'Theme, Deck mode, privacy',            icon: Settings,    shortcut: '0', section: 'System' },
+  { id: 'fonts',        label: 'Fonts',        description: 'Typography and font manager',           icon: Type,        shortcut: '',  section: 'System' },
+
+  // ── Security & Operations ──
+  { id: 'security',     label: 'Security',     description: 'Hardening, credentials, audit log',    icon: ShieldCheck, shortcut: '',  section: 'Security & Ops' },
+  { id: 'themes',       label: 'Themes',       description: 'Theme manager and color preview',      icon: Palette,     shortcut: '',  section: 'Security & Ops' },
+  { id: 'exports',      label: 'Exports',      description: 'Session and diagnostics exports',      icon: Download,    shortcut: '',  section: 'Security & Ops' },
+  { id: 'maintenance',  label: 'Maintenance',  description: 'Version info and system health',       icon: Wrench,      shortcut: '',  section: 'Security & Ops' },
+  { id: 'recovery',     label: 'Recovery',     description: 'Error recovery and event log',         icon: RotateCcw,   shortcut: '',  section: 'Security & Ops' },
 ];
 
 export const themes: ThemeTokenSet[] = [

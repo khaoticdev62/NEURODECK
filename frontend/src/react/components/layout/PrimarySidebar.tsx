@@ -15,7 +15,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
     return acc;
   }, {});
 
-  const sectionOrder = ['Mission Control', 'Dev Tools', 'Network', 'Knowledge', 'Automation', 'System'];
+  const sectionOrder = ['Mission Control', 'Dev Tools', 'Network', 'Knowledge', 'Automation', 'System', 'Security & Ops'];
 
   return (
     <aside
