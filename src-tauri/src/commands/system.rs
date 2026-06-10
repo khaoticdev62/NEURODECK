@@ -848,7 +848,7 @@ pub fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Valu
     })
 }
 
-pub async fn transcribe_audio_whisper(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
+pub async fn transcribe_audio_whisper(state: Arc<Mutex<AppState>>) -> Result<String, String> {
     let (binary, model) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         (app.whisper_binary.clone(), app.whisper_model.clone())

@@ -128,6 +128,14 @@ pub async fn sync_now(
     app_handle: crate::bridge::WsBroadcaster,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<SyncStatus, String> {
+    sync_now_bridge(app_handle, state.inner().clone()).await
+}
+
+/// Bridge-compatible entry point that accepts `Arc<Mutex<AppState>>` directly.
+pub async fn sync_now_bridge(
+    app_handle: crate::bridge::WsBroadcaster,
+    state: std::sync::Arc<std::sync::Mutex<AppState>>,
+) -> Result<SyncStatus, String> {
     let (config, mem_db) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
         (app.config.clone(), app.mem_db.clone())

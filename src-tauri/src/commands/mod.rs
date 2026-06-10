@@ -276,6 +276,23 @@ pub async fn dispatch_send_command(
     }))
 }
 
+async fn handle_sync_now(state: ServerState) -> Result<Value, String> {
+    let enabled = {
+        let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+        let enabled = app_state.config.sync.enabled;
+        let has_url = !app_state.config.sync.api_base_url.trim().is_empty();
+        enabled && has_url
+    };
+    if !enabled {
+        return Err("Sync not configured. Use configure_sync first.".to_string());
+    }
+    let broadcaster = state.broadcaster.clone();
+    match crate::sync::sync_now_bridge(broadcaster, state.app_state.clone()).await {
+        Ok(status) => Ok(serde_json::to_value(status).map_err(|e| e.to_string())?),
+        Err(e) => Err(e),
+    }
+}
+
 pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     match command {
         // ────────────────────────────────────────────────────────────────────
@@ -694,29 +711,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_u64())
                 .ok_or("Missing 'rows'")? as u16;
 
-            // Verify session exists
             let sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
-            if sessions.contains_key(id) {
-                // PTY resize requires ioctl calls which are complex in bridge mode
-                // For now, acknowledge the resize request but don't perform it
-                // TODO: Implement proper PTY resize via ioctl once dependencies are available
-
+            if let Some(session) = sessions.get(id) {
+                use portable_pty::PtySize;
+                let _ = session.master.resize(PtySize {
+                    rows,
+                    cols,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                });
                 state.broadcaster.emit(
-                    "pty_resize_requested",
-                    serde_json::json!({
-                        "id": id,
-                        "cols": cols,
-                        "rows": rows
-                    }),
+                    "pty_resized",
+                    serde_json::json!({ "id": id, "cols": cols, "rows": rows }),
                 );
-
-                Ok(serde_json::json!({
-                    "status": "resize_requested",
-                    "id": id,
-                    "cols": cols,
-                    "rows": rows,
-                    "note": "Resize request acknowledged. Full implementation coming soon."
-                }))
+                Ok(serde_json::json!({ "status": "resized", "id": id, "cols": cols, "rows": rows }))
             } else {
                 Err(format!("PTY session {} not found", id))
             }
@@ -1654,127 +1662,56 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Game Context & Detection
         // ────────────────────────────────────────────────────────────────────
         "list_games" => {
-            // Game detection uses Steam API and local game scanners
-            // For bridge mode, return empty list as placeholder
-            Ok(serde_json::json!({
-                "games": [],
-                "count": 0,
-                "note": "Game detection not yet integrated in bridge mode"
-            }))
+            let mut games = Vec::new();
+            for lib in crate::game::steam_library_paths() {
+                if let Ok(entries) = std::fs::read_dir(&lib) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        let fname = path.file_name().unwrap_or_default().to_string_lossy();
+                        if fname.starts_with("appmanifest_") && fname.ends_with(".acf") {
+                            if let Some((name, app_id, last_played)) = crate::game::parse_acf(&path) {
+                                games.push(serde_json::json!({
+                                    "name": name,
+                                    "app_id": app_id,
+                                    "last_played": last_played,
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+            games.sort_by(|a: &serde_json::Value, b: &serde_json::Value| {
+                b.get("last_played").and_then(|v| v.as_u64()).unwrap_or(0)
+                    .cmp(&a.get("last_played").and_then(|v| v.as_u64()).unwrap_or(0))
+            });
+            Ok(serde_json::json!({ "games": games, "count": games.len() }))
         }
 
         "get_game_context" => {
-            // Get current game context (Steam Deck specific)
+            let (game_name, game_id, running) = crate::game::detect_game();
+            let (context, _) = crate::game::get_game_details(&game_id, &game_name);
             Ok(serde_json::json!({
-                "game_name": "",
-                "game_id": "",
-                "running": false,
-                "context": "",
-                "note": "Game context detection not yet integrated in bridge mode"
+                "game_name": game_name,
+                "game_id": game_id,
+                "running": running,
+                "context": context,
             }))
         }
 
         "save_game_notes" => {
-            let _game_id = args
+            let game_id = args
                 .get("game_id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'game_id'")?;
-            let _notes = args
+            let notes = args
                 .get("notes")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'notes'")?;
-
-            // Game notes storage would go to user_config_dir/data/game_notes/
-            Ok(serde_json::json!({
-                "status": "saved",
-                "note": "Game notes storage not yet integrated in bridge mode"
-            }))
-        }
-
-        // ────────────────────────────────────────────────────────────────────
-        // Browser Integration
-        // ────────────────────────────────────────────────────────────────────
-        "browser_open" => {
-            let url = args
-                .get("url")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'url'")?;
-
-            if url.starts_with("http://") || url.starts_with("https://") {
-                state.broadcaster.emit(
-                    "browser_opened",
-                    serde_json::json!({ "url": url }),
-                );
-                Ok(serde_json::json!({ "status": "opened", "url": url }))
-            } else {
-                Err("Invalid URL format. Must start with a valid scheme (http/https)".to_string())
-            }
-        }
-
-        "browser_hide" => {
-            state.broadcaster.emit("browser_hide_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "hidden" }))
-        }
-
-        "browser_show" => {
-            state.broadcaster.emit("browser_show_requested", serde_json::json!({}));
-            Ok(serde_json::json!({ "status": "shown" }))
-        }
-
-        "open_browser" => {
-            let url = args
-                .get("url")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'url'")?;
-
-            // In bridge mode, we can't actually open a browser window
-            // But we can validate the URL and return a placeholder response
-            if url.starts_with("http://") || url.starts_with("https://") {
-                state.broadcaster.emit(
-                    "browser_opened",
-                    serde_json::json!({
-                        "url": url
-                    }),
-                );
-
-                Ok(serde_json::json!({
-                    "status": "opened",
-                    "url": url,
-                    "note": "Browser window not available in bridge mode"
-                }))
-            } else {
-                Err("Invalid URL format. Must start with a valid scheme (http/https)".to_string())
-            }
-        }
-
-        "get_browser_url" => {
-            // Placeholder: would require browser session tracking
-            Ok(serde_json::json!({
-                "url": "",
-                "note": "Browser session tracking not available in bridge mode"
-            }))
-        }
-
-        "browser_back" => {
-            state
-                .broadcaster
-                .emit("browser_back_requested", serde_json::json!({}));
-
-            Ok(serde_json::json!({
-                "status": "back_requested",
-                "note": "Browser back navigation not available in bridge mode"
-            }))
-        }
-
-        "browser_forward" => {
-            state
-                .broadcaster
-                .emit("browser_forward_requested", serde_json::json!({}));
-
-            Ok(serde_json::json!({
-                "status": "forward_requested",
-                "note": "Browser forward navigation not available in bridge mode"
-            }))
+            let dir = crate::user_config_dir().join("data/game_notes");
+            std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+            let path = dir.join(format!("{}.md", game_id.replace(|c: char| !c.is_alphanumeric(), "_")));
+            std::fs::write(&path, notes).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({ "status": "saved", "path": path.display().to_string() }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2695,40 +2632,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "get_memory_usage" => {
-            // Process-level memory via /proc/self/status (Linux/SteamOS) or placeholder
-            #[cfg(target_os = "linux")]
-            {
-                let status = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
-                let rss_kb = status
-                    .lines()
-                    .find(|l| l.starts_with("VmRSS:"))
-                    .and_then(|l| l.split_whitespace().nth(1))
-                    .and_then(|v| v.parse::<u64>().ok())
-                    .unwrap_or(0);
-                let vm_kb = status
-                    .lines()
-                    .find(|l| l.starts_with("VmSize:"))
-                    .and_then(|l| l.split_whitespace().nth(1))
-                    .and_then(|v| v.parse::<u64>().ok())
-                    .unwrap_or(0);
-
-                Ok(serde_json::json!({
-                    "rss_mb":    rss_kb / 1024,
-                    "virt_mb":   vm_kb  / 1024,
-                    "rss_kb":    rss_kb,
-                    "virt_kb":   vm_kb,
-                    "platform":  "linux"
-                }))
-            }
-            #[cfg(not(target_os = "linux"))]
-            {
-                Ok(serde_json::json!({
-                    "rss_mb":   0,
-                    "virt_mb":  0,
-                    "platform": std::env::consts::OS,
-                    "note":     "Memory stats only available on Linux"
-                }))
-            }
+            use sysinfo::{get_current_pid, System};
+            let mut s = System::new_all();
+            s.refresh_all();
+            let pid = get_current_pid().map_err(|e| e.to_string())?;
+            let (rss_bytes, virt_bytes) = s.process(pid)
+                .map(|p| (p.memory(), p.virtual_memory()))
+                .unwrap_or((0, 0));
+            Ok(serde_json::json!({
+                "rss_mb":   rss_bytes / 1024 / 1024,
+                "virt_mb":  virt_bytes / 1024 / 1024,
+                "rss_kb":   rss_bytes / 1024,
+                "virt_kb":  virt_bytes / 1024,
+                "platform": std::env::consts::OS,
+            }))
         }
 
         // Session Extended handlers moved to primary session section
@@ -3467,53 +3384,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Browser Extended
         // ────────────────────────────────────────────────────────────────────
-        "browser_navigate" => {
-            let url = args
-                .get("url")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'url'")?;
-            state.broadcaster.emit(
-                "browser_navigate_requested",
-                serde_json::json!({ "url": url }),
-            );
-            Ok(
-                serde_json::json!({ "status": "navigate_requested", "url": url, "note": "Browser navigation requires Tauri WebView; event emitted to UI" }),
-            )
-        }
-
-        "browser_exec" | "browser_evaluate_js" => {
-            let script = args
-                .get("script")
-                .or_else(|| args.get("js"))
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'script' or 'js'")?;
-            state.broadcaster.emit(
-                "browser_exec_requested",
-                serde_json::json!({ "script": script }),
-            );
-            Ok(
-                serde_json::json!({ "status": "exec_requested", "note": "Browser JS execution requires Tauri WebView; event emitted to UI" }),
-            )
-        }
-
-        "browser_get_content" => {
-            state
-                .broadcaster
-                .emit("browser_get_content_requested", serde_json::json!({}));
-            Ok(
-                serde_json::json!({ "content": "", "note": "Browser content retrieval requires Tauri WebView; event emitted to UI" }),
-            )
-        }
-
-        "browser_screenshot" => {
-            state
-                .broadcaster
-                .emit("browser_screenshot_requested", serde_json::json!({}));
-            Ok(
-                serde_json::json!({ "screenshot_b64": "", "note": "Browser screenshot requires Tauri WebView; event emitted to UI" }),
-            )
-        }
-
         "browser_get_citation" => {
             let url = args
                 .get("url")
@@ -3670,15 +3540,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "sync_now" => {
-            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if !app_state.config.sync.enabled
-                || app_state.config.sync.api_base_url.trim().is_empty()
-            {
-                return Err("Sync not configured. Use configure_sync first.".to_string());
-            }
-            Ok(
-                serde_json::json!({ "status": "sync_initiated", "note": "Full sync requires AppHandle; initiate from Tauri frontend" }),
-            )
+            handle_sync_now(state).await
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -3987,16 +3849,33 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Voice / STT (require AppHandle process management — stubs)
+        // Voice / STT
         // ────────────────────────────────────────────────────────────────────
         "speak_text" | "speak_text_stream" => {
             let text = args.get("text").and_then(|v| v.as_str()).unwrap_or("");
+            if text.is_empty() {
+                return Ok(serde_json::json!({ "status": "error", "message": "No text provided" }));
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = std::process::Command::new("say").arg(text).spawn();
+            }
+            #[cfg(target_os = "linux")]
+            {
+                let _ = std::process::Command::new("espeak").arg(text).spawn();
+            }
+            #[cfg(target_os = "windows")]
+            {
+                let ps = format!(
+                    "Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('{}');",
+                    text.replace('\'', "''")
+                );
+                let _ = std::process::Command::new("powershell").args(["-Command", &ps]).spawn();
+            }
             state
                 .broadcaster
                 .emit("speak_text_requested", serde_json::json!({ "text": text }));
-            Ok(
-                serde_json::json!({ "status": "requested", "text": text, "note": "TTS requires espeak/system audio; event emitted to UI" }),
-            )
+            Ok(serde_json::json!({ "status": "spoken", "text": text }))
         }
 
         "start_recording" => match system::start_recording(state.app_state.clone()) {
@@ -4010,12 +3889,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         },
 
         "transcribe_audio_whisper" => {
-            state
-                .broadcaster
-                .emit("recording_stop_requested", serde_json::json!({}));
-            Ok(
-                serde_json::json!({ "status": "requested", "transcript": "", "note": "STT stop requires system audio pipeline; event emitted to UI" }),
-            )
+            match system::transcribe_audio_whisper(state.app_state.clone()).await {
+                Ok(transcript) => Ok(serde_json::json!({ "status": "complete", "transcript": transcript })),
+                Err(e) => Err(e),
+            }
         }
 
         "get_whisper_status" => {
@@ -4826,11 +4703,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-        // canvas_collab_host / canvas_collab_join handled in final stubs below
-        "canvas_collab_host_moved" | "canvas_collab_join_moved" => {
-            Ok(serde_json::json!({ "status": "unavailable" }))
-        }
-
         // ────────────────────────────────────────────────────────────────────
         // Network / LAN
         // ────────────────────────────────────────────────────────────────────
@@ -4881,11 +4753,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "deleted", "model": model }))
         }
-
-        // ollama_pull_model implemented below with streaming broadcaster
-        "ollama_pull_model_stub_removed" => Ok(
-            serde_json::json!({ "status": "unavailable", "note": "ollama_pull_model requires Tauri AppHandle for streaming progress events; use the Tauri UI" }),
-        ),
 
         // ────────────────────────────────────────────────────────────────────
         // Computer Use (requires explicit user approval)
@@ -5037,11 +4904,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
                 None => Ok(serde_json::json!({ "running": false })),
             }
-        }
-
-        // remote_send_to_clients / remote_relay_notification implemented below; start/stop still stubs
-        "start_remote_server_moved" | "stop_remote_server_moved" => {
-            Ok(serde_json::json!({ "status": "unavailable" }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -5474,11 +5336,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // ────────────────────────────────────────────────────────────────────
         // Document Indexing
         // ────────────────────────────────────────────────────────────────────
-        // index_directory → real broadcaster implementation below
-        "_stub_index_directory_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
-
         "clear_doc_index" => {
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref mut db) = app_state.mem_db {
@@ -6314,21 +6174,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // Window Management (require Tauri Window handle — stubs)
         // ────────────────────────────────────────────────────────────────────
-        // set_kiosk_mode/get_window_mode/close_splashscreen/install_bmad_to_dir → real implementations below
-        "_stub_window_removed" | "_stub_bmad_removed" => {
-            Ok(serde_json::json!({ "status": "stub_removed" }))
-        }
-
-        // ────────────────────────────────────────────────────────────────────
-        // Write to / Kill running process
-        // ────────────────────────────────────────────────────────────────────
-        // write_to_process / kill_process → final stubs below
-        "_stub_process_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
-
-        // ────────────────────────────────────────────────────────────────────
-        // Transfer Extended (require AppHandle for events — stubs)
+        // Transfer Extended
         // ────────────────────────────────────────────────────────────────────
         "start_file_transfer" => {
             let peer_ip = args
@@ -6636,9 +6483,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "updated", "binary": binary, "model": model }))
         }
-
-        // download_whisper_model → real broadcaster implementation below
-        "_stub_whisper_download_removed" => Ok(serde_json::json!({ "status": "stub_removed" })),
 
         // ────────────────────────────────────────────────────────────────────
         // Plugin Install / Uninstall / Reload (bridge-native)
@@ -7576,18 +7420,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "joined" }))
         }
 
-        "set_kiosk_mode" => Ok(
-            serde_json::json!({ "status": "unavailable", "note": "Window management requires a Tauri Window handle; bridge mode has no WebView" }),
-        ),
-
-        "get_window_mode" => Ok(
-            serde_json::json!({ "fullscreen": false, "decorations": true, "kiosk": false, "note": "Bridge mode has no window" }),
-        ),
-
-        "close_splashscreen" => Ok(
-            serde_json::json!({ "status": "no_splashscreen", "note": "Bridge mode has no splashscreen" }),
-        ),
-
         "dispatch_action" => {
             let action_id = args
                 .get("action")
@@ -8410,18 +8242,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "ok" }))
         }
 
-        // browser_get_url — returns the current browser URL tracked by the frontend;
-        // in Electron mode the URL state lives in the renderer, so the backend always
-        // returns empty string and the frontend ignores it gracefully.
-        "browser_get_url" => Ok(serde_json::json!({ "url": "" })),
-
         // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
         _ => Err(format!(
             "Command '{}' not found in bridge dispatch table. \
-            Bridge status: ~297 commands (>99% coverage). \
-            Bridge-unavailable (Electron handles instead): set_kiosk_mode. \
             Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             command
         )),
