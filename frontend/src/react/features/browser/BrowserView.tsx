@@ -7,7 +7,19 @@ export function BrowserView() {
   const [inputUrl, setInputUrl] = useState('https://example.com');
   const [activeUrl, setActiveUrl] = useState('');
   const [visible, setVisible] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  const reportBounds = useCallback(() => {
+    const el = viewportRef.current;
+    if (!el || !window.electronAPI?.browserSetBounds) return;
+    const rect = el.getBoundingClientRect();
+    window.electronAPI.browserSetBounds({
+      x: Math.round(rect.x),
+      y: Math.round(rect.y),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    });
+  }, []);
 
   const navigate = useCallback(async (targetUrl: string) => {
     if (!targetUrl.trim()) return;
@@ -15,31 +27,30 @@ export function BrowserView() {
     if (!/^https?:\/\//i.test(normalized)) normalized = 'https://' + normalized;
     setUrl(normalized);
     setInputUrl(normalized);
-    try {
-      await neurodeckApi.browser.navigate(normalized);
-    } catch (_) { /* ignore */ }
-  }, []);
+    await neurodeckApi.browser.navigate(normalized);
+    reportBounds();
+  }, [reportBounds]);
 
   const goBack = async () => {
-    try { await neurodeckApi.browser.back(); } catch (_) { /* ignore */ }
-    iframeRef.current?.contentWindow?.history.back();
+    await neurodeckApi.browser.back();
   };
 
   const goForward = async () => {
-    try { await neurodeckApi.browser.forward(); } catch (_) { /* ignore */ }
-    iframeRef.current?.contentWindow?.history.forward();
+    await neurodeckApi.browser.forward();
   };
 
   const refresh = () => {
-    if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
+    neurodeckApi.browser.navigate(url);
   };
 
   const toggleVisibility = async () => {
-    try {
-      if (visible) await neurodeckApi.browser.hide();
-      else await neurodeckApi.browser.show();
-      setVisible(!visible);
-    } catch (_) { /* ignore */ }
+    if (visible) {
+      await neurodeckApi.browser.hide();
+    } else {
+      await neurodeckApi.browser.show();
+      reportBounds();
+    }
+    setVisible(!visible);
   };
 
   const saveToMemory = async () => {
@@ -50,7 +61,22 @@ export function BrowserView() {
     neurodeckApi.browser.getUrl().then((r) => {
       if (r.url) { setUrl(r.url); setInputUrl(r.url); }
     }).catch(() => {});
+    // Open initial URL
+    neurodeckApi.browser.open('https://example.com');
   }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    reportBounds();
+    const onResize = () => reportBounds();
+    window.addEventListener('resize', onResize);
+    const ro = new ResizeObserver(() => reportBounds());
+    if (viewportRef.current) ro.observe(viewportRef.current);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      ro.disconnect();
+    };
+  }, [visible, reportBounds]);
 
   return (
     <div className="browser-container flex h-full flex-col">
@@ -104,15 +130,10 @@ export function BrowserView() {
         </button>
       </div>
 
-      <div className={`flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-white ${visible ? '' : 'hidden'}`}>
-        <iframe
-          ref={iframeRef}
-          src={url}
-          title="Browser"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          className="h-full w-full border-none"
-        />
-      </div>
+      <div
+        ref={viewportRef}
+        className={`flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-white ${visible ? '' : 'hidden'}`}
+      />
       {!visible && (
         <div className="flex flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
           <p className="text-sm text-nd-text-muted">Browser hidden. Click the eye icon to show.</p>

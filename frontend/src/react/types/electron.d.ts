@@ -72,6 +72,18 @@ interface ElectronAPI {
 
   /** Returns the current notification permission status. */
   requestNotificationPermission(): Promise<'granted' | 'denied'>;
+
+  // Browser (WebContentsView)
+  browserOpen(url: string): Promise<{ success: boolean }>;
+  browserNavigate(url: string): Promise<{ success: boolean }>;
+  browserBack(): Promise<{ success: boolean }>;
+  browserForward(): Promise<{ success: boolean }>;
+  browserGetUrl(): Promise<{ url: string }>;
+  browserHide(): Promise<{ success: boolean }>;
+  browserShow(): Promise<{ success: boolean }>;
+  browserSetBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<{ success: boolean }>;
+  browserGetContent(): Promise<{ content: string }>;
+  browserSaveToMemory(): Promise<{ success: boolean; note?: string }>;
 }
 
 declare global {

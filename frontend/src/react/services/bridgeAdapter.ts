@@ -497,31 +497,44 @@ const terminal = {
 
 const browser = {
   async open(url: string) {
-    return bridgeInvoke<{ success: boolean }>('browser_open', { url });
+    if (window.electronAPI?.browserOpen) return window.electronAPI.browserOpen(url);
+    return { success: false };
   },
   async navigate(url: string) {
-    return bridgeInvoke<{ success: boolean }>('browser_navigate', { url });
+    if (window.electronAPI?.browserNavigate) return window.electronAPI.browserNavigate(url);
+    return { success: false };
   },
   async back() {
-    return bridgeInvoke<{ success: boolean }>('browser_back');
+    if (window.electronAPI?.browserBack) return window.electronAPI.browserBack();
+    return { success: false };
   },
   async forward() {
-    return bridgeInvoke<{ success: boolean }>('browser_forward');
+    if (window.electronAPI?.browserForward) return window.electronAPI.browserForward();
+    return { success: false };
   },
   async getUrl() {
-    return bridgeInvoke<{ url: string }>('get_browser_url');
+    if (window.electronAPI?.browserGetUrl) return window.electronAPI.browserGetUrl();
+    return { url: '' };
   },
   async hide() {
-    return bridgeInvoke<{ success: boolean }>('browser_hide');
+    if (window.electronAPI?.browserHide) return window.electronAPI.browserHide();
+    return { success: false };
   },
   async show() {
-    return bridgeInvoke<{ success: boolean }>('browser_show');
+    if (window.electronAPI?.browserShow) return window.electronAPI.browserShow();
+    return { success: false };
+  },
+  async setBounds(bounds: { x: number; y: number; width: number; height: number }) {
+    if (window.electronAPI?.browserSetBounds) return window.electronAPI.browserSetBounds(bounds);
+    return { success: false };
   },
   async getContent() {
-    return bridgeInvoke<{ content: string }>('browser_get_content');
+    if (window.electronAPI?.browserGetContent) return window.electronAPI.browserGetContent();
+    return { content: '' };
   },
   async saveToMemory() {
-    return bridgeInvoke<{ success: boolean }>('browser_save_to_memory');
+    if (window.electronAPI?.browserSaveToMemory) return window.electronAPI.browserSaveToMemory();
+    return { success: false };
   },
 };
 

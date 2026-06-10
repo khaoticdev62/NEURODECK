@@ -29,6 +29,18 @@ const IPC = Object.freeze({
 
   // Notifications
   REQUEST_NOTIFICATION_PERMISSION: 'request-notification-permission',
+
+  // Browser (WebContentsView)
+  BROWSER_OPEN: 'browser-open',
+  BROWSER_NAVIGATE: 'browser-navigate',
+  BROWSER_BACK: 'browser-back',
+  BROWSER_FORWARD: 'browser-forward',
+  BROWSER_GET_URL: 'browser-get-url',
+  BROWSER_HIDE: 'browser-hide',
+  BROWSER_SHOW: 'browser-show',
+  BROWSER_SET_BOUNDS: 'browser-set-bounds',
+  BROWSER_GET_CONTENT: 'browser-get-content',
+  BROWSER_SAVE_TO_MEMORY: 'browser-save-to-memory',
 });
 
 /** All channels that may be handled in main.js. */

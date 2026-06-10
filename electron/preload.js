@@ -50,6 +50,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notifications
   requestNotificationPermission: () => ipcRenderer.invoke(IPC.REQUEST_NOTIFICATION_PERMISSION),
+
+  // Browser (WebContentsView)
+  browserOpen: (url) => ipcRenderer.invoke(IPC.BROWSER_OPEN, url),
+  browserNavigate: (url) => ipcRenderer.invoke(IPC.BROWSER_NAVIGATE, url),
+  browserBack: () => ipcRenderer.invoke(IPC.BROWSER_BACK),
+  browserForward: () => ipcRenderer.invoke(IPC.BROWSER_FORWARD),
+  browserGetUrl: () => ipcRenderer.invoke(IPC.BROWSER_GET_URL),
+  browserHide: () => ipcRenderer.invoke(IPC.BROWSER_HIDE),
+  browserShow: () => ipcRenderer.invoke(IPC.BROWSER_SHOW),
+  browserSetBounds: (bounds) => ipcRenderer.invoke(IPC.BROWSER_SET_BOUNDS, bounds),
+  browserGetContent: () => ipcRenderer.invoke(IPC.BROWSER_GET_CONTENT),
+  browserSaveToMemory: () => ipcRenderer.invoke(IPC.BROWSER_SAVE_TO_MEMORY),
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

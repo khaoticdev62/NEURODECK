@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, shell, dialog, ipcMain, protocol, safeStorage, session, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, shell, dialog, ipcMain, protocol, safeStorage, session, Notification, WebContentsView } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -25,6 +25,8 @@ let sidecar = null;
 let sidecarRestartTimer = null;
 let isQuitting = false;
 let bridgePort = DEFAULT_PORT;
+let browserView = null;
+let browserBounds = { x: 0, y: 0, width: 1280, height: 600 };
 
 // ─────────────────────────────────────────────────────────
 // Global Error Handlers (H1)
@@ -626,6 +628,117 @@ ipcMain.handle(IPC.REQUEST_NOTIFICATION_PERMISSION, () => {
   // Notification.isSupported() is the correct Electron API — Notification.permission
   // is a Web API that does not exist in the main process (Node.js context).
   return Notification.isSupported() ? 'granted' : 'denied';
+});
+
+// ─────────────────────────────────────────────────────────
+// Browser (WebContentsView)
+// ─────────────────────────────────────────────────────────
+
+function ensureBrowserView() {
+  if (browserView) return;
+  if (!mainWindow) return;
+  browserView = new WebContentsView({
+    webPreferences: {
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  mainWindow.contentView.addChildView(browserView);
+  browserView.setBounds(browserBounds);
+}
+
+function syncBrowserViewBounds() {
+  if (browserView && mainWindow) {
+    browserView.setBounds(browserBounds);
+  }
+}
+
+ipcMain.handle(IPC.BROWSER_OPEN, (_event, url) => {
+  if (!mainWindow) return { success: false };
+  ensureBrowserView();
+  if (browserView) {
+    browserView.webContents.loadURL(url);
+    browserView.setVisible(true);
+    syncBrowserViewBounds();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_NAVIGATE, (_event, url) => {
+  if (browserView) {
+    browserView.webContents.loadURL(url);
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_BACK, () => {
+  if (browserView && browserView.webContents.navigationHistory.canGoBack()) {
+    browserView.webContents.navigationHistory.goBack();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_FORWARD, () => {
+  if (browserView && browserView.webContents.navigationHistory.canGoForward()) {
+    browserView.webContents.navigationHistory.goForward();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_GET_URL, () => {
+  if (browserView) {
+    return { url: browserView.webContents.getURL() };
+  }
+  return { url: '' };
+});
+
+ipcMain.handle(IPC.BROWSER_HIDE, () => {
+  if (browserView) {
+    browserView.setVisible(false);
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_SHOW, () => {
+  if (browserView) {
+    browserView.setVisible(true);
+    syncBrowserViewBounds();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_SET_BOUNDS, (_event, bounds) => {
+  if (bounds && typeof bounds.x === 'number' && typeof bounds.y === 'number' &&
+      typeof bounds.width === 'number' && typeof bounds.height === 'number') {
+    browserBounds = bounds;
+    syncBrowserViewBounds();
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle(IPC.BROWSER_GET_CONTENT, async () => {
+  if (browserView) {
+    try {
+      const content = await browserView.webContents.executeJavaScript('document.documentElement.outerHTML');
+      return { content };
+    } catch {
+      return { content: '' };
+    }
+  }
+  return { content: '' };
+});
+
+ipcMain.handle(IPC.BROWSER_SAVE_TO_MEMORY, () => {
+  // TODO: extract page title + visible text and send to bridge /memory/store
+  return { success: false, note: 'Not yet implemented' };
 });
 
 app.on('before-quit', () => {
