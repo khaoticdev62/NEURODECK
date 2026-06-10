@@ -37,7 +37,12 @@ import { TorrentView } from './features/torrent/TorrentView';
 import { SSHView } from './features/ssh/SSHView';
 import { TerminalView } from './features/terminal/TerminalView';
 import { TunnelView } from './features/tunnel/TunnelView';
+import { ExportsView } from './features/exports/ExportsView';
 import { FontManagerView } from './features/fonts/FontManagerView';
+import { MaintenanceView } from './features/maintenance/MaintenanceView';
+import { RecoveryView } from './features/recovery/RecoveryView';
+import { SecurityView } from './features/security/SecurityView';
+import { ThemesView } from './features/themes/ThemesView';
 import { WorkspaceView } from './features/workspace/WorkspaceView';
 import { neurodeckApi } from './services/bridgeAdapter';
 import { useNeuroDeckState } from './state/useNeuroDeckState';
@@ -530,6 +535,11 @@ export default function App() {
             {state.activeView === 'graph' && renderView('graph', <GraphView />)}
             {state.activeView === 'scheduler' && renderView('scheduler', <SchedulerView />)}
             {state.activeView === 'orchestrator' && renderView('orchestrator', <OrchestratorView />)}
+            {state.activeView === 'security'    && renderView('security',    <SecurityView    state={state} actions={appActions} />)}
+            {state.activeView === 'themes'      && renderView('themes',      <ThemesView      state={state} dispatch={dispatch} />)}
+            {state.activeView === 'exports'     && renderView('exports',     <ExportsView     state={state} actions={appActions} />)}
+            {state.activeView === 'maintenance' && renderView('maintenance', <MaintenanceView state={state} actions={appActions} />)}
+            {state.activeView === 'recovery'    && renderView('recovery',    <RecoveryView    state={state} dispatch={dispatch} actions={appActions} />)}
             {state.activeView === 'fonts' && renderView('fonts', <FontManagerView state={state} dispatch={dispatch} />)}
           </div>
         </main>

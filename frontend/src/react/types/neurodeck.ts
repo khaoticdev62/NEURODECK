@@ -7,6 +7,7 @@ export type ViewId =
   | 'project' | 'docs' | 'prompt-lab' | 'graph' | 'sessions'
   | 'scheduler' | 'orchestrator'
   | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
+  | 'security' | 'themes' | 'exports' | 'maintenance' | 'recovery'
   | 'fonts';
 export type ThemeName = 'Blacksite' | 'Tactical Glass' | 'Ghost Terminal' | 'Hologrid' | 'Minimal Ops' | 'Night Watch' | 'Broadcast';
 export type AgentStatus = 'idle' | 'thinking' | 'blocked' | 'complete';
