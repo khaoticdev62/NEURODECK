@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import type { Dispatch } from 'react';
 import { AlertTriangle, Cpu, Database, FolderOpen, Gauge, PanelRightClose, PanelRightOpen, PlugZap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { NeuroDeckSelectors, NeuroDeckState } from '../../types/neurodeck';
+import type { NeuroDeckAction, NeuroDeckSelectors, NeuroDeckState } from '../../types/neurodeck';
 import { Badge } from '../primitives/Badge';
 import { Panel } from '../primitives/Panel';
+import { MemoryPanel } from '../systems/MemoryPanel';
 
-export function SecondaryRail({ state, selectors }: { state: NeuroDeckState; selectors: NeuroDeckSelectors }) {
+export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; selectors: NeuroDeckSelectors }) {
   const [collapsed, setCollapsed] = useState(false);
   const thinking = state.agents.filter((agent) => agent.status === 'thinking');
 
@@ -66,6 +68,17 @@ export function SecondaryRail({ state, selectors }: { state: NeuroDeckState; sel
                 <Badge tone={selectors.riskCount ? 'warning' : 'success'}>{selectors.riskCount}</Badge>
               </div>
             </div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow="Memory" title="Context Sources">
+          <div className="p-3">
+            <MemoryPanel
+              memories={state.memories}
+              onTogglePin={(id) => dispatch({ type: 'toggle-memory-pin', id })}
+              maxItems={4}
+              compact
+            />
           </div>
         </Panel>
 

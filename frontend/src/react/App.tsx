@@ -477,7 +477,11 @@ export default function App() {
         <div id="app-background-css" className="app-background-css" />
       </div>
       <TitleBar
-        subtitle={`${state.selectedPersona} • ${state.selectedProvider} • ${state.selectedTheme}`}
+        modelName={modelName}
+        persona={state.selectedPersona}
+        provider={state.selectedProvider}
+        latencyMs={state.telemetry.latencyMs}
+        contextUsed={state.telemetry.contextUsed}
         onOpenCommandPalette={() => dispatch({ type: 'toggle-command', open: true })}
         onOpenNotifications={() => setNotificationsOpen((current) => !current)}
         onOpenSettings={() => openSettings('general')}
@@ -543,7 +547,7 @@ export default function App() {
             {state.activeView === 'fonts' && renderView('fonts', <FontManagerView state={state} dispatch={dispatch} />)}
           </div>
         </main>
-        <SecondaryRail state={state} selectors={selectors} />
+        <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
       </div>
       <CommandPalette state={state} dispatch={dispatch} actions={appActions} onOpenSettings={openSettings} />
       <div id="settings-overlay" className={`${settingsOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`}>
