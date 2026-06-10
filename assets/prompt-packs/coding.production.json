@@ -1,0 +1,97 @@
+{
+  "packs": [
+    {
+      "id": "coding.production",
+      "title": "Production Coding Pack",
+      "description": "Battle-tested templates for production-grade refactoring, audits, and code generation. Slot-driven, controller-friendly, and safe to execute.",
+      "templates": [
+        {
+          "id": "coding.production.safe_refactor",
+          "pack_id": "coding.production",
+          "title": "Production Safe Refactor",
+          "description": "Refactor a file or selection while preserving behavior. Generates a constrained, output-formatted improvement plan.",
+          "category": "Refactor",
+          "agent_hint": "developer",
+          "intent": "improve_existing_code",
+          "role": "Senior Software Engineer",
+          "risk_level": "medium",
+          "requires_confirmation": true,
+          "autocomplete_terms": ["refactor", "production", "safe", "maintain behavior", "tests"],
+          "slots": [
+            {
+              "id": "target",
+              "label": "Target File or Selection",
+              "required": true,
+              "kind": "text",
+              "default": "",
+              "options": [],
+              "suggestions": ["src/App.tsx", "frontend/src/react/features/prompt-lab/PromptLabView.tsx", "src-tauri/src/promptdrive.rs"]
+            },
+            {
+              "id": "language",
+              "label": "Language",
+              "required": true,
+              "kind": "select",
+              "default": "TypeScript",
+              "options": ["TypeScript", "JavaScript", "Python", "Lua", "Rust", "Go"],
+              "suggestions": []
+            },
+            {
+              "id": "constraints",
+              "label": "Constraints",
+              "required": true,
+              "kind": "text",
+              "default": "preserve all existing behavior, no new dependencies, Steam Deck 1280x800 layout",
+              "options": [],
+              "suggestions": ["no new npm packages", "1280x800 Steam Deck layout", "bridge-only IPC", "keep blast radius small"]
+            },
+            {
+              "id": "output_format",
+              "label": "Output Format",
+              "required": true,
+              "kind": "select",
+              "default": "Patch Plan",
+              "options": ["Patch Plan", "Full Code", "Diff", "Checklist"],
+              "suggestions": []
+            }
+          ],
+          "template": "Refactor {{target}} using {{language}}. Preserve all existing behavior. Improve readability, security, performance, and maintainability.\n\nConstraints: {{constraints}}\n\nOutput: {{output_format}}"
+        },
+        {
+          "id": "coding.production.component_audit",
+          "pack_id": "coding.production",
+          "title": "Full Component Audit",
+          "description": "Run a comprehensive UX, security, testing, and documentation check against a single component.",
+          "category": "Audit",
+          "agent_hint": "reviewer",
+          "intent": "audit_component",
+          "role": "Principal Engineer",
+          "risk_level": "low",
+          "requires_confirmation": false,
+          "autocomplete_terms": ["audit", "component", "review", "security", "accessibility", "tests"],
+          "slots": [
+            {
+              "id": "component",
+              "label": "Component File or Path",
+              "required": true,
+              "kind": "text",
+              "default": "",
+              "options": [],
+              "suggestions": ["PromptLabView.tsx", "AgentsView.tsx", "SettingsView.tsx", "TerminalView.tsx"]
+            },
+            {
+              "id": "focus_areas",
+              "label": "Focus Areas",
+              "required": false,
+              "kind": "select",
+              "default": "All",
+              "options": ["All", "Security", "Accessibility", "Performance", "Testing", "Documentation"],
+              "suggestions": []
+            }
+          ],
+          "template": "Audit this NEURODECK component: {{component}}\n\nFocus: {{focus_areas}}\n\nCheck: UX fidelity at 1280x800, keyboard navigation, controller bindings, accessible labels, security boundaries, test coverage gaps, inline documentation. Report findings by severity. For each finding: location, risk, and smallest safe fix."
+        }
+      ]
+    }
+  ]
+}

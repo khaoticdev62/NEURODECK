@@ -24,6 +24,14 @@ pub struct PromptTemplate {
     pub slots: Vec<PromptSlot>,
     pub template: String,
     pub risk_level: String,
+    #[serde(default)]
+    pub intent: Option<String>,
+    #[serde(default)]
+    pub role: Option<String>,
+    #[serde(default)]
+    pub autocomplete_terms: Vec<String>,
+    #[serde(default)]
+    pub requires_confirmation: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +41,8 @@ pub struct PromptSlot {
     pub required: bool,
     pub kind: String,
     pub default: Option<String>,
+    #[serde(default)]
+    pub options: Vec<String>,
     pub suggestions: Vec<String>,
 }
 
@@ -675,6 +685,7 @@ mod tests {
                     required: true,
                     kind: "textarea".to_string(),
                     default: None,
+                    options: vec![],
                     suggestions: vec!["review code".to_string()],
                 },
                 PromptSlot {
@@ -683,11 +694,16 @@ mod tests {
                     required: false,
                     kind: "text".to_string(),
                     default: Some("concise".to_string()),
+                    options: vec![],
                     suggestions: vec!["direct".to_string()],
                 },
             ],
             template: "Do {{task}} in a {{tone}} tone.".to_string(),
             risk_level: "low".to_string(),
+            intent: None,
+            role: None,
+            autocomplete_terms: vec![],
+            requires_confirmation: false,
         }
     }
 
