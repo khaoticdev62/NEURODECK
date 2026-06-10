@@ -319,6 +319,7 @@ export interface NeuroDeckState {
   selectedProvider: AIProvider;
   selectedModelId: string;
   selectedFont: string;
+  showOnboarding: boolean;
   composerValue: string;
   busyLabel: string | null;
   activeProject: ProjectScanResult | null;
@@ -392,6 +393,7 @@ export type NeuroDeckAction =
   | { type: 'set-provider'; provider: AIProvider }
   | { type: 'set-selected-model'; id: string }
   | { type: 'set-font'; font: string }
+  | { type: 'toggle-onboarding' }
   | { type: 'set-composer'; value: string }
   | { type: 'run-starter'; prompt: string }
   | { type: 'toggle-agent'; id: string }

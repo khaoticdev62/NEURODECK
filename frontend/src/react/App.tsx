@@ -590,7 +590,7 @@ export default function App() {
             </div>
           </div>
       </div>
-      <OnboardingModal />
+      {state.showOnboarding && <OnboardingModal />}
     </div>
   );
 }

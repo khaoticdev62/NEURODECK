@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Dispatch } from 'react';
-import { BrainCircuit, FileArchive, FileDown, Gamepad2, Palette, RefreshCcw, RotateCcw, Settings } from 'lucide-react';
+import { BrainCircuit, FileArchive, FileDown, Gamepad2, Palette, RefreshCcw, Rocket, RotateCcw, Settings } from 'lucide-react';
 import { themes } from '../../types/seed';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
@@ -69,6 +69,30 @@ export function SettingsView({
 
       <section className="min-h-0 overflow-y-auto rounded-3xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 scrollbar-thin">
         <div id="sp-general" className={`settings-panel ${activePanel === 'general' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
+          <Panel eyebrow="First Launch" title="Onboarding Wizard">
+            <div className="space-y-3 p-4">
+              <div className={`rounded-2xl border p-4 transition ${state.showOnboarding ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Rocket className="h-5 w-5 text-nd-accent" />
+                    <div>
+                      <h3 className="font-semibold text-nd-text">Show Onboarding</h3>
+                      <p className="text-xs text-nd-text-muted">Display the welcome wizard on next launch.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'toggle-onboarding' })}
+                    className={`relative h-7 w-12 rounded-full transition ${state.showOnboarding ? 'bg-nd-accent' : 'bg-nd-text-muted/20'}`}
+                    aria-label={state.showOnboarding ? 'Disable onboarding wizard' : 'Enable onboarding wizard'}
+                  >
+                    <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-nd-bg shadow transition-transform ${state.showOnboarding ? 'translate-x-[22px]' : 'translate-x-0.5'}`} style={{ left: '2px' }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Panel>
+
           <Panel eyebrow="Theme Engine" title="Visual Presets">
             <div className="grid gap-3 p-4 md:grid-cols-2">
               {themes.map((theme) => (

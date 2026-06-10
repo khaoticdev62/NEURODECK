@@ -1,0 +1,24 @@
+Component,Tier,Usage,Accessibility Requirement,Controller Requirement,Test Priority,Variants,Status
+Button,Foundation,Global actions,WCAG label + keyboard activation,A confirm,High,"primary, secondary, ghost, danger",specified
+IconButton,Foundation,Toolbars/cards,aria-label required,A confirm,High,"default, primary, ghost, danger",specified
+Badge,Foundation,Status metadata,text required with color,read-only,Medium,"neutral, info, success, warning, error, agent",specified
+TextInput,Foundation,Settings/forms/input,label/error association,virtual keyboard tested,High,"default, error, disabled",specified
+Select,Foundation,Settings/model choice,listbox/select semantics,D-pad navigation,Medium,"default, error, disabled",specified
+AppShell,Layout,Root layout,landmarks,global focus graph,Critical,"Deck, desktop, wide",specified
+Panel,Layout,Cards/sections,heading relationship,focusable if interactive,High,"default, raised, active, critical",specified
+NavRail,Layout,Primary nav,selected route semantics,D-pad/L1/R1,Critical,"compact, expanded",specified
+TopStatusBar,Layout,Persistent status,status labels,read-only with shortcuts,High,"normal, alert",specified
+ChatViewport,Workspace,Conversation,message roles exposed,message focus graph,Critical,"empty, streaming, error",specified
+ResponseCard,Workspace,Chat messages,role/status semantics,card actions,Critical,"user, assistant, system, tool, agent",specified
+InputConsole,Workspace,Prompt entry,textarea label,A/B/X/Y mapping,Critical,"prompt, command, busy, error",specified
+CommandPalette,Workspace,Universal command launcher,dialog/listbox,D-pad + A/B,Critical,"open, empty, filtered",specified
+ModelCard,Systems,Model manager,status text/icons,action focus,High,"available, missing, degraded",specified
+AgentCard,Systems,Agent manager,permission labels,action focus,High,"trusted, untrusted, running",specified
+MemoryPanel,Systems,Memory/context,source/scope labels,entry focus,High,"empty, loaded, sensitive",specified
+SessionCard,Systems,Session browser,title/time metadata,card action focus,High,"active, archived",specified
+PluginCard,Systems,Plugin manager,permission badges,trust/action focus,High,"trusted, untrusted, disabled",specified
+TelemetryWidget,Ops,Diagnostics/status,status not color-only,read-only/action,Medium,"healthy, degraded, failed",specified
+DiagnosticsPanel,Ops,Doctor view,issue/fix text,section focus,High,"pass, warn, fail",specified
+Modal,Overlay,Critical dialogs,focus trap,B/Escape closes,Critical,"normal, destructive",specified
+Toast,Overlay,Notifications,role status/alert,non-stealing focus,Medium,"info, success, warning, error",specified
+ConfirmDialog,Overlay,Confirmation,explicit consequence copy,A confirm/B cancel,Critical,"safe, destructive, security",specified
