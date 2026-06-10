@@ -270,7 +270,7 @@ export function PromptLabView() {
   }, [acceptSuggestion, executePrompt, savePrompt, suggestions, toggleMacro]);
 
   return (
-    <div data-testid="view-prompt-lab" className="prompt-lab-container active flex h-full flex-col overflow-hidden">
+    <div className="prompt-lab-container active flex h-full flex-col overflow-hidden">
       <div className="mb-3 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
           <Sparkles className="h-5 w-5 text-nd-accent" />

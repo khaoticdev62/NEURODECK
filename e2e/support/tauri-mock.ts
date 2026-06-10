@@ -315,5 +315,32 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
     }
   };
 
+  // Intercept bridgeInvoke HTTP calls so promptDrive.* and other bridge-only APIs
+  // work in tests without a running sidecar.
+  const _originalFetch = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (url.includes('/api/')) {
+      const match = url.match(/\/api\/([^?#/]+)/);
+      const cmd = match?.[1];
+      if (cmd) {
+        try {
+          let args: any = {};
+          if (init?.body) {
+            try { args = JSON.parse(init.body as string); } catch { /* ignore */ }
+          }
+          const result = await defaultInvoke(cmd, args);
+          return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (error) {
+          return new Response(String(error), { status: 500 });
+        }
+      }
+    }
+    return _originalFetch(input, init);
+  };
+
   if (extraInit) extraInit();
 }

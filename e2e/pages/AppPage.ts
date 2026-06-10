@@ -19,6 +19,13 @@ export class AppPage {
   readonly navTabRemote: Locator;
   readonly navTabDocs: Locator;
 
+  // Navigation — Security & Ops
+  readonly navTabSecurity: Locator;
+  readonly navTabThemes: Locator;
+  readonly navTabExports: Locator;
+  readonly navTabMaintenance: Locator;
+  readonly navTabRecovery: Locator;
+
   // Views
   readonly viewChat: Locator;
   readonly viewCanvas: Locator;
@@ -32,6 +39,13 @@ export class AppPage {
   readonly viewPromptLab: Locator;
   readonly viewRemote: Locator;
   readonly viewDocs: Locator;
+
+  // Views — Security & Ops
+  readonly viewSecurity: Locator;
+  readonly viewThemes: Locator;
+  readonly viewExports: Locator;
+  readonly viewMaintenance: Locator;
+  readonly viewRecovery: Locator;
 
   // Global chrome
   readonly settingsBtn: Locator;
@@ -59,6 +73,12 @@ export class AppPage {
     this.navTabRemote = page.getByTestId("nav-tab-remote");
     this.navTabDocs = page.getByTestId("nav-tab-docs");
 
+    this.navTabSecurity    = page.getByTestId("nav-tab-security");
+    this.navTabThemes      = page.getByTestId("nav-tab-themes");
+    this.navTabExports     = page.getByTestId("nav-tab-exports");
+    this.navTabMaintenance = page.getByTestId("nav-tab-maintenance");
+    this.navTabRecovery    = page.getByTestId("nav-tab-recovery");
+
     this.viewChat = page.getByTestId("view-chat");
     this.viewCanvas = page.getByTestId("view-canvas");
     this.viewTerminal = page.getByTestId("view-terminal");
@@ -71,6 +91,12 @@ export class AppPage {
     this.viewPromptLab = page.getByTestId("view-prompt-lab");
     this.viewRemote = page.getByTestId("view-remote");
     this.viewDocs = page.getByTestId("view-docs");
+
+    this.viewSecurity    = page.getByTestId("view-security");
+    this.viewThemes      = page.getByTestId("view-themes");
+    this.viewExports     = page.getByTestId("view-exports");
+    this.viewMaintenance = page.getByTestId("view-maintenance");
+    this.viewRecovery    = page.getByTestId("view-recovery");
 
     this.settingsBtn = page.locator("#settings-btn");
     this.settingsOverlay = page.locator("#settings-overlay");
