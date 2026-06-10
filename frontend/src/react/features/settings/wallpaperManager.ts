@@ -93,7 +93,8 @@ export class WallpaperManager {
 
     if (type === '' || type === 'none') { this.stop(); return; }
 
-    if (type.startsWith('https://') || type.startsWith('http://')) {
+    const isLocalhost = type.startsWith('http://localhost') || type.startsWith('http://127.0.0.1');
+    if (type.startsWith('https://') || isLocalhost) {
       this.stop();
       const img = document.getElementById('app-background-image') as HTMLImageElement | null;
       if (img) { img.src = type; img.style.opacity = opacity; }

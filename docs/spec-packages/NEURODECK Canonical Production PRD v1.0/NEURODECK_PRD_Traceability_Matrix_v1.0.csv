@@ -1,0 +1,29 @@
+Requirement ID,Requirement,Epic,Owner Area,Screen/Service,IPC/API,Test Type,Release Gate,Priority
+ND-APP-001,App launches from installed package,App Shell,Main/Release,windowService/package,app:getRuntimeInfo,Packaging smoke,Launch from packaged build,MUST
+ND-APP-002,Frameless custom window shell,App Shell,Renderer/Main,AppShell/windowService,window:* internal,E2E/manual,Window controls valid,MUST
+ND-APP-003,Startup recovery,App Shell,Main,crashRecoveryService,diagnostics:run,Integration,Safe mode works,MUST
+ND-WKS-001,Send prompt,Workspace,Renderer/Main,Workspace/modelService,model:sendPrompt,E2E/IPC,Prompt flow works,MUST
+ND-WKS-002,Stream response,Workspace,Main/Renderer,ResponseCard/modelService,model:generationDelta,Integration/E2E,Streaming stable,MUST
+ND-WKS-003,Non-streaming response fallback,Workspace,Main/Renderer,ResponseCard/modelService,model:sendPrompt,Integration,Fallback response works,MUST
+ND-MDL-001,Model provider registry,Models,Main,modelService,model:list,Unit/IPC,Provider registry works,MUST
+ND-MDL-002,Local model profiles,Models,Main/Renderer,Models/modelService,model:testProvider,Integration,Local profile can be tested,MUST
+ND-MDL-003,Remote provider setup,Models/Security,Main,secretsService/modelService,security:setSecret,Security/IPC,Secret storage safe,SHOULD
+ND-SES-001,Create session,Sessions,Main,sessionService,session:create,Unit/IPC,Session created,MUST
+ND-SES-002,Session browser,Sessions,Renderer/Main,SessionBrowser/sessionService,session:list,E2E,Browse/search/open sessions,MUST
+ND-SES-003,Session export,Sessions,Main,sessionService,session:export,Integration,Export no secrets,SHOULD
+ND-MEM-001,Local memory store,Memory,Main,memoryService,memory:create,Unit/IPC,Memory CRUD works,MUST
+ND-MEM-002,Memory visibility,Memory/Workspace,Renderer,ContextPanel/memoryService,memory:list,E2E,Attached context visible,MUST
+ND-HRM-001,Extension registry,Hermes,Main/Renderer,HermesExtensions/hermesService,plugin:list,Integration,Registry visible,MUST
+ND-HRM-002,Extension install from local package,Hermes,Main,pluginService,plugin:installLocal,Security/Integration,Install untrusted,MUST
+ND-HRM-003,Extension command execution,Hermes,Main,hermesService,hermes:runCommand,Security/IPC,Trusted declared commands only,MUST
+ND-HRM-004,Extension permissions,Hermes/Security,Main/Renderer,pluginService,plugin:trust,Security/E2E,Permission gate works,MUST
+ND-SET-001,Settings framework,Settings,Renderer/Main,Settings/settingsService,settings:get/set,E2E,Settings persist,MUST
+ND-SET-002,Secrets settings,Security,Main,secretsService,security:setSecret,Security,No raw secret readback,MUST
+ND-DIAG-001,Diagnostics dashboard,Diagnostics,Renderer/Main,Diagnostics/diagnosticsService,diagnostics:run,E2E,Diagnostics pass/warn/fail,MUST
+ND-DIAG-002,Logs,Diagnostics,Main,logService,logs:export,Security/Integration,Redacted log export,MUST
+ND-DSN-001,Tactical Glass theme,Design,Renderer,ThemeProvider,N/A,Visual/A11Y,Default theme readable,MUST
+ND-CTL-001,Controller focus graph,Input,Renderer,FocusManager,N/A,Manual/E2E,No focus traps,MUST
+ND-CTL-002,Critical actions controller reachable,Input,Renderer,All critical screens,N/A,Steam Deck QA,Critical path controller-only,MUST
+ND-PKG-001,Steam Deck AppImage,Release,Packaging,release scripts,N/A,Packaging smoke,Game Mode launch,MUST
+ND-SEC-001,Node integration disabled,Security,Main,BrowserWindow,N/A,Security automated,Renderer hardened,MUST
+ND-SEC-006,Raw secrets never returned to renderer,Security,Main,secretsService,security:getSecretStatus,Security/IPC,No secret exposure,MUST

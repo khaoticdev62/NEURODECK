@@ -8,6 +8,7 @@ import { PrimarySidebar } from './components/layout/PrimarySidebar';
 import { SecondaryRail } from './components/layout/SecondaryRail';
 import { TitleBar } from './components/layout/TitleBar';
 import { Badge } from './components/primitives/Badge';
+import { ToastProvider } from './components/primitives/Toast';
 import { fontOptions, themes } from './types/seed';
 import { AgentsView } from './features/agents/AgentsView';
 import { ApiLabView } from './features/api-lab/ApiLabView';
@@ -421,6 +422,7 @@ export default function App() {
   }
 
   return (
+    <ToastProvider>
     <div
       id="app-shell"
       ref={shellRef}
@@ -592,5 +594,6 @@ export default function App() {
       </div>
       {state.showOnboarding && <OnboardingModal />}
     </div>
+    </ToastProvider>
   );
 }
