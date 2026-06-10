@@ -634,6 +634,9 @@ ipcMain.handle(IPC.REQUEST_NOTIFICATION_PERMISSION, () => {
 // Browser (WebContentsView)
 // ─────────────────────────────────────────────────────────
 
+// Standard Chrome User-Agent — hides "Electron" to avoid UA-based blocking
+const CHROME_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+
 function ensureBrowserView() {
   if (browserView) return;
   if (!mainWindow) return;
@@ -642,7 +645,32 @@ function ensureBrowserView() {
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: true,
     },
+  });
+  // Mask Electron in User-Agent so sites like Reddit/Facebook don't block us
+  browserView.webContents.setUserAgent(CHROME_USER_AGENT);
+  // Disable automation flag (navigator.webdriver) which anti-bot scripts detect
+  browserView.webContents.on('dom-ready', () => {
+    browserView.webContents.executeJavaScript(`
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      if (window.chrome && window.chrome.runtime) {
+        // keep chrome.runtime as-is; some sites check for it
+      }
+    `).catch(() => {});
+  });
+  // Log load failures for debugging
+  browserView.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[browser] did-fail-load: ${errorCode} - ${errorDescription} (URL: ${validatedURL})`);
+  });
+  browserView.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    const levels = ['verbose', 'info', 'warning', 'error'];
+    console.log(`[browser console] [${levels[level] || level}] ${message} (at ${sourceId}:${line})`);
+  });
+  // Allow common permissions for the browser (media, notifications, etc.)
+  browserView.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = new Set(['notifications', 'fullscreen', 'clipboard-sanitized-write']);
+    callback(allowed.has(permission));
   });
   mainWindow.contentView.addChildView(browserView);
   browserView.setBounds(browserBounds);
