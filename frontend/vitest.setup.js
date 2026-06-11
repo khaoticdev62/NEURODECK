@@ -1,7 +1,10 @@
 // Global mocks for Vitest (Node + jsdom/happy-dom environments)
 // This runs before any test file imports execute.
 
-import { vi } from "vitest";
+import { vi, afterEach } from "vitest";
+import { cleanup } from "@testing-library/react";
+
+afterEach(cleanup);
 
 const storage = new Map();
 

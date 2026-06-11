@@ -7,12 +7,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.node.json --noEmit",
-    "test": "node ./node_modules/vitest/vitest.mjs run",
-    "test:watch": "node ./node_modules/vitest/vitest.mjs",
-    "test:coverage": "node ./node_modules/vitest/vitest.mjs run --coverage"
+    "test": "node ../node_modules/vitest/dist/cli.js run",
+    "test:watch": "node ../node_modules/vitest/dist/cli.js",
+    "test:coverage": "node ../node_modules/vitest/dist/cli.js run --coverage"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/qrcode": "^1.5.6",
+    "@vitest/coverage-v8": "^4.1.8",
     "esbuild": "^0.28.0",
     "happy-dom": "^20.9.0",
     "prettier": "^3.8.3",
