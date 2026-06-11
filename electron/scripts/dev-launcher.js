@@ -18,13 +18,13 @@ const VITE_TIMEOUT_MS = 30_000;
 
 // ── Start Vite dev server ────────────────────────────────────────────────────
 const vite = spawn(
-  process.platform === 'win32' ? 'npm.cmd' : 'npm',
+  'npm',
   ['-w', 'frontend', 'run', 'dev'],
   {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, FORCE_COLOR: '1' },
-    shell: false,
+    shell: true,
   }
 );
 
