@@ -1,0 +1,377 @@
+{
+  "generatedAt": "2026-06-11T19:23:04.117Z",
+  "connections": [
+    {
+      "id": "ipc-main-handlers",
+      "label": "Main Process IPC Handlers",
+      "category": "ipc",
+      "callerLayer": "preload → main",
+      "ipcChannels": [
+        "get-bridge-port",
+        "open-external",
+        "show-save-dialog",
+        "show-open-dialog",
+        "safe-storage-encrypt",
+        "safe-storage-decrypt",
+        "safe-storage-available",
+        "set-kiosk",
+        "get-is-kiosk",
+        "request-notification-permission"
+      ],
+      "preloadMethods": [
+        "getBridgePort",
+        "openExternal",
+        "showSaveDialog",
+        "showOpenDialog",
+        "safeStorageEncrypt",
+        "safeStorageDecrypt",
+        "isSafeStorageAvailable",
+        "setKiosk",
+        "getIsKiosk",
+        "requestNotificationPermission"
+      ],
+      "provider": "electron-built-in",
+      "storageUsed": "os-keychain",
+      "dataSourceType": "computed",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "ipc-service-handlers",
+      "label": "Sidecar Bridge IPC Handlers",
+      "category": "ipc",
+      "callerLayer": "preload → main → sidecar HTTP",
+      "ipcChannels": [
+        "lsp:start-server",
+        "lsp:stop-server",
+        "lsp:open-document",
+        "lsp:change-document",
+        "lsp:close-document",
+        "lsp:completion",
+        "lsp:hover",
+        "lsp:definition",
+        "lsp:format",
+        "models:list",
+        "models:status",
+        "models:run-prompt",
+        "sessions:create",
+        "sessions:list",
+        "sessions:save",
+        "memory:search",
+        "memory:write",
+        "diagnostics:connection-matrix",
+        "diagnostics:run-probe",
+        "settings:get",
+        "settings:set"
+      ],
+      "preloadMethods": [
+        "lsp.*",
+        "models.list",
+        "models.status",
+        "models.runPrompt",
+        "sessions.*",
+        "memory.*",
+        "diagnostics.*",
+        "settings.get",
+        "settings.set"
+      ],
+      "provider": "rust-sidecar",
+      "storageUsed": "sidecar-managed",
+      "dataSourceType": "computed",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [
+        "NEURODECK_PORT"
+      ],
+      "knownBlockers": []
+    },
+    {
+      "id": "browser-webcontentsview",
+      "label": "Browser (WebContentsView)",
+      "category": "service",
+      "callerLayer": "preload → main",
+      "ipcChannels": [
+        "browser-open",
+        "browser-navigate",
+        "browser-back",
+        "browser-forward",
+        "browser-reload",
+        "browser-get-url",
+        "browser-hide",
+        "browser-show",
+        "browser-set-bounds",
+        "browser-get-content",
+        "browser-save-to-memory",
+        "browser-zoom-in",
+        "browser-zoom-out",
+        "browser-zoom-reset",
+        "browser-find",
+        "browser-stop-find",
+        "browser-bookmark-add",
+        "browser-bookmark-remove",
+        "browser-bookmark-list",
+        "browser-history-list",
+        "browser-history-clear",
+        "browser-reader-mode",
+        "browser-adblock-toggle",
+        "browser-adblock-status"
+      ],
+      "preloadMethods": [
+        "browserOpen",
+        "browserNavigate",
+        "browserBack",
+        "browserForward",
+        "browserReload",
+        "browserGetUrl",
+        "browserHide",
+        "browserShow",
+        "browserSetBounds",
+        "browserGetContent",
+        "browserSaveToMemory",
+        "browserZoomIn",
+        "browserZoomOut",
+        "browserZoomReset",
+        "browserFind",
+        "browserStopFind",
+        "browserBookmarkAdd",
+        "browserBookmarkRemove",
+        "browserBookmarkList",
+        "browserHistoryList",
+        "browserHistoryClear",
+        "browserReaderMode",
+        "browserAdblockToggle",
+        "browserAdblockStatus"
+      ],
+      "provider": "electron-webcontentsview",
+      "storageUsed": "filesystem-json",
+      "dataSourceType": "computed",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "lsp-manager",
+      "label": "LSP Manager",
+      "category": "lsp",
+      "callerLayer": "ipc-handlers → lsp-manager → lsp-transport → subprocess",
+      "ipcChannels": [
+        "lsp:*"
+      ],
+      "preloadMethods": [
+        "lsp.*"
+      ],
+      "provider": "stdio-language-server",
+      "storageUsed": "none",
+      "dataSourceType": "lsp_server",
+      "status": "not_configured",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": [
+        "Language server binaries must be installed by user (pylsp, typescript-language-server)"
+      ]
+    },
+    {
+      "id": "connection-registry",
+      "label": "Connection Health Registry",
+      "category": "service",
+      "callerLayer": "ipc-handlers → connection-registry",
+      "ipcChannels": [
+        "diagnostics:connection-matrix",
+        "diagnostics:run-probe"
+      ],
+      "preloadMethods": [
+        "diagnostics.getConnectionMatrix",
+        "diagnostics.runHealthProbe"
+      ],
+      "provider": "local",
+      "storageUsed": "in-memory",
+      "dataSourceType": "computed",
+      "status": "production_ready",
+      "mockRiskLevel": "low",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "rust-sidecar",
+      "label": "Rust Axum Bridge Sidecar",
+      "category": "service",
+      "callerLayer": "ipc-handlers → HTTP POST → sidecar",
+      "ipcChannels": [],
+      "preloadMethods": [],
+      "provider": "axum-http-server",
+      "storageUsed": "filesystem + sqlite",
+      "dataSourceType": "filesystem",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [
+        "NEURODECK_PORT",
+        "GEMINI_API_KEY"
+      ],
+      "knownBlockers": []
+    },
+    {
+      "id": "provider-gemini",
+      "label": "Google Gemini Provider",
+      "category": "provider",
+      "callerLayer": "commands/mod.rs → GeminiProvider",
+      "ipcChannels": [
+        "models:run-prompt"
+      ],
+      "preloadMethods": [
+        "models.runPrompt"
+      ],
+      "provider": "google-gemini-api",
+      "storageUsed": "none",
+      "dataSourceType": "remote_api",
+      "status": "not_configured",
+      "mockRiskLevel": "low",
+      "envVarsRequired": [
+        "GEMINI_API_KEY"
+      ],
+      "knownBlockers": [
+        "GEMINI_API_KEY must be set"
+      ]
+    },
+    {
+      "id": "provider-ollama",
+      "label": "Ollama Local Provider",
+      "category": "provider",
+      "callerLayer": "commands/mod.rs → OllamaProvider",
+      "ipcChannels": [
+        "models:list",
+        "models:run-prompt"
+      ],
+      "preloadMethods": [
+        "models.list",
+        "models.runPrompt"
+      ],
+      "provider": "ollama-local-api",
+      "storageUsed": "none",
+      "dataSourceType": "local_model_runtime",
+      "status": "not_configured",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": [
+        "Ollama binary must be installed and running"
+      ]
+    },
+    {
+      "id": "memory-store",
+      "label": "Vector Memory Store",
+      "category": "storage",
+      "callerLayer": "bridge dispatch → memory.rs",
+      "ipcChannels": [
+        "memory:search",
+        "memory:write"
+      ],
+      "preloadMethods": [
+        "memory.search",
+        "memory.write",
+        "memory.delete"
+      ],
+      "provider": "cosine-similarity-db",
+      "storageUsed": "filesystem (user_config_dir/data/memory/)",
+      "dataSourceType": "filesystem",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "session-store",
+      "label": "Session Persistence",
+      "category": "storage",
+      "callerLayer": "bridge dispatch → session.rs",
+      "ipcChannels": [
+        "sessions:create",
+        "sessions:list",
+        "sessions:save"
+      ],
+      "preloadMethods": [
+        "sessions.*"
+      ],
+      "provider": "filesystem-json",
+      "storageUsed": "filesystem (user_config_dir/sessions/)",
+      "dataSourceType": "filesystem",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "settings-store",
+      "label": "Settings / Config Store",
+      "category": "settings",
+      "callerLayer": "bridge dispatch → config.rs → llm-term.toml",
+      "ipcChannels": [
+        "settings:get",
+        "settings:set"
+      ],
+      "preloadMethods": [
+        "settings.get",
+        "settings.set"
+      ],
+      "provider": "toml-config-file",
+      "storageUsed": "filesystem (llm-term.toml)",
+      "dataSourceType": "filesystem",
+      "status": "production_ready",
+      "mockRiskLevel": "low",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "plugin-runtime",
+      "label": "Lua/Hermes Plugin Runtime",
+      "category": "plugin",
+      "callerLayer": "bridge dispatch → plugin_mgr → lua.rs → Lua runtime",
+      "ipcChannels": [],
+      "preloadMethods": [],
+      "provider": "mlua-lua54",
+      "storageUsed": "filesystem (plugins/)",
+      "dataSourceType": "plugin_runtime",
+      "status": "production_ready",
+      "mockRiskLevel": "none",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "telemetry-system",
+      "label": "System Telemetry",
+      "category": "telemetry",
+      "callerLayer": "health-probe-runner → OS APIs",
+      "ipcChannels": [
+        "diagnostics:run-probe"
+      ],
+      "preloadMethods": [
+        "diagnostics.runHealthProbe"
+      ],
+      "provider": "os-apis",
+      "storageUsed": "none",
+      "dataSourceType": "system_telemetry",
+      "status": "production_ready",
+      "mockRiskLevel": "low",
+      "envVarsRequired": [],
+      "knownBlockers": []
+    },
+    {
+      "id": "bridge-adapter-frontend",
+      "label": "Frontend Bridge Adapter",
+      "category": "ipc",
+      "callerLayer": "renderer → (window.neurodeck IPC | HTTP fetch) → sidecar",
+      "ipcChannels": [],
+      "preloadMethods": [],
+      "provider": "multi-path",
+      "storageUsed": "localStorage-fallback",
+      "dataSourceType": "computed",
+      "status": "production_ready",
+      "mockRiskLevel": "medium",
+      "envVarsRequired": [
+        "VITE_BRIDGE_PORT"
+      ],
+      "knownBlockers": []
+    }
+  ]
+}

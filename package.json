@@ -55,7 +55,16 @@
     "verify:wiring": "tsx scripts/verify-wiring.ts",
     "verify:ipc": "tsx scripts/verify-ipc.ts",
     "verify:lsp": "tsx scripts/verify-lsp.ts",
-    "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp"
+    "verify:no-mocks": "tsx scripts/verify-no-mocks.ts",
+    "verify:security": "tsx scripts/verify-backend-security.ts",
+    "verify:real-data": "tsx scripts/verify-real-data.ts",
+    "verify:backend": "tsx scripts/verify-backend.ts",
+    "verify:report": "tsx scripts/export-backend-readiness-report.ts",
+    "verify:all": "npm run verify:no-mocks && npm run verify:security && npm run verify:real-data && npm run test:backend:contracts",
+    "test:backend:contracts": "vitest run tests/contract/",
+    "test:backend:integration": "vitest run tests/integration/",
+    "test:backend": "vitest run tests/contract/ tests/integration/",
+    "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp && npm run verify:all"
   },
   "devDependencies": {
     "electron": "^36.0.0",

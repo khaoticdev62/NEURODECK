@@ -1,0 +1,85 @@
+{
+  "checkedAt": "2026-06-11T19:20:50.241Z",
+  "checks": [
+    {
+      "file": "bridgeAdapter.ts",
+      "finding": "No hardcoded realData:true",
+      "passed": true
+    },
+    {
+      "file": "bridgeAdapter.ts",
+      "finding": "browserDraft is isolated to offline-draft path",
+      "passed": true
+    },
+    {
+      "file": "health-probe-runner.js",
+      "finding": "ipc_roundtrip uses real transport (realTransportUsed: true)",
+      "passed": true
+    },
+    {
+      "file": "health-probe-runner.js",
+      "finding": "system probe marks realTransportUsed: false",
+      "passed": true
+    },
+    {
+      "file": "health-probe-runner.js",
+      "finding": "storage probe uses real fs.writeFileSync",
+      "passed": true
+    },
+    {
+      "file": "health-probe-runner.js",
+      "finding": "storage probe uses real fs.readFileSync",
+      "passed": true
+    },
+    {
+      "file": "useNeuroDeckState.ts",
+      "finding": "Hydrates from real bridge (getInitialState)",
+      "passed": true
+    },
+    {
+      "file": "useNeuroDeckState.ts",
+      "finding": "Hydrates memory from real bridge (memory.list)",
+      "passed": true
+    },
+    {
+      "file": "useNeuroDeckState.ts",
+      "finding": "Hydrates sessions from real bridge (sessions.listMeta)",
+      "passed": true
+    },
+    {
+      "file": "useNeuroDeckState.ts",
+      "finding": "Hydrates agents from real bridge (agents.list)",
+      "passed": true
+    },
+    {
+      "file": "useNeuroDeckState.ts",
+      "finding": "Hydrates plugins from real bridge (plugins.list)",
+      "passed": true
+    },
+    {
+      "file": "ipc-handlers.js",
+      "finding": "settings:set has real set_provider dispatch",
+      "passed": true
+    },
+    {
+      "file": "ipc-handlers.js",
+      "finding": "settings:set has real set_model dispatch",
+      "passed": true
+    },
+    {
+      "file": "ipc-handlers.js",
+      "finding": "settings:set returns error for unknown keys (no fake success)",
+      "passed": true
+    },
+    {
+      "file": "main.js",
+      "finding": "BROWSER_SAVE_TO_MEMORY hits real sidecar memory_add_fact",
+      "passed": true
+    },
+    {
+      "file": "main.js",
+      "finding": "BROWSER_SAVE_TO_MEMORY not a stub",
+      "passed": true
+    }
+  ]
+}
