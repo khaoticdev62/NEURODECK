@@ -1444,6 +1444,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "output": result }))
         }
 
+        "ai_edit_code" => {
+            let code = args
+                .get("code")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'code'")?
+                .to_string();
+            let instruction = args
+                .get("instruction")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'instruction'")?
+                .to_string();
+            let lang = args
+                .get("lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("text")
+                .to_string();
+            let result = crate::commands::agent::ai_edit_code(
+                code,
+                instruction,
+                lang,
+                state.app_state.clone(),
+            )
+            .await?;
+            Ok(serde_json::json!({ "code": result }))
+        }
+
         "get_agent_plan" => {
             let orch_state = state
                 .orchestrator

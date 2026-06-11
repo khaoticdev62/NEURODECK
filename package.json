@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",
-    "dev": "npm run dev:autokill && npm run sidecar:build && cd electron && npm run dev",
+    "dev": "npm run dev:autokill && node electron/scripts/dev-launcher.js",
+    "dev:no-sidecar": "node electron/scripts/dev-launcher.js",
     "build": "npm run frontend:build && npm run sidecar:build && npx electron-builder --config electron-builder.yml --projectDir .",
     "sidecar:build": "cd src-tauri && cargo build --release",
     "frontend:dev": "npm -w frontend run dev",

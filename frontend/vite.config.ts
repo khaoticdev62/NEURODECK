@@ -8,7 +8,18 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
-    hmr: true,
+    watch: {
+      // Force Vite to use polling on Windows/WSL where inotify events are unreliable
+      usePolling: process.platform === 'win32',
+      interval: 300,
+    },
+    hmr: {
+      host: 'localhost',
+      port: 24678,
+      protocol: 'ws',
+      // Overlay error display inside Electron renderer
+      overlay: true,
+    },
   },
   envPrefix: ["VITE_"],
   build: {

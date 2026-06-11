@@ -1,9 +1,7 @@
 use crate::*;
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
-use tokio::io::{AsyncBufReadExt, BufReader as TokioBufReader};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RecommendedModel {
@@ -251,119 +249,6 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
     ]
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
-pub struct AgentHistoryEntry {
-    pub role: String, // "step" | "output"
-    pub content: String,
-}
-
-/// Call the LLM with the agent system prompt, collect the full response, and
-/// return the raw text. The frontend parses the JSON step from the text.
-pub async fn agent_step(
-    task: String,
-    history: Vec<AgentHistoryEntry>,
-    state: State<'_, Mutex<AppState>>,
-    app_handle: AppHandle,
-) -> Result<String, String> {
-    let (provider, workspace_prompt) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        let wp = if app.config.security.agent_workspace_only {
-            let path = app.config.get_resolved_workspace();
-            path.map(|p| format!("\n- YOU ARE RESTRICTED TO THE FOLLOWING WORKSPACE DIRECTORY: {}\n- Any attempt to access files outside this directory will be strictly blocked.", p.display())).unwrap_or_default()
-        } else {
-            String::new()
-        };
-        (app.provider.clone(), wp)
-    };
-
-    let os_name = std::env::consts::OS;
-    let preferred_lang = if os_name == "windows" {
-        "python or powershell"
-    } else {
-        "python or bash"
-    };
-
-    let system_prompt = format!(
-        r#"You are an autonomous coding agent running on {os}. Your job is to complete the user's programming task by iteratively writing and executing code.
-
-RESPONSE FORMAT — always output ONLY valid JSON with these exact fields, no markdown fences, no surrounding text:
-{{
-  "thought": "reasoning about what to do",
-  "code": "executable code (empty string if done)",
-  "lang": "python|bash|javascript|powershell",
-  "action": "run_code|computer|browser|done|error",
-  "summary": "one-line description of this step",
-  "tool": "tool name when action is computer/browser",
-  "args": {{"key": "value arguments when action is computer/browser"}}
-}}
-
-RULES:
-- Respond with JSON only. No markdown, no explanation outside the JSON object.
-- Keep each code block self-contained and directly executable.
-- After seeing execution output, analyze errors and iterate to fix them.
-- When the task is fully complete, set action to "done" and summarize in "summary".
-- If the task is impossible or you run out of ideas, set action to "error".
-- Prefer {lang} for code execution on this platform.
-- For desktop automation, set action to "computer" with one of these tools:
-  computer_screenshot, computer_find_text, computer_mouse_move, computer_mouse_click, computer_type, computer_key.
-- Computer actions are user-approved by NEURODECK before execution. Use them only when desktop UI control is necessary.
-- For web automation, set action to "browser" with one of these tools:
-  browser_open_session, browser_navigate_session, browser_get_content, browser_click,
-  browser_fill, browser_screenshot, browser_evaluate_js, browser_close_session.
-- Max 5 iterations total — be efficient.{workspace_prompt}"#,
-        os = os_name,
-        lang = preferred_lang,
-        workspace_prompt = workspace_prompt
-    );
-
-    // Build the prompt: task + history context
-    let mut prompt = format!("Task: {}", task);
-    if !history.is_empty() {
-        prompt.push_str("\n\nExecution history so far:\n");
-        for (i, entry) in history.iter().enumerate() {
-            match entry.role.as_str() {
-                "step" => prompt.push_str(&format!(
-                    "\n[Step {}] Agent response:\n{}\n",
-                    i / 2 + 1,
-                    entry.content
-                )),
-                "output" => prompt.push_str(&format!(
-                    "\n[Step {}] Execution output:\n{}\n",
-                    i / 2 + 1,
-                    entry.content
-                )),
-                _ => {}
-            }
-        }
-        prompt.push_str("\nBased on the above history, what is your next step?");
-    }
-
-    // Emit thinking event so frontend can show a spinner / cancel button
-    let _ = app_handle.emit("agent_thinking", serde_json::json!({ "task": &task }));
-
-    // Collect full streaming response
-    let mut stream = provider.stream_response(&prompt, &system_prompt);
-    let mut full_response = String::new();
-    while let Some(chunk) = stream.next().await {
-        match chunk {
-            Ok(text) => full_response.push_str(&text),
-            Err(e) => {
-                let _ = app_handle.emit(
-                    "agent_step_error",
-                    serde_json::json!({ "error": e.to_string() }),
-                );
-                return Err(crate::error::NeurodeckError::llm_error(e.to_string()).to_string());
-            }
-        }
-    }
-
-    let _ = app_handle.emit(
-        "agent_step_complete",
-        serde_json::json!({ "task": &task, "length": full_response.len() }),
-    );
-
-    Ok(full_response)
-}
 
 /// Apply an AI-generated inline edit to code. Sends the code + instruction to
 /// the active LLM provider via generate_oneshot and returns the modified code.
@@ -371,11 +256,11 @@ pub async fn ai_edit_code(
     code: String,
     instruction: String,
     lang: String,
-    state: State<'_, Mutex<AppState>>,
+    state: Arc<Mutex<AppState>>,
 ) -> Result<String, String> {
     let provider = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        std::sync::Arc::clone(&app.provider)
+        Arc::clone(&app.provider)
     };
 
     let prompt = format!(
@@ -490,165 +375,3 @@ pub async fn agent_exec_code(
     }
 }
 
-/// Start streaming execution of code from the Canvas view.
-/// Emits `canvas_exec_line` for stdout/stderr lines and `canvas_exec_done`
-/// when the child exits, is cancelled, or times out.
-pub async fn exec_code_stream(
-    code: String,
-    lang: String,
-    state: State<'_, Mutex<AppState>>,
-    app_handle: AppHandle,
-) -> Result<(), String> {
-    let workspace_path = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.config.get_resolved_workspace()
-    };
-
-    crate::security::validate_script_payload(
-        &code,
-        &lang,
-        "canvas-exec",
-        workspace_path.as_deref(),
-    )?;
-
-    let (program, args): (&str, Vec<&str>) = match lang.to_lowercase().as_str() {
-        "python" | "python3" => {
-            if cfg!(target_os = "windows") {
-                ("python", vec!["-c", &code])
-            } else {
-                ("python3", vec!["-c", &code])
-            }
-        }
-        "bash" | "sh" | "shell" => {
-            if cfg!(target_os = "windows") {
-                ("powershell", vec!["-Command", &code])
-            } else {
-                ("bash", vec!["-c", &code])
-            }
-        }
-        "powershell" => ("powershell", vec!["-Command", &code]),
-        "javascript" | "js" | "node" => ("node", vec!["-e", &code]),
-        _ => return Err(format!("Unsupported language: {lang}")),
-    };
-
-    {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
-            let _ = cancel_tx.send(());
-        }
-    }
-
-    let program_owned = program.to_string();
-    let args_owned: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
-
-    {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.canvas_exec_cancel_tx = Some(cancel_tx);
-    }
-
-    tokio::spawn(async move {
-        let start = std::time::Instant::now();
-        let mut cmd = tokio::process::Command::new(&program_owned);
-        cmd.args(&args_owned)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-
-        if let Some(wp) = workspace_path {
-            cmd.current_dir(wp);
-        }
-
-        let mut child = match cmd.spawn() {
-            Ok(child) => child,
-            Err(e) => {
-                emit_canvas_exec_line(
-                    &app_handle,
-                    "stderr",
-                    format!("[error] Failed to spawn '{program_owned}': {e}"),
-                );
-                emit_canvas_exec_done(&app_handle, -1, start);
-                return;
-            }
-        };
-
-        let Some(stdout) = child.stdout.take() else {
-            emit_canvas_exec_line(&app_handle, "stderr", "[error] Failed to capture stdout.");
-            let _ = child.kill().await;
-            emit_canvas_exec_done(&app_handle, -1, start);
-            return;
-        };
-        let Some(stderr) = child.stderr.take() else {
-            emit_canvas_exec_line(&app_handle, "stderr", "[error] Failed to capture stderr.");
-            let _ = child.kill().await;
-            emit_canvas_exec_done(&app_handle, -1, start);
-            return;
-        };
-
-        let stdout_handle = spawn_canvas_reader(app_handle.clone(), stdout, "stdout");
-        let stderr_handle = spawn_canvas_reader(app_handle.clone(), stderr, "stderr");
-
-        let exit_code = tokio::select! {
-            status = child.wait() => status.ok().and_then(|s| s.code()).unwrap_or(-1),
-            _ = &mut cancel_rx => {
-                let _ = child.kill().await;
-                emit_canvas_exec_line(&app_handle, "stderr", "[cancelled] Execution cancelled by user.");
-                -3
-            }
-            _ = tokio::time::sleep(std::time::Duration::from_secs(120)) => {
-                let _ = child.kill().await;
-                emit_canvas_exec_line(&app_handle, "stderr", "[error] Execution timed out (120s limit).");
-                -2
-            }
-        };
-
-        let _ = tokio::join!(stdout_handle, stderr_handle);
-        emit_canvas_exec_done(&app_handle, exit_code, start);
-    });
-
-    Ok(())
-}
-
-/// Cancel the active streaming Canvas execution, if one exists.
-pub fn cancel_exec(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(cancel_tx) = app.canvas_exec_cancel_tx.take() {
-        let _ = cancel_tx.send(());
-    }
-    Ok(())
-}
-
-fn spawn_canvas_reader<T>(
-    app_handle: AppHandle,
-    stream: T,
-    stream_name: &'static str,
-) -> tokio::task::JoinHandle<()>
-where
-    T: tokio::io::AsyncRead + Unpin + Send + 'static,
-{
-    tokio::spawn(async move {
-        let mut lines = TokioBufReader::new(stream).lines();
-        while let Ok(Some(line)) = lines.next_line().await {
-            emit_canvas_exec_line(&app_handle, stream_name, line);
-        }
-    })
-}
-
-fn emit_canvas_exec_line(app_handle: &AppHandle, stream: &str, line: impl Into<String>) {
-    let _ = app_handle.emit(
-        "canvas_exec_line",
-        serde_json::json!({
-            "stream": stream,
-            "line": line.into(),
-        }),
-    );
-}
-
-fn emit_canvas_exec_done(app_handle: &AppHandle, exit_code: i32, start: std::time::Instant) {
-    let _ = app_handle.emit(
-        "canvas_exec_done",
-        serde_json::json!({
-            "exit_code": exit_code,
-            "duration_ms": start.elapsed().as_millis() as u64,
-        }),
-    );
-}

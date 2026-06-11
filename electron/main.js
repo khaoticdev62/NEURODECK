@@ -558,7 +558,7 @@ app.whenReady().then(async () => {
   const bridgeOrigin = `http://127.0.0.1:${port}`;
   const wsBridgeOrigin = `ws://127.0.0.1:${port}`;
   const devExtras = process.env.ELECTRON_DEV
-    ? ` http://localhost:1420 ws://localhost:1420 ws://localhost:24678`
+    ? ` http://localhost:1420 ws://localhost:1420 ws://localhost:24678 http://localhost:24678`
     : '';
   const CSP = [
     "default-src 'none'",
