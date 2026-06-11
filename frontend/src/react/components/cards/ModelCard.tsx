@@ -32,7 +32,7 @@ export function ModelCard({ model, selected, onMarkReady, onMarkIndexed, onDisab
           </div>
           <div>
             <h3 className="font-semibold text-nd-text">{model.name}</h3>
-            <p className="text-xs text-nd-text0">{model.provider} · {model.size} · {model.quantization}</p>
+            <p className="text-xs text-nd-text-muted">{model.provider} · {model.size} · {model.quantization}</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">

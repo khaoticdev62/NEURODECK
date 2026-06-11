@@ -15,7 +15,7 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
             <FolderOpen className="mx-auto h-12 w-12 text-nd-accent" />
             <h2 className="mt-5 text-2xl font-semibold text-nd-text">Attach a project folder</h2>
             <p className="mt-3 text-sm leading-6 text-nd-text-muted">NEURODECK will read top-level signals locally: package manager, scripts, frameworks, docs, tests, file counts, and basic release risks.</p>
-            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent px-4 py-2 text-sm font-semibold text-blacksite transition hover:brightness-110">
+            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent px-4 py-2 text-sm font-semibold text-nd-bg transition hover:brightness-110">
               <ScanLine className="h-4 w-4" /> Select Folder
             </button>
           </div>

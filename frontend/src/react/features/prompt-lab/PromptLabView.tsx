@@ -397,7 +397,7 @@ export function PromptLabView() {
             <button id="pd-execute-btn" type="button" onClick={executePrompt} disabled={busy || !valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 disabled:opacity-50">
               <Play className="h-4 w-4" /> Execute
             </button>
-            <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-success/20 disabled:opacity-50">
+            <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
               <Save className="h-4 w-4" /> Save Prompt
             </button>
             <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${recordingId ? 'border-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>

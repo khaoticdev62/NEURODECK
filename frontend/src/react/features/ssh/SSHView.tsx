@@ -32,9 +32,9 @@ export function SSHView() {
           <Lock className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="ssh-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">SSH</div>
+          <div className="ssh-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">SSH</div>
           <h2 className="text-lg font-semibold text-nd-text">SSH</h2>
-          <p className="text-xs text-nd-text0">Secure shell connections</p>
+          <p className="text-xs text-nd-text-muted">Secure shell connections</p>
         </div>
       </div>
 
@@ -46,6 +46,7 @@ export function SSHView() {
             value={host}
             onChange={(e) => setHost(e.target.value)}
             placeholder="Host"
+            aria-label="SSH host"
             className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
           />
           <input
@@ -53,6 +54,7 @@ export function SSHView() {
             value={port}
             onChange={(e) => setPort(e.target.value)}
             placeholder="Port"
+            aria-label="SSH port"
             className="w-20 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
           />
         </div>
@@ -62,6 +64,7 @@ export function SSHView() {
           value={user}
           onChange={(e) => setUser(e.target.value)}
           placeholder="Username"
+          aria-label="SSH username"
           className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
         />
 
@@ -101,7 +104,7 @@ export function SSHView() {
         )}
 
         <div className="flex gap-2 pt-2">
-          <button type="button" onClick={saveCredential} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-success/20">
+          <button type="button" onClick={saveCredential} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
             <Save className="h-4 w-4" /> {saved ? 'Saved!' : 'Save Profile'}
           </button>
           <button type="button" onClick={() => { setHost(''); setUser(''); setPassword(''); setKeyPath(''); }} className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50">

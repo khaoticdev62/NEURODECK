@@ -95,7 +95,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               }`}
             >
               {isActive && (
-                <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent text-blacksite">
+                <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent text-nd-bg">
                   <Check className="h-3.5 w-3.5" />
                 </div>
               )}

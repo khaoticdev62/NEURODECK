@@ -9,7 +9,7 @@ export function AgentsView({ state, dispatch, actions }: { state: NeuroDeckState
 
   return (
     <Panel eyebrow="Agent Dock" title="Specialized Operators" className="agent-shell h-full overflow-hidden">
-      <div className="agent-kicker px-4 pt-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Agent</div>
+      <div className="agent-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Agent</div>
       <div className="px-4 pt-3">
         <input
           id="agent-task-input"

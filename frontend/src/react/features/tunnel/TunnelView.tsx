@@ -59,15 +59,15 @@ export function TunnelView() {
           <ArrowLeftRight className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="tunnel-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Tunnel</div>
+          <div className="tunnel-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Tunnel</div>
           <h2 className="text-lg font-semibold text-nd-text">Tunnel</h2>
-          <p className="text-xs text-nd-text0">SteamOS Game Mode to Desktop Mode bridge</p>
+          <p className="text-xs text-nd-text-muted">SteamOS Game Mode to Desktop Mode bridge</p>
         </div>
         <div className="flex items-center gap-2">
         <div id="tunnel-status-indicator" className={`h-2 w-2 rounded-full ${running ? 'bg-nd-success' : 'text-nd-text-muted/40'}`} />
-          <span className="text-xs text-nd-text0">{running ? 'Active' : 'Offline'}</span>
+          <span className="text-xs text-nd-text-muted">{running ? 'Active' : 'Offline'}</span>
         </div>
-        <button type="button" onClick={toggle} disabled={loading} className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>
+        <button type="button" onClick={toggle} disabled={loading} className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>
           {running ? <><PowerOff className="inline h-4 w-4" /> Stop</> : <><Power className="inline h-4 w-4" /> Start</>}
         </button>
       </div>

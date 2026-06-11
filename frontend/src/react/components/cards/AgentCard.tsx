@@ -25,7 +25,7 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
           </div>
           <div>
             <h3 className="font-semibold text-nd-text">{agent.name}</h3>
-            <p className="text-xs text-nd-text0">{agent.role}</p>
+            <p className="text-xs text-nd-text-muted">{agent.role}</p>
           </div>
         </div>
         <Badge tone={statusTone[agent.status]}>{agent.status}</Badge>

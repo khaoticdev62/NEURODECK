@@ -25,13 +25,13 @@ export function CliMakerView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">CLI Maker</h2>
-          <p className="text-xs text-nd-text0">Custom command builder and script generator</p>
+          <p className="text-xs text-nd-text-muted">Custom command builder and script generator</p>
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-4">
         <div className="flex w-64 flex-col gap-2 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Commands</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Commands</span>
           {commands.map((cmd, i) => (
             <div key={i} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 p-2">
               <div className="flex items-center gap-2">
@@ -51,6 +51,7 @@ export function CliMakerView() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Command name..."
+                aria-label="Command name"
                 className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
               />
               <input
@@ -58,6 +59,7 @@ export function CliMakerView() {
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder="Description..."
+                aria-label="Command description"
                 className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
               />
             </div>
@@ -65,10 +67,11 @@ export function CliMakerView() {
               value={script}
               onChange={(e) => setScript(e.target.value)}
               rows={6}
+              aria-label="Command script"
               className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-sm text-nd-text outline-none focus:border-nd-accent/40"
             />
             <div className="flex gap-2">
-              <button type="button" onClick={save} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-success/20">
+              <button type="button" onClick={save} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
                 <Plus className="h-4 w-4" /> Save Command
               </button>
               <button type="button" onClick={() => navigator.clipboard.writeText(script)} className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50">

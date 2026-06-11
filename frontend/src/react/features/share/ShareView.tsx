@@ -56,9 +56,9 @@ export function ShareView() {
           <Share2 className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="share-view-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Share</div>
+          <div className="share-view-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
           <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
-          <p className="text-xs text-nd-text0">LAN P2P, SFTP, FTP transfers</p>
+          <p className="text-xs text-nd-text-muted">LAN P2P, SFTP, FTP transfers</p>
         </div>
         <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -73,14 +73,14 @@ export function ShareView() {
           placeholder="File path to send..."
           className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
         />
-        <button type="button" onClick={sendFile} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-success/20">
+        <button type="button" onClick={sendFile} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
           <Send className="h-4 w-4" /> Send
         </button>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-4">
         <div id="share-panel-lan" className="flex w-64 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text0">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
             <Users className="h-3.5 w-3.5" /> Peers ({peers.length})
           </div>
           <div className="mt-2 space-y-2">
@@ -95,7 +95,7 @@ export function ShareView() {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text0">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
             <ArrowUpDown className="h-3.5 w-3.5" /> Active Transfers
           </div>
           <div className="mt-2 space-y-2">
@@ -103,7 +103,7 @@ export function ShareView() {
               <div key={t.id} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 p-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-nd-text/90">{t.filename}</span>
-                  <span className="text-[10px] text-nd-text0">{t.status}</span>
+                  <span className="text-[10px] text-nd-text-muted">{t.status}</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                   <div className="h-full rounded-full bg-nd-accent transition-all" style={{ width: `${t.progress}%` }} />

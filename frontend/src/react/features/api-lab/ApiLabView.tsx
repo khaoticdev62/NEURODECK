@@ -50,7 +50,7 @@ export function ApiLabView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">API Lab</h2>
-          <p className="text-xs text-nd-text0">HTTP request builder and tester</p>
+          <p className="text-xs text-nd-text-muted">HTTP request builder and tester</p>
         </div>
       </div>
 
@@ -58,6 +58,7 @@ export function ApiLabView() {
         <select
           value={method}
           onChange={(e) => setMethod(e.target.value)}
+          aria-label="HTTP method"
           className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-medium text-nd-text outline-none"
         >
           {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -68,9 +69,10 @@ export function ApiLabView() {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="https://api.example.com/v1/resource"
+          aria-label="Request URL"
           className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
         />
-        <button type="button" onClick={send} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-success/20 disabled:opacity-50">
+        <button type="button" onClick={send} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
           {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Send className="h-4 w-4" />}
           Send
         </button>
@@ -82,7 +84,7 @@ export function ApiLabView() {
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${activeTab === tab ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text0 hover:text-nd-text/80'}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${activeTab === tab ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
           >
             {tab}
           </button>
@@ -108,7 +110,7 @@ export function ApiLabView() {
                   placeholder="Value"
                   className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
                 />
-                <button type="button" onClick={() => removeHeader(i)} className="text-nd-text0 hover:text-nd-danger">
+                <button type="button" onClick={() => removeHeader(i)} className="text-nd-text-muted hover:text-nd-danger">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -136,7 +138,7 @@ export function ApiLabView() {
                   <span className={`rounded-lg px-2 py-1 text-xs font-medium ${response.status >= 200 && response.status < 300 ? 'bg-nd-success/10 text-nd-success' : response.status >= 400 ? 'bg-nd-danger/10 text-nd-danger' : 'bg-nd-warning/10 text-nd-warning'}`}>
                     {response.status} {response.statusText}
                   </span>
-                  <button type="button" onClick={() => navigator.clipboard.writeText(response.body)} className="text-nd-text0 hover:text-nd-text/80">
+                  <button type="button" onClick={() => navigator.clipboard.writeText(response.body)} className="text-nd-text-muted hover:text-nd-text/80">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>

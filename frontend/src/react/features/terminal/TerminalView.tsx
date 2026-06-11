@@ -123,13 +123,13 @@ export function TerminalView() {
           <Terminal className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="terminal-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Terminal</div>
+          <div className="terminal-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Terminal</div>
           <h2 className="text-lg font-semibold text-nd-text">Terminal</h2>
-          <p className="text-xs text-nd-text0">PTY shell sessions</p>
+          <p className="text-xs text-nd-text-muted">PTY shell sessions</p>
         </div>
         <div className="flex items-center gap-2">
           <div className={`h-2 w-2 rounded-full ${connected ? 'bg-nd-success' : 'bg-nd-danger'}`} />
-          <span className="text-xs text-nd-text0">{connected ? 'Connected' : 'Disconnected'}</span>
+          <span className="text-xs text-nd-text-muted">{connected ? 'Connected' : 'Disconnected'}</span>
         </div>
         <button type="button" onClick={reconnect} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text" title="Reconnect">
           <RefreshCw className="h-4 w-4" />

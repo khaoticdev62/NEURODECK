@@ -29,7 +29,7 @@ export function OrchestratorView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Orchestrator</h2>
-          <p className="text-xs text-nd-text0">Visual workflow automation builder</p>
+          <p className="text-xs text-nd-text-muted">Visual workflow automation builder</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}>

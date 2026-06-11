@@ -9,7 +9,7 @@ export function GraphView() {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-nd-text">Graph</h2>
-          <p className="text-xs text-nd-text0">Relationship visualizations and node graphs</p>
+          <p className="text-xs text-nd-text-muted">Relationship visualizations and node graphs</p>
         </div>
       </div>
 
@@ -28,7 +28,7 @@ export function GraphView() {
             <span className="text-xs text-nd-text-muted">Memory Links</span>
           </div>
         </div>
-        <p className="max-w-sm text-sm text-nd-text0">
+        <p className="max-w-sm text-sm text-nd-text-muted">
           Graph visualization engine is being integrated from the legacy UI.
           Visualize session relationships, model usage patterns, and memory connections.
         </p>

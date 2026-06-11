@@ -12,7 +12,7 @@ export function ExecutionView({ state, actions }: { state: NeuroDeckState; actio
             <div className="rounded-3xl border border-dashed border-nd-text-muted/15 bg-nd-surface/35 p-8 text-center">
               <BrainCircuit className="mx-auto h-10 w-10 text-nd-accent" />
               <h3 className="mt-4 text-lg font-semibold text-nd-text">No agent runs yet</h3>
-              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-nd-text0">
+              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-nd-text-muted">
                 Run an agent from the Agent Dock or use a prompt template. Runs are recorded here with provider, model, status, prompt, result, and context usage.
               </p>
               <button type="button" onClick={() => void actions.runAgent('architect')} className="mt-5 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
@@ -40,7 +40,7 @@ export function ExecutionView({ state, actions }: { state: NeuroDeckState; actio
                 {template.agentId && <span className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted/70">{template.agentId}</span>}
               </div>
               <h3 className="mt-3 font-semibold text-nd-text">{template.title}</h3>
-              <p className="mt-2 text-xs leading-5 text-nd-text0">{template.prompt}</p>
+              <p className="mt-2 text-xs leading-5 text-nd-text-muted">{template.prompt}</p>
             </button>
           ))}
           <button type="button" onClick={() => void actions.saveSession()} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-3 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
@@ -64,7 +64,7 @@ function RunCard({ run }: { run: AgentRun }) {
           </div>
           <div>
             <h3 className="font-semibold text-nd-text">{run.agentName}</h3>
-            <p className="text-xs text-nd-text0">{run.provider} • {run.model}</p>
+            <p className="text-xs text-nd-text-muted">{run.provider} • {run.model}</p>
           </div>
         </div>
         <Badge tone={tone}>{run.status}</Badge>

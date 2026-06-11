@@ -68,8 +68,8 @@ export function ResponseCard({ message, style, onRegenerate }: ResponseCardProps
           <p className="whitespace-pre-wrap text-sm leading-6 text-nd-text/90">{message.content}</p>
         </div>
 
-        {/* Hover actions */}
-        <div className={`mt-1 flex gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${isUser ? 'justify-end' : 'justify-start'}`}>
+        {/* Hover/focus actions */}
+        <div className={`mt-1 flex gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <ActionBtn icon={Copy} label="Copy" onClick={() => navigator.clipboard.writeText(message.content)} />
           {!isUser && <ActionBtn icon={RefreshCw} label="Regenerate" onClick={() => onRegenerate?.(message.id)} />}
         </div>

@@ -73,9 +73,9 @@ export function DocsView() {
           <BookOpen className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="docs-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text0">Docs</div>
+          <div className="docs-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Docs</div>
           <h2 className="text-lg font-semibold text-nd-text">Knowledge Base</h2>
-          <p className="text-xs text-nd-text0">Indexed documentation with semantic search</p>
+          <p className="text-xs text-nd-text-muted">Indexed documentation with semantic search</p>
         </div>
         <button type="button" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -84,7 +84,7 @@ export function DocsView() {
 
       <div className="docs-search-shell mb-4 flex gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
-          <Search className="h-4 w-4 text-nd-text0" />
+          <Search className="h-4 w-4 text-nd-text-muted" />
           <input
             id="docs-search-input"
             type="text"
@@ -96,35 +96,36 @@ export function DocsView() {
           />
           <button type="button" onClick={search} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80">Search</button>
         </div>
-        <button type="button" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-danger/20">
+        <button type="button" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-nd-danger/20">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
 
       <div className="mb-4 flex gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
-          <FolderOpen className="h-4 w-4 text-nd-text0" />
+          <FolderOpen className="h-4 w-4 text-nd-text-muted" />
           <input
             type="text"
             value={indexPath}
             onChange={(e) => setIndexPath(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && indexDir()}
             placeholder="Path to index..."
+            aria-label="Directory path to index"
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
         </div>
-        <button type="button" onClick={indexDir} className="rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-success/20">
+        <button type="button" onClick={indexDir} className="rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
           Index
         </button>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-4">
         <div className="flex w-64 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text0">Indexed Docs ({docs.length})</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Indexed Docs ({docs.length})</span>
           <div className="mt-2 space-y-1">
             {docs.map((doc) => (
               <div key={doc.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-nd-text/80">
-                <FileText className="h-3.5 w-3.5 text-nd-text0" />
+                <FileText className="h-3.5 w-3.5 text-nd-text-muted" />
                 <span className="truncate">{doc.title || doc.path}</span>
               </div>
             ))}

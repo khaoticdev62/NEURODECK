@@ -67,7 +67,7 @@ export function SchedulerView() {
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Scheduler</h2>
-          <p className="text-xs text-nd-text0">Task scheduling with cron expressions</p>
+          <p className="text-xs text-nd-text-muted">Task scheduling with cron expressions</p>
         </div>
         <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -119,7 +119,7 @@ export function SchedulerView() {
             <div className={`h-2 w-2 rounded-full ${task.enabled ? 'bg-nd-success' : 'text-nd-text-muted/40'}`} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-nd-text/90">{task.name}</p>
-              <p className="text-xs text-nd-text0 font-mono">{task.cron}</p>
+              <p className="text-xs text-nd-text-muted font-mono">{task.cron}</p>
               {task.goal && <p className="text-xs text-nd-text-muted/70 truncate">{task.goal}</p>}
             </div>
             <button type="button" onClick={() => runNow(task.id)} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-success">

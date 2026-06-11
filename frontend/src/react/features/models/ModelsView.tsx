@@ -9,7 +9,7 @@ export function ModelsView({ state, dispatch, actions }: { state: NeuroDeckState
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Model Manager" title="Local Runtime Inventory" className="flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-2">
+        <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin lg:grid-cols-2">
           {state.models.map((model) => (
             <ModelCard
               key={model.id}

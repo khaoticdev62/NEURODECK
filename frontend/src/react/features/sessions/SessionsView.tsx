@@ -33,7 +33,7 @@ export function SessionsView({ state, actions }: { state: NeuroDeckState; action
             <FileJson className="h-4 w-4" /> Save JSON Session
           </button>
           {state.lastExportPath && (
-            <p className="mt-3 break-all text-xs text-nd-text0">Last export: {state.lastExportPath}</p>
+            <p className="mt-3 break-all text-xs text-nd-text-muted">Last export: {state.lastExportPath}</p>
           )}
         </div>
 
