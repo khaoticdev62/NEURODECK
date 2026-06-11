@@ -5,18 +5,23 @@
  * main.js always loads from the live dev server (HMR enabled). Also clears
  * ELECTRON_RUN_AS_NODE which some IDEs (Cursor, Antigravity) inject and
  * which causes Electron to run as plain Node, breaking the main process.
+ *
+ * Uses an HTTP GET poll instead of a raw TCP socket so the check works on
+ * both IPv4 (127.0.0.1) and IPv6 (::1) — Windows 11 defaults to ::1 for
+ * "localhost" which defeats a hardcoded 127.0.0.1 socket connect.
  */
 const { spawn } = require('child_process');
+const http = require('http');
 const path = require('path');
-const net = require('net');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const VITE_PORT = 1420;
 const VITE_HMR_PORT = 24678;
-const POLL_INTERVAL_MS = 150;
-const VITE_TIMEOUT_MS = 30_000;
+const POLL_INTERVAL_MS = 300;
+const VITE_TIMEOUT_MS = 45_000;
 
 // ── Start Vite dev server ────────────────────────────────────────────────────
+// shell:true is required on Windows — .cmd files can't be spawned directly.
 const vite = spawn(
   'npm',
   ['-w', 'frontend', 'run', 'dev'],
@@ -36,7 +41,8 @@ vite.on('error', (err) => {
   process.exit(1);
 });
 
-// ── Poll until Vite is ready on port 1420 ───────────────────────────────────
+// ── Poll until Vite responds on http://localhost:PORT ───────────────────────
+// HTTP GET lets Node resolve "localhost" via the OS (handles ::1 and 127.0.0.1).
 function waitForVite() {
   return new Promise((resolve, reject) => {
     const deadline = Date.now() + VITE_TIMEOUT_MS;
@@ -44,12 +50,12 @@ function waitForVite() {
       if (Date.now() > deadline) {
         return reject(new Error(`Vite did not start within ${VITE_TIMEOUT_MS / 1000}s`));
       }
-      const socket = new net.Socket();
-      socket.setTimeout(POLL_INTERVAL_MS);
-      socket.once('connect', () => { socket.destroy(); resolve(); });
-      socket.once('error', () => { socket.destroy(); setTimeout(check, POLL_INTERVAL_MS); });
-      socket.once('timeout', () => { socket.destroy(); setTimeout(check, POLL_INTERVAL_MS); });
-      socket.connect(VITE_PORT, '127.0.0.1');
+      const req = http.get(`http://localhost:${VITE_PORT}/`, (res) => {
+        res.resume();
+        resolve();
+      });
+      req.setTimeout(POLL_INTERVAL_MS, () => req.destroy());
+      req.on('error', () => setTimeout(check, POLL_INTERVAL_MS));
     };
     check();
   });
