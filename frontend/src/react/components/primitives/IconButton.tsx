@@ -26,7 +26,7 @@ export function IconButton({
   return (
     <button
       type="button"
-      className={`no-drag inline-flex items-center justify-center rounded-lg transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-nd-accent/40 ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
+      className={`no-drag inline-flex items-center justify-center rounded-lg transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {children}

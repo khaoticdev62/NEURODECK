@@ -124,7 +124,8 @@ export function CanvasView() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck={false}
-            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm text-nd-text/90 outline-none"
+            aria-label="Code editor"
+            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm text-nd-text/90 outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-nd-accent/30"
           />
         </div>
 
@@ -138,7 +139,7 @@ export function CanvasView() {
               src={htmlBlob || undefined}
               title="Canvas Preview"
               sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
-              className="min-h-0 flex-1 w-full border-none bg-white"
+              className="min-h-0 flex-1 w-full border-none bg-nd-bg"
             />
           ) : (
             <pre

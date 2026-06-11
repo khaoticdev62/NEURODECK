@@ -115,7 +115,7 @@ export function ApiLabView() {
                 </button>
               </div>
             ))}
-            <button type="button" onClick={addHeader} className="flex items-center gap-1 text-xs text-nd-accent hover:underline">
+            <button type="button" onClick={addHeader} className="flex items-center gap-1 text-xs text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
               <Plus className="h-3.5 w-3.5" /> Add header
             </button>
           </div>

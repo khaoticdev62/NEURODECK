@@ -60,14 +60,16 @@ export function GitView() {
     } catch (_) { setDiff(''); }
   };
 
-  const FileItem = ({ file, icon: Icon, color }: { file: GitFile; icon: any; color: string }) => (
+  const FileItem = ({ file, icon: Icon, color, statusLabel }: { file: GitFile; icon: any; color: string; statusLabel: string }) => (
     <button
       type="button"
       onClick={() => showDiff(file.path)}
-      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text/80 hover:bg-nd-surface/50"
+      aria-label={`${statusLabel}: ${file.path} — click to view diff`}
+      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text/80 hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
     >
-      <Icon className={`h-3.5 w-3.5 ${color}`} />
-      <span className="truncate font-mono">{file.path}</span>
+      <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} aria-hidden="true" />
+      <span className={`shrink-0 font-mono font-semibold ${color}`}>{statusLabel}</span>
+      <span className="truncate font-mono text-nd-text-muted/80">{file.path}</span>
     </button>
   );
 
@@ -92,24 +94,24 @@ export function GitView() {
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Staged</span>
-              <button type="button" onClick={unstageAll} className="text-[10px] text-nd-accent hover:underline">Unstage all</button>
+              <button type="button" onClick={unstageAll} className="text-[11px] text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">Unstage all</button>
             </div>
-            {staged.map((f) => <FileItem key={f.path} file={f} icon={FilePlus} color="text-nd-success" />)}
+            {staged.map((f) => <FileItem key={f.path} file={f} icon={FilePlus} color="text-nd-success" statusLabel="A" />)}
             {!staged.length && <p className="py-2 text-center text-xs text-nd-text-muted/70">No staged files</p>}
           </div>
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Unstaged</span>
-              <button type="button" onClick={stageAll} className="text-[10px] text-nd-accent hover:underline">Stage all</button>
+              <button type="button" onClick={stageAll} className="text-[11px] text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">Stage all</button>
             </div>
-            {unstaged.map((f) => <FileItem key={f.path} file={f} icon={CircleDot} color="text-nd-warning" />)}
+            {unstaged.map((f) => <FileItem key={f.path} file={f} icon={CircleDot} color="text-nd-warning" statusLabel="M" />)}
             {!unstaged.length && <p className="py-2 text-center text-xs text-nd-text-muted/70">No unstaged files</p>}
           </div>
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Untracked</span>
-            {untracked.map((f) => <FileItem key={f.path} file={f} icon={FileMinus} color="text-nd-text-muted" />)}
+            {untracked.map((f) => <FileItem key={f.path} file={f} icon={FileMinus} color="text-nd-text-muted" statusLabel="?" />)}
             {!untracked.length && <p className="py-2 text-center text-xs text-nd-text-muted/70">No untracked files</p>}
           </div>
         </div>
@@ -123,7 +125,8 @@ export function GitView() {
                 value={commitMsg}
                 onChange={(e) => setCommitMsg(e.target.value)}
                 placeholder="Commit message..."
-                className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+                aria-label="Commit message"
+                className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:border-nd-accent/40"
                 onKeyDown={(e) => e.key === 'Enter' && doCommit()}
               />
               <button type="button" onClick={doCommit} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">

@@ -249,14 +249,14 @@ export function IDEView() {
                 >
                   <span>{getLangIcon(tab.lang)}</span>
                   <span className="truncate max-w-[120px]">{tab.name}{tab.dirty ? ' ●' : ''}</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); closeTab(tab.path); }}
-                    className="ml-1 rounded p-0.5 hover:bg-nd-surface/60"
+                    aria-label={`Close ${tab.name}`}
+                    className="ml-1 rounded p-0.5 hover:bg-nd-surface/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/50"
                   >
-                    <X className="h-3 w-3" />
-                  </span>
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
                 </button>
               ))}
             </div>
@@ -315,7 +315,7 @@ export function IDEView() {
           <div className="h-28 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-2">
             <div className="mb-1 flex items-center justify-between px-1">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Output</span>
-              <button type="button" onClick={() => setLogs([])} className="text-[10px] text-nd-text-muted hover:text-nd-text">Clear</button>
+              <button type="button" onClick={() => setLogs([])} className="text-[11px] text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Clear</button>
             </div>
             <div className="h-[calc(100%-1.25rem)] overflow-auto space-y-0.5 px-1">
               {logs.length === 0 && <p className="text-[11px] text-nd-text-muted/40 italic">No output yet</p>}

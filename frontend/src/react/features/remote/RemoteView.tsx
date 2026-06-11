@@ -218,7 +218,7 @@ export function RemoteView() {
           <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Event Log</span>
-              <button type="button" onClick={() => setLogs([])} className="text-[10px] text-nd-text-muted hover:text-nd-text">Clear</button>
+              <button type="button" onClick={() => setLogs([])} className="text-[11px] text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Clear</button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto space-y-1">
               {logs.length === 0 && <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>}
