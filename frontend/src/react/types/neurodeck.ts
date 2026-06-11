@@ -58,6 +58,10 @@ export interface LocalModel {
   id: string;
   name: string;
   provider: string;
+  /** Backend provider used for chat routing. */
+  backendProvider?: AIProvider;
+  /** Real model tag sent to the backend (e.g. llama3.1:8b). */
+  backendModel?: string;
   size: string;
   quantization: string;
   context: number;

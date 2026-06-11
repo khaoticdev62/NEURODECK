@@ -17,9 +17,11 @@ export function WorkspaceView({
   selectors: NeuroDeckSelectors;
   actions: NeuroDeckAppActions;
 }) {
+  const selectedModel = state.models.find((m) => m.id === state.selectedModelId)
+    ?? state.models.find((m) => m.backendModel === state.selectedModelId);
   const modelName = state.selectedProvider === 'offline-draft'
     ? 'NeuroDraft'
-    : state.models.find((m) => m.id === state.selectedModelId)?.name ?? state.selectedModelId;
+    : selectedModel?.name ?? state.selectedModelId ?? 'default';
 
   const [liveRamMb, setLiveRamMb] = useState(128);
   const [docCount, setDocCount] = useState(state.memories.length);

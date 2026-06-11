@@ -2119,16 +2119,29 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'provider'")?;
 
+            // UI-facing aliases that do not directly match backend provider names.
+            let (backend_provider, base_url_default) = match provider {
+                "lmstudio" => ("openai_compat", Some("http://localhost:1234")),
+                "offline-draft" => ("ollama", None), // frontend-only fallback
+                _ => (provider, None),
+            };
+
             if !matches!(
-                provider,
+                backend_provider,
                 "gemini" | "ollama" | "openai_compat" | "huggingface" | "kimi"
             ) {
-                return Err(format!("Unknown provider '{}'. Valid: gemini, ollama, openai_compat, huggingface, kimi", provider));
+                return Err(format!("Unknown provider '{}'. Valid: gemini, ollama, openai_compat, huggingface, kimi, lmstudio, offline-draft", provider));
             }
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let mut config = app_state.config.clone();
-            config.llm.default_provider = provider.to_string();
+            config.llm.default_provider = backend_provider.to_string();
+
+            if let Some(url) = base_url_default {
+                if config.llm.openai_compat_base_url.is_empty() {
+                    config.llm.openai_compat_base_url = url.to_string();
+                }
+            }
 
             let path = crate::get_config_path();
             crate::config::save_config(&path, &config)
@@ -2137,7 +2150,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             app_state.config = config.clone();
             app_state.provider = crate::create_provider(&config);
 
-            let active_model = match provider {
+            let active_model = match backend_provider {
                 "gemini" => config.llm.gemini_model.clone(),
                 "huggingface" => config.llm.hf_model.clone(),
                 "kimi" => config.llm.kimi_model.clone(),
@@ -2148,6 +2161,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({
                 "status": "updated",
                 "provider": provider,
+                "backend_provider": backend_provider,
                 "model": active_model
             }))
         }

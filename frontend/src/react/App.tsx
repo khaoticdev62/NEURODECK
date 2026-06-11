@@ -88,8 +88,13 @@ export default function App() {
     }
   }, []);
   const activeTheme = themes.find((theme) => theme.name === state.selectedTheme) ?? themes[0];
-  const selectedModel = state.models.find((model) => model.id === state.selectedModelId) ?? state.models[0];
-  const modelName = state.selectedProvider === 'offline-draft' ? 'NeuroDraft' : selectedModel?.name ?? 'default';
+  const selectedModel = state.models.find((model) => model.id === state.selectedModelId)
+    ?? state.models.find((model) => model.backendModel === state.selectedModelId)
+    ?? state.models[0];
+  const modelName = state.selectedProvider === 'offline-draft'
+    ? 'NeuroDraft'
+    : selectedModel?.name ?? state.selectedModelId ?? 'default';
+  const selectedBackendModel = selectedModel?.backendModel ?? selectedModel?.id ?? 'neurodraft-local';
 
   useEffect(() => {
     setRecentViews((current) => {
@@ -245,7 +250,7 @@ export default function App() {
     await neurodeckApi.ai.chatStream(
       {
         provider: state.selectedProvider,
-        model: modelName,
+        model: selectedBackendModel,
         persona: state.selectedPersona,
         prompt,
         messages: [...state.messages, userMessage],
@@ -265,7 +270,7 @@ export default function App() {
         },
       }
     );
-  }, [dispatch, modelName, state.activeProject?.name, state.composerValue, state.messages, state.projectContext, state.selectedPersona, state.selectedProvider]);
+  }, [dispatch, modelName, selectedBackendModel, state.activeProject?.name, state.composerValue, state.messages, state.projectContext, state.selectedPersona, state.selectedProvider]);
 
   const runAgent = useCallback(async (agentId: string, overridePrompt?: string) => {
     const agent = state.agents.find((item) => item.id === agentId);
@@ -664,8 +669,14 @@ export default function App() {
         latencyMs={state.telemetry.latencyMs}
         contextUsed={state.telemetry.contextUsed}
         onSelectModel={(id) => {
+          const model = state.models.find((m) => m.id === id);
+          if (!model) return;
+          const backendProvider = model.backendProvider ?? 'ollama';
+          const backendModel = model.backendModel ?? model.id;
+          dispatch({ type: 'set-provider', provider: backendProvider });
           dispatch({ type: 'set-selected-model', id });
-          void neurodeckApi.ai.setModel(id);
+          void neurodeckApi.ai.setProvider(backendProvider);
+          void neurodeckApi.ai.setModel(backendModel);
         }}
         onOpenCommandPalette={() => dispatch({ type: 'toggle-command', open: true })}
         onOpenNotifications={() => setNotificationsOpen((current) => !current)}
@@ -741,11 +752,12 @@ export default function App() {
       <CommandPalette state={state} dispatch={dispatch} actions={appActions} onOpenSettings={openSettings} />
 
       {/* Settings overlay */}
-      {settingsOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
-          onMouseDown={() => setSettingsOpen(false)}
-        >
+      <div
+        id="settings-overlay"
+        className={`settings-overlay ${settingsOpen ? 'active' : ''}`}
+        onMouseDown={() => setSettingsOpen(false)}
+      >
+        {settingsOpen && (
           <div
             ref={settingsDialogRef}
             role="dialog"
@@ -761,15 +773,16 @@ export default function App() {
               <SettingsView key={settingsPanel} state={state} dispatch={dispatch} actions={appActions} onPanelChange={setSettingsPanel} onClose={() => setSettingsOpen(false)} />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Notifications overlay */}
-      {notificationsOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
-          onMouseDown={() => setNotificationsOpen(false)}
-        >
+      <div
+        id="notif-modal"
+        className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? 'active' : 'pointer-events-none opacity-0'}`}
+        onMouseDown={() => setNotificationsOpen(false)}
+      >
+        {notificationsOpen && (
           <div
             ref={notifDialogRef}
             role="dialog"
@@ -785,15 +798,16 @@ export default function App() {
             </div>
             <p className="mt-3 text-sm text-nd-text-muted">No notifications.</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Keyboard shortcuts overlay */}
-      {shortcutsOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
-          onMouseDown={() => setShortcutsOpen(false)}
-        >
+      <div
+        id="shortcuts-overlay"
+        className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? '' : 'hidden'}`}
+        onMouseDown={() => setShortcutsOpen(false)}
+      >
+        {shortcutsOpen && (
           <div
             ref={shortcutsDialogRef}
             role="dialog"
@@ -826,8 +840,8 @@ export default function App() {
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Controller prompt overlay */}
       {ctrlPromptOpen && (
@@ -860,11 +874,12 @@ export default function App() {
       )}
 
       {/* Quick switcher overlay */}
-      {quickSwitcherOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
-          onMouseDown={() => setQuickSwitcherOpen(false)}
-        >
+      <div
+        id="quick-switcher-overlay"
+        className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? 'active' : 'pointer-events-none opacity-0'}`}
+        onMouseDown={() => setQuickSwitcherOpen(false)}
+      >
+        {quickSwitcherOpen && (
           <div
             ref={quickSwitcherDialogRef}
             role="dialog"
@@ -896,8 +911,8 @@ export default function App() {
               {!recentViews.slice(1).length && <p className="py-2 text-sm text-nd-text-muted">Visit two or more views to use quick switcher.</p>}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {state.showOnboarding && <OnboardingModal />}
     </div>

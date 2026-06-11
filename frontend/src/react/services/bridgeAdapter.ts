@@ -209,9 +209,10 @@ const models = {
     }
 
     try {
-      const ollama = await bridgeInvoke<string[]>('ollama_list_models', {
+      const res = await bridgeInvoke<{ models: Array<{ name: string; size?: number }> }>('ollama_list_models', {
         baseUrl: 'http://localhost:11434',
-      }).catch(() => []);
+      }).catch(() => ({ models: [] }));
+      const ollama = res.models ?? [];
       const discovered: ModelDetectionResult['discoveredModels'] = ollama.map((m: any) => ({
         id: m.name,
         name: m.name,

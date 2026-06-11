@@ -110,11 +110,11 @@ export const agents: Agent[] = [
 ];
 
 export const models: LocalModel[] = [
-  { id: 'neurodraft-local', name: 'NeuroDraft Offline Engine', provider: 'Local Built-in', size: 'embedded', quantization: 'N/A', context: 4096, bestFor: ['planning fallback', 'offline guidance'], status: 'ready', ramEstimate: '<1 GB' },
-  { id: 'llama31', name: 'Llama 3.1 8B Instruct', provider: 'Local', size: '4.7 GB', quantization: 'Q4_K_M', context: 8192, bestFor: ['planning', 'chat', 'docs'], status: 'ready', ramEstimate: '6-8 GB' },
-  { id: 'qwen-coder', name: 'Qwen2.5 Coder 7B', provider: 'Local', size: '4.4 GB', quantization: 'Q4_K_M', context: 32768, bestFor: ['code', 'refactor', 'tests'], status: 'indexed', ramEstimate: '7-9 GB' },
-  { id: 'phi-mini', name: 'Phi 3.5 Mini', provider: 'Local', size: '2.2 GB', quantization: 'Q4_K_M', context: 4096, bestFor: ['fast replies', 'summaries'], status: 'ready', ramEstimate: '4-5 GB' },
-  { id: 'deepseek-lite', name: 'DeepSeek Coder Lite', provider: 'External', size: 'missing', quantization: 'N/A', context: 16384, bestFor: ['code reasoning'], status: 'missing', ramEstimate: 'N/A' }
+  { id: 'neurodraft-local', name: 'NeuroDraft Offline Engine', provider: 'Local Built-in', backendProvider: 'offline-draft', backendModel: 'NeuroDraft', size: 'embedded', quantization: 'N/A', context: 4096, bestFor: ['planning fallback', 'offline guidance'], status: 'ready', ramEstimate: '<1 GB' },
+  { id: 'llama31', name: 'Llama 3.1 8B Instruct', provider: 'Local', backendProvider: 'ollama', backendModel: 'llama3.1:8b', size: '4.7 GB', quantization: 'Q4_K_M', context: 8192, bestFor: ['planning', 'chat', 'docs'], status: 'ready', ramEstimate: '6-8 GB' },
+  { id: 'qwen-coder', name: 'Qwen2.5 Coder 7B', provider: 'Local', backendProvider: 'ollama', backendModel: 'qwen2.5-coder:7b', size: '4.4 GB', quantization: 'Q4_K_M', context: 32768, bestFor: ['code', 'refactor', 'tests'], status: 'indexed', ramEstimate: '7-9 GB' },
+  { id: 'phi-mini', name: 'Phi 3.5 Mini', provider: 'Local', backendProvider: 'ollama', backendModel: 'phi3.5:mini', size: '2.2 GB', quantization: 'Q4_K_M', context: 4096, bestFor: ['fast replies', 'summaries'], status: 'ready', ramEstimate: '4-5 GB' },
+  { id: 'deepseek-lite', name: 'DeepSeek Coder Lite', provider: 'External', backendProvider: 'ollama', backendModel: 'deepseek-coder-lite', size: 'missing', quantization: 'N/A', context: 16384, bestFor: ['code reasoning'], status: 'missing', ramEstimate: 'N/A' }
 ];
 
 export const memories: MemoryItem[] = [
