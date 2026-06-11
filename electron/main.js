@@ -608,6 +608,39 @@ app.whenReady().then(async () => {
   createMainWindow();
   createTray();
 
+  // Initialize secure service layer
+  const LspManager = require('./services/lsp/lsp-manager');
+  const ConnectionRegistry = require('./services/diagnostics/connection-registry');
+  const HealthProbeRunner = require('./services/diagnostics/health-probe-runner');
+  const { registerIpcHandlers } = require('./ipc-handlers');
+
+  const isDev = !!process.env.ELECTRON_DEV;
+  const lspManager = new LspManager(mainWindow, isDev);
+  global.lspManager = lspManager; // Keep reference for cleanup
+  const connectionRegistry = new ConnectionRegistry(mainWindow);
+  const healthProbeRunner = new HealthProbeRunner(
+    connectionRegistry,
+    lspManager,
+    bridgePort,
+    app.getPath('userData')
+  );
+
+  lspManager.setWorkspaceRoot(path.join(app.getPath('userData'), 'workspace'));
+
+  registerIpcHandlers(
+    mainWindow,
+    lspManager,
+    connectionRegistry,
+    healthProbeRunner,
+    bridgePort,
+    isDev
+  );
+
+  // Run initial diagnostics probes in background
+  setTimeout(() => {
+    healthProbeRunner.runAllProbes().catch(err => console.error('[main] Initial health probe failed:', err));
+  }, 3000);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
@@ -963,9 +996,28 @@ ipcMain.handle(IPC.BROWSER_GET_CONTENT, async () => {
   return { content: '' };
 });
 
-ipcMain.handle(IPC.BROWSER_SAVE_TO_MEMORY, () => {
-  // TODO: extract page title + visible text and send to bridge /memory/store
-  return { success: false, note: 'Not yet implemented' };
+ipcMain.handle(IPC.BROWSER_SAVE_TO_MEMORY, async () => {
+  if (!browserView) return { success: false, error: 'No browser page open' };
+  try {
+    const [title, url, text] = await Promise.all([
+      browserView.webContents.executeJavaScript('document.title'),
+      browserView.webContents.executeJavaScript('location.href'),
+      browserView.webContents.executeJavaScript(
+        'document.body ? document.body.innerText.replace(/\\s+/g, " ").slice(0, 4000) : ""'
+      ),
+    ]);
+    const content = `[Browser Save] ${title} (${url})\n\n${text}`.trim();
+    const res = await fetch(`http://127.0.0.1:${bridgePort}/api/memory_add_fact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) return { success: false, error: `Sidecar error: ${res.status}` };
+    const data = await res.json();
+    return { success: true, id: data.id };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  }
 });
 
 ipcMain.handle(IPC.BROWSER_ZOOM_IN, () => {
@@ -1074,9 +1126,19 @@ ipcMain.handle(IPC.BROWSER_ADBLOCK_STATUS, () => {
   return { enabled: adBlockEnabled };
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', async (e) => {
   isQuitting = true;
-  killSidecar();
+  if (global.lspManager) {
+    e.preventDefault();
+    try {
+      await global.lspManager.destroyAll();
+    } catch (_) {}
+    global.lspManager = null;
+    killSidecar();
+    app.exit(0);
+  } else {
+    killSidecar();
+  }
 });
 
 app.on('window-all-closed', () => {
