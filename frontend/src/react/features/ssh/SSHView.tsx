@@ -32,7 +32,7 @@ export function SSHView() {
           <Lock className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="ssh-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">SSH</div>
+          <div className="ssh-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">SSH</div>
           <h2 className="text-lg font-semibold text-nd-text">SSH</h2>
           <p className="text-xs text-nd-text-muted">Secure shell connections</p>
         </div>

@@ -56,7 +56,7 @@ export function ShareView() {
           <Share2 className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="share-view-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
+          <div className="share-view-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
           <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P, SFTP, FTP transfers</p>
         </div>
@@ -105,7 +105,7 @@ export function ShareView() {
                   <span className="text-xs font-medium text-nd-text/90">{t.filename}</span>
                   <span className="text-[10px] text-nd-text-muted">{t.status}</span>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-nd-text/10">
                   <div className="h-full rounded-full bg-nd-accent transition-all" style={{ width: `${t.progress}%` }} />
                 </div>
               </div>

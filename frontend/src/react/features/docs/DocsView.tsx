@@ -73,7 +73,7 @@ export function DocsView() {
           <BookOpen className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="docs-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Docs</div>
+          <div className="docs-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Docs</div>
           <h2 className="text-lg font-semibold text-nd-text">Knowledge Base</h2>
           <p className="text-xs text-nd-text-muted">Indexed documentation with semantic search</p>
         </div>

@@ -276,7 +276,7 @@ export function PromptLabView() {
           <Sparkles className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="pl-header-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">PromptDrive</div>
+          <div className="pl-header-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">PromptDrive</div>
           <h2 className="text-lg font-semibold text-nd-text">PromptDrive Composer</h2>
           <p className="text-xs text-nd-text-muted">Pack templates, validated slots, autocomplete, saved prompts, and safe macro replay.</p>
         </div>

@@ -64,7 +64,7 @@ export function PrimarySidebar({ state, dispatch, onOpenSettings }: { state: Neu
           return (
             <div key={section} className="mb-2">
               {/* Section divider (icon mode) or label (expanded) */}
-              <div className={`mb-1 transition-opacity duration-150 ${expanded ? 'px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-nd-text-muted/60' : 'flex justify-center py-1'}`}>
+              <div className={`mb-1 transition-opacity duration-150 ${expanded ? 'px-2 py-1 text-xs font-bold uppercase tracking-[0.18em] text-nd-text-muted/60' : 'flex justify-center py-1'}`}>
                 {expanded ? section : <div className="h-px w-6 bg-nd-text-muted/20" />}
               </div>
               <div className="space-y-0.5">
@@ -80,7 +80,7 @@ export function PrimarySidebar({ state, dispatch, onOpenSettings }: { state: Neu
                       aria-label={item.label}
                       title={item.label}
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
-                      className={`nav-tab no-drag flex w-full items-center rounded-lg border px-2 py-2 text-left transition focus:outline-none focus:ring-2 focus:ring-nd-accent/40 ${
+                      className={`nav-tab no-drag flex w-full items-center rounded-lg border px-2 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         active
                           ? 'border-nd-accent/35 bg-nd-accent/10 text-nd-accent shadow-focus'
                           : 'border-transparent text-nd-text-muted hover:border-nd-text-muted/15 hover:bg-nd-surface/50 hover:text-nd-text'

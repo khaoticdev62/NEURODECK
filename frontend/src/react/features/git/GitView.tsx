@@ -83,8 +83,8 @@ export function GitView() {
           <h2 className="text-lg font-semibold text-nd-text">Git</h2>
           <p className="text-xs text-nd-text-muted">Repository management</p>
         </div>
-        <button type="button" onClick={loadStatus} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <button type="button" onClick={loadStatus} disabled={loading} aria-label="Refresh repository status" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -129,16 +129,16 @@ export function GitView() {
                 className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:border-nd-accent/40"
                 onKeyDown={(e) => e.key === 'Enter' && doCommit()}
               />
-              <button type="button" onClick={doCommit} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
-                <GitCommit className="h-4 w-4" /> Commit
+              <button type="button" onClick={doCommit} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                <GitCommit className="h-4 w-4" aria-hidden="true" /> Commit
               </button>
             </div>
             <div className="mt-2 flex gap-2">
-              <button type="button" onClick={() => neurodeckApi.git.push().then(loadStatus)} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50">
-                <GitPullRequest className="h-3 w-3" /> Push
+              <button type="button" onClick={() => neurodeckApi.git.push().then(loadStatus)} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                <GitPullRequest className="h-3 w-3" aria-hidden="true" /> Push
               </button>
-              <button type="button" onClick={() => neurodeckApi.git.pull().then(loadStatus)} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50">
-                <GitMerge className="h-3 w-3" /> Pull
+              <button type="button" onClick={() => neurodeckApi.git.pull().then(loadStatus)} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                <GitMerge className="h-3 w-3" aria-hidden="true" /> Pull
               </button>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function GitView() {
                 key={b.name}
                 type="button"
                 onClick={() => neurodeckApi.git.branchCheckout(b.name).then(loadStatus)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs ${b.current ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'}`}
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 ${b.current ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'}`}
               >
                 <GitBranch className="h-3.5 w-3.5" />
                 <span className="truncate">{b.name}</span>

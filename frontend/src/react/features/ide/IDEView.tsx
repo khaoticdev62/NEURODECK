@@ -220,7 +220,7 @@ export function IDEView() {
                 key={f.path}
                 type="button"
                 onClick={() => f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition ${
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 ${
                   activeTab === f.path ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'
                 }`}
               >
@@ -340,7 +340,7 @@ function IconBtn({ children, title, onClick }: { children: React.ReactNode; titl
       type="button"
       title={title}
       onClick={onClick}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text/80 active:scale-95"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text/80 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
       aria-label={title}
     >
       {children}

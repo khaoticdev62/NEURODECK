@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { LoadingState } from '../../components/primitives/LoadingState';
 
 export function PluginsView() {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -86,17 +88,18 @@ export function PluginsView() {
           <button
             type="button"
             onClick={reload}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Reload
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Reload
           </button>
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text"
+            aria-label="Refresh plugin list"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -109,6 +112,7 @@ export function PluginsView() {
           onChange={(e) => setInstallUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && installFromUrl()}
           placeholder="Plugin URL or registry ID..."
+          aria-label="Plugin URL or registry ID"
           className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
         />
         <button
@@ -128,12 +132,11 @@ export function PluginsView() {
       )}
 
       {/* Plugin grid */}
+      {loading && plugins.length === 0 && <LoadingState label="Loading plugins…" />}
       <div className="grid gap-3 overflow-y-auto pb-2 scrollbar-thin sm:grid-cols-2 lg:grid-cols-3">
         {plugins.length === 0 && !loading && (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
-            <Plug className="h-10 w-10 mb-3" />
-            <p className="text-sm">No plugins found</p>
-            <p className="text-xs mt-1">Install plugins from URL or place .lua files in the plugins folder</p>
+          <div className="col-span-full">
+            <EmptyState icon={Plug} title="No plugins found" description="Install plugins from a URL or place .lua files in the plugins folder." />
           </div>
         )}
         {plugins.map((p) => (
@@ -149,10 +152,11 @@ export function PluginsView() {
               <button
                 type="button"
                 onClick={() => toggle(p.file_name, p.enabled)}
-                className="shrink-0 text-nd-accent"
-                title={p.enabled ? 'Disable' : 'Enable'}
+                aria-label={p.enabled ? `Disable ${p.name}` : `Enable ${p.name}`}
+                aria-pressed={p.enabled}
+                className="shrink-0 text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
               >
-                {p.enabled ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5 text-nd-text-muted" />}
+                {p.enabled ? <ToggleRight className="h-5 w-5" aria-hidden="true" /> : <ToggleLeft className="h-5 w-5 text-nd-text-muted" aria-hidden="true" />}
               </button>
             </div>
 
@@ -191,10 +195,10 @@ export function PluginsView() {
                 <button
                   type="button"
                   onClick={() => uninstall(p.id!)}
-                  className="ml-auto rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-danger/10 hover:text-nd-danger"
-                  title="Uninstall"
+                  aria-label={`Uninstall ${p.name}`}
+                  className="ml-auto rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-danger/10 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>

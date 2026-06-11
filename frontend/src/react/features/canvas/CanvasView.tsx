@@ -84,7 +84,7 @@ export function CanvasView() {
           <Paintbrush className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="canvas-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Canvas</div>
+          <div className="canvas-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Canvas</div>
           <h2 className="text-lg font-semibold text-nd-text">Canvas</h2>
           <p className="text-xs text-nd-text-muted">Live code editor and execution</p>
         </div>

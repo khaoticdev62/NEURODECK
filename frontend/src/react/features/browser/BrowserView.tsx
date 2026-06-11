@@ -265,7 +265,7 @@ export function BrowserView() {
           <Globe className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="browser-kicker text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Browser</div>
+          <div className="browser-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Browser</div>
           <h2 className="text-lg font-semibold text-nd-text">Browser</h2>
           <p className="text-xs text-nd-text-muted">Embedded web browser</p>
         </div>
@@ -459,7 +459,7 @@ export function BrowserView() {
       {/* Viewport */}
       <div
         ref={viewportRef}
-        className={`flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-white ${visible ? '' : 'hidden'}`}
+        className={`flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-bg ${visible ? '' : 'hidden'}`}
       />
       {!visible && (
         <div className="flex flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">

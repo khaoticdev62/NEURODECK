@@ -15,7 +15,7 @@ export function MemoryView({ state, dispatch }: { state: NeuroDeckState; dispatc
 
   return (
     <Panel eyebrow="Memory Vault" title="Local-First Recall" className="memory-shell !flex-col h-full overflow-hidden">
-      <div className="memory-kicker px-4 pt-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Memory</div>
+      <div className="memory-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Memory</div>
       <div className="memory-search-shell px-4 pt-3">
         <input
           id="memory-search-input"

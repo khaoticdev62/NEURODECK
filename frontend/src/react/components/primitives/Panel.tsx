@@ -6,8 +6,8 @@ export function Panel({ title, eyebrow, action, children, className = '' }: { ti
       {(title || eyebrow || action) && (
         <header className="flex items-start justify-between gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <div>
-            {eyebrow && <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-accent/80">{eyebrow}</p>}
-            {title && <h2 className="mt-1 text-sm font-semibold text-nd-text">{title}</h2>}
+            {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-accent/80">{eyebrow}</p>}
+            {title && <h3 className="mt-1 text-sm font-semibold text-nd-text">{title}</h3>}
           </div>
           {action}
         </header>

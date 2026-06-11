@@ -133,7 +133,7 @@ export function RemoteView() {
           <Radio className={`h-5 w-5 ${status.running ? 'text-nd-success' : 'text-nd-accent'}`} />
         </div>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Remote</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Remote</div>
           <h2 className="text-lg font-semibold text-nd-text">Remote Control</h2>
           <p className="text-xs text-nd-text-muted">Mobile-friendly web remote server</p>
         </div>
@@ -158,8 +158,9 @@ export function RemoteView() {
           {/* Port + Toggle */}
           <div className="flex items-end gap-3">
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-nd-text-muted">Server Port</label>
+              <label htmlFor="remote-port" className="block text-xs font-medium text-nd-text-muted">Server Port</label>
               <input
+                id="remote-port"
                 type="number"
                 value={port}
                 onChange={(e) => setPort(Number(e.target.value))}
@@ -171,7 +172,7 @@ export function RemoteView() {
               type="button"
               onClick={toggle}
               disabled={loading}
-              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 status.running
                   ? 'border border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20'
                   : 'border border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'
@@ -196,8 +197,8 @@ export function RemoteView() {
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-nd-text-muted">Remote URL</span>
-                  <button type="button" onClick={copyUrl} className="text-nd-accent hover:text-nd-accent/80">
-                    <Copy className="h-4 w-4" />
+                  <button type="button" onClick={copyUrl} aria-label="Copy remote URL" className="text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
+                    <Copy className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
                 <p className="break-all font-mono text-sm text-nd-text/80">{status.url}</p>

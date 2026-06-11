@@ -431,20 +431,22 @@ export function TorrentView() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); toggleTorrent(t); }}
-                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent"
+                    aria-label={t.paused ? 'Resume torrent' : 'Pause torrent'}
+                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    {t.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                    {t.paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
                   </button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setConfirmRemove({ id: t.id }); }}
-                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger"
+                    aria-label="Remove torrent"
+                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-nd-text/10">
                 <div
                   className={`h-full rounded-full transition-all ${t.completed ? 'bg-nd-success' : 'bg-nd-accent'}`}
                   style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
