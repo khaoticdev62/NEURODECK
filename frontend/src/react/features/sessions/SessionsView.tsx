@@ -1,44 +1,86 @@
-import { FileDown, FileJson, GitBranch } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { FileDown, FileJson, RefreshCw, Archive } from 'lucide-react';
 import { Panel } from '../../components/primitives/Panel';
 import { SessionCard } from '../../components/cards/SessionCard';
-import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import type { NeuroDeckAppActions, NeuroDeckState, SessionNode } from '../../types/neurodeck';
 
 export function SessionsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
-  const root = state.sessions.find((node) => node.id === 'root');
-  const children = root?.children
-    .map((id) => state.sessions.find((node) => node.id === id))
-    .filter(Boolean) ?? [];
+  const [sessionsList, setSessionsList] = useState<SessionNode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSessions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { neurodeckApi } = await import('../../services/bridgeAdapter');
+      const meta = await neurodeckApi.sessions.listMeta();
+      setSessionsList(meta as SessionNode[]);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchSessions();
+  }, [fetchSessions]);
 
   return (
-    <Panel eyebrow="Session Graph" title="Conversation Map" className="h-full overflow-hidden">
+    <Panel eyebrow="Session History" title="Saved Sessions" className="h-full overflow-hidden">
       <div className="grid h-full gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-[360px_1fr]">
         <div className="rounded-3xl border border-nd-accent/25 bg-nd-accent/[0.045] p-5">
-          <GitBranch className="h-8 w-8 text-nd-accent" />
-          <h3 className="mt-4 text-xl font-semibold text-nd-text">{root?.title}</h3>
+          <Archive className="h-8 w-8 text-nd-accent" />
+          <h3 className="mt-4 text-xl font-semibold text-nd-text">Session History</h3>
           <p className="mt-2 text-sm leading-6 text-nd-text-muted">
-            A visual map for planning, audit, build, and export sessions. This turns chat history into an actual project trail.
+            A chronological trail of your interactions. View, export, or audit past sessions.
           </p>
           <button
             type="button"
-            onClick={() => void actions.exportSession()}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+            onClick={() => void fetchSessions()}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent disabled:opacity-50"
+            disabled={loading}
           >
-            <FileDown className="h-4 w-4" /> Export Markdown
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh List
           </button>
-          <button
-            type="button"
-            onClick={() => void actions.saveSession()}
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
-          >
-            <FileJson className="h-4 w-4" /> Save JSON Session
-          </button>
-          {state.lastExportPath && (
-            <p className="mt-3 break-all text-xs text-nd-text-muted">Last export: {state.lastExportPath}</p>
-          )}
+          
+          <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
+            <h4 className="text-sm font-semibold text-nd-text">Active Session Actions</h4>
+            <button
+              type="button"
+              onClick={() => void actions.exportSession()}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+            >
+              <FileDown className="h-4 w-4" /> Export Markdown
+            </button>
+            <button
+              type="button"
+              onClick={() => void actions.saveSession()}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
+            >
+              <FileJson className="h-4 w-4" /> Save JSON Session
+            </button>
+            {state.lastExportPath && (
+              <p className="mt-3 break-all text-xs text-nd-text-muted">Last export: {state.lastExportPath}</p>
+            )}
+          </div>
         </div>
 
         <div className="space-y-3">
-          {children.map((node) => node && <SessionCard key={node.id} node={node} />)}
+          {error && (
+            <div className="rounded-xl border border-nd-error/25 bg-nd-error/10 p-4 text-sm text-nd-error">
+              {error}
+            </div>
+          )}
+          {!loading && !error && sessionsList.length === 0 && (
+            <div className="flex h-40 flex-col items-center justify-center text-nd-text-muted">
+              <p>No saved sessions found.</p>
+            </div>
+          )}
+          {sessionsList.map((node) => (
+            <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
+          ))}
         </div>
       </div>
     </Panel>

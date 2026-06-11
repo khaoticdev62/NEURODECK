@@ -644,7 +644,7 @@ describe('reducer — async / error state', () => {
 
 describe('reducer — sessions', () => {
   it('set-sessions: replaces sessions array', () => {
-    const newSess = [{ id: 's1', title: 'T', type: 'build' as const, status: 'active' as const, children: [] }];
+    const newSess = [{ id: 's1', created_at: new Date().toISOString(), message_count: 5, preview: 'test', name: 'Test' }];
     const next = dispatch({ type: 'set-sessions', sessions: newSess });
     expect(next.sessions).toEqual(newSess);
   });

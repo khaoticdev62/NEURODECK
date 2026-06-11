@@ -15,7 +15,7 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
             <FolderOpen className="mx-auto h-12 w-12 text-nd-accent" />
             <h2 className="mt-5 text-2xl font-semibold text-nd-text">Attach a project folder</h2>
             <p className="mt-3 text-sm leading-6 text-nd-text-muted">NEURODECK will read top-level signals locally: package manager, scripts, frameworks, docs, tests, file counts, and basic release risks.</p>
-            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent px-4 py-2 text-sm font-semibold text-nd-bg transition hover:brightness-110">
+            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent px-4 py-2 text-sm font-semibold text-nd-bg transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               <ScanLine className="h-4 w-4" /> Select Folder
             </button>
           </div>
@@ -46,7 +46,7 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
                   <h2 className="mt-4 text-xl font-semibold text-nd-text">{project.path}</h2>
                   <p className="mt-2 text-sm text-nd-text-muted">Scanned at {new Date(project.scannedAt).toLocaleString()}</p>
                 </div>
-                <button type="button" onClick={() => void actions.scanProject()} className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
+                <button type="button" onClick={() => void actions.scanProject()} className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                   Rescan
                 </button>
               </div>
@@ -73,10 +73,10 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
               <h3 className="mt-3 font-semibold text-nd-text">Local scan completed</h3>
               <p className="mt-2 text-sm leading-6 text-nd-text-muted">This scan intentionally avoids network calls and skips heavy folders like node_modules, .git, dist, build, and release.</p>
             </div>
-            <button type="button" onClick={() => void actions.buildProjectContext()} className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
+            <button type="button" onClick={() => void actions.buildProjectContext()} className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               Build AI context snapshot
             </button>
-            <button type="button" onClick={() => void actions.exportSession()} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
+            <button type="button" onClick={() => void actions.exportSession()} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               Export project scan notes
             </button>
           </div>

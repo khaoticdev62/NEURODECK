@@ -206,7 +206,7 @@ export function IDEView() {
                   const parts = currentPath.split(/[/\\]/).filter(Boolean);
                   loadFiles(parts.slice(0, -1).join('/'));
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text-muted hover:bg-nd-surface/50"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
               >
                 <FolderOpen className="h-3.5 w-3.5" /> ..
               </button>
@@ -241,7 +241,7 @@ export function IDEView() {
                   key={tab.path}
                   type="button"
                   onClick={() => setActiveTab(tab.path)}
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                     activeTab === tab.path
                       ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
                       : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text-muted hover:bg-nd-surface/50'
@@ -292,7 +292,7 @@ export function IDEView() {
                         onEditorInput();
                       }
                     }}
-                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-nd-text/90 outline-none"
+                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-nd-text/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-nd-accent/40"
                     spellCheck={false}
                     aria-label="Code editor"
                   />
@@ -303,7 +303,7 @@ export function IDEView() {
                 <Code className="h-10 w-10" />
                 <p className="text-sm">Select a file from the explorer to start editing</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={newFile} className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs text-nd-accent hover:bg-nd-accent/20">
+                  <button type="button" onClick={newFile} className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                     <FilePlus className="h-3.5 w-3.5" /> New File
                   </button>
                 </div>

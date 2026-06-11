@@ -83,7 +83,7 @@ export function SchedulerView() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Task name..."
             aria-label="Task name"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
           <input
             type="text"
@@ -91,7 +91,7 @@ export function SchedulerView() {
             onChange={(e) => setCron(e.target.value)}
             placeholder="Cron: 0 9 * * MON"
             aria-label="Cron expression"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
         </div>
         <textarea
@@ -100,7 +100,7 @@ export function SchedulerView() {
           placeholder="Task description or Lua script..."
           aria-label="Task description or Lua script"
           rows={2}
-          className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+          className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
         <button
           type="button"

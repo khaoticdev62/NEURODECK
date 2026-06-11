@@ -47,7 +47,7 @@ export function SSHView() {
             onChange={(e) => setHost(e.target.value)}
             placeholder="Host"
             aria-label="SSH host"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
           <input
             type="text"
@@ -55,7 +55,7 @@ export function SSHView() {
             onChange={(e) => setPort(e.target.value)}
             placeholder="Port"
             aria-label="SSH port"
-            className="w-20 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="w-20 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
         </div>
 
@@ -65,21 +65,21 @@ export function SSHView() {
           onChange={(e) => setUser(e.target.value)}
           placeholder="Username"
           aria-label="SSH username"
-          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
 
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setAuthType('password')}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${authType === 'password' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${authType === 'password' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
           >
             Password
           </button>
           <button
             type="button"
             onClick={() => setAuthType('key')}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${authType === 'key' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${authType === 'key' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
           >
             SSH Key
           </button>
@@ -91,7 +91,7 @@ export function SSHView() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
         ) : (
           <input
@@ -99,15 +99,15 @@ export function SSHView() {
             value={keyPath}
             onChange={(e) => setKeyPath(e.target.value)}
             placeholder="~/.ssh/id_rsa"
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
         )}
 
         <div className="flex gap-2 pt-2">
-          <button type="button" onClick={saveCredential} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
+          <button type="button" onClick={saveCredential} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
             <Save className="h-4 w-4" /> {saved ? 'Saved!' : 'Save Profile'}
           </button>
-          <button type="button" onClick={() => { setHost(''); setUser(''); setPassword(''); setKeyPath(''); }} className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50">
+          <button type="button" onClick={() => { setHost(''); setUser(''); setPassword(''); setKeyPath(''); }} className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>

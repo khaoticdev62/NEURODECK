@@ -92,10 +92,10 @@ export interface MemoryItem {
 
 export interface SessionNode {
   id: string;
-  title: string;
-  type: 'root' | 'planning' | 'audit' | 'build' | 'export';
-  status: 'active' | 'complete' | 'draft';
-  children: string[];
+  created_at: string;
+  message_count: number;
+  preview: string;
+  name?: string;
 }
 
 export interface CacheEntry {

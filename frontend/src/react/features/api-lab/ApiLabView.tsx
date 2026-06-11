@@ -59,7 +59,7 @@ export function ApiLabView() {
           value={method}
           onChange={(e) => setMethod(e.target.value)}
           aria-label="HTTP method"
-          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-medium text-nd-text outline-none"
+          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-medium text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
           {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
@@ -70,7 +70,7 @@ export function ApiLabView() {
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="https://api.example.com/v1/resource"
           aria-label="Request URL"
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
         <button type="button" onClick={send} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Send className="h-4 w-4" />}
@@ -103,14 +103,14 @@ export function ApiLabView() {
                   value={h.key}
                   onChange={(e) => updateHeader(i, e.target.value, h.value)}
                   placeholder="Header"
-                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
                 />
                 <input
                   type="text"
                   value={h.value}
                   onChange={(e) => updateHeader(i, h.key, e.target.value)}
                   placeholder="Value"
-                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
                 />
                 <button type="button" onClick={() => removeHeader(i)} aria-label="Remove header" className="text-nd-text-muted hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40 rounded">
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -128,7 +128,7 @@ export function ApiLabView() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder='{"key": "value"}'
-            className="h-full w-full resize-none rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-sm text-nd-text outline-none"
+            className="h-full w-full resize-none rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
         )}
 

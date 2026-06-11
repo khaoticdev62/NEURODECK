@@ -61,7 +61,7 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
           <button
             type="button"
             onClick={() => void actions.checkAiHealth()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
             <Wrench className="h-4 w-4" /> Check AI Health
           </button>
@@ -116,7 +116,7 @@ function ActionRow({ icon: Icon, label, description, variant, onClick }: { icon:
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition ${cls}`}
+      className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${cls}`}
     >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" />
       <div>

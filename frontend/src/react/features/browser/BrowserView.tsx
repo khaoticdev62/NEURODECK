@@ -273,16 +273,16 @@ export function BrowserView() {
 
       {/* Toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <button type="button" onClick={goBack} disabled={!canGoBack} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent">
+        <button type="button" onClick={goBack} disabled={!canGoBack} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <button type="button" onClick={goForward} disabled={!canGoForward} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent">
+        <button type="button" onClick={goForward} disabled={!canGoForward} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <ArrowRight className="h-4 w-4" />
         </button>
-        <button type="button" onClick={refresh} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text">
+        <button type="button" onClick={refresh} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <RotateCcw className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => navigate('https://example.com')} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text">
+        <button type="button" onClick={() => navigate('https://example.com')} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <Home className="h-4 w-4" />
         </button>
 
@@ -290,7 +290,7 @@ export function BrowserView() {
         <button
           type="button"
           onClick={isBookmarked ? () => removeBookmark(url) : addBookmark}
-          className={`rounded-lg border p-2 transition hover:bg-nd-surface/50 ${isBookmarked ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text'}`}
+          className={`rounded-lg border p-2 transition hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${isBookmarked ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text'}`}
           title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
         >
           <Star className="h-4 w-4" fill={isBookmarked ? 'currentColor' : 'none'} />
@@ -298,7 +298,7 @@ export function BrowserView() {
 
         {/* Bookmarks dropdown */}
         <div className="relative">
-          <button type="button" onClick={() => { setBookmarksOpen((v) => !v); setHistoryOpen(false); setDownloadsOpen(false); }} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Bookmarks">
+          <button type="button" onClick={() => { setBookmarksOpen((v) => !v); setHistoryOpen(false); setDownloadsOpen(false); }} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Bookmarks">
             <BookMarked className="h-4 w-4" />
           </button>
           {bookmarksOpen && (
@@ -322,7 +322,7 @@ export function BrowserView() {
 
         {/* History dropdown */}
         <div className="relative">
-          <button type="button" onClick={() => { setHistoryOpen((v) => !v); loadHistory(); setBookmarksOpen(false); setDownloadsOpen(false); }} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="History">
+          <button type="button" onClick={() => { setHistoryOpen((v) => !v); loadHistory(); setBookmarksOpen(false); setDownloadsOpen(false); }} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="History">
             <Clock className="h-4 w-4" />
           </button>
           {historyOpen && (
@@ -346,7 +346,7 @@ export function BrowserView() {
 
         {/* Downloads dropdown */}
         <div className="relative">
-          <button type="button" onClick={() => { setDownloadsOpen((v) => !v); setBookmarksOpen(false); setHistoryOpen(false); }} className="relative rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Downloads">
+          <button type="button" onClick={() => { setDownloadsOpen((v) => !v); setBookmarksOpen(false); setHistoryOpen(false); }} className="relative rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Downloads">
             <Download className="h-4 w-4" />
             {downloads.length > 0 && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-nd-accent" />}
           </button>
@@ -373,12 +373,12 @@ export function BrowserView() {
         </div>
 
         {/* Reader mode */}
-        <button type="button" onClick={activateReaderMode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Reader mode">
+        <button type="button" onClick={activateReaderMode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Reader mode">
           <BookOpen className="h-4 w-4" />
         </button>
 
         {/* Ad blocker toggle */}
-        <button type="button" onClick={toggleAdBlock} className={`rounded-lg border p-2 transition hover:bg-nd-surface/50 ${adBlockEnabled ? 'border-nd-success/40 bg-nd-success/10 text-nd-success' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text'}`} title={adBlockEnabled ? 'Ad blocker on' : 'Ad blocker off'}>
+        <button type="button" onClick={toggleAdBlock} className={`rounded-lg border p-2 transition hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${adBlockEnabled ? 'border-nd-success/40 bg-nd-success/10 text-nd-success' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text'}`} title={adBlockEnabled ? 'Ad blocker on' : 'Ad blocker off'}>
           {adBlockEnabled ? <ShieldCheck className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
         </button>
 
@@ -394,30 +394,30 @@ export function BrowserView() {
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
             placeholder="Enter URL..."
           />
-          <button type="button" onClick={() => navigate(inputUrl)} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80">
+          <button type="button" onClick={() => navigate(inputUrl)} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">
             Go
           </button>
         </div>
 
-        <button type="button" onClick={handleFind} className={`rounded-lg border p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text ${findOpen ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15'}`} title="Find in page">
+        <button type="button" onClick={handleFind} className={`rounded-lg border p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${findOpen ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15'}`} title="Find in page">
           {findOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
         </button>
-        <button type="button" onClick={handleZoomOut} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Zoom out">
+        <button type="button" onClick={handleZoomOut} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Zoom out">
           <ZoomOut className="h-4 w-4" />
         </button>
-        <button type="button" onClick={handleZoomReset} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Reset zoom">
+        <button type="button" onClick={handleZoomReset} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Reset zoom">
           <Focus className="h-4 w-4" />
         </button>
-        <button type="button" onClick={handleZoomIn} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Zoom in">
+        <button type="button" onClick={handleZoomIn} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Zoom in">
           <ZoomIn className="h-4 w-4" />
         </button>
-        <button type="button" onClick={toggleVisibility} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title={visible ? 'Hide' : 'Show'}>
+        <button type="button" onClick={toggleVisibility} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title={visible ? 'Hide' : 'Show'}>
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
-        <button type="button" onClick={saveToMemory} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text" title="Save to Memory">
+        <button type="button" onClick={saveToMemory} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Save to Memory">
           <Save className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => window.open(url, '_blank')} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text">
+        <button type="button" onClick={() => window.open(url, '_blank')} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <ExternalLink className="h-4 w-4" />
         </button>
       </div>
@@ -435,7 +435,7 @@ export function BrowserView() {
             autoFocus
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
-          <button type="button" onClick={submitFind} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80">
+          <button type="button" onClick={submitFind} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">
             Find
           </button>
         </div>

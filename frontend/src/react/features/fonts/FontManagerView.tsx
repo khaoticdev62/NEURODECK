@@ -41,7 +41,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
 
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
           <Search className="h-4 w-4 text-nd-text-muted" />
           <input
             type="text"
@@ -51,7 +51,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
             className="flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
           />
           {search && (
-            <button type="button" onClick={() => setSearch('')} className="text-nd-text-muted hover:text-nd-text/80">
+            <button type="button" onClick={() => setSearch('')} className="text-nd-text-muted hover:text-nd-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -61,7 +61,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
           <button
             type="button"
             onClick={() => setCategory('All')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === 'All' ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${category === 'All' ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
           >
             All
           </button>
@@ -70,7 +70,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${category === c ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${category === c ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
             >
               {c}
             </button>
@@ -88,7 +88,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
               key={font.id}
               type="button"
               onClick={() => applyFont(font.id)}
-              className={`relative flex flex-col rounded-2xl border p-4 text-left transition ${
+              className={`relative flex flex-col rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 isActive
                   ? 'border-nd-accent/40 bg-nd-accent/[0.08] shadow-focus'
                   : 'border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'

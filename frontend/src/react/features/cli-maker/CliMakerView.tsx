@@ -404,7 +404,7 @@ export function CliMakerView() {
           <button
             type="button"
             onClick={handleNewCommand}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer min-h-[40px] min-w-[120px]"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer min-h-[40px] min-w-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
             <Plus className="h-4 w-4" /> New Command
           </button>
@@ -422,7 +422,7 @@ export function CliMakerView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search commands..."
-              className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 pl-10 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 transition-colors duration-150 min-h-[40px]"
+              className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 pl-10 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 transition-colors duration-150 min-h-[40px]"
             />
           </div>
 
@@ -433,7 +433,7 @@ export function CliMakerView() {
                 key={filter}
                 type="button"
                 onClick={() => setCategoryFilter(filter)}
-                className={`rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 min-h-[30px] ${
+                className={`rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 min-h-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                   categoryFilter === filter
                     ? 'bg-nd-accent/20 text-nd-accent border border-nd-accent/35'
                     : 'bg-nd-surface/30 text-nd-text-muted border border-nd-text-muted/10 hover:border-nd-text-muted/25'
@@ -460,7 +460,9 @@ export function CliMakerView() {
                 <div
                   key={cmd.id}
                   onClick={() => handleEditCommand(cmd)}
-                  className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition-all duration-150 ${
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEditCommand(cmd)}
+                  className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                     editingId === cmd.id
                       ? 'border-nd-accent/40 bg-nd-accent/5 shadow-[0_0_10px_rgba(94,235,255,0.05)]'
                       : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-text-muted/30 hover:bg-nd-surface/60'
@@ -489,7 +491,7 @@ export function CliMakerView() {
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCommand(cmd.id, e)}
-                      className="opacity-0 group-hover:opacity-100 hover:text-nd-danger p-1 transition-all duration-150 min-w-[30px] min-h-[30px]"
+                      className="opacity-0 group-hover:opacity-100 hover:text-nd-danger p-1 transition-all duration-150 min-w-[30px] min-h-[30px] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                       title="Delete command"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -519,7 +521,7 @@ export function CliMakerView() {
                     value={name}
                     onChange={(e) => setName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
                     placeholder="my-command"
-                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 pl-6 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 pl-6 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                   />
                 </div>
               </div>
@@ -531,7 +533,7 @@ export function CliMakerView() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this command do?"
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 />
               </div>
 
@@ -540,7 +542,7 @@ export function CliMakerView() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 >
                   <option value="prompt">AI Prompt Template</option>
                   <option value="shell">Shell Command</option>
@@ -555,7 +557,7 @@ export function CliMakerView() {
                 <select
                   value={radialBind}
                   onChange={(e) => setRadialBind(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 >
                   <option value="">No Radial Bind</option>
                   {Array.from({ length: 12 }, (_, i) => (
@@ -572,7 +574,7 @@ export function CliMakerView() {
                   onKeyDown={handleShortcutKeyDown}
                   onChange={(e) => setShortcut(e.target.value)}
                   placeholder="Click to type hotkey (e.g. Ctrl+Alt+N)"
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 />
               </div>
 
@@ -581,7 +583,7 @@ export function CliMakerView() {
                 <select
                   value={icon}
                   onChange={(e) => setIcon(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 >
                   {AVAILABLE_ICONS.map(i => (
                     <option key={i} value={i}>{i}</option>
@@ -606,7 +608,7 @@ export function CliMakerView() {
                     onChange={(e) => setPromptTemplate(e.target.value)}
                     placeholder="Enter prompt content. Use {{input}} to insert custom runner arguments at runtime."
                     rows={4}
-                    className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 resize-none"
+                    className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
                   />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -614,7 +616,7 @@ export function CliMakerView() {
                     type="checkbox"
                     checked={promptUseLlm}
                     onChange={(e) => setPromptUseLlm(e.target.checked)}
-                    className="rounded border-nd-text-muted/30 bg-nd-bg/60 text-nd-accent focus:ring-nd-accent/30 h-4 w-4"
+                    className="rounded border-nd-text-muted/30 bg-nd-bg/60 text-nd-accent focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus:ring-nd-accent/30 h-4 w-4"
                   />
                   <span className="text-xs text-nd-text-muted">Send output directly to LLM for response streaming</span>
                 </label>
@@ -631,7 +633,7 @@ export function CliMakerView() {
                       value={shellCommand}
                       onChange={(e) => setShellCommand(e.target.value)}
                       placeholder="e.g. git status or node build.js"
-                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -641,7 +643,7 @@ export function CliMakerView() {
                       value={shellCwd}
                       onChange={(e) => setShellCwd(e.target.value)}
                       placeholder="Absolute path, or blank for default workspace"
-                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                     />
                   </div>
                 </div>
@@ -658,7 +660,7 @@ export function CliMakerView() {
                 <select
                   value={viewName}
                   onChange={(e) => setViewName(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 >
                   {['chat', 'canvas', 'terminal', 'ssh', 'tunnel', 'share', 'browser', 'agent', 'memory',
                     'prompt-lab', 'remote', 'docs', 'git', 'api-lab', 'cli-maker', 'graph', 'scheduler',
@@ -683,7 +685,7 @@ export function CliMakerView() {
                           nextSteps[idx] = e.target.value;
                           setChainSteps(nextSteps);
                         }}
-                        className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus:border-nd-accent/40"
+                        className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                       >
                         <option value="">Select Command...</option>
                         {commands.filter(c => c.id !== editingId).map(c => (
@@ -693,7 +695,7 @@ export function CliMakerView() {
                       <button
                         type="button"
                         onClick={() => setChainSteps(chainSteps.filter((_, i) => i !== idx))}
-                        className="rounded-lg border border-nd-danger/30 text-nd-danger hover:bg-nd-danger/10 px-2 py-1.5 text-xs transition duration-150 min-w-[30px] min-h-[30px]"
+                        className="rounded-lg border border-nd-danger/30 text-nd-danger hover:bg-nd-danger/10 px-2 py-1.5 text-xs transition duration-150 min-w-[30px] min-h-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                         title="Remove step"
                       >
                         ×
@@ -704,7 +706,7 @@ export function CliMakerView() {
                 <button
                   type="button"
                   onClick={() => setChainSteps([...chainSteps, ''])}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[35px]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[35px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add Chain Step
                 </button>
@@ -719,7 +721,7 @@ export function CliMakerView() {
                   onChange={(e) => setPluginLuaCode(e.target.value)}
                   rows={8}
                   spellCheck={false}
-                  className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 resize-none"
+                  className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
                 />
               </div>
             )}
@@ -737,7 +739,7 @@ export function CliMakerView() {
                 <button
                   type="button"
                   onClick={handleSaveCommand}
-                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 text-sm font-semibold text-nd-success hover:bg-nd-success/20 transition-all duration-150 cursor-pointer min-h-[40px]"
+                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 text-sm font-semibold text-nd-success hover:bg-nd-success/20 transition-all duration-150 cursor-pointer min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   <Save className="h-4 w-4" /> Save Command
                 </button>
@@ -751,14 +753,14 @@ export function CliMakerView() {
                     value={testArgs}
                     onChange={(e) => setTestArgs(e.target.value)}
                     placeholder="Arguments passed to {{input}}"
-                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleTestCommand}
                   disabled={loadingTest}
-                  className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-semibold text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer disabled:opacity-50 min-h-[40px]"
+                  className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-semibold text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer disabled:opacity-50 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   {loadingTest ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" />
@@ -780,7 +782,7 @@ export function CliMakerView() {
                 <button
                   type="button"
                   onClick={handleCopyLua}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px]"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   title="Copy Lua wrapper to clipboard"
                 >
                   <Copy className="h-3.5 w-3.5" /> Copy Lua
@@ -788,7 +790,7 @@ export function CliMakerView() {
                 <button
                   type="button"
                   onClick={handleSaveAsPlugin}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px]"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   title="Save wrapper to sidecar plugins/"
                 >
                   <Code className="h-3.5 w-3.5" /> Save Plugin
@@ -800,7 +802,7 @@ export function CliMakerView() {
                 <select
                   id="export-script-format"
                   defaultValue="sh"
-                  className="w-24 h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-2 text-xs text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px]"
+                  className="w-24 h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-2 text-xs text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   <option value="sh">Bash (.sh)</option>
                   <option value="py">Python (.py)</option>
@@ -812,7 +814,7 @@ export function CliMakerView() {
                     const sel = document.getElementById('export-script-format') as HTMLSelectElement;
                     handleExportScript((sel?.value as any) || 'sh');
                   }}
-                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px]"
+                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   Export Standalone Script
                 </button>
@@ -827,13 +829,13 @@ export function CliMakerView() {
                     value={importPath}
                     onChange={(e) => setImportPath(e.target.value)}
                     placeholder="Absolute file path on host..."
-                    className="w-full h-8 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus:border-nd-accent/40 min-h-[30px]"
+                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleImportLua}
-                  className="inline-flex h-8 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[30px]"
+                  className="inline-flex h-10 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   <Upload className="h-3.5 w-3.5" /> Import
                 </button>

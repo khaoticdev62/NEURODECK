@@ -165,7 +165,7 @@ export function RemoteView() {
                 value={port}
                 onChange={(e) => setPort(Number(e.target.value))}
                 disabled={status.running || loading}
-                className="w-32 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+                className="w-32 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
               />
             </div>
             <button

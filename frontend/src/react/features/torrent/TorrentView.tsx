@@ -307,7 +307,7 @@ export function TorrentView() {
           <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}</span>
           <span>{counts.running}/{counts.total} active</span>
         </div>
-        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -320,16 +320,16 @@ export function TorrentView() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
           placeholder="Magnet link or .torrent file path..."
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
-        <button type="button" onClick={() => addTorrent()} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
+        <button type="button" onClick={() => addTorrent()} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <Plus className="h-4 w-4" /> Add
         </button>
       </div>
 
       {/* Search / Filter / Sort / Batch toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
+        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
           <Search className="h-4 w-4 text-nd-text-muted" />
           <input
             type="text"
@@ -339,7 +339,7 @@ export function TorrentView() {
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
         </div>
-        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1">
+        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
           <Filter className="h-3.5 w-3.5 text-nd-text-muted" />
           <select
             value={filter}
@@ -354,7 +354,7 @@ export function TorrentView() {
             <option value="stalled">Stalled</option>
           </select>
         </div>
-        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1">
+        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
           <ArrowDownUp className="h-3.5 w-3.5 text-nd-text-muted" />
           <select
             value={sort}
@@ -374,16 +374,16 @@ export function TorrentView() {
       {selectedIds.size > 0 && (
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/5 px-3 py-2">
           <span className="text-xs text-nd-text-muted">{selectedIds.size} selected</span>
-          <button type="button" onClick={pauseAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+          <button type="button" onClick={pauseAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
             <PauseCircle className="h-3.5 w-3.5" /> Pause All
           </button>
-          <button type="button" onClick={resumeAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+          <button type="button" onClick={resumeAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
             <PlayCircle className="h-3.5 w-3.5" /> Resume All
           </button>
-          <button type="button" onClick={() => setConfirmRemove({ ids: Array.from(selectedIds) })} className="flex items-center gap-1 rounded-lg border border-nd-danger/25 px-2 py-1 text-xs text-nd-danger hover:bg-nd-danger/10">
+          <button type="button" onClick={() => setConfirmRemove({ ids: Array.from(selectedIds) })} className="flex items-center gap-1 rounded-lg border border-nd-danger/25 px-2 py-1 text-xs text-nd-danger hover:bg-nd-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
             <Trash className="h-3.5 w-3.5" /> Remove Selected
           </button>
-          <button type="button" onClick={deselectAll} className="ml-auto text-xs text-nd-text-muted hover:text-nd-text">
+          <button type="button" onClick={deselectAll} className="ml-auto text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
             Clear
           </button>
         </div>
@@ -404,7 +404,7 @@ export function TorrentView() {
               key={t.id}
               type="button"
               onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
-              className={`rounded-xl border p-3 text-left transition ${
+              className={`rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 selectedId === t.id
                   ? 'border-nd-accent/30 bg-nd-accent/[0.04]'
                   : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/20'
@@ -415,7 +415,7 @@ export function TorrentView() {
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); toggleSelection(t.id); }}
-                  className="shrink-0 text-nd-text-muted hover:text-nd-accent"
+                  className="shrink-0 text-nd-text-muted hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
                 >
                   {selectedIds.has(t.id) ? <CheckSquare className="h-4 w-4 text-nd-accent" /> : <SquareIcon className="h-4 w-4" />}
                 </button>
@@ -535,7 +535,7 @@ export function TorrentView() {
               <button
                 type="button"
                 onClick={() => { setConfirmRemove(null); setDeleteData(false); }}
-                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-xs font-medium text-nd-text-muted hover:bg-nd-surface/50"
+                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-xs font-medium text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
               >
                 Cancel
               </button>
@@ -547,7 +547,7 @@ export function TorrentView() {
                   setConfirmRemove(null);
                   setDeleteData(false);
                 }}
-                className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-4 py-2 text-xs font-medium text-nd-danger hover:bg-nd-danger/15"
+                className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-4 py-2 text-xs font-medium text-nd-danger hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
               >
                 Remove
               </button>
@@ -573,7 +573,7 @@ function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; labe
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[10px] text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text"
+      className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[10px] text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
       title={label}
     >
       <Icon className="h-3 w-3" /> {label}

@@ -126,7 +126,7 @@ export function GitView() {
                 onChange={(e) => setCommitMsg(e.target.value)}
                 placeholder="Commit message..."
                 aria-label="Commit message"
-                className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:border-nd-accent/40"
+                className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
                 onKeyDown={(e) => e.key === 'Enter' && doCommit()}
               />
               <button type="button" onClick={doCommit} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">

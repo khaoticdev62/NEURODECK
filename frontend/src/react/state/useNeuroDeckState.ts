@@ -212,7 +212,7 @@ export function useNeuroDeckState() {
       try {
         const mems = await neurodeckApi.memory.list();
         if (mems && mems.records) {
-          stored.memories = mems.records.map(r => ({
+          stored.memories = mems.records.map((r: any) => ({
             id: r.id,
             title: r.metadata?.title || r.content.slice(0, 40),
             body: r.content,
@@ -229,35 +229,7 @@ export function useNeuroDeckState() {
       try {
         const sessList = await neurodeckApi.sessions.listMeta();
         if (sessList && sessList.length > 0) {
-          const sessionNodes: SessionNode[] = sessList.map(s => {
-            let type: SessionNode['type'] = 'build';
-            const nameLower = (s.name || s.id).toLowerCase();
-            if (nameLower.includes('prd') || nameLower.includes('plan')) type = 'planning';
-            else if (nameLower.includes('audit') || nameLower.includes('security')) type = 'audit';
-            else if (nameLower.includes('export')) type = 'export';
-
-            let status: SessionNode['status'] = 'complete';
-            if (s.message_count === 0) status = 'active';
-
-            return {
-              id: s.id,
-              title: s.name || s.id,
-              type,
-              status,
-              children: []
-            };
-          });
-
-          // Create a root node
-          const rootNode: SessionNode = {
-            id: 'root',
-            title: 'NEURODECK Workspace',
-            type: 'root',
-            status: 'active',
-            children: sessionNodes.map(s => s.id)
-          };
-
-          stored.sessions = [rootNode, ...sessionNodes];
+          stored.sessions = sessList;
         }
       } catch (_) {
         // Ignored, fallback to stored/initial

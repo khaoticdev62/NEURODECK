@@ -92,27 +92,21 @@ export function CanvasView() {
           value={lang}
           onChange={(e) => setLang(e.target.value as CodeLang)}
           aria-label="Select language"
-          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
           {LANG_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-        <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
+        <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40">
           {running ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
           Run
         </button>
-        <button id="canvas-copy-btn" type="button" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+        <button id="canvas-copy-btn" type="button" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <Copy className="h-4 w-4" />
         </button>
-        <button id="canvas-clear-btn" type="button" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+        <button id="canvas-clear-btn" type="button" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <Trash2 className="h-4 w-4" />
-        </button>
-        <button id="canvas-ai-edit-btn" type="button" onClick={() => setOutput((prev) => prev || 'AI edit queued...')} className="rounded-lg border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
-          AI Edit
-        </button>
-        <button id="canvas-collab-btn" type="button" onClick={() => setOutput((prev) => prev || 'Collab ready...')} className="rounded-lg border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
-          Collab
         </button>
       </div>
 

@@ -148,7 +148,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
           type="button"
           onClick={installFromUrl}
           disabled={installing || !installUrl.trim()}
-          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
         >
           <Download className="h-4 w-4" /> {installing ? 'Installing…' : 'Install'}
         </button>

@@ -77,7 +77,7 @@ export function DocsView() {
           <h2 className="text-lg font-semibold text-nd-text">Knowledge Base</h2>
           <p className="text-xs text-nd-text-muted">Indexed documentation with semantic search</p>
         </div>
-        <button type="button" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text">
+        <button type="button" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
@@ -94,9 +94,9 @@ export function DocsView() {
             placeholder="Search indexed docs..."
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
-          <button type="button" onClick={search} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80">Search</button>
+          <button type="button" onClick={search} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Search</button>
         </div>
-        <button type="button" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-nd-danger/20">
+        <button type="button" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -114,7 +114,7 @@ export function DocsView() {
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
         </div>
-        <button type="button" onClick={indexDir} className="rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20">
+        <button type="button" onClick={indexDir} className="rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40">
           Index
         </button>
       </div>

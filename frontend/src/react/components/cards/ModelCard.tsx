@@ -51,21 +51,21 @@ export function ModelCard({ model, selected, onMarkReady, onMarkIndexed, onDisab
         <button
           type="button"
           onClick={() => { onMarkReady(model.id); onSelect(model.id); }}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-success/25 bg-nd-success/10 px-3 py-2 text-xs font-semibold text-nd-success transition hover:bg-nd-success/15"
+          className="inline-flex items-center gap-2 rounded-xl border border-nd-success/25 bg-nd-success/10 px-3 py-2 text-xs font-semibold text-nd-success transition hover:bg-nd-success/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
         >
           <CheckCircle2 className="h-4 w-4" /> Mark Ready
         </button>
         <button
           type="button"
           onClick={() => { onMarkIndexed(model.id); onSelect(model.id); }}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+          className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
           <DownloadCloud className="h-4 w-4" /> Indexed
         </button>
         <button
           type="button"
           onClick={() => onDisable(model.id)}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-xs font-semibold text-nd-text-muted transition hover:text-nd-text"
+          className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-xs font-semibold text-nd-text-muted transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-text-muted/40"
         >
           <Power className="h-4 w-4" /> Disable
         </button>

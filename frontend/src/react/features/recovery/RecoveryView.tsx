@@ -31,14 +31,14 @@ export function RecoveryView({ state, dispatch, actions }: { state: NeuroDeckSta
                   <button
                     type="button"
                     onClick={() => dispatch({ type: 'set-error', error: null })}
-                    className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-sm text-nd-text/80 transition hover:text-nd-text"
+                    className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-sm text-nd-text/80 transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Dismiss
                   </button>
                   <button
                     type="button"
                     onClick={() => void actions.refreshDiagnostics()}
-                    className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+                    className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
                     <RefreshCcw className="h-4 w-4" /> Run Diagnostics
                   </button>
@@ -128,7 +128,7 @@ function RecoveryAction({ icon: Icon, label, description, badge, badgeTone, onCl
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.05]"
+      className="flex w-full items-start gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
     >
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent" />
       <div className="min-w-0 flex-1">

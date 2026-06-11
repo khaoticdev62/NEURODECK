@@ -55,14 +55,14 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
               <button
                 type="button"
                 onClick={() => void actions.exportDiagnosticsBundle()}
-                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm text-nd-text/80 transition hover:border-nd-accent/30 hover:text-nd-accent"
+                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm text-nd-text/80 transition hover:border-nd-accent/30 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
               >
                 <RefreshCcw className="h-4 w-4" /> Generate Security Audit Bundle
               </button>
               <button
                 type="button"
                 onClick={() => void actions.resetLocalState()}
-                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15"
+                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
               >
                 <Trash2 className="h-4 w-4" /> Clear All Local State
               </button>

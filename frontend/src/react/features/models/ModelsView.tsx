@@ -29,7 +29,7 @@ export function ModelsView({ state, dispatch, actions }: { state: NeuroDeckState
           <button
             type="button"
             onClick={() => void actions.detectModels()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
             <RefreshCcw className="h-4 w-4" /> Detect Local Models
           </button>

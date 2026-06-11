@@ -286,11 +286,11 @@ export function PromptLabView() {
           <DeckButtonHint button="L5" label="save" />
           <DeckButtonHint button="L5+R5" label="macro" />
         </div>
-        <button id="pl-open-gallery-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted">
+        <button id="pl-open-gallery-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <Sparkles className="nd-icon-svg mr-1 inline h-3.5 w-3.5" />
           Gallery
         </button>
-        <button id="pl-optimize-ai-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted">
+        <button id="pl-optimize-ai-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <RotateCcw className="nd-icon-svg mr-1 inline h-3.5 w-3.5" />
           Optimize
         </button>
@@ -307,7 +307,7 @@ export function PromptLabView() {
                     key={pack.id}
                     type="button"
                     onClick={() => setSelectedPackId(pack.id)}
-                    className={`min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition ${selectedPackId === pack.id ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-text-muted/20'}`}
+                    className={`min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${selectedPackId === pack.id ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-text-muted/20'}`}
                   >
                     <span className="block truncate font-medium">{pack.title}</span>
                     <span className="block truncate text-xs leading-relaxed text-nd-text-muted">{pack.description}</span>
@@ -323,7 +323,7 @@ export function PromptLabView() {
                     key={template.id}
                     type="button"
                     onClick={() => selectTemplate(template.id)}
-                    className={`promptdrive-template-card min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition ${selectedTemplate?.id === template.id ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-text-muted/20'}`}
+                    className={`promptdrive-template-card min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${selectedTemplate?.id === template.id ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-text-muted/20'}`}
                   >
                     <span className="block truncate font-medium">{template.title}</span>
                     <span className="block truncate text-xs leading-relaxed text-nd-text-muted">{template.description}</span>
@@ -366,14 +366,14 @@ export function PromptLabView() {
                       value={slotValues[slot.id] ?? ''}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
                       rows={3}
-                      className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+                      className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
                     />
                   ) : slot.kind === 'select' && slot.options && slot.options.length > 0 ? (
                     <select
                       id={`pd-slot-${slot.id}`}
                       value={slotValues[slot.id] ?? slot.default ?? ''}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
-                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                     >
                       {slot.options.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
@@ -385,7 +385,7 @@ export function PromptLabView() {
                       type="text"
                       value={slotValues[slot.id] ?? ''}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
-                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
                     />
                   )}
                 </label>
@@ -394,13 +394,13 @@ export function PromptLabView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button id="pd-execute-btn" type="button" onClick={executePrompt} disabled={busy || !valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 disabled:opacity-50">
+            <button id="pd-execute-btn" type="button" onClick={executePrompt} disabled={busy || !valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               <Play className="h-4 w-4" /> Execute
             </button>
-            <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50">
+            <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               <Save className="h-4 w-4" /> Save Prompt
             </button>
-            <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${recordingId ? 'border-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>
+            <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${recordingId ? 'border-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>
               {recordingId ? <Square className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
               {recordingId ? 'Stop Macro' : 'Record Macro'}
             </button>
@@ -411,7 +411,7 @@ export function PromptLabView() {
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Saved Prompts</div>
               <div id="pd-saved-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin">
                 {savedPrompts.length ? savedPrompts.map((prompt) => (
-                  <button key={prompt.id} type="button" onClick={() => setPreviewText(prompt.prompt)} className="promptdrive-saved-item min-w-0 overflow-hidden rounded-lg border border-nd-text-muted/15 px-2.5 py-2 text-left text-xs text-nd-text/80 hover:border-nd-text-muted/20">
+                  <button key={prompt.id} type="button" onClick={() => setPreviewText(prompt.prompt)} className="promptdrive-saved-item min-w-0 overflow-hidden rounded-lg border border-nd-text-muted/15 px-2.5 py-2 text-left text-xs text-nd-text/80 hover:border-nd-text-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                     <span className="block truncate font-medium">{prompt.title}</span>
                     <span className="block truncate text-nd-text-muted">{prompt.prompt}</span>
                   </button>
@@ -429,8 +429,8 @@ export function PromptLabView() {
                       <span className="block truncate text-nd-text-muted">{macro.steps.length} steps · {macro.risk_level}</span>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <button type="button" onClick={() => replayMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-nd-accent/25 px-2.5 text-xs text-nd-accent">Replay</button>
-                      <button type="button" onClick={() => deleteMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-danger/25 px-2 text-nd-danger"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
+                      <button type="button" onClick={() => replayMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-nd-accent/25 px-2.5 text-xs text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">Replay</button>
+                      <button type="button" onClick={() => deleteMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-danger/25 px-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
                     </div>
                   </div>
                 )) : <div className="text-xs text-nd-text-muted/70">No macros recorded.</div>}
@@ -447,12 +447,12 @@ export function PromptLabView() {
               type="text"
               value={suggestionQuery}
               onChange={(event) => setSuggestionQuery(event.target.value)}
-              className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+              className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
               placeholder="Search suggestions"
             />
             <div id="pd-suggestions" className="mt-2 grid max-h-40 gap-2 overflow-auto scrollbar-thin">
               {suggestions.map((suggestion) => (
-                <button key={suggestion.id} type="button" onClick={() => acceptSuggestion(suggestion)} className="promptdrive-suggestion min-w-0 overflow-hidden rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left hover:border-nd-accent/30">
+                <button key={suggestion.id} type="button" onClick={() => acceptSuggestion(suggestion)} className="promptdrive-suggestion min-w-0 overflow-hidden rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left hover:border-nd-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                   <span className="block truncate text-sm font-medium text-nd-text">{suggestion.label}</span>
                   <span className="block truncate text-xs text-nd-text-muted">{suggestion.source} · score {suggestion.score}</span>
                 </button>
@@ -473,7 +473,7 @@ export function PromptLabView() {
             />
             <div className="flex items-center justify-between border-t border-nd-text-muted/15 px-4 py-2 text-xs text-nd-text-muted">
               <span>{status}</span>
-              <button type="button" onClick={() => navigator.clipboard.writeText(previewText)} className="flex min-h-10 items-center gap-2 rounded-lg border border-nd-text-muted/15 px-2 text-nd-text-muted hover:text-nd-text">
+              <button type="button" onClick={() => navigator.clipboard.writeText(previewText)} className="flex min-h-10 items-center gap-2 rounded-lg border border-nd-text-muted/15 px-2 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                 <Copy className="h-4 w-4" /> Copy
               </button>
             </div>

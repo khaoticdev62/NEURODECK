@@ -51,11 +51,16 @@
     "promptflow:full": "python -m promptflow run --sequence full --provider manual",
     "promptflow:report": "python -m promptflow report --run-id latest",
     "promptflow:export": "python -m promptflow export --run-id latest",
-    "promptflow:clean": "python -m promptflow clean --keep 5"
+    "promptflow:clean": "python -m promptflow clean --keep 5",
+    "verify:wiring": "tsx scripts/verify-wiring.ts",
+    "verify:ipc": "tsx scripts/verify-ipc.ts",
+    "verify:lsp": "tsx scripts/verify-lsp.ts",
+    "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp"
   },
   "devDependencies": {
     "electron": "^36.0.0",
     "electron-builder": "^25.0.0",
+    "tsx": "^4.19.0",
     "vitest": "^4.1.7"
   },
   "engines": {

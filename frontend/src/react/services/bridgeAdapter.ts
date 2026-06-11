@@ -113,6 +113,11 @@ async function appInvoke<T>(cmd: string, args?: Record<string, unknown>): Promis
 
 const store = {
   async get<T>(key: string): Promise<T | null> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.settings) {
+      const res = await neurodeck.settings.get(key);
+      if (res.ok) return res.data as T;
+    }
     try {
       return await bridgeInvoke<T>('get_store', { key });
     } catch (_) {
@@ -121,6 +126,11 @@ const store = {
     }
   },
   async set(key: string, value: unknown) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.settings) {
+      const res = await neurodeck.settings.set(key, value);
+      if (res.ok) return { ok: true, updatedAt: new Date().toISOString() };
+    }
     try {
       await bridgeInvoke('set_store', { key, value });
     } catch (_) {
@@ -129,6 +139,11 @@ const store = {
     return { ok: true, updatedAt: new Date().toISOString() };
   },
   async reset(key: string) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.settings) {
+      const res = await neurodeck.settings.set(key, null);
+      if (res.ok) return { ok: true, updatedAt: new Date().toISOString() };
+    }
     try {
       await bridgeInvoke('reset_store', { key });
     } catch (_) {
@@ -182,6 +197,41 @@ export type ModelDetectionResponse =
 
 const models = {
   async detectLocal(): Promise<ModelDetectionResponse> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.models) {
+      const res = await neurodeck.models.list();
+      if (!res.ok) {
+        return { ok: false, error: res.error?.message || 'Failed to list models via preload' };
+      }
+      const ollama = res.data || [];
+      const discovered: ModelDetectionResult['discoveredModels'] = ollama.map((m: any) => ({
+        id: m.name,
+        name: m.name,
+        provider: 'ollama',
+        size: m.size ? String(m.size) : 'unknown',
+        quantization: 'Q4_K_M',
+        context: 8192,
+        bestFor: ['chat', 'code'],
+        status: 'ready',
+        ramEstimate: '4-6 GB',
+      }));
+      const healthRes = await neurodeck.models.status();
+      const hasOllama = discovered.length > 0;
+      return {
+        ok: true,
+        detection: {
+          scannedAt: new Date().toISOString(),
+          runtimes: [
+            { name: 'Ollama', path: 'http://localhost:11434', type: 'api', exists: hasOllama, status: hasOllama ? 'detected' : 'missing' },
+          ],
+          discoveredModels: discovered,
+          summary: discovered.length
+            ? `${discovered.length} model(s) discovered via Ollama`
+            : 'No local model runtimes detected.',
+        },
+      };
+    }
+
     try {
       const ollama = await bridgeInvoke<string[]>('ollama_list_models', {
         baseUrl: 'http://localhost:11434',
@@ -263,6 +313,18 @@ export interface ChatStreamCallbacks {
 
 const ai = {
   async health(): Promise<AIProviderHealth[]> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.models) {
+      const res = await neurodeck.models.status();
+      if (res.ok) {
+        const provider = res.data?.provider || 'gemini';
+        return [
+          { provider: 'offline-draft', label: 'Offline Draft Engine', available: true, endpoint: 'renderer-local', detail: 'Always available', checkedAt: new Date().toISOString() },
+          { provider: 'ollama', label: 'Ollama', available: provider === 'ollama', endpoint: 'http://127.0.0.1:11434', detail: provider === 'ollama' ? 'Active provider' : 'Not active', checkedAt: new Date().toISOString() },
+          { provider: 'lmstudio', label: 'LM Studio', available: false, endpoint: 'http://127.0.0.1:1234', detail: 'Not configured', checkedAt: new Date().toISOString() },
+        ];
+      }
+    }
     try {
       const config = await bridgeInvoke<{ llm?: { provider?: string } }>('get_config');
       const provider = config?.llm?.provider || 'gemini';
@@ -276,6 +338,33 @@ const ai = {
     }
   },
   async chat(payload: AIChatPayload): Promise<AIChatResponse> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.models) {
+      const res = await neurodeck.models.runPrompt(
+        payload.prompt,
+        payload.provider === 'offline-draft' ? undefined : payload.provider,
+        payload.model === 'NeuroDraft' ? undefined : payload.model
+      );
+      if (!res.ok) {
+        return browserDraft(payload);
+      }
+      const response = res.data;
+      return {
+        ok: true,
+        provider: payload.provider,
+        model: payload.model,
+        latencyMs: res.durationMs || 0,
+        contextSources: [],
+        message: {
+          id: `bridge-${Date.now()}`,
+          role: 'assistant',
+          content: response?.text || response?.content || '',
+          createdAt: new Date().toISOString(),
+          provider: payload.provider,
+          model: payload.model,
+        },
+      };
+    }
     try {
       const response = await bridgeInvoke<{ text?: string; content?: string }>('send_command', {
         message: payload.prompt,
@@ -333,12 +422,24 @@ const ai = {
     });
 
     try {
-      await bridgeInvoke<{ status: string }>('send_command', {
-        message: payload.prompt,
-        provider: payload.provider,
-        model: payload.model === 'NeuroDraft' ? undefined : payload.model,
-        persona: payload.persona,
-      });
+      const neurodeck = (window as any).neurodeck;
+      if (neurodeck?.models) {
+        const res = await neurodeck.models.runPrompt(
+          payload.prompt,
+          payload.provider,
+          payload.model === 'NeuroDraft' ? undefined : payload.model
+        );
+        if (!res.ok) {
+          throw new Error(res.error?.message || 'Prompt execution failed');
+        }
+      } else {
+        await bridgeInvoke<{ status: string }>('send_command', {
+          message: payload.prompt,
+          provider: payload.provider,
+          model: payload.model === 'NeuroDraft' ? undefined : payload.model,
+          persona: payload.persona,
+        });
+      }
     } catch (e) {
       unsubToken();
       unsubDone();
@@ -347,9 +448,21 @@ const ai = {
     }
   },
   async setProvider(provider: string): Promise<void> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.settings) {
+      const res = await neurodeck.settings.set('llm.provider', provider);
+      if (!res.ok) throw new Error(res.error?.message || 'Failed to set provider');
+      return;
+    }
     await bridgeInvoke('set_provider', { provider });
   },
   async setModel(model: string): Promise<void> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.settings) {
+      const res = await neurodeck.settings.set('llm.model', model);
+      if (!res.ok) throw new Error(res.error?.message || 'Failed to set model');
+      return;
+    }
     await bridgeInvoke('set_model', { model });
   },
 };
@@ -421,6 +534,12 @@ const sessions = {
     }
   },
   async save(payload: SavedSessionPayload): Promise<SaveSessionResponse> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.sessions) {
+      const res = await neurodeck.sessions.save(payload);
+      if (res.ok) return { ok: true, file: res.data };
+      return { ok: false, error: res.error?.message || 'Failed to save session' };
+    }
     try {
       const file = await bridgeInvoke<string>('save_session', { payload });
       return { ok: true, file };
@@ -429,21 +548,45 @@ const sessions = {
     }
   },
   async list(): Promise<string[]> {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.sessions) {
+      const res = await neurodeck.sessions.list();
+      if (res.ok) return res.data || [];
+      throw new Error(res.error?.message || 'Failed to list sessions');
+    }
     return bridgeInvoke<string[]>('list_sessions');
   },
   async listMeta(): Promise<any[]> {
     return bridgeInvoke<any[]>('list_sessions_meta');
   },
   async delete(id: string) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.sessions) {
+      const res = await neurodeck.sessions.delete(id);
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to delete session');
+    }
     return bridgeInvoke<{ status: string }>('delete_session', { id });
   },
   async rename(id: string, name: string) {
     return bridgeInvoke<void>('rename_session', { id, name });
   },
   async loadLatest() {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.sessions) {
+      const res = await neurodeck.sessions.create();
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to load latest session');
+    }
     return bridgeInvoke<{ session_id: string; messages: string[] }>('load_latest_session');
   },
   async loadById(id: string) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.sessions) {
+      const res = await neurodeck.sessions.load(id);
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to load session');
+    }
     return bridgeInvoke<{ session_id: string; messages: string[] }>('load_session_by_id', { id });
   },
 };
@@ -458,9 +601,21 @@ export interface MemoryRecord {
 
 const memory = {
   async list(limit: number = 50, offset: number = 0) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.memory) {
+      const res = await neurodeck.memory.search('');
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to list memory');
+    }
     return bridgeInvoke<{ records: MemoryRecord[]; count: number; total: number }>('memory_list', { limit, offset });
   },
   async delete(id: string) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.memory) {
+      const res = await neurodeck.memory.delete(id);
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to delete memory');
+    }
     return bridgeInvoke<{ status: string }>('memory_delete', { id });
   },
   async pin(id: string, pinned: boolean) {
@@ -470,6 +625,12 @@ const memory = {
     return bridgeInvoke<{ status: string }>('memory_clear');
   },
   async addFact(content: string) {
+    const neurodeck = (window as any).neurodeck;
+    if (neurodeck?.memory) {
+      const res = await neurodeck.memory.write(content);
+      if (res.ok) return res.data;
+      throw new Error(res.error?.message || 'Failed to add memory fact');
+    }
     return bridgeInvoke<{ status: string; id: string }>('memory_add_fact', { content });
   },
 };
@@ -1306,6 +1467,7 @@ export async function getInitialState() {
 export { bridgeInvoke };
 
 export const neurodeckApi = {
+  getInitialState,
   store,
   projects,
   models,

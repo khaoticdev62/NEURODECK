@@ -51,16 +51,12 @@ export function SettingsView({
             ['terminal', 'Terminal'],
             ['extensions', 'Extensions'],
             ['memory', 'Memory'],
-            ['network', 'Network'],
-            ['computer', 'Computer'],
-            ['sync', 'Sync'],
-            ['voice', 'Voice'],
           ].map(([key, label]) => (
             <button
               key={key}
               type="button"
               data-panel={`sp-${key}`}
-              className={`stv-nav-item flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition ${activePanel === key ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text/80 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'}`}
+              className={`stv-nav-item flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${activePanel === key ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text/80 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'}`}
               onClick={() => selectPanel(key)}
             >
               <span>{label}</span>
@@ -86,7 +82,7 @@ export function SettingsView({
                   <button
                     type="button"
                     onClick={() => dispatch({ type: 'toggle-onboarding' })}
-                    className={`relative h-7 w-12 rounded-full transition ${state.showOnboarding ? 'bg-nd-accent' : 'bg-nd-text-muted/20'}`}
+                    className={`relative h-7 w-12 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${state.showOnboarding ? 'bg-nd-accent' : 'bg-nd-text-muted/20'}`}
                     aria-label={state.showOnboarding ? 'Disable onboarding wizard' : 'Enable onboarding wizard'}
                   >
                     <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-nd-bg shadow transition-transform ${state.showOnboarding ? 'translate-x-[22px]' : 'translate-x-0.5'}`} style={{ left: '2px' }} />
@@ -99,7 +95,7 @@ export function SettingsView({
           <Panel eyebrow="Theme Engine" title="Visual Presets">
             <div className="grid gap-3 p-4 md:grid-cols-2">
               {themes.map((theme) => (
-                <button key={theme.name} type="button" onClick={() => dispatch({ type: 'set-theme', theme: theme.name as ThemeName })} className={`rounded-2xl border p-4 text-left transition ${state.selectedTheme === theme.name ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
+                <button key={theme.name} type="button" onClick={() => dispatch({ type: 'set-theme', theme: theme.name as ThemeName })} className={`rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${state.selectedTheme === theme.name ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
                   <div className="flex items-center justify-between">
                     <Palette className="h-5 w-5 text-nd-accent" />
                     {state.selectedTheme === theme.name && <Badge tone="accent">Active</Badge>}
@@ -123,7 +119,7 @@ export function SettingsView({
                   <button key={provider.id} type="button" onClick={() => {
                     dispatch({ type: 'set-provider', provider: provider.id });
                     void neurodeckApi.ai.setProvider(provider.id);
-                  }} className={`w-full rounded-2xl border p-4 text-left transition ${state.selectedProvider === provider.id ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
+                  }} className={`w-full rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${state.selectedProvider === provider.id ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2"><BrainCircuit className="h-4 w-4 text-nd-accent" /><span className="font-semibold text-nd-text">{provider.label}</span></div>
                       <Badge tone={health?.available ? 'success' : provider.id === 'offline-draft' ? 'success' : 'warning'}>{health?.available ? 'ready' : 'cold'}</Badge>
@@ -133,7 +129,7 @@ export function SettingsView({
                   </button>
                 );
               })}
-              <button type="button" onClick={() => void actions.checkAiHealth()} className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
+              <button type="button" onClick={() => void actions.checkAiHealth()} className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                 Check AI health
               </button>
             </div>
@@ -155,7 +151,7 @@ export function SettingsView({
                 <Gamepad2 className="h-6 w-6 text-nd-accent" />
                 <h3 className="mt-3 font-semibold text-nd-text">Controller-first layout</h3>
                 <p className="mt-2 text-sm text-nd-text-muted">Increases hit targets, density spacing, and focus affordances for Steam Deck-style navigation.</p>
-                <button type="button" onClick={() => dispatch({ type: 'toggle-deck-mode' })} className="mt-4 w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
+                <button type="button" onClick={() => dispatch({ type: 'toggle-deck-mode' })} className="mt-4 w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                   {state.deckMode ? 'Disable' : 'Enable'} Deck Mode
                 </button>
               </div>
@@ -166,16 +162,43 @@ export function SettingsView({
         <div id="sp-extensions" className={`settings-panel ${activePanel === 'extensions' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
           <Panel eyebrow="Native Actions" title="Local Utilities">
             <div className="space-y-2 p-4">
-              <button type="button" onClick={() => void actions.refreshDiagnostics()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
+              <button
+                type="button"
+                onClick={async () => {
+                  dispatch({ type: 'set-busy', label: 'Refreshing diagnostic metrics...' });
+                  try {
+                    const [diag, logs] = await Promise.all([neurodeckApi.diagnostics.get(), neurodeckApi.diagnostics.logs()]);
+                    dispatch({ type: 'set-diagnostics', diagnostics: diag, logs });
+                  } catch (e) {
+                    dispatch({ type: 'set-error', error: { title: 'Failed to refresh diagnostics', message: String(e), action: 'Retry later' } });
+                  }
+                  dispatch({ type: 'set-busy', label: null });
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
                 <RefreshCcw className="h-4 w-4" /> Refresh Diagnostics
               </button>
-              <button type="button" onClick={() => void actions.exportSession()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
-                <FileDown className="h-4 w-4" /> Export Session
+              <button
+                type="button"
+                onClick={() => void actions.exportSession()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
+                <FileDown className="h-4 w-4" /> Export Active Session
               </button>
-              <button type="button" onClick={() => void actions.saveSession()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
-                <FileDown className="h-4 w-4" /> Save Session JSON
-              </button>
-              <button type="button" onClick={() => void actions.exportDiagnosticsBundle()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent">
+              <button
+                type="button"
+                onClick={async () => {
+                  dispatch({ type: 'set-busy', label: 'Exporting sanitized diagnostics bundle.' });
+                  const response = await neurodeckApi.diagnostics.exportBundle();
+                  if (!response.ok) {
+                    dispatch({ type: 'set-error', error: { title: 'Diagnostics export failed', message: response.error, action: 'Refresh Diagnostics, then retry. Verify userData write permissions.' } });
+                  } else {
+                    dispatch({ type: 'set-export-path', path: response.file });
+                  }
+                  dispatch({ type: 'set-busy', label: null });
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
                 <FileArchive className="h-4 w-4" /> Export Diagnostics Bundle
               </button>
             </div>
@@ -186,41 +209,9 @@ export function SettingsView({
           <Panel eyebrow="Privacy" title="Local State">
             <div className="p-4">
               <p className="mb-3 text-xs leading-5 text-nd-text-muted">Settings, project scan summary, redacted project context, AI messages, agent runs, and UI state persist locally under the Electron userData folder.</p>
-              <button type="button" onClick={() => void actions.resetLocalState()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15">
+              <button type="button" onClick={() => void actions.resetLocalState()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
                 <RotateCcw className="h-4 w-4" /> Reset stored UI state
               </button>
-            </div>
-          </Panel>
-        </div>
-
-        <div id="sp-network" className={`settings-panel ${activePanel === 'network' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
-          <Panel eyebrow="Network" title="Connectivity">
-            <div className="p-4">
-              <p className="text-sm text-nd-text-muted">Network-related settings are kept minimal in this build.</p>
-            </div>
-          </Panel>
-        </div>
-
-        <div id="sp-computer" className={`settings-panel ${activePanel === 'computer' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
-          <Panel eyebrow="Computer" title="System">
-            <div className="p-4">
-              <p className="text-sm text-nd-text-muted">System compatibility options live here.</p>
-            </div>
-          </Panel>
-        </div>
-
-        <div id="sp-sync" className={`settings-panel ${activePanel === 'sync' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
-          <Panel eyebrow="Sync" title="State Sync">
-            <div className="p-4">
-              <p className="text-sm text-nd-text-muted">Sync configuration is local-first in this slice.</p>
-            </div>
-          </Panel>
-        </div>
-
-        <div id="sp-voice" className={`settings-panel ${activePanel === 'voice' ? 'active' : 'hidden'}`} data-settings-theme={activePanel}>
-          <Panel eyebrow="Voice" title="Audio">
-            <div className="p-4">
-              <p className="text-sm text-nd-text-muted">Voice settings remain hidden in this build.</p>
             </div>
           </Panel>
         </div>

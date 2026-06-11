@@ -131,10 +131,10 @@ export function TerminalView() {
           <div className={`h-2 w-2 rounded-full ${connected ? 'bg-nd-success' : 'bg-nd-danger'}`} />
           <span className="text-xs text-nd-text-muted">{connected ? 'Connected' : 'Disconnected'}</span>
         </div>
-        <button type="button" onClick={reconnect} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text" title="Reconnect">
+        <button type="button" onClick={reconnect} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40" title="Reconnect">
           <RefreshCw className="h-4 w-4" />
         </button>
-        <button type="button" onClick={killSession} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger" title="Kill Session">
+        <button type="button" onClick={killSession} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40" title="Kill Session">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>

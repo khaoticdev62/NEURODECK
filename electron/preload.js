@@ -117,6 +117,80 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 });
 
+// Expose the new typed window.neurodeck API for secure connection wiring
+const makeRequest = (payload = {}) => ({
+  requestId: `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+  timestamp: new Date().toISOString(),
+  source: 'renderer',
+  schemaVersion: '1.0.0',
+  payload
+});
+
+contextBridge.exposeInMainWorld('neurodeck', {
+  lsp: {
+    startServer: (language, command, args) => ipcRenderer.invoke('lsp:start-server', makeRequest({ language, command, args })),
+    stopServer: (language) => ipcRenderer.invoke('lsp:stop-server', makeRequest({ language })),
+    initializeWorkspace: (language, rootUri) => ipcRenderer.invoke('lsp:initialize-workspace', makeRequest({ language, rootUri })),
+    openDocument: (language, uri, content) => ipcRenderer.invoke('lsp:open-document', makeRequest({ language, uri, content })),
+    changeDocument: (language, uri, content, version) => ipcRenderer.invoke('lsp:change-document', makeRequest({ language, uri, content, version })),
+    closeDocument: (language, uri) => ipcRenderer.invoke('lsp:close-document', makeRequest({ language, uri })),
+    getDiagnostics: (language, uri) => ipcRenderer.invoke('lsp:get-diagnostics', makeRequest({ language, uri })),
+    completion: (language, uri, line, character) => ipcRenderer.invoke('lsp:completion', makeRequest({ language, uri, line, character })),
+    hover: (language, uri, line, character) => ipcRenderer.invoke('lsp:hover', makeRequest({ language, uri, line, character })),
+    definition: (language, uri, line, character) => ipcRenderer.invoke('lsp:definition', makeRequest({ language, uri, line, character })),
+    format: (language, uri) => ipcRenderer.invoke('lsp:format', makeRequest({ language, uri })),
+    
+    // Subscriptions
+    onDiagnostics: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('lsp-diagnostics', handler);
+      return () => ipcRenderer.removeListener('lsp-diagnostics', handler);
+    },
+    onStatusChanged: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('lsp-status-changed', handler);
+      return () => ipcRenderer.removeListener('lsp-status-changed', handler);
+    }
+  },
+  
+  models: {
+    list: () => ipcRenderer.invoke('models:list', makeRequest({})),
+    status: () => ipcRenderer.invoke('models:status', makeRequest({})),
+    runPrompt: (prompt, provider, model) => ipcRenderer.invoke('models:run-prompt', makeRequest({ prompt, provider, model })),
+    cancel: () => Promise.resolve({ ok: true })
+  },
+  
+  sessions: {
+    create: () => ipcRenderer.invoke('sessions:create', makeRequest({})),
+    list: () => ipcRenderer.invoke('sessions:list', makeRequest({})),
+    load: (id) => ipcRenderer.invoke('sessions:load', makeRequest({ id })),
+    save: (payload) => ipcRenderer.invoke('sessions:save', makeRequest({ payload })),
+    delete: (id) => ipcRenderer.invoke('sessions:delete', makeRequest({ id }))
+  },
+  
+  memory: {
+    search: (query) => ipcRenderer.invoke('memory:search', makeRequest({ query })),
+    write: (content) => ipcRenderer.invoke('memory:write', makeRequest({ content })),
+    delete: (id) => ipcRenderer.invoke('memory:delete', makeRequest({ id }))
+  },
+  
+  diagnostics: {
+    getConnectionMatrix: () => ipcRenderer.invoke('diagnostics:connection-matrix', makeRequest({})),
+    runHealthProbe: (id) => ipcRenderer.invoke('diagnostics:run-probe', makeRequest({ id })),
+    subscribeConnectionEvents: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('diagnostics-connection-changed', handler);
+      return () => ipcRenderer.removeListener('diagnostics-connection-changed', handler);
+    }
+  },
+  
+  settings: {
+    get: (key) => ipcRenderer.invoke('settings:get', makeRequest({ key })),
+    set: (key, value) => ipcRenderer.invoke('settings:set', makeRequest({ key, value })),
+    validate: (key, value) => Promise.resolve({ valid: true })
+  }
+});
+
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap
 // The main process sets this env var before the renderer loads.
 contextBridge.exposeInMainWorld('NEURODECK_PORT', process.env.NEURODECK_PORT || '9477');

@@ -51,7 +51,7 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
           <button
             type="button"
             onClick={() => void actions.exportDiagnosticsBundle()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
             <FolderOpen className="h-4 w-4" /> Export Diagnostics Bundle
           </button>
@@ -69,7 +69,7 @@ function ExportAction({ icon: Icon, label, description, onClick }: { icon: typeo
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col gap-2 rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.06]"
+      className="flex flex-col gap-2 rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
     >
       <Icon className="h-6 w-6 text-nd-accent" />
       <p className="font-semibold text-nd-text">{label}</p>

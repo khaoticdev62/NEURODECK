@@ -124,11 +124,8 @@ export const memories: MemoryItem[] = [
 ];
 
 export const sessions: SessionNode[] = [
-  { id: 'root', title: 'NEURODECK Workspace', type: 'root', status: 'active', children: ['prd', 'ui-audit', 'security'] },
-  { id: 'prd', title: 'PRD / SDS Buildout', type: 'planning', status: 'complete', children: ['export'] },
-  { id: 'ui-audit', title: 'Electron UI Upgrade', type: 'build', status: 'active', children: [] },
-  { id: 'security', title: 'Secure IPC Boundary', type: 'audit', status: 'draft', children: [] },
-  { id: 'export', title: 'Markdown Package', type: 'export', status: 'complete', children: [] }
+  { id: 's1', created_at: new Date().toISOString(), message_count: 5, preview: 'test', name: 'NEURODECK Workspace' },
+  { id: 's2', created_at: new Date().toISOString(), message_count: 10, preview: 'planning', name: 'PRD / SDS Buildout' }
 ];
 
 export const cacheEntries: CacheEntry[] = [
