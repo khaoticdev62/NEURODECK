@@ -1340,8 +1340,9 @@ function _sendNormalMode(text, imageAttachment) {
         const provSel = document.getElementById("llm-provider-select");
         if (provSel && provSel.value !== "gemini") appendChatMessage("system", "Vision is only supported with Gemini. The image attachment will be ignored. Switch to Gemini in Settings to use vision.", { borderColor: "var(--warning-color)" });
     }
-    const invokeArgs = { prompt: text };
-    if (imageAttachment) { invokeArgs.imageBase64 = imageAttachment.data; invokeArgs.imageMime = imageAttachment.mime; }
+    const invokeArgs = { message: text };
+    if (imageAttachment) { invokeArgs.image_base64 = imageAttachment.data; invokeArgs.image_mime = imageAttachment.mime; }
+    if (state.activeAgentId) { invokeArgs.agent_id = state.activeAgentId; }
     invoke('send_command', invokeArgs).catch(err => { appendChatMessage("system", String(err), { error: true, strongPrefix: "Error:" }); document.getElementById("tool-status").innerText = "Idle"; });
     document.getElementById("tool-status").innerText = "Thinking...";
 }

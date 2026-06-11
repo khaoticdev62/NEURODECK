@@ -383,7 +383,7 @@ async function _agStartRoundtable(ag) {
     _agSetRtRunning(true, ag);
     ag.logEl.innerHTML = "";
     await _agWireRtListeners(ag);
-    invoke("send_command", { prompt: `/discuss ${pA} ${pB} ${topic} rounds:${rounds}` }).catch(error => {
+    invoke("send_command", { message: `/discuss ${pA} ${pB} ${topic} rounds:${rounds}` }).catch(error => {
         _agAppendLog(ag.logEl, "error", `Roundtable failed: ${error}`);
         _agCleanupRtListeners(ag);
         _agSetRtRunning(false, ag);

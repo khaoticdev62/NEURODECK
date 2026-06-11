@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-06-11T20:33:19.684Z",
+  "chatReadinessScore": 100,
+  "productionGatePassed": true,
+  "areas": {
+    "chatPipeline": {
+      "passed": true,
+      "source": "reports/chat/chat-system-inventory.json"
+    },
+    "agentSelection": {
+      "passed": true,
+      "source": "reports/chat/agent-selection-matrix.json"
+    },
+    "noMockData": {
+      "passed": true,
+      "source": "reports/chat/mock-data-findings.json",
+      "violations": 0
+    },
+    "security": {
+      "passed": true,
+      "source": "reports/chat/security-scan.json",
+      "criticalFindings": 0
+    }
+  },
+  "predefinedAgents": 9,
+  "sidecarRunning": false
+}

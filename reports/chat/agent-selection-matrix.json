@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-06-11T20:33:04.412Z",
+  "predefinedAgents": [
+    {
+      "id": "gemini-flash-lite",
+      "name": "Flash Lite",
+      "provider": "gemini",
+      "model": "gemini-2.0-flash-lite",
+      "base_url": "",
+      "embed_model": "",
+      "description": "Fastest cloud model — best for quick chat and low-latency tasks."
+    },
+    {
+      "id": "gemini-flash",
+      "name": "Flash",
+      "provider": "gemini",
+      "model": "gemini-2.0-flash",
+      "base_url": "",
+      "embed_model": "",
+      "description": "Best all-around cloud model — code, analysis, multi-step reasoning."
+    },
+    {
+      "id": "gemini-pro",
+      "name": "Pro",
+      "provider": "gemini",
+      "model": "gemini-1.5-pro",
+      "base_url": "",
+      "embed_model": "",
+      "description": "Highest intelligence — complex research, long context (1M tokens)."
+    },
+    {
+      "id": "hf-llama-1b",
+      "name": "HF Llama 1B",
+      "provider": "huggingface",
+      "model": "meta-llama/Llama-3.2-1B-Instruct",
+      "base_url": "https://api-inference.huggingface.co",
+      "embed_model": "",
+      "description": "Lightweight open model via Hugging Face Inference API. Fast and free-tier friendly."
+    },
+    {
+      "id": "hf-zephyr-7b",
+      "name": "HF Zephyr 7B",
+      "provider": "huggingface",
+      "model": "HuggingFaceH4/zephyr-7b-beta",
+      "base_url": "https://api-inference.huggingface.co",
+      "embed_model": "",
+      "description": "High-quality chat model via Hugging Face. Strong reasoning and instruction following."
+    },
+    {
+      "id": "local-gemma2b",
+      "name": "Gemma 2B",
+      "provider": "ollama",
+      "model": "gemma2:2b",
+      "base_url": "http://localhost:11434",
+      "embed_model": "",
+      "description": "Best quality-per-RAM local model. ~20-30 tok/s on Steam Deck. Offline."
+    },
+    {
+      "id": "local-llama1b",
+      "name": "Llama 1B",
+      "provider": "ollama",
+      "model": "llama3.2:1b",
+      "base_url": "http://localhost:11434",
+      "embed_model": "",
+      "description": "Ultra-fast local. ~50 tok/s on Steam Deck. Basic tasks. Offline."
+    },
+    {
+      "id": "local-phi35",
+      "name": "Phi 3.5 Mini",
+      "provider": "ollama",
+      "model": "phi3.5:mini",
+      "base_url": "http://localhost:11434",
+      "embed_model": "",
+      "description": "Microsoft compact reasoning model. Strong for code. Offline."
+    },
+    {
+      "id": "local-hermes3",
+      "name": "Hermes 3",
+      "provider": "ollama",
+      "model": "hermes3:8b",
+      "base_url": "http://localhost:11434",
+      "embed_model": "",
+      "description": "Advanced reasoning model by Nous Research. Excellent for complex multi-turn chats. Offline."
+    }
+  ],
+  "checks": [
+    {
+      "id": "predefined-agent-fields",
+      "ok": true,
+      "status": "pass",
+      "message": "All 9 predefined agents have required fields"
+    },
+    {
+      "id": "per-request-routing",
+      "ok": true,
+      "status": "pass",
+      "message": "Rust send_command has per-request agent_id → provider routing"
+    },
+    {
+      "id": "frontend-agent-id",
+      "ok": true,
+      "status": "pass",
+      "message": "chat.js includes state.activeAgentId as agent_id in send_command"
+    },
+    {
+      "id": "live-checks",
+      "ok": true,
+      "status": "not_configured",
+      "message": "Sidecar offline"
+    }
+  ]
+}

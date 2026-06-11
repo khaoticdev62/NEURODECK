@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-06-11T20:32:49.706Z",
+  "sidecarRunning": false,
+  "checks": [
+    {
+      "id": "chat-contracts-exist",
+      "ok": true,
+      "status": "pass",
+      "message": "chat.contracts.ts exists and exports SendChatMessageRequest",
+      "durationMs": 0
+    },
+    {
+      "id": "agent-contracts-exist",
+      "ok": true,
+      "status": "pass",
+      "message": "agent.contracts.ts exists and exports NeurodeckAgent",
+      "durationMs": 0
+    },
+    {
+      "id": "chat-js-message-key",
+      "ok": true,
+      "status": "pass",
+      "message": "chat.js sends correct { message: text } key to send_command",
+      "durationMs": 0
+    },
+    {
+      "id": "rust-prompt-fallback",
+      "ok": true,
+      "status": "pass",
+      "message": "Rust send_command accepts both \"message\" and \"prompt\" keys",
+      "durationMs": 2
+    },
+    {
+      "id": "rust-agent-changed-event",
+      "ok": true,
+      "status": "pass",
+      "message": "Rust switch_agent emits agent_changed WebSocket event",
+      "durationMs": 1
+    },
+    {
+      "id": "agent-registry-count",
+      "ok": true,
+      "status": "pass",
+      "message": "agentRegistry.ts has correct 9 predefined agents",
+      "durationMs": 0
+    },
+    {
+      "id": "add-agent-nested-fix",
+      "ok": true,
+      "status": "pass",
+      "message": "Rust add_agent supports nested { agent: {...} } and flat args",
+      "durationMs": 2
+    },
+    {
+      "id": "live-checks",
+      "ok": true,
+      "status": "not_configured",
+      "message": "Sidecar offline — start with `npm run dev` or `npm run sidecar:build` to run live checks",
+      "durationMs": 0
+    }
+  ],
+  "passed": 8,
+  "failed": 0,
+  "productionGatePassed": true
+}

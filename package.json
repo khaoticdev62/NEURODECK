@@ -62,10 +62,16 @@
     "verify:backend": "tsx scripts/verify-backend.ts",
     "verify:report": "tsx scripts/export-backend-readiness-report.ts",
     "verify:all": "npm run verify:no-mocks && npm run verify:security && npm run verify:real-data && npm run test:backend:contracts",
+    "verify:ai-chat": "tsx scripts/verify-ai-chat.ts",
+    "verify:agent-selection": "tsx scripts/verify-agent-selection.ts",
+    "verify:no-mock-chat": "tsx scripts/verify-no-mock-chat.ts",
+    "verify:chat-security": "tsx scripts/verify-chat-security.ts",
+    "report:chat": "tsx scripts/export-chat-readiness-report.ts",
     "test:backend:contracts": "vitest run tests/contract/",
     "test:backend:integration": "vitest run tests/integration/",
     "test:backend": "vitest run tests/contract/ tests/integration/",
-    "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp && npm run verify:all"
+    "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp && npm run verify:all",
+    "production:chat-gate": "npm run verify:ai-chat && npm run verify:agent-selection && npm run verify:no-mock-chat && npm run verify:chat-security && npm run report:chat"
   },
   "devDependencies": {
     "electron": "^36.0.0",
