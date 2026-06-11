@@ -28,6 +28,81 @@ let bridgePort = DEFAULT_PORT;
 let browserView = null;
 let browserBounds = { x: 0, y: 0, width: 1280, height: 600 };
 
+/* ── Browser state: bookmarks, history, ad-block, downloads ─────────────── */
+
+const BOOKMARKS_PATH = path.join(app.getPath('userData'), 'browser-bookmarks.json');
+const MAX_HISTORY = 200;
+let browserHistory = [];
+let adBlockEnabled = true;
+let activeDownloads = new Map();
+
+// Conservative ad/tracker domain blocklist (~100 entries)
+const AD_BLOCK_DOMAINS = new Set([
+  'googleads.g.doubleclick.net','googlesyndication.com','google-analytics.com',
+  'googletagmanager.com','googletagservices.com','adservice.google.com',
+  'pagead2.googlesyndication.com','tpc.googlesyndication.com','fonts.gstatic.com',
+  'facebook.com/tr','connect.facebook.net','an.facebook.com',
+  'amazon-adsystem.com','s.amazon-adsystem.com','c.amazon-adsystem.com',
+  'ads.yahoo.com','analytics.yahoo.com','gemini.yahoo.com',
+  'ads.twitter.com','analytics.twitter.com','static.ads-twitter.com',
+  'ads.linkedin.com','analytics.linkedin.com',
+  'ads.reddit.com','events.reddit.com',
+  'ads.tiktok.com','analytics.tiktok.com',
+  'outbrain.com','taboola.com','criteo.com','criteo.net',
+  'adnxs.com','appnexus.com','openx.net','rubiconproject.com',
+  'pubmatic.com','indexww.com','sovrn.com','lijit.com',
+  'doubleclick.net','doubleverify.com','adsafeprotected.com',
+  'moatads.com','adsystem.com','adsrvr.org','advertising.com',
+  'adform.net','adroll.com','adsymptotic.com','adsrvr.org',
+  'bounceexchange.com','quantserve.com','scorecardresearch.com',
+  'krxd.net','demdex.net','omtrdc.net','everesttech.net',
+  'adsystem.amazon.com','adsystem.google.com','adsystem.microsoft.com',
+  'hotjar.com','clarity.ms','segment.io','segment.com',
+  'mixpanel.com','amplitude.com','heap.io','fullstory.com',
+  'intercom.io','intercomcdn.com','zendesk.com','freshdesk.com',
+  'driftt.com','hubspot.com','marketo.net','pardot.com',
+  'salesforce.com','eloqua.com','optimizely.com','vwo.com',
+  'crazyegg.com','luckyorange.com','mouseflow.com','sessioncam.com',
+  'datadoghq.com','newrelic.com','sentry.io','bugsnag.com',
+  'rollbar.com','logrocket.com','fullstory.com',
+  'cdn.heapanalytics.com','cdn.segment.com','cdn.amplitude.com',
+  'cdn.mxpnl.com','cdn.mouseflow.com','cdn.hotjar.com',
+  'browser.sentry-cdn.com','js.sentry-cdn.com',
+]);
+
+function loadBookmarks() {
+  try {
+    if (fs.existsSync(BOOKMARKS_PATH)) {
+      return JSON.parse(fs.readFileSync(BOOKMARKS_PATH, 'utf-8'));
+    }
+  } catch (e) { console.error('[browser] failed to load bookmarks:', e); }
+  return [];
+}
+
+function saveBookmarks(bookmarks) {
+  try {
+    fs.writeFileSync(BOOKMARKS_PATH, JSON.stringify(bookmarks, null, 2));
+  } catch (e) { console.error('[browser] failed to save bookmarks:', e); }
+}
+
+function addHistoryEntry(url, title = '') {
+  if (!url || url.startsWith('about:') || url.startsWith('chrome:')) return;
+  browserHistory = browserHistory.filter((h) => h.url !== url);
+  browserHistory.unshift({ url, title, timestamp: Date.now() });
+  if (browserHistory.length > MAX_HISTORY) browserHistory = browserHistory.slice(0, MAX_HISTORY);
+}
+
+function shouldBlockAd(details) {
+  if (!adBlockEnabled) return false;
+  try {
+    const hostname = new URL(details.url).hostname.toLowerCase();
+    for (const blocked of AD_BLOCK_DOMAINS) {
+      if (hostname === blocked || hostname.endsWith('.' + blocked)) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
 // ─────────────────────────────────────────────────────────
 // Global Error Handlers (H1)
 // ─────────────────────────────────────────────────────────
@@ -694,24 +769,52 @@ function ensureBrowserView() {
     browserView.webContents.loadURL(url);
     return { action: 'deny' };
   });
-  // Handle downloads
+  // Ad-blocker: block requests to known ad/tracker domains
+  browserView.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+    if (shouldBlockAd(details)) {
+      callback({ cancel: true });
+      return;
+    }
+    callback({});
+  });
+
+  // Handle downloads with progress tracking
   browserView.webContents.session.on('will-download', (event, item, webContents) => {
-    console.log(`[browser] download started: ${item.getFilename()} (${item.getTotalBytes()} bytes)`);
-    item.setSavePath(path.join(app.getPath('downloads'), item.getFilename()));
-    item.once('done', (event, state) => {
-      if (state === 'completed') {
-        console.log(`[browser] download complete: ${item.getSavePath()}`);
-      } else {
-        console.log(`[browser] download failed: ${state}`);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const filename = item.getFilename();
+    const savePath = path.join(app.getPath('downloads'), filename);
+    item.setSavePath(savePath);
+    activeDownloads.set(id, { id, filename, savePath, totalBytes: item.getTotalBytes(), receivedBytes: 0, state: 'progressing' });
+    broadcastBrowserEvent('download-started', { id, filename, totalBytes: item.getTotalBytes() });
+
+    item.on('updated', (event, state) => {
+      const dl = activeDownloads.get(id);
+      if (dl) {
+        dl.receivedBytes = item.getReceivedBytes();
+        dl.state = state;
+        broadcastBrowserEvent('download-progress', { id, receivedBytes: dl.receivedBytes, totalBytes: dl.totalBytes, state });
       }
+    });
+
+    item.once('done', (event, state) => {
+      const dl = activeDownloads.get(id);
+      if (dl) {
+        dl.state = state;
+        broadcastBrowserEvent('download-complete', { id, filename: dl.filename, savePath: dl.savePath, state });
+      }
+      activeDownloads.delete(id);
     });
   });
   // Forward navigation events to the renderer so the address bar updates
   browserView.webContents.on('did-navigate', (event, url) => {
+    addHistoryEntry(url);
     broadcastBrowserEvent('did-navigate', { url });
   });
   browserView.webContents.on('did-navigate-in-page', (event, url, isMainFrame) => {
-    if (isMainFrame) broadcastBrowserEvent('did-navigate', { url });
+    if (isMainFrame) {
+      addHistoryEntry(url);
+      broadcastBrowserEvent('did-navigate', { url });
+    }
   });
   // Forward history state changes so back/forward buttons can update
   browserView.webContents.on('did-finish-load', () => {
@@ -739,6 +842,20 @@ function ensureBrowserView() {
     menu.append(new MenuItem({ label: 'Back', enabled: browserView.webContents.navigationHistory.canGoBack(), click: () => browserView.webContents.navigationHistory.goBack() }));
     menu.append(new MenuItem({ label: 'Forward', enabled: browserView.webContents.navigationHistory.canGoForward(), click: () => browserView.webContents.navigationHistory.goForward() }));
     menu.append(new MenuItem({ label: 'Reload', click: () => browserView.webContents.reload() }));
+    menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(new MenuItem({ label: 'Reader Mode', click: () => {
+      browserView.webContents.executeJavaScript(`
+        (function() {
+          const article = document.querySelector('article') || document.querySelector('main') || document.body;
+          const title = document.querySelector('h1')?.textContent || document.title;
+          const paragraphs = Array.from(article.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote'));
+          const text = paragraphs.map(p => p.textContent.trim()).filter(t => t.length > 0).join('\\n\\n');
+          return { title, text, url: location.href };
+        })()
+      `).then((result) => {
+        broadcastBrowserEvent('reader-mode', result);
+      }).catch(() => {});
+    } }));
     menu.append(new MenuItem({ type: 'separator' }));
     menu.append(new MenuItem({ label: 'Inspect Element', click: () => browserView.webContents.inspectElement(params.x, params.y) }));
     menu.popup({ window: mainWindow });
@@ -891,6 +1008,70 @@ ipcMain.handle(IPC.BROWSER_STOP_FIND, () => {
     return { success: true };
   }
   return { success: false };
+});
+
+/* ── Bookmarks ───────────────────────────────────────────────────────────── */
+
+ipcMain.handle(IPC.BROWSER_BOOKMARK_ADD, (_event, { title, url }) => {
+  const bookmarks = loadBookmarks();
+  if (!bookmarks.some((b) => b.url === url)) {
+    bookmarks.push({ title: title || url, url, createdAt: Date.now() });
+    saveBookmarks(bookmarks);
+  }
+  return { success: true, bookmarks };
+});
+
+ipcMain.handle(IPC.BROWSER_BOOKMARK_REMOVE, (_event, { url }) => {
+  let bookmarks = loadBookmarks();
+  bookmarks = bookmarks.filter((b) => b.url !== url);
+  saveBookmarks(bookmarks);
+  return { success: true, bookmarks };
+});
+
+ipcMain.handle(IPC.BROWSER_BOOKMARK_LIST, () => {
+  return { bookmarks: loadBookmarks() };
+});
+
+/* ── History ─────────────────────────────────────────────────────────────── */
+
+ipcMain.handle(IPC.BROWSER_HISTORY_LIST, () => {
+  return { history: browserHistory };
+});
+
+ipcMain.handle(IPC.BROWSER_HISTORY_CLEAR, () => {
+  browserHistory = [];
+  return { success: true };
+});
+
+/* ── Reader Mode ─────────────────────────────────────────────────────────── */
+
+ipcMain.handle(IPC.BROWSER_READER_MODE, async () => {
+  if (!browserView) return { success: false, title: '', text: '', url: '' };
+  try {
+    const result = await browserView.webContents.executeJavaScript(`
+      (function() {
+        const article = document.querySelector('article') || document.querySelector('main') || document.body;
+        const title = document.querySelector('h1')?.textContent || document.title;
+        const paragraphs = Array.from(article.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote'));
+        const text = paragraphs.map(p => p.textContent.trim()).filter(t => t.length > 0).join('\\n\\n');
+        return { title, text, url: location.href };
+      })()
+    `);
+    return { success: true, ...result };
+  } catch (e) {
+    return { success: false, title: '', text: '', url: '' };
+  }
+});
+
+/* ── Ad Blocker ──────────────────────────────────────────────────────────── */
+
+ipcMain.handle(IPC.BROWSER_ADBLOCK_TOGGLE, () => {
+  adBlockEnabled = !adBlockEnabled;
+  return { enabled: adBlockEnabled };
+});
+
+ipcMain.handle(IPC.BROWSER_ADBLOCK_STATUS, () => {
+  return { enabled: adBlockEnabled };
 });
 
 app.on('before-quit', () => {

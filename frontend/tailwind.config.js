@@ -19,9 +19,11 @@ export default {
           text: 'var(--nd-text)',
           'text-muted': 'var(--nd-text-muted)',
           glow: 'var(--nd-glow)',
+          'border-subtle': 'var(--nd-border-subtle)',
+          'border-default': 'var(--nd-border-default)',
+          'border-focus': 'var(--nd-border-focus)',
         },
-        // Legacy static aliases — kept for backward compat during migration
-        // TODO: remove after full component audit
+        // DEPRECATED: static aliases — bypass theme system, use nd-* tokens instead
         neuro: '#5EEBFF',
         success: '#7CFFB2',
         warning: '#FFC857',

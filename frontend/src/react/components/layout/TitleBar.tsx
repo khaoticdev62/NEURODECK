@@ -1,13 +1,18 @@
-import { Bell, Gauge, Minus, Square, X, Zap } from 'lucide-react';
+import { Bell, Gauge, Minus, Square, X, Zap, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Badge } from '../primitives/Badge';
 import { IconButton } from '../primitives/IconButton';
+import type { LocalModel } from '../../types/neurodeck';
 
 interface TopStatusBarProps {
   modelName: string;
+  models: LocalModel[];
+  selectedModelId: string;
   persona: string;
   provider: string;
   latencyMs: number;
   contextUsed: number;
+  onSelectModel?: (id: string) => void;
   onOpenCommandPalette?: () => void;
   onOpenNotifications?: () => void;
   onOpenSettings?: () => void;
@@ -15,15 +20,83 @@ interface TopStatusBarProps {
 
 export function TitleBar({
   modelName,
+  models,
+  selectedModelId,
   persona,
   provider,
   latencyMs,
   contextUsed,
+  onSelectModel,
   onOpenCommandPalette,
   onOpenNotifications,
   onOpenSettings,
 }: TopStatusBarProps) {
   const contextColor = contextUsed > 80 ? 'danger' : contextUsed > 60 ? 'warning' : 'success';
+  const [modelOpen, setModelOpen] = useState(false);
+  const [focusedIdx, setFocusedIdx] = useState(-1);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+  const modelBtnRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setModelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus the active model when dropdown opens
+  useEffect(() => {
+    if (!modelOpen) return;
+    const idx = models.findIndex((m) => m.id === selectedModelId);
+    const startIdx = idx >= 0 ? idx : 0;
+    setFocusedIdx(startIdx);
+    requestAnimationFrame(() => optionRefs.current[startIdx]?.focus());
+  }, [modelOpen, models, selectedModelId]);
+
+  const handleDropdownKey = useCallback((e: React.KeyboardEvent) => {
+    if (!modelOpen) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setModelOpen(false);
+      modelBtnRef.current?.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIdx((prev) => {
+        const next = (prev + 1) % models.length;
+        optionRefs.current[next]?.focus();
+        return next;
+      });
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIdx((prev) => {
+        const next = (prev - 1 + models.length) % models.length;
+        optionRefs.current[next]?.focus();
+        return next;
+      });
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      setFocusedIdx(0);
+      optionRefs.current[0]?.focus();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      const last = models.length - 1;
+      setFocusedIdx(last);
+      optionRefs.current[last]?.focus();
+    }
+  }, [modelOpen, models.length]);
 
   return (
     <header
@@ -43,14 +116,70 @@ export function TitleBar({
 
       {/* Center: live status chips */}
       <div className="no-drag hidden items-center gap-2 sm:flex" aria-label="System status">
-        <StatusChip icon={Zap} label={modelName} />
+        {/* Model switcher dropdown */}
+        <div className="relative" ref={modelDropdownRef} onKeyDown={handleDropdownKey}>
+          <button
+            ref={modelBtnRef}
+            type="button"
+            onClick={() => setModelOpen((v) => !v)}
+            className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[11px] text-nd-text-muted/80 transition hover:border-nd-accent/30 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            aria-label="Switch model"
+            aria-haspopup="listbox"
+            aria-expanded={modelOpen}
+          >
+            <Zap className="h-3 w-3 text-nd-accent" aria-hidden="true" />
+            <span className="max-w-[140px] truncate">{modelName}</span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${modelOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+          {modelOpen && (
+            <div
+              role="listbox"
+              aria-label="Select model"
+              aria-activedescendant={focusedIdx >= 0 ? `model-option-${focusedIdx}` : undefined}
+              className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-nd-text-muted/15 bg-nd-bg/96 p-1 shadow-xl shadow-nd-accent/10 backdrop-blur-xl"
+            >
+              {models.length === 0 && (
+                <div className="px-3 py-2 text-xs text-nd-text-muted" role="option" aria-selected={false}>No models available</div>
+              )}
+              {models.map((model, idx) => (
+                <button
+                  key={model.id}
+                  id={`model-option-${idx}`}
+                  ref={(el) => { optionRefs.current[idx] = el; }}
+                  type="button"
+                  role="option"
+                  aria-selected={model.id === selectedModelId}
+                  onClick={() => {
+                    onSelectModel?.(model.id);
+                    setModelOpen(false);
+                    modelBtnRef.current?.focus();
+                  }}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                    model.id === selectedModelId
+                      ? 'bg-nd-accent/10 text-nd-accent'
+                      : 'text-nd-text/80 hover:bg-nd-surface/50'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{model.name}</div>
+                    <div className="truncate text-[10px] text-nd-text-muted/70">{model.provider} · {model.status}</div>
+                  </div>
+                  {model.id === selectedModelId && (
+                    <span className="ml-2 h-1.5 w-1.5 rounded-full bg-nd-accent" aria-hidden="true" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <span className="text-nd-text-muted/30" aria-hidden="true">·</span>
         <StatusChip label={persona} />
         <span className="text-nd-text-muted/30" aria-hidden="true">·</span>
         <StatusChip icon={Gauge} label={`${latencyMs}ms`} />
         <span className="text-nd-text-muted/30" aria-hidden="true">·</span>
         <span className="flex items-center gap-1.5 text-[11px]" aria-label={`Context: ${contextUsed}% used`}>
-          <span className="text-nd-text-muted/70">ctx</span>
+          <span className="text-nd-text-muted/70" aria-hidden="true">ctx</span>
           <Badge tone={contextColor} aria-hidden="true">{contextUsed}%</Badge>
         </span>
         <span className="text-nd-text-muted/30" aria-hidden="true">·</span>

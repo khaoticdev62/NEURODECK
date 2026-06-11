@@ -29,6 +29,14 @@ const IPC = Object.freeze({
   BROWSER_ZOOM_RESET: 'browser-zoom-reset',
   BROWSER_FIND: 'browser-find',
   BROWSER_STOP_FIND: 'browser-stop-find',
+  BROWSER_BOOKMARK_ADD: 'browser-bookmark-add',
+  BROWSER_BOOKMARK_REMOVE: 'browser-bookmark-remove',
+  BROWSER_BOOKMARK_LIST: 'browser-bookmark-list',
+  BROWSER_HISTORY_LIST: 'browser-history-list',
+  BROWSER_HISTORY_CLEAR: 'browser-history-clear',
+  BROWSER_READER_MODE: 'browser-reader-mode',
+  BROWSER_ADBLOCK_TOGGLE: 'browser-adblock-toggle',
+  BROWSER_ADBLOCK_STATUS: 'browser-adblock-status',
 });
 
 // Expose a minimal API for Electron-specific features.
@@ -84,6 +92,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserZoomReset: () => ipcRenderer.invoke(IPC.BROWSER_ZOOM_RESET),
   browserFind: (text) => ipcRenderer.invoke(IPC.BROWSER_FIND, text),
   browserStopFind: () => ipcRenderer.invoke(IPC.BROWSER_STOP_FIND),
+
+  // Bookmarks
+  browserBookmarkAdd: (title, url) => ipcRenderer.invoke(IPC.BROWSER_BOOKMARK_ADD, { title, url }),
+  browserBookmarkRemove: (url) => ipcRenderer.invoke(IPC.BROWSER_BOOKMARK_REMOVE, { url }),
+  browserBookmarkList: () => ipcRenderer.invoke(IPC.BROWSER_BOOKMARK_LIST),
+
+  // History
+  browserHistoryList: () => ipcRenderer.invoke(IPC.BROWSER_HISTORY_LIST),
+  browserHistoryClear: () => ipcRenderer.invoke(IPC.BROWSER_HISTORY_CLEAR),
+
+  // Reader mode
+  browserReaderMode: () => ipcRenderer.invoke(IPC.BROWSER_READER_MODE),
+
+  // Ad blocker
+  browserAdblockToggle: () => ipcRenderer.invoke(IPC.BROWSER_ADBLOCK_TOGGLE),
+  browserAdblockStatus: () => ipcRenderer.invoke(IPC.BROWSER_ADBLOCK_STATUS),
 
   // Listen for browser events from main process
   onBrowserEvent: (callback) => {

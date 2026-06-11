@@ -19,6 +19,15 @@ const sizeClasses = {
   xl: 'max-w-2xl',
 };
 
+const FOCUSABLE = [
+  'a[href]',
+  'button:not(:disabled)',
+  'input:not(:disabled)',
+  'select:not(:disabled)',
+  'textarea:not(:disabled)',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
 export function Modal({
   open,
   onClose,
@@ -30,19 +39,65 @@ export function Modal({
   closeOnBackdrop = true,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
 
+  // Save focus target before opening; restore it on close
+  useEffect(() => {
+    if (open) {
+      previousFocusRef.current = document.activeElement;
+    } else {
+      (previousFocusRef.current as HTMLElement | null)?.focus();
+    }
+  }, [open]);
+
+  // Focus first focusable element inside modal when it opens
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    const first = dialogRef.current.querySelector<HTMLElement>(FOCUSABLE);
+    (first ?? dialogRef.current).focus();
+  }, [open]);
+
+  // Escape to close + Tab/Shift+Tab focus trap
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
-  useEffect(() => {
-    if (open) dialogRef.current?.focus();
-  }, [open]);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
+      ).filter((el) => !el.closest('[aria-hidden="true"]'));
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [open, onClose]);
 
   if (!open) return null;
 

@@ -118,10 +118,16 @@ export class WallpaperManager {
     const css = document.getElementById('app-background-css') as HTMLElement | null;
     const cv = document.getElementById('app-background-canvas') as HTMLElement | null;
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     if (type.startsWith('css-')) {
       if (css) { css.className = `app-background-css ${type}`; css.style.opacity = opacity; }
-    } else {
+    } else if (!prefersReducedMotion) {
+      // Canvas animations skipped when user prefers reduced motion
       if (cv) { cv.style.opacity = opacity; this.setupCanvas(type); this.animationFrameId = requestAnimationFrame(this.loop); }
+    } else {
+      // Reduced motion: render a single static frame, do not loop
+      if (cv) { cv.style.opacity = opacity; this.setupCanvas(type); this.draw(this.canvas!.width, this.canvas!.height); }
     }
     document.body.classList.add('wallpaper-active');
   }

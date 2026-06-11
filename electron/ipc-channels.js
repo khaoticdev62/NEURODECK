@@ -47,6 +47,22 @@ const IPC = Object.freeze({
   BROWSER_ZOOM_RESET: 'browser-zoom-reset',
   BROWSER_FIND: 'browser-find',
   BROWSER_STOP_FIND: 'browser-stop-find',
+
+  // Bookmarks
+  BROWSER_BOOKMARK_ADD: 'browser-bookmark-add',
+  BROWSER_BOOKMARK_REMOVE: 'browser-bookmark-remove',
+  BROWSER_BOOKMARK_LIST: 'browser-bookmark-list',
+
+  // History
+  BROWSER_HISTORY_LIST: 'browser-history-list',
+  BROWSER_HISTORY_CLEAR: 'browser-history-clear',
+
+  // Reader mode
+  BROWSER_READER_MODE: 'browser-reader-mode',
+
+  // Ad blocker
+  BROWSER_ADBLOCK_TOGGLE: 'browser-adblock-toggle',
+  BROWSER_ADBLOCK_STATUS: 'browser-adblock-status',
 });
 
 /** All channels that may be handled in main.js. */

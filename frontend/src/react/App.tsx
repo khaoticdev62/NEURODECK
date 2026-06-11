@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AlertTriangle, Command, Loader2, Sparkles, X } from 'lucide-react';
+import type { AIProvider } from './types/neurodeck';
 import { wallpaperManager } from './features/settings/wallpaperManager';
 import { CommandPalette } from './components/command/CommandPalette';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
+import { ControllerHintBar } from './components/layout/ControllerHintBar';
 import { PrimarySidebar } from './components/layout/PrimarySidebar';
 import { SecondaryRail } from './components/layout/SecondaryRail';
 import { TitleBar } from './components/layout/TitleBar';
@@ -56,11 +58,24 @@ export default function App() {
   const { state, dispatch, resetLocalState, selectors } = useNeuroDeckState();
   const shellRef = useRef<HTMLDivElement>(null);
   const shortcutSinkRef = useRef<HTMLInputElement>(null);
+  // Overlay trigger refs — used to restore focus when overlays close
+  const settingsTriggerRef = useRef<HTMLElement | null>(null);
+  const notifTriggerRef = useRef<HTMLElement | null>(null);
+  const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
+  const ctrlPromptTriggerRef = useRef<HTMLElement | null>(null);
+  const quickSwitcherTriggerRef = useRef<HTMLElement | null>(null);
+  // Overlay panel focus targets
+  const settingsDialogRef = useRef<HTMLDivElement>(null);
+  const notifDialogRef = useRef<HTMLDivElement>(null);
+  const shortcutsDialogRef = useRef<HTMLDivElement>(null);
+  const ctrlPromptDialogRef = useRef<HTMLDivElement>(null);
+  const quickSwitcherDialogRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsPanel, setSettingsPanel] = useState('general');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
+  const [quickSwitcherFocusIdx, setQuickSwitcherFocusIdx] = useState(0);
   const [ctrlPromptOpen, setCtrlPromptOpen] = useState(false);
   const [recentViews, setRecentViews] = useState<ViewId[]>([]);
 
@@ -82,6 +97,68 @@ export default function App() {
       return [state.activeView, ...next].slice(0, 8);
     });
   }, [state.activeView]);
+
+  // Focus management for overlays — move focus in on open, restore on close
+  useEffect(() => {
+    if (settingsOpen) {
+      settingsTriggerRef.current = document.activeElement as HTMLElement;
+      requestAnimationFrame(() => {
+        const el = settingsDialogRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        (el ?? settingsDialogRef.current)?.focus();
+      });
+    } else {
+      (settingsTriggerRef.current as HTMLElement | null)?.focus();
+    }
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (notificationsOpen) {
+      notifTriggerRef.current = document.activeElement as HTMLElement;
+      requestAnimationFrame(() => {
+        const el = notifDialogRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        (el ?? notifDialogRef.current)?.focus();
+      });
+    } else {
+      (notifTriggerRef.current as HTMLElement | null)?.focus();
+    }
+  }, [notificationsOpen]);
+
+  useEffect(() => {
+    if (shortcutsOpen) {
+      shortcutsTriggerRef.current = document.activeElement as HTMLElement;
+      requestAnimationFrame(() => {
+        const el = shortcutsDialogRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        (el ?? shortcutsDialogRef.current)?.focus();
+      });
+    } else {
+      (shortcutsTriggerRef.current as HTMLElement | null)?.focus();
+    }
+  }, [shortcutsOpen]);
+
+  useEffect(() => {
+    if (ctrlPromptOpen) {
+      ctrlPromptTriggerRef.current = document.activeElement as HTMLElement;
+      requestAnimationFrame(() => {
+        const el = ctrlPromptDialogRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        (el ?? ctrlPromptDialogRef.current)?.focus();
+      });
+    } else {
+      (ctrlPromptTriggerRef.current as HTMLElement | null)?.focus();
+    }
+  }, [ctrlPromptOpen]);
+
+  useEffect(() => {
+    if (quickSwitcherOpen) {
+      quickSwitcherTriggerRef.current = document.activeElement as HTMLElement;
+      setQuickSwitcherFocusIdx(0);
+      requestAnimationFrame(() => {
+        const list = quickSwitcherDialogRef.current?.querySelectorAll<HTMLButtonElement>('button[data-qs-item]');
+        list?.[0]?.focus();
+      });
+    } else {
+      (quickSwitcherTriggerRef.current as HTMLElement | null)?.focus();
+    }
+  }, [quickSwitcherOpen]);
 
   // Defensive: hide browser native overlay when switching away from browser tab
   useEffect(() => {
@@ -151,21 +228,43 @@ export default function App() {
     const userMessage = makeUserMessage(prompt);
     dispatch({ type: 'append-message', message: userMessage });
     dispatch({ type: 'set-busy', label: `${state.selectedProvider} is generating…` });
-    const response = await neurodeckApi.ai.chat({
-      provider: state.selectedProvider,
-      model: modelName,
-      persona: state.selectedPersona,
-      prompt,
-      messages: [...state.messages, userMessage],
-      projectContext: state.projectContext,
-      activeProjectName: state.activeProject?.name
+
+    const assistantId = `assistant-${Date.now()}`;
+    dispatch({
+      type: 'append-message',
+      message: {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        createdAt: new Date().toISOString(),
+        provider: state.selectedProvider,
+        model: modelName,
+      },
     });
-    if (!response.ok) {
-      dispatch({ type: 'set-error', error: { title: 'AI execution failed', message: response.error, action: 'Check AI Health or switch to Offline Draft provider.' } });
-      return;
-    }
-    dispatch({ type: 'append-message', message: response.message });
-    dispatch({ type: 'set-busy', label: null });
+
+    await neurodeckApi.ai.chatStream(
+      {
+        provider: state.selectedProvider,
+        model: modelName,
+        persona: state.selectedPersona,
+        prompt,
+        messages: [...state.messages, userMessage],
+        projectContext: state.projectContext,
+        activeProjectName: state.activeProject?.name,
+      },
+      {
+        onToken: (token) => {
+          dispatch({ type: 'update-message', id: assistantId, content: token });
+        },
+        onDone: () => {
+          dispatch({ type: 'set-busy', label: null });
+        },
+        onError: (error) => {
+          dispatch({ type: 'set-busy', label: null });
+          dispatch({ type: 'set-error', error: { title: 'AI execution failed', message: error, action: 'Check AI Health or switch to Offline Draft provider.' } });
+        },
+      }
+    );
   }, [dispatch, modelName, state.activeProject?.name, state.composerValue, state.messages, state.projectContext, state.selectedPersona, state.selectedProvider]);
 
   const runAgent = useCallback(async (agentId: string, overridePrompt?: string) => {
@@ -283,6 +382,7 @@ export default function App() {
   };
 
   const openSettings = useCallback((panel = 'general') => {
+    settingsTriggerRef.current = document.activeElement as HTMLElement;
     localStorage.setItem('settingsActivePanel', `sp-${panel}`);
     setSettingsPanel(panel);
     setSettingsOpen(true);
@@ -330,11 +430,25 @@ export default function App() {
         if (recentViews.length > 1) setQuickSwitcherOpen(true);
         return;
       }
+      if (quickSwitcherOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        const items = quickSwitcherDialogRef.current?.querySelectorAll<HTMLButtonElement>('button[data-qs-item]');
+        if (items && items.length > 0) {
+          setQuickSwitcherFocusIdx((prev) => {
+            const next = event.key === 'ArrowDown'
+              ? (prev + 1) % items.length
+              : (prev - 1 + items.length) % items.length;
+            items[next]?.focus();
+            return next;
+          });
+        }
+        return;
+      }
       if (quickSwitcherOpen && event.key === 'Enter') {
         event.preventDefault();
-        const target = recentViews[1];
-        if (target) dispatch({ type: 'set-view', view: target });
-        setQuickSwitcherOpen(false);
+        const items = quickSwitcherDialogRef.current?.querySelectorAll<HTMLButtonElement>('button[data-qs-item]');
+        const target = items?.[quickSwitcherFocusIdx];
+        if (target) target.click();
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -380,7 +494,7 @@ export default function App() {
       window.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [dispatch, runAssistant, recentViews, settingsOpen, notificationsOpen, shortcutsOpen, quickSwitcherOpen, ctrlPromptOpen, state.commandOpen]);
+  }, [dispatch, runAssistant, recentViews, quickSwitcherFocusIdx, settingsOpen, notificationsOpen, shortcutsOpen, quickSwitcherOpen, ctrlPromptOpen, state.commandOpen]);
 
   const activeFont = useMemo(() => fontOptions.find((f) => f.id === state.selectedFont) ?? fontOptions[0], [state.selectedFont]);
 
@@ -435,10 +549,18 @@ export default function App() {
 
   return (
     <ToastProvider>
+    {/* Skip to main content — visible on first Tab press */}
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-lg focus:bg-nd-accent focus:px-3 focus:py-2 focus:text-nd-bg focus:text-sm focus:font-semibold"
+    >
+      Skip to main content
+    </a>
     <div
       id="app-shell"
       ref={shellRef}
       tabIndex={0}
+      data-density={state.deckMode ? 'deck' : 'comfortable'}
       className={`flex h-full flex-col overflow-hidden tactical-grid outline-none ${state.deckMode ? 'text-[15px]' : ''}`}
       style={{ color: 'var(--nd-text)' }}
     >
@@ -485,38 +607,48 @@ export default function App() {
       </div>
       <TitleBar
         modelName={modelName}
+        models={state.models}
+        selectedModelId={state.selectedModelId}
         persona={state.selectedPersona}
         provider={state.selectedProvider}
         latencyMs={state.telemetry.latencyMs}
         contextUsed={state.telemetry.contextUsed}
+        onSelectModel={(id) => {
+          dispatch({ type: 'set-selected-model', id });
+          void neurodeckApi.ai.setModel(id);
+        }}
         onOpenCommandPalette={() => dispatch({ type: 'toggle-command', open: true })}
         onOpenNotifications={() => setNotificationsOpen((current) => !current)}
         onOpenSettings={() => openSettings('general')}
       />
-      {state.busyLabel && (
-        <div className="pointer-events-none fixed left-1/2 top-14 z-toast -translate-x-1/2 rounded-full border border-nd-accent/25 bg-nd-bg/95 px-4 py-2 shadow-2xl shadow-nd-accent/10">
-          <span className="inline-flex items-center gap-2 text-2xs font-semibold text-nd-accent"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {state.busyLabel}</span>
-        </div>
-      )}
+      {/* Busy indicator — announced to screen readers via live region */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="pointer-events-none">
+        {state.busyLabel && (
+          <div className="fixed left-1/2 top-14 z-toast -translate-x-1/2 rounded-full border border-nd-accent/25 bg-nd-bg/95 px-4 py-2 shadow-2xl shadow-nd-accent/10">
+            <span className="inline-flex items-center gap-2 text-2xs font-semibold text-nd-accent"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> {state.busyLabel}</span>
+          </div>
+        )}
+      </div>
+      {/* Error panel — announced as alert to screen readers */}
       {state.lastError && (
-        <div className="fixed right-4 top-16 z-toast w-[360px] rounded-3xl border border-nd-danger/30 bg-nd-bg/95 p-4 shadow-2xl shadow-nd-danger/10">
+        <div role="alert" className="fixed right-4 top-16 z-toast w-[360px] rounded-3xl border border-nd-danger/30 bg-nd-bg/95 p-4 shadow-2xl shadow-nd-danger/10">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-danger" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-danger" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <Badge tone="danger">Action needed</Badge>
               <h3 className="mt-2 font-semibold text-nd-text">{state.lastError.title}</h3>
               <p className="mt-1 text-sm leading-6 text-nd-text-muted">{state.lastError.message}</p>
               {state.lastError.action && <p className="mt-2 text-2xs text-nd-text-muted">{state.lastError.action}</p>}
             </div>
-            <button type="button" onClick={() => dispatch({ type: 'set-error', error: null })} className="rounded-xl border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:text-nd-text">
-              <X className="h-4 w-4" />
+            <button type="button" aria-label="Dismiss error" onClick={() => dispatch({ type: 'set-error', error: null })} className="rounded-xl border border-nd-text-muted/15 p-2 text-nd-text-muted transition hover:text-nd-text">
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
       )}
       <div className="flex min-h-0 flex-1">
-        <PrimarySidebar state={state} dispatch={dispatch} />
-        <main className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
+        <PrimarySidebar state={state} dispatch={dispatch} onOpenSettings={() => openSettings('general')} />
+        <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
           <div className="view-container h-full min-h-0">
             {(state.activeView === 'chat' || state.activeView === 'workspace') && renderView('chat', <WorkspaceView state={state} dispatch={dispatch} selectors={selectors} actions={appActions} />)}
             {state.activeView === 'execution' && renderView('execution', <ExecutionView state={state} actions={appActions} />)}
@@ -528,7 +660,6 @@ export default function App() {
             {state.activeView === 'cache' && renderView('cache', <CacheView state={state} />)}
             {state.activeView === 'plugins' && renderView('plugins', <PluginsView />)}
             {state.activeView === 'diagnostics' && renderView('diagnostics', <DiagnosticsView state={state} actions={appActions} />)}
-            {state.activeView === 'settings' && renderView('settings', <SettingsView state={state} dispatch={dispatch} actions={appActions} />)}
             {state.activeView === 'canvas' && renderView('canvas', <CanvasView />)}
             {state.activeView === 'terminal' && renderView('terminal', <TerminalView />)}
             {state.activeView === 'ssh' && renderView('ssh', <SSHView />)}
@@ -556,63 +687,168 @@ export default function App() {
         </main>
         <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
       </div>
+      {state.deckMode && <ControllerHintBar />}
       <CommandPalette state={state} dispatch={dispatch} actions={appActions} onOpenSettings={openSettings} />
-      <div id="settings-overlay" className={`${settingsOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`}>
-          <div className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-0 shadow-2xl shadow-nd-accent/10" data-settings-theme={settingsPanel}>
+
+      {/* Settings overlay */}
+      {settingsOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+          onMouseDown={() => setSettingsOpen(false)}
+        >
+          <div
+            ref={settingsDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-dialog-title"
+            tabIndex={-1}
+            className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
+            data-settings-theme={settingsPanel}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <span id="settings-dialog-title" className="sr-only">Settings</span>
             <div className="h-full min-h-0">
-              <SettingsView key={settingsPanel} state={state} dispatch={dispatch} actions={appActions} onPanelChange={setSettingsPanel} />
+              <SettingsView key={settingsPanel} state={state} dispatch={dispatch} actions={appActions} onPanelChange={setSettingsPanel} onClose={() => setSettingsOpen(false)} />
             </div>
           </div>
-      </div>
-      <div id="notif-modal" className={`${notificationsOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`} onMouseDown={() => setNotificationsOpen(false)}>
-          <div className="notif-modal-card absolute right-4 top-14 w-[360px] rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
+        </div>
+      )}
+
+      {/* Notifications overlay */}
+      {notificationsOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+          onMouseDown={() => setNotificationsOpen(false)}
+        >
+          <div
+            ref={notifDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="notif-dialog-title"
+            tabIndex={-1}
+            className="notif-modal-card absolute right-4 top-14 w-[360px] rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-nd-text">Notifications</h2>
-              <button type="button" id="close-notif-btn" onClick={() => setNotificationsOpen(false)} className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted">Close</button>
+              <h2 id="notif-dialog-title" className="text-sm font-semibold text-nd-text">Notifications</h2>
+              <button type="button" onClick={() => setNotificationsOpen(false)} className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">Close</button>
             </div>
             <p className="mt-3 text-sm text-nd-text-muted">No notifications.</p>
           </div>
-      </div>
-      <div id="shortcuts-overlay" className={`${shortcutsOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`} onMouseDown={() => setShortcutsOpen(false)}>
-          <div className="absolute left-1/2 top-16 z-modal w-[760px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
-            <h2 className="text-sm font-semibold text-nd-text">Keyboard shortcuts</h2>
-            <p className="mt-2 text-sm text-nd-text-muted">Ctrl/Cmd+K opens command palette, Ctrl+Shift+P opens the controller prompt, Ctrl+Tab opens quick switcher, and Escape closes overlays.</p>
-          </div>
-      </div>
-      <div id="ctrl-prompt-overlay" className={`${ctrlPromptOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`} onMouseDown={() => setCtrlPromptOpen(false)}>
-          <div className="absolute left-1/2 top-20 z-modal w-[720px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="ctrl-prompt-title flex items-center gap-2 text-sm font-semibold text-nd-text">
-              <Sparkles className="nd-icon-svg h-4 w-4 text-nd-accent" />
-              <span className="ctrl-prompt-cat-icon inline-flex h-6 w-6 items-center justify-center rounded-lg border border-nd-text-muted/15 bg-nd-surface/50">
-                <Command className="nd-icon-svg h-3.5 w-3.5 text-nd-text/90" />
-              </span>
-              Controller Prompt
+        </div>
+      )}
+
+      {/* Keyboard shortcuts overlay */}
+      {shortcutsOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+          onMouseDown={() => setShortcutsOpen(false)}
+        >
+          <div
+            ref={shortcutsDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shortcuts-dialog-title"
+            tabIndex={-1}
+            className="absolute left-1/2 top-16 z-modal w-[760px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-5 shadow-2xl shadow-nd-accent/10 outline-none"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 id="shortcuts-dialog-title" className="text-sm font-semibold text-nd-text">Keyboard Shortcuts</h2>
+              <button type="button" onClick={() => setShortcutsOpen(false)} aria-label="Close shortcuts" className="rounded-lg p-1 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"><X className="h-4 w-4" /></button>
             </div>
-            <p className="mt-2 text-sm text-nd-text-muted">Press B to close, R4 to accept suggestions, R5 hold to execute, and L5 to save or record PromptDrive macros.</p>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+              {[
+                ['Ctrl / ⌘ + K', 'Open command palette'],
+                ['Ctrl + Tab', 'Quick view switcher'],
+                ['Ctrl / ⌘ + Enter', 'Run assistant'],
+                ['Ctrl + Shift + P', 'Controller prompt'],
+                ['?', 'Show this help'],
+                ['Escape', 'Close overlay'],
+                ['Ctrl + 1–9', 'Jump to view (Chat → Sessions)'],
+                ['Ctrl + 0', 'Open settings'],
+                ['Ctrl + D', 'Diagnostics'],
+              ].map(([key, label]) => (
+                <div key={key} className="flex items-center justify-between gap-3 py-1">
+                  <span className="text-xs text-nd-text-muted">{label}</span>
+                  <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 text-[10px] font-mono text-nd-accent">{key}</kbd>
+                </div>
+              ))}
+            </div>
           </div>
-      </div>
-      <div id="quick-switcher-overlay" className={`${quickSwitcherOpen ? 'active' : 'hidden'} fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm`} onMouseDown={() => setQuickSwitcherOpen(false)}>
-          <div className="absolute left-1/2 top-20 z-modal w-[520px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
-            <h2 className="text-sm font-semibold text-nd-text">Quick Switcher</h2>
-            <div id="quick-switcher-list" className="mt-3 space-y-2">
+        </div>
+      )}
+
+      {/* Controller prompt overlay */}
+      {ctrlPromptOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+          onMouseDown={() => setCtrlPromptOpen(false)}
+        >
+          <div
+            ref={ctrlPromptDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ctrlprompt-dialog-title"
+            tabIndex={-1}
+            className="absolute left-1/2 top-20 z-modal w-[720px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div id="ctrlprompt-dialog-title" className="flex items-center gap-2 text-sm font-semibold text-nd-text">
+                <Sparkles className="h-4 w-4 text-nd-accent" aria-hidden="true" />
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-nd-text-muted/15 bg-nd-surface/50">
+                  <Command className="h-3.5 w-3.5 text-nd-text/90" aria-hidden="true" />
+                </span>
+                Controller Prompt
+              </div>
+              <button type="button" onClick={() => setCtrlPromptOpen(false)} aria-label="Close controller prompt" className="rounded-lg p-1 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-sm text-nd-text-muted">Press B to close, R4 to accept suggestions, R5 hold to execute, and L5 to save or record PromptDrive macros.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Quick switcher overlay */}
+      {quickSwitcherOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+          onMouseDown={() => setQuickSwitcherOpen(false)}
+        >
+          <div
+            ref={quickSwitcherDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qs-dialog-title"
+            tabIndex={-1}
+            className="absolute left-1/2 top-20 z-modal w-[520px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h2 id="qs-dialog-title" className="text-sm font-semibold text-nd-text">Quick Switcher</h2>
+            <div role="listbox" aria-label="Recent views" className="mt-3 space-y-1">
               {recentViews.slice(1).map((view, index) => (
                 <button
                   key={view}
                   type="button"
-                  className={`quick-switcher-item flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left ${index === 0 ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80'}`}
+                  role="option"
+                  aria-selected={index === quickSwitcherFocusIdx}
+                  data-qs-item
+                  className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${index === quickSwitcherFocusIdx ? 'border-nd-accent/35 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}
                   onClick={() => {
                     dispatch({ type: 'set-view', view });
                     setQuickSwitcherOpen(false);
                   }}
                 >
-                  <span>{view}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted">{index === 0 ? 'active' : 'recent'}</span>
+                  <span className="capitalize">{view.replace(/-/g, ' ')}</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted">{index === 0 ? 'previous' : 'recent'}</span>
                 </button>
               ))}
-              {!recentViews.slice(1).length && <p className="text-sm text-nd-text-muted">Visit two or more views to use quick switcher.</p>}
+              {!recentViews.slice(1).length && <p className="py-2 text-sm text-nd-text-muted">Visit two or more views to use quick switcher.</p>}
             </div>
           </div>
-      </div>
+        </div>
+      )}
+
       {state.showOnboarding && <OnboardingModal />}
     </div>
     </ToastProvider>

@@ -254,6 +254,12 @@ function browserDraft(payload: AIChatPayload): AIChatResponse {
   };
 }
 
+export interface ChatStreamCallbacks {
+  onToken: (token: string) => void;
+  onDone: () => void;
+  onError: (error: string) => void;
+}
+
 const ai = {
   async health(): Promise<AIProviderHealth[]> {
     try {
@@ -294,6 +300,56 @@ const ai = {
     } catch (e) {
       return browserDraft(payload);
     }
+  },
+  async chatStream(payload: AIChatPayload, callbacks: ChatStreamCallbacks): Promise<void> {
+    const { onToken, onDone, onError } = callbacks;
+
+    // For offline-draft, bypass the bridge and return the draft immediately
+    if (payload.provider === 'offline-draft') {
+      const draft = browserDraft(payload);
+      if (draft.ok) onToken(draft.message.content);
+      onDone();
+      return;
+    }
+
+    const unsubToken = listenBridge('command_token', (msg: unknown) => {
+      const token = (msg as Record<string, string>)?.token ?? '';
+      if (token) onToken(token);
+    });
+
+    const unsubDone = listenBridge('command_done', () => {
+      unsubToken();
+      unsubDone();
+      onDone();
+    });
+
+    const unsubError = listenBridge('command_error', (msg: unknown) => {
+      const errorMsg = (msg as Record<string, string>)?.error ?? 'Streaming error';
+      unsubToken();
+      unsubDone();
+      unsubError();
+      onError(errorMsg);
+    });
+
+    try {
+      await bridgeInvoke<{ status: string }>('send_command', {
+        message: payload.prompt,
+        provider: payload.provider,
+        model: payload.model === 'NeuroDraft' ? undefined : payload.model,
+        persona: payload.persona,
+      });
+    } catch (e) {
+      unsubToken();
+      unsubDone();
+      unsubError();
+      onError(String(e));
+    }
+  },
+  async setProvider(provider: string): Promise<void> {
+    await bridgeInvoke('set_provider', { provider });
+  },
+  async setModel(model: string): Promise<void> {
+    await bridgeInvoke('set_model', { model });
   },
 };
 
@@ -560,6 +616,47 @@ const browser = {
     if (window.electronAPI?.browserStopFind) return window.electronAPI.browserStopFind();
     return { success: false };
   },
+
+  // Bookmarks
+  async addBookmark(title: string, url: string) {
+    if (window.electronAPI?.browserBookmarkAdd) return window.electronAPI.browserBookmarkAdd(title, url);
+    return { success: false, bookmarks: [] };
+  },
+  async removeBookmark(url: string) {
+    if (window.electronAPI?.browserBookmarkRemove) return window.electronAPI.browserBookmarkRemove(url);
+    return { success: false, bookmarks: [] };
+  },
+  async listBookmarks() {
+    if (window.electronAPI?.browserBookmarkList) return window.electronAPI.browserBookmarkList();
+    return { bookmarks: [] };
+  },
+
+  // History
+  async listHistory() {
+    if (window.electronAPI?.browserHistoryList) return window.electronAPI.browserHistoryList();
+    return { history: [] };
+  },
+  async clearHistory() {
+    if (window.electronAPI?.browserHistoryClear) return window.electronAPI.browserHistoryClear();
+    return { success: false };
+  },
+
+  // Reader mode
+  async readerMode() {
+    if (window.electronAPI?.browserReaderMode) return window.electronAPI.browserReaderMode();
+    return { success: false, title: '', text: '', url: '' };
+  },
+
+  // Ad blocker
+  async toggleAdblock() {
+    if (window.electronAPI?.browserAdblockToggle) return window.electronAPI.browserAdblockToggle();
+    return { enabled: false };
+  },
+  async getAdblockStatus() {
+    if (window.electronAPI?.browserAdblockStatus) return window.electronAPI.browserAdblockStatus();
+    return { enabled: false };
+  },
+
   onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void) {
     if (window.electronAPI?.onBrowserEvent) return window.electronAPI.onBrowserEvent(callback);
     return () => {};
@@ -1076,8 +1173,17 @@ const torrent = {
   async resume(id: string) {
     return bridgeInvoke<{ success: boolean }>('torrent_resume', { id });
   },
-  async remove(id: string) {
-    return bridgeInvoke<{ success: boolean }>('torrent_remove', { id });
+  async remove(id: string, deleteData?: boolean) {
+    return bridgeInvoke<{ success: boolean }>('torrent_remove', { id, delete_data: deleteData ?? false });
+  },
+  async pauseAll() {
+    return bridgeInvoke<{ success: boolean }>('torrent_pause_all');
+  },
+  async resumeAll() {
+    return bridgeInvoke<{ success: boolean }>('torrent_resume_all');
+  },
+  async getDownloadRoot() {
+    return bridgeInvoke<{ root: string }>('torrent_get_download_root');
   },
   async getStatus(): Promise<TorrentClientStatus> {
     return bridgeInvoke<TorrentClientStatus>('torrent_get_status');

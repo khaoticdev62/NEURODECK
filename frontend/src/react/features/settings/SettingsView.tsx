@@ -5,6 +5,7 @@ import { themes } from '../../types/seed';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
 import { LiveWallpaperPanel } from './LiveWallpaperPanel';
+import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { AIProvider, NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ThemeName } from '../../types/neurodeck';
 
 const providers: Array<{ id: AIProvider; label: string; description: string }> = [
@@ -18,11 +19,13 @@ export function SettingsView({
   dispatch,
   actions,
   onPanelChange,
+  onClose,
 }: {
   state: NeuroDeckState;
   dispatch: Dispatch<NeuroDeckAction>;
   actions: NeuroDeckAppActions;
   onPanelChange?: (panel: string) => void;
+  onClose?: () => void;
 }) {
   const [activePanel, setActivePanel] = useState(() => {
     const saved = localStorage.getItem('settingsActivePanel');
@@ -117,7 +120,10 @@ export function SettingsView({
               {providers.map((provider) => {
                 const health = state.aiHealth.find((item) => item.provider === provider.id);
                 return (
-                  <button key={provider.id} type="button" onClick={() => dispatch({ type: 'set-provider', provider: provider.id })} className={`w-full rounded-2xl border p-4 text-left transition ${state.selectedProvider === provider.id ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
+                  <button key={provider.id} type="button" onClick={() => {
+                    dispatch({ type: 'set-provider', provider: provider.id });
+                    void neurodeckApi.ai.setProvider(provider.id);
+                  }} className={`w-full rounded-2xl border p-4 text-left transition ${state.selectedProvider === provider.id ? 'border-nd-accent/40 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2"><BrainCircuit className="h-4 w-4 text-nd-accent" /><span className="font-semibold text-nd-text">{provider.label}</span></div>
                       <Badge tone={health?.available ? 'success' : provider.id === 'offline-draft' ? 'success' : 'warning'}>{health?.available ? 'ready' : 'cold'}</Badge>

@@ -35,6 +35,16 @@
   /* Response color for wallpapers / legacy compatibility */
   --response-color: #7CFFB2;
 
+  /* Semantic border tokens */
+  --nd-border-subtle: color-mix(in srgb, var(--nd-text-muted) 10%, transparent);
+  --nd-border-default: color-mix(in srgb, var(--nd-text-muted) 16%, transparent);
+  --nd-border-focus: color-mix(in srgb, var(--nd-accent) 60%, transparent);
+
+  /* Density mode tokens — overridden by [data-density] selectors below */
+  --nd-target-min: 44px;
+  --nd-spacing-item: 8px;
+  --nd-font-ui: 14px;
+
   /* Z-index scale */
   --z-wallpaper: 0;
   --z-base: 1;
@@ -44,6 +54,19 @@
   --z-modal: 40;
   --z-toast: 50;
   --z-tooltip: 60;
+}
+
+/* Density overrides */
+[data-density="deck"] {
+  --nd-target-min: 48px;
+  --nd-spacing-item: 10px;
+  --nd-font-ui: 15px;
+}
+
+[data-density="compact"] {
+  --nd-target-min: 36px;
+  --nd-spacing-item: 6px;
+  --nd-font-ui: 13px;
 }
 
 html,
@@ -288,6 +311,11 @@ body.wallpaper-active #app-shell {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
+  }
+
+  .glow-pulse {
+    animation: none !important;
+    box-shadow: 0 0 0 1px var(--nd-accent);
   }
 }
 

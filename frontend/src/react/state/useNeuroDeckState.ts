@@ -154,6 +154,11 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
         composerValue: action.message.role === 'user' ? '' : state.composerValue,
         telemetry: { ...state.telemetry, latencyMs: action.message.latencyMs ?? state.telemetry.latencyMs }
       };
+    case 'update-message':
+      return {
+        ...state,
+        messages: state.messages.map((m) => m.id === action.id ? { ...m, content: m.content + action.content } : m),
+      };
     case 'add-ai-run':
       return { ...state, aiRuns: [action.run, ...state.aiRuns].slice(0, 60), activeView: action.run.status === 'complete' ? state.activeView : 'execution' };
     case 'set-diagnostics':

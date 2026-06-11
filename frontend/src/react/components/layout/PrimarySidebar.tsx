@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import type { Dispatch } from 'react';
-import { Command, Gamepad2, WifiOff } from 'lucide-react';
+import { ChevronRight, Command, Gamepad2, WifiOff } from 'lucide-react';
 import { navItems } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckState, ViewId } from '../../types/neurodeck';
 import { Badge } from '../primitives/Badge';
 
-export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction> }) {
-  const [expanded, setExpanded] = useState(false);
+export function PrimarySidebar({ state, dispatch, onOpenSettings }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; onOpenSettings?: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const expanded = pinned || hovered;
 
   const grouped = navItems.reduce<Record<string, typeof navItems>>((acc, item) => {
     const section = item.section ?? 'Other';
@@ -21,21 +23,36 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
     <aside
       className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-text-muted/15 bg-nd-bg/72 backdrop-blur-xl transition-all duration-200 ease-snap lg:flex"
       style={{ width: expanded ? 200 : 56 }}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {/* Command button */}
-      <div className="shrink-0 p-2">
+      {/* Command button + pin toggle */}
+      <div className="shrink-0 space-y-1 p-2">
         <button
           type="button"
-          className="no-drag flex w-full items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/[0.06] px-2 py-2.5 text-left transition hover:border-nd-accent/40 hover:bg-nd-accent/[0.1]"
+          className="no-drag flex w-full items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/[0.06] px-2 py-2.5 text-left transition hover:border-nd-accent/40 hover:bg-nd-accent/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           onClick={() => dispatch({ type: 'toggle-command', open: true })}
           aria-label="Open command palette"
         >
-          <Command className="h-5 w-5 shrink-0 text-nd-accent" />
+          <Command className="h-5 w-5 shrink-0 text-nd-accent" aria-hidden="true" />
           <span className={`ml-2.5 overflow-hidden whitespace-nowrap text-xs font-semibold uppercase tracking-[0.22em] text-nd-accent transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
             Cmd
           </span>
+        </button>
+        {/* Pin sidebar expanded — visible to keyboard users even when collapsed */}
+        <button
+          type="button"
+          onClick={() => setPinned((p) => !p)}
+          aria-label={pinned ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-pressed={pinned}
+          title={pinned ? 'Collapse sidebar' : 'Expand sidebar'}
+          className={`no-drag flex w-full items-center justify-center rounded-lg border px-2 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${pinned ? 'border-nd-accent/30 bg-nd-accent/[0.06] text-nd-accent' : 'border-transparent text-nd-text-muted/50 hover:border-nd-text-muted/15 hover:text-nd-text-muted'}`}
+        >
+          <ChevronRight
+            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${pinned ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+          {expanded && <span className="ml-1.5 overflow-hidden whitespace-nowrap">{pinned ? 'Collapse' : 'Expand'}</span>}
         </button>
       </div>
 

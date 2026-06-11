@@ -410,6 +410,7 @@ export type NeuroDeckAction =
   | { type: 'merge-detected-models'; models: LocalModel[] }
   | { type: 'set-ai-health'; health: AIProviderHealth[] }
   | { type: 'append-message'; message: AIMessage }
+  | { type: 'update-message'; id: string; content: string }
   | { type: 'add-ai-run'; run: AgentRun }
   | { type: 'set-diagnostics'; diagnostics: DiagnosticsPayload | null; logs: DiagnosticLog[] }
   | { type: 'set-busy'; label: string | null }

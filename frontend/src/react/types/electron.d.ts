@@ -90,6 +90,23 @@ interface ElectronAPI {
   browserZoomReset(): Promise<{ zoomLevel: number }>;
   browserFind(text: string): Promise<{ success: boolean }>;
   browserStopFind(): Promise<{ success: boolean }>;
+
+  // Bookmarks
+  browserBookmarkAdd(title: string, url: string): Promise<{ success: boolean; bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
+  browserBookmarkRemove(url: string): Promise<{ success: boolean; bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
+  browserBookmarkList(): Promise<{ bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
+
+  // History
+  browserHistoryList(): Promise<{ history: Array<{ url: string; title: string; timestamp: number }> }>;
+  browserHistoryClear(): Promise<{ success: boolean }>;
+
+  // Reader mode
+  browserReaderMode(): Promise<{ success: boolean; title: string; text: string; url: string }>;
+
+  // Ad blocker
+  browserAdblockToggle(): Promise<{ enabled: boolean }>;
+  browserAdblockStatus(): Promise<{ enabled: boolean }>;
+
   onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void): () => void;
 }
 
