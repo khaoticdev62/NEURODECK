@@ -110,7 +110,7 @@ fn default_provider() -> String {
     "ollama".to_string()
 }
 fn default_ollama_model() -> String {
-    "llama2".to_string()
+    "llama3.2:1b".to_string()
 }
 fn default_gemini_model() -> String {
     "gemini-1.5-flash".to_string()
@@ -324,7 +324,7 @@ mod tests {
         assert_eq!(config.theme.primary_color, "#00F0FF");
         assert_eq!(config.theme.secondary_color, "#FF0055");
         assert_eq!(config.llm.default_provider, "ollama");
-        assert_eq!(config.llm.ollama_model, "llama2");
+        assert_eq!(config.llm.ollama_model, "llama3.2:1b");
         assert_eq!(config.llm.gemini_model, "gemini-1.5-flash");
         assert_eq!(config.llm.ollama_base_url, "http://localhost:11434");
     }

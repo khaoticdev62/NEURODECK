@@ -70,6 +70,42 @@ pub(crate) fn provider_from_agent(agent: &config::AgentConfig) -> Arc<dyn LlmPro
     }
 }
 
+/// Build a provider Arc for an explicit provider/model pair, falling back to
+/// config defaults for base URL / embed model / API keys.
+pub(crate) fn provider_for(
+    provider: &str,
+    model: &str,
+    config: &config::Config,
+) -> Arc<dyn LlmProvider> {
+    match provider {
+        "gemini" => Arc::new(GeminiProvider::new(model.to_string())),
+        "huggingface" => Arc::new(HuggingFaceProvider::new(
+            model.to_string(),
+            None,
+            config.llm.hf_base_url.clone(),
+            config.llm.hf_embed_model.clone(),
+        )),
+        "kimi" => Arc::new(KimiProvider::new(
+            model.to_string(),
+            config.llm.kimi_base_url.clone(),
+        )),
+        "openai_compat" => {
+            let api_key =
+                neurodeck_infrastructure::secrets::get_openai_compat_api_key().unwrap_or_default();
+            Arc::new(OpenAICompatProvider::new(
+                config.llm.openai_compat_base_url.clone(),
+                model.to_string(),
+                api_key,
+            ))
+        }
+        _ => Arc::new(OllamaProvider::new(
+            model.to_string(),
+            config.llm.ollama_base_url.clone(),
+            config.llm.ollama_embed_model.clone(),
+        )),
+    }
+}
+
 /// Seed default agent profiles when none exist in config.
 pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
     let ollama_url = "http://localhost:11434".to_string();

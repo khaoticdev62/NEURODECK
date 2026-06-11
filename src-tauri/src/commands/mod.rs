@@ -759,6 +759,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("agent_id")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
+            let request_provider = args
+                .get("provider")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let request_model = args
+                .get("model")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
             {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -774,18 +782,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let app_state_clone = state.app_state.clone();
             let (provider_clone, mem_db, session_id, messages_len) = {
                 let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
-                // Per-request agent routing: if caller specifies agent_id, route to that
-                // agent's provider without changing global AppState.provider.
-                let effective_id = request_agent_id.as_deref()
-                    .unwrap_or(&app.config.llm.active_agent_id);
-                let provider_arc: std::sync::Arc<dyn crate::LlmProvider> = if !effective_id.is_empty() {
-                    app.config.llm.agents.iter()
-                        .find(|a| a.id == effective_id)
-                        .map(|a| crate::providers::provider_from_agent(a))
-                        .unwrap_or_else(|| app.provider.clone())
-                } else {
-                    app.provider.clone()
-                };
+                // Provider resolution priority:
+                // 1. Explicit provider+model from the request (UI selection)
+                // 2. Explicit agent_id from the request
+                // 3. Global active agent / default provider
+                let provider_arc: std::sync::Arc<dyn crate::LlmProvider> =
+                    if let (Some(ref p), Some(ref m)) = (&request_provider, &request_model) {
+                        crate::providers::provider_for(p, m, &app.config)
+                    } else if let Some(ref id) = request_agent_id {
+                        app.config.llm.agents
+                            .iter()
+                            .find(|a| &a.id == id)
+                            .map(|a| crate::providers::provider_from_agent(a))
+                            .unwrap_or_else(|| app.provider.clone())
+                    } else {
+                        app.provider.clone()
+                    };
                 (
                     provider_arc,
                     app.mem_db.clone(),
@@ -837,11 +849,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 };
 
                 // 3. RAG: Search memory for relevant messages with pack + privacy filters
+                // Cap embedding generation so a slow/missing Ollama embeddings model
+                // cannot block chat streaming indefinitely.
                 if let Some(ref db) = mem_db {
-                    let rag_results = match provider_clone.generate_embedding(&message_clone).await
+                    let rag_results = match tokio::time::timeout(
+                        std::time::Duration::from_secs(15),
+                        provider_clone.generate_embedding(&message_clone),
+                    )
+                    .await
                     {
-                        Ok(query_embed) => db.search(&query_embed, 10).ok(),
-                        Err(_) => db.list_all().ok().map(|records| {
+                        Ok(Ok(query_embed)) => db.search(&query_embed, 10).ok(),
+                        Ok(Err(_)) | Err(_) => db.list_all().ok().map(|records| {
                             let query_words: Vec<&str> = message_clone
                                 .split_whitespace()
                                 .filter(|w| w.len() > 3)
