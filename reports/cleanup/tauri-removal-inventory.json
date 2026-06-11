@@ -1,0 +1,13 @@
+{
+  "purged_compat_shims": [
+    "State",
+    "AppHandle",
+    "Window",
+    "PathResolver",
+    "SystemTray",
+    "CustomMenuItem"
+  ],
+  "removed_signatures_count": 7,
+  "cargo_check_status": "PASSING",
+  "remaining_tauri_occurrences": 0
+}

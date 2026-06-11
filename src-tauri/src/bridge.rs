@@ -161,7 +161,7 @@ impl ServerState {
 // ─────────────────────────────────────────────────────────
 
 /// Dispatch a single command by name, returning a JSON result.
-/// This is the single-entry-point equivalent of Tauri's `generate_handler![]`.
+/// This is the single-entry-point equivalent of a command dispatch registry.
 async fn dispatch_command(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     crate::commands::dispatch(state, command, args).await
 }

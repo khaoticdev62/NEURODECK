@@ -5,8 +5,6 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use crate::AppHandle;
-
 const REGISTRY_URL: &str =
     "https://raw.githubusercontent.com/khaoticdev62/neurodeck-plugins/main/registry.json";
 
@@ -386,11 +384,7 @@ pub async fn reload_plugins_bridge(
     result
 }
 
-/// Legacy reload path kept for callers that still hold an `AppHandle` stub.
-/// In the bridge architecture this is a no-op; use `reload_plugins_bridge` instead.
-pub async fn reload_plugins(_app_handle: AppHandle) -> Result<(), String> {
-    Err("reload_plugins: use reload_plugins_bridge in the bridge architecture".to_string())
-}
+
 
 /// Scan the plugins directory and return metadata for every `.lua` / `.lua.disabled` file.
 /// Parses the plugin manifest header to populate name/version/author/description/permissions.

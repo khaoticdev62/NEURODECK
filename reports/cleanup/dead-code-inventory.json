@@ -1,0 +1,33 @@
+{
+  "deleted_files": [
+    "src-tauri/src/tauri_compat.rs",
+    "src-tauri/src/autocomplete.rs",
+    "scripts/replace_batch1.js",
+    "scripts/replace_batch2.js",
+    "scripts/replace_batch3.js",
+    "scripts/replace_batch4.js",
+    "scripts/replace_batch5.js",
+    "scripts/replace_batch6.js",
+    "scripts/replace_batch7.js",
+    "scripts/replace_batch8.js",
+    "scripts/replace_batch9.js",
+    "scripts/replace_initBrowser.js",
+    "scripts/replace_initManualModal.js",
+    "scripts/replace_pollGamepads.js",
+    "frontend/public/splash.css",
+    "frontend/public/splash.js",
+    "frontend/public/splashscreen.html"
+  ],
+  "modified_files_with_purges": [
+    "src-tauri/src/commands/system.rs",
+    "src-tauri/src/lib.rs",
+    "src-tauri/src/lsp.rs",
+    "src-tauri/src/ollama_mgr.rs",
+    "src-tauri/src/scheduler.rs",
+    "src-tauri/src/sync.rs",
+    "src-tauri/src/transfer.rs",
+    "frontend/src/react/services/bridgeAdapter.ts",
+    "frontend/src/neurobridge.js",
+    "src-tauri/src/bridge.rs"
+  ]
+}

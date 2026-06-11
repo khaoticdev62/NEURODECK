@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 
 use crate::llm::LlmProvider;
-use crate::{AppHandle, State};
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -78,63 +77,6 @@ impl OrchestratorManaged {
             })),
         }
     }
-}
-
-// ── Commands ───────────────────────────────────────────────────────────────────
-
-pub async fn start_orchestrated_task(
-    goal: String,
-    app_handle: AppHandle,
-    app_state: State<'_, std::sync::Mutex<crate::AppState>>,
-    orch: State<'_, OrchestratorManaged>,
-) -> Result<(), String> {
-    {
-        let mut s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
-        if s.running {
-            return Err("Orchestrator is already running".to_string());
-        }
-        s.running = true;
-        s.plan = None;
-    }
-
-    let provider = {
-        let s = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        Arc::clone(&s.provider)
-    };
-
-    let (abort_tx, mut abort_rx) = oneshot::channel::<()>();
-    {
-        let mut s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
-        s.abort_tx = Some(abort_tx);
-    }
-
-    let state_arc = Arc::clone(&orch.state);
-    let goal_clone = goal.clone();
-
-    tokio::spawn(async move {
-        let _ =
-            _run_orchestration(goal_clone, provider, app_handle, state_arc, &mut abort_rx).await;
-    });
-
-    Ok(())
-}
-
-pub fn get_orchestration_status(orch: State<'_, OrchestratorManaged>) -> OrchestratorStatus {
-    let s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
-    OrchestratorStatus {
-        running: s.running,
-        goal: s.plan.as_ref().map(|p| p.goal.clone()).unwrap_or_default(),
-        tasks: s.plan.as_ref().map(|p| p.tasks.clone()).unwrap_or_default(),
-    }
-}
-
-pub fn stop_orchestration(orch: State<'_, OrchestratorManaged>) -> Result<(), String> {
-    let mut s = orch.state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(tx) = s.abort_tx.take() {
-        let _ = tx.send(());
-    }
-    s.running = false;
-    Ok(())
 }
 
 // ── Orchestration engine ───────────────────────────────────────────────────────

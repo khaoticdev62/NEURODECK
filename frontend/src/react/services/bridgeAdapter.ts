@@ -60,24 +60,6 @@ function _ensureWs(): WebSocket {
 _ensureWs();
 
 export function listenBridge(event: string, handler: (payload: unknown) => void): () => void {
-  const runtime = window as unknown as {
-    __TAURI__?: {
-      event?: {
-        listen?: (name: string, callback: (event: { payload: unknown }) => void) => Promise<() => void>;
-      };
-    };
-  };
-  const tauriListen = runtime.__TAURI__?.event?.listen;
-  if (tauriListen) {
-    let unlisten: (() => void) | null = null;
-    void tauriListen(event, (ev) => handler(ev.payload)).then((fn) => {
-      unlisten = fn;
-    }).catch(() => {});
-    return () => {
-      unlisten?.();
-    };
-  }
-
   _ensureWs();
   if (!_wsListeners.has(event)) _wsListeners.set(event, new Set());
   _wsListeners.get(event)!.add(handler);
@@ -100,12 +82,6 @@ async function bridgeInvoke<T>(cmd: string, args?: unknown): Promise<T> {
 }
 
 async function appInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const runtime = window as unknown as {
-    __TAURI__?: { core?: { invoke?: <R>(command: string, payload?: Record<string, unknown>) => Promise<R> } };
-    __TAURI_INTERNALS__?: { invoke?: <R>(command: string, payload?: Record<string, unknown>) => Promise<R> };
-  };
-  const tauriInvoke = runtime.__TAURI__?.core?.invoke ?? runtime.__TAURI_INTERNALS__?.invoke;
-  if (tauriInvoke) return tauriInvoke<T>(cmd, args);
   return bridgeInvoke<T>(cmd, args);
 }
 

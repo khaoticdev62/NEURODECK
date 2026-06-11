@@ -1,762 +1,16 @@
-use crate::llm::GeminiProvider;
-use crate::*;
-use base64::Engine as _;
-use neurodeck_core::ipc::{Intent, StatePatch};
-use std::collections::HashMap;
+use crate::AppState;
+use crate::paths::{user_config_dir, get_config_path, get_home_dir};
+use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use std::collections::HashMap;
 
-/// ── Boot Diagnostics ─────────────────────────────────────────────────────
-/// Structured data for the cinematic boot animation. Returned in a single
-/// invoke so the frontend can render the pipeline without N+1 round-trips.
+use crate::plugin_mgr;
+use crate::whisper;
 
-#[derive(serde::Serialize)]
-pub struct PluginBootInfo {
-    pub file_name: String,
-    pub description: String,
-    pub enabled: bool,
-}
-
-/// A single step in the cinematic boot pipeline.  Adding a new major feature
-/// to the backend only requires pushing another `BootPipelineStep` into the
-/// `pipeline` vec inside `get_boot_diagnostics` — the frontend renders it
-/// automatically without hard-coded log lines.
-#[derive(serde::Serialize)]
-pub struct BootPipelineStep {
-    pub id: String,
-    pub category: String,
-    pub label: String,
-    pub status: String,
-    pub detail: String,
-}
-
-#[derive(serde::Serialize)]
-pub struct BootDiagnostics {
-    pub kfms_version: String,
-    pub codename: String,
-    pub build_date: String,
-    pub config_path: String,
-    pub provider: String,
-    pub model: String,
-    pub ollama_base_url: String,
-    pub active_agent_id: String,
-    pub boot_health_status: String,
-    pub boot_health_summary: String,
-    pub boot_health_recovered_count: usize,
-    pub boot_health_warning_count: usize,
-    pub plugins: Vec<PluginBootInfo>,
-    pub persona_count: usize,
-    pub theme_count: usize,
-    pub memory_ready: bool,
-    pub memory_doc_count: usize,
-    pub mcp_running: bool,
-    pub mcp_url: String,
-    pub mcp_port: String,
-    pub agent_count: usize,
-    pub custom_theme_count: usize,
-    pub onboarding_complete: bool,
-    pub security_hardening_applied: bool,
-    pub canvas_collab_security: bool,
-    pub bmad_framework_loaded: bool,
-    pub game_name: String,
-    pub game_running: bool,
-    pub collab_peer_count: usize,
-    pub collab_active: bool,
-    pub sync_enabled: bool,
-    pub sync_last_at: Option<String>,
-    pub pipeline: Vec<BootPipelineStep>,
-}
-
-pub fn get_game_context() -> HashMap<String, String> {
-    let (name, app_id, is_running) = detect_game();
-    let mut map = HashMap::new();
-    let (_, notes) = get_game_details(&app_id, &name);
-    map.insert("name".to_string(), name);
-    map.insert("app_id".to_string(), app_id);
-    map.insert("is_running".to_string(), is_running.to_string());
-    map.insert("notes".to_string(), notes);
-    map
-}
-
-pub fn get_boot_diagnostics(state: State<'_, Mutex<AppState>>) -> BootDiagnostics {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-    let provider = app.config.llm.default_provider.clone();
-    let model = match provider.as_str() {
-        "gemini" => app.config.llm.gemini_model.clone(),
-        "kimi" => app.config.llm.kimi_model.clone(),
-        "huggingface" => app.config.llm.hf_model.clone(),
-        _ => app.config.llm.ollama_model.clone(),
-    };
-
-    let plugins: Vec<PluginBootInfo> = plugin_mgr::list_local_plugins()
-        .unwrap_or_default()
-        .into_iter()
-        .map(|p| PluginBootInfo {
-            file_name: p.file_name.clone(),
-            description: p.description.clone().unwrap_or_default(),
-            enabled: p.enabled,
-        })
-        .collect();
-
-    let persona_count = app.custom_personas.len() + PERSONAS.len();
-    let theme_count = THEMES.len();
-    let memory_ready = app.mem_db.is_some();
-    let memory_doc_count = app
-        .mem_db
-        .as_ref()
-        .and_then(|db| db.list_all().ok())
-        .map(|r| r.len())
-        .unwrap_or(0);
-
-    let mcp_port_str = app.mcp_port.to_string();
-    let mcp_running = app.mcp_abort.is_some();
-
-    let agent_count = app.config.llm.agents.len();
-
-    let bmad_framework_loaded = plugins.iter().any(|p| p.file_name == "bmad.lua");
-    let canvas_collab_security = true; // peer-sync approval gate is always active since v1.2.2
-
-    let custom_theme_count =
-        std::fs::read_to_string(user_config_dir().join("data/themes/custom.json"))
-            .ok()
-            .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
-            .map(|v| v.len())
-            .unwrap_or(0);
-
-    let collab_peer_count = app
-        .collab_peer_count
-        .as_ref()
-        .map(|c| c.load(Ordering::Relaxed))
-        .unwrap_or(0);
-    let collab_active = app.collab_abort.is_some();
-
-    let sync_enabled = app.config.sync.enabled;
-    let sync_last_at = app.config.sync.last_sync_at.clone();
-
-    let (game_name, _game_id, game_running) = detect_game();
-
-    // ── Dynamic boot pipeline ──────────────────────────────────────────────
-    // New major features only need to push a step here — the frontend
-    // auto-renders every entry without hard-coded log lines.
-    let mut pipeline = Vec::new();
-
-    pipeline.push(BootPipelineStep {
-        id: "kernel".to_string(),
-        category: "system".to_string(),
-        label: "Initializing kernel space… KFMS v1.3.0-isis · Codename Isis".to_string(),
-        status: "info".to_string(),
-        detail: String::new(),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "config".to_string(),
-        category: "system".to_string(),
-        label: "Loading configuration llm-term.toml".to_string(),
-        status: "ok".to_string(),
-        detail: get_config_path().to_string_lossy().to_string(),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "provider".to_string(),
-        category: "network".to_string(),
-        label: format!("Provider {} · Model {}", provider.to_uppercase(), model),
-        status: "ok".to_string(),
-        detail: String::new(),
-    });
-
-    let health_status = app.boot_self_heal.status.clone();
-    let health_tone = if health_status == "healthy" {
-        "ok"
-    } else if health_status == "recovered" {
-        "warn"
-    } else {
-        "err"
-    };
-    pipeline.push(BootPipelineStep {
-        id: "health".to_string(),
-        category: "system".to_string(),
-        label: format!(
-            "Startup recovery {} · {}",
-            health_status.to_uppercase(),
-            app.boot_self_heal.summary()
-        ),
-        status: health_tone.to_string(),
-        detail: format!(
-            "{} recovered, {} warnings",
-            app.boot_self_heal.recovered_count, app.boot_self_heal.warning_count
-        ),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "plugin_scan".to_string(),
-        category: "system".to_string(),
-        label: "Scanning plugin directory plugins/".to_string(),
-        status: "info".to_string(),
-        detail: format!("{} plugin(s) discovered", plugins.len()),
-    });
-
-    for p in &plugins {
-        pipeline.push(BootPipelineStep {
-            id: format!("plugin:{}", p.file_name),
-            category: "plugin".to_string(),
-            label: format!(
-                "Plugin {} — {}",
-                p.file_name,
-                if p.enabled { "LOADED" } else { "DISABLED" }
-            ),
-            status: if p.enabled {
-                "ok".to_string()
-            } else {
-                "warn".to_string()
-            },
-            detail: p.description.clone(),
-        });
-    }
-
-    if plugins.is_empty() {
-        pipeline.push(BootPipelineStep {
-            id: "plugin_empty".to_string(),
-            category: "plugin".to_string(),
-            label: "Plugin registry EMPTY".to_string(),
-            status: "warn".to_string(),
-            detail: "no runtime plugins discovered".to_string(),
-        });
-    }
-
-    pipeline.push(BootPipelineStep {
-        id: "personas".to_string(),
-        category: "feature".to_string(),
-        label: format!("Persona registry {} online", persona_count),
-        status: "ok".to_string(),
-        detail: String::new(),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "themes".to_string(),
-        category: "feature".to_string(),
-        label: format!(
-            "Theme palette {} variants indexed",
-            theme_count + custom_theme_count
-        ),
-        status: "ok".to_string(),
-        detail: format!("{} built-in, {} custom", theme_count, custom_theme_count),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "memory".to_string(),
-        category: "feature".to_string(),
-        label: format!(
-            "Vector memory {} · {} docs indexed",
-            if memory_ready { "ATTACHED" } else { "OFFLINE" },
-            memory_doc_count
-        ),
-        status: if memory_ready {
-            "ok".to_string()
-        } else {
-            "warn".to_string()
-        },
-        detail: String::new(),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "mcp".to_string(),
-        category: "network".to_string(),
-        label: format!(
-            "MCP loopback {}",
-            if mcp_running { "ONLINE" } else { "STANDBY" }
-        ),
-        status: if mcp_running {
-            "ok".to_string()
-        } else {
-            "warn".to_string()
-        },
-        detail: if mcp_running {
-            format!("http://127.0.0.1:{}", mcp_port_str)
-        } else {
-            format!("port {}", mcp_port_str)
-        },
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "agents".to_string(),
-        category: "feature".to_string(),
-        label: format!("Agent roster {} configured", agent_count),
-        status: "ok".to_string(),
-        detail: format!("active: {}", app.config.llm.active_agent_id),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "collab".to_string(),
-        category: "network".to_string(),
-        label: format!(
-            "Canvas collab {} · {} peer(s)",
-            if collab_active { "ACTIVE" } else { "INACTIVE" },
-            collab_peer_count
-        ),
-        status: if collab_active {
-            "ok".to_string()
-        } else {
-            "neutral".to_string()
-        },
-        detail: if canvas_collab_security {
-            "peer-sync approval gate enabled".to_string()
-        } else {
-            String::new()
-        },
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "sync".to_string(),
-        category: "network".to_string(),
-        label: format!(
-            "Cloud sync {}",
-            if sync_enabled { "ENABLED" } else { "DISABLED" }
-        ),
-        status: if sync_enabled {
-            "ok".to_string()
-        } else {
-            "neutral".to_string()
-        },
-        detail: sync_last_at
-            .clone()
-            .unwrap_or_else(|| "never synced".to_string()),
-    });
-
-    pipeline.push(BootPipelineStep {
-        id: "security".to_string(),
-        category: "security".to_string(),
-        label: "Security hardening APPLIED".to_string(),
-        status: "ok".to_string(),
-        detail: "v1.2.2 audit gate active".to_string(),
-    });
-
-    if !game_name.is_empty() {
-        pipeline.push(BootPipelineStep {
-            id: "game".to_string(),
-            category: "feature".to_string(),
-            label: format!(
-                "Game context {} · {}",
-                if game_running { "RUNNING" } else { "DETECTED" },
-                game_name
-            ),
-            status: if game_running {
-                "ok".to_string()
-            } else {
-                "neutral".to_string()
-            },
-            detail: String::new(),
-        });
-    }
-
-    // ── Merge custom steps from boot-pipeline.json manifest ────────────────
-    // Allows custom boot log entries without touching Rust or JS source.
-    let mut manifest_candidates: Vec<PathBuf> = vec![
-        PathBuf::from("../assets/boot-pipeline.json"), // dev (cwd = src-tauri/)
-        PathBuf::from("./assets/boot-pipeline.json"),  // production bundle (sidecar)
-    ];
-    // Also check next to the running binary
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            manifest_candidates.push(dir.join("assets").join("boot-pipeline.json"));
-        }
-    }
-    for path in &manifest_candidates {
-        if let Ok(text) = std::fs::read_to_string(path) {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
-                if let Some(steps) = json.get("steps").and_then(|s| s.as_array()) {
-                    for step in steps {
-                        if let Some(id) = step.get("id").and_then(|v| v.as_str()) {
-                            pipeline.push(BootPipelineStep {
-                                id: id.to_string(),
-                                category: step
-                                    .get("category")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("system")
-                                    .to_string(),
-                                label: step
-                                    .get("label")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("")
-                                    .to_string(),
-                                status: step
-                                    .get("status")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("info")
-                                    .to_string(),
-                                detail: step
-                                    .get("detail")
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("")
-                                    .to_string(),
-                            });
-                        }
-                    }
-                }
-            }
-            break; // use first found manifest
-        }
-    }
-
-    BootDiagnostics {
-        kfms_version: "v1.3.0-isis".to_string(),
-        codename: "Isis".to_string(),
-        build_date: chrono::Utc::now().format("%Y%m%d").to_string(),
-        config_path: get_config_path().to_string_lossy().to_string(),
-        provider,
-        model: model.clone(),
-        ollama_base_url: app.config.llm.ollama_base_url.clone(),
-        active_agent_id: app.config.llm.active_agent_id.clone(),
-        boot_health_status: health_status,
-        boot_health_summary: app.boot_self_heal.summary(),
-        boot_health_recovered_count: app.boot_self_heal.recovered_count,
-        boot_health_warning_count: app.boot_self_heal.warning_count,
-        plugins,
-        persona_count,
-        theme_count,
-        memory_ready,
-        memory_doc_count,
-        mcp_running,
-        mcp_url: format!("http://127.0.0.1:{}", mcp_port_str),
-        mcp_port: mcp_port_str,
-        agent_count,
-        custom_theme_count,
-        onboarding_complete: false, // frontend will override from localStorage
-        security_hardening_applied: true, // applied in v1.2.2 security audit
-        canvas_collab_security,
-        bmad_framework_loaded,
-        game_name: game_name.clone(),
-        game_running,
-        collab_peer_count,
-        collab_active,
-        sync_enabled,
-        sync_last_at,
-        pipeline,
-    }
-}
-
-pub fn get_initial_state(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut initial = HashMap::new();
-
-    let model_name = match app.config.llm.default_provider.as_str() {
-        "gemini" => app.config.llm.gemini_model.clone(),
-        "kimi" => app.config.llm.kimi_model.clone(),
-        "huggingface" => app.config.llm.hf_model.clone(),
-        _ => app.config.llm.ollama_model.clone(),
-    };
-
-    initial.insert("model".to_string(), model_name);
-    initial.insert(
-        "provider".to_string(),
-        app.config.llm.default_provider.clone(),
-    );
-    initial.insert(
-        "active_agent_id".to_string(),
-        app.config.llm.active_agent_id.clone(),
-    );
-    initial.insert("session_id".to_string(), app.session_id.clone());
-    // SECURITY: exec_auth_token removed — Tauri's WebView boundary is the security model.
-    // Commands are invocable only from the app's own WebView context.
-    initial.insert("active_persona".to_string(), app.active_persona.clone());
-    initial.insert(
-        "memory_status".to_string(),
-        if app.mem_db.is_some() {
-            "Stable"
-        } else {
-            "Offline"
-        }
-        .to_string(),
-    );
-    initial.insert("tool_status".to_string(), "Idle".to_string());
-    initial.insert(
-        "boot_health_status".to_string(),
-        app.boot_self_heal.status.clone(),
-    );
-    initial.insert(
-        "boot_health_summary".to_string(),
-        app.boot_self_heal.summary(),
-    );
-    initial.insert(
-        "boot_health_recovered_count".to_string(),
-        app.boot_self_heal.recovered_count.to_string(),
-    );
-    initial.insert(
-        "boot_health_warning_count".to_string(),
-        app.boot_self_heal.warning_count.to_string(),
-    );
-
-    let (game_name, game_id, game_running) = detect_game();
-    initial.insert("game_name".to_string(), game_name);
-    initial.insert("game_app_id".to_string(), game_id);
-    initial.insert("game_running".to_string(), game_running.to_string());
-
-    initial
-}
-
-pub async fn execute_command(
-    cmd_str: String,
-    _state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
-
-    Ok(tokio::task::spawn_blocking(move || {
-        let mut cmd = if cfg!(target_os = "windows") {
-            let mut c = std::process::Command::new("cmd.exe");
-            c.arg("/c").arg(&cmd_str);
-            c
-        } else {
-            let mut c = std::process::Command::new("sh");
-            c.arg("-c").arg(&cmd_str);
-            c
-        };
-
-        let bin_dir = crate::user_bin_dir();
-        let bin_str = bin_dir.to_string_lossy().to_string();
-        if let Some(existing_path) = std::env::var_os("PATH") {
-            let new_path = if cfg!(target_os = "windows") {
-                format!("{};{}", bin_str, existing_path.to_string_lossy())
-            } else {
-                format!("{}:{}", bin_str, existing_path.to_string_lossy())
-            };
-            cmd.env("PATH", new_path);
-        } else {
-            cmd.env("PATH", bin_str);
-        }
-
-        match cmd.output() {
-            Ok(output) => {
-                let combined = [output.stdout, output.stderr].concat();
-                String::from_utf8_lossy(&combined).into_owned()
-            }
-            Err(e) => format!("Error: {}", e),
-        }
-    })
-    .await
-    .unwrap_or_else(|e| format!("Error: spawn_blocking panicked: {}", e)))
-}
-
-#[cfg(debug_assertions)]
-pub async fn execute_lua(code: String, app_handle: AppHandle) -> Result<(), String> {
-    crate::security::validate_script_payload(&code, "lua", "lua-exec", None)?;
-
-    let app_handle_clone = app_handle.clone();
-    tokio::task::spawn_blocking(move || {
-        let lua_state = app_handle_clone.state::<LuaState>();
-        let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
-        match engine.run_script(&code) {
-            Ok(_) => {
-                let _ = app_handle_clone.emit("command_exit", 0);
-                Ok(())
-            }
-            Err(e) => {
-                let _ = app_handle_clone.emit("command_stderr", format!("{}\n", e));
-                let _ = app_handle_clone.emit("command_exit", 1);
-                Err(e)
-            }
-        }
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))?
-}
-
-pub async fn execute_command_stream(
-    cmd_str: String,
-    app_handle: AppHandle,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    crate::security::validate_terminal_command(&cmd_str, "terminal-shell")?;
-
-    // 1. Kill any existing running process.
-    let proc_id = {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(kill_tx) = app.kill_tx.take() {
-            let _ = kill_tx.send(());
-        }
-        app.process_stdin_tx = None;
-        app.active_process_id += 1;
-        app.active_process_id
-    };
-
-    // 2. Setup channels for stdin writing and killing.
-    let (stdin_tx, mut stdin_rx) = tokio::sync::mpsc::channel::<String>(100);
-    let (kill_tx, mut kill_rx) = tokio::sync::oneshot::channel::<()>();
-
-    // Store them in AppState
-    {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.process_stdin_tx = Some(stdin_tx);
-        app.kill_tx = Some(kill_tx);
-    }
-
-    // 3. Spawn child process
-    let mut cmd = if cfg!(target_os = "windows") {
-        let mut c = tokio::process::Command::new("cmd.exe");
-        c.arg("/c").arg(&cmd_str);
-        c
-    } else {
-        let mut c = tokio::process::Command::new("sh");
-        c.arg("-c").arg(&cmd_str);
-        c
-    };
-
-    let bin_dir = crate::user_bin_dir();
-    let bin_str = bin_dir.to_string_lossy().to_string();
-    if let Some(existing_path) = std::env::var_os("PATH") {
-        let new_path = if cfg!(target_os = "windows") {
-            format!("{};{}", bin_str, existing_path.to_string_lossy())
-        } else {
-            format!("{}:{}", bin_str, existing_path.to_string_lossy())
-        };
-        cmd.env("PATH", new_path);
-    } else {
-        cmd.env("PATH", bin_str);
-    }
-
-    cmd.stdin(Stdio::piped());
-    cmd.stdout(Stdio::piped());
-    cmd.stderr(Stdio::piped());
-
-    let mut child = match cmd.spawn() {
-        Ok(child) => child,
-        Err(e) => {
-            let err_msg = format!("Failed to spawn process: {}", e);
-            let _ = app_handle.emit("command_stderr", format!("{}\n", err_msg));
-            let _ = app_handle.emit("command_exit", 1);
-            let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-            if app.active_process_id == proc_id {
-                app.process_stdin_tx = None;
-                app.kill_tx = None;
-            }
-            return Err(err_msg);
-        }
-    };
-
-    let mut stdin = child.stdin.take().ok_or("Failed to open stdin")?;
-    let stdout = child.stdout.take().ok_or("Failed to open stdout")?;
-    let stderr = child.stderr.take().ok_or("Failed to open stderr")?;
-
-    let app_handle_clone1 = app_handle.clone();
-    let app_handle_clone2 = app_handle.clone();
-
-    // Spawn stdout reader task
-    let mut stdout_reader = BufReader::new(stdout).lines();
-    tokio::spawn(async move {
-        while let Ok(Some(line)) = stdout_reader.next_line().await {
-            let _ = app_handle_clone1.emit("command_stdout", line);
-        }
-    });
-
-    // Spawn stderr reader task
-    let mut stderr_reader = BufReader::new(stderr).lines();
-    tokio::spawn(async move {
-        while let Ok(Some(line)) = stderr_reader.next_line().await {
-            let _ = app_handle_clone2.emit("command_stderr", line);
-        }
-    });
-
-    // Spawn main control loop task that manages stdin writing, killing, and waiting for exit.
-    let app_handle_exit = app_handle.clone();
-    tokio::spawn(async move {
-        let mut exit_status = None;
-        loop {
-            tokio::select! {
-                // Handle stdin inputs sent from the frontend
-                Some(input) = stdin_rx.recv() => {
-                    let formatted_input = if input.ends_with('\n') {
-                        input
-                    } else {
-                        format!("{}\n", input)
-                    };
-                    if let Err(e) = stdin.write_all(formatted_input.as_bytes()).await {
-                        let _ = app_handle_exit.emit("command_stderr", format!("Failed to write to stdin: {}\n", e));
-                    }
-                    let _ = stdin.flush().await;
-                }
-                // Handle kill signal
-                _ = &mut kill_rx => {
-                    let _ = child.kill().await;
-                    let _ = child.wait().await;
-                    let _ = app_handle_exit.emit("command_stderr", "Process terminated by user.\n".to_string());
-                    break;
-                }
-                // Wait for the process to exit
-                status = child.wait() => {
-                    match status {
-                        Ok(s) => {
-                            exit_status = s.code();
-                        }
-                        Err(e) => {
-                            let _ = app_handle_exit.emit("command_stderr", format!("Error waiting for process: {}\n", e));
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Emit exit code
-        let code = exit_status.unwrap_or(-1);
-        let _ = app_handle_exit.emit("command_exit", code);
-
-        // Clean state if it's still our process
-        if let Some(app_state_mutex) = app_handle_exit.try_state::<Mutex<AppState>>() {
-            let mut app = app_state_mutex.lock().unwrap_or_else(|e| e.into_inner());
-            if app.active_process_id == proc_id {
-                app.process_stdin_tx = None;
-                app.kill_tx = None;
-            }
-        }
-    });
-
-    Ok(())
-}
-
-pub async fn write_to_process(
-    input: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    // SECURITY: We intentionally do NOT run validate_terminal_command() here.
-    // PTY stdin is inherently untrusted — the user is interacting with a real
-    // shell. Attempting to blocklist stdin content creates a false sense of
-    // security and breaks legitimate terminal usage (e.g. control sequences,
-    // paste operations). The security boundary is the OS process, not this
-    // validation gate.
-    if input.len() > 32 * 1024 {
-        return Err("Input exceeds 32KB".to_string());
-    }
-
-    let tx = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.process_stdin_tx.clone()
-    };
-
-    if let Some(tx) = tx {
-        tx.send(input)
-            .await
-            .map_err(|e| format!("Failed to send to stdin channel: {}", e))?;
-        Ok(())
-    } else {
-        Err("No active process running to write to".to_string())
-    }
-}
-
-pub async fn kill_process(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let tx = {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.kill_tx.take()
-    };
-
-    if let Some(tx) = tx {
-        let _ = tx.send(());
-        Ok(())
-    } else {
-        Err("No active process running to kill".to_string())
-    }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Audio Recording & Whisper STT
+// ─────────────────────────────────────────────────────────────────────────────
 
 pub fn start_recording(state: Arc<Mutex<AppState>>) -> Result<String, String> {
     let mut app = state.lock().map_err(|e| e.to_string())?;
@@ -780,72 +34,6 @@ pub fn start_recording(state: Arc<Mutex<AppState>>) -> Result<String, String> {
             Err(e) => Err(e),
         }
     }
-}
-
-pub fn set_whisper_config(
-    state: State<'_, Mutex<AppState>>,
-    binary: String,
-    model: String,
-) -> Result<(), String> {
-    // SECURITY: Validate binary path to prevent arbitrary command execution.
-    // Only allow known whisper binary names or absolute paths that exist and are files.
-    if !binary.is_empty() {
-        let file_name = std::path::Path::new(&binary)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
-        let allowed_names = ["whisper", "whisper-cli", "whisper.cpp", "main"];
-        if !allowed_names.contains(&file_name) {
-            // Allow absolute paths that point to an existing file
-            let path = std::path::Path::new(&binary);
-            if !path.is_absolute() || !path.is_file() {
-                return Err("Invalid whisper binary: must be 'whisper', 'whisper-cli', 'whisper.cpp', 'main', or an absolute path to an existing file.".into());
-            }
-        }
-    }
-    // SECURITY: Validate model path to prevent command injection via model arg.
-    if !model.is_empty() {
-        let model_path = std::path::Path::new(&model);
-        let model_name = model_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
-        if model_name.is_empty()
-            || model.contains(';')
-            || model.contains('&')
-            || model.contains('|')
-            || model.contains('$')
-            || model.contains('`')
-        {
-            return Err("Invalid whisper model path: contains dangerous characters.".into());
-        }
-    }
-    let mut app = state.lock().map_err(|_| "State lock error".to_string())?;
-    app.whisper_binary = binary.clone();
-    app.whisper_model = model.clone();
-    app.config.stt.whisper_binary = binary;
-    app.config.stt.whisper_model = model;
-    let config = app.config.clone();
-    drop(app);
-    let path = get_config_path();
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    config::save_config(&path, &config)
-}
-
-pub fn get_whisper_status(state: State<'_, Mutex<AppState>>) -> serde_json::Value {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let model_exists =
-        !app.whisper_model.is_empty() && std::path::Path::new(&app.whisper_model).exists();
-    let available = whisper::is_available(&app.whisper_binary);
-    serde_json::json!({
-        "configured": model_exists && available,
-        "binary": &app.whisper_binary,
-        "model": &app.whisper_model,
-        "model_exists": model_exists,
-        "binary_found": available,
-    })
 }
 
 pub async fn transcribe_audio_whisper(state: Arc<Mutex<AppState>>) -> Result<String, String> {
@@ -885,7 +73,7 @@ pub async fn stop_recording(state: Arc<Mutex<AppState>>) -> Result<String, Strin
     }
 
     if let Some(flag) = record_stop_flag {
-        flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        flag.store(true, Ordering::Relaxed);
         // Give cpal a moment to flush the WAV file.
         tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }
@@ -924,357 +112,436 @@ pub async fn stop_recording(state: Arc<Mutex<AppState>>) -> Result<String, Strin
     }
 }
 
-/// Download a GGML whisper model from HuggingFace into ~/.local/share/neurodeck/models/.
-/// Emits `whisper_download_progress` events: { done, pct, downloaded?, total?, path?, file? }
-pub async fn download_whisper_model(
-    model: String,
-    app_handle: AppHandle,
-) -> Result<String, String> {
-    const VALID: &[&str] = &[
-        "tiny.en",
-        "base.en",
-        "small.en",
-        "medium.en",
-        "tiny",
-        "base",
-        "small",
-        "medium",
-    ];
-    if !VALID.contains(&model.as_str()) {
-        return Err(format!(
-            "Unknown model '{}'. Valid: tiny.en, base.en, small.en, medium.en",
-            model
+// ─────────────────────────────────────────────────────────────────────────────
+// Canvas Collaboration & Network
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Discover canvas collab peers on the local network via mDNS.
+/// Browses for `_neurodeck-canvas._tcp` services for ~2.5 seconds.
+pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
+    let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
+    let service_type = "_neurodeck-canvas._tcp.local.";
+    let receiver = daemon.browse(service_type).map_err(|e| e.to_string())?;
+
+    let mut peers = Vec::new();
+    let start = std::time::Instant::now();
+    while start.elapsed() < std::time::Duration::from_millis(2500) {
+        match receiver.recv_timeout(std::time::Duration::from_millis(200)) {
+            Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) => {
+                let hostname = info.get_hostname().to_string();
+                let port = info.get_port();
+                let props = info.get_properties();
+                let display_name = props
+                    .get_property_val_str("hostname")
+                    .unwrap_or(&hostname)
+                    .to_string();
+                // Extract IP address from hostname or use a heuristic
+                let ip = info
+                    .get_addresses()
+                    .iter()
+                    .next()
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| {
+                        // Fallback: try to resolve .local hostname
+                        hostname.trim_end_matches(".local.").to_string()
+                    });
+                peers.push(serde_json::json!({
+                    "name": display_name,
+                    "hostname": hostname,
+                    "ip": ip,
+                    "port": port,
+                    "addr": format!("{}:{}", ip, port)
+                }));
+            }
+            Ok(mdns_sd::ServiceEvent::SearchStopped(_)) => break,
+            _ => {}
+        }
+    }
+
+    // Deduplicate by address
+    peers.sort_by(|a, b| a["addr"].as_str().cmp(&b["addr"].as_str()));
+    peers.dedup_by(|a, b| a["addr"].as_str() == b["addr"].as_str());
+
+    Ok(peers)
+}
+
+pub fn get_lan_ip() -> String {
+    match std::net::UdpSocket::bind("0.0.0.0:0") {
+        Ok(sock) => {
+            if sock.connect("8.8.8.8:80").is_ok() {
+                if let Ok(addr) = sock.local_addr() {
+                    return addr.ip().to_string();
+                }
+            }
+            "unknown".to_string()
+        }
+        Err(_) => "unknown".to_string(),
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Observability: Support Bundle + System Health
+// ─────────────────────────────────────────────────────────────────────────────
+
+pub fn redact_line(line: &str) -> String {
+    let mut out = line.to_string();
+    // Simple textual redaction — not regex-based to avoid an extra crate.
+    // Replace literal token-like strings using heuristic substrings.
+    for redaction in [
+        ("AIza", "[REDACTED_API_KEY]"),
+        ("GOCSPX-", "[REDACTED_OAUTH_SECRET]"),
+        ("Bearer ", "Bearer [REDACTED_TOKEN]"),
+    ] {
+        if let Some(pos) = out.find(redaction.0) {
+            // Replace from the marker to end-of-token (non-whitespace run)
+            let prefix = &out[..pos];
+            let rest = &out[pos..];
+            let token_end = rest
+                .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
+                .unwrap_or(rest.len());
+            out = format!("{}{}{}", prefix, redaction.1, &rest[token_end..]);
+        }
+    }
+    // Redact passwords in toml-style `key = "value"` lines
+    let lower = out.to_lowercase();
+    if lower.contains("password") || lower.contains("secret") || lower.contains("api_key") {
+        if let Some(eq_pos) = out.find('=') {
+            let key_part = &out[..=eq_pos];
+            out = format!("{} [REDACTED]", key_part.trim_end());
+        }
+    }
+    out
+}
+
+/// Collect the tail of a log file (last `max_lines` lines), redacting secrets.
+fn collect_log_tail(path: &Path, max_lines: usize) -> Vec<String> {
+    let Ok(content) = std::fs::read_to_string(path) else {
+        return vec!["[could not read log file]".to_string()];
+    };
+    let lines: Vec<&str> = content.lines().collect();
+    let start = lines.len().saturating_sub(max_lines);
+    lines[start..].iter().map(|l| redact_line(l)).collect()
+}
+
+#[derive(serde::Serialize)]
+pub struct SupportBundleResult {
+    pub path: String,
+    pub size_bytes: u64,
+    pub sections: Vec<String>,
+}
+
+/// Generate a redacted support bundle in `user_config_dir()/exports/`.
+pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBundleResult, String> {
+    let config_dir = user_config_dir();
+    let exports_dir = config_dir.join("exports");
+    std::fs::create_dir_all(&exports_dir).map_err(|e| format!("exports dir: {}", e))?;
+
+    let timestamp = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    };
+    let bundle_path = exports_dir.join(format!("support_bundle_{}.txt", timestamp));
+    let mut sections: Vec<String> = Vec::new();
+    let mut buf = String::new();
+
+    // ── Section: header ──────────────────────────────────────────────────────
+    buf.push_str(&format!(
+        "NEURODECK Support Bundle\nGenerated: {} (Unix seconds)\n{}\n\n",
+        timestamp,
+        "=".repeat(60)
+    ));
+    sections.push("header".to_string());
+
+    // ── Section: platform ────────────────────────────────────────────────────
+    buf.push_str("## PLATFORM\n");
+    buf.push_str(&format!("OS:           {}\n", std::env::consts::OS));
+    buf.push_str(&format!("Arch:         {}\n", std::env::consts::ARCH));
+    buf.push_str(&format!("Config dir:   {}\n", config_dir.display()));
+    buf.push_str(&format!(
+        "Safe mode:    {}\n",
+        std::env::var("NEURODECK_SAFE_MODE").is_ok()
+    ));
+
+    // Disk space at config dir (best-effort)
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(stat) = nix::sys::statvfs::statvfs(&config_dir) {
+            let free_mb = stat.blocks_free() * stat.block_size() as u64 / 1024 / 1024;
+            buf.push_str(&format!("Free disk:    {} MB\n", free_mb));
+        }
+    }
+    buf.push('\n');
+    sections.push("platform".to_string());
+
+    // ── Section: version / KFMS ──────────────────────────────────────────────
+    buf.push_str("## VERSION\n");
+    let meta_path = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("infra/meta/meta.json");
+    if let Ok(meta_str) = std::fs::read_to_string(&meta_path) {
+        if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_str) {
+            let version = meta_val
+                .get("version")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            let codename = meta_val
+                .pointer("/codename/name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            buf.push_str(&format!("KFMS version: {} ({})\n", version, codename));
+        }
+    } else {
+        buf.push_str("KFMS meta: not found\n");
+    }
+    buf.push('\n');
+    sections.push("version".to_string());
+
+    // ── Section: config summary ──────────────────────────────────────────────
+    buf.push_str("## CONFIG SUMMARY (secrets redacted)\n");
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        buf.push_str(&format!(
+            "Provider:     {}\n",
+            app.config.llm.default_provider
+        ));
+        buf.push_str(&format!("Gemini model: {}\n", app.config.llm.gemini_model));
+        buf.push_str(&format!("Ollama model: {}\n", app.config.llm.ollama_model));
+        buf.push_str(&format!(
+            "Ollama URL:   {}\n",
+            app.config.llm.ollama_base_url
+        ));
+        let key_env = std::env::var("GEMINI_API_KEY").is_ok();
+        buf.push_str(&format!(
+            "Gemini key:   {}\n",
+            if key_env {
+                "[SET via env]"
+            } else {
+                "[keychain or unset]"
+            }
         ));
     }
+    buf.push('\n');
+    sections.push("config".to_string());
 
-    let models_dir = get_home_dir()
-        .ok_or("Cannot determine home dir")?
-        .join(".local")
-        .join("share")
-        .join("neurodeck")
-        .join("models");
-    std::fs::create_dir_all(&models_dir).map_err(|e| format!("mkdir: {}", e))?;
-
-    let filename = format!("ggml-{}.bin", model);
-    let target = models_dir.join(&filename);
-
-    if target.exists() {
-        let path_str = target.to_string_lossy().to_string();
-        let _ = app_handle.emit(
-            "whisper_download_progress",
-            serde_json::json!({ "done": true, "pct": 100, "path": &path_str, "skipped": true }),
-        );
-        return Ok(path_str);
-    }
-
-    let url = format!(
-        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{}.bin",
-        model
-    );
-
-    let _ = app_handle.emit(
-        "whisper_download_progress",
-        serde_json::json!({ "done": false, "pct": 0, "file": &filename }),
-    );
-
-    let app2 = app_handle.clone();
-    let target2 = target.clone();
-    let file2 = filename.clone();
-
-    tokio::task::spawn_blocking(move || -> Result<String, String> {
-        use std::io::{Read, Write};
-
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(600))
-            .user_agent("neurodeck/1.1")
-            .build()
-            .map_err(|e| format!("HTTP client: {}", e))?;
-
-        let mut resp = client.get(&url).send()
-            .map_err(|e| format!("Request failed: {}", e))?;
-
-        if !resp.status().is_success() {
-            return Err(format!("HTTP {}: cannot download {}", resp.status(), file2));
-        }
-
-        let total = resp.content_length().unwrap_or(0);
-        let mut downloaded: u64 = 0;
-        let mut file = std::fs::File::create(&target2)
-            .map_err(|e| format!("Create file: {}", e))?;
-
-        let mut buf = [0u8; 65536];
-        loop {
-            let n = resp.read(&mut buf).map_err(|e| format!("Read: {}", e))?;
-            if n == 0 { break; }
-            file.write_all(&buf[..n]).map_err(|e| format!("Write: {}", e))?;
-            downloaded += n as u64;
-            let pct = if total > 0 { ((downloaded * 100) / total) as u8 } else { 0 };
-            let _ = app2.emit("whisper_download_progress",
-                serde_json::json!({ "done": false, "pct": pct, "downloaded": downloaded, "total": total }));
-        }
-
-        let path_str = target2.to_string_lossy().to_string();
-        let _ = app2.emit("whisper_download_progress",
-            serde_json::json!({ "done": true, "pct": 100, "path": &path_str }));
-        Ok(path_str)
-    })
-    .await
-    .map_err(|e| format!("Task: {}", e))?
-}
-
-fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
-    std::fs::create_dir_all(dst).map_err(|e| format!("mkdir {}: {}", dst.display(), e))?;
-    for entry in std::fs::read_dir(src).map_err(|e| format!("readdir {}: {}", src.display(), e))? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
-            copy_dir_recursive(&src_path, &dst_path)?;
-        } else {
-            std::fs::copy(&src_path, &dst_path).map_err(|e| {
-                format!(
-                    "copy {} → {}: {}",
-                    src_path.display(),
-                    dst_path.display(),
-                    e
-                )
-            })?;
-        }
-    }
-    Ok(())
-}
-
-pub async fn install_bmad_to_dir(
-    app_handle: AppHandle,
-    target_dir: String,
-) -> Result<String, String> {
-    let _ = app_handle.emit(
-        "bmad_install_progress",
-        serde_json::json!({ "stage": "start", "target": &target_dir }),
-    );
-
-    let resource_dir = app_handle
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Cannot resolve resource dir: {}", e))?;
-
-    let bmad_source = resource_dir.join("bmad-bundle");
-
-    // Dev fallback: look relative to project root
-    let bmad_source = if bmad_source.exists() {
-        bmad_source
-    } else {
-        let dev_path = std::path::PathBuf::from("../assets/bmad-bundle");
-        if dev_path.exists() {
-            dev_path
-        } else {
-            let _ = app_handle.emit(
-                "bmad_install_progress",
-                serde_json::json!({ "stage": "error", "reason": "bundle_not_found" }),
-            );
-            return Err("BMAD bundle not found. Please reinstall NEURODECK.".to_string());
-        }
-    };
-
-    let target = std::path::PathBuf::from(&target_dir);
-    if !target.exists() {
-        let _ = app_handle.emit(
-            "bmad_install_progress",
-            serde_json::json!({ "stage": "error", "reason": "target_missing" }),
-        );
-        return Err(format!("Target directory does not exist: {}", target_dir));
-    }
-
-    copy_dir_recursive(&bmad_source, &target).map_err(|e| format!("BMAD install failed: {}", e))?;
-
-    let _ = app_handle.emit(
-        "bmad_install_progress",
-        serde_json::json!({ "stage": "done", "target": &target_dir }),
-    );
-
-    Ok(format!(
-        "BMAD installed to {}  (_bmad/ + .claude/skills/ with 44 skill sets)",
-        target_dir
-    ))
-}
-
-#[derive(serde::Serialize, Clone)]
-pub struct MemoryRecordFrontend {
-    pub id: String,
-    pub content: String,
-    pub metadata: std::collections::HashMap<String, String>,
-}
-
-pub fn memory_list_all(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<MemoryRecordFrontend>, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let records = db.list_all()?;
-    Ok(records
-        .into_iter()
-        .map(|r| MemoryRecordFrontend {
-            id: r.id,
-            content: r.content,
-            metadata: r.metadata,
-        })
-        .collect())
-}
-
-pub fn memory_list_by_namespace(
-    namespace: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<MemoryRecordFrontend>, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let all = db.list_all()?;
-    let filtered: Vec<MemoryRecordFrontend> = all
-        .into_iter()
-        .filter(|r| {
-            r.metadata
-                .get("namespace")
-                .map(|v| v == &namespace)
-                .unwrap_or(false)
-        })
-        .map(|r| MemoryRecordFrontend {
-            id: r.id,
-            content: r.content,
-            metadata: r.metadata,
-        })
-        .collect();
-    Ok(filtered)
-}
-
-#[derive(serde::Serialize, Clone)]
-pub struct GraphNode {
-    pub id: String,
-    pub node_type: String,
-    pub label: String,
-}
-
-#[derive(serde::Serialize, Clone)]
-pub struct GraphEdge {
-    pub source: String,
-    pub target: String,
-    pub similarity: f64,
-}
-
-#[derive(serde::Serialize, Clone)]
-pub struct GraphData {
-    pub nodes: Vec<GraphNode>,
-    pub edges: Vec<GraphEdge>,
-}
-
-pub fn get_memory_graph_data(state: State<'_, Mutex<AppState>>) -> Result<GraphData, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let records = db.list_all()?;
-
-    let mut nodes = Vec::new();
-    for r in &records {
-        let node_type = if r.id.starts_with("fact-") {
-            "fact"
-        } else if r.id.starts_with("session-") {
-            "session"
-        } else {
-            "memory"
-        };
-        nodes.push(GraphNode {
-            id: r.id.clone(),
-            node_type: node_type.to_string(),
-            label: r.content.clone(),
-        });
-    }
-
-    let mut edges = Vec::new();
-    for i in 0..records.len() {
-        for j in (i + 1)..records.len() {
-            let sim = _text_similarity(&records[i].content, &records[j].content);
-            if sim > 0.15 {
-                edges.push(GraphEdge {
-                    source: records[i].id.clone(),
-                    target: records[j].id.clone(),
-                    similarity: sim,
-                });
+    // ── Section: plugins ─────────────────────────────────────────────────────
+    buf.push_str("## PLUGINS\n");
+    let plugins_dir = plugin_mgr::plugins_dir();
+    if plugins_dir.is_dir() {
+        let mut plugin_count = 0usize;
+        let mut disabled_count = 0usize;
+        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".lua") {
+                    plugin_count += 1;
+                    buf.push_str(&format!("  [active]   {}\n", name));
+                } else if name.ends_with(".lua.disabled") {
+                    disabled_count += 1;
+                    buf.push_str(&format!("  [disabled] {}\n", name));
+                }
             }
         }
+        buf.push_str(&format!(
+            "Total: {} active, {} disabled\n",
+            plugin_count, disabled_count
+        ));
+    } else {
+        buf.push_str("Plugins directory not found\n");
+    }
+    buf.push('\n');
+    sections.push("plugins".to_string());
+
+    // ── Section: memory stats ────────────────────────────────────────────────
+    buf.push_str("## MEMORY DB\n");
+    {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(ref db) = app.mem_db {
+            let doc_count = db.list_all().map(|v| v.len()).unwrap_or(0);
+            buf.push_str(&format!("Status:  ready\nDocs:    {}\n", doc_count));
+        } else {
+            buf.push_str("Status:  not initialized\n");
+        }
+    }
+    buf.push('\n');
+    sections.push("memory".to_string());
+
+    // ── Section: logs ────────────────────────────────────────────────────────
+    buf.push_str("## LOGS (last 150 lines each, secrets redacted)\n");
+    let logs_dir = config_dir.join("logs");
+    if logs_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&logs_dir) {
+            let mut log_files: Vec<PathBuf> = entries
+                .flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().and_then(|e| e.to_str()) == Some("log"))
+                .collect();
+            log_files.sort();
+            for log_path in &log_files {
+                let name = log_path.file_name().unwrap_or_default().to_string_lossy();
+                buf.push_str(&format!("\n### {}\n", name));
+                for line in collect_log_tail(log_path, 150) {
+                    buf.push_str(&line);
+                    buf.push('\n');
+                }
+                sections.push(format!("log:{}", name));
+            }
+        }
+    } else {
+        buf.push_str("Logs directory not found\n");
+    }
+    buf.push('\n');
+
+    // ── Section: audit log ───────────────────────────────────────────────────
+    let audit_path = plugin_mgr::audit_log_path();
+    if audit_path.exists() {
+        buf.push_str("## PLUGIN AUDIT LOG (last 50 lines)\n");
+        for line in collect_log_tail(&audit_path, 50) {
+            buf.push_str(&line);
+            buf.push('\n');
+        }
+        buf.push('\n');
+        sections.push("plugin_audit".to_string());
     }
 
-    Ok(GraphData { nodes, edges })
+    // ── Write bundle ─────────────────────────────────────────────────────────
+    std::fs::write(&bundle_path, &buf).map_err(|e| format!("write bundle: {}", e))?;
+    let size_bytes = std::fs::metadata(&bundle_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    Ok(SupportBundleResult {
+        path: bundle_path.to_string_lossy().to_string(),
+        size_bytes,
+        sections,
+    })
 }
 
-fn _text_similarity(a: &str, b: &str) -> f64 {
-    let a_words: std::collections::HashSet<String> = a
-        .to_lowercase()
-        .split_whitespace()
-        .map(|w| w.chars().filter(|c| c.is_alphanumeric()).collect())
-        .filter(|w: &String| !w.is_empty())
-        .collect();
-    let b_words: std::collections::HashSet<String> = b
-        .to_lowercase()
-        .split_whitespace()
-        .map(|w| w.chars().filter(|c| c.is_alphanumeric()).collect())
-        .filter(|w: &String| !w.is_empty())
-        .collect();
-    if a_words.is_empty() || b_words.is_empty() {
-        return 0.0;
+#[derive(serde::Serialize)]
+pub struct SystemHealthReport {
+    pub status: String, // "healthy" | "degraded" | "critical"
+    pub safe_mode: bool,
+    pub provider: String,
+    pub model: String,
+    pub memory_db_ready: bool,
+    pub memory_doc_count: usize,
+    pub plugin_count: usize,
+    pub plugin_disabled_count: usize,
+    pub config_valid: bool,
+    pub kfms_version: String,
+    pub issues: Vec<String>,
+}
+
+/// Extended health check returning structured diagnostics.
+pub fn get_system_health(state: Arc<Mutex<AppState>>) -> SystemHealthReport {
+    let mut issues: Vec<String> = Vec::new();
+
+    // Safe mode
+    let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
+
+    // Provider / config
+    let (provider, model, key_set, config_valid) = {
+        let app = state.lock().unwrap_or_else(|e| e.into_inner());
+        let provider = app.config.llm.default_provider.clone();
+        let model = if provider == "gemini" {
+            app.config.llm.gemini_model.clone()
+        } else {
+            app.config.llm.ollama_model.clone()
+        };
+        let key_set = std::env::var("GEMINI_API_KEY").is_ok();
+        (provider, model, key_set, true)
+    };
+
+    if provider == "gemini" && !key_set {
+        issues.push("Gemini provider selected but API key is not set".to_string());
     }
-    let intersection: std::collections::HashSet<_> = a_words.intersection(&b_words).collect();
-    let union_size = a_words.len() + b_words.len() - intersection.len();
-    intersection.len() as f64 / union_size as f64
-}
 
-pub fn memory_delete(id: String, state: State<'_, Mutex<AppState>>) -> Result<(), String> {
-    let mem_db = {
+    // Memory DB
+    let (mem_ready, mem_count) = {
         let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
+        if let Some(ref db) = app.mem_db {
+            let count = db.list_all().map(|v| v.len()).unwrap_or(0);
+            (true, count)
+        } else {
+            issues.push("Memory database not initialized".to_string());
+            (false, 0)
+        }
     };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    db.delete_record(&id)
-}
 
-pub fn memory_pin(
-    id: String,
-    pinned: bool,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
+    // Plugins
+    let plugins_dir = plugin_mgr::plugins_dir();
+    let (plugin_count, plugin_disabled) = if plugins_dir.is_dir() {
+        let mut active = 0usize;
+        let mut disabled = 0usize;
+        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name.ends_with(".lua") {
+                    active += 1;
+                } else if name.ends_with(".lua.disabled") {
+                    disabled += 1;
+                }
+            }
+        }
+        (active, disabled)
+    } else {
+        (0, 0)
     };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    db.set_pinned(&id, pinned)
-}
 
-pub fn memory_add_fact(
-    content: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    if content.trim().is_empty() {
-        return Err("Fact content cannot be empty".to_string());
+    // KFMS version
+    let kfms_version = {
+        let meta_path = std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join("infra/meta/meta.json");
+        std::fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .and_then(|v| {
+                v.get("version")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| "unknown".to_string())
+    };
+
+    if safe_mode {
+        issues.push("Running in safe mode — plugins are disabled".to_string());
     }
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let id = format!("fact-{}", chrono::Utc::now().format("%Y%m%d%H%M%S%3f"));
-    db.add_fact(id.clone(), content)?;
-    Ok(id)
+
+    let status = if issues
+        .iter()
+        .any(|i| i.contains("database") || i.contains("critical"))
+    {
+        "critical"
+    } else if issues.is_empty() {
+        "healthy"
+    } else {
+        "degraded"
+    }
+    .to_string();
+
+    SystemHealthReport {
+        status,
+        safe_mode,
+        provider,
+        model,
+        memory_db_ready: mem_ready,
+        memory_doc_count: mem_count,
+        plugin_count,
+        plugin_disabled_count: plugin_disabled,
+        config_valid,
+        kfms_version,
+        issues,
+    }
 }
 
-// ── Memory Export / Import / Backup ──────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Memory Backup
+// ─────────────────────────────────────────────────────────────────────────────
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct NdmemEnvelope {
     pub ndmem_version: String,
     pub exported_at: String,
@@ -1282,94 +549,13 @@ pub struct NdmemEnvelope {
     pub records: Vec<crate::memory::MemoryRecord>,
 }
 
-#[derive(serde::Serialize, Clone)]
-pub struct BackupInfo {
-    pub name: String,
-    pub path: String,
-    pub created_at: String,
-    pub record_count: usize,
-}
-
-fn memory_backup_dir() -> std::path::PathBuf {
-    crate::user_config_dir()
+fn memory_backup_dir() -> PathBuf {
+    user_config_dir()
         .join("data")
         .join("memory")
         .join("backups")
 }
 
-fn memory_export_dir() -> std::path::PathBuf {
-    crate::user_config_dir().join("exports")
-}
-
-/// Exports all memory records to `user_config_dir/exports/memory_TIMESTAMP.ndmem`.
-/// Returns the absolute path of the written file.
-pub fn memory_export(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let records = db.export_all_records()?;
-    let count = records.len();
-
-    let envelope = NdmemEnvelope {
-        ndmem_version: "1.0".into(),
-        exported_at: chrono::Utc::now().to_rfc3339(),
-        record_count: count,
-        records,
-    };
-    let json = serde_json::to_string_pretty(&envelope)
-        .map_err(|e| format!("Serialization error: {}", e))?;
-
-    let export_dir = memory_export_dir();
-    std::fs::create_dir_all(&export_dir)
-        .map_err(|e| format!("Cannot create exports dir: {}", e))?;
-
-    let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-    let filename = format!("memory_{}.ndmem", ts);
-    let dest = export_dir.join(&filename);
-    std::fs::write(&dest, json).map_err(|e| format!("Failed to write export file: {}", e))?;
-
-    Ok(dest.to_string_lossy().into_owned())
-}
-
-/// Imports memory records from a JSON string (`.ndmem` envelope).
-/// `merge=true` deduplicates by ID; `merge=false` replaces all records.
-/// Returns the count of records imported.
-pub fn memory_import_data(
-    data: String,
-    merge: bool,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<usize, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-
-    // Accept either a bare Vec<MemoryRecord> or an NdmemEnvelope
-    let records: Vec<crate::memory::MemoryRecord> =
-        if let Ok(env) = serde_json::from_str::<NdmemEnvelope>(&data) {
-            env.records
-        } else {
-            serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data)
-                .map_err(|e| format!("Invalid .ndmem file: {}", e))?
-        };
-
-    if records.is_empty() {
-        return Ok(0);
-    }
-    // Validate: each record must have a non-empty id and content
-    for r in &records {
-        if r.id.trim().is_empty() {
-            return Err("Invalid record: missing id".into());
-        }
-    }
-    db.import_records(records, merge)
-}
-
-/// Core backup logic — operates directly on a `MemoryDB` reference.
-/// Usable from both the Tauri command and internal startup tasks.
 pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String> {
     let records = db.export_all_records()?;
     let backup_dir = memory_backup_dir();
@@ -1407,163 +593,6 @@ pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String>
     Ok(dest.to_string_lossy().into_owned())
 }
 
-/// Creates a timestamped backup in `user_config_dir/data/memory/backups/`.
-/// Keeps the 5 most recent backups, pruning older ones.
-/// Returns the backup file path.
-pub fn memory_backup_auto(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    run_memory_backup(&db)
-}
-
-/// Returns a list of available backups sorted newest-first.
-pub fn memory_list_backups(_state: State<'_, Mutex<AppState>>) -> Result<Vec<BackupInfo>, String> {
-    let backup_dir = memory_backup_dir();
-    if !backup_dir.exists() {
-        return Ok(Vec::new());
-    }
-    let mut infos: Vec<BackupInfo> = std::fs::read_dir(&backup_dir)
-        .map_err(|e| format!("Cannot read backup dir: {}", e))?
-        .flatten()
-        .filter(|e| e.path().extension().map(|x| x == "ndmem").unwrap_or(false))
-        .filter_map(|e| {
-            let path = e.path();
-            let name = path.file_name()?.to_string_lossy().into_owned();
-            let created_at = e
-                .metadata()
-                .ok()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| {
-                    t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| {
-                        let secs = d.as_secs() as i64;
-                        chrono::DateTime::<chrono::Utc>::from_timestamp(secs, 0)
-                            .unwrap_or_default()
-                            .format("%Y-%m-%d %H:%M:%S UTC")
-                            .to_string()
-                    })
-                })
-                .unwrap_or_default();
-            // Read record count from envelope without loading everything into state
-            let record_count = std::fs::read_to_string(&path)
-                .ok()
-                .and_then(|s| serde_json::from_str::<NdmemEnvelope>(&s).ok())
-                .map(|e| e.record_count)
-                .unwrap_or(0);
-            Some(BackupInfo {
-                name,
-                path: path.to_string_lossy().into_owned(),
-                created_at,
-                record_count,
-            })
-        })
-        .collect();
-
-    // Sort newest first
-    infos.sort_by(|a, b| b.name.cmp(&a.name));
-    Ok(infos)
-}
-
-/// Restores memory from a named backup file (full replace — not a merge).
-pub fn memory_restore_backup(
-    backup_name: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    // Sanitize: backup_name must be a plain filename with no path separators
-    if backup_name.contains('/') || backup_name.contains('\\') || backup_name.contains("..") {
-        return Err("Invalid backup name".into());
-    }
-    let backup_path = memory_backup_dir().join(&backup_name);
-    if !backup_path.exists() {
-        return Err(format!("Backup '{}' not found", backup_name));
-    }
-    let data =
-        std::fs::read_to_string(&backup_path).map_err(|e| format!("Cannot read backup: {}", e))?;
-    // Delegate to import_data with merge=false (full replace)
-    let mem_db = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mem_db.clone()
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let records: Vec<crate::memory::MemoryRecord> = serde_json::from_str::<NdmemEnvelope>(&data)
-        .map(|e| e.records)
-        .or_else(|_| serde_json::from_str::<Vec<crate::memory::MemoryRecord>>(&data))
-        .map_err(|e| format!("Corrupt backup file: {}", e))?;
-    db.import_records(records, false)?;
-    Ok(())
-}
-
-/// Run an embedding-based MMR search over memory records.
-/// Returns up to `limit` semantically diverse results for the given `query`.
-pub async fn memory_search_semantic(
-    query: String,
-    limit: u8,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<crate::memory::MemoryRecord>, String> {
-    let (provider, mem_db) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        (app.provider.clone(), app.mem_db.clone())
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let embedding = provider
-        .generate_embedding(&query)
-        .await
-        .map_err(|e| format!("Embedding error: {}", e))?;
-    let n = limit.max(1) as usize;
-    db.search_mmr(&embedding, n, 0.5, n * 4)
-}
-
-pub async fn start_oauth_flow(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<neurodeck_infrastructure::oauth::DeviceAuthResponse, String> {
-    let client_id = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.config.llm.google_client_id.clone()
-    };
-    if client_id.is_empty() {
-        return Err("google_client_id is not set in llm-term.toml. Add google_client_id = \"your-client-id\" under [llm].".to_string());
-    }
-    let config = neurodeck_infrastructure::oauth::OAuthConfig {
-        client_id,
-        ..neurodeck_infrastructure::oauth::OAuthConfig::default()
-    };
-    neurodeck_infrastructure::oauth::request_device_code(&config).await
-}
-
-pub async fn poll_oauth_token(
-    device_code: String,
-    interval: u64,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let client_id = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.config.llm.google_client_id.clone()
-    };
-    let config = if client_id.is_empty() {
-        neurodeck_infrastructure::oauth::OAuthConfig::default()
-    } else {
-        neurodeck_infrastructure::oauth::OAuthConfig {
-            client_id,
-            ..neurodeck_infrastructure::oauth::OAuthConfig::default()
-        }
-    };
-    let token =
-        neurodeck_infrastructure::oauth::poll_for_token(&config, &device_code, interval).await?;
-
-    // Save to OS Keychain
-    neurodeck_infrastructure::secrets::save_gemini_api_key(&token)?;
-
-    // Update active provider using the key directly — never mutate the global env var
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    app.provider = Arc::new(GeminiProvider::new_with_key(
-        app.config.llm.gemini_model.clone(),
-        token.clone(),
-    ));
-
-    Ok(())
-}
 
 #[derive(serde::Serialize)]
 pub struct DiagnosticResult {
@@ -1646,7 +675,6 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     let (audio_ok, audio_details) = tokio::task::spawn_blocking(|| {
         #[cfg(target_os = "windows")]
         {
-            // On Windows check for any audio input device via PowerShell
             let out = std::process::Command::new("powershell")
                 .args(["-NoProfile", "-Command",
                     "Get-PnpDevice -Class AudioEndpoint -Status OK | Where-Object { $_.FriendlyName -match 'Microphone|Input|Capture' } | Measure-Object | Select-Object -ExpandProperty Count"])
@@ -1666,7 +694,6 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         }
         #[cfg(not(target_os = "windows"))]
         {
-            // Check for arecord (ALSA) or pactl (PulseAudio/PipeWire)
             if std::process::Command::new("which").arg("arecord").output()
                 .map(|o| o.status.success()).unwrap_or(false)
             {
@@ -1691,11 +718,10 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         let found = std::process::Command::new(ssh_bin)
             .arg("-V")
             .output()
-            .map(|o| o.status.success() || !o.stderr.is_empty()) // ssh -V writes to stderr
+            .map(|o| o.status.success() || !o.stderr.is_empty())
             .unwrap_or(false);
 
         if found {
-            // Try to get version string
             let ver = std::process::Command::new(ssh_bin)
                 .arg("-V")
                 .output()
@@ -1715,12 +741,10 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     let (tts_ok, tts_details) = tokio::task::spawn_blocking(|| {
         #[cfg(target_os = "windows")]
         {
-            // Windows has built-in SAPI TTS — always available
             (true, "Windows SAPI TTS available".to_string())
         }
         #[cfg(target_os = "macos")]
         {
-            // macOS has `say` built in
             let found = std::process::Command::new("say")
                 .arg("--version")
                 .output()
@@ -1734,7 +758,6 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
         }
         #[cfg(not(any(target_os = "windows", target_os = "macos")))]
         {
-            // Linux: check espeak-ng or espeak
             if std::process::Command::new("which")
                 .arg("espeak-ng")
                 .output()
@@ -1773,368 +796,6 @@ pub async fn run_onboarding_diagnostics() -> Result<DiagnosticResult, String> {
     })
 }
 
-#[derive(serde::Serialize)]
-pub struct ContextStats {
-    pub active_model: String,
-    pub active_provider: String,
-    pub memory_records_count: usize,
-    pub memory_pinned_count: usize,
-    pub memory_last_store: String,
-    pub session_id: String,
-    pub session_messages_count: usize,
-    pub session_created: String,
-    pub active_persona: String,
-    pub ram_available: String,
-}
-
-pub fn get_context_stats(state: State<'_, Mutex<AppState>>) -> Result<ContextStats, String> {
-    // Scope the lock so it is released before the blocking OS RAM query below.
-    let (
-        active_provider,
-        active_model,
-        memory_records_count,
-        memory_pinned_count,
-        memory_last_store,
-        session_id,
-        session_messages_count,
-        session_created,
-        active_persona,
-    ) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-
-        let active_provider = app.config.llm.default_provider.clone();
-        let active_model = if active_provider == "gemini" {
-            app.config.llm.gemini_model.clone()
-        } else if active_provider == "kimi" {
-            app.config.llm.kimi_model.clone()
-        } else if active_provider == "huggingface" {
-            app.config.llm.hf_model.clone()
-        } else {
-            app.config.llm.ollama_model.clone()
-        };
-
-        let mut memory_records_count = 0;
-        let mut memory_pinned_count = 0;
-        let mut memory_last_store = "Never".to_string();
-
-        if let Some(ref db) = app.mem_db {
-            if let Ok(records) = db.list_all() {
-                memory_records_count = records.len();
-                memory_pinned_count = records
-                    .iter()
-                    .filter(|r| r.metadata.get("pinned") == Some(&"true".to_string()))
-                    .count();
-                if memory_records_count > 0 {
-                    memory_last_store = "Connected".to_string();
-                }
-            }
-        }
-
-        let session_id = app.session_id.clone();
-        let session_messages_count = app.messages.len();
-        let session_created = if session_id.len() >= 15 {
-            let date = &session_id[0..8];
-            let time = &session_id[9..15];
-            format!(
-                "{}-{}-{} {}:{}:{}",
-                &date[0..4],
-                &date[4..6],
-                &date[6..8],
-                &time[0..2],
-                &time[2..4],
-                &time[4..6]
-            )
-        } else {
-            "N/A".to_string()
-        };
-
-        let active_persona = app.active_persona.clone();
-        (
-            active_provider,
-            active_model,
-            memory_records_count,
-            memory_pinned_count,
-            memory_last_store,
-            session_id,
-            session_messages_count,
-            session_created,
-            active_persona,
-        )
-    }; // AppState lock released here — RAM query below does not block other commands
-
-    let ram_available = if cfg!(target_os = "windows") {
-        let output = std::process::Command::new("cmd")
-            .args([
-                "/c",
-                "wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value",
-            ])
-            .output();
-        if let Ok(out) = output {
-            let res = String::from_utf8_lossy(&out.stdout);
-            let mut free_kb = 0u64;
-            let mut total_kb = 0u64;
-            for line in res.lines() {
-                let trimmed = line.trim();
-                if let Some(stripped) = trimmed.strip_prefix("FreePhysicalMemory=") {
-                    free_kb = stripped.trim().parse().unwrap_or(0);
-                } else if let Some(stripped) = trimmed.strip_prefix("TotalVisibleMemorySize=") {
-                    total_kb = stripped.trim().parse().unwrap_or(0);
-                }
-            }
-            if total_kb > 0 {
-                format!("{}MB / {}MB", free_kb / 1024, total_kb / 1024)
-            } else {
-                "Unknown".to_string()
-            }
-        } else {
-            "Unknown".to_string()
-        }
-    } else {
-        let output = std::process::Command::new("sh")
-            .arg("-c")
-            .arg("free -m | grep Mem")
-            .output();
-        if let Ok(out) = output {
-            let res = String::from_utf8_lossy(&out.stdout);
-            let parts: Vec<&str> = res.split_whitespace().collect();
-            if parts.len() >= 4 {
-                let total = parts[1];
-                let available = parts[parts.len() - 1]; // available is the last column
-                format!("{}MB / {}MB", available, total)
-            } else {
-                "Unknown".to_string()
-            }
-        } else {
-            "Unknown".to_string()
-        }
-    };
-
-    Ok(ContextStats {
-        active_model,
-        active_provider,
-        memory_records_count,
-        memory_pinned_count,
-        memory_last_store,
-        session_id,
-        session_messages_count,
-        session_created,
-        active_persona,
-        ram_available,
-    })
-}
-
-/// Explains a generated prompt in Just Plain English (JPE).
-pub async fn generate_jpe_explanation(
-    prompt_text: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
-    };
-
-    if prompt_text.trim().is_empty() {
-        return Ok(String::new());
-    }
-
-    let system_prompt = "You are a prompt engineering expert. Your task is to explain the intent of the following prompt in Just Plain English (JPE), so that anyone can understand it. Use simple, grade-8 reading level language. Summarize the role, the task, the constraints, and the expected format concisely. Do not evaluate the prompt, just explain what it asks the AI to do.";
-    let query = format!(
-        "Explain the following prompt in simple English, step by step:\n\n{}",
-        prompt_text
-    );
-
-    let result = provider
-        .chat_with_image(&query, system_prompt, None, None)
-        .await?;
-    Ok(result.trim().to_string())
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct PromptSchema {
-    pub persona: String,
-    pub task: String,
-    pub context: String,
-    pub tone: String,
-    pub constraints: String,
-    pub format: String,
-}
-
-#[allow(clippy::too_many_arguments)]
-pub async fn assemble_prompt_via_lua_cmd(
-    persona: String,
-    task: String,
-    context: String,
-    tone: String,
-    constraints: String,
-    format: String,
-    examples: String,
-    formula: String,
-    lua_state: State<'_, LuaState>,
-) -> Result<String, String> {
-    let engine = lua_state.0.lock().unwrap_or_else(|e| e.into_inner());
-    engine.assemble_prompt(
-        &persona,
-        &task,
-        &context,
-        &tone,
-        &constraints,
-        &format,
-        &examples,
-        &formula,
-    )
-}
-
-pub async fn optimize_raw_prompt(
-    raw_text: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<PromptSchema, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
-    };
-
-    if raw_text.trim().is_empty() {
-        return Err("Input draft cannot be empty".to_string());
-    }
-
-    let system_prompt = "You are an expert prompt engineer. The user will provide a rough draft of a task or prompt. Your job is to decompose it into a structured prompt schema.\n\
-Return ONLY a valid JSON object matching this schema, with no other text, markdown formatting, or explanations. If a field cannot be inferred, return an empty string.\n\n\
-JSON Schema:\n\
-{\n\
-  \"persona\": \"the assumed persona or role of the AI (e.g. 'You are a senior python engineer')\",\n\
-  \"task\": \"the core objective or query (e.g. 'write a python function to merge lists')\",\n\
-  \"context\": \"any background context, target audience, or domain specific details\",\n\
-  \"tone\": \"the tone/style (e.g. 'concise', 'educational')\",\n\
-  \"constraints\": \"specific constraints, rules, limits (e.g. 'no third party libraries', 'max 100 words')\",\n\
-  \"format\": \"the expected output structure or format (e.g. 'markdown table', 'code block')\"\n\
-}";
-
-    let result = provider
-        .chat_with_image(&raw_text, system_prompt, None, None)
-        .await?;
-
-    // Clean JSON markdown codeblocks if returned
-    let cleaned = result
-        .trim()
-        .trim_start_matches("```json")
-        .trim_start_matches("```")
-        .trim_end_matches("```")
-        .trim();
-
-    let schema: PromptSchema = serde_json::from_str(cleaned).map_err(|e| {
-        format!(
-            "Failed to parse LLM response into prompt schema: {}. Raw response: {}",
-            e, result
-        )
-    })?;
-
-    Ok(schema)
-}
-
-pub async fn generate_jpe_explanation_with_level(
-    prompt_text: String,
-    reading_level: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
-    };
-
-    if prompt_text.trim().is_empty() {
-        return Ok(String::new());
-    }
-
-    let tone_instruction = match reading_level.to_lowercase().as_str() {
-        "grade8" => "simple, grade-8 reading level language suitable for children or non-experts",
-        "grade12" => "clear, standard grade-12 reading level language",
-        "executive" => "high-level, executive business summary style, focusing on outcomes and ROI",
-        "technical" => "highly technical and analytical language, dissecting parameter weights and prompt structure details",
-        _ => "simple, grade-8 reading level language",
-    };
-
-    let system_prompt = format!(
-        "You are a prompt engineering expert. Your task is to explain the intent of the following prompt in Just Plain English (JPE), so that anyone can understand it. Use {}. Summarize the role, the task, the constraints, and the expected format concisely. Do not evaluate the prompt, just explain what it asks the AI to do.",
-        tone_instruction
-    );
-
-    let query = format!(
-        "Explain the following prompt in simple English, step by step:\n\n{}",
-        prompt_text
-    );
-
-    let result = provider
-        .chat_with_image(&query, &system_prompt, None, None)
-        .await?;
-    Ok(result.trim().to_string())
-}
-
-pub fn save_prompt_preset(name: String, schema_json: String) -> Result<(), String> {
-    let data_dir = user_config_dir().join("data");
-    let _ = std::fs::create_dir_all(&data_dir);
-    let path = data_dir.join("prompt_presets.json");
-
-    let mut presets = if path.exists() {
-        let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        serde_json::from_str::<std::collections::HashMap<String, String>>(&content)
-            .unwrap_or_default()
-    } else {
-        std::collections::HashMap::new()
-    };
-
-    presets.insert(name, schema_json);
-
-    let serialized = serde_json::to_string_pretty(&presets).map_err(|e| e.to_string())?;
-    std::fs::write(&path, serialized).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-pub fn load_prompt_presets() -> Result<std::collections::HashMap<String, String>, String> {
-    let path = user_config_dir().join("data/prompt_presets.json");
-    if !path.exists() {
-        return Ok(std::collections::HashMap::new());
-    }
-    let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let presets = serde_json::from_str::<std::collections::HashMap<String, String>>(&content)
-        .unwrap_or_default();
-    Ok(presets)
-}
-
-/// AI-powered terminal autocomplete.
-/// Takes the current terminal input buffer and returns suggested completion suffix.
-pub async fn shell_autocomplete(
-    buffer: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
-    };
-
-    if buffer.trim().is_empty() {
-        return Ok(String::new());
-    }
-
-    let system_prompt = "You are a Unix/Linux shell autocomplete daemon. The user has partially typed a shell command. You must return ONLY the remaining characters needed to complete the most likely command — nothing else. No explanations, no punctuation, no newlines. If the input already looks complete or you cannot determine a sensible completion, return an empty string.";
-
-    let prompt = format!("Complete this shell command: {}", buffer);
-
-    // Use chat_with_image (text-only, no image) for a single-shot non-streaming response
-    let result = provider
-        .chat_with_image(&prompt, system_prompt, None, None)
-        .await?;
-
-    // Clean the result: strip any leading text the model may have added
-    let completion = result.trim().to_string();
-
-    // Safety check: completion should be short and not contain the original buffer
-    if completion.len() > 200 || completion.contains('\n') {
-        return Ok(String::new());
-    }
-
-    Ok(completion)
-}
-
 /// Read the most recent screenshot from Steam or system Pictures directories.
 /// Returns a map with keys: `path`, `data` (base64), `mime`.
 pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
@@ -2145,7 +806,6 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
         if let Ok(home) = std::env::var("HOME") {
             let home_path = PathBuf::from(&home);
 
-            // SteamOS screenshot dirs: ~/.local/share/Steam/userdata/*/760/remote/*/screenshots/
             let userdata = home_path.join(".local/share/Steam/userdata");
             if let Ok(entries) = std::fs::read_dir(&userdata) {
                 for entry in entries.flatten() {
@@ -2161,7 +821,6 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
                 }
             }
 
-            // XDG Pictures/Screenshots
             for rel in &["Pictures/Screenshots", "Pictures"] {
                 let p = home_path.join(rel);
                 if p.is_dir() {
@@ -2173,14 +832,12 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 
     #[cfg(target_os = "windows")]
     {
-        // On Windows: %USERPROFILE%\Pictures\Screenshots
         if let Ok(userprofile) = std::env::var("USERPROFILE") {
             let p = PathBuf::from(&userprofile).join("Pictures\\Screenshots");
             if p.is_dir() {
                 candidate_dirs.push(p);
             }
         }
-        // Steam on Windows
         for steam_root in &[
             r"C:\Program Files (x86)\Steam\userdata",
             r"C:\Program Files\Steam\userdata",
@@ -2206,7 +863,6 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
         return Err("No screenshot directories found".to_string());
     }
 
-    // Find the most recently modified image file across all candidate dirs
     let image_extensions = ["png", "jpg", "jpeg", "webp", "bmp"];
     let mut best_path: Option<PathBuf> = None;
     let mut best_modified = std::time::SystemTime::UNIX_EPOCH;
@@ -2252,8 +908,8 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 
     let data = std::fs::read(&path).map_err(|e| format!("Failed to read screenshot: {}", e))?;
 
-    use base64::prelude::*;
-    let b64 = BASE64_STANDARD.encode(&data);
+    use base64::Engine as _;
+    let b64 = base64::prelude::BASE64_STANDARD.encode(&data);
 
     let mut result = HashMap::new();
     result.insert("path".to_string(), path.to_string_lossy().to_string());
@@ -2263,1118 +919,14 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
     Ok(result)
 }
 
-/// AI-powered shell history search.
-/// Reads local shell history, deduplicates, and asks the LLM to rank/filter by relevance.
-pub async fn search_history_ai(
-    query: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<String>, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.provider.clone()
-    };
-
-    // Collect history from common shell history files
-    let mut history_lines: Vec<String> = Vec::new();
-
-    let history_files = {
-        let mut files: Vec<PathBuf> = Vec::new();
-
-        #[cfg(target_os = "linux")]
-        {
-            if let Ok(home) = std::env::var("HOME") {
-                let home_path = PathBuf::from(&home);
-                for rel in &[
-                    ".bash_history",
-                    ".zsh_history",
-                    ".local/share/fish/fish_history",
-                ] {
-                    let p = home_path.join(rel);
-                    if p.exists() {
-                        files.push(p);
-                    }
-                }
-            }
-        }
-
-        #[cfg(target_os = "windows")]
-        {
-            // PowerShell history
-            if let Ok(appdata) = std::env::var("APPDATA") {
-                let ps_history = PathBuf::from(&appdata)
-                    .join("Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt");
-                if ps_history.exists() {
-                    files.push(ps_history);
-                }
-            }
-        }
-
-        files
-    };
-
-    for file in &history_files {
-        if let Ok(content) = std::fs::read_to_string(file) {
-            for line in content.lines() {
-                let trimmed = line.trim();
-                // Skip zsh history metadata lines (": 1234567890:0;")
-                if trimmed.is_empty() || trimmed.starts_with(": ") {
-                    continue;
-                }
-                // For zsh history, extract the actual command after the semicolon
-                let cmd = if let Some(semi) = trimmed.find(';') {
-                    trimmed[semi + 1..].trim().to_string()
-                } else {
-                    trimmed.to_string()
-                };
-                if !cmd.is_empty() {
-                    history_lines.push(cmd);
-                }
-            }
-        }
-    }
-
-    if history_lines.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    // Deduplicate while preserving order (most recent wins)
-    history_lines.reverse();
-    let mut seen = std::collections::HashSet::new();
-    history_lines.retain(|line| seen.insert(line.clone()));
-
-    // Take at most 150 entries to keep the prompt manageable
-    let history_sample: Vec<String> = history_lines.into_iter().take(150).collect();
-
-    let history_text = history_sample.join("\n");
-    let system_prompt = "You are a shell history search assistant. The user provides a natural-language search query and a list of past shell commands. You must return ONLY the 10 most relevant commands from the list, ordered from most to least relevant. Return exactly one command per line, with no numbering, commentary, or extra text. If fewer than 10 commands are relevant, return only the relevant ones.";
-    let prompt = format!(
-        "Search query: \"{}\"\n\nShell history:\n{}",
-        query, history_text
-    );
-
-    let raw = provider
-        .chat_with_image(&prompt, system_prompt, None, None)
-        .await?;
-
-    let results: Vec<String> = raw
-        .lines()
-        .map(|l| l.trim().to_string())
-        .filter(|l| !l.is_empty())
-        .take(10)
-        .collect();
-
-    Ok(results)
-}
-
-/// Split text into word-based chunks with overlap for RAG indexing.
-fn chunk_text(text: &str, chunk_words: usize, overlap_words: usize) -> Vec<String> {
-    let words: Vec<&str> = text.split_whitespace().collect();
-    if words.is_empty() {
-        return vec![];
-    }
-    let step = chunk_words.saturating_sub(overlap_words).max(1);
-    let mut chunks = Vec::new();
-    let mut start = 0usize;
-    while start < words.len() {
-        let end = (start + chunk_words).min(words.len());
-        chunks.push(words[start..end].join(" "));
-        if end == words.len() {
-            break;
-        }
-        start += step;
-    }
-    chunks
-}
-
-fn collect_text_files(dir: &Path, collected: &mut Vec<PathBuf>, max: usize) {
-    let extensions = [
-        "txt", "md", "rs", "py", "js", "ts", "json", "toml", "yaml", "yml", "csv", "log",
-    ];
-    if collected.len() >= max {
-        return;
-    }
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => return,
-    };
-    for entry in entries.flatten() {
-        if collected.len() >= max {
-            break;
-        }
-        let path = entry.path();
-        if path.is_dir() {
-            // Skip hidden directories
-            if path
-                .file_name()
-                .map(|n| n.to_string_lossy().starts_with('.'))
-                .unwrap_or(false)
-            {
-                continue;
-            }
-            collect_text_files(&path, collected, max);
-        } else if path.is_file() {
-            let ext = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .map(|e| e.to_lowercase())
-                .unwrap_or_default();
-            if extensions.contains(&ext.as_str()) {
-                // Skip files > 100 KB
-                if let Ok(meta) = std::fs::metadata(&path) {
-                    if meta.len() <= 102_400 {
-                        collected.push(path);
-                    }
-                }
-            }
-        }
-    }
-}
-
-pub async fn index_directory(
-    path: String,
-    app_handle: AppHandle,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<usize, String> {
-    let (provider, mem_db) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        (app.provider.clone(), app.mem_db.clone())
-    };
-    let db = mem_db.ok_or("Memory database not initialized")?;
-    let dir = PathBuf::from(&path);
-    if !dir.is_dir() {
-        return Err(format!("'{}' is not a directory", path));
-    }
-    let canonical_dir = dir
-        .canonicalize()
-        .map_err(|e| format!("Failed to canonicalize directory: {}", e))?;
-    let mut safe = false;
-    if let Some(home) = crate::get_home_dir() {
-        if let Ok(canonical_home) = home.canonicalize() {
-            if canonical_dir.starts_with(&canonical_home) {
-                safe = true;
-            }
-        }
-    }
-    if !safe {
-        if let Ok(current_dir) = std::env::current_dir() {
-            if let Ok(canonical_current) = current_dir.canonicalize() {
-                if canonical_dir.starts_with(&canonical_current) {
-                    safe = true;
-                }
-            }
-        }
-    }
-    if !safe {
-        return Err("Access denied: path escapes the permitted directories sandbox (home directory or current workspace)".to_string());
-    }
-
-    let mut files: Vec<PathBuf> = Vec::new();
-    collect_text_files(&canonical_dir, &mut files, 500);
-
-    let total = files.len();
-    let _ = app_handle.emit(
-        "doc_index_progress",
-        serde_json::json!({ "indexed": 0, "total": total }),
-    );
-
-    let mut indexed = 0usize;
-    for file in files {
-        let content = match std::fs::read_to_string(&file) {
-            Ok(c) if !c.trim().is_empty() => c,
-            _ => continue,
-        };
-        let file_path_str = file.to_string_lossy().to_string();
-        // Chunk the file: 512 words per chunk, 64-word overlap
-        let chunks = chunk_text(&content, 512, 64);
-        for (chunk_idx, chunk) in chunks.iter().enumerate() {
-            if let Ok(embedding) = provider.generate_embedding(chunk).await {
-                let mut metadata = HashMap::new();
-                metadata.insert("namespace".to_string(), "documents".to_string());
-                metadata.insert("source_file".to_string(), file_path_str.clone());
-                metadata.insert("chunk_index".to_string(), chunk_idx.to_string());
-                metadata.insert("role".to_string(), "document".to_string());
-                let id = format!("doc::{}::{}", file_path_str, chunk_idx);
-                let _ = db.store_message(id, chunk.clone(), embedding, metadata);
-                indexed += 1;
-            }
-        }
-        let _ = app_handle.emit(
-            "doc_index_progress",
-            serde_json::json!({ "indexed": indexed, "total": total }),
-        );
-    }
-
-    let _ = app_handle.emit(
-        "doc_index_progress",
-        serde_json::json!({ "indexed": indexed, "total": total, "done": true }),
-    );
-    Ok(indexed)
-}
-
-pub fn get_doc_count(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(ref db) = app.mem_db {
-        db.count_by_namespace("docs")
-    } else {
-        Ok(0)
-    }
-}
-
-pub fn clear_doc_index(state: State<'_, Mutex<AppState>>) -> Result<usize, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(ref db) = app.mem_db {
-        db.delete_by_namespace("docs")
-    } else {
-        Ok(0)
-    }
-}
-
-fn game_notes_path(app_id: &str) -> PathBuf {
-    user_config_dir()
-        .join("data/game_notes")
-        .join(format!("{}.md", app_id.replace(['/', '\\', '.', ':'], "_")))
-}
-
-pub fn get_game_notes(app_id: String) -> Result<String, String> {
-    let path = game_notes_path(&app_id);
-    if path.exists() {
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read notes: {}", e))
-    } else {
-        Ok(String::new())
-    }
-}
-
-pub fn save_game_note(app_id: String, content: String) -> Result<(), String> {
-    let path = game_notes_path(&app_id);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {}", e))?;
-    }
-    std::fs::write(&path, &content).map_err(|e| format!("Failed to write notes: {}", e))
-}
-
-pub async fn start_mcp_server(
-    port: u16,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<serde_json::Value, String> {
-    let (provider, whitelist, mem_db) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        if app.mcp_abort.is_some() {
-            return Err(format!(
-                "MCP server is already running on port {}. Stop it first.",
-                app.mcp_port
-            ));
-        }
-        (
-            app.provider.clone(),
-            app.mcp_tool_whitelist.clone(),
-            app.mem_db.clone(),
-        )
-    };
-
-    let config = mcp::McpServerConfig {
-        provider,
-        tool_whitelist: whitelist,
-        mem_db,
-        port,
-    };
-    let (bound_port, abort_handle, token) = mcp::start(config).await?;
-
-    {
-        let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-        app.mcp_abort = Some(abort_handle);
-        app.mcp_port = bound_port;
-        app.mcp_token = Some(token.clone());
-    }
-
-    Ok(serde_json::json!({
-        "url": format!("http://127.0.0.1:{}", bound_port),
-        "token": token,
-        "discovery": format!("http://127.0.0.1:{}/.well-known/mcp", bound_port)
-    }))
-}
-
-pub async fn stop_mcp_server(state: State<'_, Mutex<AppState>>) -> Result<String, String> {
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(handle) = app.mcp_abort.take() {
-        handle.abort();
-        let port = app.mcp_port;
-        app.mcp_port = 13337;
-        Ok(format!("MCP server on port {} stopped.", port))
-    } else {
-        Err("MCP server is not running.".to_string())
-    }
-}
-
-pub fn get_mcp_status(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<HashMap<String, String>, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut result = HashMap::new();
-    if app.mcp_abort.is_some() {
-        result.insert("running".to_string(), "true".to_string());
-        result.insert("port".to_string(), app.mcp_port.to_string());
-        result.insert(
-            "url".to_string(),
-            format!("http://127.0.0.1:{}", app.mcp_port),
-        );
-        result.insert(
-            "discovery".to_string(),
-            format!("http://127.0.0.1:{}/.well-known/mcp", app.mcp_port),
-        );
-        // Token is shown in Settings so the user can copy it for their MCP client config.
-        // This is acceptable: the local UI is already trusted, it runs on the same machine.
-        if let Some(tok) = &app.mcp_token {
-            result.insert("token".to_string(), tok.clone());
-        }
-    } else {
-        result.insert("running".to_string(), "false".to_string());
-        result.insert("port".to_string(), app.mcp_port.to_string());
-    }
-    Ok(result)
-}
-
-/// Returns the current MCP tool whitelist.
-pub fn get_mcp_tool_whitelist(state: State<'_, Mutex<AppState>>) -> Result<Vec<String>, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(app.mcp_tool_whitelist.clone())
-}
-
-/// Updates the MCP tool whitelist. Changes take effect on the next server start.
-pub fn set_mcp_tool_whitelist(
-    tools: Vec<String>,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    // Validate: only allow names from the known set
-    let known: std::collections::HashSet<&str> = crate::mcp::ALL_TOOLS.iter().copied().collect();
-    for t in &tools {
-        if !known.contains(t.as_str()) {
-            return Err(format!("Unknown tool name: '{}'", t));
-        }
-    }
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    app.mcp_tool_whitelist = tools;
-    Ok(())
-}
-
-pub async fn canvas_collab_host(
-    port: u16,
-    state: State<'_, Mutex<AppState>>,
-    app: AppHandle,
-) -> Result<u16, String> {
-    {
-        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(abort) = s.collab_abort.take() {
-            abort.abort();
-        }
-        s.collab_tx = None;
-        s.collab_mode = None;
-        s.collab_addr = None;
-        s.collab_peer_count = None;
-        if let Some(daemon) = s.collab_mdns.take() {
-            let hostname = crate::transfer::get_hostname();
-            let _ = daemon.unregister(&format!(
-                "neurodeck-{}._neurodeck-canvas._tcp.local.",
-                hostname.replace(" ", "-")
-            ));
-        }
-    }
-
-    let (bound_port, session) = canvas_collab::host(port, app).await?;
-
-    // Register mDNS advertisement for peer discovery
-    if let Ok(daemon) = mdns_sd::ServiceDaemon::new() {
-        let hostname = crate::transfer::get_hostname();
-        let instance = format!("neurodeck-{}", hostname.replace(" ", "-"));
-        let host_name = format!("{}.local.", hostname.replace(" ", "-"));
-        let mut props = std::collections::HashMap::new();
-        props.insert("hostname".to_string(), hostname);
-        if let Ok(info) = mdns_sd::ServiceInfo::new(
-            "_neurodeck-canvas._tcp.local.",
-            &instance,
-            &host_name,
-            "0.0.0.0",
-            bound_port,
-            Some(props),
-        ) {
-            let _ = daemon.register(info);
-            let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-            s.collab_mdns = Some(daemon);
-        }
-    }
-
-    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-    s.collab_abort = Some(session.abort_handle);
-    s.collab_tx = Some(session.tx);
-    s.collab_mode = Some("host".to_string());
-    s.collab_addr = Some(format!("0.0.0.0:{}", bound_port));
-    s.collab_peer_count = Some(session.peer_count);
-
-    Ok(bound_port)
-}
-
-pub async fn canvas_collab_join(
-    addr: String,
-    state: State<'_, Mutex<AppState>>,
-    app: AppHandle,
-) -> Result<(), String> {
-    {
-        let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(abort) = s.collab_abort.take() {
-            abort.abort();
-        }
-        s.collab_tx = None;
-        s.collab_mode = None;
-        s.collab_addr = None;
-        s.collab_peer_count = None;
-    }
-
-    let session = canvas_collab::join(&addr, app).await?;
-
-    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-    s.collab_abort = Some(session.abort_handle);
-    s.collab_tx = Some(session.tx);
-    s.collab_mode = Some("guest".to_string());
-    s.collab_addr = Some(addr);
-    s.collab_peer_count = Some(session.peer_count);
-
-    Ok(())
-}
-
-pub async fn canvas_collab_send(
-    code: String,
-    lang: String,
-    sender: Option<String>,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let tx = {
-        let s = state.lock().unwrap_or_else(|e| e.into_inner());
-        s.collab_tx.clone()
-    };
-    if let Some(tx) = tx {
-        // Build a CRDT update using the session's shared Doc
-        let tmp_doc = crate::canvas_collab::CollabDoc::new();
-        let update_bytes = tmp_doc.set_content(&code);
-        let data_b64 = base64::engine::general_purpose::STANDARD.encode(&update_bytes);
-        let payload = serde_json::json!({
-            "type": "y_update",
-            "data": data_b64,
-            "lang": lang,
-            "sender": sender.unwrap_or_default(),
-            // Include code so recipients that don't understand y_update can still fall back
-            "code": code
-        });
-        tx.send(payload.to_string())
-            .await
-            .map_err(|_| "Collab channel closed".to_string())?;
-        Ok(())
-    } else {
-        Err("No active collab session".to_string())
-    }
-}
-
-pub async fn canvas_collab_broadcast(
-    payload: serde_json::Value,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    let tx = {
-        let s = state.lock().unwrap_or_else(|e| e.into_inner());
-        s.collab_tx.clone()
-    };
-    if let Some(tx) = tx {
-        tx.send(payload.to_string())
-            .await
-            .map_err(|_| "Collab channel closed".to_string())?;
-        Ok(())
-    } else {
-        Err("No active collab session".to_string())
-    }
-}
-
-pub fn canvas_collab_stop(state: State<'_, Mutex<AppState>>) {
-    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(abort) = s.collab_abort.take() {
-        abort.abort();
-    }
-    s.collab_tx = None;
-    s.collab_mode = None;
-    s.collab_addr = None;
-    s.collab_peer_count = None;
-    if let Some(daemon) = s.collab_mdns.take() {
-        let hostname = crate::transfer::get_hostname();
-        let _ = daemon.unregister(&format!(
-            "neurodeck-{}._neurodeck-canvas._tcp.local.",
-            hostname.replace(" ", "-")
-        ));
-    }
-}
-
-/// Discover canvas collab peers on the local network via mDNS.
-/// Browses for `_neurodeck-canvas._tcp` services for ~2.5 seconds.
-pub fn discover_canvas_peers() -> Result<Vec<serde_json::Value>, String> {
-    let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
-    let service_type = "_neurodeck-canvas._tcp.local.";
-    let receiver = daemon.browse(service_type).map_err(|e| e.to_string())?;
-
-    let mut peers = Vec::new();
-    let start = std::time::Instant::now();
-    while start.elapsed() < std::time::Duration::from_millis(2500) {
-        match receiver.recv_timeout(std::time::Duration::from_millis(200)) {
-            Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) => {
-                let hostname = info.get_hostname().to_string();
-                let port = info.get_port();
-                let props = info.get_properties();
-                let display_name = props
-                    .get_property_val_str("hostname")
-                    .unwrap_or(&hostname)
-                    .to_string();
-                // Extract IP address from hostname or use a heuristic
-                let ip = info
-                    .get_addresses()
-                    .iter()
-                    .next()
-                    .map(|a| a.to_string())
-                    .unwrap_or_else(|| {
-                        // Fallback: try to resolve .local hostname
-                        hostname.trim_end_matches(".local.").to_string()
-                    });
-                peers.push(serde_json::json!({
-                    "name": display_name,
-                    "hostname": hostname,
-                    "ip": ip,
-                    "port": port,
-                    "addr": format!("{}:{}", ip, port)
-                }));
-            }
-            Ok(mdns_sd::ServiceEvent::SearchStopped(_)) => break,
-            _ => {}
-        }
-    }
-
-    // Deduplicate by address
-    peers.sort_by(|a, b| a["addr"].as_str().cmp(&b["addr"].as_str()));
-    peers.dedup_by(|a, b| a["addr"].as_str() == b["addr"].as_str());
-
-    Ok(peers)
-}
-
-pub fn canvas_collab_status(state: State<'_, Mutex<AppState>>) -> HashMap<String, String> {
-    let s = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut result = HashMap::new();
-    result.insert("active".to_string(), s.collab_abort.is_some().to_string());
-    result.insert(
-        "mode".to_string(),
-        s.collab_mode.clone().unwrap_or_else(|| "idle".to_string()),
-    );
-    result.insert(
-        "addr".to_string(),
-        s.collab_addr.clone().unwrap_or_default(),
-    );
-    let peers = s
-        .collab_peer_count
-        .as_ref()
-        .map(|count| count.load(Ordering::SeqCst))
-        .unwrap_or(0);
-    result.insert("peers".to_string(), peers.to_string());
-    result
-}
-
-pub fn get_lan_ip() -> String {
-    match std::net::UdpSocket::bind("0.0.0.0:0") {
-        Ok(sock) => {
-            if sock.connect("8.8.8.8:80").is_ok() {
-                if let Ok(addr) = sock.local_addr() {
-                    return addr.ip().to_string();
-                }
-            }
-            "unknown".to_string()
-        }
-        Err(_) => "unknown".to_string(),
-    }
-}
-
-pub async fn close_splashscreen() {
-    // Stub: splashscreen is managed by Electron main process
-}
-
-pub async fn set_kiosk_mode(_enabled: bool) -> Result<(), String> {
-    // Stub: window management is handled by Electron main process
-    Ok(())
-}
-
-pub async fn get_window_mode() -> Result<serde_json::Value, String> {
-    Ok(serde_json::json!({
-        "fullscreen": false,
-        "decorations": true,
-        "kiosk": false,
-    }))
-}
-
-pub async fn dispatch_action(
-    action: Intent,
-    app_handle: AppHandle,
-    _state: State<'_, Mutex<AppState>>,
-) -> Result<(), String> {
-    tracing::info!("Received Intent: {:?}", action);
-
-    match action {
-        Intent::StartTerminal { id, shell } => {
-            tracing::info!("StartTerminal called for id {} with shell {:?}", id, shell);
-            let patch = StatePatch::TerminalOutput {
-                id: id.clone(),
-                data: format!("Initializing terminal {}...\n", id),
-            };
-            let _ = app_handle.emit("state_patch", patch);
-        }
-        _ => {
-            tracing::warn!(
-                "Intent not fully handled yet in backend migration: {:?}",
-                action
-            );
-        }
-    }
-
-    Ok(())
-}
-
-pub async fn llm_oneshot(
-    prompt: String,
-    max_tokens: Option<u32>,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    let provider = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        Arc::clone(&app.provider)
-    };
-    let max_tokens = max_tokens.unwrap_or(512);
-    provider.generate_oneshot(&prompt, max_tokens).await
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Observability: Support Bundle + System Health
-// ─────────────────────────────────────────────────────────────────────────────
-
-fn redact_line(line: &str) -> String {
-    let mut out = line.to_string();
-    // Simple textual redaction — not regex-based to avoid an extra crate.
-    // Replace literal token-like strings using heuristic substrings.
-    for redaction in [
-        ("AIza", "[REDACTED_API_KEY]"),
-        ("GOCSPX-", "[REDACTED_OAUTH_SECRET]"),
-        ("Bearer ", "Bearer [REDACTED_TOKEN]"),
-    ] {
-        if let Some(pos) = out.find(redaction.0) {
-            // Replace from the marker to end-of-token (non-whitespace run)
-            let prefix = &out[..pos];
-            let rest = &out[pos..];
-            let token_end = rest
-                .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
-                .unwrap_or(rest.len());
-            out = format!("{}{}{}", prefix, redaction.1, &rest[token_end..]);
-        }
-    }
-    // Redact passwords in toml-style `key = "value"` lines
-    let lower = out.to_lowercase();
-    if lower.contains("password") || lower.contains("secret") || lower.contains("api_key") {
-        if let Some(eq_pos) = out.find('=') {
-            let key_part = &out[..=eq_pos];
-            out = format!("{} [REDACTED]", key_part.trim_end());
-        }
-    }
-    out
-}
-
-/// Collect the tail of a log file (last `max_lines` lines), redacting secrets.
-fn collect_log_tail(path: &Path, max_lines: usize) -> Vec<String> {
-    let Ok(content) = std::fs::read_to_string(path) else {
-        return vec!["[could not read log file]".to_string()];
-    };
-    let lines: Vec<&str> = content.lines().collect();
-    let start = lines.len().saturating_sub(max_lines);
-    lines[start..].iter().map(|l| redact_line(l)).collect()
-}
-
-#[derive(serde::Serialize)]
-pub struct SupportBundleResult {
-    pub path: String,
-    pub size_bytes: u64,
-    pub sections: Vec<String>,
-}
-
-/// Generate a redacted support bundle in `user_config_dir()/exports/`.
-///
-/// The bundle is a plain-text file that contains:
-///   - Platform / version info
-///   - Sanitized config summary (secrets masked)
-///   - Plugin list (names only)
-///   - Memory stats (counts only)
-///   - Tail of each log file (with secrets redacted)
-///
-/// Nothing is sent anywhere — the user controls distribution.
-pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBundleResult, String> {
-    let config_dir = crate::user_config_dir();
-    let exports_dir = config_dir.join("exports");
-    std::fs::create_dir_all(&exports_dir).map_err(|e| format!("exports dir: {}", e))?;
-
-    let timestamp = {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0)
-    };
-    let bundle_path = exports_dir.join(format!("support_bundle_{}.txt", timestamp));
-    let mut sections: Vec<String> = Vec::new();
-    let mut buf = String::new();
-
-    // ── Section: header ──────────────────────────────────────────────────────
-    buf.push_str(&format!(
-        "NEURODECK Support Bundle\nGenerated: {} (Unix seconds)\n{}\n\n",
-        timestamp,
-        "=".repeat(60)
-    ));
-    sections.push("header".to_string());
-
-    // ── Section: platform ────────────────────────────────────────────────────
-    buf.push_str("## PLATFORM\n");
-    buf.push_str(&format!("OS:           {}\n", std::env::consts::OS));
-    buf.push_str(&format!("Arch:         {}\n", std::env::consts::ARCH));
-    buf.push_str(&format!("Config dir:   {}\n", config_dir.display()));
-    buf.push_str(&format!(
-        "Safe mode:    {}\n",
-        std::env::var("NEURODECK_SAFE_MODE").is_ok()
-    ));
-
-    // Disk space at config dir (best-effort)
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(stat) = nix::sys::statvfs::statvfs(&config_dir) {
-            let free_mb = stat.blocks_free() * stat.block_size() as u64 / 1024 / 1024;
-            buf.push_str(&format!("Free disk:    {} MB\n", free_mb));
-        }
-    }
-    buf.push('\n');
-    sections.push("platform".to_string());
-
-    // ── Section: version / KFMS ──────────────────────────────────────────────
-    buf.push_str("## VERSION\n");
-    let meta_path = std::env::current_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("infra/meta/meta.json");
-    if let Ok(meta_str) = std::fs::read_to_string(&meta_path) {
-        if let Ok(meta_val) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-            let version = meta_val
-                .get("version")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown");
-            let codename = meta_val
-                .pointer("/codename/name")
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown");
-            buf.push_str(&format!("KFMS version: {} ({})\n", version, codename));
-        }
-    } else {
-        buf.push_str("KFMS meta: not found\n");
-    }
-    buf.push('\n');
-    sections.push("version".to_string());
-
-    // ── Section: config summary ──────────────────────────────────────────────
-    buf.push_str("## CONFIG SUMMARY (secrets redacted)\n");
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        buf.push_str(&format!(
-            "Provider:     {}\n",
-            app.config.llm.default_provider
-        ));
-        buf.push_str(&format!("Gemini model: {}\n", app.config.llm.gemini_model));
-        buf.push_str(&format!("Ollama model: {}\n", app.config.llm.ollama_model));
-        buf.push_str(&format!(
-            "Ollama URL:   {}\n",
-            app.config.llm.ollama_base_url
-        ));
-        // Gemini key is stored in the OS keychain — check env var as proxy
-        let key_env = std::env::var("GEMINI_API_KEY").is_ok();
-        buf.push_str(&format!(
-            "Gemini key:   {}\n",
-            if key_env {
-                "[SET via env]"
-            } else {
-                "[keychain or unset]"
-            }
-        ));
-    }
-    buf.push('\n');
-    sections.push("config".to_string());
-
-    // ── Section: plugins ─────────────────────────────────────────────────────
-    buf.push_str("## PLUGINS\n");
-    let plugins_dir = crate::plugin_mgr::plugins_dir();
-    if plugins_dir.is_dir() {
-        let mut plugin_count = 0usize;
-        let mut disabled_count = 0usize;
-        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                if name.ends_with(".lua") {
-                    plugin_count += 1;
-                    buf.push_str(&format!("  [active]   {}\n", name));
-                } else if name.ends_with(".lua.disabled") {
-                    disabled_count += 1;
-                    buf.push_str(&format!("  [disabled] {}\n", name));
-                }
-            }
-        }
-        buf.push_str(&format!(
-            "Total: {} active, {} disabled\n",
-            plugin_count, disabled_count
-        ));
-    } else {
-        buf.push_str("Plugins directory not found\n");
-    }
-    buf.push('\n');
-    sections.push("plugins".to_string());
-
-    // ── Section: memory stats ────────────────────────────────────────────────
-    buf.push_str("## MEMORY DB\n");
-    {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(ref db) = app.mem_db {
-            let doc_count = db.list_all().map(|v| v.len()).unwrap_or(0);
-            buf.push_str(&format!("Status:  ready\nDocs:    {}\n", doc_count));
-        } else {
-            buf.push_str("Status:  not initialized\n");
-        }
-    }
-    buf.push('\n');
-    sections.push("memory".to_string());
-
-    // ── Section: logs ────────────────────────────────────────────────────────
-    buf.push_str("## LOGS (last 150 lines each, secrets redacted)\n");
-    let logs_dir = config_dir.join("logs");
-    if logs_dir.is_dir() {
-        if let Ok(entries) = std::fs::read_dir(&logs_dir) {
-            let mut log_files: Vec<PathBuf> = entries
-                .flatten()
-                .map(|e| e.path())
-                .filter(|p| p.extension().and_then(|e| e.to_str()) == Some("log"))
-                .collect();
-            log_files.sort();
-            for log_path in &log_files {
-                let name = log_path.file_name().unwrap_or_default().to_string_lossy();
-                buf.push_str(&format!("\n### {}\n", name));
-                for line in collect_log_tail(log_path, 150) {
-                    buf.push_str(&line);
-                    buf.push('\n');
-                }
-                sections.push(format!("log:{}", name));
-            }
-        }
-    } else {
-        buf.push_str("Logs directory not found\n");
-    }
-    buf.push('\n');
-
-    // ── Section: audit log ───────────────────────────────────────────────────
-    let audit_path = crate::plugin_mgr::audit_log_path();
-    if audit_path.exists() {
-        buf.push_str("## PLUGIN AUDIT LOG (last 50 lines)\n");
-        for line in collect_log_tail(&audit_path, 50) {
-            buf.push_str(&line);
-            buf.push('\n');
-        }
-        buf.push('\n');
-        sections.push("plugin_audit".to_string());
-    }
-
-    // ── Write bundle ─────────────────────────────────────────────────────────
-    std::fs::write(&bundle_path, &buf).map_err(|e| format!("write bundle: {}", e))?;
-    let size_bytes = std::fs::metadata(&bundle_path)
-        .map(|m| m.len())
-        .unwrap_or(0);
-
-    Ok(SupportBundleResult {
-        path: bundle_path.to_string_lossy().to_string(),
-        size_bytes,
-        sections,
-    })
-}
-
-#[derive(serde::Serialize)]
-pub struct SystemHealthReport {
-    pub status: String, // "healthy" | "degraded" | "critical"
-    pub safe_mode: bool,
-    pub provider: String,
-    pub model: String,
-    pub memory_db_ready: bool,
-    pub memory_doc_count: usize,
-    pub plugin_count: usize,
-    pub plugin_disabled_count: usize,
-    pub config_valid: bool,
-    pub kfms_version: String,
-    pub issues: Vec<String>,
-}
-
-/// Extended health check returning structured diagnostics.
-/// Safe to call from the Electron main process health-check loop.
-pub fn get_system_health(state: Arc<Mutex<AppState>>) -> SystemHealthReport {
-    let mut issues: Vec<String> = Vec::new();
-
-    // Safe mode
-    let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
-
-    // Provider / config
-    let (provider, model, key_set, config_valid) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        let provider = app.config.llm.default_provider.clone();
-        let model = if provider == "gemini" {
-            app.config.llm.gemini_model.clone()
-        } else {
-            app.config.llm.ollama_model.clone()
-        };
-        let key_set = std::env::var("GEMINI_API_KEY").is_ok();
-        (provider, model, key_set, true)
-    };
-
-    if provider == "gemini" && !key_set {
-        issues.push("Gemini provider selected but API key is not set".to_string());
-    }
-
-    // Memory DB
-    let (mem_ready, mem_count) = {
-        let app = state.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(ref db) = app.mem_db {
-            let count = db.list_all().map(|v| v.len()).unwrap_or(0);
-            (true, count)
-        } else {
-            issues.push("Memory database not initialized".to_string());
-            (false, 0)
-        }
-    };
-
-    // Plugins
-    let plugins_dir = crate::plugin_mgr::plugins_dir();
-    let (plugin_count, plugin_disabled) = if plugins_dir.is_dir() {
-        let mut active = 0usize;
-        let mut disabled = 0usize;
-        if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                if name.ends_with(".lua") {
-                    active += 1;
-                } else if name.ends_with(".lua.disabled") {
-                    disabled += 1;
-                }
-            }
-        }
-        (active, disabled)
-    } else {
-        (0, 0)
-    };
-
-    // KFMS version
-    let kfms_version = {
-        let meta_path = std::env::current_dir()
-            .unwrap_or_else(|_| PathBuf::from("."))
-            .join("infra/meta/meta.json");
-        std::fs::read_to_string(&meta_path)
-            .ok()
-            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-            .and_then(|v| {
-                v.get("version")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string())
-            })
-            .unwrap_or_else(|| "unknown".to_string())
-    };
-
-    if safe_mode {
-        issues.push("Running in safe mode — plugins are disabled".to_string());
-    }
-
-    let status = if issues
-        .iter()
-        .any(|i| i.contains("database") || i.contains("critical"))
-    {
-        "critical"
-    } else if issues.is_empty() {
-        "healthy"
-    } else {
-        "degraded"
-    }
-    .to_string();
-
-    SystemHealthReport {
-        status,
-        safe_mode,
-        provider,
-        model,
-        memory_db_ready: mem_ready,
-        memory_doc_count: mem_count,
-        plugin_count,
-        plugin_disabled_count: plugin_disabled,
-        config_valid,
-        kfms_version,
-        issues,
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{_text_similarity, get_lan_ip};
-
-    #[test]
-    fn text_similarity_identical_strings() {
-        let sim = _text_similarity("hello world", "hello world");
-        assert!(
-            sim > 0.99,
-            "identical strings should have similarity ~1.0, got {}",
-            sim
-        );
-    }
-
-    #[test]
-    fn text_similarity_completely_different() {
-        let sim = _text_similarity("abc xyz", "123 456");
-        assert_eq!(sim, 0.0);
-    }
-
-    #[test]
-    fn text_similarity_partial_overlap() {
-        let sim = _text_similarity("hello world foo", "hello world bar");
-        assert!(
-            sim > 0.0 && sim < 1.0,
-            "partial overlap should be between 0 and 1, got {}",
-            sim
-        );
-    }
-
-    #[test]
-    fn text_similarity_empty_strings() {
-        assert_eq!(_text_similarity("", ""), 0.0);
-        assert_eq!(_text_similarity("hello", ""), 0.0);
-    }
-
-    #[test]
-    fn text_similarity_punctuation_stripped() {
-        let sim = _text_similarity("hello, world!", "hello world");
-        assert!(sim > 0.99, "punctuation should be stripped, got {}", sim);
-    }
-
-    #[test]
-    fn text_similarity_case_insensitive() {
-        let sim = _text_similarity("HELLO WORLD", "hello world");
-        assert!(
-            sim > 0.99,
-            "comparison should be case insensitive, got {}",
-            sim
-        );
-    }
+    use super::get_lan_ip;
 
     #[test]
     fn lan_ip_returns_non_empty() {
         let ip = get_lan_ip();
         assert!(!ip.is_empty());
-        // Should be either a valid-looking IP or "unknown"
         assert!(
             ip == "unknown" || ip.contains('.'),
             "get_lan_ip should return an IP or 'unknown', got: {}",

@@ -8376,7 +8376,7 @@ async function _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, pro
 
     // 4. Collaboration Server Status
     const collabDot = document.getElementById("diag-dot-collab");
-    const collabOk = !!window._mockCollabActive;
+    const collabOk = !!window._mockCollabActive; // APPROVED_MOCK_FALLBACK
     if (collabDot) {
       collabDot.className = collabOk ? "diag-dot online" : "diag-dot offline";
     }

@@ -5,7 +5,6 @@ use std::sync::{
 };
 
 use crate::bridge::WsBroadcaster;
-use crate::{AppHandle, State};
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -22,16 +21,12 @@ use serde_json::{json, Value};
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
 #[derive(Clone)]
 pub enum AppEmitter {
-    Tauri(AppHandle),
     Bridge(WsBroadcaster),
 }
 
 impl AppEmitter {
     pub fn emit<E: serde::Serialize + Clone>(&self, event: &str, payload: E) {
         match self {
-            AppEmitter::Tauri(h) => {
-                crate::bridge::EventEmitter::emit(h, event, payload);
-            }
             AppEmitter::Bridge(b) => b.emit(event, payload),
         }
     }
@@ -41,7 +36,6 @@ impl AppEmitter {
 /// In Tauri mode we store event IDs for unlisten();
 /// in bridge mode we store an AbortHandle for the subscriber task.
 pub enum EventListenerHandle {
-    Tauri(Vec<u64>),
     Bridge(tokio::task::AbortHandle),
 }
 
@@ -946,26 +940,6 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
     }
 }
 
-// ── Tauri commands ────────────────────────────────────────────────────────────
-
-pub async fn start_remote_server(
-    _port: u16,
-    _app_handle: AppHandle,
-    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
-    _state: State<'_, RemoteControlState>,
-    _pty_state: State<'_, crate::pty_manager::PtyState>,
-) -> Result<serde_json::Value, String> {
-    Err("Tauri remote server start is not available in pure Electron mode".to_string())
-}
-
-pub async fn stop_remote_server(
-    _app_handle: AppHandle,
-    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
-    _state: State<'_, RemoteControlState>,
-    _pty_state: State<'_, crate::pty_manager::PtyState>,
-) -> Result<(), String> {
-    Err("Tauri remote server stop is not available in pure Electron mode".to_string())
-}
 
 // ── Bridge-compatible commands (Electron sidecar) ─────────────────────────────
 
@@ -1125,70 +1099,7 @@ pub async fn stop_remote_server_bridge(
     Ok(())
 }
 
-pub fn get_remote_server_info(
-    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
-    state: State<'_, RemoteControlState>,
-) -> Result<serde_json::Value, String> {
-    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(match guard.as_ref() {
-        Some(h) => {
-            let connected = h.connected.load(Ordering::Relaxed);
-            const SESSION_TTL_SECS: u64 = 900; // 15 minutes
-            let elapsed = h.started_at.elapsed().as_secs();
-            let ttl_remaining = SESSION_TTL_SECS.saturating_sub(elapsed);
-            json!({
-                "running":              true,
-                "port":                 h.port,
-                "ip":                   h.local_ip,
-                "pin":                  h.pin,
-                "url":                  format!(
-                    "http://{}:{}/#pin={}&session={}",
-                    h.local_ip, h.port, h.pin, h.access_token
-                ),
-                "connected":            connected,
-                "ttl_seconds_remaining": ttl_remaining,
-                "session_ttl_seconds":  SESSION_TTL_SECS,
-            })
-        }
-        None => json!({"running": false}),
-    })
-}
 
-pub fn remote_send_to_clients(
-    message: String,
-    _app_state: State<'_, std::sync::Mutex<crate::AppState>>,
-    state: State<'_, RemoteControlState>,
-) -> Result<(), String> {
-    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(ref h) = *guard {
-        let _ = h.broadcast_tx.send(message);
-        Ok(())
-    } else {
-        Err("Remote server not running".into())
-    }
-}
-
-/// Relay a desktop notification to all connected remote WebSocket clients.
-/// Called from notifications.js via invoke() on every addNotification().
-pub fn remote_relay_notification(
-    title: String,
-    text: String,
-    notif_type: String,
-    state: State<'_, RemoteControlState>,
-) -> Result<(), String> {
-    let guard = state.handle.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(ref h) = *guard {
-        let msg = json!({
-            "type": "notification",
-            "title": title,
-            "text": text,
-            "notifType": notif_type,
-        })
-        .to_string();
-        let _ = h.broadcast_tx.send(msg);
-    }
-    Ok(())
-}
 
 #[cfg(test)]
 mod tests {

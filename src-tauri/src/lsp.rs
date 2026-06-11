@@ -10,7 +10,6 @@ use std::sync::{
 };
 
 use crate::bridge::EventEmitter;
-use crate::AppHandle;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -514,19 +513,6 @@ async fn send_request(
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
-/// Start (or restart) an LSP server for the given language.
-pub async fn lsp_start(
-    language: String,
-    command: String,
-    args: Vec<String>,
-    state: Arc<Mutex<LspManager>>,
-    app: AppHandle,
-) -> Result<(), String> {
-    let workspace = crate::user_config_dir().join("workspace");
-    let root = workspace.to_string_lossy().to_string();
-    let mgr = Arc::clone(&state);
-    spawn_server(mgr, app, language, command, args, root).await
-}
 
 /// Stop an LSP server for the given language.
 pub fn lsp_stop(language: String, state: Arc<Mutex<LspManager>>) -> Result<(), String> {

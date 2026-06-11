@@ -1,5 +1,5 @@
 use crate::memory::MemoryRecord;
-use crate::{config, storage, AppState, State};
+use crate::{config, storage, AppState};
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use pbkdf2::pbkdf2_hmac;
@@ -76,60 +76,6 @@ struct SessionPayload {
     messages: Vec<String>,
 }
 
-pub fn get_sync_status(state: State<'_, Mutex<AppState>>) -> Result<SyncStatus, String> {
-    let app = state.lock().unwrap_or_else(|e| e.into_inner());
-    let mut status = load_status();
-    status.enabled = app.config.sync.enabled;
-    status.sync_memory = app.config.sync.sync_memory;
-    status.sync_sessions = app.config.sync.sync_sessions;
-    status.api_base_url = app.config.sync.api_base_url.clone();
-    status.device_id = app.config.sync.device_id.clone();
-    status.last_sync_at = app.config.sync.last_sync_at.clone().or(status.last_sync_at);
-    status.pending_records = count_pending_records(&app)?;
-    Ok(status)
-}
-
-pub fn configure_sync(
-    request: ConfigureSyncRequest,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<SyncStatus, String> {
-    if request.enabled && request.api_base_url.trim().is_empty() {
-        return Err("Sync API URL is required before enabling cloud sync".to_string());
-    }
-
-    let mut app = state.lock().unwrap_or_else(|e| e.into_inner());
-    app.config.sync.enabled = request.enabled;
-    app.config.sync.sync_memory = request.sync_memory;
-    app.config.sync.sync_sessions = request.sync_sessions;
-    app.config.sync.api_base_url = request
-        .api_base_url
-        .trim()
-        .trim_end_matches('/')
-        .to_string();
-    if app.config.sync.device_id.is_empty() {
-        app.config.sync.device_id = uuid::Uuid::new_v4().to_string();
-    }
-
-    let path = crate::get_config_path();
-    config::save_config(&path, &app.config)?;
-    drop(app);
-
-    get_sync_status(state)
-}
-
-pub async fn start_sync(
-    app_handle: crate::bridge::WsBroadcaster,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<SyncStatus, String> {
-    sync_now(app_handle, state).await
-}
-
-pub async fn sync_now(
-    app_handle: crate::bridge::WsBroadcaster,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<SyncStatus, String> {
-    sync_now_bridge(app_handle, state.inner().clone()).await
-}
 
 /// Bridge-compatible entry point that accepts `Arc<Mutex<AppState>>` directly.
 pub async fn sync_now_bridge(

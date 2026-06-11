@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{AppHandle, State};
+
 use chrono::Utc;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
@@ -1195,101 +1195,6 @@ pub async fn start_file_transfer_impl<E: crate::bridge::EventEmitter>(
     Ok(transfer_id)
 }
 
-pub async fn start_file_transfer(
-    peer_ip: String,
-    file_path: String,
-    app_handle: AppHandle,
-    state: State<'_, SharedTransferState>,
-) -> Result<String, String> {
-    start_file_transfer_impl(peer_ip, file_path, app_handle, (*state).clone()).await
-}
-
-pub fn respond_to_transfer(
-    transfer_id: String,
-    accept: bool,
-    state: State<'_, SharedTransferState>,
-) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(tx) = s.accept_txs.remove(&transfer_id) {
-        let _ = tx.send(accept);
-        Ok(())
-    } else {
-        Err("No pending transfer response channel found".to_string())
-    }
-}
-
-pub fn get_discovered_peers(state: State<'_, SharedTransferState>) -> Vec<Peer> {
-    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    s.peers.values().map(|(p, _)| p.clone()).collect()
-}
-
-pub fn get_active_transfers(state: State<'_, SharedTransferState>) -> Vec<FileTransfer> {
-    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    s.transfers.values().cloned().collect()
-}
-
-pub fn cancel_transfer(
-    transfer_id: String,
-    state: State<'_, SharedTransferState>,
-) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(tx) = s.cancel_txs.remove(&transfer_id) {
-        let _ = tx.send(());
-        if let Some(t) = s.transfers.get_mut(&transfer_id) {
-            t.status = "Cancelled".to_string();
-        }
-        Ok(())
-    } else if let Some(tx) = s.accept_txs.remove(&transfer_id) {
-        let _ = tx.send(false);
-        if let Some(t) = s.transfers.get_mut(&transfer_id) {
-            t.status = "Cancelled".to_string();
-        }
-        Ok(())
-    } else {
-        Err("No active or pending transfer found to cancel".to_string())
-    }
-}
-
-pub fn set_group_code(code: String, state: State<'_, SharedTransferState>) -> Result<(), String> {
-    let mut s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    s.group_code = code.trim().to_string();
-
-    if let Some(ref mdns) = s.mdns_daemon {
-        let local_hostname = get_hostname();
-        let instance_name = format!("neurodeck-{}", local_hostname);
-        let service_type = "_neurodeck._tcp.local.";
-        let host_name = format!("{}.local.", local_hostname.replace(" ", "-"));
-        let port = 18338;
-
-        let fullname = format!("{}.{}", instance_name, service_type);
-        let _ = mdns.unregister(&fullname);
-
-        let mut properties = HashMap::new();
-        properties.insert("hostname".to_string(), local_hostname.clone());
-        properties.insert("os".to_string(), get_os_name());
-        properties.insert("group_code".to_string(), s.group_code.clone());
-
-        if let Ok(service_info) = ServiceInfo::new(
-            service_type,
-            &instance_name,
-            &host_name,
-            "0.0.0.0",
-            port,
-            Some(properties),
-        ) {
-            let _ = mdns.register(service_info);
-            println!("mDNS Peer re-registered with group code: {}", s.group_code);
-        }
-    }
-
-    s.peers.clear();
-    Ok(())
-}
-
-pub fn get_group_code(state: State<'_, SharedTransferState>) -> Result<String, String> {
-    let s = state.0.lock().unwrap_or_else(|e| e.into_inner());
-    Ok(s.group_code.clone())
-}
 
 #[cfg(test)]
 mod tests {

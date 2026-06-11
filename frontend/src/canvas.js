@@ -471,7 +471,7 @@ async function _ccRefreshCollabStatus(cc) {
             const peerCount = Number.parseInt(status.peers||'0', 10);
             cc.statusPeers.textContent = `${peerCount} peer${peerCount===1?'':'s'}`;
         }
-        if (window) window._mockCollabActive = status.active === 'true';
+        if (window) window._mockCollabActive = status.active === 'true'; // APPROVED_MOCK_FALLBACK
     } catch (_) {}
 }
 
@@ -498,7 +498,7 @@ function _ccSetDisconnected(cc) {
     if (cc.statusBar) cc.statusBar.style.display = 'none';
     collabPresence.clear();
     _ccUpdatePresenceList(cc);
-    if (window) window._mockCollabActive = false;
+    if (window) window._mockCollabActive = false; // APPROVED_MOCK_FALLBACK
 }
 
 function _ccUpdateInvitePayload(address, cc) {

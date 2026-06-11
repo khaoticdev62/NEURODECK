@@ -1,5 +1,4 @@
 mod audio_recorder;
-mod autocomplete;
 pub mod bridge;
 mod canvas_collab;
 use mdns_sd::ServiceDaemon;
@@ -39,7 +38,6 @@ mod self_heal;
 mod sftp;
 mod storage;
 pub mod sync;
-pub mod tauri_compat;
 mod torrent;
 mod transfer;
 mod tunnel;
@@ -56,7 +54,6 @@ pub(crate) use game::*;
 pub(crate) use models::{CustomPersona, PERSONAS, THEMES};
 pub use paths::*;
 pub(crate) use providers::*;
-pub use tauri_compat::*;
 
 pub struct LuaState(pub Mutex<lua::LuaEngine>);
 
