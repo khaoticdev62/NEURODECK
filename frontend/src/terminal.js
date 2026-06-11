@@ -398,7 +398,7 @@ listen("pty_output", (event) => {
 });
 
 listen("pty_exit", (event) => {
-    const id = event.payload;
+    const id = event.payload?.id ?? event.payload;
     const session = state.terminalSessions.find(s => s.id === id);
     if (session) {
         session.term.write("\r\n\x1b[1;31m[Shell Session Exited]\x1b[0m\r\n");

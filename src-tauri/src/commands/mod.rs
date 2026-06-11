@@ -604,19 +604,24 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let cols = args.get("cols").and_then(|v| v.as_u64()).unwrap_or(80) as u16;
             let rows = args.get("rows").and_then(|v| v.as_u64()).unwrap_or(24) as u16;
-            let _shell = args
+            let shell = args
                 .get("shell")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
-            let _args_list = args.get("args").and_then(|v| v.as_array()).map(|arr| {
+            let args_list = args.get("args").and_then(|v| v.as_array()).map(|arr| {
                 arr.iter()
                     .filter_map(|v| v.as_str().map(|s| s.to_string()))
                     .collect::<Vec<_>>()
             });
 
             let broadcaster = state.broadcaster.clone();
+            let pty_state = state.pty.clone();
+            let workspace_path = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.config.get_resolved_workspace()
+            };
 
-            // Emit session created event
+            // Emit session created event before the blocking spawn.
             broadcaster.emit(
                 "pty_session_created",
                 serde_json::json!({
@@ -626,18 +631,29 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }),
             );
 
-            // In bridge mode, PTY output events will be emitted by the underlying
-            // PTY reader thread. The main app loop or event subscription should
-            // relay these events via the broadcaster.
-            // For now, spawning directly causes issues with AppHandle.
-            // TODO: Implement bridge-compatible PTY spawning
+            // Spawn the real PTY in a blocking task; this can take several
+            // seconds on a cold WSL start and must not stall the async runtime.
+            let spawn_id = id.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::pty_manager::pty_spawn(
+                    spawn_id,
+                    cols,
+                    rows,
+                    shell,
+                    args_list,
+                    broadcaster.clone(),
+                    pty_state,
+                    workspace_path,
+                )
+            })
+            .await
+            .map_err(|e| format!("PTY spawn task failed: {}", e))??;
 
             Ok(serde_json::json!({
                 "status": "spawned",
                 "id": id,
                 "cols": cols,
-                "rows": rows,
-                "note": "PTY session created. Monitor WebSocket for pty_output events."
+                "rows": rows
             }))
         }
 
@@ -651,26 +667,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'data'")?;
 
-            let mut sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some(session) = sessions.get_mut(id) {
-                use std::io::Write;
-                session
-                    .writer
-                    .write_all(data.as_bytes())
-                    .map_err(|e| format!("Failed to write to PTY: {}", e))?;
-                session
-                    .writer
-                    .flush()
-                    .map_err(|e| format!("Failed to flush PTY: {}", e))?;
+            crate::pty_manager::pty_write(
+                id.to_string(),
+                data.to_string(),
+                state.pty.clone(),
+            )
+            .map_err(|e| format!("Failed to write to PTY: {}", e))?;
 
-                Ok(serde_json::json!({
-                    "status": "written",
-                    "id": id,
-                    "bytes": data.len()
-                }))
-            } else {
-                Err(format!("PTY session {} not found", id))
-            }
+            Ok(serde_json::json!({
+                "status": "written",
+                "id": id,
+                "bytes": data.len()
+            }))
         }
 
         "pty_kill" => {
@@ -679,21 +687,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
 
-            let mut sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
-            if sessions.remove(id).is_some() {
-                state
-                    .broadcaster
-                    .emit("pty_killed", serde_json::json!({ "id": id }));
-                Ok(serde_json::json!({
-                    "status": "killed",
-                    "id": id
-                }))
-            } else {
-                Ok(serde_json::json!({
+            match crate::pty_manager::pty_kill(id.to_string(), state.pty.clone()) {
+                Ok(()) => {
+                    state
+                        .broadcaster
+                        .emit("pty_killed", serde_json::json!({ "id": id }));
+                    Ok(serde_json::json!({
+                        "status": "killed",
+                        "id": id
+                    }))
+                }
+                Err(_) => Ok(serde_json::json!({
                     "status": "not_found",
                     "id": id,
                     "message": "Session was not running"
-                }))
+                })),
             }
         }
 
@@ -711,23 +719,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_u64())
                 .ok_or("Missing 'rows'")? as u16;
 
-            let sessions = state.pty.sessions.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some(session) = sessions.get(id) {
-                use portable_pty::PtySize;
-                let _ = session.master.resize(PtySize {
-                    rows,
-                    cols,
-                    pixel_width: 0,
-                    pixel_height: 0,
-                });
-                state.broadcaster.emit(
-                    "pty_resized",
-                    serde_json::json!({ "id": id, "cols": cols, "rows": rows }),
-                );
-                Ok(serde_json::json!({ "status": "resized", "id": id, "cols": cols, "rows": rows }))
-            } else {
-                Err(format!("PTY session {} not found", id))
-            }
+            crate::pty_manager::pty_resize(
+                id.to_string(),
+                cols,
+                rows,
+                state.pty.clone(),
+            )
+            .map_err(|e| format!("Failed to resize PTY: {}", e))?;
+
+            state.broadcaster.emit(
+                "pty_resized",
+                serde_json::json!({ "id": id, "cols": cols, "rows": rows }),
+            );
+            Ok(serde_json::json!({ "status": "resized", "id": id, "cols": cols, "rows": rows }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -736,8 +740,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "send_command" => {
             let message = args
                 .get("message")
+                .or_else(|| args.get("prompt"))
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'message'")?;
+                .ok_or("Missing 'message' or 'prompt'")?;
             let image_base64 = args
                 .get("image_base64")
                 .and_then(|v| v.as_str())
@@ -748,6 +753,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map(|s| s.to_string());
             let pack_id = args
                 .get("pack_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let request_agent_id = args
+                .get("agent_id")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
 
@@ -765,8 +774,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let app_state_clone = state.app_state.clone();
             let (provider_clone, mem_db, session_id, messages_len) = {
                 let app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                // Per-request agent routing: if caller specifies agent_id, route to that
+                // agent's provider without changing global AppState.provider.
+                let effective_id = request_agent_id.as_deref()
+                    .unwrap_or(&app.config.llm.active_agent_id);
+                let provider_arc: std::sync::Arc<dyn crate::LlmProvider> = if !effective_id.is_empty() {
+                    app.config.llm.agents.iter()
+                        .find(|a| a.id == effective_id)
+                        .map(|a| crate::providers::provider_from_agent(a))
+                        .unwrap_or_else(|| app.provider.clone())
+                } else {
+                    app.provider.clone()
+                };
                 (
-                    app.provider.clone(),
+                    provider_arc,
                     app.mem_db.clone(),
                     app.session_id.clone(),
                     app.messages.len(),
@@ -2767,42 +2788,60 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'id'")?;
-            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let agent = app_state
-                .config
-                .llm
-                .agents
-                .iter()
-                .find(|a| a.id == id)
-                .cloned()
-                .ok_or_else(|| format!("Agent '{}' not found", id))?;
-            app_state.config.llm.active_agent_id = id.to_string();
-            let path = crate::get_config_path();
-            crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+            let agent = {
+                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let agent = app_state
+                    .config
+                    .llm
+                    .agents
+                    .iter()
+                    .find(|a| a.id == id)
+                    .cloned()
+                    .ok_or_else(|| format!("Agent '{}' not found", id))?;
+                app_state.config.llm.active_agent_id = id.to_string();
+                // Rebuild provider so subsequent send_command calls use the new agent's
+                // provider/model without needing an explicit agent_id per request.
+                app_state.provider = crate::providers::provider_from_agent(&agent);
+                let path = crate::get_config_path();
+                crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
+                agent
+            };
+            // Notify all connected WebSocket clients (main.js listens for agent_changed).
+            state.broadcaster.emit(
+                "agent_changed",
+                serde_json::json!({
+                    "id": agent.id,
+                    "name": agent.name,
+                    "provider": agent.provider,
+                    "model": agent.model
+                }),
+            );
             Ok(
                 serde_json::json!({ "status": "switched", "id": agent.id, "name": agent.name, "provider": agent.provider, "model": agent.model }),
             )
         }
 
         "add_agent" => {
-            let name = args
+            // Frontend sends { agent: { name, model, ... } } (nested) — check both shapes.
+            let agent_obj = args.get("agent").cloned().unwrap_or(args.clone());
+            let name = agent_obj
                 .get("name")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
-            let model = args
+            let model = agent_obj
                 .get("model")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'model'")?;
-            let description = args
+            let description = agent_obj
                 .get("description")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let provider_name = args
+            let provider_name = agent_obj
                 .get("provider")
                 .and_then(|v| v.as_str())
                 .unwrap_or("gemini");
-            let base_url = args
+            let base_url = agent_obj
                 .get("base_url")
                 .and_then(|v| v.as_str())
                 .unwrap_or("")

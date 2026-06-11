@@ -1,6 +1,4 @@
-#![allow(dead_code)]
-
-use crate::{AppHandle, State};
+use crate::bridge::EventEmitter;
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -17,6 +15,12 @@ const WATCHDOG_INTERVAL_SECS: u64 = 60;
 struct PtyOutputPayload {
     id: String,
     data: String,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct PtyExitPayload {
+    id: String,
+    reason: String,
 }
 
 pub struct PtySession {
@@ -215,15 +219,18 @@ fn spawn_pty_with_timeout(
         })?
 }
 
-pub fn pty_spawn(
+/// Spawns a new PTY shell session and wires output/exit events to the bridge
+/// broadcaster. The session is inserted into `state` so subsequent write/resize
+/// commands can address it by `id`.
+pub fn pty_spawn<E: EventEmitter>(
     id: String,
     cols: u16,
     rows: u16,
     shell: Option<String>,
     args: Option<Vec<String>>,
-    app_handle: AppHandle,
-    state: State<'_, PtyState>,
-    app_state: State<'_, std::sync::Mutex<crate::AppState>>,
+    broadcaster: E,
+    state: Arc<PtyState>,
+    workspace_path: Option<std::path::PathBuf>,
 ) -> Result<(), String> {
     let requested_shell = shell.unwrap_or_default();
     let candidates = build_shell_candidates(&requested_shell);
@@ -236,11 +243,6 @@ pub fn pty_spawn(
             .clone()
     };
 
-    let workspace_path = {
-        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
-        app.config.get_resolved_workspace()
-    };
-
     let (writer, mut reader, master, mut child) = spawn_pty_with_timeout(
         cols,
         rows,
@@ -250,7 +252,7 @@ pub fn pty_spawn(
         workspace_path,
     )?;
 
-    let app_handle_clone = app_handle.clone();
+    let broadcaster_clone = broadcaster.clone();
     let id_clone = id.clone();
 
     std::thread::spawn(move || {
@@ -260,7 +262,7 @@ pub fn pty_spawn(
                 break;
             }
             let text = String::from_utf8_lossy(&buffer[..n]).to_string();
-            let _ = app_handle_clone.emit(
+            broadcaster_clone.emit(
                 "pty_output",
                 PtyOutputPayload {
                     id: id_clone.clone(),
@@ -273,7 +275,13 @@ pub fn pty_spawn(
             }
         }
         let _ = child.wait();
-        let _ = app_handle_clone.emit("pty_exit", id_clone);
+        broadcaster_clone.emit(
+            "pty_exit",
+            PtyExitPayload {
+                id: id_clone,
+                reason: "exited".to_string(),
+            },
+        );
     });
 
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
@@ -293,7 +301,7 @@ pub fn pty_spawn(
     Ok(())
 }
 
-pub fn pty_write(id: String, data: String, state: State<'_, PtyState>) -> Result<(), String> {
+pub fn pty_write(id: String, data: String, state: Arc<PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get_mut(&id) {
         session
@@ -311,7 +319,7 @@ pub fn pty_resize(
     id: String,
     cols: u16,
     rows: u16,
-    state: State<'_, PtyState>,
+    state: Arc<PtyState>,
 ) -> Result<(), String> {
     let sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get(&id) {
@@ -330,7 +338,7 @@ pub fn pty_resize(
     }
 }
 
-pub fn pty_kill(id: String, state: State<'_, PtyState>) -> Result<(), String> {
+pub fn pty_kill(id: String, state: Arc<PtyState>) -> Result<(), String> {
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if sessions.remove(&id).is_some() {
         Ok(())

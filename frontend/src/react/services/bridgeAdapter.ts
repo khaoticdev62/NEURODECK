@@ -748,19 +748,20 @@ const voice = {
 
 const terminal = {
   async spawn(sessionId: string = 'main_pty_session', shell?: string) {
-    return bridgeInvoke<{ success: boolean }>('pty_spawn', { session_id: sessionId, shell });
+    return bridgeInvoke<{ success: boolean }>('pty_spawn', { id: sessionId, shell });
   },
   async kill(sessionId: string = 'main_pty_session') {
-    return bridgeInvoke<{ success: boolean }>('pty_kill', { session_id: sessionId });
+    return bridgeInvoke<{ success: boolean }>('pty_kill', { id: sessionId });
   },
   async write(sessionId: string, data: string) {
-    return bridgeInvoke<{ success: boolean }>('pty_write', { session_id: sessionId, data });
+    return bridgeInvoke<{ success: boolean }>('pty_write', { id: sessionId, data });
   },
   async resize(sessionId: string, cols: number, rows: number) {
-    return bridgeInvoke<{ success: boolean }>('pty_resize', { session_id: sessionId, cols, rows });
+    return bridgeInvoke<{ success: boolean }>('pty_resize', { id: sessionId, cols, rows });
   },
   async listSessions() {
-    return bridgeInvoke<string[]>('get_pty_sessions');
+    const result = await bridgeInvoke<{ sessions: string[]; count: number }>('get_pty_sessions');
+    return result.sessions ?? [];
   },
 };
 
