@@ -355,6 +355,24 @@ export interface NeuroDeckSelectors {
   completedRuns: number;
 }
 
+export type CliAction =
+  | { type: 'Prompt'; data: { template: string; use_llm: boolean } }
+  | { type: 'Shell'; data: { command: string; cwd: string | null } }
+  | { type: 'View'; data: { view_name: string } }
+  | { type: 'Chain'; data: { steps: string[] } }
+  | { type: 'Plugin'; data: { lua_code: string } };
+
+export interface CliCommandDef {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  action: CliAction;
+  shortcut: string | null;
+  radial_bind: number | null;
+}
+
 export interface ExportSessionPayload {
   title: string;
   persona: string;
@@ -384,6 +402,9 @@ export interface NeuroDeckAppActions {
   saveSession: () => Promise<void>;
   exportDiagnosticsBundle: () => Promise<void>;
   resetLocalState: () => Promise<void>;
+  addMemoryFact: (content: string) => Promise<void>;
+  deleteMemory: (id: string) => Promise<void>;
+  toggleMemoryPin: (id: string, pinned: boolean) => Promise<void>;
 }
 
 export type NeuroDeckAction =
@@ -416,4 +437,10 @@ export type NeuroDeckAction =
   | { type: 'set-busy'; label: string | null }
   | { type: 'set-error'; error: AppError | null }
   | { type: 'set-export-path'; path: string | null }
+  | { type: 'set-memories'; memories: MemoryItem[] }
+  | { type: 'add-memory'; memory: MemoryItem }
+  | { type: 'delete-memory'; id: string }
+  | { type: 'set-sessions'; sessions: SessionNode[] }
+  | { type: 'set-agents'; agents: Agent[] }
+  | { type: 'set-plugins'; plugins: PluginCard[] }
   | { type: 'reset-local-state' };

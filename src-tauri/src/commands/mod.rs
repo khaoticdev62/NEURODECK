@@ -2192,6 +2192,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
+
+
         // ────────────────────────────────────────────────────────────────────
         // Chat History Management
         // ────────────────────────────────────────────────────────────────────

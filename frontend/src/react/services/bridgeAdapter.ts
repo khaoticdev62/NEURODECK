@@ -24,6 +24,7 @@ import type {
   SessionExportResponse,
   SaveSessionResponse,
   DiagnosticsBundleResponse,
+  CliCommandDef,
 } from '../types/neurodeck';
 
 const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || '9477', 10);
@@ -397,6 +398,15 @@ const agents = {
       return { ok: false, run, error: String(e) };
     }
   },
+  async list() {
+    return bridgeInvoke<Array<{ id: string; name: string; provider: string; model: string; description: string }>>('list_agents');
+  },
+  async getActiveId() {
+    return bridgeInvoke<{ active_agent_id: string }>('get_active_agent_id');
+  },
+  async switchAgent(id: string) {
+    return bridgeInvoke<{ status: string; id: string; name: string; provider: string; model: string }>('switch_agent', { id });
+  },
 };
 
 /* ── Sessions ────────────────────────────────────────────────────────────── */
@@ -417,6 +427,50 @@ const sessions = {
     } catch (e) {
       return { ok: false, error: String(e) };
     }
+  },
+  async list(): Promise<string[]> {
+    return bridgeInvoke<string[]>('list_sessions');
+  },
+  async listMeta(): Promise<any[]> {
+    return bridgeInvoke<any[]>('list_sessions_meta');
+  },
+  async delete(id: string) {
+    return bridgeInvoke<{ status: string }>('delete_session', { id });
+  },
+  async rename(id: string, name: string) {
+    return bridgeInvoke<void>('rename_session', { id, name });
+  },
+  async loadLatest() {
+    return bridgeInvoke<{ session_id: string; messages: string[] }>('load_latest_session');
+  },
+  async loadById(id: string) {
+    return bridgeInvoke<{ session_id: string; messages: string[] }>('load_session_by_id', { id });
+  },
+};
+
+/* ── Memory ──────────────────────────────────────────────────────────────── */
+
+export interface MemoryRecord {
+  id: string;
+  content: string;
+  metadata: Record<string, string>;
+}
+
+const memory = {
+  async list(limit: number = 50, offset: number = 0) {
+    return bridgeInvoke<{ records: MemoryRecord[]; count: number; total: number }>('memory_list', { limit, offset });
+  },
+  async delete(id: string) {
+    return bridgeInvoke<{ status: string }>('memory_delete', { id });
+  },
+  async pin(id: string, pinned: boolean) {
+    return bridgeInvoke<{ status: string }>('memory_pin', { id, pinned });
+  },
+  async clear() {
+    return bridgeInvoke<{ status: string }>('memory_clear');
+  },
+  async addFact(content: string) {
+    return bridgeInvoke<{ status: string; id: string }>('memory_add_fact', { content });
   },
 };
 
@@ -1196,7 +1250,58 @@ const torrent = {
   },
 };
 
+/* ── CLI Maker ───────────────────────────────────────────────────────────── */
+
+const cliMaker = {
+  async list(): Promise<CliCommandDef[]> {
+    return bridgeInvoke<CliCommandDef[]>('cli_list_commands');
+  },
+  async create(def: CliCommandDef): Promise<{ id: string }> {
+    return bridgeInvoke<{ id: string }>('cli_create_command', { def: JSON.stringify(def) });
+  },
+  async update(id: string, def: CliCommandDef): Promise<{ status: string }> {
+    return bridgeInvoke<{ status: string }>('cli_update_command', { id, def: JSON.stringify(def) });
+  },
+  async delete(id: string): Promise<{ status: string }> {
+    return bridgeInvoke<{ status: string }>('cli_delete_command', { id });
+  },
+  async run(id: string, args: string = ''): Promise<{ output: string }> {
+    return bridgeInvoke<{ output: string }>('cli_run_command', { id, args });
+  },
+  async exportLua(id: string): Promise<{ lua: string }> {
+    return bridgeInvoke<{ lua: string }>('cli_export_lua', { id });
+  },
+  async saveAsPlugin(id: string): Promise<{ path: string }> {
+    return bridgeInvoke<{ path: string }>('cli_maker_save_plugin', { id });
+  },
+  async exportScript(id: string, format: string): Promise<{ path: string }> {
+    return bridgeInvoke<{ path: string }>('cli_maker_export', { id, format });
+  },
+  async importLua(path: string): Promise<CliCommandDef[]> {
+    return bridgeInvoke<CliCommandDef[]>('cli_import_lua', { path });
+  },
+};
+
 /* ── Exported API surface (matches v6 neurodeckApi exactly) ──────────────── */
+
+export async function getInitialState() {
+  return bridgeInvoke<{
+    model: string;
+    provider: string;
+    active_agent_id: string;
+    session_id: string;
+    active_persona: string;
+    memory_status: string;
+    tool_status: string;
+    boot_health_status: string;
+    boot_health_summary: string;
+    boot_health_recovered_count: string;
+    boot_health_warning_count: string;
+    game_name: string;
+    game_app_id: number;
+    game_running: string;
+  }>('get_initial_state');
+}
 
 export { bridgeInvoke };
 
@@ -1208,6 +1313,7 @@ export const neurodeckApi = {
   voice,
   agents,
   sessions,
+  memory,
   diagnostics,
   terminal,
   browser,
@@ -1227,4 +1333,5 @@ export const neurodeckApi = {
   orchestrator,
   ssh,
   torrent,
+  cliMaker,
 };

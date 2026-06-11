@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { agents, cacheEntries, initialMessages, memories, models, plugins, promptTemplates, sessions, STORE_KEY } from '../types/seed';
 import { neurodeckApi } from '../services/bridgeAdapter';
-import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState } from '../types/neurodeck';
+import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, SessionNode, MemoryItem, Agent, PluginCard } from '../types/neurodeck';
 
 const initialState: NeuroDeckState = {
   hydrated: false,
@@ -127,6 +127,18 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
         ...state,
         memories: state.memories.map((memory) => memory.id === action.id ? { ...memory, pinned: !memory.pinned } : memory)
       };
+    case 'set-memories':
+      return { ...state, memories: action.memories };
+    case 'add-memory':
+      return { ...state, memories: [...state.memories, action.memory] };
+    case 'delete-memory':
+      return { ...state, memories: state.memories.filter((memory) => memory.id !== action.id) };
+    case 'set-sessions':
+      return { ...state, sessions: action.sessions };
+    case 'set-agents':
+      return { ...state, agents: action.agents };
+    case 'set-plugins':
+      return { ...state, plugins: action.plugins };
     case 'toggle-plugin':
       return {
         ...state,
@@ -182,7 +194,117 @@ export function useNeuroDeckState() {
   useEffect(() => {
     let mounted = true;
     async function hydrate() {
-      const stored = await neurodeckApi.store.get<Partial<NeuroDeckState>>(STORE_KEY);
+      const stored = (await neurodeckApi.store.get<Partial<NeuroDeckState>>(STORE_KEY)) || {};
+      
+      // 1. Fetch live backend initial settings
+      try {
+        const init = await neurodeckApi.getInitialState();
+        if (init) {
+          stored.selectedProvider = (init.provider as any) || stored.selectedProvider;
+          stored.selectedModelId = init.model || stored.selectedModelId;
+          stored.selectedPersona = init.active_persona || stored.selectedPersona;
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
+      // 2. Fetch live memory records
+      try {
+        const mems = await neurodeckApi.memory.list();
+        if (mems && mems.records) {
+          stored.memories = mems.records.map(r => ({
+            id: r.id,
+            title: r.metadata?.title || r.content.slice(0, 40),
+            body: r.content,
+            scope: (r.metadata?.scope as any) || 'Global',
+            pinned: r.metadata?.pinned === 'true',
+            updatedAt: r.metadata?.updatedAt || 'local cache'
+          }));
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
+      // 3. Fetch live sessions metadata
+      try {
+        const sessList = await neurodeckApi.sessions.listMeta();
+        if (sessList && sessList.length > 0) {
+          const sessionNodes: SessionNode[] = sessList.map(s => {
+            let type: SessionNode['type'] = 'build';
+            const nameLower = (s.name || s.id).toLowerCase();
+            if (nameLower.includes('prd') || nameLower.includes('plan')) type = 'planning';
+            else if (nameLower.includes('audit') || nameLower.includes('security')) type = 'audit';
+            else if (nameLower.includes('export')) type = 'export';
+
+            let status: SessionNode['status'] = 'complete';
+            if (s.message_count === 0) status = 'active';
+
+            return {
+              id: s.id,
+              title: s.name || s.id,
+              type,
+              status,
+              children: []
+            };
+          });
+
+          // Create a root node
+          const rootNode: SessionNode = {
+            id: 'root',
+            title: 'NEURODECK Workspace',
+            type: 'root',
+            status: 'active',
+            children: sessionNodes.map(s => s.id)
+          };
+
+          stored.sessions = [rootNode, ...sessionNodes];
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
+      // 4. Fetch live agents
+      try {
+        const agentList = await neurodeckApi.agents.list();
+        if (agentList && agentList.length > 0) {
+          stored.agents = agentList.map(a => {
+            const localAgent = agents.find(la => la.id === a.id);
+            return {
+              id: a.id,
+              name: a.name,
+              role: localAgent?.role || a.description || 'Specialized operator',
+              status: localAgent?.status || 'idle',
+              model: a.model || localAgent?.model || 'default',
+              memoryAccess: localAgent?.memoryAccess || 'project',
+              lastAction: localAgent?.lastAction || 'Ready',
+              task: localAgent?.task || 'Ready',
+            };
+          });
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
+      // 5. Fetch live plugins
+      try {
+        const pluginList = await neurodeckApi.plugins.list();
+        if (pluginList && pluginList.plugins) {
+          stored.plugins = pluginList.plugins.map(p => {
+            let status: PluginCard['status'] = 'disabled';
+            if (p.enabled) status = 'enabled';
+            return {
+              id: p.id || p.file_name,
+              name: p.name,
+              description: p.description || '',
+              status,
+              permissions: p.permissions || []
+            };
+          });
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
       if (mounted) dispatch({ type: 'hydrate', payload: stored });
     }
     hydrate().catch(() => dispatch({ type: 'hydrate', payload: null }));

@@ -150,6 +150,18 @@ function reduce(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState 
         ...state,
         memories: state.memories.map((mem) => (mem.id === action.id ? { ...mem, pinned: !mem.pinned } : mem)),
       };
+    case 'set-memories':
+      return { ...state, memories: action.memories };
+    case 'add-memory':
+      return { ...state, memories: [...state.memories, action.memory] };
+    case 'delete-memory':
+      return { ...state, memories: state.memories.filter((memory) => memory.id !== action.id) };
+    case 'set-sessions':
+      return { ...state, sessions: action.sessions };
+    case 'set-agents':
+      return { ...state, agents: action.agents };
+    case 'set-plugins':
+      return { ...state, plugins: action.plugins };
     case 'toggle-plugin':
       return {
         ...state,
@@ -395,6 +407,12 @@ describe('reducer — agents', () => {
     expect(agent?.lastAction).toBe(originalAgent.lastAction);
     expect(agent?.task).toBe(originalAgent.task);
   });
+
+  it('set-agents: replaces agents array', () => {
+    const newAgents = [{ id: 'a1', name: 'N', role: 'R', status: 'idle' as const, model: 'M', memoryAccess: 'project' as const, lastAction: 'L', task: 'T' }];
+    const next = dispatch({ type: 'set-agents', agents: newAgents });
+    expect(next.agents).toEqual(newAgents);
+  });
 });
 
 describe('reducer — models', () => {
@@ -428,6 +446,27 @@ describe('reducer — memory', () => {
     const back = reduce(next, { type: 'toggle-memory-pin', id });
     expect(back.memories.find((m) => m.id === id)?.pinned).toBe(original);
   });
+
+  it('set-memories: replaces memories array', () => {
+    const newMems = [{ id: 'm1', title: 'T', body: 'B', scope: 'Global' as const, pinned: false, updatedAt: 'now' }];
+    const next = dispatch({ type: 'set-memories', memories: newMems });
+    expect(next.memories).toEqual(newMems);
+  });
+
+  it('add-memory: appends memory fact', () => {
+    const count = s.memories.length;
+    const newMem = { id: 'm-new', title: 'T', body: 'B', scope: 'Global' as const, pinned: false, updatedAt: 'now' };
+    const next = dispatch({ type: 'add-memory', memory: newMem });
+    expect(next.memories.length).toBe(count + 1);
+    expect(next.memories[count]).toEqual(newMem);
+  });
+
+  it('delete-memory: filters out matching memory', () => {
+    const id = s.memories[0]?.id;
+    if (!id) return;
+    const next = dispatch({ type: 'delete-memory', id });
+    expect(next.memories.some((m) => m.id === id)).toBe(false);
+  });
 });
 
 describe('reducer — plugins', () => {
@@ -443,6 +482,12 @@ describe('reducer — plugins', () => {
     if (!id) return;
     const next = dispatch({ type: 'toggle-plugin', id });
     expect(next.plugins.find((p) => p.id === id)?.status).toBe('enabled');
+  });
+
+  it('set-plugins: replaces plugins array', () => {
+    const newPlugins = [{ id: 'p1', name: 'N', description: 'D', status: 'enabled' as const, permissions: [] }];
+    const next = dispatch({ type: 'set-plugins', plugins: newPlugins });
+    expect(next.plugins).toEqual(newPlugins);
   });
 });
 
@@ -594,6 +639,14 @@ describe('reducer — async / error state', () => {
     const health = [{ provider: 'ollama', available: true } as any];
     const next = dispatch({ type: 'set-ai-health', health });
     expect(next.aiHealth).toEqual(health);
+  });
+});
+
+describe('reducer — sessions', () => {
+  it('set-sessions: replaces sessions array', () => {
+    const newSess = [{ id: 's1', title: 'T', type: 'build' as const, status: 'active' as const, children: [] }];
+    const next = dispatch({ type: 'set-sessions', sessions: newSess });
+    expect(next.sessions).toEqual(newSess);
   });
 });
 

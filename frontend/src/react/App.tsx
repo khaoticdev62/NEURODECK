@@ -367,6 +367,53 @@ export default function App() {
     dispatch({ type: 'set-busy', label: null });
   }, [dispatch]);
 
+  const addMemoryFact = useCallback(async (content: string) => {
+    dispatch({ type: 'set-busy', label: 'Adding fact to memory...' });
+    try {
+      const res = await neurodeckApi.memory.addFact(content);
+      const newMemoryItem = {
+        id: res.id,
+        title: content.slice(0, 40),
+        body: content,
+        scope: 'Global' as const,
+        pinned: false,
+        updatedAt: new Date().toLocaleDateString()
+      };
+      dispatch({ type: 'add-memory', memory: newMemoryItem });
+    } catch (e) {
+      const localId = `mem-${Date.now()}`;
+      const newMemoryItem = {
+        id: localId,
+        title: content.slice(0, 40),
+        body: content,
+        scope: 'Global' as const,
+        pinned: false,
+        updatedAt: new Date().toLocaleDateString()
+      };
+      dispatch({ type: 'add-memory', memory: newMemoryItem });
+    } finally {
+      dispatch({ type: 'set-busy', label: null });
+    }
+  }, [dispatch]);
+
+  const deleteMemory = useCallback(async (id: string) => {
+    dispatch({ type: 'set-busy', label: 'Deleting memory fact...' });
+    try {
+      await neurodeckApi.memory.delete(id);
+    } catch (_) {}
+    dispatch({ type: 'delete-memory', id });
+    dispatch({ type: 'set-busy', label: null });
+  }, [dispatch]);
+
+  const toggleMemoryPin = useCallback(async (id: string, pinned: boolean) => {
+    dispatch({ type: 'set-busy', label: pinned ? 'Pinning memory...' : 'Unpinning memory...' });
+    try {
+      await neurodeckApi.memory.pin(id, pinned);
+    } catch (_) {}
+    dispatch({ type: 'toggle-memory-pin', id });
+    dispatch({ type: 'set-busy', label: null });
+  }, [dispatch]);
+
   const appActions: NeuroDeckAppActions = {
     scanProject,
     buildProjectContext,
@@ -378,7 +425,10 @@ export default function App() {
     exportSession,
     saveSession,
     exportDiagnosticsBundle,
-    resetLocalState
+    resetLocalState,
+    addMemoryFact,
+    deleteMemory,
+    toggleMemoryPin
   };
 
   const openSettings = useCallback((panel = 'general') => {
@@ -655,10 +705,10 @@ export default function App() {
             {state.activeView === 'project' && renderView('project', <ProjectView state={state} actions={appActions} />)}
             {state.activeView === 'models' && renderView('models', <ModelsView state={state} dispatch={dispatch} actions={appActions} />)}
             {(state.activeView === 'agent' || state.activeView === 'agents') && renderView('agent', <AgentsView state={state} dispatch={dispatch} actions={appActions} />)}
-            {state.activeView === 'memory' && renderView('memory', <MemoryView state={state} dispatch={dispatch} />)}
+            {state.activeView === 'memory' && renderView('memory', <MemoryView state={state} dispatch={dispatch} actions={appActions} />)}
             {state.activeView === 'sessions' && renderView('sessions', <SessionsView state={state} actions={appActions} />)}
             {state.activeView === 'cache' && renderView('cache', <CacheView state={state} />)}
-            {state.activeView === 'plugins' && renderView('plugins', <PluginsView />)}
+            {state.activeView === 'plugins' && renderView('plugins', <PluginsView state={state} dispatch={dispatch} />)}
             {state.activeView === 'diagnostics' && renderView('diagnostics', <DiagnosticsView state={state} actions={appActions} />)}
             {state.activeView === 'canvas' && renderView('canvas', <CanvasView />)}
             {state.activeView === 'terminal' && renderView('terminal', <TerminalView />)}

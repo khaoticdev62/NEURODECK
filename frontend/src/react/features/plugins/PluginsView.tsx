@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Dispatch } from 'react';
 import {
   Plug, RefreshCw, ShieldCheck, ShieldAlert, Download, Trash2,
   ToggleLeft, ToggleRight, Tag, User, FileCode, AlertTriangle
@@ -7,8 +8,9 @@ import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { LoadingState } from '../../components/primitives/LoadingState';
+import type { NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
 
-export function PluginsView() {
+export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispatch?: Dispatch<NeuroDeckAction> }) {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,9 +22,36 @@ export function PluginsView() {
     setError(null);
     try {
       const res = await neurodeckApi.plugins.list();
-      setPlugins(res.plugins || []);
+      const list = res.plugins || [];
+      setPlugins(list);
+      if (dispatch) {
+        dispatch({
+          type: 'set-plugins',
+          plugins: list.map(p => ({
+            id: p.id || p.file_name,
+            name: p.name,
+            description: p.description || '',
+            status: p.enabled ? 'enabled' : 'disabled',
+            permissions: p.permissions || []
+          }))
+        });
+      }
     } catch (e) {
       setError(String(e));
+      if (state?.plugins) {
+        setPlugins(state.plugins.map(p => ({
+          name: p.name,
+          file_name: p.id,
+          enabled: p.status === 'enabled',
+          id: p.id,
+          author: 'System',
+          version: '1.0.0',
+          description: p.description,
+          tags: [],
+          marketplace: false,
+          permissions: p.permissions
+        })));
+      }
     }
     setLoading(false);
   };

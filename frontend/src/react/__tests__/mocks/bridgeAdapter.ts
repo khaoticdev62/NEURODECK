@@ -166,6 +166,17 @@ export const neurodeckApi = {
     themes: fn(),
     personas: fn(),
   },
+  cliMaker: {
+    list: fn(),
+    create: fn(),
+    update: fn(),
+    delete: fn(),
+    run: fn(),
+    exportLua: fn(),
+    saveAsPlugin: fn(),
+    exportScript: fn(),
+    importLua: fn(),
+  },
   projects: {
     selectAndScan: fn(),
     buildContext: fn(),
