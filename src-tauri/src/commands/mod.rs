@@ -5758,13 +5758,18 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "memory_list_all" | "memory_list_by_namespace" => {
             let namespace = args.get("namespace").and_then(|v| v.as_str());
+            let limit = args
+                .get("limit")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(500)
+                .min(1000) as usize;
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
                 let all = db.list_all().map_err(|e| e.to_string())?;
                 let filtered: Vec<_> = all.iter().filter(|r| {
                     namespace.map(|ns| r.metadata.get("namespace").map(|v| v == ns).unwrap_or(false))
                         .unwrap_or(true)
-                }).map(|r| serde_json::json!({ "id": r.id, "content": r.content, "metadata": r.metadata, "project_id": r.project_id, "pack_id": r.pack_id }))
+                }).take(limit).map(|r| serde_json::json!({ "id": r.id, "content": r.content, "metadata": r.metadata, "project_id": r.project_id, "pack_id": r.pack_id }))
                 .collect();
                 Ok(serde_json::json!({ "records": filtered, "count": filtered.len() }))
             } else {
@@ -5778,6 +5783,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("query")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'query'")?;
+            if query.len() > 512 {
+                return Err("Query too long (max 512 characters)".to_string());
+            }
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             if let Some(ref db) = app_state.mem_db {
                 let all = db.list_all().map_err(|e| e.to_string())?;
@@ -5851,6 +5859,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("app_id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'app_id'")?;
+            if app_id.is_empty() || app_id.contains("..") || app_id.contains('/') || app_id.contains('\\') {
+                return Err("Invalid app_id".to_string());
+            }
             let path = crate::user_config_dir()
                 .join("data/game_notes")
                 .join(format!("{}.txt", app_id));
@@ -5863,14 +5874,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("app_id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'app_id'")?;
+            if app_id.is_empty() || app_id.contains("..") || app_id.contains('/') || app_id.contains('\\') {
+                return Err("Invalid app_id".to_string());
+            }
             let content = args
                 .get("content")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'content'")?;
+            if content.len() > 1_048_576 {
+                return Err("Note too large (max 1 MB)".to_string());
+            }
             let dir = crate::user_config_dir().join("data/game_notes");
             std::fs::create_dir_all(&dir).ok();
             std::fs::write(dir.join(format!("{}.txt", app_id)), content)
-                .map_err(|e| format!("Save failed: {}", e))?;
+                .map_err(|e| crate::security::sanitize_error_for_frontend(&e.to_string()))?;
             Ok(serde_json::json!({ "status": "saved", "app_id": app_id }))
         }
 
@@ -5993,9 +6010,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("profile_name")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'profile_name'")?;
-            let cred = neurodeck_infrastructure::secrets::get_ssh_credential(name)
-                .map_err(|e| format!("Keychain read failed: {}", e))?;
-            Ok(serde_json::json!({ "profile": name, "password": cred }))
+            // Verify the credential exists; do not return the raw secret over the bridge.
+            let exists = neurodeck_infrastructure::secrets::get_ssh_credential(name).is_ok();
+            Ok(serde_json::json!({ "profile": name, "exists": exists }))
         }
 
         "delete_ssh_credential" => {
@@ -6161,9 +6178,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("profile_name")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'profile_name'")?;
-            let cred = neurodeck_infrastructure::secrets::get_sftp_credential(name)
-                .map_err(|e| format!("Keychain read failed: {}", e))?;
-            Ok(serde_json::json!({ "profile": name, "password": cred }))
+            // Verify the credential exists; do not return the raw secret over the bridge.
+            let exists = neurodeck_infrastructure::secrets::get_sftp_credential(name).is_ok();
+            Ok(serde_json::json!({ "profile": name, "exists": exists }))
         }
 
         "delete_sftp_credential" => {

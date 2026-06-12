@@ -1174,8 +1174,10 @@ async function _sshLoadProfile(p) {
     $("ssh-auth-type").dispatchEvent(new Event("change"));
     $("ssh-pass-input").value = "";
     if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-        try { const pwd = await invoke("get_ssh_credential", { profileName: p.name }); if (pwd) $("ssh-pass-input").value = pwd; }
-        catch (err) { console.error("Failed to load SSH credential from keychain:", err); }
+        try {
+            const res = await invoke("get_ssh_credential", { profile_name: p.name });
+            if (res?.exists) $("ssh-pass-input").placeholder = "Saved in keychain — enter to override";
+        } catch (err) { console.error("Failed to check SSH credential:", err); }
     }
 }
 
@@ -1195,8 +1197,10 @@ async function _sftpLoadProfile(p) {
     $("sftp-auth-type").dispatchEvent(new Event("change"));
     $("sftp-pass-input").value = ""; $("sftp-path-input").value = p.path || "/";
     if (p.auth_type === "password" && window.__TAURI_INTERNALS__) {
-        try { const pwd = await invoke("get_sftp_credential", { profileName: p.name }); if (pwd) $("sftp-pass-input").value = pwd; }
-        catch (err) { console.error("Failed to load SFTP credential from keychain:", err); }
+        try {
+            const res = await invoke("get_sftp_credential", { profile_name: p.name });
+            if (res?.exists) $("sftp-pass-input").placeholder = "Saved in keychain — enter to override";
+        } catch (err) { console.error("Failed to check SFTP credential:", err); }
     }
 }
 
