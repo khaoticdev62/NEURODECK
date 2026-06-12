@@ -7,6 +7,8 @@ import {
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { TorrentItem } from '../../services/bridgeAdapter';
 import { useToast } from '../../components/primitives/Toast';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { LoadingState } from '../../components/primitives/LoadingState';
 
 function formatBytes(bytes?: number) {
   const value = Number(bytes || 0);
@@ -308,8 +310,8 @@ export function TorrentView() {
           <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}</span>
           <span>{counts.running}/{counts.total} active</span>
         </div>
-        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <button type="button" aria-label="Refresh torrent list" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -394,12 +396,13 @@ export function TorrentView() {
       <div className="flex min-h-0 flex-1 gap-3">
         {/* Torrent list */}
         <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-auto">
-          {filteredTorrents.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
-              <Magnet className="h-10 w-10 mb-3" />
-              <p className="text-sm">No torrents match</p>
-              <p className="text-xs mt-1">Add a magnet link, paste a torrent, or drag &amp; drop</p>
-            </div>
+          {loading && <LoadingState label="Loading torrents…" />}
+          {!loading && filteredTorrents.length === 0 && (
+            <EmptyState
+              icon={Magnet}
+              title="No torrents"
+              description="Add a magnet link, paste a torrent URL, or drag &amp; drop a .torrent file."
+            />
           )}
           {filteredTorrents.map((t) => (
             <button

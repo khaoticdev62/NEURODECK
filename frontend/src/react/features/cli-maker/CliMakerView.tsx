@@ -518,6 +518,7 @@ export function CliMakerView() {
                   <span className="absolute left-3.5 text-sm font-semibold text-nd-text-muted">/</span>
                   <input
                     type="text"
+                    aria-label="Command trigger"
                     value={name}
                     onChange={(e) => setName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
                     placeholder="my-command"
@@ -530,6 +531,7 @@ export function CliMakerView() {
                 <label className="text-xs font-medium text-nd-text-muted">Short Description</label>
                 <input
                   type="text"
+                  aria-label="Short description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this command do?"
@@ -540,6 +542,7 @@ export function CliMakerView() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-nd-text-muted">Action Category</label>
                 <select
+                  aria-label="Action category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
@@ -555,6 +558,7 @@ export function CliMakerView() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-nd-text-muted">Radial Bind (Menu Slot)</label>
                 <select
+                  aria-label="Radial menu bind slot"
                   value={radialBind}
                   onChange={(e) => setRadialBind(e.target.value)}
                   className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
@@ -570,6 +574,7 @@ export function CliMakerView() {
                 <label className="text-xs font-medium text-nd-text-muted">Shortcut Hotkey</label>
                 <input
                   type="text"
+                  aria-label="Shortcut hotkey"
                   value={shortcut}
                   onKeyDown={handleShortcutKeyDown}
                   onChange={(e) => setShortcut(e.target.value)}
@@ -581,6 +586,7 @@ export function CliMakerView() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-nd-text-muted">Command Icon</label>
                 <select
+                  aria-label="Command icon"
                   value={icon}
                   onChange={(e) => setIcon(e.target.value)}
                   className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
@@ -608,6 +614,7 @@ export function CliMakerView() {
                     onChange={(e) => setPromptTemplate(e.target.value)}
                     placeholder="Enter prompt content. Use {{input}} to insert custom runner arguments at runtime."
                     rows={4}
+                    aria-label="Prompt template"
                     className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
                   />
                 </div>
@@ -633,6 +640,7 @@ export function CliMakerView() {
                       value={shellCommand}
                       onChange={(e) => setShellCommand(e.target.value)}
                       placeholder="e.g. git status or node build.js"
+                      aria-label="Shell command"
                       className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                     />
                   </div>
@@ -643,6 +651,7 @@ export function CliMakerView() {
                       value={shellCwd}
                       onChange={(e) => setShellCwd(e.target.value)}
                       placeholder="Absolute path, or blank for default workspace"
+                      aria-label="Working directory"
                       className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                     />
                   </div>
@@ -660,6 +669,7 @@ export function CliMakerView() {
                 <select
                   value={viewName}
                   onChange={(e) => setViewName(e.target.value)}
+                  aria-label="Target screen view"
                   className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
                 >
                   {['chat', 'canvas', 'terminal', 'ssh', 'tunnel', 'share', 'browser', 'agent', 'memory',
@@ -685,6 +695,7 @@ export function CliMakerView() {
                           nextSteps[idx] = e.target.value;
                           setChainSteps(nextSteps);
                         }}
+                        aria-label={`Chain step ${idx + 1}`}
                         className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                       >
                         <option value="">Select Command...</option>
@@ -695,8 +706,8 @@ export function CliMakerView() {
                       <button
                         type="button"
                         onClick={() => setChainSteps(chainSteps.filter((_, i) => i !== idx))}
+                        aria-label={`Remove chain step ${idx + 1}`}
                         className="rounded-lg border border-nd-danger/30 text-nd-danger hover:bg-nd-danger/10 px-2 py-1.5 text-xs transition duration-150 min-w-[30px] min-h-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                        title="Remove step"
                       >
                         ×
                       </button>
@@ -721,6 +732,7 @@ export function CliMakerView() {
                   onChange={(e) => setPluginLuaCode(e.target.value)}
                   rows={8}
                   spellCheck={false}
+                  aria-label="Lua code snippet"
                   className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
                 />
               </div>
@@ -753,6 +765,7 @@ export function CliMakerView() {
                     value={testArgs}
                     onChange={(e) => setTestArgs(e.target.value)}
                     placeholder="Arguments passed to {{input}}"
+                    aria-label="Test input args"
                     className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                   />
                 </div>
@@ -783,17 +796,17 @@ export function CliMakerView() {
                   type="button"
                   onClick={handleCopyLua}
                   className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  title="Copy Lua wrapper to clipboard"
+                  aria-label="Copy Lua wrapper to clipboard"
                 >
-                  <Copy className="h-3.5 w-3.5" /> Copy Lua
+                  <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copy Lua
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveAsPlugin}
                   className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  title="Save wrapper to sidecar plugins/"
+                  aria-label="Save wrapper to sidecar plugins"
                 >
-                  <Code className="h-3.5 w-3.5" /> Save Plugin
+                  <Code className="h-3.5 w-3.5" aria-hidden="true" /> Save Plugin
                 </button>
               </div>
 
@@ -802,6 +815,7 @@ export function CliMakerView() {
                 <select
                   id="export-script-format"
                   defaultValue="sh"
+                  aria-label="Export script format"
                   className="w-24 h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-2 text-xs text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   <option value="sh">Bash (.sh)</option>

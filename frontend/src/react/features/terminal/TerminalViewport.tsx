@@ -269,17 +269,17 @@ export function TerminalViewport({
           <span className="truncate">{pane.cwd || "cwd unavailable"}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={copySelection} className={buttonClass} title="Copy selection">
-            <Copy className="h-4 w-4" />
+          <button type="button" onClick={copySelection} className={buttonClass} aria-label="Copy selection">
+            <Copy className="h-4 w-4" aria-hidden="true" />
           </button>
-          <button type="button" onClick={() => onRequestClear()} className={buttonClass} title="Clear terminal">
-            <RefreshCw className="h-4 w-4" />
+          <button type="button" onClick={() => onRequestClear()} className={buttonClass} aria-label="Clear terminal">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </button>
-          <button type="button" onClick={() => onRequestRestart()} className={buttonClass} title="Restart session">
-            <RefreshCw className="h-4 w-4" />
+          <button type="button" onClick={() => onRequestRestart()} className={buttonClass} aria-label="Restart session">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </button>
-          <button type="button" onClick={() => onRequestClose()} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger" title="Close pane">
-            <Trash2 className="h-4 w-4" />
+          <button type="button" aria-label="Close pane" onClick={() => onRequestClose()} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

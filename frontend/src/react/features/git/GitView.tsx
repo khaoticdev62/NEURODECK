@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ElementType } from 'react';
 import { GitBranch, RefreshCw, GitCommit, GitPullRequest, GitMerge, FilePlus, FileMinus, CircleDot } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { GitFile, GitCommit as GitCommitType, GitBranch as GitBranchType } from '../../services/bridgeAdapter';
@@ -60,7 +60,7 @@ export function GitView() {
     } catch (_) { setDiff(''); }
   };
 
-  const FileItem = ({ file, icon: Icon, color, statusLabel }: { file: GitFile; icon: any; color: string; statusLabel: string }) => (
+  const FileItem = ({ file, icon: Icon, color, statusLabel }: { file: GitFile; icon: ElementType; color: string; statusLabel: string }) => (
     <button
       type="button"
       onClick={() => showDiff(file.path)}

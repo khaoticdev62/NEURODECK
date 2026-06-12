@@ -1105,8 +1105,8 @@ export function TerminalScreen() {
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Plugin Hooks</div>
               <div className="text-sm font-semibold text-nd-text">Lua / Hermes / tool commands</div>
             </div>
-            <button type="button" onClick={() => setPluginPanelOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-              <X className="h-4 w-4" />
+            <button type="button" aria-label="Close plugin panel" onClick={() => setPluginPanelOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="mt-3 space-y-2 text-sm text-nd-text-muted">
