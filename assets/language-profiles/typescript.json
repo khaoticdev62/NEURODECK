@@ -1,0 +1,327 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "typescript",
+      "displayName": "TypeScript / JavaScript",
+      "fileExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
+      "configFiles": ["package.json", "tsconfig.json", "vite.config.ts", "vite.config.js", "next.config.js", "next.config.ts", "eslint.config.js", ".eslintrc.js", ".eslintrc.json"],
+      "lsp": {
+        "serverId": "typescript-language-server",
+        "serverCommand": "typescript-language-server",
+        "serverArgs": ["--stdio"],
+        "installHint": "npm install -g typescript-language-server typescript",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": true,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": true
+      },
+      "commands": {
+        "runFile": [
+          {
+            "id": "ts.run-node",
+            "label": "Run with Node",
+            "languageId": "typescript",
+            "command": "node",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".js", ".mjs", ".cjs"] },
+            "safety": "safe",
+            "description": "Execute JavaScript file with Node.js"
+          },
+          {
+            "id": "ts.run-tsx",
+            "label": "Run with tsx",
+            "languageId": "typescript",
+            "command": "npx",
+            "args": ["tsx", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".ts", ".tsx"] },
+            "safety": "safe",
+            "description": "Execute TypeScript file with tsx"
+          }
+        ],
+        "runProject": [
+          {
+            "id": "ts.npm-dev",
+            "label": "npm run dev",
+            "languageId": "typescript",
+            "command": "npm",
+            "args": ["run", "dev"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["package.json"], "packageScripts": ["dev"] },
+            "safety": "safe",
+            "description": "Start development server (npm)"
+          },
+          {
+            "id": "ts.pnpm-dev",
+            "label": "pnpm dev",
+            "languageId": "typescript",
+            "command": "pnpm",
+            "args": ["dev"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["pnpm-lock.yaml"], "packageScripts": ["dev"] },
+            "safety": "safe",
+            "description": "Start development server (pnpm)"
+          },
+          {
+            "id": "ts.yarn-dev",
+            "label": "yarn dev",
+            "languageId": "typescript",
+            "command": "yarn",
+            "args": ["dev"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["yarn.lock"], "packageScripts": ["dev"] },
+            "safety": "safe",
+            "description": "Start development server (yarn)"
+          },
+          {
+            "id": "ts.bun-dev",
+            "label": "bun dev",
+            "languageId": "typescript",
+            "command": "bun",
+            "args": ["dev"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["bun.lockb"], "packageScripts": ["dev"] },
+            "safety": "safe",
+            "description": "Start development server (bun)"
+          }
+        ],
+        "testProject": [
+          {
+            "id": "ts.npm-test",
+            "label": "npm test",
+            "languageId": "typescript",
+            "command": "npm",
+            "args": ["test"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["package.json"], "packageScripts": ["test"] },
+            "safety": "safe",
+            "description": "Run test suite (npm)"
+          },
+          {
+            "id": "ts.pnpm-test",
+            "label": "pnpm test",
+            "languageId": "typescript",
+            "command": "pnpm",
+            "args": ["test"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["pnpm-lock.yaml"], "packageScripts": ["test"] },
+            "safety": "safe",
+            "description": "Run test suite (pnpm)"
+          }
+        ],
+        "build": [
+          {
+            "id": "ts.npm-build",
+            "label": "npm run build",
+            "languageId": "typescript",
+            "command": "npm",
+            "args": ["run", "build"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["package.json"], "packageScripts": ["build"] },
+            "safety": "safe",
+            "description": "Build project (npm)"
+          }
+        ],
+        "typecheck": [
+          {
+            "id": "ts.tsc-check",
+            "label": "tsc --noEmit",
+            "languageId": "typescript",
+            "command": "npx",
+            "args": ["tsc", "--noEmit"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["tsconfig.json"] },
+            "safety": "safe",
+            "description": "Type-check without emitting output"
+          }
+        ],
+        "lint": [
+          {
+            "id": "ts.eslint",
+            "label": "ESLint",
+            "languageId": "typescript",
+            "command": "npx",
+            "args": ["eslint", "."],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["eslint.config.js", ".eslintrc.js", ".eslintrc.json"] },
+            "safety": "safe",
+            "description": "Lint project with ESLint"
+          }
+        ],
+        "format": [
+          {
+            "id": "ts.prettier-file",
+            "label": "Prettier (file)",
+            "languageId": "typescript",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": [".prettierrc", ".prettierrc.json", "prettier.config.js"] },
+            "safety": "safe",
+            "description": "Format current file with Prettier"
+          }
+        ],
+        "packageInstall": [
+          {
+            "id": "ts.npm-install",
+            "label": "npm install",
+            "languageId": "typescript",
+            "command": "npm",
+            "args": ["install"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["package-lock.json"] },
+            "safety": "confirm",
+            "description": "Install all dependencies (npm)"
+          },
+          {
+            "id": "ts.pnpm-install",
+            "label": "pnpm install",
+            "languageId": "typescript",
+            "command": "pnpm",
+            "args": ["install"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["pnpm-lock.yaml"] },
+            "safety": "confirm",
+            "description": "Install all dependencies (pnpm)"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "ts.function",
+          "languageId": "typescript",
+          "label": "function",
+          "description": "TypeScript function declaration",
+          "triggerContexts": ["toplevel", "block"],
+          "insertText": "function ${1:name}(${2:params}): ${3:void} {\n  ${4}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "myFunction" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "void" },
+            { "index": 4, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.arrow",
+          "languageId": "typescript",
+          "label": "arrow function",
+          "description": "Arrow function constant",
+          "triggerContexts": ["toplevel", "block"],
+          "insertText": "const ${1:name} = (${2:params}): ${3:void} => {\n  ${4}\n};",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "handler" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "void" },
+            { "index": 4, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.async-function",
+          "languageId": "typescript",
+          "label": "async function",
+          "description": "Async TypeScript function",
+          "triggerContexts": ["toplevel", "block"],
+          "insertText": "async function ${1:name}(${2:params}): Promise<${3:void}> {\n  ${4}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "fetchData" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "void" },
+            { "index": 4, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.interface",
+          "languageId": "typescript",
+          "label": "interface",
+          "description": "TypeScript interface",
+          "triggerContexts": ["toplevel"],
+          "insertText": "export interface ${1:Name} {\n  ${2:field}: ${3:string};\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyInterface" },
+            { "index": 2, "label": "field", "defaultValue": "id" },
+            { "index": 3, "label": "type", "defaultValue": "string" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.trycatch",
+          "languageId": "typescript",
+          "label": "try/catch",
+          "description": "Try-catch block",
+          "triggerContexts": ["block"],
+          "insertText": "try {\n  ${1}\n} catch (err) {\n  console.error('${2:error}', err);\n}",
+          "placeholders": [
+            { "index": 1, "label": "body", "defaultValue": "" },
+            { "index": 2, "label": "message", "defaultValue": "Operation failed:" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.for-of",
+          "languageId": "typescript",
+          "label": "for...of",
+          "description": "For-of loop",
+          "triggerContexts": ["block"],
+          "insertText": "for (const ${1:item} of ${2:items}) {\n  ${3}\n}",
+          "placeholders": [
+            { "index": 1, "label": "item", "defaultValue": "item" },
+            { "index": 2, "label": "iterable", "defaultValue": "items" },
+            { "index": 3, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.react-component",
+          "languageId": "typescript",
+          "label": "React component",
+          "description": "React functional component",
+          "triggerContexts": ["toplevel"],
+          "insertText": "import React from 'react';\n\ntype ${1:Name}Props = {\n  ${2:prop}: ${3:string};\n};\n\nexport function ${1:Name}({ ${2:prop} }: ${1:Name}Props) {\n  return (\n    <div>\n      ${4}\n    </div>\n  );\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyComponent" },
+            { "index": 2, "label": "prop", "defaultValue": "children" },
+            { "index": 3, "label": "propType", "defaultValue": "React.ReactNode" },
+            { "index": 4, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "ts.test-case",
+          "languageId": "typescript",
+          "label": "test",
+          "description": "Vitest/Jest test case",
+          "triggerContexts": ["toplevel", "describe"],
+          "insertText": "it('${1:description}', () => {\n  ${2:// arrange}\n  expect(${3:actual}).toBe(${4:expected});\n});",
+          "placeholders": [
+            { "index": 1, "label": "description", "defaultValue": "should work" },
+            { "index": 2, "label": "arrange", "defaultValue": "" },
+            { "index": 3, "label": "actual", "defaultValue": "result" },
+            { "index": 4, "label": "expected", "defaultValue": "true" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": ["npm install", "pnpm install", "yarn", "bun install", "npm uninstall", "pnpm remove"],
+        "blockedCommands": ["npm publish", "rm -rf", "sudo"]
+      }
+    }
+  ]
+}

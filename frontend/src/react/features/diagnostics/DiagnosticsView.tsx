@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -16,128 +16,143 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
-  Server
-} from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { Panel } from '../../components/primitives/Panel';
-import { DiagnosticsPanel } from '../../components/systems/DiagnosticsPanel';
-import type { DiagnosticsCheck } from '../../components/systems/DiagnosticsPanel';
-import type { DiagnosticLog, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+  Server,
+} from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { Panel } from "../../components/primitives/Panel";
+import { DiagnosticsPanel } from "../../components/systems/DiagnosticsPanel";
+import type { DiagnosticsCheck } from "../../components/systems/DiagnosticsPanel";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { ConnectionMatrixEntry } from "../../services/bridgeAdapter";
+import type { DiagnosticLog, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
-export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
+export function DiagnosticsView({
+  state,
+  actions,
+}: {
+  state: NeuroDeckState;
+  actions: NeuroDeckAppActions;
+}) {
   const diagnostics = state.diagnostics;
   const [matrix, setMatrix] = useState<any[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
   const [globalProbing, setGlobalProbing] = useState(false);
 
-  // Sync with main process connection health matrix
+  // Sync with bridge-backed connection health matrix
   useEffect(() => {
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
-    // Fetch initial health matrix
-    neurodeck.diagnostics.getConnectionMatrix().then((res: any) => {
-      if (res.ok) {
-        setMatrix(res.data || []);
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await neurodeckApi.diagnostics.getConnectionMatrix();
+        if (!cancelled && res.ok) {
+          setMatrix(res.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to get connection matrix:", err);
       }
-    }).catch((err: any) => {
-      console.error('Failed to get connection matrix:', err);
-    });
-
-    // Subscribe to live connection updates
-    const unsubscribe = neurodeck.diagnostics.subscribeConnectionEvents((data: any) => {
-      if (data && data.id && data.connection) {
-        setMatrix(prev => prev.map(c => c.id === data.id ? data.connection : c));
-      }
-    });
-
+    }
+    void load();
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      cancelled = true;
     };
   }, []);
 
+  const mergeProbeResults = (incoming: ConnectionMatrixEntry[]) => {
+    setMatrix((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]));
+      for (const conn of incoming) {
+        const existing = byId.get(conn.id);
+        if (existing) {
+          const totalRequests = existing.requestCount + conn.requestCount;
+          const totalSuccess = existing.successCount + conn.successCount;
+          byId.set(conn.id, {
+            ...conn,
+            requestCount: totalRequests,
+            successCount: totalSuccess,
+            evidence: [...existing.evidence, ...conn.evidence].slice(-20),
+          });
+        } else {
+          byId.set(conn.id, conn);
+        }
+      }
+      return Array.from(byId.values());
+    });
+  };
+
   const runSingleProbe = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card selection toggle
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
-    setIsProbing(prev => ({ ...prev, [id]: true }));
+    setIsProbing((prev) => ({ ...prev, [id]: true }));
     try {
-      const res = await neurodeck.diagnostics.runHealthProbe(id);
+      const res = await neurodeckApi.diagnostics.runHealthProbe(id);
       if (res.ok) {
-        setMatrix(res.data || []);
+        mergeProbeResults(res.data || []);
       }
     } catch (err) {
       console.error(`Probe run failed for ${id}:`, err);
     } finally {
-      setIsProbing(prev => ({ ...prev, [id]: false }));
+      setIsProbing((prev) => ({ ...prev, [id]: false }));
     }
   };
 
   const runAllProbes = async () => {
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
     setGlobalProbing(true);
     // Optimistically set all to probing status
-    const allIds = matrix.map(c => c.id);
+    const allIds = matrix.map((c) => c.id);
     const initialProbing = allIds.reduce((acc, id) => ({ ...acc, [id]: true }), {});
     setIsProbing(initialProbing);
 
     try {
-      const res = await neurodeck.diagnostics.runHealthProbe();
+      const res = await neurodeckApi.diagnostics.runHealthProbe();
       if (res.ok) {
-        setMatrix(res.data || []);
+        mergeProbeResults(res.data || []);
       }
     } catch (err) {
-      console.error('Running all health probes failed:', err);
+      console.error("Running all health probes failed:", err);
     } finally {
       setIsProbing({});
       setGlobalProbing(false);
     }
   };
 
-  const selectedConnection = matrix.find(c => c.id === selectedConnectionId);
+  const selectedConnection = matrix.find((c) => c.id === selectedConnectionId);
 
   // Helper to resolve state/status styles
   const getStatusStyles = (connState: string) => {
     switch (connState) {
-      case 'connected':
-      case 'passed':
+      case "connected":
+      case "passed":
         return {
-          bg: 'bg-nd-success/10',
-          border: 'border-nd-success/20',
-          text: 'text-nd-success',
-          dot: 'bg-nd-success shadow-[0_0_8px_rgba(var(--color-success-rgb),0.5)]',
-          label: 'ONLINE'
+          bg: "bg-nd-success/10",
+          border: "border-nd-success/20",
+          text: "text-nd-success",
+          dot: "bg-nd-success shadow-[0_0_8px_rgba(var(--color-success-rgb),0.5)]",
+          label: "ONLINE",
         };
-      case 'error':
-      case 'offline':
+      case "error":
+      case "offline":
         return {
-          bg: 'bg-nd-danger/10',
-          border: 'border-nd-danger/20',
-          text: 'text-nd-danger',
-          dot: 'bg-nd-danger shadow-[0_0_8px_rgba(var(--color-danger-rgb),0.5)]',
-          label: 'OFFLINE'
+          bg: "bg-nd-danger/10",
+          border: "border-nd-danger/20",
+          text: "text-nd-danger",
+          dot: "bg-nd-danger shadow-[0_0_8px_rgba(var(--color-danger-rgb),0.5)]",
+          label: "OFFLINE",
         };
-      case 'warning':
+      case "warning":
         return {
-          bg: 'bg-nd-warning/10',
-          border: 'border-nd-warning/20',
-          text: 'text-nd-warning',
-          dot: 'bg-nd-warning shadow-[0_0_8px_rgba(var(--color-warning-rgb),0.5)]',
-          label: 'WARN'
+          bg: "bg-nd-warning/10",
+          border: "border-nd-warning/20",
+          text: "text-nd-warning",
+          dot: "bg-nd-warning shadow-[0_0_8px_rgba(var(--color-warning-rgb),0.5)]",
+          label: "WARN",
         };
       default:
         return {
-          bg: 'bg-nd-text-muted/10',
-          border: 'border-nd-text-muted/10',
-          text: 'text-nd-text-muted',
-          dot: 'bg-nd-text-muted/40',
-          label: 'UNPROBED'
+          bg: "bg-nd-text-muted/10",
+          border: "border-nd-text-muted/10",
+          text: "text-nd-text-muted",
+          dot: "bg-nd-text-muted/40",
+          label: "UNPROBED",
         };
     }
   };
@@ -145,28 +160,38 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
   // Helper to map category to icon
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'ipc': return Zap;
-      case 'api': return Network;
-      case 'lsp': return Cpu;
-      case 'storage': return Database;
-      case 'plugin': return Settings;
-      case 'system': return Server;
-      default: return Activity;
+      case "ipc":
+        return Zap;
+      case "api":
+        return Network;
+      case "lsp":
+        return Cpu;
+      case "storage":
+        return Database;
+      case "plugin":
+        return Settings;
+      case "system":
+        return Server;
+      default:
+        return Activity;
     }
   };
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[340px_1fr_400px]">
-      
       {/* ── Column 1: System Info & Core Health Checks ────────────────────── */}
-      <Panel eyebrow="Diagnostics" title="Runtime Health" className="min-h-0 overflow-y-auto scrollbar-thin">
+      <Panel
+        eyebrow="Diagnostics"
+        title="Runtime Health"
+        className="min-h-0 overflow-y-auto scrollbar-thin"
+      >
         <div className="space-y-3 p-4">
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
             <button
               type="button"
               onClick={() => void actions.refreshDiagnostics()}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2.5 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
-              style={{ minHeight: '40px' }}
+              style={{ minHeight: "40px" }}
             >
               <RefreshCcw className="h-4 w-4" /> Refresh System
             </button>
@@ -174,7 +199,7 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
               type="button"
               onClick={() => void actions.exportDiagnosticsBundle()}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
-              style={{ minHeight: '40px' }}
+              style={{ minHeight: "40px" }}
             >
               <FileArchive className="h-4 w-4" /> Export Bundle
             </button>
@@ -182,12 +207,18 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
           {diagnostics ? (
             <div className="space-y-3">
               <div className="space-y-2">
-                <RuntimeRow label="Platform" value={`${diagnostics.platform}/${diagnostics.arch}`} />
+                <RuntimeRow
+                  label="Platform"
+                  value={`${diagnostics.platform}/${diagnostics.arch}`}
+                />
                 <RuntimeRow label="Electron" value={diagnostics.electron} />
                 <RuntimeRow label="Chrome" value={diagnostics.chrome} />
                 <RuntimeRow label="Node" value={diagnostics.node} />
-                <RuntimeRow label="Packaged" value={diagnostics.packaged ? 'yes' : 'no'} />
-                <RuntimeRow label="Schema" value={diagnostics.schemaVersion ? `v${diagnostics.schemaVersion}` : 'unknown'} />
+                <RuntimeRow label="Packaged" value={diagnostics.packaged ? "yes" : "no"} />
+                <RuntimeRow
+                  label="Schema"
+                  value={diagnostics.schemaVersion ? `v${diagnostics.schemaVersion}` : "unknown"}
+                />
                 <RuntimeRow label="Logs" value={String(diagnostics.logCount)} />
                 <RuntimeRow label="User Data" value={diagnostics.userData} wrap />
                 <RuntimeRow label="Store" value={diagnostics.storeFile} wrap />
@@ -202,7 +233,9 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
             <div className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-5 text-center">
               <Activity className="mx-auto h-10 w-10 text-nd-accent" />
               <h3 className="mt-4 font-semibold text-nd-text">No diagnostics loaded</h3>
-              <p className="mt-2 text-sm leading-6 text-nd-text-muted">Refresh to read Electron runtime data and recent main-process events.</p>
+              <p className="mt-2 text-sm leading-6 text-nd-text-muted">
+                Refresh to read Electron runtime data and recent main-process events.
+              </p>
             </div>
           )}
         </div>
@@ -219,16 +252,17 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
             onClick={runAllProbes}
             disabled={globalProbing}
             className="inline-flex items-center gap-1.5 rounded-lg border border-nd-accent/20 bg-nd-accent/10 px-2.5 py-1 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-50"
-            style={{ minHeight: '30px' }}
+            style={{ minHeight: "30px" }}
           >
-            <Zap className={`h-3 w-3 ${globalProbing ? 'animate-pulse' : ''}`} />
-            {globalProbing ? 'Probing...' : 'Probe All'}
+            <Zap className={`h-3 w-3 ${globalProbing ? "animate-pulse" : ""}`} />
+            {globalProbing ? "Probing..." : "Probe All"}
           </button>
         }
       >
         <div className="space-y-2 p-4">
           <p className="text-xs text-nd-text-muted">
-            The Connection Matrix monitors 9 operational connections in real-time. Click any connection to view its diagnostic timeline and raw evidence logs.
+            The Connection Matrix monitors 9 operational connections in real-time. Click any
+            connection to view its diagnostic timeline and raw evidence logs.
           </p>
 
           <div className="mt-4 space-y-2.5">
@@ -243,8 +277,8 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
                   onClick={() => setSelectedConnectionId(isSelected ? null : conn.id)}
                   className={`group flex items-center justify-between rounded-xl border p-3.5 transition cursor-pointer ${
                     isSelected
-                      ? 'bg-nd-accent/5 border-nd-accent/30 shadow-sm'
-                      : 'bg-nd-surface/40 border-nd-text-muted/10 hover:border-nd-text-muted/20 hover:bg-nd-surface/60'
+                      ? "bg-nd-accent/5 border-nd-accent/30 shadow-sm"
+                      : "bg-nd-surface/40 border-nd-text-muted/10 hover:border-nd-text-muted/20 hover:bg-nd-surface/60"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -258,15 +292,19 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
                         <span className="font-semibold text-sm text-nd-text group-hover:text-nd-accent transition truncate">
                           {conn.label}
                         </span>
-                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold border uppercase ${styles.bg} ${styles.border} ${styles.text}`}>
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold border uppercase ${styles.bg} ${styles.border} ${styles.text}`}
+                        >
                           {styles.label}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-3 mt-1 text-xs text-nd-text-muted">
                         <span className="flex items-center gap-1">
                           <CatIcon className="h-3.5 w-3.5" />
-                          <span className="uppercase tracking-wide text-[10px]">{conn.category}</span>
+                          <span className="uppercase tracking-wide text-[10px]">
+                            {conn.category}
+                          </span>
                         </span>
                         {conn.latencyMs !== null && (
                           <span className="flex items-center gap-1">
@@ -274,7 +312,9 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
                             <span>{conn.latencyMs}ms</span>
                           </span>
                         )}
-                        <span>{conn.successCount}/{conn.requestCount} OK</span>
+                        <span>
+                          {conn.successCount}/{conn.requestCount} OK
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -287,7 +327,7 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-nd-text-muted/10 bg-nd-surface/50 text-nd-text-muted transition hover:border-nd-accent/25 hover:text-nd-accent hover:bg-nd-surface/80 disabled:opacity-40"
                       title="Run connection check"
                     >
-                      <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? 'animate-spin' : ''}`} />
+                      <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} />
                     </button>
                   </div>
                 </div>
@@ -318,23 +358,34 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
             <div className="grid grid-cols-2 gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/20 p-3 text-xs">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Category</p>
-                <p className="font-semibold text-nd-text mt-0.5 uppercase">{selectedConnection.category}</p>
+                <p className="font-semibold text-nd-text mt-0.5 uppercase">
+                  {selectedConnection.category}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Latency</p>
-                <p className="font-semibold text-nd-text mt-0.5">{selectedConnection.latencyMs !== null ? `${selectedConnection.latencyMs} ms` : 'N/A'}</p>
-              </div>
-              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Probes Ran</p>
-                <p className="font-semibold text-nd-text mt-0.5">{selectedConnection.requestCount}</p>
-              </div>
-              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Success Rate</p>
                 <p className="font-semibold text-nd-text mt-0.5">
-                  {selectedConnection.requestCount > 0 
+                  {selectedConnection.latencyMs !== null
+                    ? `${selectedConnection.latencyMs} ms`
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
+                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">
+                  Probes Ran
+                </p>
+                <p className="font-semibold text-nd-text mt-0.5">
+                  {selectedConnection.requestCount}
+                </p>
+              </div>
+              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
+                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">
+                  Success Rate
+                </p>
+                <p className="font-semibold text-nd-text mt-0.5">
+                  {selectedConnection.requestCount > 0
                     ? `${((selectedConnection.successCount / selectedConnection.requestCount) * 100).toFixed(0)}%`
-                    : '0%'
-                  }
+                    : "0%"}
                 </p>
               </div>
             </div>
@@ -352,29 +403,35 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
               ) : (
                 <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-nd-text-muted/10">
                   {selectedConnection.evidence.map((ev: any, idx: number) => {
-                    const isSuccess = ev.status === 'passed';
+                    const isSuccess = ev.status === "passed";
                     return (
                       <div key={idx} className="relative pl-7 text-xs">
                         {/* Timeline node dot */}
-                        <span className={`absolute left-1.5 top-1 h-3.5 w-3.5 rounded-full border-2 border-nd-surface flex items-center justify-center shadow-sm ${
-                          isSuccess ? 'bg-nd-success' : 'bg-nd-danger'
-                        }`} />
+                        <span
+                          className={`absolute left-1.5 top-1 h-3.5 w-3.5 rounded-full border-2 border-nd-surface flex items-center justify-center shadow-sm ${
+                            isSuccess ? "bg-nd-success" : "bg-nd-danger"
+                          }`}
+                        />
 
                         <div className="rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 p-2.5">
                           <div className="flex items-center justify-between text-[10px] text-nd-text-muted mb-1">
-                            <span className="font-mono text-nd-text-muted/70">{ev.requestId || 'req-unknown'}</span>
+                            <span className="font-mono text-nd-text-muted/70">
+                              {ev.requestId || "req-unknown"}
+                            </span>
                             <span>{new Date(ev.timestamp).toLocaleTimeString()}</span>
                           </div>
-                          
-                          <p className="text-nd-text font-medium leading-relaxed mt-0.5">{ev.summary}</p>
-                          
+
+                          <p className="text-nd-text font-medium leading-relaxed mt-0.5">
+                            {ev.summary}
+                          </p>
+
                           <div className="flex flex-wrap items-center gap-3 mt-1.5 pt-1.5 border-t border-nd-text-muted/5 text-[10px] text-nd-text-muted/80 font-mono">
                             {ev.durationMs !== undefined && <span>time: {ev.durationMs}ms</span>}
                             {ev.bytesSent > 0 && <span>sent: {ev.bytesSent}B</span>}
                             {ev.bytesReceived > 0 && <span>recv: {ev.bytesReceived}B</span>}
                             {ev.realTransportUsed !== undefined && (
                               <span className="text-nd-accent uppercase">
-                                {ev.realTransportUsed ? 'Real Call' : 'Mock Fallback'}
+                                {ev.realTransportUsed ? "Real Call" : "Mock Fallback"}
                               </span>
                             )}
                           </div>
@@ -388,19 +445,28 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
           </div>
         </Panel>
       ) : (
-        <Panel eyebrow="IPC Logs" title="Recent Main Process Events" className="min-h-0 overflow-hidden">
+        <Panel
+          eyebrow="IPC Logs"
+          title="Recent Main Process Events"
+          className="min-h-0 overflow-hidden"
+        >
           <div className="h-full overflow-y-auto p-4 scrollbar-thin">
             {!state.diagnosticLogs.length && (
               <div className="flex h-full items-center justify-center">
                 <div className="max-w-md text-center">
                   <TerminalSquare className="mx-auto h-12 w-12 text-nd-accent" />
                   <h3 className="mt-4 text-xl font-semibold text-nd-text">Logs are quiet</h3>
-                  <p className="mt-2 text-sm leading-6 text-nd-text-muted">Run a project scan, model detection, export, or diagnostics refresh to populate the event trail.</p>
+                  <p className="mt-2 text-sm leading-6 text-nd-text-muted">
+                    Run a project scan, model detection, export, or diagnostics refresh to populate
+                    the event trail.
+                  </p>
                 </div>
               </div>
             )}
             <div className="space-y-3">
-              {state.diagnosticLogs.map((log) => <LogCard key={log.id} log={log} />)}
+              {state.diagnosticLogs.map((log) => (
+                <LogCard key={log.id} log={log} />
+              ))}
             </div>
           </div>
         </Panel>
@@ -409,77 +475,97 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
   );
 }
 
-function buildRuntimeChecks(d: NonNullable<NeuroDeckState['diagnostics']>) {
+function buildRuntimeChecks(d: NonNullable<NeuroDeckState["diagnostics"]>) {
   return [
     {
-      id: 'schema',
-      label: 'Schema version present',
-      status: d.schemaVersion ? 'pass' : 'warn',
-      detail: d.schemaVersion ? `v${d.schemaVersion}` : 'Missing — migrations may not have run',
+      id: "schema",
+      label: "Schema version present",
+      status: d.schemaVersion ? "pass" : "warn",
+      detail: d.schemaVersion ? `v${d.schemaVersion}` : "Missing — migrations may not have run",
     },
     {
-      id: 'packaged',
-      label: 'Packaged Electron build',
-      status: d.packaged ? 'pass' : 'warn',
-      detail: d.packaged ? 'Running production binary' : 'Running in dev mode — paths may differ',
+      id: "packaged",
+      label: "Packaged Electron build",
+      status: d.packaged ? "pass" : "warn",
+      detail: d.packaged ? "Running production binary" : "Running in dev mode — paths may differ",
     },
     {
-      id: 'userData',
-      label: 'User data directory resolved',
-      status: d.userData ? 'pass' : 'fail',
-      detail: d.userData || 'No user data path reported',
+      id: "userData",
+      label: "User data directory resolved",
+      status: d.userData ? "pass" : "fail",
+      detail: d.userData || "No user data path reported",
     },
     {
-      id: 'store',
-      label: 'Store file path resolved',
-      status: d.storeFile ? 'pass' : 'warn',
-      detail: d.storeFile || 'Store path not set',
+      id: "store",
+      label: "Store file path resolved",
+      status: d.storeFile ? "pass" : "warn",
+      detail: d.storeFile || "Store path not set",
     },
     {
-      id: 'exports',
-      label: 'Exports directory resolved',
-      status: d.exportsDir ? 'pass' : 'warn',
-      detail: d.exportsDir || 'Exports path not set',
+      id: "exports",
+      label: "Exports directory resolved",
+      status: d.exportsDir ? "pass" : "warn",
+      detail: d.exportsDir || "Exports path not set",
     },
     {
-      id: 'logcount',
-      label: 'Main-process log events',
-      status: d.logCount > 0 ? 'pass' : 'warn',
-      detail: `${d.logCount} event${d.logCount === 1 ? '' : 's'} in current session`,
+      id: "logcount",
+      label: "Main-process log events",
+      status: d.logCount > 0 ? "pass" : "warn",
+      detail: `${d.logCount} event${d.logCount === 1 ? "" : "s"} in current session`,
     },
     {
-      id: 'hardening',
-      label: 'v6 hardening active',
-      status: 'pass' as const,
-      detail: 'IPC payload validation, safe errors, and sanitized diagnostics enabled',
+      id: "hardening",
+      label: "v6 hardening active",
+      status: "pass" as const,
+      detail: "IPC payload validation, safe errors, and sanitized diagnostics enabled",
     },
   ] as DiagnosticsCheck[];
 }
 
-function RuntimeRow({ label, value, wrap = false }: { label: string; value: string; wrap?: boolean }) {
+function RuntimeRow({
+  label,
+  value,
+  wrap = false,
+}: {
+  label: string;
+  value: string;
+  wrap?: boolean;
+}) {
   return (
     <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 text-xs">
       <p className="uppercase tracking-[0.2em] text-nd-text-muted/70">{label}</p>
-      <p className={`mt-1 text-nd-text/80 ${wrap ? 'break-all' : ''}`}>{value}</p>
+      <p className={`mt-1 text-nd-text/80 ${wrap ? "break-all" : ""}`}>{value}</p>
     </div>
   );
 }
 
 function LogCard({ log }: { log: DiagnosticLog }) {
-  const Icon = log.level === 'error' ? AlertTriangle : log.level === 'warning' ? AlertTriangle : CheckCircle2;
-  const tone: 'danger' | 'warning' | 'success' = log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'success';
+  const Icon =
+    log.level === "error" ? AlertTriangle : log.level === "warning" ? AlertTriangle : CheckCircle2;
+  const tone: "danger" | "warning" | "success" =
+    log.level === "error" ? "danger" : log.level === "warning" ? "warning" : "success";
   return (
     <article className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
       <div className="flex items-start gap-3">
-        <Icon className={`mt-0.5 h-5 w-5 ${tone === 'danger' ? 'text-nd-danger' : tone === 'warning' ? 'text-nd-warning' : 'text-nd-success'}`} />
+        <Icon
+          className={`mt-0.5 h-5 w-5 ${tone === "danger" ? "text-nd-danger" : tone === "warning" ? "text-nd-warning" : "text-nd-success"}`}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={tone}>{log.level}</Badge>
-            <span className="text-xs uppercase tracking-[0.2em] text-nd-text-muted/70">{log.scope}</span>
-            <span className="text-xs text-nd-text-muted/70">{new Date(log.timestamp).toLocaleTimeString()}</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-nd-text-muted/70">
+              {log.scope}
+            </span>
+            <span className="text-xs text-nd-text-muted/70">
+              {new Date(log.timestamp).toLocaleTimeString()}
+            </span>
           </div>
           <h3 className="mt-2 font-semibold text-nd-text">{log.message}</h3>
-          {log.details && <pre className="mt-3 overflow-x-auto rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text">{JSON.stringify(log.details, null, 2)}</pre>}
+          {log.details && (
+            <pre className="mt-3 overflow-x-auto rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text">
+              {JSON.stringify(log.details, null, 2)}
+            </pre>
+          )}
         </div>
       </div>
     </article>

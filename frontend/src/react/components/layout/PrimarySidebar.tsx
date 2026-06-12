@@ -76,6 +76,7 @@ export function PrimarySidebar({ state, dispatch, onOpenSettings }: { state: Neu
                       key={item.id}
                       type="button"
                       data-testid={`nav-tab-${item.id}`}
+                      data-view={item.id}
                       aria-current={active ? 'page' : undefined}
                       aria-label={item.label}
                       title={item.label}

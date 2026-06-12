@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-06-12T22:46:00Z",
+  "generatedBy": "export-ide-readiness-report.ts",
+  "summary": {
+    "totalLanguages": 13,
+    "totalCommands": 58,
+    "totalSnippets": 72,
+    "lspServers": 9,
+    "controllerActions": 29,
+    "ideModes": 5,
+    "predictionSources": ["lsp_completion", "diagnostic_fix", "snippet", "command"],
+    "maxPredictions": 20,
+    "rankingOrder": [
+      { "source": "lsp_completion", "confidence": 0.95 },
+      { "source": "diagnostic_fix", "confidence": 0.85 },
+      { "source": "snippet", "confidence": 0.6 },
+      { "source": "command", "confidence": 0.5 }
+    ]
+  },
+  "verificationGate": {
+    "name": "production:ide-gate",
+    "scripts": [
+      "verify:language-commands",
+      "verify:predictive-snippets",
+      "verify:controller-coding",
+      "verify:lsp-ide",
+      "verify:safe-commands",
+      "verify:no-mock-ide",
+      "report:ide"
+    ],
+    "lastRun": {
+      "passed": true,
+      "languageCommands": "350/350",
+      "predictiveSnippets": "378/378",
+      "controllerCoding": "41/41",
+      "lspIde": "110/110",
+      "safeCommands": "19/19",
+      "noMockIde": "20/20"
+    }
+  },
+  "testCoverage": {
+    "unitTests": {
+      "languageProfiles": 25,
+      "commandTemplates": 9,
+      "projectDetection": 16,
+      "predictiveRanking": 13,
+      "snippetExpansion": 16
+    },
+    "controllerTests": {
+      "controllerActionMap": 16
+    },
+    "integrationTests": {
+      "safeCommandExecution": 28,
+      "noMockIdeData": 10
+    },
+    "total": 133
+  },
+  "securityPolicy": {
+    "commandExecutionModel": "spawn-with-args-array",
+    "rendererAccess": "none — child_process is main-process only",
+    "tiers": {
+      "blocked": "Never execute — reject immediately",
+      "dangerous": "Require typed CONFIRM string before executing",
+      "confirm": "Show confirmation dialog before executing",
+      "safe": "Execute immediately"
+    },
+    "blockedExamples": ["curl | sh", "sudo rm", "rm -rf /", "fork bombs", "mimikatz"],
+    "dangerousExamples": ["rm -rf <path>", "git reset --hard", "drop database", "sudo"],
+    "confirmExamples": ["npm install", "pip install", "cargo add", "chmod", "bash script.sh"]
+  }
+}

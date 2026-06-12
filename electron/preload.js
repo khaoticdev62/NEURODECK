@@ -188,7 +188,130 @@ contextBridge.exposeInMainWorld('neurodeck', {
     get: (key) => ipcRenderer.invoke('settings:get', makeRequest({ key })),
     set: (key, value) => ipcRenderer.invoke('settings:set', makeRequest({ key, value })),
     validate: (key, value) => Promise.resolve({ valid: true })
-  }
+  },
+
+  ide: {
+    detectProject: (workspacePath) =>
+      ipcRenderer.invoke('ide:detect-project', makeRequest({ workspacePath })),
+    runCommand: (command, args, cwd, safety, label, commandId) =>
+      ipcRenderer.invoke('ide:run-command', makeRequest({ command, args, cwd, safety, label, commandId })),
+    cancelCommand: (commandId) =>
+      ipcRenderer.invoke('ide:cancel-command', makeRequest({ commandId })),
+    getCommandHistory: () =>
+      ipcRenderer.invoke('ide:get-command-history', makeRequest({})),
+    getPredictions: (filePath, languageId, cursorLine, cursorChar, diagnosticsCount, snippetIds, commandTemplates, lspCompletions) =>
+      ipcRenderer.invoke('ide:get-predictions', makeRequest({
+        filePath, languageId, cursorLine, cursorChar,
+        diagnosticsCount: diagnosticsCount ?? 0,
+        snippetIds: snippetIds ?? [],
+        commandTemplates: commandTemplates ?? [],
+        lspCompletions: lspCompletions ?? [],
+      })),
+    applySnippet: (snippetId, languageId) =>
+      ipcRenderer.invoke('ide:apply-snippet', makeRequest({ snippetId, languageId })),
+
+    onCommandOutput: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('ide:command-output', handler);
+      return () => ipcRenderer.removeListener('ide:command-output', handler);
+    },
+    onCommandExit: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('ide:command-exit', handler);
+      return () => ipcRenderer.removeListener('ide:command-exit', handler);
+    },
+  },
+
+  controller: {
+    getIdeActionMap: () =>
+      ipcRenderer.invoke('controller:get-ide-action-map', makeRequest({})),
+    setIdeMode: (mode) =>
+      ipcRenderer.invoke('controller:set-ide-mode', makeRequest({ mode })),
+    onIdeModeChanged: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('controller:ide-mode-changed', handler);
+      return () => ipcRenderer.removeListener('controller:ide-mode-changed', handler);
+    },
+  },
+
+  theme: {
+    get: () => ipcRenderer.invoke('theme:get', makeRequest({})),
+    set: (settings) => ipcRenderer.invoke('theme:set', makeRequest({ settings })),
+    list: () => ipcRenderer.invoke('theme:list', makeRequest({})),
+  },
+
+  wallpaper: {
+    get: () => ipcRenderer.invoke('wallpaper:get', makeRequest({})),
+    set: (id) => ipcRenderer.invoke('wallpaper:set', makeRequest({ id })),
+    list: () => ipcRenderer.invoke('wallpaper:list', makeRequest({})),
+  },
+
+  browser: {
+    createTab: (url, profileId) => ipcRenderer.invoke('browser:create-tab', makeRequest({ url, profileId })).then(r => r.ok ? r.data : null),
+    closeTab: (tabId) => ipcRenderer.invoke('browser:close-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    switchTab: (tabId) => ipcRenderer.invoke('browser:switch-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    duplicateTab: (tabId) => ipcRenderer.invoke('browser:duplicate-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    getTabs: () => ipcRenderer.invoke('browser:get-tabs', makeRequest({})).then(r => r.ok ? r.data : []),
+    getActiveTab: () => ipcRenderer.invoke('browser:get-active-tab', makeRequest({})).then(r => r.ok ? r.data : null),
+    navigate: (tabId, url) => ipcRenderer.invoke('browser:navigate', makeRequest({ tabId, url })).then(r => r.ok ? r.data : null),
+    goBack: (tabId) => ipcRenderer.invoke('browser:go-back', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    goForward: (tabId) => ipcRenderer.invoke('browser:go-forward', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    reload: (tabId) => ipcRenderer.invoke('browser:reload', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    stop: (tabId) => ipcRenderer.invoke('browser:stop', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    findInPage: (tabId, text, findNext) => ipcRenderer.invoke('browser:find-in-page', makeRequest({ tabId, text, findNext })).then(r => r.ok ? r.data : null),
+    setZoom: (tabId, zoomFactor) => ipcRenderer.invoke('browser:set-zoom', makeRequest({ tabId, zoomFactor })).then(r => r.ok ? r.data : null),
+    setBounds: (bounds) => ipcRenderer.invoke('browser:set-bounds', makeRequest(bounds)).then(r => r.ok ? r.data : null),
+    hide: () => ipcRenderer.invoke('browser:hide', makeRequest({})).then(r => r.ok ? r.data : null),
+    show: () => ipcRenderer.invoke('browser:show', makeRequest({})).then(r => r.ok ? r.data : null),
+    getProfiles: () => ipcRenderer.invoke('browser:get-profiles', makeRequest({})).then(r => r.ok ? r.data : []),
+    setProfile: (tabId, profileId) => ipcRenderer.invoke('browser:set-profile', makeRequest({ tabId, profileId })).then(r => r.ok ? r.data : null),
+    clearData: (profileId, options) => ipcRenderer.invoke('browser:clear-data', makeRequest({ profileId, options })).then(r => r.ok ? r.data : null),
+    getHistory: (profileId) => ipcRenderer.invoke('browser:get-history', makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    deleteHistory: (id) => ipcRenderer.invoke('browser:delete-history', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    clearHistory: (profileId) => ipcRenderer.invoke('browser:clear-history', makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getBookmarks: (profileId) => ipcRenderer.invoke('browser:get-bookmarks', makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    addBookmark: (url, title, profileId) => ipcRenderer.invoke('browser:add-bookmark', makeRequest({ url, title, profileId })).then(r => r.ok ? r.data : null),
+    deleteBookmark: (id) => ipcRenderer.invoke('browser:delete-bookmark', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    getDownloads: () => ipcRenderer.invoke('browser:get-downloads', makeRequest({})).then(r => r.ok ? r.data : []),
+    cancelDownload: (id) => ipcRenderer.invoke('browser:cancel-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    openDownload: (id) => ipcRenderer.invoke('browser:open-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    showDownload: (id) => ipcRenderer.invoke('browser:show-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    getPermissions: () => ipcRenderer.invoke('browser:get-permissions', makeRequest({})).then(r => r.ok ? r.data : []),
+    setPermission: (payload) => ipcRenderer.invoke('browser:set-permission', makeRequest(payload)).then(r => r.ok ? r.data : null),
+    respondToPermission: (requestId, decision) => ipcRenderer.invoke('browser:respond-to-permission', makeRequest({ requestId, decision })).then(r => r.ok ? r.data : null),
+    openDevTools: (tabId) => ipcRenderer.invoke('browser:open-devtools', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    getDiagnostics: () => ipcRenderer.invoke('browser:get-diagnostics', makeRequest({})).then(r => r.ok ? r.data : null),
+    normalizeUrl: (url) => ipcRenderer.invoke('browser:normalize-url', makeRequest({ url })).then(r => r.ok ? r.data : { url }),
+    saveToMemory: () => ipcRenderer.invoke('browser-save-to-memory', makeRequest({})).then(r => r.ok ? r.data : null),
+    onBrowserEvent: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('browser-event', handler);
+      return () => ipcRenderer.removeListener('browser-event', handler);
+    },
+  },
+
+  vpn: {
+    listProfiles: () => ipcRenderer.invoke(IPC.VPN_LIST_PROFILES, makeRequest({})).then(r => r.ok ? r.data : []),
+    getProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    createProfile: (payload) => ipcRenderer.invoke(IPC.VPN_CREATE_PROFILE, makeRequest(payload)).then(r => r.ok ? r.data : null),
+    updateProfile: (payload) => ipcRenderer.invoke(IPC.VPN_UPDATE_PROFILE, makeRequest(payload)).then(r => r.ok ? r.data : null),
+    deleteProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_DELETE_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    importConfig: (text, kind) => ipcRenderer.invoke(IPC.VPN_IMPORT_CONFIG, makeRequest({ text, kind })).then(r => r.ok ? r.data : null),
+    validateConfig: (text, kind) => ipcRenderer.invoke(IPC.VPN_VALIDATE_CONFIG, makeRequest({ text, kind })).then(r => r.ok ? r.data : null),
+    listTemplates: () => ipcRenderer.invoke(IPC.VPN_LIST_TEMPLATES, makeRequest({})).then(r => r.ok ? r.data : []),
+    connect: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_CONNECT, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    disconnect: (profileId) => ipcRenderer.invoke(IPC.VPN_DISCONNECT, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    verify: (profileId) => ipcRenderer.invoke(IPC.VPN_VERIFY, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    repair: (profileId) => ipcRenderer.invoke(IPC.VPN_REPAIR, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getStatus: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_STATUS, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getEvidence: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_EVIDENCE, makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    getRecoveryEvents: () => ipcRenderer.invoke(IPC.VPN_GET_RECOVERY_EVENTS, makeRequest({})).then(r => r.ok ? r.data : []),
+    setKillSwitch: (profileId, enabled) => ipcRenderer.invoke(IPC.VPN_SET_KILL_SWITCH, makeRequest({ profileId, enabled })).then(r => r.ok ? r.data : null),
+    applyBrowserProxy: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_APPLY_BROWSER_PROXY, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    clearBrowserProxy: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_CLEAR_BROWSER_PROXY, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    getProviderMatrix: () => ipcRenderer.invoke(IPC.VPN_GET_PROVIDER_MATRIX, makeRequest({})).then(r => r.ok ? r.data : []),
+    exportRedactedProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_EXPORT_REDACTED_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+  },
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

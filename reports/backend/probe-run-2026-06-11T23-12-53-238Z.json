@@ -1,0 +1,323 @@
+{
+  "generatedAt": "2026-06-11T23:12:53.238Z",
+  "totalProbes": 9,
+  "passed": 3,
+  "failed": 6,
+  "results": [
+    {
+      "id": "sidecar-health",
+      "ok": false,
+      "status": "offline",
+      "requestId": "probe-1781219573167-2mhamb",
+      "startedAt": "2026-06-11T23:12:53.167Z",
+      "completedAt": "2026-06-11T23:12:53.194Z",
+      "durationMs": 26,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://127.0.0.1:9477",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.194Z",
+          "probeId": "sidecar-health",
+          "requestId": "probe-1781219573167-2mhamb",
+          "evidenceType": "api_roundtrip",
+          "passed": false,
+          "summary": "GET /health failed: TypeError: fetch failed",
+          "durationMs": 26,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ],
+      "error": {
+        "code": "ERR_API",
+        "message": "fetch failed",
+        "category": "api",
+        "recoverable": true,
+        "userAction": "The backend service is unreachable. Check that the NEURODECK sidecar is running.",
+        "technicalDetails": "TypeError: fetch failed\n    at node:internal/deps/undici/undici:14900:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async probeSidecarHealth (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:49:17)\n    at async runAllProbes (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:445:20)\n    at async main (C:\\Users\\thecr\\Desktop\\S-Term\\scripts\\verify-backend.ts:18:19)",
+        "requestId": "probe-1781219573167-2mhamb",
+        "source": "sidecar-health"
+      }
+    },
+    {
+      "id": "storage-probe",
+      "ok": true,
+      "status": "production_ready",
+      "requestId": "probe-1781219573198-fmy0ky",
+      "startedAt": "2026-06-11T23:12:53.198Z",
+      "completedAt": "2026-06-11T23:12:53.199Z",
+      "durationMs": 1,
+      "realTransportUsed": true,
+      "realDataObserved": true,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "C:\\Users\\thecr\\AppData\\Local\\Temp\\neurodeck-probe-probe-1781219573198-fmy0ky.json",
+      "bytesSent": 133,
+      "bytesReceived": 133,
+      "recordsWritten": 1,
+      "recordsRead": 1,
+      "checksum": "09f2094d81aba764b1ebdb03e677ccc63627f956ed832ea8ca565264abb44bd0",
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.199Z",
+          "probeId": "storage-probe",
+          "requestId": "probe-1781219573198-fmy0ky",
+          "evidenceType": "storage_write_read_delete",
+          "passed": true,
+          "durationMs": 1,
+          "bytesSent": 133,
+          "bytesReceived": 133,
+          "summary": "write=133B checksum=true deleted=true"
+        }
+      ]
+    },
+    {
+      "id": "settings-probe",
+      "ok": false,
+      "status": "offline",
+      "requestId": "probe-1781219573199-9zbxho",
+      "startedAt": "2026-06-11T23:12:53.199Z",
+      "completedAt": "2026-06-11T23:12:53.205Z",
+      "durationMs": 6,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://127.0.0.1:9477/api/get_config",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.205Z",
+          "probeId": "settings-probe",
+          "requestId": "probe-1781219573199-9zbxho",
+          "evidenceType": "api_roundtrip",
+          "passed": false,
+          "summary": "Settings probe failed: TypeError: fetch failed",
+          "durationMs": 6,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ],
+      "error": {
+        "code": "ERR_API",
+        "message": "fetch failed",
+        "category": "api",
+        "recoverable": true,
+        "userAction": "The backend service is unreachable. Check that the NEURODECK sidecar is running.",
+        "technicalDetails": "TypeError: fetch failed\n    at node:internal/deps/undici/undici:14900:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async callSidecar (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:30:15)\n    at async probeSettings (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:152:20)\n    at async runAllProbes (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:445:20)\n    at async main (C:\\Users\\thecr\\Desktop\\S-Term\\scripts\\verify-backend.ts:18:19)",
+        "requestId": "probe-1781219573199-9zbxho",
+        "source": "settings-probe"
+      }
+    },
+    {
+      "id": "memory-probe",
+      "ok": false,
+      "status": "offline",
+      "requestId": "probe-1781219573205-y9lir7",
+      "startedAt": "2026-06-11T23:12:53.205Z",
+      "completedAt": "2026-06-11T23:12:53.207Z",
+      "durationMs": 2,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://127.0.0.1:9477/api/memory_add_fact",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.207Z",
+          "probeId": "memory-probe",
+          "requestId": "probe-1781219573205-y9lir7",
+          "evidenceType": "storage_write_read_delete",
+          "passed": false,
+          "summary": "Memory probe failed: TypeError: fetch failed",
+          "durationMs": 2,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ],
+      "error": {
+        "code": "ERR_API",
+        "message": "fetch failed",
+        "category": "api",
+        "recoverable": true,
+        "userAction": "The backend service is unreachable. Check that the NEURODECK sidecar is running.",
+        "technicalDetails": "TypeError: fetch failed\n    at node:internal/deps/undici/undici:14900:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async callSidecar (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:30:15)\n    at async probeMemory (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:199:22)\n    at async runAllProbes (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:445:20)\n    at async main (C:\\Users\\thecr\\Desktop\\S-Term\\scripts\\verify-backend.ts:18:19)",
+        "requestId": "probe-1781219573205-y9lir7",
+        "source": "memory-probe"
+      }
+    },
+    {
+      "id": "session-probe",
+      "ok": false,
+      "status": "offline",
+      "requestId": "probe-1781219573207-s8oumf",
+      "startedAt": "2026-06-11T23:12:53.207Z",
+      "completedAt": "2026-06-11T23:12:53.208Z",
+      "durationMs": 1,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://127.0.0.1:9477/api/list_sessions_meta",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.208Z",
+          "probeId": "session-probe",
+          "requestId": "probe-1781219573207-s8oumf",
+          "evidenceType": "api_roundtrip",
+          "passed": false,
+          "summary": "Session probe failed: TypeError: fetch failed",
+          "durationMs": 1,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ],
+      "error": {
+        "code": "ERR_API",
+        "message": "fetch failed",
+        "category": "api",
+        "recoverable": true,
+        "userAction": "The backend service is unreachable. Check that the NEURODECK sidecar is running.",
+        "technicalDetails": "TypeError: fetch failed\n    at node:internal/deps/undici/undici:14900:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async callSidecar (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:30:15)\n    at async probeSession (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:247:21)\n    at async runAllProbes (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:445:20)\n    at async main (C:\\Users\\thecr\\Desktop\\S-Term\\scripts\\verify-backend.ts:18:19)",
+        "requestId": "probe-1781219573207-s8oumf",
+        "source": "session-probe"
+      }
+    },
+    {
+      "id": "provider-ollama",
+      "ok": true,
+      "status": "production_ready",
+      "requestId": "probe-1781219573209-kxerf1",
+      "startedAt": "2026-06-11T23:12:53.209Z",
+      "completedAt": "2026-06-11T23:12:53.234Z",
+      "durationMs": 25,
+      "realTransportUsed": true,
+      "realDataObserved": true,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://localhost:11434",
+      "bytesSent": 0,
+      "bytesReceived": 6041,
+      "recordsRead": 14,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.234Z",
+          "probeId": "provider-ollama",
+          "requestId": "probe-1781219573209-kxerf1",
+          "evidenceType": "model_runtime_ping",
+          "passed": true,
+          "summary": "Ollama reachable, 14 models found",
+          "durationMs": 25,
+          "bytesSent": 0,
+          "bytesReceived": 6041
+        }
+      ]
+    },
+    {
+      "id": "provider-gemini",
+      "ok": false,
+      "status": "not_configured",
+      "requestId": "probe-1781219573234-e7ead8",
+      "startedAt": "2026-06-11T23:12:53.234Z",
+      "completedAt": "2026-06-11T23:12:53.236Z",
+      "durationMs": 2,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "GEMINI_API_KEY",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.236Z",
+          "probeId": "provider-gemini",
+          "requestId": "probe-1781219573234-e7ead8",
+          "evidenceType": "api_roundtrip",
+          "passed": false,
+          "summary": "Gemini key probe failed: TypeError: fetch failed",
+          "durationMs": 2,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ]
+    },
+    {
+      "id": "plugin-probe",
+      "ok": false,
+      "status": "offline",
+      "requestId": "probe-1781219573236-jfuw3k",
+      "startedAt": "2026-06-11T23:12:53.236Z",
+      "completedAt": "2026-06-11T23:12:53.238Z",
+      "durationMs": 2,
+      "realTransportUsed": true,
+      "realDataObserved": false,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "http://127.0.0.1:9477/api/list_plugins",
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.238Z",
+          "probeId": "plugin-probe",
+          "requestId": "probe-1781219573236-jfuw3k",
+          "evidenceType": "plugin_manifest_validation",
+          "passed": false,
+          "summary": "Plugin probe failed: TypeError: fetch failed",
+          "durationMs": 2,
+          "bytesSent": 0,
+          "bytesReceived": 0
+        }
+      ],
+      "error": {
+        "code": "ERR_API",
+        "message": "fetch failed",
+        "category": "api",
+        "recoverable": true,
+        "userAction": "The backend service is unreachable. Check that the NEURODECK sidecar is running.",
+        "technicalDetails": "TypeError: fetch failed\n    at node:internal/deps/undici/undici:14900:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async callSidecar (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:30:15)\n    at async probePlugins (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:367:17)\n    at async runAllProbes (C:\\Users\\thecr\\Desktop\\S-Term\\src\\main\\services\\backend\\backendProbeRunner.ts:445:20)\n    at async main (C:\\Users\\thecr\\Desktop\\S-Term\\scripts\\verify-backend.ts:18:19)",
+        "requestId": "probe-1781219573236-jfuw3k",
+        "source": "plugin-probe"
+      }
+    },
+    {
+      "id": "telemetry-probe",
+      "ok": true,
+      "status": "production_ready",
+      "requestId": "probe-1781219573238-zjo5ch",
+      "startedAt": "2026-06-11T23:12:53.238Z",
+      "completedAt": "2026-06-11T23:12:53.238Z",
+      "durationMs": 0,
+      "realTransportUsed": false,
+      "realDataObserved": true,
+      "mockDataDetected": false,
+      "source": "backend-probe-runner",
+      "target": "os-apis",
+      "bytesSent": 0,
+      "bytesReceived": 128,
+      "evidence": [
+        {
+          "timestamp": "2026-06-11T23:12:53.238Z",
+          "probeId": "telemetry-probe",
+          "requestId": "probe-1781219573238-zjo5ch",
+          "evidenceType": "system_telemetry_read",
+          "passed": true,
+          "summary": "platform=win32 arch=x64 totalMem=32683MB freeMem=18151MB steamDeck=false",
+          "durationMs": 0,
+          "bytesSent": 0,
+          "bytesReceived": 128
+        }
+      ]
+    }
+  ]
+}

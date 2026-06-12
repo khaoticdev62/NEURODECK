@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-
 use chrono::Utc;
 use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
 use neurodeck_infrastructure::warpinator::WarpinatorCallbacks;
@@ -286,8 +285,7 @@ impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCall
                 }
             }
         }
-        let _ = self
-            .emitter
+        self.emitter
             .emit("transfer_progress", (transfer_id.to_string(), progress));
     }
 
@@ -298,8 +296,7 @@ impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCall
                 t.status = "Completed".to_string();
             }
         }
-        let _ = self
-            .emitter
+        self.emitter
             .emit("transfer_completed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
@@ -321,8 +318,7 @@ impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCall
                 t.status = "Failed".to_string();
             }
         }
-        let _ = self
-            .emitter
+        self.emitter
             .emit("transfer_failed", transfer_id.to_string());
 
         // Clean up temp file if it was a directory archive
@@ -913,7 +909,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
                     t.status = "Failed".to_string();
                 }
             }
-            let _ = emitter.emit("transfer_failed", transfer_id.clone());
+            emitter.emit("transfer_failed", transfer_id.clone());
             if is_temp {
                 let _ = tokio::fs::remove_file(&file_path).await;
             }
@@ -946,7 +942,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
                 t.status = "Rejected".to_string();
             }
         }
-        let _ = emitter.emit("transfer_failed", transfer_id.clone());
+        emitter.emit("transfer_failed", transfer_id.clone());
         if is_temp {
             let _ = tokio::fs::remove_file(&file_path).await;
         }
@@ -963,7 +959,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
         }
         s.cancel_txs.insert(transfer_id.clone(), cancel_tx);
     }
-    let _ = emitter.emit("transfer_progress", (transfer_id.clone(), 0u64));
+    emitter.emit("transfer_progress", (transfer_id.clone(), 0u64));
 
     let mut file = File::open(&file_path).await?;
     let mut buffer = [0u8; 16384];
@@ -1006,7 +1002,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
                     t.progress = bytes_sent;
                 }
             }
-            let _ = emitter.emit("transfer_progress", (transfer_id.clone(), bytes_sent));
+            emitter.emit("transfer_progress", (transfer_id.clone(), bytes_sent));
             last_emit = Instant::now();
         }
     }
@@ -1032,7 +1028,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
                 }
             }
         }
-        let _ = emitter.emit("transfer_failed", transfer_id);
+        emitter.emit("transfer_failed", transfer_id);
         return Ok(());
     }
 
@@ -1043,7 +1039,7 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
             t.progress = size;
         }
     }
-    let _ = emitter.emit("transfer_completed", transfer_id);
+    emitter.emit("transfer_completed", transfer_id);
 
     Ok(())
 }
@@ -1194,7 +1190,6 @@ pub async fn start_file_transfer_impl<E: crate::bridge::EventEmitter>(
 
     Ok(transfer_id)
 }
-
 
 #[cfg(test)]
 mod tests {

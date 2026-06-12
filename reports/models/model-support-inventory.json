@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T19:10:00Z",
+  "summary": {
+    "production_ready": 14,
+    "partially_mocked": 7,
+    "mocked": 5,
+    "not_configured": 3,
+    "legacy_pending_migration": 1
+  },
+  "entries": [
+    { "path": "src-tauri/src/llm.rs", "component": "GeminiProvider", "status": "production_ready", "evidence": "Streaming SSE implementation" },
+    { "path": "src-tauri/src/llm.rs", "component": "OllamaProvider", "status": "production_ready", "evidence": "/api/generate and /api/embeddings" },
+    { "path": "src-tauri/src/llm.rs", "component": "HuggingFaceProvider", "status": "production_ready", "evidence": "HF Inference API" },
+    { "path": "src-tauri/src/llm.rs", "component": "KimiProvider", "status": "production_ready", "evidence": "OpenAI-compatible API" },
+    { "path": "src-tauri/src/llm.rs", "component": "OpenAICompatProvider", "status": "production_ready", "evidence": "Generic /v1/chat/completions" },
+    { "path": "src-tauri/src/providers.rs", "component": "ProviderFactory", "status": "production_ready", "evidence": "create_provider, provider_for, provider_from_agent" },
+    { "path": "frontend/src/react/types/seed.ts", "component": "SeedData", "status": "mocked", "evidence": "Hardcoded models/agents/memories/sessions" },
+    { "path": "src-tauri/src/commands/mod.rs", "component": "list_models", "status": "mocked", "evidence": "Hardcoded gemini_models and ollama_models arrays" },
+    { "path": "src-tauri/src/commands/mod.rs", "component": "get_recommended_models", "status": "mocked", "evidence": "Hardcoded JSON recommendations" },
+    { "path": "src-tauri/src/commands/agent.rs", "component": "get_recommended_models", "status": "mocked", "evidence": "~20 hardcoded recommended models" },
+    { "path": "src-tauri/src/hf_model_mgr.rs", "component": "get_curated_steam_deck_models", "status": "mocked", "evidence": "Fake downloads/likes/tags" },
+    { "path": "src-tauri/src/providers.rs", "component": "default_agents", "status": "partially_mocked", "evidence": "Hardcoded agent profiles" },
+    { "path": "src-tauri/src/models.rs", "component": "PERSONAS/THEMES", "status": "partially_mocked", "evidence": "Bundled config in source" },
+    { "path": "frontend/src/react/services/bridgeAdapter.ts", "component": "fallbackHealth/browserDraft", "status": "partially_mocked", "evidence": "Synthetic offline fallbacks" },
+    { "path": "frontend/src/react/services/bridgeAdapter.ts", "component": "models.detectLocal", "status": "partially_mocked", "evidence": "Hardcoded quantization/context/ramEstimate" },
+    { "path": "frontend/src/react/features/settings/SettingsView.tsx", "component": "providers array", "status": "partially_mocked", "evidence": "Static provider list" },
+    { "path": "src-tauri/src/ollama_mgr.rs", "component": "ollama_list_models", "status": "production_ready", "evidence": "Real /api/tags call" },
+    { "path": "electron/ipc-registry.js", "component": "IPC channel registry", "status": "production_ready", "evidence": "Single source of truth" },
+    { "path": "electron/ipc-channels.js", "component": "IPC allowlist", "status": "legacy_pending_migration", "evidence": "Drift from ipc-registry.js" },
+    { "path": "electron/preload.js", "component": "window.neurodeck APIs", "status": "production_ready", "evidence": "Typed narrow APIs" },
+    { "path": "src-tauri/src/commands/system.rs", "component": "get_system_health", "status": "production_ready", "evidence": "Real health report" },
+    { "path": "frontend/src/react/features/models/ModelsView.tsx", "component": "ModelsView", "status": "partially_mocked", "evidence": "Renders seed models; Ollama-only detection" },
+    { "path": "frontend/src/react/components/cards/ModelCard.tsx", "component": "ModelCard", "status": "production_ready", "evidence": "Model card rendering" },
+    { "path": "frontend/src/react/types/neurodeck.ts", "component": "AIProvider type", "status": "partially_mocked", "evidence": "Only 3 UI labels vs 5 backend providers" },
+    { "path": "frontend/src/react/state/useNeuroDeckState.ts", "component": "telemetry initial state", "status": "partially_mocked", "evidence": "Mock latency/memory pressure numbers" },
+    { "path": "src-tauri/src/llm.rs", "component": "OpenAICompatProvider for LM Studio", "status": "not_configured", "evidence": "No auto-discovery" },
+    { "path": "src-tauri/src/llm.rs", "component": "llama.cpp server", "status": "not_configured", "evidence": "No dedicated client" },
+    { "path": "src-tauri/src/llm.rs", "component": "OpenAI-compatible remote", "status": "not_configured", "evidence": "Requires API key" },
+    { "path": "tests/contract/provider-contracts.test.ts", "component": "Provider contract tests", "status": "production_ready", "evidence": "Updated for bridge-only adapter" },
+    { "path": "frontend/src/react/__tests__", "component": "Frontend tests", "status": "production_ready", "evidence": "335 tests passing" }
+  ]
+}

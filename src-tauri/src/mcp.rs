@@ -627,7 +627,7 @@ fn extract_header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
     Some(rest[..end].trim())
 }
 
-fn extract_request_line<'a>(raw: &'a str) -> (&'a str, &'a str) {
+fn extract_request_line(raw: &str) -> (&str, &str) {
     let line = raw.lines().next().unwrap_or("");
     let mut parts = line.splitn(3, ' ');
     let method = parts.next().unwrap_or("GET");

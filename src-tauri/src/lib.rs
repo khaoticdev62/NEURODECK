@@ -1,3 +1,5 @@
+#![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
+
 mod audio_recorder;
 pub mod bridge;
 mod canvas_collab;
@@ -19,6 +21,7 @@ pub mod lsp;
 mod lua;
 mod mcp;
 pub mod memory;
+pub mod model_registry;
 pub mod models;
 mod ollama_mgr;
 mod orchestrator;
@@ -35,6 +38,7 @@ mod scheduler;
 mod search;
 mod security;
 mod self_heal;
+mod services;
 mod sftp;
 mod storage;
 pub mod sync;

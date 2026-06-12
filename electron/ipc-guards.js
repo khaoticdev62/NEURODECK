@@ -61,10 +61,10 @@ function validateSchema(payload, schema) {
       throw createError('MISSING_FIELD', `Missing required field: ${key}`, 'validation');
     }
     
-    if (value !== undefined && value !== null) {
+    if (value !== undefined && value !== null && rules.type !== undefined) {
       // Type check
       const actualType = typeof value;
-      let expectedType = rules.type;
+      const expectedType = rules.type;
       if (expectedType === 'array') {
         if (!Array.isArray(value)) {
           throw createError('INVALID_TYPE', `Field ${key} expected array, got ${actualType}`, 'validation');

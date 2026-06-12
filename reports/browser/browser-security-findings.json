@@ -1,0 +1,19 @@
+{
+  "audit": "Browser Security boundaries check",
+  "isolated": true,
+  "nodeIntegration": false,
+  "contextIsolation": true,
+  "sandbox": true,
+  "findings": [
+    {
+      "severity": "low",
+      "issue": "Unrestricted top-level file:// navigations not blocked dynamically on url entry.",
+      "remediation": "Validate schemes in BrowserUrlNormalizer to block file:// URLs for non-local resources."
+    },
+    {
+      "severity": "medium",
+      "issue": "OpenExternal handles links without strict schema whitelist checks.",
+      "remediation": "Enforce strict schema checking in BrowserSecurityService before calling shell.openExternal."
+    }
+  ]
+}

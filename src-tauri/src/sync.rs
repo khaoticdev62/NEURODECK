@@ -8,7 +8,6 @@ use ring::{aead, rand};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::fs;
-use std::sync::Mutex;
 
 fn sync_dir() -> std::path::PathBuf {
     crate::user_config_dir().join("data/sync")
@@ -76,7 +75,6 @@ struct SessionPayload {
     messages: Vec<String>,
 }
 
-
 /// Bridge-compatible entry point that accepts `Arc<Mutex<AppState>>` directly.
 pub async fn sync_now_bridge(
     app_handle: crate::bridge::WsBroadcaster,
@@ -98,13 +96,13 @@ pub async fn sync_now_bridge(
         .or_else(|_| std::env::var("GEMINI_API_KEY").map_err(|e| e.to_string()))
         .map_err(|_| "Google OAuth/API token not found. Sign in before syncing.".to_string())?;
 
-    let _ = app_handle.emit("sync_progress", "collecting");
+    app_handle.emit("sync_progress", "collecting");
     let records = collect_local_records(&config.sync, mem_db.as_ref(), &token)?;
     let client = reqwest::Client::new();
     let base_url = config.sync.api_base_url.trim_end_matches('/');
     let since = config.sync.last_sync_at.clone().unwrap_or_default();
 
-    let _ = app_handle.emit("sync_progress", "pushing");
+    app_handle.emit("sync_progress", "pushing");
     let push_resp = client
         .post(format!("{}/sync/push", base_url))
         .bearer_auth(&token)
@@ -130,7 +128,7 @@ pub async fn sync_now_bridge(
         .and_then(|r| r.accepted)
         .unwrap_or(records.len());
 
-    let _ = app_handle.emit("sync_progress", "pulling");
+    app_handle.emit("sync_progress", "pulling");
     let pull_resp = client
         .get(format!("{}/sync/pull", base_url))
         .bearer_auth(&token)
@@ -151,7 +149,7 @@ pub async fn sync_now_bridge(
         .await
         .map_err(|e| persist_error(format!("Invalid sync pull response: {}", e)))?;
 
-    let _ = app_handle.emit("sync_progress", "merging");
+    app_handle.emit("sync_progress", "merging");
     let merge = merge_remote_records(
         remote.records,
         &config.sync.device_id,
@@ -181,7 +179,7 @@ pub async fn sync_now_bridge(
         conflict_count: merge.conflicts,
     };
     save_status(&status)?;
-    let _ = app_handle.emit("sync_progress", "done");
+    app_handle.emit("sync_progress", "done");
     Ok(status)
 }
 

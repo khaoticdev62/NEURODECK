@@ -1,9 +1,9 @@
+use crate::paths::user_config_dir;
 use crate::AppState;
-use crate::paths::{user_config_dir, get_config_path, get_home_dir};
-use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
-use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use crate::plugin_mgr;
 use crate::whisper;
@@ -193,16 +193,19 @@ pub fn redact_line(line: &str) -> String {
         ("Bearer ", "Bearer [REDACTED_TOKEN]"),
     ] {
         if let Some(pos) = out.find(redaction.0) {
-            // Replace from the marker to end-of-token (non-whitespace run)
+            // Replace the marker and the token that follows it. The token
+            // ends at the next whitespace or quote boundary.
             let prefix = &out[..pos];
             let rest = &out[pos..];
-            let token_end = rest
-                .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
-                .unwrap_or(rest.len());
+            let marker_len = redaction.0.len();
+            let token_end = marker_len
+                + rest[marker_len..]
+                    .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
+                    .unwrap_or(rest.len() - marker_len);
             out = format!("{}{}{}", prefix, redaction.1, &rest[token_end..]);
         }
     }
-    // Redact passwords in toml-style `key = "value"` lines
+    // Redact passwords/secrets in toml-style `key = "value"` lines
     let lower = out.to_lowercase();
     if lower.contains("password") || lower.contains("secret") || lower.contains("api_key") {
         if let Some(eq_pos) = out.find('=') {
@@ -593,7 +596,6 @@ pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String>
     Ok(dest.to_string_lossy().into_owned())
 }
 
-
 #[derive(serde::Serialize)]
 pub struct DiagnosticResult {
     pub pty_ok: bool,
@@ -921,7 +923,7 @@ pub async fn read_last_screenshot() -> Result<HashMap<String, String>, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::get_lan_ip;
+    use super::{get_lan_ip, redact_line};
 
     #[test]
     fn lan_ip_returns_non_empty() {
@@ -932,5 +934,53 @@ mod tests {
             "get_lan_ip should return an IP or 'unknown', got: {}",
             ip
         );
+    }
+
+    #[test]
+    fn redact_line_scrubs_gemini_key() {
+        let line = "model endpoint key: AIzaSyD-1234567890abcdefg";
+        let out = redact_line(line);
+        assert!(out.contains("[REDACTED_API_KEY]"), "got: {}", out);
+        assert!(!out.contains("AIzaSyD"));
+    }
+
+    #[test]
+    fn redact_line_scrubs_oauth_secret() {
+        // A line explicitly containing "secret" is fully redacted by the
+        // generic password/secret rule before the OAuth marker is reached.
+        let line = "client_secret = GOCSPX-abc123def456";
+        let out = redact_line(line);
+        assert!(out.contains("client_secret = [REDACTED]"), "got: {}", out);
+        assert!(!out.contains("GOCSPX-abc"));
+    }
+
+    #[test]
+    fn redact_line_scrubs_bearer_token() {
+        let line = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+        let out = redact_line(line);
+        assert!(out.contains("Bearer [REDACTED_TOKEN]"), "got: {}", out);
+        assert!(!out.contains("eyJhbGci"));
+    }
+
+    #[test]
+    fn redact_line_scrubs_config_api_key_value() {
+        let line = r#"api_key = "AIzaSyD-1234567890abcdefg""#;
+        let out = redact_line(line);
+        assert!(out.contains("api_key = [REDACTED]"), "got: {}", out);
+        assert!(!out.contains("AIzaSyD"));
+    }
+
+    #[test]
+    fn redact_line_scrubs_password_value() {
+        let line = r#"password = "super_secret_123""#;
+        let out = redact_line(line);
+        assert!(out.contains("password = [REDACTED]"), "got: {}", out);
+        assert!(!out.contains("super_secret_123"));
+    }
+
+    #[test]
+    fn redact_line_leaves_innocuous_lines_intact() {
+        let line = r#"provider = "ollama""#;
+        assert_eq!(redact_line(line), line);
     }
 }

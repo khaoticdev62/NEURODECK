@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-11",
+  "policies": [
+    {
+      "agentId": "general",
+      "preferredModels": ["llama32-3b", "llama32-1b", "gemma3-4b", "qwen3-4b"],
+      "allowedModelCapabilities": ["chat", "completion", "summarization"],
+      "blockedModelFamilies": [],
+      "minimumCompatibilityTier": "deck_default",
+      "allowHeavyModels": false,
+      "allowRemoteFallback": false
+    },
+    {
+      "agentId": "developer",
+      "preferredModels": ["qwen25-coder-3b", "qwen25-coder-1.5b", "qwen3-4b", "phi4-mini-3.8b"],
+      "allowedModelCapabilities": ["chat", "completion", "coding"],
+      "blockedModelFamilies": [],
+      "minimumCompatibilityTier": "deck_default",
+      "allowHeavyModels": true,
+      "allowRemoteFallback": false
+    },
+    {
+      "agentId": "security",
+      "preferredModels": ["qwen3-4b", "gemma3-4b", "deepseek-r1-1.5b"],
+      "allowedModelCapabilities": ["chat", "completion", "reasoning", "coding"],
+      "blockedModelFamilies": [],
+      "minimumCompatibilityTier": "deck_default",
+      "allowHeavyModels": true,
+      "allowRemoteFallback": true
+    },
+    {
+      "agentId": "deck-engineer",
+      "preferredModels": ["llama32-3b", "qwen3-1.7b", "qwen25-coder-1.5b"],
+      "allowedModelCapabilities": ["chat", "completion", "coding"],
+      "blockedModelFamilies": [],
+      "minimumCompatibilityTier": "deck_default",
+      "allowHeavyModels": false,
+      "allowRemoteFallback": false
+    },
+    {
+      "agentId": "researcher",
+      "preferredModels": ["qwen3-4b", "gemma3-4b", "llama32-3b"],
+      "allowedModelCapabilities": ["chat", "completion", "summarization", "long_context"],
+      "blockedModelFamilies": [],
+      "minimumCompatibilityTier": "deck_default",
+      "allowHeavyModels": true,
+      "allowRemoteFallback": true
+    }
+  ]
+}

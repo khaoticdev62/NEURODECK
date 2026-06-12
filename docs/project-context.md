@@ -353,3 +353,26 @@ Active sprint artifacts in `_bmad-output/implementation-artifacts/` — 30+ stor
 - Maintain this constraint when modifying any UI layout or sizing
 - LLM responses stream via SSE — never block the UI thread
 - All user input from outside Tauri is sanitized (IPC args validated, session IDs checked for traversal)
+
+---
+
+## Bridge Command Registry (v1.8.x)
+
+Key commands added or used by the model-runtime-provider stack:
+
+| Command | Module | Purpose |
+|---|---|---|
+| `list_provider_runtimes` | `services/models/provider_runtime_registry.rs` | Returns all configured provider runtimes from `assets/model-registry/provider-runtimes.json` |
+| `discover_installed_models` | `services/models/model_discovery_service.rs` | Cross-references local runtimes with the supported-models registry |
+| `get_provider_health` | `services/models/provider_health_service.rs` | Async health check for one or all runtimes |
+| `run_model_probe` | `services/models/model_probe_service.rs` | Runs a tiny-prompt probe against a runtime/model |
+| `get_model_compatibility_scores` | `services/models/model_compatibility_service.rs` | Scores models for Steam Deck compatibility |
+| `pick_best_local_model` | `services/models/model_compatibility_service.rs` | Selects the best local model for current constraints |
+| `get_agent_model_policies` | `services/models/agent_policy_service.rs` | Loads agent/model policies from `assets/model-registry/agent-policies.json` |
+| `get_allowed_models_for_agent` | `services/models/agent_policy_service.rs` | Filters scored models by active agent policy |
+| `validate_agent_model` | `services/models/agent_policy_service.rs` | Checks whether a specific model is allowed for an agent |
+| `evaluate_recovery` | `services/models/model_recovery_service.rs` | Picks a self-healing recovery action for a runtime state |
+| `record_recovery_event` | `services/models/model_recovery_service.rs` | Persists a recovery decision to the evidence log |
+| `get_recovery_event_log` | `services/models/model_recovery_service.rs` | Returns recent recovery events |
+| `get_model_support_metrics` | `services/models/model_recovery_service.rs` | Aggregates runtime/model/recovery metrics for observability |
+| `generate_support_bundle` | `commands/system.rs` | Produces a redacted diagnostic archive |

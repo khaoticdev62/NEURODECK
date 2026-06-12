@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T19:10:00Z",
+  "note": "Initial baseline before implementation. Recovery events will be recorded by connectionSelfHealingService after implementation.",
+  "events": []
+}

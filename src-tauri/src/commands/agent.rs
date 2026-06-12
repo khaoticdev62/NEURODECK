@@ -16,237 +16,27 @@ pub struct RecommendedModel {
 }
 
 pub fn get_recommended_models() -> Vec<RecommendedModel> {
-    let ollama = "ollama".to_string();
-    let gemini = "gemini".to_string();
-    let huggingface = "huggingface".to_string();
-    let kimi = "kimi".to_string();
-    vec![
-        // ── Cloud (Gemini) ────────────────────────────────────────────────────
-        RecommendedModel {
-            provider: gemini.clone(),
-            model: "gemini-2.0-flash-lite".into(),
-            name: "Gemini Flash Lite".into(),
-            tier: "fast".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Fastest cloud model. Best for quick chat and low-latency tasks.".into(),
-            tags: vec!["cloud".into(), "fast".into(), "low-cost".into()],
-        },
-        RecommendedModel {
-            provider: gemini.clone(),
-            model: "gemini-2.0-flash".into(),
-            name: "Gemini 2.0 Flash".into(),
-            tier: "balanced".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Best all-around cloud model — code, analysis, multi-step reasoning."
-                .into(),
-            tags: vec!["cloud".into(), "balanced".into(), "recommended".into()],
-        },
-        RecommendedModel {
-            provider: gemini.clone(),
-            model: "gemini-1.5-flash".into(),
-            name: "Gemini 1.5 Flash".into(),
-            tier: "balanced".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Reliable and widely-tested. 1M-token context window.".into(),
-            tags: vec!["cloud".into(), "long-context".into()],
-        },
-        RecommendedModel {
-            provider: gemini.clone(),
-            model: "gemini-1.5-pro".into(),
-            name: "Gemini 1.5 Pro".into(),
-            tier: "smart".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Highest intelligence cloud option. Best for complex research.".into(),
-            tags: vec!["cloud".into(), "smart".into(), "premium".into()],
-        },
-        // ── Cloud (Kimi / Moonshot) ───────────────────────────────────────────
-        RecommendedModel {
-            provider: kimi.clone(),
-            model: "kimi-k2.5".into(),
-            name: "Kimi K2.5".into(),
-            tier: "smart".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description:
-                "Moonshot AI flagship. Excellent reasoning, coding, and ultra-long context.".into(),
-            tags: vec![
-                "cloud".into(),
-                "smart".into(),
-                "long-context".into(),
-                "recommended".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: kimi.clone(),
-            model: "kimi-k2-turbo-preview".into(),
-            name: "Kimi K2 Turbo".into(),
-            tier: "fast".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Fast and efficient Kimi model. Great for daily chat and quick tasks."
-                .into(),
-            tags: vec!["cloud".into(), "fast".into(), "low-cost".into()],
-        },
-        // ── Cloud (Hugging Face) ──────────────────────────────────────────────
-        RecommendedModel {
-            provider: huggingface.clone(),
-            model: "meta-llama/Llama-3.2-1B-Instruct".into(),
-            name: "HF Llama 1B".into(),
-            tier: "fast".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description:
-                "Lightweight open model via Hugging Face. Free-tier friendly, fast responses."
-                    .into(),
-            tags: vec!["cloud".into(), "open-source".into(), "fast".into()],
-        },
-        RecommendedModel {
-            provider: huggingface.clone(),
-            model: "HuggingFaceH4/zephyr-7b-beta".into(),
-            name: "HF Zephyr 7B".into(),
-            tier: "balanced".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "High-quality chat model. Strong reasoning and instruction following."
-                .into(),
-            tags: vec![
-                "cloud".into(),
-                "open-source".into(),
-                "balanced".into(),
-                "recommended".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: huggingface.clone(),
-            model: "mistralai/Mistral-7B-Instruct-v0.3".into(),
-            name: "HF Mistral 7B".into(),
-            tier: "smart".into(),
-            vram_mb: 0,
-            steam_deck_ok: true,
-            description: "Popular open-weight model with excellent code and reasoning performance."
-                .into(),
-            tags: vec![
-                "cloud".into(),
-                "open-source".into(),
-                "smart".into(),
-                "code".into(),
-            ],
-        },
-        // ── Local / Ollama (Steam Deck optimized) ────────────────────────────
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "llama3.2:1b".into(),
-            name: "Llama 3.2 1B".into(),
-            tier: "local-fast".into(),
-            vram_mb: 800,
-            steam_deck_ok: true,
-            description: "Ultra-fast local. ~50 tok/s on Steam Deck. Basic tasks.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "fast".into(),
-                "steam-deck".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "gemma2:2b".into(),
-            name: "Gemma 2 2B".into(),
-            tier: "local-balanced".into(),
-            vram_mb: 1600,
-            steam_deck_ok: true,
-            description:
-                "Best quality-per-RAM local model. ~20-30 tok/s on Steam Deck. Recommended.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "balanced".into(),
-                "steam-deck".into(),
-                "recommended".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "qwen2.5:1.5b".into(),
-            name: "Qwen 2.5 1.5B".into(),
-            tier: "local-fast".into(),
-            vram_mb: 1000,
-            steam_deck_ok: true,
-            description: "Fast and multilingual. ~30 tok/s on Steam Deck.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "multilingual".into(),
-                "steam-deck".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "phi3.5:mini".into(),
-            name: "Phi 3.5 Mini".into(),
-            tier: "local-balanced".into(),
-            vram_mb: 2300,
-            steam_deck_ok: true,
-            description:
-                "Microsoft's compact reasoning model. Strong for code and structured output.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "code".into(),
-                "steam-deck".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "llama3.2:3b".into(),
-            name: "Llama 3.2 3B".into(),
-            tier: "local-balanced".into(),
-            vram_mb: 2000,
-            steam_deck_ok: true,
-            description: "Better reasoning than 1B. ~15 tok/s on Steam Deck.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "balanced".into(),
-                "steam-deck".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama.clone(),
-            model: "phi4-mini:3.8b".into(),
-            name: "Phi 4 Mini 3.8B".into(),
-            tier: "local-smart".into(),
-            vram_mb: 2500,
-            steam_deck_ok: true,
-            description: "Microsoft's latest compact model. Excellent reasoning in 3.8B params."
-                .into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "smart".into(),
-                "code".into(),
-            ],
-        },
-        RecommendedModel {
-            provider: ollama,
-            model: "tinyllama".into(),
-            name: "TinyLlama 1.1B".into(),
-            tier: "local-fast".into(),
-            vram_mb: 600,
-            steam_deck_ok: true,
-            description: "Smallest model. ~60 tok/s. For simple completions only.".into(),
-            tags: vec![
-                "local".into(),
-                "offline".into(),
-                "ultra-fast".into(),
-                "steam-deck".into(),
-            ],
-        },
-    ]
+    crate::model_registry::load_supported_models()
+        .into_iter()
+        .map(|profile| {
+            let provider = crate::model_registry::provider_label(&profile).to_string();
+            let model = profile.provider_model_ids.first().cloned().unwrap_or_else(|| profile.id.clone());
+            let tier = crate::model_registry::tier_label(&profile);
+            let vram_mb = crate::model_registry::vram_mb_estimate(&profile);
+            let steam_deck_ok = crate::model_registry::steam_deck_ok(&profile);
+            let description = profile.steam_deck_policy.notes.first().cloned().unwrap_or_else(|| "Curated model profile".to_string());
+            RecommendedModel {
+                provider,
+                model,
+                name: profile.display_name,
+                tier,
+                vram_mb,
+                steam_deck_ok,
+                description,
+                tags: profile.capabilities,
+            }
+        })
+        .collect()
 }
 
 

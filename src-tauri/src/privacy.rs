@@ -72,18 +72,12 @@ impl PrivacyFilter {
 
     /// How much of the content can be shown in search snippets?
     /// Returns `Some(max_chars)` or `None` if no snippet allowed.
-    pub fn snippet_limit(level: &PrivacyLevel, is_unlocked: bool) -> Option<usize> {
+    pub fn snippet_limit(level: &PrivacyLevel, _is_unlocked: bool) -> Option<usize> {
         match level {
             PrivacyLevel::Standard => None, // no limit
             PrivacyLevel::Private => Some(80),
             PrivacyLevel::Sensitive => None,
-            PrivacyLevel::Sealed => {
-                if is_unlocked {
-                    None
-                } else {
-                    None
-                }
-            }
+            PrivacyLevel::Sealed => None,
         }
     }
 

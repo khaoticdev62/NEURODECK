@@ -55,6 +55,9 @@ jobs:
       - name: Frontend Format Check
         run: npx prettier --check "frontend/src/**/*.{js,ts,tsx,json,css}" "frontend/index.html"
 
+      - name: Verify no production mocks
+        run: npm run verify:no-production-mocks
+
       - name: Python Ruff Check
         run: |
           uv run ruff check .
@@ -146,6 +149,12 @@ jobs:
 
       - name: Frontend Unit Tests (Vitest)
         run: npm run frontend:test
+
+      - name: Verify model support registry
+        run: npm run verify:model-support
+
+      - name: Verify no dead code (fallow baseline)
+        run: npm run verify:no-dead-code
 
       - name: Upload test results
         if: always()

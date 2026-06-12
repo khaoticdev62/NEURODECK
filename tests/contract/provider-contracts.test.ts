@@ -29,11 +29,12 @@ describe('LLM provider contracts', () => {
     expect(src).toContain('/api/');
   });
 
-  it('bridgeAdapter has triple fallback (tauri → electron → http)', () => {
+  it('bridgeAdapter is bridge-only (HTTP + WebSocket)', () => {
     const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/services/bridgeAdapter.ts'), 'utf8');
-    expect(src).toMatch(/tauri|window\.__TAURI__/);
-    expect(src).toMatch(/ipcRenderer|electronAPI|window\.neurodeck/);
     expect(src).toMatch(/fetch\(/);
+    expect(src).toMatch(/WebSocket\(/);
+    expect(src).toMatch(/\/ws/);
+    expect(src).toMatch(/127\.0\.0\.1/);
   });
 });
 
@@ -65,5 +66,29 @@ describe('ModelCard data contract', () => {
     expect(src).not.toContain("gemini-pro");
     expect(src).not.toContain("llama2");
     expect(src).toContain('model');
+  });
+
+  it('ModelCard disables selection when policy blocks the model', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/components/cards/ModelCard.tsx'), 'utf8');
+    expect(src).toContain('policyAllowed');
+    expect(src).toContain('Blocked');
+    expect(src).toContain('disabled={policyAllowed === false}');
+  });
+});
+
+describe('SettingsView provider contract', () => {
+  it('no longer hardcodes the provider list', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/features/settings/SettingsView.tsx'), 'utf8');
+    expect(src).not.toMatch(/const providers\s*=/);
+    expect(src).toContain('listProviderRuntimes');
+  });
+});
+
+describe('DiagnosticsView bridge contract', () => {
+  it('uses bridge-backed diagnostics instead of preload API', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/features/diagnostics/DiagnosticsView.tsx'), 'utf8');
+    expect(src).not.toContain('window.neurodeck.diagnostics');
+    expect(src).toContain('neurodeckApi.diagnostics.getConnectionMatrix');
+    expect(src).toContain('neurodeckApi.diagnostics.runHealthProbe');
   });
 });

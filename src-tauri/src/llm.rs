@@ -2,6 +2,17 @@ use base64::prelude::*;
 use futures_util::{Stream, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
+use std::time::Duration;
+
+/// Shared HTTP client with sane timeouts so unreachable or stalled LLM
+/// endpoints cannot block the backend indefinitely.
+fn http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(300))
+        .build()
+        .unwrap_or_else(|_| http_client())
+}
 
 pub trait LlmProvider: Send + Sync {
     fn stream_response(
@@ -192,7 +203,7 @@ impl LlmProvider for GeminiProvider {
             system_instruction,
         };
 
-        let client = reqwest::Client::new();
+        let client = http_client();
 
         let stream = async_stream::try_stream! {
             let res = client.post(&url)
@@ -280,7 +291,7 @@ impl LlmProvider for GeminiProvider {
                 system_instruction: None,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -343,7 +354,7 @@ impl LlmProvider for GeminiProvider {
                 },
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -427,7 +438,7 @@ impl LlmProvider for GeminiProvider {
                 system_instruction,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -506,7 +517,7 @@ impl LlmProvider for GeminiProvider {
                 },
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -551,7 +562,7 @@ pub struct OllamaProvider {
 impl OllamaProvider {
     pub fn new(model: String, base_url: String, embed_model: String) -> Self {
         let m = if model.is_empty() {
-            "llama2".to_string()
+            "llama3.2:1b".to_string()
         } else {
             model
         };
@@ -623,7 +634,7 @@ impl LlmProvider for OllamaProvider {
             stream: true,
         };
 
-        let client = reqwest::Client::new();
+        let client = http_client();
 
         let stream = async_stream::try_stream! {
             let res = client.post(&url)
@@ -686,7 +697,7 @@ impl LlmProvider for OllamaProvider {
                 model,
                 prompt: text,
             };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -728,7 +739,7 @@ impl LlmProvider for OllamaProvider {
                 stream: false,
                 images,
             };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -765,7 +776,7 @@ impl LlmProvider for OllamaProvider {
                 stream: false,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .json(&request_body)
@@ -902,7 +913,7 @@ impl LlmProvider for HuggingFaceProvider {
         };
 
         let stream = async_stream::try_stream! {
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client.post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
                 .json(&request_body)
@@ -953,7 +964,7 @@ impl LlmProvider for HuggingFaceProvider {
         let text = text.to_string();
         Box::pin(async move {
             let request_body = HfEmbedRequest { inputs: text };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1017,7 +1028,7 @@ impl LlmProvider for HuggingFaceProvider {
                     temperature: 0.7,
                 },
             };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1071,7 +1082,7 @@ impl LlmProvider for HuggingFaceProvider {
                     temperature: 0.3,
                 },
             };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1273,7 +1284,7 @@ impl LlmProvider for KimiProvider {
             stream: true,
         };
 
-        let client = reqwest::Client::new();
+        let client = http_client();
 
         let stream = async_stream::try_stream! {
             let res = client.post(&url)
@@ -1359,7 +1370,7 @@ impl LlmProvider for KimiProvider {
                 input: text,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1436,7 +1447,7 @@ impl LlmProvider for KimiProvider {
                 stream: false,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1492,7 +1503,7 @@ impl LlmProvider for KimiProvider {
                 stream: false,
             };
 
-            let client = reqwest::Client::new();
+            let client = http_client();
             let res = client
                 .post(&url)
                 .header("Authorization", format!("Bearer {}", api_key))
@@ -1681,7 +1692,7 @@ impl LlmProvider for OpenAICompatProvider {
             stream: true,
             max_tokens: None,
         };
-        let client = reqwest::Client::new();
+        let client = http_client();
 
         let stream = async_stream::try_stream! {
             let mut req = client.post(&url).json(&body);
@@ -1741,7 +1752,7 @@ impl LlmProvider for OpenAICompatProvider {
             input: text.to_string(),
             model: self.model.clone(),
         };
-        let client = reqwest::Client::new();
+        let client = http_client();
         Box::pin(async move {
             let mut req = client.post(&url).json(&body);
             if let Some(auth_val) = auth {
@@ -1783,7 +1794,7 @@ impl LlmProvider for OpenAICompatProvider {
         let image_mime = image_mime.map(|s| s.to_string());
 
         Box::pin(async move {
-            let client = reqwest::Client::new();
+            let client = http_client();
             let mut req = client.post(&url);
             if let Some(auth_val) = &auth {
                 req = req.header("Authorization", auth_val);
@@ -1902,7 +1913,7 @@ impl LlmProvider for OpenAICompatProvider {
                 stream: false,
                 max_tokens: Some(max_tokens),
             };
-            let client = reqwest::Client::new();
+            let client = http_client();
             let mut req = client.post(&url).json(&body);
             if let Some(auth_val) = auth {
                 req = req.header("Authorization", auth_val);
@@ -1953,7 +1964,7 @@ mod tests {
         assert_eq!(provider.embed_model, "custom-embed");
 
         let provider_default = OllamaProvider::new("".to_string(), "".to_string(), "".to_string());
-        assert_eq!(provider_default.model, "llama2");
+        assert_eq!(provider_default.model, "llama3.2:1b");
         assert_eq!(provider_default.base_url, "http://localhost:11434");
         assert_eq!(provider_default.embed_model, "nomic-embed-text");
     }

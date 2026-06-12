@@ -7,7 +7,7 @@ response_color = "#00FF88"
 
 [llm]
 default_provider = "ollama"
-ollama_model = "hermes3:8b"
+ollama_model = "llama3.1:8b"
 gemini_model = "gemini-2.0-flash"
 ollama_base_url = "http://localhost:11434"
 hf_model = "meta-llama/Llama-3.2-1B-Instruct"
@@ -94,3 +94,44 @@ minimize_to_tray_on_close = true
 [security]
 agent_workspace_only = false
 agent_workspace_path = ""
+
+[security.permission_registry]
+default_profile_id = "default"
+
+[[security.permission_registry.profiles]]
+id = "default"
+name = "Default"
+description = "Standard agent permissions"
+granted = [
+    "shell_exec",
+    "browser",
+    "memory_write",
+    "plugin_load",
+    "network",
+    "memory_read",
+]
+created_at = "2026-06-11T22:48:46.793280100+00:00"
+
+[[security.permission_registry.profiles]]
+id = "restricted"
+name = "Restricted"
+description = "Minimal permissions — memory read-only"
+granted = ["memory_read"]
+created_at = "2026-06-11T22:48:46.793281+00:00"
+
+[[security.permission_registry.profiles]]
+id = "privileged"
+name = "Privileged"
+description = "Full system access"
+granted = [
+    "file_system_write",
+    "memory_write",
+    "plugin_load",
+    "network",
+    "memory_read",
+    "browser",
+    "file_system_read",
+    "computer",
+    "shell_exec",
+]
+created_at = "2026-06-11T22:48:46.793281400+00:00"

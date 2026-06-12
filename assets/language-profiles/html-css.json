@@ -1,0 +1,227 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "html",
+      "displayName": "HTML",
+      "fileExtensions": [".html", ".htm", ".xhtml"],
+      "configFiles": ["package.json", ".prettierrc", ".prettierrc.json"],
+      "lsp": {
+        "serverId": "vscode-html-language-server",
+        "serverCommand": "vscode-html-language-server",
+        "serverArgs": ["--stdio"],
+        "installHint": "npm install -g vscode-langservers-extracted",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": true,
+        "supportsDiagnostics": false,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "format": [
+          {
+            "id": "html.prettier",
+            "label": "Prettier (file)",
+            "languageId": "html",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": [".prettierrc", ".prettierrc.json", "prettier.config.js"] },
+            "safety": "safe",
+            "description": "Format HTML file with Prettier"
+          }
+        ],
+        "runProject": [
+          {
+            "id": "html.npm-dev",
+            "label": "npm run dev",
+            "languageId": "html",
+            "command": "npm",
+            "args": ["run", "dev"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": ["package.json"], "packageScripts": ["dev"] },
+            "safety": "safe",
+            "description": "Start dev server"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "html.doctype",
+          "languageId": "html",
+          "label": "HTML5 boilerplate",
+          "description": "Full HTML5 document structure",
+          "triggerContexts": ["empty_file"],
+          "insertText": "<!DOCTYPE html>\n<html lang=\"${1:en}\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>${2:Document}</title>\n</head>\n<body>\n  ${3}\n</body>\n</html>",
+          "placeholders": [
+            { "index": 1, "label": "lang", "defaultValue": "en" },
+            { "index": 2, "label": "title", "defaultValue": "Document" },
+            { "index": 3, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "html.link",
+          "languageId": "html",
+          "label": "<link>",
+          "description": "CSS stylesheet link",
+          "triggerContexts": ["head"],
+          "insertText": "<link rel=\"stylesheet\" href=\"${1:styles.css}\">",
+          "placeholders": [
+            { "index": 1, "label": "href", "defaultValue": "styles.css" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "html.form",
+          "languageId": "html",
+          "label": "<form>",
+          "description": "HTML form element",
+          "triggerContexts": ["body"],
+          "insertText": "<form action=\"${1:#}\" method=\"${2:post}\">\n  ${3}\n  <button type=\"submit\">${4:Submit}</button>\n</form>",
+          "placeholders": [
+            { "index": 1, "label": "action", "defaultValue": "#" },
+            { "index": 2, "label": "method", "defaultValue": "post" },
+            { "index": 3, "label": "fields", "defaultValue": "" },
+            { "index": 4, "label": "label", "defaultValue": "Submit" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "html.input",
+          "languageId": "html",
+          "label": "<input>",
+          "description": "HTML input field",
+          "triggerContexts": ["body"],
+          "insertText": "<input type=\"${1:text}\" id=\"${2:field}\" name=\"${2:field}\" placeholder=\"${3:Enter value}\" />",
+          "placeholders": [
+            { "index": 1, "label": "type", "defaultValue": "text" },
+            { "index": 2, "label": "name", "defaultValue": "field" },
+            { "index": 3, "label": "placeholder", "defaultValue": "Enter value" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": ["npm install"],
+        "blockedCommands": []
+      }
+    },
+    {
+      "id": "css",
+      "displayName": "CSS / SCSS",
+      "fileExtensions": [".css", ".scss", ".sass", ".less"],
+      "configFiles": [".stylelintrc", "stylelint.config.js", ".prettierrc"],
+      "lsp": {
+        "serverId": "vscode-css-language-server",
+        "serverCommand": "vscode-css-language-server",
+        "serverArgs": ["--stdio"],
+        "installHint": "npm install -g vscode-langservers-extracted",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "lint": [
+          {
+            "id": "css.stylelint",
+            "label": "stylelint",
+            "languageId": "css",
+            "command": "npx",
+            "args": ["stylelint", "\"**/*.css\""],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "configFilesAny": [".stylelintrc", "stylelint.config.js"] },
+            "safety": "safe",
+            "description": "Lint CSS with stylelint"
+          }
+        ],
+        "format": [
+          {
+            "id": "css.prettier",
+            "label": "Prettier (file)",
+            "languageId": "css",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "nearestPackageRoot",
+            "appliesWhen": { "configFilesAny": [".prettierrc", ".prettierrc.json"] },
+            "safety": "safe",
+            "description": "Format CSS with Prettier"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "css.custom-property",
+          "languageId": "css",
+          "label": ":root variables",
+          "description": "CSS custom properties block",
+          "triggerContexts": ["toplevel"],
+          "insertText": ":root {\n  --${1:color-primary}: ${2:#3b82f6};\n  --${3:color-bg}: ${4:#ffffff};\n}",
+          "placeholders": [
+            { "index": 1, "label": "var1", "defaultValue": "color-primary" },
+            { "index": 2, "label": "val1", "defaultValue": "#3b82f6" },
+            { "index": 3, "label": "var2", "defaultValue": "color-bg" },
+            { "index": 4, "label": "val2", "defaultValue": "#ffffff" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "css.media-query",
+          "languageId": "css",
+          "label": "@media",
+          "description": "Responsive breakpoint",
+          "triggerContexts": ["toplevel"],
+          "insertText": "@media (max-width: ${1:768px}) {\n  ${2:/* styles */}\n}",
+          "placeholders": [
+            { "index": 1, "label": "breakpoint", "defaultValue": "768px" },
+            { "index": 2, "label": "styles", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "css.flex-center",
+          "languageId": "css",
+          "label": "flex center",
+          "description": "Flexbox centering",
+          "triggerContexts": ["rule"],
+          "insertText": "display: flex;\nalign-items: center;\njustify-content: center;",
+          "placeholders": [],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "css.selector-rule",
+          "languageId": "css",
+          "label": ".selector { }",
+          "description": "CSS selector with rule block",
+          "triggerContexts": ["toplevel"],
+          "insertText": ".${1:selector} {\n  ${2:property}: ${3:value};\n}",
+          "placeholders": [
+            { "index": 1, "label": "selector", "defaultValue": "class-name" },
+            { "index": 2, "label": "property", "defaultValue": "color" },
+            { "index": 3, "label": "value", "defaultValue": "inherit" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": [],
+        "blockedCommands": []
+      }
+    }
+  ]
+}

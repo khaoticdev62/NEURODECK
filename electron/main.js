@@ -391,6 +391,31 @@ function createSplashWindow() {
   splashWindow.show();
 }
 
+function loadMainWindowURL() {
+  if (!mainWindow) return;
+
+  // Dev: load Vite dev server if running, otherwise fall back to built files
+  if (process.env.ELECTRON_DEV) {
+    const client = new net.Socket();
+    client.setTimeout(200);
+    const fallback = () => {
+      client.destroy();
+      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
+      mainWindow.loadURL('neurodeck://app/index.html');
+    };
+    client.once('connect', () => {
+      client.destroy();
+      mainWindow.loadURL('http://localhost:1420');
+      mainWindow.webContents.openDevTools();
+    });
+    client.once('error', fallback);
+    client.once('timeout', fallback);
+    client.connect(1420, '127.0.0.1');
+  } else {
+    mainWindow.loadURL('neurodeck://app/index.html');
+  }
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -414,27 +439,6 @@ function createMainWindow() {
       devTools: !!process.env.ELECTRON_DEV,
     },
   });
-
-  // Dev: load Vite dev server if running, otherwise fall back to built files
-  if (process.env.ELECTRON_DEV) {
-    const client = new net.Socket();
-    client.setTimeout(200);
-    const fallback = () => {
-      client.destroy();
-      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
-      mainWindow.loadURL('neurodeck://app/index.html');
-    };
-    client.once('connect', () => {
-      client.destroy();
-      mainWindow.loadURL('http://localhost:1420');
-      mainWindow.webContents.openDevTools();
-    });
-    client.once('error', fallback);
-    client.once('timeout', fallback);
-    client.connect(1420, '127.0.0.1');
-  } else {
-    mainWindow.loadURL('neurodeck://app/index.html');
-  }
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     console.error(`[webContents] did-fail-load: ${errorCode} - ${errorDescription} (URL: ${validatedURL})`);
@@ -636,6 +640,9 @@ app.whenReady().then(async () => {
     isDev
   );
 
+  // All IPC handlers are fully registered. Now it is safe to load the main window's URL.
+  loadMainWindowURL();
+
   // Run initial diagnostics probes in background
   setTimeout(() => {
     healthProbeRunner.runAllProbes().catch(err => console.error('[main] Initial health probe failed:', err));
@@ -644,6 +651,7 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
+      loadMainWindowURL();
     }
   });
 });
@@ -996,30 +1004,6 @@ ipcMain.handle(IPC.BROWSER_GET_CONTENT, async () => {
   return { content: '' };
 });
 
-ipcMain.handle(IPC.BROWSER_SAVE_TO_MEMORY, async () => {
-  if (!browserView) return { success: false, error: 'No browser page open' };
-  try {
-    const [title, url, text] = await Promise.all([
-      browserView.webContents.executeJavaScript('document.title'),
-      browserView.webContents.executeJavaScript('location.href'),
-      browserView.webContents.executeJavaScript(
-        'document.body ? document.body.innerText.replace(/\\s+/g, " ").slice(0, 4000) : ""'
-      ),
-    ]);
-    const content = `[Browser Save] ${title} (${url})\n\n${text}`.trim();
-    const res = await fetch(`http://127.0.0.1:${bridgePort}/api/memory_add_fact`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
-    if (!res.ok) return { success: false, error: `Sidecar error: ${res.status}` };
-    const data = await res.json();
-    return { success: true, id: data.id };
-  } catch (e) {
-    return { success: false, error: String(e) };
-  }
-});
-
 ipcMain.handle(IPC.BROWSER_ZOOM_IN, () => {
   if (browserView) {
     const level = browserView.webContents.getZoomLevel();
@@ -1095,36 +1079,6 @@ ipcMain.handle(IPC.BROWSER_HISTORY_CLEAR, () => {
   return { success: true };
 });
 
-/* ── Reader Mode ─────────────────────────────────────────────────────────── */
-
-ipcMain.handle(IPC.BROWSER_READER_MODE, async () => {
-  if (!browserView) return { success: false, title: '', text: '', url: '' };
-  try {
-    const result = await browserView.webContents.executeJavaScript(`
-      (function() {
-        const article = document.querySelector('article') || document.querySelector('main') || document.body;
-        const title = document.querySelector('h1')?.textContent || document.title;
-        const paragraphs = Array.from(article.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote'));
-        const text = paragraphs.map(p => p.textContent.trim()).filter(t => t.length > 0).join('\\n\\n');
-        return { title, text, url: location.href };
-      })()
-    `);
-    return { success: true, ...result };
-  } catch (e) {
-    return { success: false, title: '', text: '', url: '' };
-  }
-});
-
-/* ── Ad Blocker ──────────────────────────────────────────────────────────── */
-
-ipcMain.handle(IPC.BROWSER_ADBLOCK_TOGGLE, () => {
-  adBlockEnabled = !adBlockEnabled;
-  return { enabled: adBlockEnabled };
-});
-
-ipcMain.handle(IPC.BROWSER_ADBLOCK_STATUS, () => {
-  return { enabled: adBlockEnabled };
-});
 
 app.on('before-quit', async (e) => {
   isQuitting = true;

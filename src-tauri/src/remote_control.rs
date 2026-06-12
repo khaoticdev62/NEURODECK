@@ -18,6 +18,18 @@ use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
 
+/// Format the LAN URL advertised to remote-control clients.
+/// Plain HTTP is intentional: the PIN is transmitted as a URL fragment
+/// (not sent to the server) and the LAN is the trust boundary.
+pub fn format_remote_control_url(
+    local_ip: &str,
+    port: u16,
+    pin: &str,
+    session: &str,
+) -> String {
+    format!("http://{}:{}/#pin={}&session={}", local_ip, port, pin, session)
+}
+
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
 #[derive(Clone)]
 pub enum AppEmitter {
@@ -41,7 +53,7 @@ pub enum EventListenerHandle {
 
 // ── Embedded mobile webapp ────────────────────────────────────────────────────
 
-const WEBAPP_HTML: &str = r##"<!DOCTYPE html>
+const WEBAPP_HTML_TEMPLATE: &str = r##"<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -272,9 +284,7 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <div>
       <div class="alab">AI Agent</div>
       <div class="agrid" id="agent-grid">
-        <button class="abtn" onclick="s({type:'switch_agent',id:'gemini-flash-lite'})"><span class="abtn-icon">⚡</span>Flash Lite</button>
-        <button class="abtn" onclick="s({type:'switch_agent',id:'gemini-flash'})"><span class="abtn-icon">☁️</span>Flash</button>
-        <button class="abtn" onclick="s({type:'switch_agent',id:'local-gemma2b'})"><span class="abtn-icon">🏠</span>Gemma 2B</button>
+        <!-- AGENT_BUTTONS -->
       </div>
     </div>
     <div>
@@ -604,6 +614,35 @@ doConnect();
 </body>
 </html>"##;
 
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
+fn build_webapp_html() -> String {
+    let agents = crate::providers::default_agents();
+    if agents.is_empty() {
+        return WEBAPP_HTML_TEMPLATE.replace(
+            "<!-- AGENT_BUTTONS -->",
+            r#"<div class="alab" style="color:var(--mu)">No agents configured</div>"#,
+        );
+    }
+    let buttons: String = agents
+        .into_iter()
+        .map(|a| {
+            format!(
+                r#"<button class="abtn" onclick="s({{type:'switch_agent',id:'{}'}})"><span class="abtn-icon">🤖</span>{}</button>"#,
+                escape_html(&a.id),
+                escape_html(&a.name)
+            )
+        })
+        .collect();
+    WEBAPP_HTML_TEMPLATE.replace("<!-- AGENT_BUTTONS -->", &buttons)
+}
+
 // ── Shared state ──────────────────────────────────────────────────────────────
 
 #[derive(Clone)]
@@ -696,7 +735,7 @@ async fn root_handler(
         )
             .into_response();
     }
-    Html(WEBAPP_HTML).into_response()
+    Html(build_webapp_html()).into_response()
 }
 
 async fn ws_handler(
@@ -835,7 +874,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_add(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state.emitter.emit("remote_client_connected", count);
+    ws_state.emitter.emit("remote_client_connected", count);
 
     let mut rx = ws_state.broadcast_tx.subscribe();
     let emitter = ws_state.emitter.clone();
@@ -873,7 +912,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_sub(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state.emitter.emit("remote_client_disconnected", count);
+    ws_state.emitter.emit("remote_client_disconnected", count);
 }
 
 async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
@@ -940,7 +979,6 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
     }
 }
 
-
 // ── Bridge-compatible commands (Electron sidecar) ─────────────────────────────
 
 /// Start the remote control server in bridge mode (no Tauri runtime).
@@ -959,9 +997,8 @@ pub async fn start_remote_server_bridge(
             .unwrap_or_else(|e| e.into_inner());
         if let Some(old) = guard.take() {
             let _ = old.shutdown_tx.send(());
-            if let EventListenerHandle::Bridge(abort) = old.event_listener {
-                abort.abort();
-            }
+            let EventListenerHandle::Bridge(abort) = old.event_listener;
+            abort.abort();
         }
     }
 
@@ -1045,10 +1082,7 @@ pub async fn start_remote_server_bridge(
     let event_listener = EventListenerHandle::Bridge(event_listener_task.abort_handle());
     let started_at = std::time::Instant::now();
 
-    let url = format!(
-        "http://{}:{}/#pin={}&session={}",
-        local_ip, port, pin, access_token
-    );
+    let url = format_remote_control_url(&local_ip, port, &pin, &access_token);
 
     {
         let mut guard = remote_state
@@ -1087,9 +1121,8 @@ pub async fn stop_remote_server_bridge(
         .unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
-        if let EventListenerHandle::Bridge(abort) = handle.event_listener {
-            abort.abort();
-        }
+        let EventListenerHandle::Bridge(abort) = handle.event_listener;
+        abort.abort();
     }
     let mut rtx = pty_state
         .remote_tx
@@ -1098,8 +1131,6 @@ pub async fn stop_remote_server_bridge(
     *rtx = None;
     Ok(())
 }
-
-
 
 #[cfg(test)]
 mod tests {

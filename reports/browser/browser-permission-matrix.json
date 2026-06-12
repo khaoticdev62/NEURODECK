@@ -1,0 +1,29 @@
+{
+  "permissionRules": [
+    {
+      "permission": "notifications",
+      "defaultDecision": "prompt",
+      "persisted": true
+    },
+    {
+      "permission": "geolocation",
+      "defaultDecision": "block",
+      "persisted": true
+    },
+    {
+      "permission": "media",
+      "defaultDecision": "prompt",
+      "persisted": true
+    },
+    {
+      "permission": "clipboard-read",
+      "defaultDecision": "block",
+      "persisted": false
+    },
+    {
+      "permission": "downloads",
+      "defaultDecision": "prompt",
+      "persisted": false
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-06-12T22:46:00Z",
+  "generatedBy": "export-ide-readiness-report.ts",
+  "profileId": "steamdeck.default",
+  "profileName": "Steam Deck Default",
+  "device": "steamdeck",
+  "totalActions": 29,
+  "totalBindings": 22,
+  "categories": {
+    "navigation": ["NAV_UP", "NAV_DOWN", "NAV_LEFT", "NAV_RIGHT", "BACK", "CANCEL", "ACCEPT"],
+    "prompt": ["ACCEPT_SUGGESTION", "NEXT_SUGGESTION", "PREVIOUS_SUGGESTION", "EXECUTE_PROMPT", "SAVE_PROMPT", "COMPLETE_PROMPT", "REGENERATE"],
+    "command": ["OPEN_COMMAND_PALETTE"],
+    "macro": ["START_MACRO_RECORDING", "STOP_MACRO_RECORDING"],
+    "agent": ["OPEN_AGENT_WHEEL"],
+    "system": ["NEW_SESSION", "OPEN_SETTINGS", "OPEN_SNIPPET_VAULT", "EDIT_SELECTED_BLOCK", "OPEN_CONTEXT_MENU", "PREVIOUS_PANEL", "NEXT_PANEL", "PREVIOUS_CATEGORY", "NEXT_CATEGORY", "OPEN_PROMPT_LIBRARY"]
+  },
+  "bindings": {
+    "DPadUp.tap": "NAV_UP",
+    "DPadDown.tap": "NAV_DOWN",
+    "DPadLeft.tap": "NAV_LEFT",
+    "DPadRight.tap": "NAV_RIGHT",
+    "A.tap": "ACCEPT",
+    "B.tap": "BACK",
+    "B.hold": "CANCEL",
+    "X.tap": "EDIT_SELECTED_BLOCK",
+    "Y.tap": "OPEN_CONTEXT_MENU",
+    "L1.tap": "PREVIOUS_PANEL",
+    "R1.tap": "NEXT_PANEL",
+    "L2.tap": "PREVIOUS_CATEGORY",
+    "R2.tap": "NEXT_CATEGORY",
+    "L4.tap": "OPEN_PROMPT_LIBRARY",
+    "L4.hold": "OPEN_AGENT_WHEEL",
+    "L5.tap": "SAVE_PROMPT",
+    "L5.hold": "OPEN_SNIPPET_VAULT",
+    "R4.tap": "ACCEPT_SUGGESTION",
+    "R4.hold": "REGENERATE",
+    "R5.tap": "OPEN_COMMAND_PALETTE",
+    "R5.hold": "EXECUTE_PROMPT",
+    "L4+R4.chord": "COMPLETE_PROMPT",
+    "L5+R5.chord": "START_MACRO_RECORDING"
+  },
+  "ideModeBindings": {
+    "IDE_PREDICTION": {
+      "A.tap": "IDE_ACCEPT_COMPLETION",
+      "B.tap": "IDE_DISMISS_COMPLETION",
+      "DPadDown.tap": "IDE_NEXT_COMPLETION",
+      "DPadUp.tap": "IDE_PREV_COMPLETION"
+    },
+    "IDE_EDIT": {
+      "Y.tap": "IDE_OPEN_COMMAND_WHEEL",
+      "X.tap": "IDE_TOGGLE_PREDICTIVE_BAR",
+      "L5.tap": "IDE_FORMAT_FILE",
+      "R5.tap": "IDE_RUN_COMMAND",
+      "L1.tap": "IDE_NEXT_DIAGNOSTIC",
+      "A.hold": "IDE_GO_TO_DEFINITION"
+    },
+    "IDE_COMMAND": {
+      "A.tap": "ACCEPT",
+      "B.tap": "BACK"
+    }
+  }
+}

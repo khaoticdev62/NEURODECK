@@ -1,0 +1,31 @@
+{
+  "systemName": "NeuroBrowse",
+  "version": "1.0.0",
+  "auditedAt": "2026-06-12T03:19:00Z",
+  "items": [
+    {
+      "id": "single-view-wcv",
+      "name": "Single WebContentsView Instance",
+      "state": "partially_wired",
+      "source": "electron/main.js"
+    },
+    {
+      "id": "bookmarks-json",
+      "name": "Bookmarks JSON Persistence",
+      "state": "production_ready",
+      "source": "electron/main.js"
+    },
+    {
+      "id": "in-memory-history",
+      "name": "In-Memory Browser History",
+      "state": "mocked",
+      "source": "electron/main.js"
+    },
+    {
+      "id": "adblock-filter",
+      "name": "Simple Request Interceptor Adblocker",
+      "state": "partially_wired",
+      "source": "electron/main.js"
+    }
+  ]
+}

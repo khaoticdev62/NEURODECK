@@ -43,6 +43,65 @@ const IPC_CHANNELS = Object.freeze({
   BROWSER_ADBLOCK_TOGGLE: 'browser-adblock-toggle',
   BROWSER_ADBLOCK_STATUS: 'browser-adblock-status',
 
+  // Browser VPN
+  VPN_LIST_PROFILES: 'vpn:list-profiles',
+  VPN_GET_PROFILE: 'vpn:get-profile',
+  VPN_CREATE_PROFILE: 'vpn:create-profile',
+  VPN_UPDATE_PROFILE: 'vpn:update-profile',
+  VPN_DELETE_PROFILE: 'vpn:delete-profile',
+  VPN_IMPORT_CONFIG: 'vpn:import-config',
+  VPN_VALIDATE_CONFIG: 'vpn:validate-config',
+  VPN_LIST_TEMPLATES: 'vpn:list-templates',
+  VPN_CONNECT: 'vpn:connect',
+  VPN_DISCONNECT: 'vpn:disconnect',
+  VPN_VERIFY: 'vpn:verify',
+  VPN_REPAIR: 'vpn:repair',
+  VPN_GET_STATUS: 'vpn:get-status',
+  VPN_GET_EVIDENCE: 'vpn:get-evidence',
+  VPN_GET_RECOVERY_EVENTS: 'vpn:get-recovery-events',
+  VPN_SET_KILL_SWITCH: 'vpn:set-kill-switch',
+  VPN_APPLY_BROWSER_PROXY: 'vpn:apply-browser-proxy',
+  VPN_CLEAR_BROWSER_PROXY: 'vpn:clear-browser-proxy',
+  VPN_GET_PROVIDER_MATRIX: 'vpn:get-provider-matrix',
+  VPN_EXPORT_REDACTED_PROFILE: 'vpn:export-redacted-profile',
+
+  // NeuroBrowse Multi-tab (New)
+  BROWSER_CREATE_TAB: "browser:create-tab",
+  BROWSER_CLOSE_TAB: "browser:close-tab",
+  BROWSER_SWITCH_TAB: "browser:switch-tab",
+  BROWSER_DUPLICATE_TAB: "browser:duplicate-tab",
+  BROWSER_NAVIGATE_NEW: "browser:navigate",
+  BROWSER_GO_BACK_NEW: "browser:go-back",
+  BROWSER_GO_FORWARD_NEW: "browser:go-forward",
+  BROWSER_RELOAD_NEW: "browser:reload",
+  BROWSER_STOP_NEW: "browser:stop",
+  BROWSER_FIND_IN_PAGE: "browser:find-in-page",
+  BROWSER_SET_ZOOM: "browser:set-zoom",
+  BROWSER_SET_BOUNDS_NEW: "browser:set-bounds",
+  BROWSER_HIDE_NEW: "browser:hide",
+  BROWSER_SHOW_NEW: "browser:show",
+  BROWSER_GET_TABS: "browser:get-tabs",
+  BROWSER_GET_ACTIVE_TAB: "browser:get-active-tab",
+  BROWSER_GET_PROFILES: "browser:get-profiles",
+  BROWSER_SET_PROFILE: "browser:set-profile",
+  BROWSER_CLEAR_DATA: "browser:clear-data",
+  BROWSER_GET_HISTORY: "browser:get-history",
+  BROWSER_DELETE_HISTORY: "browser:delete-history",
+  BROWSER_CLEAR_HISTORY: "browser:clear-history",
+  BROWSER_GET_BOOKMARKS: "browser:get-bookmarks",
+  BROWSER_ADD_BOOKMARK: "browser:add-bookmark",
+  BROWSER_DELETE_BOOKMARK: "browser:delete-bookmark",
+  BROWSER_GET_DOWNLOADS: "browser:get-downloads",
+  BROWSER_CANCEL_DOWNLOAD: "browser:cancel-download",
+  BROWSER_OPEN_DOWNLOAD: "browser:open-download",
+  BROWSER_SHOW_DOWNLOAD: "browser:show-download",
+  BROWSER_GET_PERMISSIONS: "browser:get-permissions",
+  BROWSER_SET_PERMISSION: "browser:set-permission",
+  BROWSER_RESPOND_TO_PERMISSION: "browser:respond-to-permission",
+  BROWSER_OPEN_DEVTOOLS: "browser:open-devtools",
+  BROWSER_GET_DIAGNOSTICS: "browser:get-diagnostics",
+  BROWSER_NORMALIZE_URL: "browser:normalize-url",
+
   // Language Server Protocol (LSP) (New Target)
   LSP_START_SERVER: "lsp:start-server",
   LSP_STOP_SERVER: "lsp:stop-server",
@@ -75,7 +134,27 @@ const IPC_CHANNELS = Object.freeze({
 
   // Settings (New Target)
   SETTINGS_GET: "settings:get",
-  SETTINGS_SET: "settings:set"
+  SETTINGS_SET: "settings:set",
+
+  // IDE Predictive Coding (New)
+  IDE_DETECT_PROJECT: "ide:detect-project",
+  IDE_RUN_COMMAND: "ide:run-command",
+  IDE_CANCEL_COMMAND: "ide:cancel-command",
+  IDE_GET_COMMAND_HISTORY: "ide:get-command-history",
+  IDE_GET_PREDICTIONS: "ide:get-predictions",
+  IDE_APPLY_SNIPPET: "ide:apply-snippet",
+
+  // Controller IDE (New)
+  CONTROLLER_GET_IDE_ACTION_MAP: "controller:get-ide-action-map",
+  CONTROLLER_SET_IDE_MODE: "controller:set-ide-mode",
+
+  // Theme & Wallpaper Overhaul (New)
+  THEME_GET: "theme:get",
+  THEME_SET: "theme:set",
+  THEME_LIST: "theme:list",
+  WALLPAPER_GET: "wallpaper:get",
+  WALLPAPER_SET: "wallpaper:set",
+  WALLPAPER_LIST: "wallpaper:list"
 });
 
 const ALLOWED_CHANNELS = new Set(Object.values(IPC_CHANNELS));

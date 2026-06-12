@@ -90,7 +90,8 @@ describe('useNeuroDeckState — hydration', () => {
     storeMock.get.mockResolvedValueOnce(null);
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
-    expect(result.current.state.selectedProvider).toBe('offline-draft');
+    expect(result.current.state.selectedProvider).toBe('ollama');
+    expect(result.current.state.selectedModelId).toBe('');
   });
 });
 
