@@ -29,6 +29,10 @@ pub struct ThemeConfig {
     pub foreground_color: String,
     #[serde(default = "default_response_color")]
     pub response_color: String,
+    /// Name of the currently-active preset theme (e.g. "Blacksite").
+    /// Used by the frontend to hydrate the correct theme on boot.
+    #[serde(default)]
+    pub active_theme_name: Option<String>,
 }
 
 fn default_primary_color() -> String {
@@ -55,6 +59,7 @@ impl Default for ThemeConfig {
             bg_color: default_bg_color(),
             foreground_color: default_foreground_color(),
             response_color: default_response_color(),
+            active_theme_name: None,
         }
     }
 }

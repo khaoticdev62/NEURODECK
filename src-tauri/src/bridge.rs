@@ -359,8 +359,8 @@ pub async fn start_server(state: ServerState) -> anyhow::Result<()> {
         .route("/health", get(health))
         .route("/ws", get(ws_handler))
         .route("/api/{command}", post(api_command))
-        .layer(axum::middleware::from_fn(cors_middleware))
-        .with_state(state);
+        .with_state(state)
+        .layer(axum::middleware::from_fn(cors_middleware));
 
     tracing::info!("NEURODECK bridge server listening on {}", addr);
     println!("NEURODECK_READY:{}", port);

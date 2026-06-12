@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { useTheme } from "../../theme/useTheme";
 
 interface CanvasWallpaperRendererProps {
@@ -144,6 +144,11 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     };
   };
 
+  // Stable ref so the rAF loop always calls the latest draw even after theme changes
+  const drawRef = useRef<(ctx: CanvasRenderingContext2D, w: number, h: number) => void>(
+    () => undefined
+  );
+
   // Rendering loops
   useEffect(() => {
     if (isPaused) {
@@ -167,7 +172,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       const delta = time - lastTimeRef.current;
       if (delta >= minFrameTime) {
         lastTimeRef.current = time;
-        draw(ctx, canvas.width, canvas.height);
+        drawRef.current(ctx, canvas.width, canvas.height);
       }
       animationFrameIdRef.current = requestAnimationFrame(render);
     };
@@ -182,7 +187,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     };
   }, [wallpaperId, isPaused, performanceTier]);
 
-  const draw = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     const ac = resolvedTokens.color.accent.primary;
     const sc = resolvedTokens.color.state.success;
 
@@ -203,7 +208,10 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     } else if (wallpaperId === "code_stream") {
       drawAscii(ctx, w, h, ac);
     }
-  };
+  }, [resolvedTokens, wallpaperId]);
+
+  // Keep the ref in sync so the stable rAF loop always uses the latest draw
+  useEffect(() => { drawRef.current = draw; }, [draw]);
 
   const drawMatrix = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string) => {
     ctx.fillStyle = "rgba(0,0,0,0.08)";

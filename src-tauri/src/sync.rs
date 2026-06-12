@@ -42,6 +42,8 @@ pub struct SyncStatus {
     pub pushed_records: usize,
     pub pulled_records: usize,
     pub conflict_count: usize,
+    /// True while a sync operation is actively running.
+    pub syncing: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -90,6 +92,17 @@ pub async fn sync_now_bridge(
     }
     if config.sync.api_base_url.trim().is_empty() {
         return Err("Sync API URL is not configured.".to_string());
+    }
+
+    {
+        let mut running = load_status();
+        running.syncing = true;
+        running.enabled = config.sync.enabled;
+        running.sync_memory = config.sync.sync_memory;
+        running.sync_sessions = config.sync.sync_sessions;
+        running.api_base_url = config.sync.api_base_url.clone();
+        running.device_id = config.sync.device_id.clone();
+        let _ = save_status(&running);
     }
 
     let token = neurodeck_infrastructure::secrets::get_gemini_api_key()
@@ -177,6 +190,7 @@ pub async fn sync_now_bridge(
         pushed_records,
         pulled_records: merge.applied,
         conflict_count: merge.conflicts,
+        syncing: false,
     };
     save_status(&status)?;
     app_handle.emit("sync_progress", "done");
@@ -416,7 +430,7 @@ fn count_pending_records(app: &AppState) -> Result<usize, String> {
     Ok(count)
 }
 
-fn load_status() -> SyncStatus {
+pub(crate) fn load_status() -> SyncStatus {
     fs::read_to_string(status_file())
         .ok()
         .and_then(|raw| serde_json::from_str::<SyncStatus>(&raw).ok())
@@ -433,6 +447,7 @@ fn save_status(status: &SyncStatus) -> Result<(), String> {
 fn persist_error(message: String) -> String {
     let mut status = load_status();
     status.last_error = Some(message.clone());
+    status.syncing = false;
     let _ = save_status(&status);
     message
 }

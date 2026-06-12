@@ -36,6 +36,9 @@ export class WallpaperManager {
   private lastTime = 0;
   private mouseX = -9999;
   private mouseY = -9999;
+  // Cached CSS variable values — read once on start/refreshColors, not every frame
+  private accentColor = '#00F0FF';
+  private responseColor = '#00FF88';
 
   private readonly loop = (time: number) => {
     if (!this.ctx || !this.canvas || !this.currentType) return;
@@ -52,7 +55,14 @@ export class WallpaperManager {
     this.ctx = this.canvas.getContext('2d');
     window.addEventListener('resize', this.resize);
     window.addEventListener('mousemove', this.mousemove);
+    this.refreshColors();
     this.resize();
+  }
+
+  refreshColors() {
+    const cs = getComputedStyle(document.documentElement);
+    this.accentColor = cs.getPropertyValue('--accent-color').trim() || '#00F0FF';
+    this.responseColor = cs.getPropertyValue('--response-color').trim() || '#00FF88';
   }
 
   private readonly resize = () => {
@@ -114,6 +124,7 @@ export class WallpaperManager {
     if (!this.canvas) this.init();
     this.currentType = type;
     this.lastTime = performance.now();
+    this.refreshColors();
 
     const css = document.getElementById('app-background-css') as HTMLElement | null;
     const cv = document.getElementById('app-background-canvas') as HTMLElement | null;
@@ -196,9 +207,8 @@ export class WallpaperManager {
 
   private draw(w: number, h: number) {
     if (!this.ctx) return;
-    const cs = getComputedStyle(document.documentElement);
-    const ac = cs.getPropertyValue('--accent-color').trim() || '#00F0FF';
-    const rc = cs.getPropertyValue('--response-color').trim() || '#00FF88';
+    const ac = this.accentColor;
+    const rc = this.responseColor;
     const t = this.currentType;
     if      (t === 'matrix')    this.drawMatrix(w, h, ac);
     else if (t === 'starfield') this.drawStarfield(w, h, ac, rc);
@@ -259,11 +269,15 @@ export class WallpaperManager {
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.strokeStyle = ac;
+    ctx.lineWidth = 0.8;
     const ps = this.particles as Array<{ x: number; y: number; r: number; vx: number; vy: number }>;
     for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
       const dx = ps[i].x - ps[j].x, dy = ps[i].y - ps[j].y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 100) { ctx.globalAlpha = ((100 - dist) / 100) * 0.15; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(ps[i].x, ps[i].y); ctx.lineTo(ps[j].x, ps[j].y); ctx.stroke(); }
+      const distSq = dx * dx + dy * dy;
+      if (distSq < 10000) { // 100² — avoid sqrt for distant pairs
+        ctx.globalAlpha = ((100 - Math.sqrt(distSq)) / 100) * 0.15;
+        ctx.beginPath(); ctx.moveTo(ps[i].x, ps[i].y); ctx.lineTo(ps[j].x, ps[j].y); ctx.stroke();
+      }
     }
     ctx.globalAlpha = 1;
   }

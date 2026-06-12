@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from "react";
 import type {
   NeurodeckTheme,
   ThemeSettings,
@@ -24,6 +24,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<ThemeSettings | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load persistence settings on mount
   useEffect(() => {
@@ -52,6 +53,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   }, [settings, activeTheme]);
 
+  // Flush any pending debounced save on unmount
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, []);
+
   // Inject CSS variables when resolved tokens changes
   useEffect(() => {
     if (resolvedTokens) {
@@ -63,7 +69,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!settings) return;
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
-    await themePersistenceClient.saveSettings(updated);
+    // Debounce writes — slider drags produce many rapid calls; only persist after 300ms idle
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void themePersistenceClient.saveSettings(updated);
+      saveTimerRef.current = null;
+    }, 300);
   };
 
   const resetToDefaults = async () => {

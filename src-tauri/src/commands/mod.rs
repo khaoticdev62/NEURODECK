@@ -293,6 +293,170 @@ async fn handle_sync_now(state: ServerState) -> Result<Value, String> {
     }
 }
 
+/// Compute a real tool-status summary from backend state.
+/// Returns a structured object so the frontend can show idle/working/error states
+/// without hardcoded placeholders.
+fn compute_tool_status(state: &ServerState) -> Value {
+    let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+
+    let orchestrator_running = state
+        .orchestrator
+        .state
+        .lock()
+        .map(|s| s.running)
+        .unwrap_or(false);
+    let canvas_exec_running = app.canvas_exec_cancel_tx.is_some();
+    let mcp_running = app.mcp_abort.is_some();
+
+    let pty_session_count = state
+        .pty
+        .sessions
+        .lock()
+        .map(|s| s.len())
+        .unwrap_or(0);
+
+    let active_transfer_count = state
+        .transfer
+        .0
+        .lock()
+        .map(|s| {
+            s.transfers
+                .values()
+                .filter(|t| t.status == "Transferring")
+                .count()
+        })
+        .unwrap_or(0);
+
+    let mut activities: Vec<&str> = Vec::new();
+    if orchestrator_running {
+        activities.push("orchestrator");
+    }
+    if canvas_exec_running {
+        activities.push("canvas");
+    }
+    if mcp_running {
+        activities.push("mcp");
+    }
+    if pty_session_count > 0 {
+        activities.push("terminal");
+    }
+    if active_transfer_count > 0 {
+        activities.push("transfer");
+    }
+
+    if activities.is_empty() {
+        serde_json::json!({
+            "state": "idle",
+            "label": "Idle",
+            "detail": "No active tools",
+            "activities": [],
+            "since": null
+        })
+    } else {
+        serde_json::json!({
+            "state": "working",
+            "label": "Working",
+            "detail": activities.join(", "),
+            "activities": activities,
+            "since": null
+        })
+    }
+}
+
+/// Build a consolidated status-bar payload from real backend state.
+fn build_status_bar_state(state: &ServerState) -> Result<Value, String> {
+    let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+
+    let model_name = match app.config.llm.default_provider.as_str() {
+        "gemini" => app.config.llm.gemini_model.clone(),
+        "kimi" => app.config.llm.kimi_model.clone(),
+        "huggingface" => app.config.llm.hf_model.clone(),
+        "openai_compat" => app.config.llm.openai_compat_model.clone(),
+        _ => app.config.llm.ollama_model.clone(),
+    };
+
+    let (memory_ready, memory_count) = if let Some(ref db) = app.mem_db {
+        (true, db.list_all().map(|v| v.len()).unwrap_or(0))
+    } else {
+        (false, 0)
+    };
+
+    let pty_session_count = state
+        .pty
+        .sessions
+        .lock()
+        .map(|s| s.len())
+        .unwrap_or(0);
+
+    let remote_server_running = state
+        .remote
+        .handle
+        .lock()
+        .map(|h| h.is_some())
+        .unwrap_or(false);
+
+    let active_transfer_count = state
+        .transfer
+        .0
+        .lock()
+        .map(|s| {
+            s.transfers
+                .values()
+                .filter(|t| t.status == "Transferring")
+                .count()
+        })
+        .unwrap_or(0);
+
+    let sync_status = crate::sync::load_status();
+    let health = crate::commands::system::get_system_health(state.app_state.clone());
+    let tool_status = compute_tool_status(state);
+
+    Ok(serde_json::json!({
+        "connection": {
+            "status": health.status,
+            "issues": health.issues,
+        },
+        "ai": {
+            "provider": app.config.llm.default_provider,
+            "model": model_name,
+            "active_agent_id": app.config.llm.active_agent_id,
+            "active_persona": app.active_persona,
+        },
+        "session": {
+            "id": app.session_id,
+            "message_count": app.messages.len(),
+        },
+        "memory": {
+            "ready": memory_ready,
+            "count": memory_count,
+        },
+        "tools": tool_status,
+        "pty": {
+            "session_count": pty_session_count,
+        },
+        "remote": {
+            "server_running": remote_server_running,
+        },
+        "transfer": {
+            "active_count": active_transfer_count,
+        },
+        "mcp": {
+            "running": app.mcp_abort.is_some(),
+        },
+        "sync": {
+            "enabled": app.config.sync.enabled,
+            "syncing": sync_status.syncing,
+            "last_sync_at": sync_status.last_sync_at,
+            "last_error": sync_status.last_error,
+            "pending_records": sync_status.pending_records,
+        },
+        "theme": {
+            "active_theme_name": app.config.theme.active_theme_name,
+        },
+        "safe_mode": std::env::var("NEURODECK_SAFE_MODE").is_ok(),
+    }))
+}
+
 pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
     match command {
         // ────────────────────────────────────────────────────────────────────
@@ -330,10 +494,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "gemini" => app.config.llm.gemini_model.clone(),
                 "kimi" => app.config.llm.kimi_model.clone(),
                 "huggingface" => app.config.llm.hf_model.clone(),
+                "openai_compat" => app.config.llm.openai_compat_model.clone(),
                 _ => app.config.llm.ollama_model.clone(),
             };
 
             let (game_name, game_id, game_running) = crate::detect_game();
+            let tool_status = compute_tool_status(&state);
 
             Ok(serde_json::json!({
                 "model": model_name,
@@ -342,7 +508,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "session_id": app.session_id,
                 "active_persona": app.active_persona,
                 "memory_status": if app.mem_db.is_some() { "Stable" } else { "Offline" },
-                "tool_status": "Idle",
+                "tool_status": tool_status,
                 "boot_health_status": app.boot_self_heal.status,
                 "boot_health_summary": app.boot_self_heal.summary(),
                 "boot_health_recovered_count": app.boot_self_heal.recovered_count.to_string(),
@@ -350,8 +516,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 "game_name": game_name,
                 "game_app_id": game_id,
                 "game_running": game_running.to_string(),
+                "active_theme_name": app.config.theme.active_theme_name,
             }))
         }
+
+        "get_status_bar_state" => build_status_bar_state(&state),
 
         "list_sessions" => {
             let sessions = crate::commands::session::list_sessions().map_err(|e| e.to_string())?;
@@ -3975,11 +4144,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "get_sync_status" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let persisted = crate::sync::load_status();
             Ok(serde_json::json!({
                 "enabled":         app_state.config.sync.enabled,
                 "api_base_url":    app_state.config.sync.api_base_url,
-                "last_sync_at":    null,
-                "syncing":         false
+                "sync_memory":     app_state.config.sync.sync_memory,
+                "sync_sessions":   app_state.config.sync.sync_sessions,
+                "last_sync_at":    app_state.config.sync.last_sync_at.as_ref().or(persisted.last_sync_at.as_ref()),
+                "last_error":      persisted.last_error,
+                "syncing":         persisted.syncing,
+                "pending_records": persisted.pending_records,
+                "pushed_records":  persisted.pushed_records,
+                "pulled_records":  persisted.pulled_records,
+                "conflict_count":  persisted.conflict_count,
             }))
         }
 
@@ -4184,34 +4361,45 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
+                .ok_or("Missing 'name'")?
+                .to_string();
             let schema_json = args
                 .get("schema_json")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'schema_json'")?;
-            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
-
-            let mut presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path)
-                    .ok()
-                    .and_then(|s| serde_json::from_str(&s).ok())
-                    .unwrap_or_default();
-            presets.insert(name.to_string(), schema_json.to_string());
-            std::fs::write(
-                &presets_path,
-                serde_json::to_string_pretty(&presets).unwrap_or_default(),
-            )
-            .map_err(|e| format!("Save failed: {}", e))?;
-            Ok(serde_json::json!({ "status": "saved", "name": name }))
+                .ok_or("Missing 'schema_json'")?
+                .to_string();
+            tokio::task::spawn_blocking(move || {
+                let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+                let mut presets: std::collections::HashMap<String, String> =
+                    std::fs::read_to_string(&presets_path)
+                        .ok()
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default();
+                presets.insert(name.clone(), schema_json);
+                std::fs::write(
+                    &presets_path,
+                    serde_json::to_string_pretty(&presets).unwrap_or_default(),
+                )
+                .map_err(|e| format!("Save failed: {}", e))?;
+                Ok::<String, String>(name)
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))?
+            .map(|n| serde_json::json!({ "status": "saved", "name": n }))
         }
 
         "load_prompt_presets" => {
-            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
-            let presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path)
-                    .ok()
-                    .and_then(|s| serde_json::from_str(&s).ok())
-                    .unwrap_or_default();
+            let presets = tokio::task::spawn_blocking(|| {
+                let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+                let presets: std::collections::HashMap<String, String> =
+                    std::fs::read_to_string(&presets_path)
+                        .ok()
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default();
+                presets
+            })
+            .await
+            .unwrap_or_default();
             Ok(serde_json::json!({ "presets": presets, "count": presets.len() }))
         }
 
@@ -4219,22 +4407,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
-            let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
-            let mut presets: std::collections::HashMap<String, String> =
-                std::fs::read_to_string(&presets_path)
-                    .ok()
-                    .and_then(|s| serde_json::from_str(&s).ok())
-                    .unwrap_or_default();
-            if presets.remove(name).is_none() {
-                return Err(format!("Preset '{}' not found", name));
-            }
-            std::fs::write(
-                &presets_path,
-                serde_json::to_string_pretty(&presets).unwrap_or_default(),
-            )
-            .map_err(|e| e.to_string())?;
-            Ok(serde_json::json!({ "status": "deleted", "name": name }))
+                .ok_or("Missing 'name'")?
+                .to_string();
+            tokio::task::spawn_blocking(move || {
+                let presets_path = crate::user_config_dir().join("data/prompt_presets.json");
+                let mut presets: std::collections::HashMap<String, String> =
+                    std::fs::read_to_string(&presets_path)
+                        .ok()
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default();
+                if presets.remove(&name).is_none() {
+                    return Err(format!("Preset '{}' not found", name));
+                }
+                std::fs::write(
+                    &presets_path,
+                    serde_json::to_string_pretty(&presets).unwrap_or_default(),
+                )
+                .map_err(|e| e.to_string())?;
+                Ok::<String, String>(name)
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))?
+            .map(|n| serde_json::json!({ "status": "deleted", "name": n }))
         }
 
         "generate_jpe_explanation" => {
@@ -4831,6 +5025,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
             if let Some(t) = crate::THEMES.iter().find(|t| t.name == name) {
+                {
+                    let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                    app_state.config.theme.active_theme_name = Some(name.to_string());
+                    let path = crate::get_config_path();
+                    crate::config::save_config(&path, &app_state.config)
+                        .map_err(|e| format!("Failed to persist active theme: {}", e))?;
+                }
                 Ok(serde_json::json!({
                     "Name": t.name,
                     "Color": t.color,
@@ -4850,6 +5051,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "response": t.response,
                     "warning": t.warning,
                     "error": t.error,
+                    "active_theme_name": name,
                 }))
             } else {
                 Err(format!("Theme '{}' not found", name))
@@ -4860,18 +5062,28 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let data = args
                 .get("data")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'data'")?;
-            let dir = crate::user_config_dir().join("data/themes");
-            std::fs::create_dir_all(&dir).ok();
-            std::fs::write(dir.join("custom.json"), data)
-                .map_err(|e| format!("Save failed: {}", e))?;
+                .ok_or("Missing 'data'")?
+                .to_string();
+            tokio::task::spawn_blocking(move || {
+                let dir = crate::user_config_dir().join("data/themes");
+                std::fs::create_dir_all(&dir).ok();
+                std::fs::write(dir.join("custom.json"), data)
+                    .map_err(|e| format!("Save failed: {}", e))
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))??;
             Ok(serde_json::json!({ "status": "saved" }))
         }
 
         "load_custom_themes" => {
-            let data =
-                std::fs::read_to_string(crate::user_config_dir().join("data/themes/custom.json"))
-                    .unwrap_or_else(|_| "[]".to_string());
+            let data = tokio::task::spawn_blocking(|| {
+                std::fs::read_to_string(
+                    crate::user_config_dir().join("data/themes/custom.json"),
+                )
+                .unwrap_or_else(|_| "[]".to_string())
+            })
+            .await
+            .unwrap_or_else(|_| "[]".to_string());
             Ok(serde_json::json!({ "themes": data }))
         }
 
@@ -4917,22 +5129,29 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             {
                 return Err(format!("'{}' clashes with a built-in persona", name));
             }
-            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if app_state
-                .custom_personas
-                .iter()
-                .any(|p| p.name.to_lowercase() == name.to_lowercase())
-            {
-                return Err(format!("Persona '{}' already exists", name));
-            }
-            app_state.custom_personas.push(crate::CustomPersona {
-                name: name.clone(),
-                prompt,
-            });
-            let json = serde_json::to_string_pretty(&app_state.custom_personas)
-                .map_err(|e| e.to_string())?;
-            std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
-                .map_err(|e| format!("Save failed: {}", e))?;
+            let json = {
+                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if app_state
+                    .custom_personas
+                    .iter()
+                    .any(|p| p.name.to_lowercase() == name.to_lowercase())
+                {
+                    return Err(format!("Persona '{}' already exists", name));
+                }
+                app_state.custom_personas.push(crate::CustomPersona {
+                    name: name.clone(),
+                    prompt,
+                });
+                serde_json::to_string_pretty(&app_state.custom_personas)
+                    .map_err(|e| e.to_string())?
+                // MutexGuard drops here — before the .await below
+            };
+            tokio::task::spawn_blocking(move || {
+                std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
+                    .map_err(|e| format!("Save failed: {}", e))
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))??;
             Ok(serde_json::json!({ "status": "added", "name": name }))
         }
 
@@ -4940,17 +5159,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let name = args
                 .get("name")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'name'")?;
-            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let before = app_state.custom_personas.len();
-            app_state.custom_personas.retain(|p| p.name != name);
-            if app_state.custom_personas.len() == before {
-                return Err(format!("Persona '{}' not found", name));
-            }
-            let json = serde_json::to_string_pretty(&app_state.custom_personas)
-                .map_err(|e| e.to_string())?;
-            std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
-                .map_err(|e| format!("Save failed: {}", e))?;
+                .ok_or("Missing 'name'")?
+                .to_string();
+            let json = {
+                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let before = app_state.custom_personas.len();
+                app_state.custom_personas.retain(|p| p.name != name);
+                if app_state.custom_personas.len() == before {
+                    return Err(format!("Persona '{}' not found", name));
+                }
+                serde_json::to_string_pretty(&app_state.custom_personas)
+                    .map_err(|e| e.to_string())?
+                // MutexGuard drops here — before the .await below
+            };
+            tokio::task::spawn_blocking(move || {
+                std::fs::write(crate::user_config_dir().join("data/personas.json"), json)
+                    .map_err(|e| format!("Save failed: {}", e))
+            })
+            .await
+            .map_err(|e| format!("spawn_blocking: {}", e))??;
             Ok(serde_json::json!({ "status": "deleted", "name": name }))
         }
 
