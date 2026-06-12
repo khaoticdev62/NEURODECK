@@ -1470,6 +1470,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'command'")?;
 
+            crate::security::validate_terminal_command(cmd, "execute-command-sync")?;
+
             tokio::task::spawn_blocking({
                 let cmd_str = cmd.to_string();
                 move || {
@@ -3101,6 +3103,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("name")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
+            // Guard: name must be a plain filename — no directory traversal
+            if name.is_empty() || name.contains("..") || name.contains('/') || name.contains('\\') {
+                return Err("Invalid backup name".to_string());
+            }
             let backup_path = crate::user_config_dir()
                 .join("data/memory/backups")
                 .join(name);
@@ -3108,7 +3114,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 return Err(format!("Backup '{}' not found", name));
             }
             let dest = crate::user_config_dir().join("data/memory/memory.json");
-            std::fs::copy(&backup_path, &dest).map_err(|e| format!("Restore failed: {}", e))?;
+            std::fs::copy(&backup_path, &dest)
+                .map_err(|e| crate::security::sanitize_error_for_frontend(&e.to_string()))?;
             Ok(serde_json::json!({ "status": "restored", "name": name }))
         }
 
@@ -4326,12 +4333,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
             #[cfg(target_os = "windows")]
             {
-                let ps = format!(
-                    "Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('{}');",
-                    text.replace('\'', "''")
-                );
+                // Pass text via env var to avoid any shell-string injection in the PS script.
                 let _ = std::process::Command::new("powershell")
-                    .args(["-Command", &ps])
+                    .env("ND_SPEAK_TEXT", text)
+                    .args([
+                        "-NoProfile",
+                        "-NonInteractive",
+                        "-Command",
+                        "Add-Type -AssemblyName System.Speech; \
+                         $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; \
+                         $synth.Speak($env:ND_SPEAK_TEXT);",
+                    ])
                     .spawn();
             }
             state

@@ -280,46 +280,64 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<WsEven
     }
 }
 
+/// Resolve a request origin to an allowed ACAO value, or `None` to deny.
+/// Only localhost / 127.0.0.1 origins are permitted — production Electron
+/// uses file:// and sends no Origin header, which also passes (no CORS context).
+fn resolve_cors_origin(
+    origin: Option<&axum::http::HeaderValue>,
+) -> Option<axum::http::HeaderValue> {
+    let o = origin?.to_str().ok()?;
+    let allowed = o.starts_with("http://localhost:")
+        || o.starts_with("http://127.0.0.1:")
+        || o == "http://localhost"
+        || o == "http://127.0.0.1";
+    if allowed {
+        axum::http::HeaderValue::from_str(o).ok()
+    } else {
+        None
+    }
+}
+
 async fn cors_middleware(req: axum::extract::Request, next: axum::middleware::Next) -> Response {
     let method = req.method().clone();
     let origin = req.headers().get("origin").cloned();
+    let allowed = resolve_cors_origin(origin.as_ref());
 
     if method == axum::http::Method::OPTIONS {
         let mut response = Response::new(axum::body::Body::empty());
         let headers = response.headers_mut();
-        if let Some(origin_val) = origin {
-            headers.insert("access-control-allow-origin", origin_val);
-        } else {
+        if let Some(v) = allowed {
+            headers.insert("access-control-allow-origin", v);
             headers.insert(
-                "access-control-allow-origin",
-                axum::http::HeaderValue::from_static("*"),
+                "access-control-allow-methods",
+                axum::http::HeaderValue::from_static("POST, GET, OPTIONS"),
+            );
+            headers.insert(
+                "access-control-allow-headers",
+                axum::http::HeaderValue::from_static("Content-Type"),
+            );
+            headers.insert(
+                "access-control-max-age",
+                axum::http::HeaderValue::from_static("86400"),
             );
         }
-        headers.insert(
-            "access-control-allow-methods",
-            axum::http::HeaderValue::from_static("POST, GET, OPTIONS"),
-        );
-        headers.insert(
-            "access-control-allow-headers",
-            axum::http::HeaderValue::from_static("Content-Type"),
-        );
-        headers.insert(
-            "access-control-max-age",
-            axum::http::HeaderValue::from_static("86400"),
-        );
         return response;
     }
 
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
-    if let Some(origin_val) = origin {
-        headers.insert("access-control-allow-origin", origin_val);
-    } else {
-        headers.insert(
-            "access-control-allow-origin",
-            axum::http::HeaderValue::from_static("*"),
-        );
+    if let Some(v) = allowed {
+        headers.insert("access-control-allow-origin", v);
     }
+    // Harden all responses regardless of origin
+    headers.insert(
+        "x-content-type-options",
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        "x-frame-options",
+        axum::http::HeaderValue::from_static("DENY"),
+    );
     response
 }
 
