@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T20:32:49.706Z",
+  "generatedAt": "2026-06-12T21:56:16.629Z",
   "sidecarRunning": false,
   "checks": [
     {
@@ -14,7 +14,7 @@
       "ok": true,
       "status": "pass",
       "message": "agent.contracts.ts exists and exports NeurodeckAgent",
-      "durationMs": 0
+      "durationMs": 1
     },
     {
       "id": "chat-js-message-key",
@@ -42,14 +42,14 @@
       "ok": true,
       "status": "pass",
       "message": "agentRegistry.ts has correct 9 predefined agents",
-      "durationMs": 0
+      "durationMs": 1
     },
     {
       "id": "add-agent-nested-fix",
       "ok": true,
       "status": "pass",
       "message": "Rust add_agent supports nested { agent: {...} } and flat args",
-      "durationMs": 2
+      "durationMs": 1
     },
     {
       "id": "live-checks",

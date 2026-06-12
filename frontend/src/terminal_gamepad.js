@@ -50,7 +50,7 @@ const PLACEHOLDER_OPTIONS = {
   SOURCE:    ['./src/', './dist/', '~/Documents/', '/var/log/'],
   ARCHIVE:   ['backup', 'release', 'snapshot', 'export'],
   SCRIPT:    ['build', 'dev', 'test', 'start', 'lint', 'check'],
-  VAR:       ['PATH', 'HOME', 'USER', 'GEMINI_API_KEY', 'NODE_ENV', 'NEURODECK_PORT'],
+  VAR:       ['PATH', 'HOME', 'USER', 'GEMINI_API_VAR', 'NODE_ENV', 'NEURODECK_PORT'],
   CMD:       ['ls', 'git', 'cargo', 'npm', 'node', 'python3'],
   URL:       ['http://localhost:3000', 'https://api.github.com', 'http://127.0.0.1:9477/health'],
   PATH:      ['.', './src', '~/Desktop', '/tmp'],

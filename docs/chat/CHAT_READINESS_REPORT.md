@@ -1,6 +1,6 @@
 # NEURODECK Chat Readiness Report
 
-**Generated:** 2026-06-11T20:33:19.685Z  
+**Generated:** 2026-06-12T21:56:19.889Z  
 **Score:** 100%  
 **Gate:** ✅ PASSED
 

@@ -31,7 +31,7 @@ import type {
   NeuroDeckAppActions,
   NeuroDeckState,
 } from "../../types/neurodeck";
-import type { RuntimeManifest } from "../../types/electron";
+import type { RuntimeManifest } from "../../types/preload-surface";
 import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 
 type ProviderOption = { id: AIProvider; runtimeId: string; label: string; description: string };

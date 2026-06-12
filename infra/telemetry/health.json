@@ -6,8 +6,8 @@
     "codename":  "Ptah",
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
-    "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-12T22:22:18Z",
+    "dirty_build":  false,
+    "stamped_at_utc":  "2026-06-12T22:22:54Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -17,7 +17,7 @@
                },
     "release_plan":  {
                          "release_decision":  "HOLD",
-                         "readiness_score":  70,
+                         "readiness_score":  90,
                          "policy":  {
                                         "go_threshold":  85,
                                         "hold_threshold":  60,
@@ -35,8 +35,8 @@
                          "gate_summary":  "hardening_check=pass,cargo_check=pass,cargo_test=pass,frontend_build=pass",
                          "metadata":  "aligned",
                          "diff_hygiene":  "pass",
-                         "workspace_state":  "manual-uncommitted",
-                         "loose_root_files":  4,
+                         "workspace_state":  "clean",
+                         "loose_root_files":  3,
                          "hardening_check":  "pass",
                          "cargo_check":  "pass",
                          "cargo_test":  "pass",
@@ -47,43 +47,42 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  801,
-                                           "started_at_utc":  "2026-06-12T22:22:21Z",
-                                           "finished_at_utc":  "2026-06-12T22:22:22Z"
+                                           "duration_ms":  832,
+                                           "started_at_utc":  "2026-06-12T22:22:56Z",
+                                           "finished_at_utc":  "2026-06-12T22:22:57Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1502,
-                                           "started_at_utc":  "2026-06-12T22:22:22Z",
-                                           "finished_at_utc":  "2026-06-12T22:22:23Z"
+                                           "duration_ms":  1492,
+                                           "started_at_utc":  "2026-06-12T22:22:57Z",
+                                           "finished_at_utc":  "2026-06-12T22:22:59Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  5089,
-                                           "started_at_utc":  "2026-06-12T22:22:23Z",
-                                           "finished_at_utc":  "2026-06-12T22:22:28Z"
+                                           "duration_ms":  5182,
+                                           "started_at_utc":  "2026-06-12T22:22:59Z",
+                                           "finished_at_utc":  "2026-06-12T22:23:04Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  2533,
-                                           "started_at_utc":  "2026-06-12T22:22:28Z",
-                                           "finished_at_utc":  "2026-06-12T22:22:31Z"
+                                           "duration_ms":  2759,
+                                           "started_at_utc":  "2026-06-12T22:23:04Z",
+                                           "finished_at_utc":  "2026-06-12T22:23:07Z"
                                        }
                                    ],
                          "blockers":  [
-                                          "Workspace has uncommitted manual changes.",
                                           "Loose root files are present outside the preserved set."
                                       ],
-                         "duration_ms":  9949,
-                         "checked_at_utc":  "2026-06-12T22:22:31Z"
+                         "duration_ms":  10292,
+                         "checked_at_utc":  "2026-06-12T22:23:07Z"
                      }
 }

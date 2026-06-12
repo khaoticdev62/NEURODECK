@@ -543,7 +543,7 @@ function loadMainWindowURL() {
       mainWindow.loadURL('http://localhost:1420');
       mainWindow.webContents.openDevTools();
     });
-    req.setTimeout(300, () => {
+    req.setTimeout(3000, () => {
       req.destroy();
       console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
       mainWindow.loadURL('neurodeck://app/index.html');

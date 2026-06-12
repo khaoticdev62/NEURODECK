@@ -1,10 +1,10 @@
 {
-  "scannedAt": "2026-06-12T04:40:40.123Z",
+  "scannedAt": "2026-06-12T21:58:43.417Z",
   "violations": [],
   "warnings": [
     {
       "file": "electron/preload.js",
-      "line": 160,
+      "line": 251,
       "col": 19,
       "pattern": "Stub Promise.resolve({ok:true})",
       "context": "cancel: () => Promise.resolve({ ok: true })",
@@ -12,7 +12,7 @@
     },
     {
       "file": "electron/preload.js",
-      "line": 190,
+      "line": 281,
       "col": 31,
       "pattern": "Stub Promise.resolve({valid:true})",
       "context": "validate: (key, value) => Promise.resolve({ valid: true })",

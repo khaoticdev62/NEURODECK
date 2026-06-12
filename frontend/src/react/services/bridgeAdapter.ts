@@ -647,7 +647,7 @@ const ai = {
     if (neurodeck?.models) {
       const res = await neurodeck.models.runPrompt(
         payload.prompt,
-        payload.provider === "offline-draft" ? undefined : payload.provider,
+        payload.provider === 'offline-draft' ? undefined : payload.provider,
         payload.model === "NeuroDraft" ? undefined : payload.model
       );
       if (!res.ok) {

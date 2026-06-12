@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-/// <reference path="./electron.d.ts" />
+/// <reference path="./preload-surface.d.ts" />
 
 import type {
   AgentRunRequest,
