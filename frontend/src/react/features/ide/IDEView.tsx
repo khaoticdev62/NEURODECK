@@ -75,6 +75,10 @@ function fileUri(path: string): string {
   return `file:///${path.replace(/\\/g, '/')}`;
 }
 
+function supportsLspLanguage(language: string) {
+  return language !== 'text';
+}
+
 export function IDEView() {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [currentPath, setCurrentPath] = useState('');
@@ -167,7 +171,9 @@ export function IDEView() {
       setPredictions([]);
 
       const nd = (window as any).neurodeck;
-      nd?.lsp?.openDocument?.(lang, fileUri(path), res.content).catch(() => {});
+      if (supportsLspLanguage(lang)) {
+        nd?.lsp?.openDocument?.(lang, fileUri(path), res.content).catch(() => {});
+      }
     } catch (e) {
       log(`Cannot open ${name}: ${e}`, 'error');
     }
@@ -176,7 +182,7 @@ export function IDEView() {
   // ── Close tab: notify LSP ─────────────────────────────────────────────
   const closeTab = useCallback((path: string) => {
     const tab = openTabs.find((t) => t.path === path);
-    if (tab) {
+    if (tab && supportsLspLanguage(tab.lang)) {
       const nd = (window as any).neurodeck;
       nd?.lsp?.closeDocument?.(tab.lang, fileUri(path)).catch(() => {});
     }
@@ -214,7 +220,7 @@ export function IDEView() {
     if (lspChangeTimer.current) clearTimeout(lspChangeTimer.current);
     lspChangeTimer.current = setTimeout(() => {
       const tab = openTabs.find((t) => t.path === activeTab);
-      if (!tab) return;
+      if (!tab || !supportsLspLanguage(tab.lang)) return;
       const nd = (window as any).neurodeck;
       nd?.lsp?.changeDocument?.(tab.lang, fileUri(activeTab), value, tab.lspVersion + 1).catch(() => {});
     }, 300);
