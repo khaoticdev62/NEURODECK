@@ -397,7 +397,7 @@ export function CliMakerView() {
                 ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
                 : 'border-nd-success/30 bg-nd-success/10 text-nd-success'
             }`}>
-              {statusIsError ? <AlertCircle className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+              {statusIsError ? <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" /> : <Check className="h-3.5 w-3.5" aria-hidden="true" />}
               <span>{statusMessage}</span>
             </div>
           )}
@@ -406,7 +406,7 @@ export function CliMakerView() {
             onClick={handleNewCommand}
             className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer min-h-[40px] min-w-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <Plus className="h-4 w-4" /> New Command
+            <Plus className="h-4 w-4" aria-hidden="true" /> New Command
           </button>
         </div>
       </div>
@@ -470,11 +470,11 @@ export function CliMakerView() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-nd-text-muted/10 bg-nd-bg/60 text-nd-accent">
-                      {cmd.category === 'prompt' && <Sparkles className="h-4 w-4" />}
-                      {cmd.category === 'shell' && <Command className="h-4 w-4" />}
-                      {cmd.category === 'view' && <Globe className="h-4 w-4" />}
-                      {cmd.category === 'chain' && <Layers className="h-4 w-4" />}
-                      {cmd.category === 'plugin' && <Code className="h-4 w-4" />}
+                      {cmd.category === 'prompt' && <Sparkles className="h-4 w-4" aria-hidden="true" />}
+                      {cmd.category === 'shell' && <Command className="h-4 w-4" aria-hidden="true" />}
+                      {cmd.category === 'view' && <Globe className="h-4 w-4" aria-hidden="true" />}
+                      {cmd.category === 'chain' && <Layers className="h-4 w-4" aria-hidden="true" />}
+                      {cmd.category === 'plugin' && <Code className="h-4 w-4" aria-hidden="true" />}
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs font-semibold text-nd-text/90">/{cmd.name}</div>
@@ -508,7 +508,7 @@ export function CliMakerView() {
           {/* Card 1: Command Profile */}
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-              <Settings className="h-4 w-4" /> Command Profile
+              <Settings className="h-4 w-4" aria-hidden="true" /> Command Profile
             </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -602,7 +602,7 @@ export function CliMakerView() {
           {/* Card 2: Action Details */}
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-              <Code className="h-4 w-4" /> Action Implementation
+              <Code className="h-4 w-4" aria-hidden="true" /> Action Implementation
             </h3>
 
             {category === 'prompt' && (
@@ -657,7 +657,7 @@ export function CliMakerView() {
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5 rounded-xl border border-nd-warning/20 bg-nd-warning/5 p-3 text-xs text-nd-warning/90">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
                   <span>Shell commands are executed directly on the host machine. Ensure you audit inputs properly. Use <code>"&#123;&#123;input&#125;&#125;"</code> to safely pass runner arguments.</span>
                 </div>
               </div>
@@ -719,7 +719,7 @@ export function CliMakerView() {
                   onClick={() => setChainSteps([...chainSteps, ''])}
                   className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[35px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Add Chain Step
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add Chain Step
                 </button>
               </div>
             )}
@@ -744,7 +744,7 @@ export function CliMakerView() {
             {/* Left Actions: Save and Test */}
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-                <Play className="h-4 w-4" /> Save &amp; Run Test
+                <Play className="h-4 w-4" aria-hidden="true" /> Save &amp; Run Test
               </h3>
 
               <div className="flex gap-2">
@@ -753,7 +753,7 @@ export function CliMakerView() {
                   onClick={handleSaveCommand}
                   className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 text-sm font-semibold text-nd-success hover:bg-nd-success/20 transition-all duration-150 cursor-pointer min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <Save className="h-4 w-4" /> Save Command
+                  <Save className="h-4 w-4" aria-hidden="true" /> Save Command
                 </button>
               </div>
 
@@ -778,7 +778,7 @@ export function CliMakerView() {
                   {loadingTest ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" />
                   ) : (
-                    <Play className="h-4 w-4" />
+                    <Play className="h-4 w-4" aria-hidden="true" />
                   )}
                   Run Test
                 </button>
@@ -788,7 +788,7 @@ export function CliMakerView() {
             {/* Right Actions: Export and Imports */}
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-                <Folder className="h-4 w-4" /> Import &amp; Export
+                <Folder className="h-4 w-4" aria-hidden="true" /> Import &amp; Export
               </h3>
 
               <div className="grid grid-cols-2 gap-2">
@@ -851,7 +851,7 @@ export function CliMakerView() {
                   onClick={handleImportLua}
                   className="inline-flex h-10 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <Upload className="h-3.5 w-3.5" /> Import
+                  <Upload className="h-3.5 w-3.5" aria-hidden="true" /> Import
                 </button>
               </div>
             </div>
@@ -862,7 +862,7 @@ export function CliMakerView() {
             {/* Help Preview */}
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-2 flex flex-col h-64">
               <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2 shrink-0">
-                <HelpCircle className="h-4 w-4" /> Command Help Preview
+                <HelpCircle className="h-4 w-4" aria-hidden="true" /> Command Help Preview
               </h3>
               <pre className="flex-1 overflow-auto rounded-xl bg-nd-bg/40 p-3 font-mono text-[11px] text-nd-text-muted leading-relaxed select-text whitespace-pre scrollbar-thin">
                 {getHelpPreview()}
@@ -872,7 +872,7 @@ export function CliMakerView() {
             {/* Test Run Output */}
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-2 flex flex-col h-64">
               <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2 shrink-0">
-                <Activity className="h-4 w-4" /> Test Execution Output
+                <Activity className="h-4 w-4" aria-hidden="true" /> Test Execution Output
               </h3>
               <pre className={`flex-1 overflow-auto rounded-xl bg-nd-bg/40 p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap scrollbar-thin ${
                 testError ? 'text-nd-danger' : 'text-nd-success'

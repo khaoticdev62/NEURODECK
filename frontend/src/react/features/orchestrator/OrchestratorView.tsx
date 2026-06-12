@@ -25,7 +25,7 @@ export function OrchestratorView() {
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Layers className="h-5 w-5 text-nd-accent" />
+          <Layers className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Orchestrator</h2>
@@ -33,7 +33,7 @@ export function OrchestratorView() {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}>
-            {running ? <><Square className="h-4 w-4" /> Stop</> : <><Play className="h-4 w-4" /> Run</>}
+            {running ? <><Square className="h-4 w-4" aria-hidden="true" /> Stop</> : <><Play className="h-4 w-4" aria-hidden="true" /> Run</>}
           </button>
           <button type="button" aria-label="Add workflow node" className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
             <Plus className="h-4 w-4" aria-hidden="true" />

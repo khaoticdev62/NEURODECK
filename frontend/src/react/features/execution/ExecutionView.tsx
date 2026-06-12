@@ -44,7 +44,7 @@ export function ExecutionView({ state, actions }: { state: NeuroDeckState; actio
             </button>
           ))}
           <button type="button" onClick={() => void actions.saveSession()} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-3 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
-            <FileText className="h-4 w-4" /> Save execution session
+            <FileText className="h-4 w-4" aria-hidden="true" /> Save execution session
           </button>
         </div>
       </Panel>
@@ -60,7 +60,7 @@ function RunCard({ run }: { run: AgentRun }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/25 bg-nd-accent/10 text-nd-accent">
-            <Icon className="h-5 w-5" />
+            <Icon className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
             <h3 className="font-semibold text-nd-text">{run.agentName}</h3>

@@ -70,7 +70,7 @@ export function DocsView() {
     <div className="docs-container flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <BookOpen className="h-5 w-5 text-nd-accent" />
+          <BookOpen className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="docs-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Docs</div>
@@ -84,7 +84,7 @@ export function DocsView() {
 
       <div className="docs-search-shell mb-4 flex gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
-          <Search className="h-4 w-4 text-nd-text-muted" />
+          <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
           <input
             id="docs-search-input"
             type="text"
@@ -92,6 +92,7 @@ export function DocsView() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && search()}
             placeholder="Search indexed docs..."
+            aria-label="Search indexed docs"
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
           <button type="button" onClick={search} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Search</button>
@@ -103,7 +104,7 @@ export function DocsView() {
 
       <div className="mb-4 flex gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
-          <FolderOpen className="h-4 w-4 text-nd-text-muted" />
+          <FolderOpen className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
           <input
             type="text"
             value={indexPath}
@@ -125,7 +126,7 @@ export function DocsView() {
           <div className="mt-2 space-y-1">
             {docs.map((doc) => (
               <div key={doc.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-nd-text/80">
-                <FileText className="h-3.5 w-3.5 text-nd-text-muted" />
+                <FileText className="h-3.5 w-3.5 text-nd-text-muted" aria-hidden="true" />
                 <span className="truncate">{doc.title || doc.path}</span>
               </div>
             ))}

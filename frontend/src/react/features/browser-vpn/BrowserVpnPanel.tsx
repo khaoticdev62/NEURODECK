@@ -108,11 +108,11 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => void refresh()} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted">
-              <RefreshCcw className="mr-1 inline h-3.5 w-3.5" />
+              <RefreshCcw className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
               Refresh
             </button>
             <button type="button" onClick={onClose} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted">
-              <X className="mr-1 inline h-3.5 w-3.5" />
+              <X className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
               Close
             </button>
           </div>
@@ -214,7 +214,7 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
               </div>
             </div>
             <div className="rounded-xl border border-nd-warning/25 bg-nd-warning/10 p-3 text-nd-warning">
-              <AlertTriangle className="mr-2 inline h-4 w-4" />
+              <AlertTriangle className="mr-2 inline h-4 w-4" aria-hidden="true" />
               Unsupported locked clients remain unsupported until a real config or CLI path exists.
             </div>
           </section>

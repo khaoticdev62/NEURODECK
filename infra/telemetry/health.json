@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-12T15:24:50Z",
+    "stamped_at_utc":  "2026-06-12T15:36:07Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,36 +47,36 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  787,
-                                           "started_at_utc":  "2026-06-12T15:24:53Z",
-                                           "finished_at_utc":  "2026-06-12T15:24:53Z"
+                                           "duration_ms":  744,
+                                           "started_at_utc":  "2026-06-12T15:36:09Z",
+                                           "finished_at_utc":  "2026-06-12T15:36:10Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  1383,
-                                           "started_at_utc":  "2026-06-12T15:24:53Z",
-                                           "finished_at_utc":  "2026-06-12T15:24:55Z"
+                                           "duration_ms":  1345,
+                                           "started_at_utc":  "2026-06-12T15:36:10Z",
+                                           "finished_at_utc":  "2026-06-12T15:36:11Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  4590,
-                                           "started_at_utc":  "2026-06-12T15:24:55Z",
-                                           "finished_at_utc":  "2026-06-12T15:24:59Z"
+                                           "duration_ms":  4731,
+                                           "started_at_utc":  "2026-06-12T15:36:11Z",
+                                           "finished_at_utc":  "2026-06-12T15:36:16Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  2556,
-                                           "started_at_utc":  "2026-06-12T15:24:59Z",
-                                           "finished_at_utc":  "2026-06-12T15:25:02Z"
+                                           "duration_ms":  2584,
+                                           "started_at_utc":  "2026-06-12T15:36:16Z",
+                                           "finished_at_utc":  "2026-06-12T15:36:18Z"
                                        }
                                    ],
                          "blockers":  [
@@ -84,7 +84,7 @@
                                           "Workspace has uncommitted manual changes.",
                                           "Loose root files are present outside the preserved set."
                                       ],
-                         "duration_ms":  9340,
-                         "checked_at_utc":  "2026-06-12T15:25:02Z"
+                         "duration_ms":  9428,
+                         "checked_at_utc":  "2026-06-12T15:36:19Z"
                      }
 }

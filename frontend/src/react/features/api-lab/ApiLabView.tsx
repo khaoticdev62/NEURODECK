@@ -46,7 +46,7 @@ export function ApiLabView() {
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Webhook className="h-5 w-5 text-nd-accent" />
+          <Webhook className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">API Lab</h2>
@@ -73,7 +73,7 @@ export function ApiLabView() {
           className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
         <button type="button" onClick={send} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Send className="h-4 w-4" />}
+          {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
           Send
         </button>
       </div>
@@ -118,7 +118,7 @@ export function ApiLabView() {
               </div>
             ))}
             <button type="button" onClick={addHeader} className="flex items-center gap-1 text-xs text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-              <Plus className="h-3.5 w-3.5" /> Add header
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add header
             </button>
           </div>
         )}

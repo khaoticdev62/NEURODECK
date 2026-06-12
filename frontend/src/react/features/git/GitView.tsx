@@ -77,7 +77,7 @@ export function GitView() {
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <GitBranch className="h-5 w-5 text-nd-accent" />
+          <GitBranch className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Git</h2>
@@ -178,7 +178,7 @@ export function GitView() {
                 onClick={() => neurodeckApi.git.branchCheckout(b.name).then(loadStatus)}
                 className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 ${b.current ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'}`}
               >
-                <GitBranch className="h-3.5 w-3.5" />
+                <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="truncate">{b.name}</span>
               </button>
             ))}

@@ -81,7 +81,7 @@ export function CanvasView() {
     <div className="canvas-container flex h-full flex-col">
       <div className="canvas-toolbar mb-3 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Paintbrush className="h-5 w-5 text-nd-accent" />
+          <Paintbrush className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="canvas-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Canvas</div>
@@ -99,7 +99,7 @@ export function CanvasView() {
           ))}
         </select>
         <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40">
-          {running ? <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" /> : <Play className="h-4 w-4 nd-icon-svg" />}
+          {running ? <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" aria-hidden="true" /> : <Play className="h-4 w-4 nd-icon-svg" aria-hidden="true" />}
           Run
         </button>
         <button id="canvas-copy-btn" type="button" aria-label="Copy code" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">

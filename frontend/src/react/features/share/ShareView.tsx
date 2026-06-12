@@ -55,7 +55,7 @@ export function ShareView() {
     <div className="share-container flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Share2 className="h-5 w-5 text-nd-accent" />
+          <Share2 className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="share-view-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
@@ -105,7 +105,7 @@ export function ShareView() {
             className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
           <button type="button" onClick={sendFile} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Send className="h-4 w-4" /> Send
+            <Send className="h-4 w-4" aria-hidden="true" /> Send
           </button>
         </div>
 

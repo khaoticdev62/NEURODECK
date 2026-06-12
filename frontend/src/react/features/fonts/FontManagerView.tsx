@@ -29,7 +29,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Type className="h-5 w-5 text-nd-accent" />
+          <Type className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Font Manager</h2>
@@ -42,17 +42,18 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <Search className="h-4 w-4 text-nd-text-muted" />
+          <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search fonts..."
+            aria-label="Search fonts"
             className="flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
           />
           {search && (
-            <button type="button" onClick={() => setSearch('')} className="text-nd-text-muted hover:text-nd-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-              <X className="h-3.5 w-3.5" />
+            <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="text-nd-text-muted hover:text-nd-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -96,7 +97,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
             >
               {isActive && (
                 <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent text-nd-bg">
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
                 </div>
               )}
 

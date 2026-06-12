@@ -5,7 +5,7 @@ export function GraphView() {
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Network className="h-5 w-5 text-nd-accent" />
+          <Network className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div>
           <h2 className="text-lg font-semibold text-nd-text">Graph</h2>

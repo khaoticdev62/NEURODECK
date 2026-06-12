@@ -27,7 +27,7 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm">
       <div className="mt-24 w-full max-w-xl overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 shadow-panel-elevated">
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
-          <Command className="h-4 w-4 text-nd-accent" />
+          <Command className="h-4 w-4 text-nd-accent" aria-hidden="true" />
           <div>
             <div className="text-sm font-semibold text-nd-text">Terminal Command Palette</div>
             <div className="text-xs text-nd-text-muted">Execute real terminal actions only.</div>

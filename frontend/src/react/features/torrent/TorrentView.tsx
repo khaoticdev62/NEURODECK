@@ -298,7 +298,7 @@ export function TorrentView() {
       {/* Header */}
       <div className="mb-3 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Magnet className="h-5 w-5 text-nd-accent" />
+          <Magnet className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <div className="torrent-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Torrent</div>
@@ -324,22 +324,24 @@ export function TorrentView() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
           placeholder="Magnet link or .torrent file path..."
+          aria-label="Magnet link or torrent file path"
           className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
         />
         <button type="button" onClick={() => addTorrent()} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Plus className="h-4 w-4" /> Add
+          <Plus className="h-4 w-4" aria-hidden="true" /> Add
         </button>
       </div>
 
       {/* Search / Filter / Sort / Batch toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <Search className="h-4 w-4 text-nd-text-muted" />
+          <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search torrents..."
+            aria-label="Search torrents"
             className="flex-1 bg-transparent text-sm text-nd-text outline-none"
           />
         </div>
@@ -420,9 +422,11 @@ export function TorrentView() {
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); toggleSelection(t.id); }}
+                  aria-label={selectedIds.has(t.id) ? `Deselect ${t.name || t.id}` : `Select ${t.name || t.id}`}
+                  aria-pressed={selectedIds.has(t.id)}
                   className="shrink-0 text-nd-text-muted hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
                 >
-                  {selectedIds.has(t.id) ? <CheckSquare className="h-4 w-4 text-nd-accent" /> : <SquareIcon className="h-4 w-4" />}
+                  {selectedIds.has(t.id) ? <CheckSquare className="h-4 w-4 text-nd-accent" aria-hidden="true" /> : <SquareIcon className="h-4 w-4" aria-hidden="true" />}
                 </button>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-nd-text/90">{t.name || t.id}</p>
@@ -581,7 +585,7 @@ function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; labe
       className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[10px] text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
       title={label}
     >
-      <Icon className="h-3 w-3" /> {label}
+      <Icon className="h-3 w-3" aria-hidden="true" /> {label}
     </button>
   );
 }

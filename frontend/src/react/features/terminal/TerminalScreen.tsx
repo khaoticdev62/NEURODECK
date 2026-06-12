@@ -770,19 +770,19 @@ export function TerminalScreen() {
             {activePane?.cwd || activeProjectPath || environment?.cwd || "cwd unavailable"}
           </span>
           <button type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             New Tab
           </button>
           <button type="button" onClick={() => splitActivePane("vertical")} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <SplitSquareVertical className="h-3.5 w-3.5" />
+            <SplitSquareVertical className="h-3.5 w-3.5" aria-hidden="true" />
             Split
           </button>
           <button type="button" onClick={() => setCommandPaletteOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <LayoutGrid className="h-3.5 w-3.5" />
+            <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
             Palette
           </button>
           <button type="button" onClick={() => void refreshDiagnostics()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
             Refresh
           </button>
         </div>
@@ -850,8 +850,8 @@ export function TerminalScreen() {
                         <button type="button" onClick={(e) => { e.stopPropagation(); pinTab(tab.id); }} className="rounded-md border border-nd-text-muted/15 px-2 py-1 text-[10px] text-nd-text-muted">
                           {tab.pinned ? "Pinned" : "Pin"}
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); void closeTab(tab.id); }} className="rounded-md border border-nd-danger/25 px-2 py-1 text-[10px] text-nd-danger">
-                          <X className="h-3 w-3" />
+                        <button type="button" onClick={(e) => { e.stopPropagation(); void closeTab(tab.id); }} aria-label="Close tab" className="rounded-md border border-nd-danger/25 px-2 py-1 text-[10px] text-nd-danger">
+                          <X className="h-3 w-3" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -881,13 +881,13 @@ export function TerminalScreen() {
                 onClick={() => switchTab(tab.id)}
                 className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08] text-nd-text" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text-muted hover:bg-nd-surface/60"}`}
               >
-                <TerminalIcon className="h-4 w-4 shrink-0" />
+                <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="truncate">{tab.label}</span>
-                {tab.pinned && <ShieldCheck className="h-3.5 w-3.5 text-nd-success" />}
+                {tab.pinned && <ShieldCheck className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />}
               </button>
             ))}
             <button type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               Add Tab
             </button>
           </div>

@@ -15,7 +15,7 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
             <article key={entry.id} className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 transition hover:border-nd-accent/25">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/25 bg-nd-accent/10 text-nd-accent"><HardDrive className="h-5 w-5" /></div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/25 bg-nd-accent/10 text-nd-accent"><HardDrive className="h-5 w-5" aria-hidden="true" /></div>
                   <div>
                     <h3 className="font-semibold text-nd-text">{entry.label}</h3>
                     <p className="text-xs text-nd-text-muted">{entry.size} • {entry.updatedAt}</p>
