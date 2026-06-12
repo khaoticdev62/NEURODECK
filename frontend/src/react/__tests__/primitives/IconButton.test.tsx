@@ -34,6 +34,11 @@ describe('IconButton', () => {
 
   it('applies lg size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="lg"><X /></IconButton>);
+    expect(container.querySelector('button')?.className).toContain('h-10 w-10');
+  });
+
+  it('applies xl size classes', () => {
+    const { container } = render(<IconButton aria-label="x" size="xl"><X /></IconButton>);
     expect(container.querySelector('button')?.className).toContain('h-11 w-11');
   });
 
