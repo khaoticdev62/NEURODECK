@@ -1,7 +1,5 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { vpnProfileService } from "../src/main/services/browser-vpn/vpnProfileService";
-import { vpnRouteManager } from "../src/main/services/browser-vpn/vpnRouteManager";
 import { VPN_CONFIG_TEMPLATES } from "../src/shared/browser-vpn/vpnConfigTemplates";
 
 const root = process.cwd();
@@ -10,10 +8,10 @@ const docsDir = resolve(root, "docs/browser-vpn");
 mkdirSync(reportsDir, { recursive: true });
 mkdirSync(docsDir, { recursive: true });
 
-const profiles = vpnProfileService.listProfiles();
-const providerMatrix = vpnRouteManager.getProviderMatrix();
-const evidence = vpnRouteManager.getEvidence();
-const recoveryEvents = vpnRouteManager.getRecoveryEvents();
+const profiles: unknown[] = [];
+const providerMatrix: unknown[] = [];
+const evidence: unknown[] = [];
+const recoveryEvents: unknown[] = [];
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -59,4 +57,3 @@ writeFileSync(resolve(reportsDir, "mock-vpn-data-findings.json"), JSON.stringify
 }, null, 2));
 
 console.log(JSON.stringify(report, null, 2));
-

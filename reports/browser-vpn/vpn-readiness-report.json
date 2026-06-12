@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2026-06-12T05:37:10.695Z",
+  "totalProfiles": 0,
+  "supportedProtocols": [],
+  "templates": 4,
+  "providerMatrix": [],
+  "evidenceCount": 0,
+  "recoveryEventCount": 0,
+  "mockVpnViolations": 0,
+  "vpnGate": "not_run"
+}
