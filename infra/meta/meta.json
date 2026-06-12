@@ -14,9 +14,9 @@
   },
   "tag": "v1.8.0-ptah",
   "build": {
-    "git_sha": "82878cf4663a912569cbeb2326b521450709c9b6",
+    "git_sha": "7bad137c213bf5ea04b4fa9e3777107d447f9762",
     "git_tag": null,
-    "built_at_utc": "2026-06-12T13:29:34Z",
+    "built_at_utc": "2026-06-12T13:33:58Z",
     "dirty": true
   },
   "studio": {
