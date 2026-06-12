@@ -74,10 +74,10 @@ export function ThemesView() {
         <button
           type="button"
           onClick={resetToDefaults}
+          aria-label="Reset settings to defaults"
           className="ml-auto min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted hover:border-nd-accent/30 hover:text-nd-text"
-          title="Reset settings to defaults"
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -268,7 +268,7 @@ export function ThemesView() {
                     htmlFor="display-profile"
                     className="text-sm font-semibold text-nd-text flex items-center gap-1.5"
                   >
-                    <Monitor className="h-4 w-4 text-nd-accent" /> Display Profile
+                    <Monitor className="h-4 w-4 text-nd-accent" aria-hidden="true" /> Display Profile
                   </label>
                   <select
                     id="display-profile"
@@ -290,7 +290,7 @@ export function ThemesView() {
                     htmlFor="accessibility-profile"
                     className="text-sm font-semibold text-nd-text flex items-center gap-1.5"
                   >
-                    <Sliders className="h-4 w-4 text-nd-accent" /> Accessibility Mode
+                    <Sliders className="h-4 w-4 text-nd-accent" aria-hidden="true" /> Accessibility Mode
                   </label>
                   <select
                     id="accessibility-profile"
@@ -325,6 +325,7 @@ export function ThemesView() {
                     <textarea
                       readOnly
                       value={exportStr}
+                      aria-label="Exported theme JSON"
                       className="w-full h-32 rounded-xl p-3 border border-nd-text-muted/15 bg-nd-surface font-mono text-xs text-nd-text-muted outline-none"
                     />
                   )}
@@ -335,6 +336,7 @@ export function ThemesView() {
                     placeholder="Paste Theme JSON configuration here..."
                     value={importStr}
                     onChange={(e) => setImportStr(e.target.value)}
+                    aria-label="Import theme JSON"
                     className="w-full h-24 rounded-xl p-3 border border-nd-text-muted/15 bg-nd-surface font-mono text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   />
                   <button
@@ -362,7 +364,7 @@ export function ThemesView() {
             <div className="flex flex-col gap-4">
               <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
                 <h4 className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
-                  <ShieldAlert className="h-4 w-4 text-nd-accent" /> Theme Engine Health
+                  <ShieldAlert className="h-4 w-4 text-nd-accent" aria-hidden="true" /> Theme Engine Health
                 </h4>
                 <div className="mt-3 grid grid-cols-2 gap-4 text-xs font-mono">
                   <div className="rounded-lg bg-nd-surface/50 p-3">
@@ -392,7 +394,7 @@ export function ThemesView() {
                   className="min-h-[40px] px-4 rounded-xl border border-nd-text-muted/15 text-nd-text font-semibold text-xs flex items-center justify-between"
                 >
                   <span>Active Token CSS Custom Properties</span>
-                  <Eye className="h-4 w-4 text-nd-text-muted" />
+                  <Eye className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
                 </button>
                 {showTokenInspector && (
                   <div className="max-h-60 overflow-y-auto p-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/50 font-mono text-[11px] text-nd-text-secondary flex flex-col gap-1.5 scrollbar-thin">

@@ -93,31 +93,34 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
 
         <div className="flex shrink-0 items-center gap-2 self-end sm:self-start">
           <button
+            type="button"
             onClick={() => {
               setRenameValue(node.name || "");
               setRenameOpen(true);
             }}
             disabled={loading}
             className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent disabled:opacity-50"
-            title="Rename Session"
+            aria-label="Rename Session"
           >
-            <Edit2 className="h-4 w-4" />
+            <Edit2 className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={handleExport}
             disabled={loading}
             className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent disabled:opacity-50"
-            title="Export Markdown"
+            aria-label="Export Markdown"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={handleDelete}
             disabled={loading}
             className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-danger/20 hover:text-nd-danger disabled:opacity-50"
-            title="Delete Session"
+            aria-label="Delete Session"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

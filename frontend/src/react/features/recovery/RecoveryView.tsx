@@ -51,14 +51,14 @@ export function RecoveryView({
                     onClick={() => dispatch({ type: "set-error", error: null })}
                     className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-sm text-nd-text/80 transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Dismiss
+                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Dismiss
                   </button>
                   <button
                     type="button"
                     onClick={() => void actions.refreshDiagnostics()}
                     className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    <RefreshCcw className="h-4 w-4" /> Run Diagnostics
+                    <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Run Diagnostics
                   </button>
                 </div>
               </div>
@@ -178,7 +178,7 @@ function RecoveryAction({
       onClick={onClick}
       className="flex w-full items-start gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent" />
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-nd-text">{label}</p>
         <p className="mt-0.5 text-xs leading-5 text-nd-text-muted">{description}</p>

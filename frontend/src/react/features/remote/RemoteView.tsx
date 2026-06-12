@@ -150,7 +150,7 @@ export function RemoteView() {
             </span>
             {status.clients !== undefined && status.running && (
               <span className="ml-auto flex items-center gap-1 text-xs text-nd-text-muted">
-                <Users className="h-3.5 w-3.5" /> {status.clients} client{status.clients === 1 ? '' : 's'}
+                <Users className="h-3.5 w-3.5" aria-hidden="true" /> {status.clients} client{status.clients === 1 ? '' : 's'}
               </span>
             )}
           </div>
@@ -172,6 +172,7 @@ export function RemoteView() {
               type="button"
               onClick={toggle}
               disabled={loading}
+              aria-label={status.running ? 'Stop remote server' : 'Start remote server'}
               className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 status.running
                   ? 'border border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20'
@@ -179,11 +180,11 @@ export function RemoteView() {
               }`}
             >
               {loading ? (
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
               ) : status.running ? (
-                <><PowerOff className="h-4 w-4" /> Stop Server</>
+                <><PowerOff className="h-4 w-4" aria-hidden="true" /> Stop Server</>
               ) : (
-                <><Power className="h-4 w-4" /> Start Server</>
+                <><Power className="h-4 w-4" aria-hidden="true" /> Start Server</>
               )}
             </button>
           </div>
@@ -207,7 +208,7 @@ export function RemoteView() {
                 )}
                 {ttl > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-nd-text-muted">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className={ttl < 60 ? 'text-nd-danger' : ''}>Session expires in {formatTtl(ttl)}</span>
                   </div>
                 )}

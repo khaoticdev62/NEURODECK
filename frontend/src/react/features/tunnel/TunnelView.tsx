@@ -67,8 +67,8 @@ export function TunnelView() {
         <div id="tunnel-status-indicator" className={`h-2 w-2 rounded-full ${running ? 'bg-nd-success' : 'text-nd-text-muted/40'}`} />
           <span className="text-xs text-nd-text-muted">{running ? 'Active' : 'Offline'}</span>
         </div>
-        <button type="button" onClick={toggle} disabled={loading} className={`rounded-lg border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>
-          {running ? <><PowerOff className="inline h-4 w-4" /> Stop</> : <><Power className="inline h-4 w-4" /> Start</>}
+        <button type="button" onClick={toggle} disabled={loading} aria-label={running ? 'Stop tunnel' : 'Start tunnel'} className={`rounded-lg border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>
+          {running ? <><PowerOff className="inline h-4 w-4" aria-hidden="true" /> Stop</> : <><Power className="inline h-4 w-4" aria-hidden="true" /> Start</>}
         </button>
       </div>
 
@@ -80,10 +80,11 @@ export function TunnelView() {
             onChange={(e) => setCommand(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendCmd()}
             placeholder="Shell command..."
+            aria-label="Shell command"
             className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
           <button type="button" onClick={sendCmd} className="flex items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Send className="h-4 w-4" /> Send
+            <Send className="h-4 w-4" aria-hidden="true" /> Send
           </button>
         </div>
         <div className="flex gap-2">
@@ -93,10 +94,11 @@ export function TunnelView() {
             onChange={(e) => setDirPath(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && listDir()}
             placeholder="Directory path..."
+            aria-label="Directory path to list"
             className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
           />
           <button type="button" onClick={listDir} className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text/80 hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <FolderOpen className="h-4 w-4" /> List
+            <FolderOpen className="h-4 w-4" aria-hidden="true" /> List
           </button>
         </div>
       </div>

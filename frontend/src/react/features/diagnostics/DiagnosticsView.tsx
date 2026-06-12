@@ -193,7 +193,7 @@ export function DiagnosticsView({
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2.5 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
               style={{ minHeight: "40px" }}
             >
-              <RefreshCcw className="h-4 w-4" /> Refresh System
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Refresh System
             </button>
             <button
               type="button"
@@ -201,7 +201,7 @@ export function DiagnosticsView({
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
               style={{ minHeight: "40px" }}
             >
-              <FileArchive className="h-4 w-4" /> Export Bundle
+              <FileArchive className="h-4 w-4" aria-hidden="true" /> Export Bundle
             </button>
           </div>
           {diagnostics ? (
@@ -254,7 +254,7 @@ export function DiagnosticsView({
             className="inline-flex items-center gap-1.5 rounded-lg border border-nd-accent/20 bg-nd-accent/10 px-2.5 py-1 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-50"
             style={{ minHeight: "30px" }}
           >
-            <Zap className={`h-3 w-3 ${globalProbing ? "animate-pulse" : ""}`} />
+            <Zap className={`h-3 w-3 ${globalProbing ? "animate-pulse" : ""}`} aria-hidden="true" />
             {globalProbing ? "Probing..." : "Probe All"}
           </button>
         }
@@ -301,14 +301,14 @@ export function DiagnosticsView({
 
                       <div className="flex items-center gap-3 mt-1 text-xs text-nd-text-muted">
                         <span className="flex items-center gap-1">
-                          <CatIcon className="h-3.5 w-3.5" />
+                          <CatIcon className="h-3.5 w-3.5" aria-hidden="true" />
                           <span className="uppercase tracking-wide text-[10px]">
                             {conn.category}
                           </span>
                         </span>
                         {conn.latencyMs !== null && (
                           <span className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-nd-text-muted/60" />
+                            <Clock className="h-3.5 w-3.5 text-nd-text-muted/60" aria-hidden="true" />
                             <span>{conn.latencyMs}ms</span>
                           </span>
                         )}
@@ -325,9 +325,9 @@ export function DiagnosticsView({
                       onClick={(e) => runSingleProbe(conn.id, e)}
                       disabled={isProbing[conn.id]}
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-nd-text-muted/10 bg-nd-surface/50 text-nd-text-muted transition hover:border-nd-accent/25 hover:text-nd-accent hover:bg-nd-surface/80 disabled:opacity-40"
-                      title="Run connection check"
+                      aria-label="Run connection probe"
                     >
-                      <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} />
+                      <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -347,9 +347,10 @@ export function DiagnosticsView({
             <button
               type="button"
               onClick={() => setSelectedConnectionId(null)}
+              aria-label="Close connection detail"
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text hover:border-nd-text-muted/30 transition"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           }
         >

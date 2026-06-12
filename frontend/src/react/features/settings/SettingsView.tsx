@@ -198,9 +198,9 @@ export function SettingsView({
                   : "border-transparent text-nd-text/70 hover:border-nd-text-muted/15 hover:bg-nd-surface/60 hover:text-nd-text"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="flex-1">{label}</span>
-              {active && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
+              {active && <ChevronRight className="h-3.5 w-3.5 opacity-60" aria-hidden="true" />}
             </button>
           );
         })}
@@ -306,7 +306,7 @@ export function SettingsView({
                 )}
                 {providersError && (
                   <div className="flex items-start gap-2 rounded-xl border border-nd-danger/20 bg-nd-danger/10 p-3 text-sm text-nd-danger">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     {providersError}
                   </div>
                 )}
@@ -330,7 +330,7 @@ export function SettingsView({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent" />
+                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
                             <span className="font-semibold text-nd-text text-sm truncate">
                               {provider.label}
                             </span>
@@ -554,14 +554,14 @@ export function SettingsView({
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <RefreshCcw className="h-4 w-4" /> Refresh Diagnostics
+                  <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Refresh Diagnostics
                 </button>
                 <button
                   type="button"
                   onClick={() => void actions.exportSession()}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <FileDown className="h-4 w-4" /> Export Active Session
+                  <FileDown className="h-4 w-4" aria-hidden="true" /> Export Active Session
                 </button>
                 <button
                   type="button"
@@ -587,7 +587,7 @@ export function SettingsView({
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <FileArchive className="h-4 w-4" /> Export Diagnostics Bundle
+                  <FileArchive className="h-4 w-4" aria-hidden="true" /> Export Diagnostics Bundle
                 </button>
               </div>
             </Panel>
@@ -642,7 +642,7 @@ export function SettingsView({
                   onClick={() => void actions.resetLocalState()}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                 >
-                  <RotateCcw className="h-4 w-4" /> Reset Stored UI State
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset Stored UI State
                 </button>
               </div>
             </Panel>

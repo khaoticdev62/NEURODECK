@@ -53,7 +53,7 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
             onClick={() => void actions.exportDiagnosticsBundle()}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <FolderOpen className="h-4 w-4" /> Export Diagnostics Bundle
+            <FolderOpen className="h-4 w-4" aria-hidden="true" /> Export Diagnostics Bundle
           </button>
           {state.diagnostics?.diagnosticsDir && (
             <p className="break-all text-xs text-nd-text-muted/70">Output: {state.diagnostics.diagnosticsDir}</p>

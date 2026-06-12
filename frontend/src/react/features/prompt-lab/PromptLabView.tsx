@@ -287,11 +287,11 @@ export function PromptLabView() {
           <DeckButtonHint button="L5+R5" label="macro" />
         </div>
         <button id="pl-open-gallery-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Sparkles className="nd-icon-svg mr-1 inline h-3.5 w-3.5" />
+          <Sparkles className="nd-icon-svg mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
           Gallery
         </button>
         <button id="pl-optimize-ai-btn" type="button" className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RotateCcw className="nd-icon-svg mr-1 inline h-3.5 w-3.5" />
+          <RotateCcw className="nd-icon-svg mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
           Optimize
         </button>
       </div>
@@ -395,13 +395,13 @@ export function PromptLabView() {
 
           <div className="flex flex-wrap gap-2">
             <button id="pd-execute-btn" type="button" onClick={executePrompt} disabled={busy || !valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-              <Play className="h-4 w-4" /> Execute
+              <Play className="h-4 w-4" aria-hidden="true" /> Execute
             </button>
             <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-              <Save className="h-4 w-4" /> Save Prompt
+              <Save className="h-4 w-4" aria-hidden="true" /> Save Prompt
             </button>
             <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${recordingId ? 'border-nd-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>
-              {recordingId ? <Square className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+              {recordingId ? <Square className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
               {recordingId ? 'Stop Macro' : 'Record Macro'}
             </button>
           </div>
@@ -469,12 +469,13 @@ export function PromptLabView() {
               id="pd-preview"
               value={previewText}
               onChange={(event) => setPreviewText(event.target.value)}
+              aria-label="Live prompt preview"
               className="min-h-0 flex-1 resize-none bg-transparent p-4 font-mono text-sm text-nd-text/90 outline-none"
             />
             <div className="flex items-center justify-between border-t border-nd-text-muted/15 px-4 py-2 text-xs text-nd-text-muted">
               <span>{status}</span>
               <button type="button" onClick={() => navigator.clipboard.writeText(previewText)} className="flex min-h-10 items-center gap-2 rounded-lg border border-nd-text-muted/15 px-2 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-                <Copy className="h-4 w-4" /> Copy
+                <Copy className="h-4 w-4" aria-hidden="true" /> Copy
               </button>
             </div>
           </div>

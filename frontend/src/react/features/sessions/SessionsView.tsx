@@ -51,7 +51,7 @@ export function SessionsView({
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent disabled:opacity-50"
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh List
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh List
           </button>
 
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
@@ -61,14 +61,14 @@ export function SessionsView({
               onClick={() => void actions.exportSession()}
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
             >
-              <FileDown className="h-4 w-4" /> Export Markdown
+              <FileDown className="h-4 w-4" aria-hidden="true" /> Export Markdown
             </button>
             <button
               type="button"
               onClick={() => void actions.saveSession()}
               className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
             >
-              <FileJson className="h-4 w-4" /> Save JSON Session
+              <FileJson className="h-4 w-4" aria-hidden="true" /> Save JSON Session
             </button>
             {state.lastExportPath && (
               <p className="mt-3 break-all text-xs text-nd-text-muted">

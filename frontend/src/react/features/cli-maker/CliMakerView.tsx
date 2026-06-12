@@ -492,9 +492,9 @@ export function CliMakerView() {
                       type="button"
                       onClick={(e) => handleDeleteCommand(cmd.id, e)}
                       className="opacity-0 group-hover:opacity-100 hover:text-nd-danger p-1 transition-all duration-150 min-w-[30px] min-h-[30px] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                      title="Delete command"
+                      aria-label="Delete command"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>

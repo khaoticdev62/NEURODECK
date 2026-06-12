@@ -28,7 +28,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
             <HardeningRow label="CSP policy active" ok />
             <HardeningRow label="Safe error messages (no stack traces)" ok />
             <div className="mt-2 rounded-xl border border-nd-success/20 bg-nd-success/10 px-3 py-2 text-xs text-nd-success">
-              <span className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> v6 hardening active — all gates passing</span>
+              <span className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" aria-hidden="true" /> v6 hardening active — all gates passing</span>
             </div>
           </div>
         </Panel>
@@ -57,14 +57,14 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                 onClick={() => void actions.exportDiagnosticsBundle()}
                 className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm text-nd-text/80 transition hover:border-nd-accent/30 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
               >
-                <RefreshCcw className="h-4 w-4" /> Generate Security Audit Bundle
+                <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Generate Security Audit Bundle
               </button>
               <button
                 type="button"
                 onClick={() => void actions.resetLocalState()}
                 className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
               >
-                <Trash2 className="h-4 w-4" /> Clear All Local State
+                <Trash2 className="h-4 w-4" aria-hidden="true" /> Clear All Local State
               </button>
             </div>
             <p className="text-[11px] leading-5 text-nd-text-muted/70">
@@ -120,8 +120,8 @@ function HardeningRow({ label, ok }: { label: string; ok: boolean }) {
     <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
       <span className="text-xs text-nd-text/80">{label}</span>
       {ok
-        ? <CheckCircle2 className="h-4 w-4 shrink-0 text-nd-success" />
-        : <ShieldAlert className="h-4 w-4 shrink-0 text-nd-warning" />}
+        ? <CheckCircle2 className="h-4 w-4 shrink-0 text-nd-success" role="img" aria-label="Pass" />
+        : <ShieldAlert className="h-4 w-4 shrink-0 text-nd-warning" role="img" aria-label="Warning" />}
     </div>
   );
 }
@@ -129,7 +129,7 @@ function HardeningRow({ label, ok }: { label: string; ok: boolean }) {
 function CredentialRow({ label, status }: { label: string; status: 'keychain' | 'optional' | 'missing' }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
-      <span className="flex items-center gap-2 text-xs text-nd-text/80"><KeyRound className="h-3.5 w-3.5 text-nd-accent" /> {label}</span>
+      <span className="flex items-center gap-2 text-xs text-nd-text/80"><KeyRound className="h-3.5 w-3.5 text-nd-accent" aria-hidden="true" /> {label}</span>
       <Badge tone={status === 'keychain' ? 'success' : status === 'optional' ? 'neutral' : 'danger'}>
         {status}
       </Badge>
