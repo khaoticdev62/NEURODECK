@@ -409,5 +409,7 @@ contextBridge.exposeInMainWorld('neurodeck', {
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap
-// The main process sets this env var before the renderer loads.
-contextBridge.exposeInMainWorld('NEURODECK_PORT', process.env.NEURODECK_PORT || '9477');
+// The main process sets this env var or passes it in process.argv before the renderer loads.
+const portArg = process.argv.find(arg => arg.startsWith('--neurodeck-port='));
+const neurodeckPort = portArg ? portArg.split('=')[1] : (process.env.NEURODECK_PORT || '9477');
+contextBridge.exposeInMainWorld('NEURODECK_PORT', neurodeckPort);

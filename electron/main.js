@@ -576,6 +576,7 @@ function createMainWindow() {
       sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      additionalArguments: [`--neurodeck-port=${bridgePort}`],
       // M1: only enable DevTools in dev mode
       devTools: !!process.env.ELECTRON_DEV,
     },
