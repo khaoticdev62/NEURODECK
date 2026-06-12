@@ -146,7 +146,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
           onKeyDown={(e) => e.key === 'Enter' && installFromUrl()}
           placeholder="Plugin URL or registry ID..."
           aria-label="Plugin URL or registry ID"
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40"
+          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         />
         <button
           type="button"

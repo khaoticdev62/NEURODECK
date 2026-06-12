@@ -36,14 +36,17 @@ export function ThemesView() {
     setExportStr(JSON.stringify(settings, null, 2));
   };
 
+  const [importMessage, setImportMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
   const handleImport = () => {
     try {
       const parsed = JSON.parse(importStr);
       updateSettings(parsed);
-      alert("Theme settings imported successfully!");
+      setImportMessage({ text: "Theme settings imported successfully.", ok: true });
     } catch (_) {
-      alert("Invalid JSON settings format.");
+      setImportMessage({ text: "Invalid JSON — check format and try again.", ok: false });
     }
+    setTimeout(() => setImportMessage(null), 3000);
   };
 
   return (
@@ -150,14 +153,18 @@ export function ThemesView() {
                     <label className="text-sm font-semibold text-nd-text">Live Wallpaper</label>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={settings.liveWallpaperEnabled}
+                      aria-label="Toggle live wallpaper"
                       onClick={() =>
                         updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })
                       }
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nd-accent ${
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         settings.liveWallpaperEnabled ? "bg-nd-accent" : "bg-nd-surface"
                       }`}
                     >
                       <span
+                        aria-hidden="true"
                         className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                           settings.liveWallpaperEnabled ? "translate-x-5" : "translate-x-0"
                         }`}
@@ -269,7 +276,7 @@ export function ThemesView() {
                     onChange={(e) =>
                       updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })
                     }
-                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus:border-nd-accent outline-none"
+                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   >
                     <option value="steamdeck_lcd">Steam Deck LCD (Contrast Boost)</option>
                     <option value="steamdeck_oled">Steam Deck OLED (Absolute Black)</option>
@@ -291,7 +298,7 @@ export function ThemesView() {
                     onChange={(e) =>
                       updateSettings({ accessibilityProfile: e.target.value as any })
                     }
-                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus:border-nd-accent outline-none"
+                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   >
                     <option value="default">Default (Standard Styling)</option>
                     <option value="high_contrast">High Contrast (AAA Black/Yellow)</option>
@@ -328,15 +335,24 @@ export function ThemesView() {
                     placeholder="Paste Theme JSON configuration here..."
                     value={importStr}
                     onChange={(e) => setImportStr(e.target.value)}
-                    className="w-full h-24 rounded-xl p-3 border border-nd-text-muted/15 bg-nd-surface font-mono text-xs text-nd-text outline-none focus:border-nd-accent"
+                    className="w-full h-24 rounded-xl p-3 border border-nd-text-muted/15 bg-nd-surface font-mono text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleImport}
-                    className="min-h-[40px] px-4 rounded-xl bg-nd-accent text-nd-bg font-semibold text-xs transition hover:opacity-90"
+                    className="min-h-[40px] px-4 rounded-xl bg-nd-accent text-nd-bg font-semibold text-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
                     Apply Imported JSON
                   </button>
+                  {importMessage && (
+                    <p
+                      role="status"
+                      aria-live="polite"
+                      className={`text-xs ${importMessage.ok ? 'text-nd-success' : 'text-nd-danger'}`}
+                    >
+                      {importMessage.text}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

@@ -14,6 +14,7 @@ import { LanguageModeBadge } from './LanguageModeBadge';
 import { RadialCommandWheel } from './RadialCommandWheel';
 import { SafeCommandConfirmModal } from './SafeCommandConfirmModal';
 import { Modal } from '../../components/primitives/Modal';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import type { DiagnosticFix } from './DiagnosticFixPanel';
 import { DiagnosticFixPanel } from './DiagnosticFixPanel';
 
@@ -103,6 +104,8 @@ export function IDEView() {
   const [commandOutput, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
   const [newFileModalOpen, setNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('untitled.txt');
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [pendingDeleteTab, setPendingDeleteTab] = useState<OpenTab | null>(null);
 
   // Debounce refs
   const lspChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -297,20 +300,28 @@ export function IDEView() {
     }
   }, [currentPath, loadFiles, log, newFileName, openFile]);
 
-  const deleteFile = useCallback(async () => {
+  const deleteFile = useCallback(() => {
     if (!activeTab) return;
     const tab = openTabs.find((t) => t.path === activeTab);
     if (!tab) return;
-    if (!window.confirm(`Delete '${tab.name}'? This cannot be undone.`)) return;
+    setPendingDeleteTab(tab);
+    setConfirmDeleteOpen(true);
+  }, [activeTab, openTabs]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDeleteTab) return;
+    setConfirmDeleteOpen(false);
     try {
-      await neurodeckApi.ide.deleteWorkspaceFile(activeTab);
-      closeTab(activeTab);
-      log(`Deleted ${tab.name}`, 'ok');
+      await neurodeckApi.ide.deleteWorkspaceFile(pendingDeleteTab.path);
+      closeTab(pendingDeleteTab.path);
+      log(`Deleted ${pendingDeleteTab.name}`, 'ok');
       await loadFiles(currentPath);
     } catch (e) {
       log(`Delete failed: ${e}`, 'error');
+    } finally {
+      setPendingDeleteTab(null);
     }
-  }, [activeTab, openTabs, closeTab, currentPath, loadFiles, log]);
+  }, [pendingDeleteTab, closeTab, currentPath, loadFiles, log]);
 
   // ── Command execution ─────────────────────────────────────────────────
   const executeCommand = useCallback(async (cmd: CommandTemplate) => {
@@ -646,6 +657,15 @@ export function IDEView() {
           className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text outline-none"
         />
       </Modal>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete File"
+        message={`Delete '${pendingDeleteTab?.name ?? ''}'? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => { setConfirmDeleteOpen(false); setPendingDeleteTab(null); }}
+      />
     </div>
   );
 }
