@@ -464,11 +464,11 @@ export function SettingsView({
               </div>
             </Panel>
 
-            {state.exportPath && (
+            {state.lastExportPath && (
               <Panel eyebrow="Export" title="Last Export">
                 <div className="p-4">
                   <p className="rounded-xl border border-nd-success/20 bg-nd-success/10 px-3 py-2 text-xs font-mono text-nd-success break-all">
-                    {state.exportPath}
+                    {state.lastExportPath}
                   </p>
                 </div>
               </Panel>
