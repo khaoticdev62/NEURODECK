@@ -104,6 +104,7 @@ export function TitleBar({
 
   return (
     <header
+      data-controller-zone="toolbar"
       className="drag-region relative z-[var(--z-dropdown)] flex h-11 shrink-0 items-center justify-between border-b border-nd-text-muted/15 bg-nd-bg/80 px-3 backdrop-blur-xl"
       role="banner"
     >

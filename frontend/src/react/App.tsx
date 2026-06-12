@@ -10,7 +10,6 @@ import { SecondaryRail } from "./components/layout/SecondaryRail";
 import { TitleBar } from "./components/layout/TitleBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
-import { fontOptions } from "./types/seed";
 import { AgentsView } from "./features/agents/AgentsView";
 import { ApiLabView } from "./features/api-lab/ApiLabView";
 import { BrowserView } from "./features/browser/BrowserView";
@@ -46,6 +45,9 @@ import { SecurityView } from "./features/security/SecurityView";
 import { ThemesView } from "./features/themes/ThemesView";
 import { WorkspaceView } from "./features/workspace/WorkspaceView";
 import { LiveWallpaperHost } from "./features/wallpapers/LiveWallpaperHost";
+import { ControllerDebugOverlay } from "./input/controller/ControllerDebugOverlay";
+import { ControllerHelpOverlay } from "./input/controller/ControllerHelpOverlay";
+import { ControllerProvider } from "./input/controller/ControllerProvider";
 import { useTheme } from "./theme/useTheme";
 
 import { neurodeckApi } from "./services/bridgeAdapter";
@@ -57,6 +59,7 @@ import type {
   SavedSessionPayload,
   ViewId,
 } from "./types/neurodeck";
+import { fontOptions, navItems } from "./types/seed";
 
 function makeUserMessage(content: string): AIMessage {
   return { id: `user-${Date.now()}`, role: "user", content, createdAt: new Date().toISOString() };
@@ -900,6 +903,8 @@ export default function App() {
   const renderView = (id: ViewId, node: ReactNode) => (
     <div
       data-testid={`view-${id}`}
+      data-controller-screen={id}
+      data-controller-screen-active={state.activeView === id ? "true" : "false"}
       className="view-content active h-full min-h-0 animate-view-enter"
     >
       {node}
@@ -919,6 +924,103 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <ControllerProvider
+        activeView={state.activeView}
+        settings={state.controllerSettings}
+        onSettingsChange={(next) => dispatch({ type: "set-controller-settings", settings: next })}
+        onOpenCommandPalette={() => dispatch({ type: "toggle-command", open: true })}
+        onCloseCommandPalette={() => dispatch({ type: "toggle-command", open: false })}
+        onOpenSettings={openSettings}
+        onOpenHelp={() => {}}
+        onNavigatePreviousView={() => {
+          const index = navItems.findIndex((item) => item.id === state.activeView);
+          if (index > 0) {
+            dispatch({ type: "set-view", view: navItems[index - 1].id });
+          }
+        }}
+        onNavigateNextView={() => {
+          const index = navItems.findIndex((item) => item.id === state.activeView);
+          if (index >= 0 && index < navItems.length - 1) {
+            dispatch({ type: "set-view", view: navItems[index + 1].id });
+          }
+        }}
+        onBack={() => {
+          if (state.commandOpen) {
+            dispatch({ type: "toggle-command", open: false });
+            return;
+          }
+          if (settingsOpen) {
+            setSettingsOpen(false);
+            return;
+          }
+          if (notificationsOpen) {
+            setNotificationsOpen(false);
+            return;
+          }
+          if (quickSwitcherOpen) {
+            setQuickSwitcherOpen(false);
+            return;
+          }
+          if (shortcutsOpen) {
+            setShortcutsOpen(false);
+            return;
+          }
+          if (ctrlPromptOpen) {
+            setCtrlPromptOpen(false);
+            return;
+          }
+          if (state.activeView === "browser") {
+            (window as unknown as { __neurodeckBrowserBack?: () => void }).__neurodeckBrowserBack?.();
+            return;
+          }
+          dispatch({ type: "set-view", view: "chat" });
+        }}
+        onEmergencyEscape={() => {
+          setSettingsOpen(false);
+          setNotificationsOpen(false);
+          setShortcutsOpen(false);
+          setQuickSwitcherOpen(false);
+          setCtrlPromptOpen(false);
+          dispatch({ type: "toggle-command", open: false });
+          dispatch({ type: "set-view", view: "chat" });
+        }}
+        onOpenSearch={() => {
+          const target = document.querySelector<HTMLElement>(
+            "#command-palette-input, #browser-address-input, #user-input, input[type='search'], input[placeholder*='Search'], input[placeholder*='search'], input[placeholder*='address'], textarea",
+          );
+          target?.focus();
+          target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }}
+        onReload={() => {
+          if (state.activeView === "browser") {
+            (window as unknown as { __neurodeckBrowserReload?: () => void }).__neurodeckBrowserReload?.();
+            return;
+          }
+          void runAssistant();
+        }}
+        onSave={() => {
+          if (state.activeView === "browser") {
+            (window as unknown as { __neurodeckBrowserFavorite?: () => void }).__neurodeckBrowserFavorite?.();
+            return;
+          }
+          void saveSession();
+        }}
+        onRegenerate={() => {
+          void runAssistant();
+        }}
+        onNewContextAction={() => {
+          if (state.activeView === "browser") {
+            (window as unknown as { __neurodeckBrowserNewTab?: () => void }).__neurodeckBrowserNewTab?.();
+            return;
+          }
+          dispatch({ type: "set-view", view: "sessions" });
+        }}
+        onToggleFullscreen={() => {
+          void window.electronAPI
+            ?.getIsKiosk?.()
+            .then((isKiosk) => window.electronAPI?.setKiosk?.(!isKiosk));
+        }}
+      >
       {/* Skip to main content — visible on first Tab press */}
       <a
         href="#main-content"
@@ -930,6 +1032,7 @@ export default function App() {
         id="app-shell"
         ref={shellRef}
         tabIndex={0}
+        data-controller-screen="app-shell"
         data-density={state.deckMode ? "deck" : "comfortable"}
         className={`flex h-full flex-col overflow-hidden tactical-grid outline-none ${state.deckMode ? "text-[15px]" : ""}`}
         style={{ color: "var(--nd-text)" }}
@@ -1057,7 +1160,12 @@ export default function App() {
             dispatch={dispatch}
             onOpenSettings={() => openSettings("general")}
           />
-          <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4 lg:pb-4">
+          <main
+            id="main-content"
+            data-controller-zone="content"
+            data-controller-default="true"
+            className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4 lg:pb-4"
+          >
             <div className="view-container h-full min-h-0">
               {(state.activeView === "chat" || state.activeView === "workspace") &&
                 renderView(
@@ -1136,7 +1244,9 @@ export default function App() {
           </main>
           <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
         </div>
-        {state.deckMode && <ControllerHintBar />}
+        {state.deckMode && state.controllerSettings.showHints && <ControllerHintBar />}
+        <ControllerHelpOverlay />
+        <ControllerDebugOverlay />
         <CommandPalette
           state={state}
           dispatch={dispatch}
@@ -1147,6 +1257,7 @@ export default function App() {
         {/* Settings overlay */}
         <div
           id="settings-overlay"
+          data-controller-overlay={settingsOpen ? "true" : undefined}
           className={`settings-overlay ${settingsOpen ? "active" : ""}`}
           onMouseDown={() => setSettingsOpen(false)}
         >
@@ -1159,6 +1270,7 @@ export default function App() {
               tabIndex={-1}
               className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
               data-settings-theme={settingsPanel}
+              data-controller-zone="dialog"
               onMouseDown={(e) => e.stopPropagation()}
             >
               <span id="settings-dialog-title" className="sr-only">
@@ -1181,6 +1293,7 @@ export default function App() {
         {/* Notifications overlay */}
         <div
           id="notif-modal"
+          data-controller-overlay={notificationsOpen ? "true" : undefined}
           className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
           onMouseDown={() => setNotificationsOpen(false)}
         >
@@ -1214,6 +1327,7 @@ export default function App() {
         {/* Keyboard shortcuts overlay */}
         <div
           id="shortcuts-overlay"
+          data-controller-overlay={shortcutsOpen ? "true" : undefined}
           className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
           onMouseDown={() => setShortcutsOpen(false)}
         >
@@ -1267,6 +1381,7 @@ export default function App() {
         {/* Controller prompt overlay */}
         {ctrlPromptOpen && (
           <div
+            data-controller-overlay="true"
             className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
             onMouseDown={() => setCtrlPromptOpen(false)}
           >
@@ -1310,6 +1425,7 @@ export default function App() {
         {/* Quick switcher overlay */}
         <div
           id="quick-switcher-overlay"
+          data-controller-overlay={quickSwitcherOpen ? "true" : undefined}
           className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
           onMouseDown={() => setQuickSwitcherOpen(false)}
         >
@@ -1358,6 +1474,7 @@ export default function App() {
 
         {state.showOnboarding && <OnboardingModal state={state} dispatch={dispatch} />}
       </div>
+      </ControllerProvider>
     </ToastProvider>
   );
 }

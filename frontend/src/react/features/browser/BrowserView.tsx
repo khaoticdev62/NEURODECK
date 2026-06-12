@@ -586,12 +586,39 @@ export function BrowserView() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeTabId, tabs, loadTabs]);
 
+  useEffect(() => {
+    const controllerBridge = window as unknown as {
+      __neurodeckBrowserBack?: () => void;
+      __neurodeckBrowserReload?: () => void;
+      __neurodeckBrowserFavorite?: () => void;
+      __neurodeckBrowserNewTab?: () => void;
+    };
+    controllerBridge.__neurodeckBrowserBack = () => {
+      void goBack();
+    };
+    controllerBridge.__neurodeckBrowserReload = () => {
+      void refresh();
+    };
+    controllerBridge.__neurodeckBrowserFavorite = () => {
+      void toggleBookmark();
+    };
+    controllerBridge.__neurodeckBrowserNewTab = () => {
+      void createTab();
+    };
+    return () => {
+      delete controllerBridge.__neurodeckBrowserBack;
+      delete controllerBridge.__neurodeckBrowserReload;
+      delete controllerBridge.__neurodeckBrowserFavorite;
+      delete controllerBridge.__neurodeckBrowserNewTab;
+    };
+  }, [createTab, goBack, refresh, toggleBookmark]);
+
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const isBookmarked = activeTab && bookmarks.some((b) => b.url === activeTab.url);
   const activeProfile = profiles.find((p) => p.id === activeTab?.profileId);
 
   return (
-    <div className="browser-container flex h-full flex-col bg-nd-bg text-nd-text select-none">
+    <div className="browser-container flex h-full flex-col bg-nd-bg text-nd-text select-none" data-controller-zone="browser">
       {/* Permission Prompts Overlay */}
       {permissions.length > 0 && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[9999] w-96 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">
@@ -639,7 +666,7 @@ export function BrowserView() {
       )}
 
       {/* Title / Tab Strip */}
-      <div className="flex items-center justify-between border-b border-nd-text-muted/10 bg-nd-surface/10 px-4 py-2 shrink-0">
+      <div className="flex items-center justify-between border-b border-nd-text-muted/10 bg-nd-surface/10 px-4 py-2 shrink-0" data-controller-zone="toolbar">
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -742,7 +769,7 @@ export function BrowserView() {
       </div>
 
       {/* Navigation & Address Bar Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-nd-text-muted/10 bg-nd-surface/5 px-4 py-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 border-b border-nd-text-muted/10 bg-nd-surface/5 px-4 py-2 shrink-0" data-controller-zone="browser">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -793,6 +820,8 @@ export function BrowserView() {
           )}
           <input
             ref={urlInputRef}
+            id="browser-address-input"
+            data-controller-default="true"
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}

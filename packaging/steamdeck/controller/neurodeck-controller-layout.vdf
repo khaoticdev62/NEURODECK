@@ -1,0 +1,24 @@
+"NEURODECK_Controller_Template"
+{
+  "note" "Manual Steam Input template only. This file is not an auto-generated export."
+  "default_layer" "semantic-app-actions"
+  "text_entry_layer" "steam-keyboard-assisted"
+  "browser_layer" "chrome-first-with-trackpad-fallback"
+  "terminal_layer" "keyboard-assisted"
+  "bindings"
+  {
+    "south_button" "confirm"
+    "east_button" "cancel"
+    "west_button" "reload"
+    "north_button" "openSearch"
+    "left_bumper" "previousTab"
+    "right_bumper" "nextTab"
+    "left_trigger" "pageUp"
+    "right_trigger" "pageDown"
+    "start" "openMainMenu"
+    "select" "openControllerOverlay"
+    "r4" "regenerate"
+    "l5" "save"
+    "r5" "newTab"
+  }
+}

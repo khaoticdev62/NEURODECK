@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { ControllerSettings } from '../../shared/types/controller';
 
 export type ViewId =
   | 'chat' | 'workspace' | 'execution' | 'agent' | 'agents' | 'memory'
@@ -366,6 +367,7 @@ export interface NeuroDeckState {
   activeView: ViewId;
   commandOpen: boolean;
   deckMode: boolean;
+  controllerSettings: ControllerSettings;
   selectedTheme: ThemeName;
   selectedPersona: string;
   selectedProvider: AIProvider;
@@ -470,6 +472,7 @@ export type NeuroDeckAction =
   | { type: 'set-view'; view: ViewId }
   | { type: 'toggle-command'; open?: boolean }
   | { type: 'toggle-deck-mode' }
+  | { type: 'set-controller-settings'; settings: Partial<ControllerSettings> }
   | { type: 'set-theme'; theme: ThemeName }
   | { type: 'set-persona'; persona: string }
   | { type: 'set-provider'; provider: AIProvider }

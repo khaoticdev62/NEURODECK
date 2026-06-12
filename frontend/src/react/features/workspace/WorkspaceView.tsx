@@ -68,7 +68,7 @@ export function WorkspaceView({
   };
 
   return (
-    <div className="workspace-container flex h-full min-h-0 flex-col gap-3">
+    <div className="workspace-container flex h-full min-h-0 flex-col gap-3" data-controller-zone="content">
       {/* Session header */}
       <div className="flex items-center justify-between rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-2.5">
         <div className="flex items-center gap-3">

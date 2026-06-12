@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, Check, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import { useControllerAction } from '../../input/controller/useControllerAction';
 import { useTheme } from '../../theme/useTheme';
 import type { NeuroDeckState, NeuroDeckAction, AIProvider } from '../../types/neurodeck';
 import type { OnboardingStep, SetupWarning, SetupError, OnboardingDiagnosticResult } from '../../types/onboarding';
@@ -482,10 +483,61 @@ export function OnboardingModal({
     return false;
   };
 
+  useControllerAction(
+    'back',
+    () => {
+      if (currentStep === 'welcome') {
+        if (precheckPassed) {
+          void dismiss('skipped');
+        }
+        return true;
+      }
+      handleBack();
+      return true;
+    },
+    true,
+  );
+  useControllerAction(
+    'cancel',
+    () => {
+      if (currentStep === 'welcome' || currentStep === 'finish') {
+        if (precheckPassed) {
+          void dismiss('skipped');
+        }
+        return true;
+      }
+      handleBack();
+      return true;
+    },
+    true,
+  );
+  useControllerAction(
+    'forward',
+    () => {
+      if (isNextDisabled()) return true;
+      void handleNext();
+      return true;
+    },
+    true,
+  );
+  useControllerAction(
+    'openSearch',
+    () => {
+      const target = wizardRef.current?.querySelector<HTMLElement>(
+        "input:not(:disabled), select:not(:disabled), textarea:not(:disabled)",
+      );
+      target?.focus();
+      target?.scrollIntoView({ block: 'nearest' });
+      return true;
+    },
+    true,
+  );
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
+    <div data-controller-overlay="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
       <div
         ref={wizardRef}
+        data-controller-zone="modal"
         className="no-drag w-full max-w-4xl h-[600px] overflow-hidden rounded-3xl border border-nd-accent/25 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10 flex flex-row"
         role="dialog"
         aria-modal="true"
@@ -734,6 +786,7 @@ export function OnboardingModal({
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-nd-text">Provider Type</label>
                       <select
+                        data-controller-default="true"
                         value={providerType}
                         onChange={(e) => setProviderType(e.target.value as any)}
                         className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
@@ -1008,6 +1061,10 @@ export function OnboardingModal({
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div className="rounded-xl border border-nd-accent/20 bg-nd-accent/10 px-3 py-2 text-xs text-nd-text-muted">
+                  Steam Deck text entry: focus a field with A or Y, then use Steam + X to open the on-screen keyboard.
                 </div>
 
                 {diagnosticsWarnings.length > 0 && (

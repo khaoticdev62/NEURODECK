@@ -79,6 +79,7 @@
     "test:backend:contracts": "vitest run tests/contract/",
     "test:backend:integration": "vitest run tests/integration/",
     "test:backend": "vitest run tests/contract/ tests/integration/",
+    "test:controller": "npm -w frontend run test -- src/react/__tests__/controller src/react/__tests__/features/OnboardingWizard.test.tsx",
     "test:unit": "vitest run tests/unit/",
     "test:unit:ide": "vitest run tests/unit/ide/ tests/unit/controller/",
     "test:integration:ide": "vitest run tests/integration/ide/",
@@ -130,7 +131,9 @@
     "check:installer": "bash scripts/steamdeck/validate-installer.sh",
     "package:steamdeck": "bash scripts/steamdeck/package-steamdeck.sh --target all",
     "validate:steamdeck-package": "bash scripts/steamdeck/validate-installer.sh",
-    "validate:proton-package": "bash scripts/steamdeck/validate-proton.sh"
+    "validate:proton-package": "bash scripts/steamdeck/validate-proton.sh",
+    "check:focus-graphs": "node scripts/check-focus-graphs.cjs",
+    "check:controller-actions": "node scripts/check-controller-actions.cjs"
   },
   "devDependencies": {
     "electron": "^36.0.0",

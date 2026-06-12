@@ -388,6 +388,20 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 1px var(--nd-accent), 0 0 8px var(--nd-glow);
 }
 
+button:focus,
+a:focus,
+[role='button']:focus,
+[role='option']:focus,
+[aria-current='page']:focus,
+[aria-current='step']:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--nd-accent) 55%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--nd-accent) 18%, transparent),
+    0 0 18px var(--nd-glow);
+  transform: translateY(-1px);
+}
+
 /* Focus-visible ring for keyboard navigation (replaces outline-none) */
 .focus-ring:focus-visible {
   outline: none;

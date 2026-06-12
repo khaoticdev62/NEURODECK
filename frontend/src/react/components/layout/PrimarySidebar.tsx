@@ -43,6 +43,7 @@ export function PrimarySidebar({ state, dispatch, onOpenSettings }: SidebarProps
     <>
       {/* ── Desktop sidebar (lg+) ────────────────────────────────────────── */}
       <aside
+        data-controller-zone="navigation"
         className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-text-muted/15 bg-nd-bg/72 backdrop-blur-xl transition-all duration-200 ease-snap lg:flex"
         style={{ width: expanded ? 200 : 56 }}
         onMouseEnter={() => setHovered(true)}

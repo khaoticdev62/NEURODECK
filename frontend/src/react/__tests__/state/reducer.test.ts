@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 // --- inline the reducer + helpers so we can test without the hook ---
 import type { AgentStatus, NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
+import { controllerDefaults } from '../../input/controller/controllerStore';
 import { STORE_KEY } from '../../types/seed';
 import {
   agents,
@@ -33,6 +34,7 @@ const initialState: NeuroDeckState = {
   activeView: 'chat',
   commandOpen: false,
   deckMode: false,
+  controllerSettings: controllerDefaults,
   selectedTheme: 'Blacksite',
   selectedPersona: 'Developer',
   selectedProvider: 'ollama',

@@ -4,6 +4,7 @@ import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, Database, Downlo
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
+import { useControllerAction } from '../../input/controller/useControllerAction';
 import { Badge } from '../primitives/Badge';
 
 const RECENT_KEY = 'neurodeck:recent-commands';
@@ -205,14 +206,90 @@ export function CommandPalette({
   const normalizedQuery = query.trim().toLowerCase();
   const showRecents = !normalizedQuery && recentCommands.length > 0;
 
+  useControllerAction(
+    'cancel',
+    () => {
+      if (!isOpen) return false;
+      dispatch({ type: 'toggle-command', open: false });
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'back',
+    () => {
+      if (!isOpen) return false;
+      dispatch({ type: 'toggle-command', open: false });
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'openSearch',
+    () => {
+      if (!isOpen) return false;
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'confirm',
+    () => {
+      if (!isOpen) return false;
+      const cmd = filteredCommands[selectedIndex];
+      if (cmd) void runCommand(cmd);
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'focusDown',
+    () => {
+      if (!isOpen) return false;
+      setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'focusUp',
+    () => {
+      if (!isOpen) return false;
+      setSelectedIndex((i) => Math.max(i - 1, 0));
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'pageDown',
+    () => {
+      if (!isOpen) return false;
+      setSelectedIndex((i) => Math.min(i + 5, filteredCommands.length - 1));
+      return true;
+    },
+    isOpen,
+  );
+  useControllerAction(
+    'pageUp',
+    () => {
+      if (!isOpen) return false;
+      setSelectedIndex((i) => Math.max(i - 5, 0));
+      return true;
+    },
+    isOpen,
+  );
+
   return (
-    <div id="command-palette-overlay" className={`${isOpen ? 'active' : 'hidden'} fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-20 backdrop-blur-sm`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
+    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`${isOpen ? 'active' : 'hidden'} fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-20 backdrop-blur-sm`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
       <div className="no-drag w-full max-w-2xl overflow-hidden rounded-3xl border border-nd-accent/25 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <Search className="h-5 w-5 text-nd-accent" />
           <input
             ref={inputRef}
             id="command-palette-input"
+            data-controller-default="true"
             placeholder="Run command, open panel, execute local AI workflow..."
             className="h-10 flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
             value={query}

@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { STORE_KEY } from '../types/seed';
 import { neurodeckApi } from '../services/bridgeAdapter';
 import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, SessionNode, MemoryItem, Agent, PluginCard } from '../types/neurodeck';
+import { controllerDefaults } from '../input/controller/controllerStore';
 
 const initialState: NeuroDeckState = {
   hydrated: false,
   activeView: 'chat',
   commandOpen: false,
   deckMode: false,
+  controllerSettings: controllerDefaults,
   selectedTheme: 'Blacksite',
   selectedPersona: 'Developer',
   selectedProvider: 'ollama',
@@ -90,6 +92,14 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
       return { ...state, commandOpen: action.open ?? !state.commandOpen };
     case 'toggle-deck-mode':
       return { ...state, deckMode: !state.deckMode };
+    case 'set-controller-settings':
+      return {
+        ...state,
+        controllerSettings: {
+          ...state.controllerSettings,
+          ...action.settings,
+        },
+      };
     case 'set-theme':
       return { ...state, selectedTheme: action.theme };
     case 'set-persona':

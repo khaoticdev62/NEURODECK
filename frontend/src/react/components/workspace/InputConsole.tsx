@@ -52,7 +52,7 @@ export function InputConsole({
   }, [onSend, value]);
 
   return (
-    <div className="border-t border-nd-text-muted/15 bg-nd-surface/30 p-3">
+    <div className="border-t border-nd-text-muted/15 bg-nd-surface/30 p-3" data-controller-zone="form">
       {/* Status row */}
       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
         <Badge tone="accent">{provider}</Badge>
@@ -126,6 +126,7 @@ export function InputConsole({
         <textarea
           ref={textareaRef}
           id="user-input"
+          data-controller-default="true"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
