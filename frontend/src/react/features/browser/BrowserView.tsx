@@ -35,6 +35,7 @@ import {
   Info,
   RefreshCw,
 } from "lucide-react";
+import { BrowserVpnPanel } from "../browser-vpn/BrowserVpnPanel";
 
 interface BrowserTab {
   id: string;
@@ -137,6 +138,7 @@ export function BrowserView() {
   const [permissions, setPermissions] = useState<PermissionRequest[]>([]);
   const [showProfilesMenu, setShowProfilesMenu] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showVpnPanel, setShowVpnPanel] = useState(false);
   const [diagnosticsReport, setDiagnosticsReport] = useState<any>(null);
   const [visible, setVisible] = useState(true);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
@@ -689,6 +691,18 @@ export function BrowserView() {
           >
             <Terminal className="h-4 w-4" />
           </button>
+
+          <button
+            onClick={() => setShowVpnPanel((v) => !v)}
+            className={`rounded-xl border p-2 text-nd-text transition ${
+              showVpnPanel
+                ? "bg-nd-warning/15 border-nd-warning/30 text-nd-warning"
+                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
+            }`}
+            title="Browser VPN"
+          >
+            <ShieldCheck className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -1098,6 +1112,8 @@ export function BrowserView() {
           </div>
         </div>
       )}
+
+      {showVpnPanel && <BrowserVpnPanel visible={showVpnPanel} onClose={() => setShowVpnPanel(false)} />}
 
       {/* Main Viewport & Collapsible Sidebar Drawer */}
       <div className="flex flex-1 min-h-0 relative">

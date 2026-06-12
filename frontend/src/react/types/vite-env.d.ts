@@ -122,6 +122,28 @@ declare global {
           callback: (data: { event: string; payload: Record<string, unknown> }) => void
         ) => () => void;
       };
+      vpn: {
+        listProfiles: () => Promise<unknown[]>;
+        getProfile: (profileId: string) => Promise<unknown | null>;
+        createProfile: (payload: unknown) => Promise<unknown | null>;
+        updateProfile: (payload: unknown) => Promise<unknown | null>;
+        deleteProfile: (profileId: string) => Promise<unknown | null>;
+        importConfig: (text: string, kind?: string) => Promise<unknown | null>;
+        validateConfig: (text: string, kind?: string) => Promise<unknown | null>;
+        listTemplates: () => Promise<unknown[]>;
+        connect: (profileId: string, browserProfileId?: string) => Promise<unknown | null>;
+        disconnect: (profileId: string) => Promise<unknown | null>;
+        verify: (profileId: string) => Promise<unknown | null>;
+        repair: (profileId: string) => Promise<unknown | null>;
+        getStatus: (profileId?: string) => Promise<unknown | null>;
+        getEvidence: (profileId?: string) => Promise<unknown[]>;
+        getRecoveryEvents: () => Promise<unknown[]>;
+        setKillSwitch: (profileId: string, enabled: boolean) => Promise<unknown | null>;
+        applyBrowserProxy: (profileId: string, browserProfileId?: string) => Promise<unknown | null>;
+        clearBrowserProxy: (profileId: string, browserProfileId?: string) => Promise<unknown | null>;
+        getProviderMatrix: () => Promise<unknown[]>;
+        exportRedactedProfile: (profileId: string) => Promise<unknown | null>;
+      };
     };
   }
 }
