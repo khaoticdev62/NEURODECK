@@ -13,6 +13,7 @@ import { ControllerHintBar } from './ControllerHintBar';
 import { LanguageModeBadge } from './LanguageModeBadge';
 import { RadialCommandWheel } from './RadialCommandWheel';
 import { SafeCommandConfirmModal } from './SafeCommandConfirmModal';
+import { Modal } from '../../components/primitives/Modal';
 import type { DiagnosticFix } from './DiagnosticFixPanel';
 import { DiagnosticFixPanel } from './DiagnosticFixPanel';
 
@@ -96,6 +97,8 @@ export function IDEView() {
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
   const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState('');
   const [commandOutput, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
+  const [newFileModalOpen, setNewFileModalOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState('untitled.txt');
 
   // Debounce refs
   const lspChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -273,18 +276,20 @@ export function IDEView() {
   }, [activeTab, activeTabData?.content, updateLineNumbers]);
 
   const newFile = useCallback(async () => {
-    const name = window.prompt('Enter filename (with extension):', 'untitled.txt');
+    const name = newFileName.trim();
     if (!name) return;
     const path = currentPath ? `${currentPath}/${name}` : name;
     try {
       await neurodeckApi.ide.createWorkspaceFile(path);
+      setNewFileModalOpen(false);
+      setNewFileName('untitled.txt');
       log(`Created ${path}`, 'ok');
       await loadFiles(currentPath);
       await openFile(path, name);
     } catch (e) {
       log(`Cannot create file: ${e}`, 'error');
     }
-  }, [currentPath, loadFiles, openFile, log]);
+  }, [currentPath, loadFiles, log, newFileName, openFile]);
 
   const deleteFile = useCallback(async () => {
     if (!activeTab) return;
@@ -536,7 +541,7 @@ export function IDEView() {
                 <Code className="h-10 w-10" />
                 <p className="text-sm">Select a file from the explorer to start editing</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={newFile} className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                  <button type="button" onClick={() => setNewFileModalOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                     <FilePlus className="h-3.5 w-3.5" /> New File
                   </button>
                 </div>
@@ -602,6 +607,39 @@ export function IDEView() {
           }}
         />
       )}
+      <Modal
+        open={newFileModalOpen}
+        onClose={() => setNewFileModalOpen(false)}
+        title="Create File"
+        description="Create a new workspace file in the current directory."
+        size="sm"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setNewFileModalOpen(false)}
+              className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void newFile()}
+              disabled={!newFileName.trim()}
+              className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent disabled:opacity-50"
+            >
+              Create
+            </button>
+          </>
+        }
+      >
+        <input
+          value={newFileName}
+          onChange={(event) => setNewFileName(event.target.value)}
+          placeholder="untitled.txt"
+          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text outline-none"
+        />
+      </Modal>
     </div>
   );
 }

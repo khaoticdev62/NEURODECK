@@ -1,5 +1,6 @@
 import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
 import { Badge } from "../primitives/Badge";
+import { Modal } from "../primitives/Modal";
 import type { SessionNode } from "../../types/neurodeck";
 import { useState } from "react";
 import { bridgeInvoke, neurodeckApi } from "../../services/bridgeAdapter";
@@ -12,6 +13,8 @@ interface SessionCardProps {
 export function SessionCard({ node, onRefresh }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState(node.name || "");
 
   const formattedDate = new Date(node.created_at).toLocaleString();
   const displayName = node.name || node.id;
@@ -30,12 +33,13 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
   };
 
   const handleRename = async () => {
-    const newName = prompt("Enter new session name:", node.name || "");
-    if (newName === null) return;
+    const newName = renameValue.trim();
+    if (!newName) return;
     setLoading(true);
     setError(null);
     try {
       await neurodeckApi.sessions.rename(node.id, newName);
+      setRenameOpen(false);
       onRefresh?.();
     } catch (e) {
       setError(String(e));
@@ -62,6 +66,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
   };
 
   return (
+    <>
     <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 transition-colors hover:border-nd-accent/25">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
@@ -88,7 +93,10 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
 
         <div className="flex shrink-0 items-center gap-2 self-end sm:self-start">
           <button
-            onClick={handleRename}
+            onClick={() => {
+              setRenameValue(node.name || "");
+              setRenameOpen(true);
+            }}
             disabled={loading}
             className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent disabled:opacity-50"
             title="Rename Session"
@@ -114,5 +122,39 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
         </div>
       </div>
     </article>
+    <Modal
+      open={renameOpen}
+      onClose={() => setRenameOpen(false)}
+      title="Rename Session"
+      description="Update the saved session label."
+      size="sm"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={() => setRenameOpen(false)}
+            className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleRename()}
+            disabled={!renameValue.trim() || loading}
+            className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent disabled:opacity-50"
+          >
+            Save
+          </button>
+        </>
+      }
+    >
+      <input
+        value={renameValue}
+        onChange={(event) => setRenameValue(event.target.value)}
+        placeholder="Session name"
+        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text outline-none"
+      />
+    </Modal>
+    </>
   );
 }
