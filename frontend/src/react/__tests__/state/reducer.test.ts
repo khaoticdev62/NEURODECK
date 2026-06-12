@@ -43,6 +43,8 @@ const initialState: NeuroDeckState = {
   showOnboarding: true,
   composerValue: '',
   busyLabel: null,
+  toolStatus: null,
+  statusBar: null,
   activeProject: null,
   projectContext: null,
   modelDetection: null,
@@ -118,6 +120,10 @@ function reduce(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState 
       return { ...state, selectedTheme: action.theme };
     case 'set-persona':
       return { ...state, selectedPersona: action.persona };
+    case 'set-tool-status':
+      return { ...state, toolStatus: action.status };
+    case 'set-status-bar':
+      return { ...state, statusBar: action.state };
     case 'set-provider':
       return { ...state, selectedProvider: action.provider };
     case 'set-selected-model':

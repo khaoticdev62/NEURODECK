@@ -535,23 +535,23 @@ function createSplashWindow() {
 function loadMainWindowURL() {
   if (!mainWindow) return;
 
-  // Dev: load Vite dev server if running, otherwise fall back to built files
+  // Dev: load Vite dev server if running, otherwise fall back to built files.
+  // Use an HTTP GET so OS resolution of "localhost" works for both IPv4 and IPv6.
   if (process.env.ELECTRON_DEV) {
-    const client = new net.Socket();
-    client.setTimeout(200);
-    const fallback = () => {
-      client.destroy();
-      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
-      mainWindow.loadURL('neurodeck://app/index.html');
-    };
-    client.once('connect', () => {
-      client.destroy();
+    const req = require('http').get('http://localhost:1420/', (res) => {
+      res.resume();
       mainWindow.loadURL('http://localhost:1420');
       mainWindow.webContents.openDevTools();
     });
-    client.once('error', fallback);
-    client.once('timeout', fallback);
-    client.connect(1420, '127.0.0.1');
+    req.setTimeout(300, () => {
+      req.destroy();
+      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
+      mainWindow.loadURL('neurodeck://app/index.html');
+    });
+    req.once('error', () => {
+      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
+      mainWindow.loadURL('neurodeck://app/index.html');
+    });
   } else {
     mainWindow.loadURL('neurodeck://app/index.html');
   }

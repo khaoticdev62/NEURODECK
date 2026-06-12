@@ -84,3 +84,19 @@ fn config_handles_missing_file() {
     assert_eq!(loaded.llm.default_provider, "ollama");
     assert_eq!(loaded.theme.primary_color, "#00F0FF");
 }
+
+#[test]
+fn config_persists_active_theme_name() {
+    let path = temp_config_path("theme");
+    let _ = std::fs::remove_file(&path);
+
+    let mut config = Config::default();
+    config.theme.active_theme_name = Some("Blacksite".to_string());
+
+    save_config(&path, &config).expect("save_config should succeed");
+
+    let loaded = load_config(&path);
+    assert_eq!(loaded.theme.active_theme_name, Some("Blacksite".to_string()));
+
+    let _ = std::fs::remove_file(&path);
+}

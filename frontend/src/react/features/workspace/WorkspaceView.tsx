@@ -1,5 +1,6 @@
 import { type Dispatch, useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '../../components/primitives/Badge';
+import { StatusChip } from '../../components/primitives/StatusChip';
 import { ChatViewport } from '../../components/workspace/ChatViewport';
 import { InputConsole } from '../../components/workspace/InputConsole';
 import { TelemetryWidget } from '../../components/workspace/TelemetryWidget';
@@ -70,19 +71,15 @@ export function WorkspaceView({
   return (
     <div className="workspace-container flex h-full min-h-0 flex-col gap-3" data-controller-zone="content">
       {/* Session header */}
-      <div className="flex items-center justify-between rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-2.5">
+      <div className="flex items-center justify-between rounded-2xl border border-nd-border-subtle bg-nd-surface-raised/40 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="chat-session-kicker text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
             Active Session
           </span>
-          <span
-            className="relative flex h-2 w-2 items-center justify-center"
-            aria-hidden="true"
-          >
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-nd-success/60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-nd-success" />
-          </span>
-          <span className="text-xs text-nd-text-muted">
+          <StatusChip tone="success" size="sm" pulse>
+            live
+          </StatusChip>
+          <span className="hidden text-xs text-nd-text-secondary sm:inline">
             {state.activeProject?.name || 'Welcome session'}
           </span>
         </div>

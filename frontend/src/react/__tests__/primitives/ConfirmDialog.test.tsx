@@ -72,19 +72,19 @@ describe('ConfirmDialog', () => {
   it('renders danger variant on confirm button when destructive=true', () => {
     setup({ destructive: true });
     const confirmBtn = screen.getByRole('button', { name: 'Confirm' });
-    expect(confirmBtn.className).toContain('nd-danger');
+    expect(confirmBtn.className).toContain('nd-accent-error');
   });
 
   it('renders primary variant on confirm button when destructive=false', () => {
     setup({ destructive: false });
     const confirmBtn = screen.getByRole('button', { name: 'Confirm' });
-    expect(confirmBtn.className).toContain('nd-accent');
+    expect(confirmBtn.className).toContain('nd-accent-primary');
   });
 
   it('renders alert triangle icon when destructive=true', () => {
     const { container } = setup({ destructive: true });
-    // AlertTriangle SVG is inside a span with text-nd-danger class
-    expect(container.querySelector('span.text-nd-danger')).not.toBeNull();
+    // AlertTriangle SVG is inside a span with text-nd-accent-error class
+    expect(container.querySelector('span.text-nd-accent-error')).not.toBeNull();
   });
 
   it('does not render danger icon span when destructive=false', () => {

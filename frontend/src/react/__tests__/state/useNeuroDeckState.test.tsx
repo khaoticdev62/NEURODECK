@@ -12,6 +12,12 @@ vi.mock('../../services/bridgeAdapter', () => ({
       set: vi.fn().mockResolvedValue({ ok: true }),
       reset: vi.fn().mockResolvedValue({ ok: true }),
     },
+    getInitialState: vi.fn().mockResolvedValue(null),
+    getStatusBarState: vi.fn().mockResolvedValue(null),
+    memory: { list: vi.fn().mockResolvedValue(null) },
+    sessions: { listMeta: vi.fn().mockResolvedValue(null) },
+    agents: { list: vi.fn().mockResolvedValue(null) },
+    plugins: { list: vi.fn().mockResolvedValue(null) },
   },
   listenBridge: vi.fn().mockReturnValue(() => {}),
 }));

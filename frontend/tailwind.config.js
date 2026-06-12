@@ -9,25 +9,33 @@ export default {
       colors: {
         // NEURODECK design tokens — all mapped to runtime CSS custom properties
         nd: {
-          // ── Backgrounds / Surfaces ─────────────────────────────────────
-          bg:               'var(--nd-bg)',
-          surface:          'var(--nd-surface)',
+          // ── Semantic surfaces ──────────────────────────────────────────
+          'surface-base':   'var(--nd-surface-base, var(--nd-surface, #11161C))',
           'surface-raised': 'var(--nd-surface-raised)',
-          'surface-sunken': 'var(--nd-surface-sunken, #07090C)',
+          'surface-glass':  'var(--nd-surface-glass, rgba(17,22,28,0.72))',
           'surface-overlay':'var(--nd-surface-overlay, rgba(10,13,16,0.85))',
           'surface-modal':  'var(--nd-surface-modal, #0F1419)',
-          'surface-glass':  'var(--nd-surface-glass, rgba(17,22,28,0.72))',
+          'surface-danger': 'var(--nd-surface-danger, #FF5A6A)',
+
+          // Legacy surface aliases (kept for compatibility during migration)
+          bg:               'var(--nd-bg)',
+          surface:          'var(--nd-surface)',
+          'surface-sunken': 'var(--nd-surface-sunken, #07090C)',
           'surface-sidebar':'var(--nd-surface-sidebar, #0D1117)',
           'surface-panel':  'var(--nd-surface-panel, #11161C)',
           'surface-card':   'var(--nd-surface-card, #131A22)',
           'surface-input':  'var(--nd-surface-input, #0A0D10)',
           'surface-tooltip':'var(--nd-surface-tooltip, #1C242E)',
 
-          // ── Text ─────────────────────────────────────────────────────
-          text:             'var(--nd-text)',
+          // ── Semantic text ──────────────────────────────────────────────
+          'text-primary':   'var(--nd-text-primary, var(--nd-text, #E8F4FF))',
           'text-secondary': 'var(--nd-text-secondary, #B8CCE0)',
-          'text-tertiary':  'var(--nd-text-tertiary, #6E8499)',
           'text-muted':     'var(--nd-text-muted)',
+          'text-disabled':  'var(--nd-text-disabled, rgba(255,255,255,0.05))',
+
+          // Legacy text aliases
+          text:             'var(--nd-text)',
+          'text-tertiary':  'var(--nd-text-tertiary, #6E8499)',
           'text-inverse':   'var(--nd-text-inverse, #0A0D10)',
           'text-link':      'var(--nd-text-link, #5EEBFF)',
           'text-code':      'var(--nd-text-code, #A6E3A1)',
@@ -37,25 +45,34 @@ export default {
           'text-success':   'var(--nd-text-success, #7CFFB2)',
           'text-info':      'var(--nd-text-info, #89DCEB)',
 
-          // ── Accent ───────────────────────────────────────────────────
+          // ── Semantic accent ────────────────────────────────────────────
+          'accent-primary':   'var(--nd-accent-primary, var(--nd-accent, #5EEBFF))',
+          'accent-secondary': 'var(--nd-accent-secondary, #89DCEB)',
+          'accent-success':   'var(--nd-accent-success, #7CFFB2)',
+          'accent-warning':   'var(--nd-accent-warning, #FFC857)',
+          'accent-error':     'var(--nd-accent-error, #FF5A6A)',
+          'accent-info':      'var(--nd-accent-info, #89DCEB)',
+
+          // Legacy accent aliases
           accent:           'var(--nd-accent)',
-          'accent-secondary':'var(--nd-accent-secondary, #89DCEB)',
           'accent-tertiary': 'var(--nd-accent-tertiary, #CBA6F7)',
           'accent-glow':    'var(--nd-accent-glow, rgba(94,235,255,0.18))',
           'accent-soft':    'var(--nd-accent-soft, rgba(94,235,255,0.08))',
           'accent-strong':  'var(--nd-accent-strong, #0ACFD8)',
 
-          // ── Semantic State ───────────────────────────────────────────
+          // ── Semantic state ─────────────────────────────────────────────
           success:          'var(--nd-success)',
           warning:          'var(--nd-warning)',
           danger:           'var(--nd-danger)',
           glow:             'var(--nd-glow)',
 
-          // ── Borders ──────────────────────────────────────────────────
+          // ── Semantic borders ───────────────────────────────────────────
           'border-subtle':  'var(--nd-border-subtle)',
-          'border-default': 'var(--nd-border-default)',
           'border-strong':  'var(--nd-border-strong, rgba(141,161,179,0.28))',
           'border-focus':   'var(--nd-border-focus)',
+
+          // Legacy border aliases
+          'border-default': 'var(--nd-border-default)',
         },
       },
 
@@ -146,6 +163,10 @@ export default {
           '0%':   { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(360deg)' },
         },
+        'shimmer': {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
 
       animation: {
@@ -157,6 +178,7 @@ export default {
         'pulse-glow':      'pulse-glow 2s ease-in-out infinite',
         'shake':           'shake 300ms ease-in-out',
         'spin-once':       'spin-once 600ms ease-in-out forwards',
+        'shimmer':         'shimmer 1.5s ease-in-out infinite',
       },
     },
   },

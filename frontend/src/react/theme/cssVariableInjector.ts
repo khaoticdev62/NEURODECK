@@ -1,4 +1,8 @@
 import type { ThemeTokenSet } from "../../shared/theme/themeContracts";
+import {
+  resolveSemanticTokens,
+  semanticTokensToCssVars,
+} from "../../../../src/shared/theme/designTokens";
 
 export function hexToRgb(hex: string): string {
   const clean = hex.replace("#", "");
@@ -82,4 +86,11 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
   root.style.setProperty("--nd-transition-fast", tokens.motion.durationFast);
   root.style.setProperty("--nd-transition-normal", tokens.motion.durationNormal);
   root.style.setProperty("--nd-transition-slow", tokens.motion.durationSlow);
+
+  // Semantic token layer (surface.base, text.primary, accent.error, etc.)
+  const semantic = resolveSemanticTokens(tokens);
+  const semanticVars = semanticTokensToCssVars(semantic);
+  for (const [key, value] of Object.entries(semanticVars)) {
+    root.style.setProperty(key, value);
+  }
 }

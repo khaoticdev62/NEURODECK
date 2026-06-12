@@ -9,6 +9,8 @@ import { themeRegistry } from "../../shared/theme/themeRegistry";
 import { wallpaperRegistry } from "../../shared/theme/wallpaperRegistry";
 import { themePersistenceClient } from "./themePersistenceClient";
 import { injectThemeVariables } from "./cssVariableInjector";
+import { neurodeckApi } from "../services/bridgeAdapter";
+import { resolveThemeIdFromBackend } from "./themeIdMapper";
 
 interface ThemeContextType {
   settings: ThemeSettings;
@@ -24,13 +26,33 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<ThemeSettings | null>(null);
+  const [backendReconciled, setBackendReconciled] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load persistence settings on mount
+  // Load persistence settings on mount, then reconcile with backend theme
   useEffect(() => {
-    themePersistenceClient.getSettings().then((loaded) => {
+    let mounted = true;
+    async function load() {
+      const loaded = await themePersistenceClient.getSettings();
+      if (!mounted) return;
+
+      // Render immediately with local settings so the UI never waits on the bridge.
       setSettings(loaded);
-    });
+
+      try {
+        const init = await neurodeckApi.getInitialState();
+        const backendName = init?.active_theme_name ?? null;
+        const backendId = resolveThemeIdFromBackend(backendName);
+        if (backendId && themeRegistry.getTheme(backendId) && backendId !== loaded.activeThemeId) {
+          setSettings({ ...loaded, activeThemeId: backendId });
+        }
+      } catch (_) {
+        // Keep local settings if the bridge is unreachable.
+      }
+      setBackendReconciled(true);
+    }
+    void load();
+    return () => { mounted = false; };
   }, []);
 
   const availableThemes = useMemo(() => themeRegistry.listThemes(), []);
@@ -64,6 +86,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       injectThemeVariables(resolvedTokens);
     }
   }, [resolvedTokens]);
+
+  // Persist active theme changes back to the backend config
+  useEffect(() => {
+    if (!settings || !backendReconciled) return;
+    void neurodeckApi.setTheme(settings.activeThemeId);
+  }, [settings?.activeThemeId, backendReconciled]);
 
   const updateSettings = async (newSettings: Partial<ThemeSettings>) => {
     if (!settings) return;

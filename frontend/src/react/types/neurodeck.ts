@@ -44,6 +44,58 @@ export interface ThemeTokenSet {
   glow: string;
 }
 
+export interface ToolStatus {
+  state: 'idle' | 'working' | 'error';
+  label: string;
+  detail?: string;
+  since?: string;
+}
+
+export interface StatusBarState {
+  connection: {
+    status: string;
+    issues: string[];
+  };
+  ai: {
+    provider: string;
+    model: string;
+    active_agent_id: string;
+    active_persona: string;
+  };
+  session: {
+    id: string;
+    message_count: number;
+  };
+  memory: {
+    ready: boolean;
+    count: number;
+  };
+  tools: ToolStatus;
+  pty: {
+    session_count: number;
+  };
+  remote: {
+    server_running: boolean;
+  };
+  transfer: {
+    active_count: number;
+  };
+  mcp: {
+    running: boolean;
+  };
+  sync: {
+    enabled: boolean;
+    syncing: boolean;
+    last_sync_at: string | null;
+    last_error: string | null;
+    pending_records: number;
+  };
+  theme: {
+    active_theme_name: string | null;
+  };
+  safe_mode: boolean;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -370,6 +422,8 @@ export interface NeuroDeckState {
   controllerSettings: ControllerSettings;
   selectedTheme: ThemeName;
   selectedPersona: string;
+  toolStatus: ToolStatus | null;
+  statusBar: StatusBarState | null;
   selectedProvider: AIProvider;
   selectedModelId: string;
   activeAgentId: string;
@@ -475,6 +529,8 @@ export type NeuroDeckAction =
   | { type: 'set-controller-settings'; settings: Partial<ControllerSettings> }
   | { type: 'set-theme'; theme: ThemeName }
   | { type: 'set-persona'; persona: string }
+  | { type: 'set-tool-status'; status: ToolStatus | null }
+  | { type: 'set-status-bar'; state: StatusBarState | null }
   | { type: 'set-provider'; provider: AIProvider }
   | { type: 'set-selected-model'; id: string }
   | { type: 'set-font'; font: string }

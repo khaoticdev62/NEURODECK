@@ -28,6 +28,8 @@ import type {
   SaveSessionResponse,
   DiagnosticsBundleResponse,
   CliCommandDef,
+  ToolStatus,
+  StatusBarState,
 } from "../types/neurodeck";
 import type { ProviderRuntimeProfile } from "../../shared/contracts/models.contracts";
 import type { TerminalCommandSafety } from "../../../../src/shared/terminal/terminalSafetyTypes";
@@ -39,7 +41,15 @@ import type {
 import type { OnboardingDiagnosticResult } from "../types/onboarding";
 import type { TerminalProfileAvailability } from "../../../../src/shared/terminal/terminalProfiles";
 
-const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || "9477", 10);
+function getBridgePort(): number {
+  const runtime = typeof window !== "undefined" ? (window as any).NEURODECK_PORT : undefined;
+  const runtimePort = runtime ? parseInt(String(runtime), 10) : NaN;
+  return Number.isNaN(runtimePort)
+    ? parseInt(import.meta.env.VITE_BRIDGE_PORT || "9477", 10)
+    : runtimePort;
+}
+
+const BRIDGE_PORT = getBridgePort();
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
 
 let _ws: WebSocket | null = null;
@@ -2157,7 +2167,7 @@ export async function getInitialState() {
     session_id: string;
     active_persona: string;
     memory_status: string;
-    tool_status: string;
+    tool_status: ToolStatus;
     boot_health_status: string;
     boot_health_summary: string;
     boot_health_recovered_count: string;
@@ -2165,13 +2175,24 @@ export async function getInitialState() {
     game_name: string;
     game_app_id: number;
     game_running: string;
+    active_theme_name: string | null;
   }>("get_initial_state");
+}
+
+export async function getStatusBarState(): Promise<StatusBarState> {
+  return bridgeInvoke<StatusBarState>("get_status_bar_state");
+}
+
+export async function setTheme(name: string): Promise<{ active_theme_name: string }> {
+  return bridgeInvoke<{ active_theme_name: string }>("set_theme", { name });
 }
 
 export { bridgeInvoke };
 
 export const neurodeckApi = {
   getInitialState,
+  getStatusBarState,
+  setTheme,
   store,
   projects,
   models,

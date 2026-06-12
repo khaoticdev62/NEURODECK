@@ -12,7 +12,11 @@ const sizeMap = {
   lg: 'h-8 w-8',
 };
 
-export function LoadingState({ label = 'Loading…', fullHeight = false, size = 'md' }: LoadingStateProps) {
+export function LoadingState({
+  label = 'Loading…',
+  fullHeight = false,
+  size = 'md',
+}: LoadingStateProps) {
   return (
     <div
       role="status"
@@ -22,7 +26,10 @@ export function LoadingState({ label = 'Loading…', fullHeight = false, size = 
         fullHeight ? 'h-full min-h-[200px]' : 'py-10',
       ].join(' ')}
     >
-      <Loader2 className={`${sizeMap[size]} animate-spin text-nd-accent`} />
+      <Loader2
+        className={`${sizeMap[size]} animate-spin text-nd-accent-primary motion-reduce:animate-none`}
+        aria-hidden="true"
+      />
       <span className="text-xs">{label}</span>
     </div>
   );

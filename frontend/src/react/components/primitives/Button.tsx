@@ -1,7 +1,7 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'premium';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,11 +14,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:   'border-nd-accent/30 bg-nd-accent/10 text-nd-accent hover:bg-nd-accent/20 focus-visible:ring-nd-accent/50 disabled:border-nd-text-muted/15 disabled:bg-transparent disabled:text-nd-text-muted/50',
-  secondary: 'border-nd-text-muted/20 bg-nd-surface text-nd-text hover:bg-nd-surface-raised focus-visible:ring-nd-accent/40',
-  ghost:     'border-transparent bg-transparent text-nd-text-muted hover:bg-nd-surface-raised hover:text-nd-text focus-visible:ring-nd-accent/40',
-  danger:    'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20 focus-visible:ring-nd-danger/40',
-  success:   'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20 focus-visible:ring-nd-success/40',
+  primary:   'border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary hover:bg-nd-accent-primary/20 focus-visible:ring-nd-accent-primary/50 disabled:border-nd-text-muted/15 disabled:bg-transparent disabled:text-nd-text-muted/50',
+  secondary: 'border-nd-border-subtle bg-nd-surface-base text-nd-text-primary hover:bg-nd-surface-raised focus-visible:ring-nd-accent-primary/40',
+  ghost:     'border-transparent bg-transparent text-nd-text-muted hover:bg-nd-surface-raised hover:text-nd-text-primary focus-visible:ring-nd-accent-primary/40',
+  danger:    'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error hover:bg-nd-accent-error/20 focus-visible:ring-nd-accent-error/40',
+  success:   'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success hover:bg-nd-accent-success/20 focus-visible:ring-nd-accent-success/40',
+  premium:   'relative overflow-hidden border-nd-accent-primary/40 bg-gradient-to-b from-nd-accent-primary/15 to-nd-accent-primary/5 text-nd-accent-primary shadow-[0_0_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-nd-accent-primary/25 hover:to-nd-accent-primary/10 focus-visible:ring-nd-accent-primary/60 active:scale-[0.96]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -63,10 +64,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       className={[
         'inline-flex items-center justify-center border font-medium',
-        'transition-colors duration-150',
+        'transition-all duration-fast',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-nd-bg',
         'disabled:pointer-events-none disabled:opacity-50',
-        'active:scale-[0.97]',
+        'active:scale-[0.97] active:brightness-110',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth ? 'w-full' : '',

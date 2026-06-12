@@ -42,13 +42,13 @@ export function ConfirmDialog({
     >
       <div className="flex items-start gap-3">
         {destructive && (
-          <span className="mt-0.5 shrink-0 text-nd-danger">
-            <AlertTriangle className="h-5 w-5" />
+          <span className="mt-0.5 shrink-0 text-nd-accent-error">
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
           </span>
         )}
         <div>
-          <p className="font-semibold text-nd-text">{title}</p>
-          <p className="mt-1 text-sm text-nd-text-muted">{message}</p>
+          <p className="font-semibold text-nd-text-primary">{title}</p>
+          <p className="mt-1 text-sm text-nd-text-secondary">{message}</p>
         </div>
       </div>
     </Modal>

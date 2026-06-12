@@ -19,6 +19,8 @@ const initialState: NeuroDeckState = {
   showOnboarding: true,
   composerValue: '',
   busyLabel: null,
+  toolStatus: null,
+  statusBar: null,
   activeProject: null,
   projectContext: null,
   modelDetection: null,
@@ -104,6 +106,10 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
       return { ...state, selectedTheme: action.theme };
     case 'set-persona':
       return { ...state, selectedPersona: action.persona };
+    case 'set-tool-status':
+      return { ...state, toolStatus: action.status };
+    case 'set-status-bar':
+      return { ...state, statusBar: action.state };
     case 'set-provider':
       return { ...state, selectedProvider: action.provider };
     case 'set-selected-model':
@@ -225,6 +231,17 @@ export function useNeuroDeckState() {
           stored.selectedProvider = (init.provider as any) || stored.selectedProvider;
           stored.selectedModelId = init.model || stored.selectedModelId;
           stored.selectedPersona = init.active_persona || stored.selectedPersona;
+          stored.toolStatus = init.tool_status ?? stored.toolStatus;
+        }
+      } catch (_) {
+        // Ignored, fallback to stored/initial
+      }
+
+      // 1b. Fetch consolidated status-bar state
+      try {
+        const status = await neurodeckApi.getStatusBarState();
+        if (status) {
+          stored.statusBar = status;
         }
       } catch (_) {
         // Ignored, fallback to stored/initial

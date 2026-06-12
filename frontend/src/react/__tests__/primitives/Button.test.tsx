@@ -39,12 +39,12 @@ describe('Button', () => {
 
   it('applies primary variant classes', () => {
     const { container } = render(<Button variant="primary">Primary</Button>);
-    expect(container.querySelector('button')?.className).toContain('text-nd-accent');
+    expect(container.querySelector('button')?.className).toContain('text-nd-accent-primary');
   });
 
   it('applies danger variant classes', () => {
     const { container } = render(<Button variant="danger">Delete</Button>);
-    expect(container.querySelector('button')?.className).toContain('text-nd-danger');
+    expect(container.querySelector('button')?.className).toContain('text-nd-accent-error');
   });
 
   it('applies fullWidth class when fullWidth=true', () => {

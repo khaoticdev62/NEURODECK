@@ -306,6 +306,8 @@ async fn cors_middleware(req: axum::extract::Request, next: axum::middleware::Ne
     let origin = req.headers().get("origin").cloned();
     let allowed = resolve_cors_origin(origin.as_ref());
 
+    println!("[CORS Debug] Method: {:?}, Origin: {:?}, Allowed: {:?}", method, origin, allowed);
+
     if method == axum::http::Method::OPTIONS {
         let mut response = Response::new(axum::body::Body::empty());
         let headers = response.headers_mut();

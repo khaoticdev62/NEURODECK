@@ -8,6 +8,7 @@ import { ControllerHintBar } from "./components/layout/ControllerHintBar";
 import { PrimarySidebar } from "./components/layout/PrimarySidebar";
 import { SecondaryRail } from "./components/layout/SecondaryRail";
 import { TitleBar } from "./components/layout/TitleBar";
+import { StatusBar } from "./components/layout/StatusBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
 import { AgentsView } from "./features/agents/AgentsView";
@@ -1164,7 +1165,7 @@ export default function App() {
             id="main-content"
             data-controller-zone="content"
             data-controller-default="true"
-            className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4 lg:pb-4"
+            className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4"
           >
             <div className="view-container h-full min-h-0">
               {(state.activeView === "chat" || state.activeView === "workspace") &&
@@ -1244,6 +1245,7 @@ export default function App() {
           </main>
           <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
         </div>
+        <StatusBar state={state} />
         {state.deckMode && state.controllerSettings.showHints && <ControllerHintBar />}
         <ControllerHelpOverlay />
         <ControllerDebugOverlay />

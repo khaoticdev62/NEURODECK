@@ -5024,38 +5024,46 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("name")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
-            if let Some(t) = crate::THEMES.iter().find(|t| t.name == name) {
-                {
-                    let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                    app_state.config.theme.active_theme_name = Some(name.to_string());
-                    let path = crate::get_config_path();
-                    crate::config::save_config(&path, &app_state.config)
-                        .map_err(|e| format!("Failed to persist active theme: {}", e))?;
-                }
-                Ok(serde_json::json!({
-                    "Name": t.name,
-                    "Color": t.color,
-                    "Pulse": serde_json::to_string(&t.pulse).unwrap_or_default(),
-                    "Background": t.background,
-                    "Foreground": t.foreground,
-                    "Accent": t.accent,
-                    "Response": t.response,
-                    "Warning": t.warning,
-                    "Error": t.error,
-                    // also add lowercase for compatibility
-                    "name": t.name,
-                    "color": t.color,
-                    "background": t.background,
-                    "foreground": t.foreground,
-                    "accent": t.accent,
-                    "response": t.response,
-                    "warning": t.warning,
-                    "error": t.error,
-                    "active_theme_name": name,
-                }))
-            } else {
-                Err(format!("Theme '{}' not found", name))
+            let t = crate::THEMES.iter().find(|t| t.name == name).cloned();
+            let fallback = t.unwrap_or_else(|| crate::THEMES.first().cloned().unwrap_or(crate::models::Theme {
+                name: "BLACKSITE".to_string(),
+                color: "#00F0FF".to_string(),
+                pulse: vec!["#00F0FF".to_string()],
+                background: "#050505".to_string(),
+                foreground: "#D9F7FF".to_string(),
+                accent: "#00F0FF".to_string(),
+                response: "#00FF88".to_string(),
+                warning: "#FFB000".to_string(),
+                error: "#FF3C5A".to_string(),
+            }));
+            {
+                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app_state.config.theme.active_theme_name = Some(name.to_string());
+                let path = crate::get_config_path();
+                crate::config::save_config(&path, &app_state.config)
+                    .map_err(|e| format!("Failed to persist active theme: {}", e))?;
             }
+            Ok(serde_json::json!({
+                "Name": fallback.name,
+                "Color": fallback.color,
+                "Pulse": serde_json::to_string(&fallback.pulse).unwrap_or_default(),
+                "Background": fallback.background,
+                "Foreground": fallback.foreground,
+                "Accent": fallback.accent,
+                "Response": fallback.response,
+                "Warning": fallback.warning,
+                "Error": fallback.error,
+                // also add lowercase for compatibility
+                "name": fallback.name,
+                "color": fallback.color,
+                "background": fallback.background,
+                "foreground": fallback.foreground,
+                "accent": fallback.accent,
+                "response": fallback.response,
+                "warning": fallback.warning,
+                "error": fallback.error,
+                "active_theme_name": name,
+            }))
         }
 
         "save_custom_themes" => {

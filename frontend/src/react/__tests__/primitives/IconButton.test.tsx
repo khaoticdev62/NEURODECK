@@ -24,27 +24,27 @@ describe('IconButton', () => {
 
   it('applies md size classes by default', () => {
     const { container } = render(<IconButton aria-label="x"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('h-8 w-8');
+    expect(container.querySelector('button')?.className).toContain('min-h-[40px]');
   });
 
   it('applies sm size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="sm"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('h-7 w-7');
+    expect(container.querySelector('button')?.className).toContain('min-h-[40px]');
   });
 
   it('applies lg size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="lg"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('h-10 w-10');
+    expect(container.querySelector('button')?.className).toContain('min-h-[44px]');
   });
 
   it('applies xl size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="xl"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('h-11 w-11');
+    expect(container.querySelector('button')?.className).toContain('min-h-[48px]');
   });
 
   it('applies subtle variant by default', () => {
     const { container } = render(<IconButton aria-label="x"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('bg-nd-surface/50');
+    expect(container.querySelector('button')?.className).toContain('bg-nd-surface-base/50');
   });
 
   it('applies ghost variant', () => {
@@ -54,7 +54,7 @@ describe('IconButton', () => {
 
   it('applies outline variant', () => {
     const { container } = render(<IconButton aria-label="x" variant="outline"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('border-nd-text-muted/15');
+    expect(container.querySelector('button')?.className).toContain('border-nd-border-subtle');
   });
 
   it('passes through additional props', () => {
