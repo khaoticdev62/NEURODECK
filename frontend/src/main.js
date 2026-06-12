@@ -93,6 +93,17 @@ import {
   initCtrlPromptPicker,
   initCtrlPromptPanel,
 } from "./ctrl_prompt.js";
+import {
+  isTerminalViewActive,
+  isTerminalCommandPickerVisible,
+  openTerminalCommandPicker,
+  closeTerminalCommandPicker,
+  handlePickerGamepadShoulder,
+  handleTerminalGamepadButton,
+  handleTerminalGamepadDpad,
+  updateHintBarVisibility,
+  initTerminalGamepad,
+} from "./terminal_gamepad.js";
 import { initRemoteControl } from "./remote_control_view.js";
 
 // ==========================================================================
@@ -1704,6 +1715,11 @@ function _gpButtonPressed(gp, index) {
 
 function _gpFaceButtonA(gp) {
   if (!_gpButtonPressed(gp, 0)) return;
+  if (isTerminalCommandPickerVisible() || isTerminalViewActive()) {
+    triggerHaptic("medium");
+    handleTerminalGamepadButton(0);
+    return;
+  }
   triggerHaptic("medium");
   if (getCtrlPromptVisible()) {
     getCtrlPromptTemplateMode() ? confirmTemplateAndSend() : confirmCtrlPrompt();
@@ -1717,13 +1733,23 @@ function _gpFaceButtonA(gp) {
 
 function _gpFaceButtonB(gp) {
   if (!_gpButtonPressed(gp, 1)) return;
+  if (isTerminalCommandPickerVisible() || isTerminalViewActive()) {
+    triggerHaptic("medium");
+    handleTerminalGamepadButton(1);
+    return;
+  }
   triggerHaptic("medium");
   if (getCtrlPromptVisible()) { getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay(); }
   else { closeTopmostOverlay(); }
 }
 
 function _gpFaceButtonX(gp) {
-  if (!_gpButtonPressed(gp, 2) || getCtrlPromptVisible()) return;
+  if (!_gpButtonPressed(gp, 2)) return;
+  if (isTerminalCommandPickerVisible() || isTerminalViewActive()) {
+    handleTerminalGamepadButton(2);
+    return;
+  }
+  if (getCtrlPromptVisible()) return;
   const focused = document.querySelector(".gamepad-focused");
   if (focused && focused.classList.contains("message")) {
     triggerHaptic("doubleTick");
@@ -1752,7 +1778,12 @@ function _gpFaceButtonX(gp) {
 }
 
 function _gpFaceButtonY(gp) {
-  if (!_gpButtonPressed(gp, 3) || getCtrlPromptVisible()) return;
+  if (!_gpButtonPressed(gp, 3)) return;
+  if (isTerminalCommandPickerVisible() || isTerminalViewActive()) {
+    handleTerminalGamepadButton(3);
+    return;
+  }
+  if (getCtrlPromptVisible()) return;
   triggerHaptic("medium");
   const chatView = document.getElementById("view-chat");
   if (chatView && chatView.classList.contains("active")) {
@@ -1798,7 +1829,10 @@ function _gpShoulderL2R2(gp) {
   if (_gpButtonPressed(gp, 7)) {
     const shareView = document.getElementById("view-share");
     if (!(shareView && shareView.classList.contains("active"))) {
-      if (getCtrlPromptVisible()) {
+      if (isTerminalViewActive()) {
+        isTerminalCommandPickerVisible() ? closeTerminalCommandPicker() : openTerminalCommandPicker();
+        triggerHaptic("medium");
+      } else if (getCtrlPromptVisible()) {
         triggerHaptic("light");
         getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
       } else {
@@ -1851,11 +1885,22 @@ function _gpShoulderL1R1(gp) {
   const isR1 = _gpButtonPressed(gp, 5);
   if (!isL1 && !isR1) return;
 
+  if (isTerminalCommandPickerVisible()) {
+    handlePickerGamepadShoulder(isL1);
+    return;
+  }
+
   if (getCtrlPromptVisible()) {
     _gpShoulderL1R1_CtrlPrompt(isL1);
     return;
   }
-  
+
+  if (isTerminalViewActive()) {
+    if (window.ptyTerminal) window.ptyTerminal.scrollLines(isL1 ? -10 : 10);
+    triggerHaptic("tick");
+    return;
+  }
+
   _gpShoulderL1R1_ChatScroll(isL1);
   _gpShoulderL1R1_SshProfile();
   _gpShoulderL1R1_NavTabs(isL1);
@@ -1867,6 +1912,19 @@ function _gpHandleShoulderButtons(gp) {
 }
 
 function _gpHandleMenuButtons(gp) {
+  if (isTerminalCommandPickerVisible()) return;
+  if (isTerminalViewActive() && !getCtrlPromptVisible()) {
+    if (_gpButtonPressed(gp, 8)) {
+      triggerHaptic("medium");
+      if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x12" }).catch(() => {});
+      return;
+    }
+    if (_gpButtonPressed(gp, 9)) {
+      triggerHaptic("medium");
+      if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x04" }).catch(() => {});
+      return;
+    }
+  }
   if (_gpButtonPressed(gp, 8) && !getCtrlPromptVisible()) {
     triggerHaptic("medium");
     const runBtn = document.getElementById("canvas-run-btn");
@@ -1907,6 +1965,14 @@ function _gpDpadVerticalSsh(goUp) {
 }
 
 function _gpDpadVertical(gp, goUp) {
+  if (isTerminalCommandPickerVisible()) {
+    handleTerminalGamepadDpad(goUp ? "up" : "down");
+    return;
+  }
+  if (isTerminalViewActive() && !getCtrlPromptVisible()) {
+    handleTerminalGamepadDpad(goUp ? "up" : "down");
+    return;
+  }
   if (getCtrlPromptVisible()) {
     _gpDpadVerticalCtrlPrompt(goUp);
     return;
@@ -1923,6 +1989,14 @@ function _gpDpadVertical(gp, goUp) {
 }
 
 function _gpDpadHorizontal(gp, goLeft) {
+  if (isTerminalCommandPickerVisible()) {
+    handleTerminalGamepadDpad(goLeft ? "left" : "right");
+    return;
+  }
+  if (isTerminalViewActive() && !getCtrlPromptVisible()) {
+    handleTerminalGamepadDpad(goLeft ? "left" : "right");
+    return;
+  }
   if (getCtrlPromptVisible()) {
     if (getCtrlPromptTemplateMode()) cycleTemplatePlaceholder(goLeft ? -1 : 1);
     else navigateCtrlPromptCat(goLeft ? -1 : 1);
@@ -1961,8 +2035,22 @@ function _gpHandleDpad(gp) {
   if (_gpButtonPressed(gp, 14) || _gpButtonPressed(gp, 15)) _gpDpadHorizontal(gp, _gpButtonPressed(gp, 14));
 }
 
+function _cycleTerminalTabRight() {
+  const tabs = Array.from(document.querySelectorAll("#terminal-tabs-list .terminal-tab"));
+  if (tabs.length < 2) return;
+  const ai = tabs.findIndex(t => t.classList.contains("active"));
+  tabs[((ai < 0 ? 0 : ai) + 1) % tabs.length].click();
+  triggerHaptic("light");
+}
+
 function _gpHandleGripButtons(gp) {
-  if (getCtrlPromptVisible()) return;
+  if (getCtrlPromptVisible() || isTerminalCommandPickerVisible()) return;
+  if (isTerminalViewActive()) {
+    if (_gpButtonPressed(gp, 17)) { triggerHaptic("medium"); createTerminalSession(); return; }
+    if (_gpButtonPressed(gp, 18)) { _cycleTerminalTabRight(); return; }
+    if (_gpButtonPressed(gp, 19)) { triggerHaptic("medium"); if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x15" }).catch(() => {}); return; }
+    if (_gpButtonPressed(gp, 20)) { triggerHaptic("light"); if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x17" }).catch(() => {}); return; }
+  }
   if (_gpButtonPressed(gp, 17)) { triggerHaptic("light"); const s = document.getElementById("sidebar"); if (s) s.classList.toggle("collapsed"); }
   if (_gpButtonPressed(gp, 18)) { triggerHaptic("light"); const d = document.getElementById("inspect-drawer"); if (d) d.classList.toggle("collapsed"); }
   if (_gpButtonPressed(gp, 19)) { triggerHaptic("heavy"); const c = document.getElementById("canvas-clear-btn"); if (c) c.click(); }
@@ -1986,8 +2074,12 @@ function _gpHandleTouchpadAndScroll(gp, l2Held) {
   if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held) moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
   if (_gpButtonPressed(gp, 11) && state.tpCursorVisible) { triggerHaptic("medium"); tpClick(0); }
   if (!l2Held && Math.abs(gp.axes[1] || 0) > 0.2) {
-    const scrollEl = getActiveScrollContainer();
-    if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
+    if (isTerminalViewActive() && !isTerminalCommandPickerVisible() && window.ptyTerminal) {
+      window.ptyTerminal.scrollLines(Math.round((gp.axes[1] || 0) * 3));
+    } else {
+      const scrollEl = getActiveScrollContainer();
+      if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
+    }
   }
   if (_gpButtonPressed(gp, 1) && state.tpCursorVisible) {
     const c = document.getElementById("tp-cursor");
@@ -2113,6 +2205,11 @@ function closeTopmostOverlay() {
     hideRadialMenu();
     closed = true;
   }
+  const termPicker = document.getElementById("terminal-cmd-picker-overlay");
+  if (!closed && termPicker?.classList.contains("active")) {
+    closeTerminalCommandPicker();
+    closed = true;
+  }
   const ctrlPrompt = document.getElementById("ctrl-prompt-overlay");
   if (!closed && ctrlPrompt?.classList.contains("active")) {
     closeCtrlPromptOverlay();
@@ -2161,9 +2258,12 @@ function cycleTheme() {
 }
 
 window.addEventListener("gamepadconnected", (e) => {
-  state.previousGamepadState.buttons = Array(e.gamepad.buttons.length).fill(
-    false,
-  );
+  state.previousGamepadState.buttons = Array(e.gamepad.buttons.length).fill(false);
+  updateHintBarVisibility();
+});
+window.addEventListener("gamepaddisconnected", () => {
+  state.gamepadActive = false;
+  updateHintBarVisibility();
 });
 
 requestAnimationFrame(pollGamepads);
@@ -2375,6 +2475,7 @@ async function _applyInitialState(initialState) {
   const savedTheme = localStorage.getItem("selectedTheme");
   if (savedTheme) invoke("set_theme", { name: savedTheme }).then((theme) => { if (theme) applyThemeColors(theme); });
   initChat(); initSettings(); initTerminal(); initCanvas(); initNotificationCenter();
+  initTerminalGamepad();
   initSessionBrowser(); initShortcutsOverlay(); initShortcutCustomization(); initOsThemeSync();
   const initialActiveTab = document.querySelector(".nav-tab.active");
   if (initialActiveTab) updateTabGlide(initialActiveTab);
@@ -2487,6 +2588,7 @@ function _navActivateSideEffects(targetViewName) {
   if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
     setTimeout(() => { try { window.ptyTerminalFitAddon.fit(); } catch (e) { console.error("Error fitting terminal:", e); } }, 50);
   }
+  updateHintBarVisibility();
   if (targetViewName === "ssh") {
     if (!window.sshTerminal) initSshTerminal();
     setTimeout(() => { try { window.sshTerminalFitAddon?.fit(); } catch (e) {} }, 50);
@@ -2565,6 +2667,7 @@ function _navTabClick(tab, navTabs) {
   _navAnimateTransition(outgoing, incoming, direction, currentViewId);
   currentViewId = targetViewId;
   recordViewSwitch(targetViewId);
+  updateHintBarVisibility();
 
   requestAnimationFrame(() => restoreViewState(targetViewId));
   updateBreadcrumb(targetViewName);
