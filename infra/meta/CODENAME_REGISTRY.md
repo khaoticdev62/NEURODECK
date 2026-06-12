@@ -12,7 +12,7 @@ Codenames must be unique within a MAJOR release line.
 - Current tag: `v1.8.0-ptah`
 - Current MINOR line: `8`
 - Source of truth: `infra/meta/meta.json`
-- Last stamped build: `2026-06-12T13:33:58Z`
+- Last stamped build: `2026-06-12T15:03:36Z`
 <!-- KFMS:CURRENT_ASSIGNMENT:END -->
 
 ## Assignment Rules

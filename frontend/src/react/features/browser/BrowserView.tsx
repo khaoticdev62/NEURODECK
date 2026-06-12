@@ -590,24 +590,28 @@ export function BrowserView() {
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             <button
+              type="button"
               onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}
               className="px-3 py-1.5 rounded-lg bg-nd-accent/10 border border-nd-accent/20 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition text-center"
             >
               Allow Once
             </button>
             <button
+              type="button"
               onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}
               className="px-3 py-1.5 rounded-lg bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition text-center"
             >
               Allow Always
             </button>
             <button
+              type="button"
               onClick={() => respondToPermission(permissions[0].requestId, "block_once")}
               className="px-3 py-1.5 rounded-lg bg-nd-surface border border-nd-text-muted/15 text-xs text-nd-text-muted hover:text-nd-text transition text-center"
             >
               Block Once
             </button>
             <button
+              type="button"
               onClick={() => respondToPermission(permissions[0].requestId, "block_always")}
               className="px-3 py-1.5 rounded-lg bg-nd-danger/10 border border-nd-danger/20 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20 transition text-center"
             >
@@ -646,35 +650,40 @@ export function BrowserView() {
                 {tab.isMuted && <VolumeX className="h-3 w-3 text-nd-danger shrink-0" />}
                 {tab.isPinned && <Pin className="h-3 w-3 text-nd-accent shrink-0 rotate-45" />}
                 <button
+                  type="button"
                   onClick={(e) => closeTab(tab.id, e)}
+                  aria-label={`Close tab: ${tab.title || "New Tab"}`}
                   className="rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-nd-surface text-nd-text-muted hover:text-nd-text shrink-0"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3" aria-hidden="true" />
                 </button>
               </div>
             );
           })}
           <button
+            type="button"
             onClick={() => createTab()}
+            aria-label="Open new tab"
             className="flex h-7 w-7 items-center justify-center rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text transition"
-            title="Open New Tab"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
         {/* Global Toolbar Options */}
         <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             onClick={() => setShowDownloadsMenu((v) => !v)}
+            aria-label="Downloads"
+            aria-expanded={showDownloadsMenu}
             className={`relative rounded-xl border p-2 text-nd-text transition ${
               showDownloadsMenu || activeDownloadCount > 0
                 ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
                 : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title="Downloads"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
             {activeDownloadCount > 0 && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-nd-accent text-[9px] font-bold text-nd-bg">
                 {activeDownloadCount}
@@ -683,30 +692,34 @@ export function BrowserView() {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setShowDiagnostics((v) => !v);
               if (!showDiagnostics) loadDiagnostics();
             }}
+            aria-label="Session diagnostics"
+            aria-expanded={showDiagnostics}
             className={`rounded-xl border p-2 text-nd-text transition ${
               showDiagnostics
                 ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
                 : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title="Session Diagnostics"
           >
-            <Terminal className="h-4 w-4" />
+            <Terminal className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => setShowVpnPanel((v) => !v)}
+            aria-label="Browser VPN"
+            aria-expanded={showVpnPanel}
             className={`rounded-xl border p-2 text-nd-text transition ${
               showVpnPanel
                 ? "bg-nd-warning/15 border-nd-warning/30 text-nd-warning"
                 : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title="Browser VPN"
           >
-            <ShieldCheck className="h-4 w-4" />
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -715,46 +728,50 @@ export function BrowserView() {
       <div className="flex flex-wrap items-center gap-2 border-b border-nd-text-muted/10 bg-nd-surface/5 px-4 py-2 shrink-0">
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={goBack}
             disabled={!activeTab?.canGoBack}
+            aria-label="Back"
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent"
-            title="Back"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={goForward}
             disabled={!activeTab?.canGoForward}
+            aria-label="Forward"
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent"
-            title="Forward"
           >
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={activeTab?.isLoading ? stop : refresh}
+            aria-label={activeTab?.isLoading ? "Stop loading" : "Reload page"}
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
-            title={activeTab?.isLoading ? "Stop" : "Reload"}
           >
-            {activeTab?.isLoading ? <X className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+            {activeTab?.isLoading ? <X className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
           </button>
           <button
+            type="button"
             onClick={() => navigate("https://example.com")}
+            aria-label="Home"
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
-            title="Home"
           >
-            <Home className="h-4 w-4" />
+            <Home className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
         {/* Address Bar */}
         <div className="flex flex-1 min-w-[240px] items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/20 px-3 py-1.5 focus-within:border-nd-accent/40 focus-within:ring-2 focus-within:ring-nd-accent/25 transition">
           {activeTab?.security === "secure" ? (
-            <span title="Secure HTTPS connection">
-              <Lock className="h-3.5 w-3.5 text-nd-success" />
+            <span aria-label="Secure HTTPS connection" role="img">
+              <Lock className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />
             </span>
           ) : (
-            <span title="Insecure HTTP connection">
-              <Unlock className="h-3.5 w-3.5 text-nd-warning" />
+            <span aria-label="Insecure HTTP connection" role="img">
+              <Unlock className="h-3.5 w-3.5 text-nd-warning" aria-hidden="true" />
             </span>
           )}
           <input
@@ -763,10 +780,12 @@ export function BrowserView() {
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && navigate(urlInput)}
+            aria-label="Address bar"
             className="flex-1 bg-transparent text-xs text-nd-text outline-none"
             placeholder="Search or enter web URL..."
           />
           <button
+            type="button"
             onClick={() => navigate(urlInput)}
             className="rounded px-2 py-0.5 text-xs font-semibold text-nd-accent hover:bg-nd-accent/15 transition"
           >
@@ -777,42 +796,49 @@ export function BrowserView() {
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={toggleBookmark}
+            aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+            aria-pressed={isBookmarked}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               isBookmarked
                 ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
                 : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title={isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
           >
-            <Star className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} />
+            <Star className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={handleToggleAdBlock}
+            aria-label={adBlockEnabled ? "Disable ad blocker" : "Enable ad blocker"}
+            aria-pressed={adBlockEnabled}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               adBlockEnabled
                 ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
                 : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title={adBlockEnabled ? "Shield Active (Ad Blocker)" : "Shield Inactive (Ad Blocker)"}
           >
-            {adBlockEnabled ? <ShieldCheck className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+            {adBlockEnabled ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <Shield className="h-4 w-4" aria-hidden="true" />}
           </button>
 
           {/* Profile Switcher */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => {
                 setShowProfilesMenu((v) => !v);
                 setShowDownloadsMenu(false);
                 setShowDiagnostics(false);
               }}
+              aria-label="Switch browser profile"
+              aria-expanded={showProfilesMenu}
               className="flex items-center gap-1.5 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 px-3 py-2 text-xs font-semibold text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
             >
-              <Settings className="h-3.5 w-3.5" />
+              <Settings className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{activeProfile?.name || "Profile"}</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             </button>
 
             {showProfilesMenu && (
@@ -825,6 +851,7 @@ export function BrowserView() {
                   return (
                     <button
                       key={p.id}
+                      type="button"
                       onClick={() => changeProfile(p.id)}
                       className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition ${
                         isCurrent
@@ -840,8 +867,8 @@ export function BrowserView() {
                       </div>
                       <div className="flex gap-1.5">
                         {!p.persistent && (
-                          <span title="Private mode">
-                            <Lock className="h-3 w-3 text-nd-warning" />
+                          <span role="img" aria-label="Private mode">
+                            <Lock className="h-3 w-3 text-nd-warning" aria-hidden="true" />
                           </span>
                         )}
                         {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-nd-accent" />}
@@ -852,10 +879,11 @@ export function BrowserView() {
                 <div className="my-2 border-t border-nd-text-muted/10" />
                 {activeProfile && (
                   <button
+                    type="button"
                     onClick={() => clearProfileData(activeProfile.id)}
                     className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs text-nd-danger hover:bg-nd-danger/10 transition"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Clear Profile Storage</span>
                   </button>
                 )}
@@ -864,69 +892,78 @@ export function BrowserView() {
           </div>
 
           <button
+            type="button"
             onClick={handleFind}
+            aria-label="Find in page"
+            aria-pressed={findOpen}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               findOpen
                 ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
                 : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
-            title="Find in page"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => {
               if (showSidebar === "history") setShowSidebar(null);
               else setShowSidebar("history");
             }}
+            aria-label="History"
+            aria-pressed={showSidebar === "history"}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               showSidebar === "history"
                 ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
                 : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
-            title="History"
           >
-            <Clock className="h-4 w-4" />
+            <Clock className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => {
               if (showSidebar === "bookmarks") setShowSidebar(null);
               else setShowSidebar("bookmarks");
             }}
+            aria-label="Bookmarks"
+            aria-pressed={showSidebar === "bookmarks"}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               showSidebar === "bookmarks"
                 ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
                 : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
-            title="Bookmarks"
           >
-            <BookMarked className="h-4 w-4" />
+            <BookMarked className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={openDevTools}
+            aria-label="Inspect (DevTools)"
             className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
-            title="Inspect (DevTools)"
           >
-            <Terminal className="h-4 w-4" />
+            <Terminal className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={saveToMemory}
+            aria-label="Save page to memory fact"
             className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
-            title="Save Page to Memory Fact"
           >
-            <Save className="h-4 w-4" />
+            <Save className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={toggleVisibility}
+            aria-label={visible ? "Hide viewport" : "Show viewport"}
             className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
-            title={visible ? "Hide Viewport" : "Show Viewport"}
           >
-            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -941,27 +978,32 @@ export function BrowserView() {
             onChange={(e) => setFindText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitFind(true)}
             placeholder="Search text in page..."
+            aria-label="Find text in page"
             className="flex-1 bg-transparent text-xs text-nd-text outline-none"
             autoFocus
           />
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => submitFind(false)}
               className="rounded px-2.5 py-1 bg-nd-surface border border-nd-text-muted/15 text-xs text-nd-text-muted hover:text-nd-text transition"
             >
               Find Previous
             </button>
             <button
+              type="button"
               onClick={() => submitFind(true)}
               className="rounded px-2.5 py-1 bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition"
             >
               Find Next
             </button>
             <button
+              type="button"
               onClick={() => setFindOpen(false)}
+              aria-label="Close find bar"
               className="rounded p-1 text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -976,14 +1018,17 @@ export function BrowserView() {
               <span>Diagnostics / Process Monitor</span>
             </h4>
             <button
+              type="button"
               onClick={() => setShowDiagnostics(false)}
+              aria-label="Close diagnostics panel"
               className="text-nd-text-muted hover:text-nd-text"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto scrollbar-thin text-xs">
             <button
+              type="button"
               onClick={loadDiagnostics}
               className="px-2.5 py-1.5 rounded-lg bg-nd-surface text-nd-text hover:bg-nd-surface/80 transition text-center mb-1.5 font-semibold"
             >
@@ -1037,10 +1082,12 @@ export function BrowserView() {
               <span>Downloads Tracker</span>
             </h4>
             <button
+              type="button"
               onClick={() => setShowDownloadsMenu(false)}
+              aria-label="Close downloads panel"
               className="text-nd-text-muted hover:text-nd-text"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto scrollbar-thin">
@@ -1083,6 +1130,7 @@ export function BrowserView() {
                     <div className="flex gap-2 justify-end mt-1">
                       {d.state === "progressing" && (
                         <button
+                          type="button"
                           onClick={() =>
                             window.neurodeck?.browser
                               ?.cancelDownload(d.id)
@@ -1096,12 +1144,14 @@ export function BrowserView() {
                       {d.state === "completed" && (
                         <>
                           <button
+                            type="button"
                             onClick={() => window.neurodeck?.browser?.openDownload(d.id)}
                             className="px-2 py-1 bg-nd-accent/10 text-nd-accent hover:bg-nd-accent/20 rounded text-[10px] font-semibold transition"
                           >
                             Open File
                           </button>
                           <button
+                            type="button"
                             onClick={() => window.neurodeck?.browser?.showDownload(d.id)}
                             className="px-2 py-1 bg-nd-surface border border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text rounded text-[10px] transition"
                           >
@@ -1138,6 +1188,7 @@ export function BrowserView() {
                 the eye icon in toolbar to resume.
               </p>
               <button
+                type="button"
                 onClick={toggleVisibility}
                 className="mt-2 px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
               >
@@ -1155,10 +1206,12 @@ export function BrowserView() {
                 {showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
               </span>
               <button
+                type="button"
                 onClick={() => setShowSidebar(null)}
+                aria-label="Close sidebar"
                 className="rounded p-1 text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -1168,10 +1221,11 @@ export function BrowserView() {
                 <>
                   <div className="flex gap-2 mb-2">
                     <button
+                      type="button"
                       onClick={clearHistory}
                       className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-nd-danger/10 border border-nd-danger/20 text-nd-danger hover:bg-nd-danger/20 rounded-xl text-xs font-semibold transition"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>Purge History</span>
                     </button>
                   </div>
@@ -1195,11 +1249,12 @@ export function BrowserView() {
                           </span>
                         </div>
                         <button
+                          type="button"
                           onClick={() => deleteHistoryEntry(h.id)}
+                          aria-label={`Delete history entry: ${h.title || h.url}`}
                           className="opacity-0 group-hover:opacity-100 p-1 text-nd-text-muted hover:text-nd-danger transition"
-                          title="Delete history entry"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     ))
@@ -1227,11 +1282,12 @@ export function BrowserView() {
                           </span>
                         </div>
                         <button
+                          type="button"
                           onClick={() => deleteBookmark(b.id)}
+                          aria-label={`Remove bookmark: ${b.title || b.url}`}
                           className="opacity-0 group-hover:opacity-100 p-1 text-nd-text-muted hover:text-nd-danger transition"
-                          title="Remove bookmark"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     ))
