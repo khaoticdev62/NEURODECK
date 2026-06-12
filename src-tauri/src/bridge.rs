@@ -281,13 +281,16 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<WsEven
 }
 
 /// Resolve a request origin to an allowed ACAO value, or `None` to deny.
-/// Only localhost / 127.0.0.1 origins are permitted — production Electron
-/// uses file:// and sends no Origin header, which also passes (no CORS context).
+/// Trusted origins:
+///   - neurodeck://app   — Electron renderer (custom protocol)
+///   - http://localhost: — Vite dev server (any port)
+///   - http://127.0.0.1: — loopback variants
 fn resolve_cors_origin(
     origin: Option<&axum::http::HeaderValue>,
 ) -> Option<axum::http::HeaderValue> {
     let o = origin?.to_str().ok()?;
-    let allowed = o.starts_with("http://localhost:")
+    let allowed = o == "neurodeck://app"
+        || o.starts_with("http://localhost:")
         || o.starts_with("http://127.0.0.1:")
         || o == "http://localhost"
         || o == "http://127.0.0.1";
