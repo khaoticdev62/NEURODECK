@@ -18,17 +18,16 @@ import {
   Check,
   AlertTriangle,
 } from "lucide-react";
-import { themes } from "../../types/seed";
 import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
 import { LiveWallpaperPanel } from "./LiveWallpaperPanel";
 import { neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
+import { useTheme } from "../../theme/useTheme";
 import type {
   AIProvider,
   NeuroDeckAction,
   NeuroDeckAppActions,
   NeuroDeckState,
-  ThemeName,
 } from "../../types/neurodeck";
 import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 
@@ -126,6 +125,7 @@ export function SettingsView({
   onPanelChange?: (panel: string) => void;
   onClose?: () => void;
 }) {
+  const { activeTheme, availableThemes, settings, updateSettings } = useTheme();
   const [activePanel, setActivePanel] = useState<PanelKey>(() => {
     const saved = localStorage.getItem("settingsActivePanel");
     const stripped = saved?.replace("sp-", "") ?? "general";
@@ -139,11 +139,9 @@ export function SettingsView({
   const [compactMode, setCompactMode] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("nd:fontScale");
-    if (saved) setFontScale(Number(saved));
-    const compact = localStorage.getItem("nd:compactMode");
-    if (compact) setCompactMode(compact === "true");
-  }, []);
+    setFontScale(settings.fontScale);
+    setCompactMode(settings.compactMode);
+  }, [settings.compactMode, settings.fontScale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -189,14 +187,14 @@ export function SettingsView({
 
   const applyFontScale = (val: number) => {
     setFontScale(val);
-    localStorage.setItem("nd:fontScale", String(val));
+    void updateSettings({ fontScale: val });
     document.documentElement.style.fontSize = `${val}%`;
   };
 
   const applyCompactMode = (val: boolean) => {
     setCompactMode(val);
-    localStorage.setItem("nd:compactMode", String(val));
-    if (val) {
+    void updateSettings({ compactMode: val });
+    if (state.deckMode !== val) {
       dispatch({ type: "toggle-deck-mode" });
     }
   };
@@ -267,15 +265,13 @@ export function SettingsView({
 
             <Panel eyebrow="Theme Engine" title="Quick Theme Picker">
               <div className="grid gap-2.5 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {themes.map((theme) => {
-                  const active = state.selectedTheme === theme.name;
+                {availableThemes.map((theme) => {
+                  const active = settings.activeThemeId === theme.id;
                   return (
                     <button
-                      key={theme.name}
+                      key={theme.id}
                       type="button"
-                      onClick={() =>
-                        dispatch({ type: "set-theme", theme: theme.name as ThemeName })
-                      }
+                      onClick={() => void updateSettings({ activeThemeId: theme.id })}
                       className={`relative rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         active
                           ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
@@ -289,11 +285,11 @@ export function SettingsView({
                       )}
                       <div className="mb-2 flex gap-1">
                         {[
-                          theme.accent,
-                          theme.success,
-                          theme.warning,
-                          theme.danger,
-                          theme.surface,
+                          theme.tokens.color.accent.primary,
+                          theme.tokens.color.accent.secondary,
+                          theme.tokens.color.text.warning,
+                          theme.tokens.color.text.danger,
+                          theme.tokens.color.surface.raised,
                         ].map((c) => (
                           <span
                             key={c}
@@ -303,14 +299,22 @@ export function SettingsView({
                         ))}
                       </div>
                       <p className="text-xs font-semibold text-nd-text truncate">{theme.name}</p>
+                      <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
+                        {theme.description}
+                      </p>
                     </button>
                   );
                 })}
               </div>
-              <p className="px-4 pb-4 text-xs text-nd-text-muted">
-                For the full design-system theme experience with wallpapers and token tuning, use
-                the <strong className="text-nd-text">Themes</strong> tab.
-              </p>
+              <div className="px-4 pb-4">
+                <p className="text-xs text-nd-text-muted">
+                  Active theme: <strong className="text-nd-text">{activeTheme.name}</strong>
+                </p>
+                <p className="mt-1 text-xs text-nd-text-muted">
+                  Full wallpaper and display tuning remains in the{" "}
+                  <strong className="text-nd-text">Themes</strong> tab.
+                </p>
+              </div>
             </Panel>
           </div>
         )}

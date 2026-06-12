@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
 import type { AIProvider } from "./types/neurodeck";
-import { wallpaperManager } from "./features/settings/wallpaperManager";
 import { CommandPalette } from "./components/command/CommandPalette";
 import { OnboardingModal } from "./components/onboarding/OnboardingModal";
 import { ControllerHintBar } from "./components/layout/ControllerHintBar";
@@ -11,7 +10,7 @@ import { SecondaryRail } from "./components/layout/SecondaryRail";
 import { TitleBar } from "./components/layout/TitleBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
-import { fontOptions, themes } from "./types/seed";
+import { fontOptions } from "./types/seed";
 import { AgentsView } from "./features/agents/AgentsView";
 import { ApiLabView } from "./features/api-lab/ApiLabView";
 import { BrowserView } from "./features/browser/BrowserView";
@@ -47,6 +46,7 @@ import { SecurityView } from "./features/security/SecurityView";
 import { ThemesView } from "./features/themes/ThemesView";
 import { WorkspaceView } from "./features/workspace/WorkspaceView";
 import { LiveWallpaperHost } from "./features/wallpapers/LiveWallpaperHost";
+import { useTheme } from "./theme/useTheme";
 
 import { neurodeckApi } from "./services/bridgeAdapter";
 import { useNeuroDeckState } from "./state/useNeuroDeckState";
@@ -64,6 +64,7 @@ function makeUserMessage(content: string): AIMessage {
 
 export default function App() {
   const { state, dispatch, resetLocalState, selectors } = useNeuroDeckState();
+  const { activeTheme } = useTheme();
   const shellRef = useRef<HTMLDivElement>(null);
   const shortcutSinkRef = useRef<HTMLInputElement>(null);
   // Overlay trigger refs — used to restore focus when overlays close
@@ -102,7 +103,6 @@ export default function App() {
       };
     }
   }, []);
-  const activeTheme = themes.find((theme) => theme.name === state.selectedTheme) ?? themes[0];
   const selectedModel =
     state.models.find((model) => model.id === state.selectedModelId) ??
     state.models.find((model) => model.backendModel === state.selectedModelId) ??
@@ -563,7 +563,7 @@ export default function App() {
     const payload: ExportSessionPayload = {
       title: "NEURODECK Workspace Export",
       persona: state.selectedPersona,
-      theme: state.selectedTheme,
+      theme: activeTheme.name,
       lines: [
         `Active view: ${state.activeView}`,
         `Provider: ${state.selectedProvider}`,
@@ -606,7 +606,7 @@ export default function App() {
     state.modelDetection?.summary,
     state.selectedPersona,
     state.selectedProvider,
-    state.selectedTheme,
+    activeTheme.name,
   ]);
 
   const saveSession = useCallback(async () => {
@@ -748,14 +748,6 @@ export default function App() {
     localStorage.setItem("settingsActivePanel", `sp-${panel}`);
     setSettingsPanel(panel);
     setSettingsOpen(true);
-  }, []);
-
-  // Initialize wallpaper manager and restore saved background on mount
-  useEffect(() => {
-    wallpaperManager.init();
-    const saved = localStorage.getItem("bgUrl");
-    if (saved) wallpaperManager.start(saved);
-    return () => wallpaperManager.destroy();
   }, []);
 
   useEffect(() => {
@@ -981,7 +973,7 @@ export default function App() {
             }
           }}
         />
-        {/* Fixed background layers — managed by wallpaperManager */}
+        {/* Fixed background layers — registry-backed theme/wallpaper host */}
         <div className="app-background-container" aria-hidden="true">
           <img
             id="app-background-image"
