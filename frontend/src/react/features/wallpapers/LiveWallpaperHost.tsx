@@ -32,6 +32,18 @@ export const LiveWallpaperHost: React.FC = () => {
   }
 
   const wpId = settings.activeWallpaperId;
+  const normalizedCanvasId: Record<string, string> = {
+    hologrid_drift: "tactical_signal_grid",
+    liquid_glass_flow: "ghost_particles",
+    memory_constellation: "ghost_particles",
+    agent_pulse_network: "command_waveform",
+    audio_spectrum_glass: "command_waveform",
+    telemetry_nebula: "ghost_particles",
+    blueprint_motion: "tactical_signal_grid",
+    blacksite_sweep: "deep_space_radar",
+    sapphire_dataflow: "command_waveform",
+  };
+  const effectiveWallpaperId = normalizedCanvasId[wpId] ?? wpId;
   const isCanvas = [
     "terminal_rainfield",
     "oled_starfield",
@@ -41,18 +53,18 @@ export const LiveWallpaperHost: React.FC = () => {
     "solar_circuit",
     "command_waveform",
     "code_stream",
-  ].includes(wpId);
+  ].includes(effectiveWallpaperId);
 
   return (
     <div className="absolute inset-0 -z-50 pointer-events-none overflow-hidden h-full w-full select-none">
       {isCanvas ? (
         <CanvasWallpaperRenderer
-          wallpaperId={wpId}
+          wallpaperId={effectiveWallpaperId}
           opacity={settings.wallpaperOpacity}
           performanceTier={settings.performanceTier}
           isPaused={isPaused}
         />
-      ) : wpId === "neural_aurora" ? (
+      ) : effectiveWallpaperId === "neural_aurora" ? (
         <div
           className="absolute inset-0 h-full w-full opacity-30 animate-pulse bg-gradient-to-tr from-nd-accent/20 via-nd-surface to-nd-accent-secondary/10"
           style={{
@@ -60,7 +72,7 @@ export const LiveWallpaperHost: React.FC = () => {
             opacity: settings.wallpaperOpacity / 100,
           }}
         />
-      ) : wpId === "kernel_heatmap" ? (
+      ) : effectiveWallpaperId === "kernel_heatmap" ? (
         <div
           className="absolute inset-0 h-full w-full opacity-20 animate-pulse bg-gradient-to-br from-nd-danger/15 via-nd-surface to-nd-warning/10"
           style={{
@@ -68,7 +80,7 @@ export const LiveWallpaperHost: React.FC = () => {
             opacity: settings.wallpaperOpacity / 100,
           }}
         />
-      ) : wpId === "violet_stormfront" ? (
+      ) : effectiveWallpaperId === "violet_stormfront" ? (
         <div
           className="absolute inset-0 h-full w-full opacity-25 animate-pulse bg-gradient-to-tr from-nd-accent-tertiary/20 via-nd-surface to-nd-accent-secondary/15"
           style={{
