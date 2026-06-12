@@ -60,6 +60,7 @@
     "verify:security": "tsx scripts/verify-backend-security.ts",
     "verify:real-data": "tsx scripts/verify-real-data.ts",
     "verify:backend": "tsx scripts/verify-backend.ts",
+    "verify:model-support": "tsx scripts/verify-model-support.ts",
     "verify:report": "tsx scripts/export-backend-readiness-report.ts",
     "verify:all": "npm run verify:no-mocks && npm run verify:security && npm run verify:real-data && npm run test:backend:contracts",
     "verify:ai-chat": "tsx scripts/verify-ai-chat.ts",

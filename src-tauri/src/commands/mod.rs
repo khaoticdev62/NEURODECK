@@ -1128,12 +1128,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         "list_models" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let gemini_models = vec!["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
-            let ollama_models = vec!["llama2", "mistral", "neural-chat", "orca-mini"];
+            let profiles = crate::model_registry::load_supported_models();
+            let mut groups: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+            for profile in profiles {
+                let provider = crate::model_registry::provider_label(&profile).to_string();
+                groups.entry(provider).or_default().extend(profile.provider_model_ids.clone());
+            }
 
             Ok(serde_json::json!({
-                "gemini": gemini_models,
-                "ollama": ollama_models,
+                "gemini": groups.get("gemini").cloned().unwrap_or_default(),
+                "ollama": groups.get("ollama").cloned().unwrap_or_default(),
                 "current": {
                     "provider": app_state.config.llm.default_provider,
                     "model": if app_state.config.llm.default_provider == "gemini" {
@@ -1143,6 +1147,98 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }
                 }
             }))
+        }
+
+        "list_provider_runtimes" => {
+            let runtimes = crate::services::models::load_provider_runtimes();
+            serde_json::to_value(runtimes).map_err(|e| e.to_string())
+        }
+
+        "discover_installed_models" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let models = crate::services::models::discover_installed_models(&config.llm).await;
+            serde_json::to_value(models).map_err(|e| e.to_string())
+        }
+
+        "get_provider_health" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let runtime_id = args.get("runtimeId").and_then(|v| v.as_str()).unwrap_or_default();
+            let results = if runtime_id.is_empty() {
+                crate::services::models::check_all_provider_health(&config.llm).await
+            } else if let Some(runtime) = crate::services::models::runtime_by_id(runtime_id) {
+                vec![crate::services::models::check_provider_health(&runtime, &config.llm).await]
+            } else {
+                return Err(format!("Unknown runtime '{}'", runtime_id));
+            };
+            serde_json::to_value(results).map_err(|e| e.to_string())
+        }
+
+        "run_model_probe" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let runtime_id = args
+                .get("runtimeId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'runtimeId'")?;
+            let model_id = args
+                .get("modelId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'modelId'")?;
+            let result =
+                crate::services::models::run_model_probe(runtime_id, model_id, &config.llm).await;
+            serde_json::to_value(result).map_err(|e| e.to_string())
+        }
+
+        "get_model_compatibility_scores" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let options: crate::services::models::ScoreOptions =
+                serde_json::from_value(args).unwrap_or_default();
+            let scores =
+                crate::services::models::get_model_compatibility_scores(&options, &config.llm).await;
+            serde_json::to_value(scores).map_err(|e| e.to_string())
+        }
+
+        "pick_best_local_model" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let options: crate::services::models::ScoreOptions =
+                serde_json::from_value(args).unwrap_or_default();
+            let best =
+                crate::services::models::pick_best_local_model(&options, &config.llm).await;
+            serde_json::to_value(best).map_err(|e| e.to_string())
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -2909,13 +3005,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "deleted", "id": id }))
         }
 
-        "get_recommended_models" => Ok(serde_json::json!([
-            { "provider": "gemini", "model": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "tier": "fast", "steam_deck_ok": true, "vram_mb": 0, "description": "Fast multimodal model for everyday tasks", "tags": ["recommended", "multilingual"] },
-            { "provider": "gemini", "model": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "tier": "smart", "steam_deck_ok": true, "vram_mb": 0, "description": "High-quality reasoning with long context", "tags": ["recommended", "long-context"] },
-            { "provider": "ollama", "model": "llama3", "name": "Llama 3 8B", "tier": "local-fast", "steam_deck_ok": true, "vram_mb": 5200, "description": "Efficient local model, great for Steam Deck", "tags": ["recommended"] },
-            { "provider": "ollama", "model": "mistral", "name": "Mistral 7B", "tier": "local-balanced", "steam_deck_ok": true, "vram_mb": 4800, "description": "Balanced local performance", "tags": ["recommended", "code"] },
-            { "provider": "ollama", "model": "neural-chat", "name": "Neural Chat 7B", "tier": "local-balanced", "steam_deck_ok": false, "vram_mb": 4800, "description": "Conversational local model", "tags": [] }
-        ])),
+        "get_recommended_models" => {
+            let models = crate::commands::agent::get_recommended_models();
+            Ok(serde_json::to_value(models).map_err(|e| e.to_string())?)
+        },
 
         // ────────────────────────────────────────────────────────────────────
         // IDE / Workspace File System

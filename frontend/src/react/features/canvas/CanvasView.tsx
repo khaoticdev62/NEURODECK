@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Paintbrush, Play, Copy, Trash2, RefreshCw } from 'lucide-react';
+import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { CodeLang } from '../../services/bridgeAdapter';
 
@@ -99,14 +99,20 @@ export function CanvasView() {
           ))}
         </select>
         <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40">
-          {running ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {running ? <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" /> : <Play className="h-4 w-4 nd-icon-svg" />}
           Run
         </button>
         <button id="canvas-copy-btn" type="button" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Copy className="h-4 w-4" />
+          <Copy className="h-4 w-4 nd-icon-svg" />
         </button>
         <button id="canvas-clear-btn" type="button" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4 nd-icon-svg" />
+        </button>
+        <button id="canvas-ai-edit-btn" type="button" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Sparkles className="h-4 w-4 nd-icon-svg" />
+        </button>
+        <button id="canvas-collab-btn" type="button" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Users className="h-4 w-4 nd-icon-svg" />
         </button>
       </div>
 

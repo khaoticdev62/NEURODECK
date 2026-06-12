@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 // --- inline the reducer + helpers so we can test without the hook ---
 import type { AgentStatus, NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
+import { STORE_KEY } from '../../types/seed';
 import {
   agents,
   cacheEntries,
@@ -16,8 +17,7 @@ import {
   plugins,
   promptTemplates,
   sessions,
-  STORE_KEY,
-} from '../../types/seed';
+} from '../fixtures/seedFixtures';
 
 // Re-derive the private helpers and initialState from the module.
 // We load the hook module directly; the reducer itself is closure-private,
@@ -35,8 +35,8 @@ const initialState: NeuroDeckState = {
   deckMode: false,
   selectedTheme: 'Blacksite',
   selectedPersona: 'Developer',
-  selectedProvider: 'offline-draft',
-  selectedModelId: 'neurodraft-local',
+  selectedProvider: 'ollama',
+  selectedModelId: '',
   selectedFont: 'inter',
   showOnboarding: true,
   composerValue: '',
@@ -57,7 +57,7 @@ const initialState: NeuroDeckState = {
   plugins,
   messages: initialMessages,
   aiRuns: [],
-  promptTemplates,
+  promptTemplates: promptTemplates,
   telemetry: {
     latencyMs: 42,
     contextUsed: 14,

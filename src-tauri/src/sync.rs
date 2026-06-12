@@ -8,7 +8,7 @@ use ring::{aead, rand};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::fs;
-use std::sync::Mutex;
+
 
 fn sync_dir() -> std::path::PathBuf {
     crate::user_config_dir().join("data/sync")

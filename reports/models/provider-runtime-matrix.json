@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T19:10:00Z",
+  "runtimes": [
+    {
+      "id": "ollama",
+      "label": "Ollama",
+      "type": "ollama",
+      "baseUrl": "http://127.0.0.1:11434",
+      "localOnly": true,
+      "steamDeckRecommended": true,
+      "endpoints": { "health": "/api/tags", "listModels": "/api/tags", "generate": "/api/generate", "embeddings": "/api/embeddings", "ps": "/api/ps" },
+      "auth": { "required": false, "envVars": [] },
+      "supports": { "modelListing": true, "chat": true, "streaming": true, "embeddings": true, "tools": false, "vision": true, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": true, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "production_ready"
+    },
+    {
+      "id": "lm_studio",
+      "label": "LM Studio",
+      "type": "openai_compatible_local",
+      "baseUrl": "http://127.0.0.1:1234",
+      "localOnly": true,
+      "steamDeckRecommended": true,
+      "endpoints": { "health": "/v1/models", "listModels": "/v1/models", "chat": "/v1/chat/completions", "embeddings": "/v1/embeddings" },
+      "auth": { "required": false, "envVars": [] },
+      "supports": { "modelListing": true, "chat": true, "streaming": true, "embeddings": true, "tools": true, "vision": true, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    },
+    {
+      "id": "llama_cpp_server",
+      "label": "llama.cpp server",
+      "type": "llama_cpp_server",
+      "baseUrl": "http://127.0.0.1:8080",
+      "localOnly": true,
+      "steamDeckRecommended": true,
+      "endpoints": { "health": "/health", "listModels": "/v1/models", "chat": "/v1/chat/completions", "embeddings": "/v1/embeddings" },
+      "auth": { "required": false, "envVars": [] },
+      "supports": { "modelListing": false, "chat": true, "streaming": true, "embeddings": true, "tools": true, "vision": false, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    },
+    {
+      "id": "openai_compatible_remote",
+      "label": "OpenAI-Compatible Remote",
+      "type": "openai_compatible_remote",
+      "baseUrl": "",
+      "localOnly": false,
+      "steamDeckRecommended": false,
+      "endpoints": { "health": "/v1/models", "listModels": "/v1/models", "chat": "/v1/chat/completions", "embeddings": "/v1/embeddings" },
+      "auth": { "required": true, "envVars": ["OPENAI_API_KEY", "OPENAI_COMPAT_API_KEY"], "headerName": "Authorization" },
+      "supports": { "modelListing": true, "chat": true, "streaming": true, "embeddings": true, "tools": true, "vision": true, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    },
+    {
+      "id": "huggingface",
+      "label": "HuggingFace Inference",
+      "type": "huggingface",
+      "baseUrl": "https://api-inference.huggingface.co",
+      "localOnly": false,
+      "steamDeckRecommended": false,
+      "endpoints": { "chat": "/models/{model}", "embeddings": "/models/{model}" },
+      "auth": { "required": true, "envVars": ["HF_API_KEY"], "headerName": "Authorization" },
+      "supports": { "modelListing": false, "chat": true, "streaming": false, "embeddings": true, "tools": false, "vision": false, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    },
+    {
+      "id": "kimi",
+      "label": "Kimi (Moonshot)",
+      "type": "openai_compatible_remote",
+      "baseUrl": "https://api.moonshot.ai/v1",
+      "localOnly": false,
+      "steamDeckRecommended": false,
+      "endpoints": { "health": "/v1/models", "listModels": "/v1/models", "chat": "/v1/chat/completions", "embeddings": "/v1/embeddings" },
+      "auth": { "required": true, "envVars": ["KIMI_API_KEY"], "headerName": "Authorization" },
+      "supports": { "modelListing": true, "chat": true, "streaming": true, "embeddings": true, "tools": true, "vision": true, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    },
+    {
+      "id": "gemini",
+      "label": "Gemini",
+      "type": "openai_compatible_remote",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "localOnly": false,
+      "steamDeckRecommended": false,
+      "endpoints": { "chat": "/models/{model}:streamGenerateContent", "embeddings": "/models/{model}:batchEmbedContents" },
+      "auth": { "required": true, "envVars": ["GEMINI_API_KEY"], "headerName": "key" },
+      "supports": { "modelListing": false, "chat": true, "streaming": true, "embeddings": true, "tools": true, "vision": true, "cancellation": false },
+      "selfHealing": { "canRestartService": false, "canReloadModel": false, "canRetryRequest": true, "canFailover": true, "maxRecoveryAttempts": 3 },
+      "currentState": "not_configured"
+    }
+  ]
+}

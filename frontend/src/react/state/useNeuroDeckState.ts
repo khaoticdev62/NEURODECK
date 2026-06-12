@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { agents, cacheEntries, initialMessages, memories, models, plugins, promptTemplates, sessions, STORE_KEY } from '../types/seed';
+import { STORE_KEY } from '../types/seed';
 import { neurodeckApi } from '../services/bridgeAdapter';
 import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, SessionNode, MemoryItem, Agent, PluginCard } from '../types/neurodeck';
 
@@ -10,8 +10,8 @@ const initialState: NeuroDeckState = {
   deckMode: false,
   selectedTheme: 'Blacksite',
   selectedPersona: 'Developer',
-  selectedProvider: 'offline-draft',
-  selectedModelId: 'neurodraft-local',
+  selectedProvider: 'ollama',
+  selectedModelId: '',
   selectedFont: 'inter',
   showOnboarding: true,
   composerValue: '',
@@ -24,15 +24,15 @@ const initialState: NeuroDeckState = {
   diagnosticLogs: [],
   lastExportPath: null,
   lastError: null,
-  agents,
-  models,
-  memories,
-  sessions,
-  cacheEntries,
-  plugins,
-  messages: initialMessages,
+  agents: [],
+  models: [],
+  memories: [],
+  sessions: [],
+  cacheEntries: [],
+  plugins: [],
+  messages: [],
   aiRuns: [],
-  promptTemplates,
+  promptTemplates: [],
   telemetry: {
     latencyMs: 42,
     contextUsed: 14,
@@ -239,19 +239,16 @@ export function useNeuroDeckState() {
       try {
         const agentList = await neurodeckApi.agents.list();
         if (agentList && agentList.length > 0) {
-          stored.agents = agentList.map(a => {
-            const localAgent = agents.find(la => la.id === a.id);
-            return {
-              id: a.id,
-              name: a.name,
-              role: localAgent?.role || a.description || 'Specialized operator',
-              status: localAgent?.status || 'idle',
-              model: a.model || localAgent?.model || 'default',
-              memoryAccess: localAgent?.memoryAccess || 'project',
-              lastAction: localAgent?.lastAction || 'Ready',
-              task: localAgent?.task || 'Ready',
-            };
-          });
+          stored.agents = agentList.map(a => ({
+            id: a.id,
+            name: a.name,
+            role: a.description || 'Specialized operator',
+            status: 'idle',
+            model: a.model || 'default',
+            memoryAccess: 'project',
+            lastAction: 'Ready',
+            task: 'Ready',
+          }));
         }
       } catch (_) {
         // Ignored, fallback to stored/initial

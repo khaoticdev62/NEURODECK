@@ -562,7 +562,7 @@ pub struct OllamaProvider {
 impl OllamaProvider {
     pub fn new(model: String, base_url: String, embed_model: String) -> Self {
         let m = if model.is_empty() {
-            "llama2".to_string()
+            "llama3.2:1b".to_string()
         } else {
             model
         };
@@ -1964,7 +1964,7 @@ mod tests {
         assert_eq!(provider.embed_model, "custom-embed");
 
         let provider_default = OllamaProvider::new("".to_string(), "".to_string(), "".to_string());
-        assert_eq!(provider_default.model, "llama2");
+        assert_eq!(provider_default.model, "llama3.2:1b");
         assert_eq!(provider_default.base_url, "http://localhost:11434");
         assert_eq!(provider_default.embed_model, "nomic-embed-text");
     }

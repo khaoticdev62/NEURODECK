@@ -1,0 +1,76 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T19:10:00Z",
+  "findings": [
+    {
+      "severity": "high",
+      "file": "frontend/src/react/types/seed.ts",
+      "pattern": "hardcoded models array",
+      "description": "Production seed data presented as real models",
+      "remediation": "Move to runtime-loaded registry; keep fixtures only in tests/examples"
+    },
+    {
+      "severity": "high",
+      "file": "src-tauri/src/commands/mod.rs",
+      "pattern": "gemini_models / ollama_models",
+      "description": "list_models returns static arrays instead of querying runtime",
+      "remediation": "Query real provider endpoints or return empty list"
+    },
+    {
+      "severity": "high",
+      "file": "src-tauri/src/commands/mod.rs",
+      "pattern": "get_recommended_models",
+      "description": "Hardcoded JSON recommendations",
+      "remediation": "Load from assets/model-registry/supported-models.json"
+    },
+    {
+      "severity": "high",
+      "file": "src-tauri/src/commands/agent.rs",
+      "pattern": "get_recommended_models()",
+      "description": "~20 hardcoded recommended models with marketing metadata",
+      "remediation": "Load from registry data file"
+    },
+    {
+      "severity": "high",
+      "file": "src-tauri/src/hf_model_mgr.rs",
+      "pattern": "get_curated_steam_deck_models",
+      "description": "Fake downloads/likes/tags for GGUF models",
+      "remediation": "Query HF Hub or load curated JSON with honest unknown placeholders"
+    },
+    {
+      "severity": "medium",
+      "file": "frontend/src/react/services/bridgeAdapter.ts",
+      "pattern": "fallbackHealth / browserDraft / fallbackDiagnostics",
+      "description": "Synthetic fallback responses when bridge unreachable",
+      "remediation": "Use explicit offline states and clear labels"
+    },
+    {
+      "severity": "medium",
+      "file": "frontend/src/react/services/bridgeAdapter.ts",
+      "pattern": "models.detectLocal defaults",
+      "description": "Hardcoded quantization/context/ramEstimate without evidence",
+      "remediation": "Use discovered values or unknown"
+    },
+    {
+      "severity": "medium",
+      "file": "frontend/src/react/features/settings/SettingsView.tsx",
+      "pattern": "providers array",
+      "description": "Static provider list missing real backend providers",
+      "remediation": "Drive from provider runtime registry"
+    },
+    {
+      "severity": "medium",
+      "file": "src-tauri/src/providers.rs",
+      "pattern": "default_agents()",
+      "description": "Hardcoded agent profiles",
+      "remediation": "Load from llm-term.toml or data/agents.json"
+    },
+    {
+      "severity": "low",
+      "file": "frontend/src/react/state/useNeuroDeckState.ts",
+      "pattern": "telemetry initial state",
+      "description": "Mock latency/memory pressure numbers",
+      "remediation": "Default to null/unknown until real telemetry arrives"
+    }
+  ]
+}

@@ -68,115 +68,34 @@ pub struct InstalledModel {
 // =============================================================================
 
 pub fn get_curated_steam_deck_models() -> Vec<HfModelInfo> {
-    vec![
-        HfModelInfo {
-            repo_id: "bartowski/Llama-3.2-1B-Instruct-GGUF".to_string(),
-            name: "Llama 3.2 1B Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Meta's Llama 3.2 1B instruction-tuned model, quantized for local inference. Extremely fast on Steam Deck with minimal RAM usage.".to_string(),
-            tags: vec!["llama".to_string(), "gguf".to_string(), "1b".to_string(), "instruct".to_string(), "meta".to_string()],
-            downloads: 1250000,
-            likes: 842,
-            last_modified: "2024-10".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "Llama-3.2-1B-Instruct-Q4_K_M.gguf".to_string(), size_bytes: 770_000_000, quantization: "Q4_K_M".to_string(), parameters: "1B".to_string() },
-                GgufFileInfo { filename: "Llama-3.2-1B-Instruct-Q5_K_M.gguf".to_string(), size_bytes: 910_000_000, quantization: "Q5_K_M".to_string(), parameters: "1B".to_string() },
-                GgufFileInfo { filename: "Llama-3.2-1B-Instruct-Q6_K.gguf".to_string(), size_bytes: 1_050_000_000, quantization: "Q6_K".to_string(), parameters: "1B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/Llama-3.2-3B-Instruct-GGUF".to_string(),
-            name: "Llama 3.2 3B Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Meta's Llama 3.2 3B instruction-tuned model. Great balance of quality and speed on Steam Deck.".to_string(),
-            tags: vec!["llama".to_string(), "gguf".to_string(), "3b".to_string(), "instruct".to_string(), "meta".to_string()],
-            downloads: 890000,
-            likes: 756,
-            last_modified: "2024-10".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "Llama-3.2-3B-Instruct-Q4_K_M.gguf".to_string(), size_bytes: 1_920_000_000, quantization: "Q4_K_M".to_string(), parameters: "3B".to_string() },
-                GgufFileInfo { filename: "Llama-3.2-3B-Instruct-Q5_K_M.gguf".to_string(), size_bytes: 2_280_000_000, quantization: "Q5_K_M".to_string(), parameters: "3B".to_string() },
-                GgufFileInfo { filename: "Llama-3.2-3B-Instruct-Q6_K.gguf".to_string(), size_bytes: 2_640_000_000, quantization: "Q6_K".to_string(), parameters: "3B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/Phi-3-mini-4k-instruct-GGUF".to_string(),
-            name: "Phi-3 Mini 4K Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Microsoft's Phi-3 Mini with strong reasoning capabilities. 4K context window, optimized for chat.".to_string(),
-            tags: vec!["phi3".to_string(), "gguf".to_string(), "3.8b".to_string(), "instruct".to_string(), "microsoft".to_string()],
-            downloads: 650000,
-            likes: 543,
-            last_modified: "2024-05".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "Phi-3-mini-4k-instruct-Q4_K_M.gguf".to_string(), size_bytes: 2_320_000_000, quantization: "Q4_K_M".to_string(), parameters: "3.8B".to_string() },
-                GgufFileInfo { filename: "Phi-3-mini-4k-instruct-Q5_K_M.gguf".to_string(), size_bytes: 2_740_000_000, quantization: "Q5_K_M".to_string(), parameters: "3.8B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/Qwen2.5-1.5B-Instruct-GGUF".to_string(),
-            name: "Qwen 2.5 1.5B Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Alibaba's Qwen 2.5 1.5B with excellent multilingual capabilities. Small and efficient.".to_string(),
-            tags: vec!["qwen".to_string(), "gguf".to_string(), "1.5b".to_string(), "instruct".to_string(), "multilingual".to_string()],
-            downloads: 420000,
-            likes: 312,
-            last_modified: "2024-09".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf".to_string(), size_bytes: 1_020_000_000, quantization: "Q4_K_M".to_string(), parameters: "1.5B".to_string() },
-                GgufFileInfo { filename: "Qwen2.5-1.5B-Instruct-Q5_K_M.gguf".to_string(), size_bytes: 1_200_000_000, quantization: "Q5_K_M".to_string(), parameters: "1.5B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/Qwen2.5-3B-Instruct-GGUF".to_string(),
-            name: "Qwen 2.5 3B Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Alibaba's Qwen 2.5 3B with strong multilingual performance. Good for non-English chat.".to_string(),
-            tags: vec!["qwen".to_string(), "gguf".to_string(), "3b".to_string(), "instruct".to_string(), "multilingual".to_string()],
-            downloads: 380000,
-            likes: 289,
-            last_modified: "2024-09".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "Qwen2.5-3B-Instruct-Q4_K_M.gguf".to_string(), size_bytes: 1_940_000_000, quantization: "Q4_K_M".to_string(), parameters: "3B".to_string() },
-                GgufFileInfo { filename: "Qwen2.5-3B-Instruct-Q5_K_M.gguf".to_string(), size_bytes: 2_290_000_000, quantization: "Q5_K_M".to_string(), parameters: "3B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/gemma-2-2b-it-GGUF".to_string(),
-            name: "Gemma 2 2B IT".to_string(),
-            author: "bartowski".to_string(),
-            description: "Google's Gemma 2 2B instruction-tuned model. Surprisingly capable for its size.".to_string(),
-            tags: vec!["gemma".to_string(), "gguf".to_string(), "2b".to_string(), "instruct".to_string(), "google".to_string()],
-            downloads: 310000,
-            likes: 267,
-            last_modified: "2024-07".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "gemma-2-2b-it-Q4_K_M.gguf".to_string(), size_bytes: 1_540_000_000, quantization: "Q4_K_M".to_string(), parameters: "2B".to_string() },
-                GgufFileInfo { filename: "gemma-2-2b-it-Q5_K_M.gguf".to_string(), size_bytes: 1_820_000_000, quantization: "Q5_K_M".to_string(), parameters: "2B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-        HfModelInfo {
-            repo_id: "bartowski/SmolLM2-1.7B-Instruct-GGUF".to_string(),
-            name: "SmolLM2 1.7B Instruct".to_string(),
-            author: "bartowski".to_string(),
-            description: "Hugging Face's SmolLM2 1.7B — extremely lightweight and efficient for edge devices.".to_string(),
-            tags: vec!["smollm".to_string(), "gguf".to_string(), "1.7b".to_string(), "instruct".to_string(), "huggingface".to_string()],
-            downloads: 180000,
-            likes: 198,
-            last_modified: "2024-11".to_string(),
-            gguf_files: vec![
-                GgufFileInfo { filename: "SmolLM2-1.7B-Instruct-Q4_K_M.gguf".to_string(), size_bytes: 1_120_000_000, quantization: "Q4_K_M".to_string(), parameters: "1.7B".to_string() },
-                GgufFileInfo { filename: "SmolLM2-1.7B-Instruct-Q5_K_M.gguf".to_string(), size_bytes: 1_320_000_000, quantization: "Q5_K_M".to_string(), parameters: "1.7B".to_string() },
-            ],
-            steam_deck_compat: true,
-        },
-    ]
+    crate::model_registry::load_supported_models()
+        .into_iter()
+        .filter(|p| {
+            p.steam_deck_policy.allowed_local
+                && !matches!(p.compatibility_tier.as_str(), "unsupported" | "unknown")
+        })
+        .map(|profile| {
+            let steam_deck_compat = crate::model_registry::steam_deck_ok(&profile);
+            let description = profile
+                .steam_deck_policy
+                .notes
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "Curated Steam Deck model".to_string());
+            HfModelInfo {
+                repo_id: format!("registry/{}", profile.id),
+                name: profile.display_name,
+                author: "unknown".to_string(),
+                description,
+                tags: profile.capabilities,
+                downloads: 0,
+                likes: 0,
+                last_modified: "unknown".to_string(),
+                gguf_files: Vec::new(),
+                steam_deck_compat,
+            }
+        })
+        .collect()
 }
 
 // =============================================================================

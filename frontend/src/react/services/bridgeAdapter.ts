@@ -32,13 +32,43 @@ const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
 
 let _ws: WebSocket | null = null;
 let _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
+let _wsOpenPromise: Promise<void> | null = null;
+let _wsOpenResolve: (() => void) | null = null;
+let _wsOpenReject: ((err: Error) => void) | null = null;
 
-function _ensureWs(): WebSocket {
+function _ensureWs(): WebSocket | null {
   if (_ws && _ws.readyState === WebSocket.OPEN) return _ws;
   if (_ws && _ws.readyState === WebSocket.CONNECTING) return _ws;
 
-  _ws = new WebSocket(`ws://127.0.0.1:${BRIDGE_PORT}`);
-  _ws.onmessage = (ev) => {
+  const socket = new WebSocket(`ws://127.0.0.1:${BRIDGE_PORT}/ws`);
+  const openPromise = new Promise<void>((resolve, reject) => {
+    _wsOpenResolve = resolve;
+    _wsOpenReject = reject;
+  });
+  // Prevent unhandled-rejection noise during module load / reconnection attempts.
+  openPromise.catch(() => {});
+  _wsOpenPromise = openPromise;
+  socket.onopen = () => {
+    _wsOpenPromise = null;
+    _wsOpenReject = null;
+    _wsOpenResolve?.();
+    _wsOpenResolve = null;
+  };
+  socket.onerror = () => {
+    _wsOpenReject?.(new Error('WebSocket connection failed'));
+    _wsOpenReject = null;
+    _wsOpenResolve = null;
+    _wsOpenPromise = null;
+  };
+  socket.onclose = () => {
+    _wsOpenReject?.(new Error('WebSocket closed before open'));
+    _wsOpenReject = null;
+    _wsOpenResolve = null;
+    _wsOpenPromise = null;
+    _ws = null;
+    setTimeout(() => _ensureWs(), 2000);
+  };
+  socket.onmessage = (ev) => {
     try {
       const msg = JSON.parse(ev.data);
       const eventName = msg.event || msg.type;
@@ -50,11 +80,14 @@ function _ensureWs(): WebSocket {
       /* ignore non-JSON ws messages */
     }
   };
-  _ws.onclose = () => {
-    _ws = null;
-    setTimeout(() => _ensureWs(), 2000);
-  };
+  _ws = socket;
   return _ws;
+}
+
+function _waitForWsOpen(): Promise<void> {
+  _ensureWs();
+  if (_ws?.readyState === WebSocket.OPEN) return Promise.resolve();
+  return _wsOpenPromise ?? Promise.resolve();
 }
 
 _ensureWs();
@@ -185,11 +218,11 @@ const models = {
         name: m.name,
         provider: 'ollama',
         size: m.size ? String(m.size) : 'unknown',
-        quantization: 'Q4_K_M',
-        context: 8192,
-        bestFor: ['chat', 'code'],
+        quantization: 'unknown',
+        context: 0,
+        bestFor: [],
         status: 'ready',
-        ramEstimate: '4-6 GB',
+        ramEstimate: 'unknown',
       }));
       const healthRes = await neurodeck.models.status();
       const hasOllama = discovered.length > 0;
@@ -218,11 +251,11 @@ const models = {
         name: m.name,
         provider: 'ollama',
         size: m.size ? String(m.size) : 'unknown',
-        quantization: 'Q4_K_M',
-        context: 8192,
-        bestFor: ['chat', 'code'],
+        quantization: 'unknown',
+        context: 0,
+        bestFor: [],
         status: 'ready',
-        ramEstimate: '4-6 GB',
+        ramEstimate: 'unknown',
       }));
       return {
         ok: true,
@@ -245,39 +278,37 @@ const models = {
 
 /* ── AI ──────────────────────────────────────────────────────────────────── */
 
-const fallbackHealth: AIProviderHealth[] = [
-  { provider: 'offline-draft', label: 'Offline Draft Engine', available: true, endpoint: 'renderer-local', detail: 'Bridge fallback mode', checkedAt: new Date().toISOString() },
-  { provider: 'ollama', label: 'Ollama', available: false, endpoint: 'http://127.0.0.1:11434', detail: 'Bridge fallback', checkedAt: new Date().toISOString() },
-  { provider: 'lmstudio', label: 'LM Studio', available: false, endpoint: 'http://127.0.0.1:1234', detail: 'Bridge fallback', checkedAt: new Date().toISOString() },
+const offlineHealthFallback: AIProviderHealth[] = [
+  { provider: 'offline-draft', label: 'Backend unreachable', available: false, endpoint: '', detail: 'Offline fallback: cannot determine provider status. Start a local runtime or check the bridge connection.', checkedAt: new Date().toISOString() },
 ];
 
-function browserDraft(payload: AIChatPayload): AIChatResponse {
+function offlineDraftFallback(payload: AIChatPayload): AIChatResponse {
   const projectLine = payload.projectContext
     ? `Attached context: ${payload.projectContext.summary}`
     : 'No project context attached yet.';
   return {
     ok: true,
     provider: 'offline-draft',
-    model: 'NeuroDraft',
-    latencyMs: 12,
+    model: 'offline-draft',
+    latencyMs: 0,
     contextSources: payload.projectContext?.files.map((f) => f.path) ?? [],
     message: {
-      id: `bridge-draft-${Date.now()}`,
+      id: `offline-fallback-${Date.now()}`,
       role: 'assistant',
       content: [
-        `Offline draft response for ${payload.persona}.`,
+        '[OFFLINE FALLBACK] No AI backend is currently reachable.',
         '',
         projectLine,
         '',
         'Recommended next action:',
         `1. Tighten the ask: ${payload.prompt.slice(0, 160)}`,
         '2. Attach project context if this is a codebase task.',
-        '3. Switch provider to Ollama or LM Studio when a local runtime is running.',
+        '3. Start Ollama, LM Studio, or another configured provider.',
       ].join('\n'),
       createdAt: new Date().toISOString(),
       provider: 'offline-draft',
-      model: 'NeuroDraft',
-      latencyMs: 12,
+      model: 'offline-draft',
+      latencyMs: 0,
     },
   };
 }
@@ -311,7 +342,7 @@ const ai = {
         { provider: 'lmstudio', label: 'LM Studio', available: false, endpoint: 'http://127.0.0.1:1234', detail: 'Not configured', checkedAt: new Date().toISOString() },
       ];
     } catch (_) {
-      return fallbackHealth;
+      return offlineHealthFallback;
     }
   },
   async chat(payload: AIChatPayload): Promise<AIChatResponse> {
@@ -323,7 +354,7 @@ const ai = {
         payload.model === 'NeuroDraft' ? undefined : payload.model
       );
       if (!res.ok) {
-        return browserDraft(payload);
+        return offlineDraftFallback(payload);
       }
       const response = res.data;
       return {
@@ -365,7 +396,7 @@ const ai = {
         },
       };
     } catch (e) {
-      return browserDraft(payload);
+      return offlineDraftFallback(payload);
     }
   },
   async chatStream(payload: AIChatPayload, callbacks: ChatStreamCallbacks): Promise<void> {
@@ -373,7 +404,7 @@ const ai = {
 
     // For offline-draft, bypass the bridge and return the draft immediately
     if (payload.provider === 'offline-draft') {
-      const draft = browserDraft(payload);
+      const draft = offlineDraftFallback(payload);
       if (draft.ok) onToken(draft.message.content);
       onDone();
       return;
@@ -399,6 +430,11 @@ const ai = {
     });
 
     try {
+      // Make sure the WebSocket is actually open before triggering the backend,
+      // otherwise the streaming events can be emitted (and dropped) before we
+      // are subscribed.
+      await _waitForWsOpen();
+
       const neurodeck = (window as any).neurodeck;
       if (neurodeck?.models) {
         const res = await neurodeck.models.runPrompt(
@@ -614,16 +650,16 @@ const memory = {
 
 /* ── Diagnostics ─────────────────────────────────────────────────────────── */
 
-const fallbackDiagnostics: DiagnosticsPayload = {
-  platform: 'neurodeck-bridge',
+const offlineDiagnosticsFallback: DiagnosticsPayload = {
+  platform: navigator.platform,
   arch: 'unknown',
-  electron: 'available',
-  chrome: 'available',
-  node: 'available',
-  packaged: true,
-  userData: 'bridge',
-  storeFile: 'bridge',
-  exportsDir: 'bridge',
+  electron: 'unavailable',
+  chrome: 'unavailable',
+  node: 'unavailable',
+  packaged: false,
+  userData: 'unavailable',
+  storeFile: 'unavailable',
+  exportsDir: 'unavailable',
   logCount: 0,
 };
 
@@ -638,14 +674,20 @@ const diagnostics = {
         plugin_count?: number;
       }>('get_system_health');
       return {
-        ...fallbackDiagnostics,
         platform: navigator.platform,
         arch: 'unknown',
+        electron: 'unavailable',
+        chrome: 'unavailable',
+        node: 'unavailable',
+        packaged: false,
         appVersion: '1.8.0',
+        userData: 'unavailable',
+        storeFile: 'unavailable',
+        exportsDir: 'unavailable',
         logCount: health.memory_doc_count ?? 0,
       };
     } catch (_) {
-      return fallbackDiagnostics;
+      return offlineDiagnosticsFallback;
     }
   },
   async logs(): Promise<DiagnosticLog[]> {

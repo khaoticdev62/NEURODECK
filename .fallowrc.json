@@ -6,6 +6,7 @@
   ],
   "ignorePatterns": [
     "scripts/**",
+    "src/shared/**",
     "e2e/**",
     "frontend/src/**/*.test.js",
     "tests/**",

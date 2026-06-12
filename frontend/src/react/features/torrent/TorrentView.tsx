@@ -299,7 +299,8 @@ export function TorrentView() {
           <Magnet className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">Torrent</h2>
+          <div className="torrent-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Torrent</div>
+          <h2 className="text-lg font-semibold text-nd-text">Torrent Client</h2>
           <p className="text-xs text-nd-text-muted">BitTorrent downloads</p>
         </div>
         <div className="flex items-center gap-3 text-xs text-nd-text-muted">
@@ -315,6 +316,7 @@ export function TorrentView() {
       {/* Add bar */}
       <div className="mb-3 flex gap-2">
         <input
+          id="torrent-source-input"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}

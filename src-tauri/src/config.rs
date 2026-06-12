@@ -69,6 +69,10 @@ pub struct LlmConfig {
     pub gemini_model: String,
     #[serde(default = "default_ollama_base_url")]
     pub ollama_base_url: String,
+    #[serde(default = "default_lm_studio_base_url")]
+    pub lm_studio_base_url: String,
+    #[serde(default = "default_llamacpp_base_url")]
+    pub llamacpp_base_url: String,
     #[serde(default = "default_hf_model")]
     pub hf_model: String,
     #[serde(default)]
@@ -118,6 +122,12 @@ fn default_gemini_model() -> String {
 fn default_ollama_base_url() -> String {
     "http://localhost:11434".to_string()
 }
+fn default_lm_studio_base_url() -> String {
+    "http://127.0.0.1:1234".to_string()
+}
+fn default_llamacpp_base_url() -> String {
+    "http://127.0.0.1:8080".to_string()
+}
 fn default_hf_model() -> String {
     "meta-llama/Llama-3.2-1B-Instruct".to_string()
 }
@@ -147,6 +157,8 @@ impl Default for LlmConfig {
             ollama_model: default_ollama_model(),
             gemini_model: default_gemini_model(),
             ollama_base_url: default_ollama_base_url(),
+            lm_studio_base_url: default_lm_studio_base_url(),
+            llamacpp_base_url: default_llamacpp_base_url(),
             hf_model: default_hf_model(),
             hf_api_key: String::new(),
             hf_base_url: default_hf_base_url(),

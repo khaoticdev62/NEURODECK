@@ -41,7 +41,7 @@ pub enum EventListenerHandle {
 
 // ── Embedded mobile webapp ────────────────────────────────────────────────────
 
-const WEBAPP_HTML: &str = r##"<!DOCTYPE html>
+const WEBAPP_HTML_TEMPLATE: &str = r##"<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -272,9 +272,7 @@ input.ci:focus { border-color: var(--a); box-shadow: 0 0 0 2px rgba(0,240,255,.0
     <div>
       <div class="alab">AI Agent</div>
       <div class="agrid" id="agent-grid">
-        <button class="abtn" onclick="s({type:'switch_agent',id:'gemini-flash-lite'})"><span class="abtn-icon">⚡</span>Flash Lite</button>
-        <button class="abtn" onclick="s({type:'switch_agent',id:'gemini-flash'})"><span class="abtn-icon">☁️</span>Flash</button>
-        <button class="abtn" onclick="s({type:'switch_agent',id:'local-gemma2b'})"><span class="abtn-icon">🏠</span>Gemma 2B</button>
+        <!-- AGENT_BUTTONS -->
       </div>
     </div>
     <div>
@@ -604,6 +602,35 @@ doConnect();
 </body>
 </html>"##;
 
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
+fn build_webapp_html() -> String {
+    let agents = crate::providers::default_agents();
+    if agents.is_empty() {
+        return WEBAPP_HTML_TEMPLATE.replace(
+            "<!-- AGENT_BUTTONS -->",
+            r#"<div class="alab" style="color:var(--mu)">No agents configured</div>"#,
+        );
+    }
+    let buttons: String = agents
+        .into_iter()
+        .map(|a| {
+            format!(
+                r#"<button class="abtn" onclick="s({{type:'switch_agent',id:'{}'}})"><span class="abtn-icon">🤖</span>{}</button>"#,
+                escape_html(&a.id),
+                escape_html(&a.name)
+            )
+        })
+        .collect();
+    WEBAPP_HTML_TEMPLATE.replace("<!-- AGENT_BUTTONS -->", &buttons)
+}
+
 // ── Shared state ──────────────────────────────────────────────────────────────
 
 #[derive(Clone)]
@@ -696,7 +723,7 @@ async fn root_handler(
         )
             .into_response();
     }
-    Html(WEBAPP_HTML).into_response()
+    Html(build_webapp_html()).into_response()
 }
 
 async fn ws_handler(

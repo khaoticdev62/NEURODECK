@@ -1,5 +1,5 @@
 use crate::AppState;
-use crate::paths::{user_config_dir, get_config_path, get_home_dir};
+use crate::paths::user_config_dir;
 use std::sync::{Arc, Mutex};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;

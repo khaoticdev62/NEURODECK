@@ -100,7 +100,7 @@ export function TitleBar({
 
   return (
     <header
-      className="drag-region flex h-11 shrink-0 items-center justify-between border-b border-nd-text-muted/15 bg-nd-bg/80 px-3 backdrop-blur-xl"
+      className="drag-region relative z-[var(--z-dropdown)] flex h-11 shrink-0 items-center justify-between border-b border-nd-text-muted/15 bg-nd-bg/80 px-3 backdrop-blur-xl"
       role="banner"
     >
       {/* Left: wordmark + traffic lights */}
@@ -119,6 +119,7 @@ export function TitleBar({
         {/* Model switcher dropdown */}
         <div className="relative" ref={modelDropdownRef} onKeyDown={handleDropdownKey}>
           <button
+            id="model-name"
             ref={modelBtnRef}
             type="button"
             onClick={() => setModelOpen((v) => !v)}
@@ -131,46 +132,57 @@ export function TitleBar({
             <span className="max-w-[140px] truncate">{modelName}</span>
             <ChevronDown className={`h-3 w-3 transition-transform ${modelOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
-          {modelOpen && (
-            <div
-              role="listbox"
-              aria-label="Select model"
-              aria-activedescendant={focusedIdx >= 0 ? `model-option-${focusedIdx}` : undefined}
-              className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-nd-text-muted/15 bg-nd-bg/96 p-1 shadow-xl shadow-nd-accent/10 backdrop-blur-xl"
-            >
-              {models.length === 0 && (
-                <div className="px-3 py-2 text-xs text-nd-text-muted" role="option" aria-selected={false}>No models available</div>
-              )}
-              {models.map((model, idx) => (
-                <button
-                  key={model.id}
-                  id={`model-option-${idx}`}
-                  ref={(el) => { optionRefs.current[idx] = el; }}
-                  type="button"
-                  role="option"
-                  aria-selected={model.id === selectedModelId}
-                  onClick={() => {
-                    onSelectModel?.(model.id);
-                    setModelOpen(false);
-                    modelBtnRef.current?.focus();
-                  }}
-                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                    model.id === selectedModelId
-                      ? 'bg-nd-accent/10 text-nd-accent'
-                      : 'text-nd-text/80 hover:bg-nd-surface/50'
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{model.name}</div>
-                    <div className="truncate text-[10px] text-nd-text-muted/70">{model.provider} · {model.status}</div>
-                  </div>
-                  {model.id === selectedModelId && (
-                    <span className="ml-2 h-1.5 w-1.5 rounded-full bg-nd-accent" aria-hidden="true" />
-                  )}
-                </button>
-              ))}
+          <div
+            id="agent-switcher-panel"
+            role="listbox"
+            aria-label="Select model"
+            aria-activedescendant={focusedIdx >= 0 ? `model-option-${focusedIdx}` : undefined}
+            className={`no-drag pointer-events-auto absolute left-0 top-full z-[var(--z-dropdown)] mt-1 w-56 rounded-xl border border-nd-text-muted/15 bg-nd-bg p-1 shadow-2xl shadow-black/40 ${modelOpen ? '' : 'hidden'}`}
+          >
+            <div className="agent-switcher-header border-b border-nd-text-muted/15 px-3 py-1.5 flex items-center justify-between mb-1">
+              <span className="agent-switcher-title text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted flex items-center gap-1">
+                <Zap className="h-3 w-3 text-nd-accent nd-icon-svg" /> select model
+              </span>
+              <button
+                type="button"
+                onClick={() => setModelOpen(false)}
+                className="agent-switcher-close rounded-lg p-1 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
+                <X className="h-3 w-3 nd-icon-svg" />
+              </button>
             </div>
-          )}
+            {models.length === 0 && (
+              <div className="px-3 py-2 text-xs text-nd-text-muted" role="option" aria-selected={false}>No models available</div>
+            )}
+            {models.map((model, idx) => (
+              <button
+                key={model.id}
+                id={`model-option-${idx}`}
+                ref={(el) => { optionRefs.current[idx] = el; }}
+                type="button"
+                role="option"
+                aria-selected={model.id === selectedModelId}
+                onClick={() => {
+                  onSelectModel?.(model.id);
+                  setModelOpen(false);
+                  modelBtnRef.current?.focus();
+                }}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                  model.id === selectedModelId
+                    ? 'bg-nd-accent/10 text-nd-accent'
+                    : 'text-nd-text/80 hover:bg-nd-surface/50'
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{model.name}</div>
+                  <div className="truncate text-[10px] text-nd-text-muted/70">{model.provider} · {model.status}</div>
+                </div>
+                {model.id === selectedModelId && (
+                  <span className="ml-2 h-1.5 w-1.5 rounded-full bg-nd-accent" aria-hidden="true" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         <span className="text-nd-text-muted/30" aria-hidden="true">·</span>

@@ -59,7 +59,7 @@ export function MemoryView({
           </button>
         </form>
 
-        <div className="flex flex-col justify-end">
+        <div className="memory-search-shell flex flex-col justify-end">
           <label htmlFor="memory-search-input" className="block text-2xs font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
             Search Memory Vault
           </label>

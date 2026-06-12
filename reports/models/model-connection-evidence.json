@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T19:10:00Z",
+  "note": "Initial baseline before implementation. Evidence will be populated by real probes after provider discovery and health services are implemented.",
+  "evidence": []
+}

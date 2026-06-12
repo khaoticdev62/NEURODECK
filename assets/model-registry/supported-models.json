@@ -1,0 +1,756 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-11",
+  "models": [
+    {
+      "id": "llama32-1b",
+      "family": "llama",
+      "displayName": "Llama 3.2 1B Instruct",
+      "providerModelIds": ["llama3.2:1b"],
+      "parameterClass": "1b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Fast default for chat and light tasks on battery."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "llama32-3b",
+      "family": "llama",
+      "displayName": "Llama 3.2 3B Instruct",
+      "providerModelIds": ["llama3.2:3b"],
+      "parameterClass": "3b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Slightly stronger than 1B while remaining battery-friendly."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "gemma3-1b",
+      "family": "gemma",
+      "displayName": "Gemma 3 1B",
+      "providerModelIds": ["gemma3:1b"],
+      "parameterClass": "1b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Google lightweight edge model."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "gemma3-4b",
+      "family": "gemma",
+      "displayName": "Gemma 3 4B",
+      "providerModelIds": ["gemma3:4b"],
+      "parameterClass": "4b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_balanced",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "medium",
+        "expectedThermalPressure": "medium",
+        "notes": ["Stronger reasoning; may increase heat/battery."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-0.6b",
+      "family": "qwen",
+      "displayName": "Qwen3 0.6B",
+      "providerModelIds": ["qwen3:0.6b"],
+      "parameterClass": "sub_1b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Extremely fast; good for summaries."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-1.7b",
+      "family": "qwen",
+      "displayName": "Qwen3 1.7B",
+      "providerModelIds": ["qwen3:1.7b"],
+      "parameterClass": "1_5b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Fast chat and coding helper."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-4b",
+      "family": "qwen",
+      "displayName": "Qwen3 4B",
+      "providerModelIds": ["qwen3:4b"],
+      "parameterClass": "4b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_balanced",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "medium",
+        "expectedThermalPressure": "medium",
+        "notes": ["Good coding and reasoning."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-8b",
+      "family": "qwen",
+      "displayName": "Qwen3 8B",
+      "providerModelIds": ["qwen3:8b"],
+      "parameterClass": "8b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_heavy",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "high",
+        "expectedThermalPressure": "high",
+        "notes": ["Heavy local model; requires explicit opt-in."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-0.5b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 0.5B",
+      "providerModelIds": ["qwen2.5-coder:0.5b"],
+      "parameterClass": "sub_1b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Tiny coding assistant."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-1.5b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 1.5B",
+      "providerModelIds": ["qwen2.5-coder:1.5b"],
+      "parameterClass": "1_5b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Lightweight coding."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-3b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 3B",
+      "providerModelIds": ["qwen2.5-coder:3b"],
+      "parameterClass": "3b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_balanced",
+      "capabilities": ["chat", "completion", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "medium",
+        "expectedThermalPressure": "medium",
+        "notes": ["Better code quality than 1.5B."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-7b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 7B",
+      "providerModelIds": ["qwen2.5-coder:7b"],
+      "parameterClass": "7b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_heavy",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "high",
+        "expectedThermalPressure": "high",
+        "notes": ["Heavy coding model; requires opt-in."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "phi4-mini-3.8b",
+      "family": "phi",
+      "displayName": "Phi-4 Mini 3.8B",
+      "providerModelIds": ["phi4-mini:3.8b", "phi4-mini"],
+      "parameterClass": "4b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_balanced",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "medium",
+        "expectedThermalPressure": "medium",
+        "notes": ["Microsoft compact reasoning model."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-1.5b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 1.5B",
+      "providerModelIds": ["deepseek-r1:1.5b"],
+      "parameterClass": "1_5b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_default",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": true,
+        "requiresOptIn": false,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "low",
+        "expectedThermalPressure": "low",
+        "notes": ["Small reasoning model."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-7b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 7B",
+      "providerModelIds": ["deepseek-r1:7b"],
+      "parameterClass": "7b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_heavy",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "high",
+        "expectedThermalPressure": "high",
+        "notes": ["Heavy reasoning; requires opt-in."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "mistral-7b",
+      "family": "mistral",
+      "displayName": "Mistral 7B",
+      "providerModelIds": ["mistral:7b"],
+      "parameterClass": "7b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_heavy",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "high",
+        "expectedThermalPressure": "high",
+        "notes": ["General heavy model; requires opt-in."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "llama3-8b",
+      "family": "llama",
+      "displayName": "Llama 3 8B",
+      "providerModelIds": ["llama3:8b"],
+      "parameterClass": "8b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "deck_heavy",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": true,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": false,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "high",
+        "expectedThermalPressure": "high",
+        "notes": ["General heavy model; requires opt-in."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": true,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "gemma3-12b",
+      "family": "gemma",
+      "displayName": "Gemma 3 12B",
+      "providerModelIds": ["gemma3:12b"],
+      "parameterClass": "12b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "gemma3-27b",
+      "family": "gemma",
+      "displayName": "Gemma 3 27B",
+      "providerModelIds": ["gemma3:27b"],
+      "parameterClass": "27b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-14b",
+      "family": "qwen",
+      "displayName": "Qwen3 14B",
+      "providerModelIds": ["qwen3:14b"],
+      "parameterClass": "14b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-30b",
+      "family": "qwen",
+      "displayName": "Qwen3 30B",
+      "providerModelIds": ["qwen3:30b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-32b",
+      "family": "qwen",
+      "displayName": "Qwen3 32B",
+      "providerModelIds": ["qwen3:32b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen3-235b",
+      "family": "qwen",
+      "displayName": "Qwen3 235B",
+      "providerModelIds": ["qwen3:235b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["MoE giant; remote only."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-14b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 14B",
+      "providerModelIds": ["qwen2.5-coder:14b"],
+      "parameterClass": "14b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "qwen25-coder-32b",
+      "family": "qwen",
+      "displayName": "Qwen2.5 Coder 32B",
+      "providerModelIds": ["qwen2.5-coder:32b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-14b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 14B",
+      "providerModelIds": ["deepseek-r1:14b"],
+      "parameterClass": "14b",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-32b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 32B",
+      "providerModelIds": ["deepseek-r1:32b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-70b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 70B",
+      "providerModelIds": ["deepseek-r1:70b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "deepseek-r1-671b",
+      "family": "deepseek",
+      "displayName": "DeepSeek-R1 671B",
+      "providerModelIds": ["deepseek-r1:671b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "coding", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["MoE giant; remote only."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    },
+    {
+      "id": "llama3-70b",
+      "family": "llama",
+      "displayName": "Llama 3 70B",
+      "providerModelIds": ["llama3:70b"],
+      "parameterClass": "30b_plus",
+      "recommendedQuantization": "Q4_K_M",
+      "compatibilityTier": "remote_or_docked_only",
+      "capabilities": ["chat", "completion", "reasoning", "summarization"],
+      "steamDeckPolicy": {
+        "allowedLocal": false,
+        "defaultLocal": false,
+        "requiresOptIn": true,
+        "remoteRecommended": true,
+        "maxRecommendedContextTokens": 8192,
+        "expectedMemoryPressure": "extreme",
+        "expectedThermalPressure": "extreme",
+        "notes": ["Too large for reliable Steam Deck local use."]
+      },
+      "healthRequirements": {
+        "providerMustListModel": true,
+        "mustPassTinyPrompt": false,
+        "mustSupportStreaming": true
+      }
+    }
+  ]
+}

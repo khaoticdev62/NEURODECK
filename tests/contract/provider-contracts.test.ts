@@ -29,11 +29,12 @@ describe('LLM provider contracts', () => {
     expect(src).toContain('/api/');
   });
 
-  it('bridgeAdapter has triple fallback (tauri → electron → http)', () => {
+  it('bridgeAdapter is bridge-only (HTTP + WebSocket)', () => {
     const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/services/bridgeAdapter.ts'), 'utf8');
-    expect(src).toMatch(/tauri|window\.__TAURI__/);
-    expect(src).toMatch(/ipcRenderer|electronAPI|window\.neurodeck/);
     expect(src).toMatch(/fetch\(/);
+    expect(src).toMatch(/WebSocket\(/);
+    expect(src).toMatch(/\/ws/);
+    expect(src).toMatch(/127\.0\.0\.1/);
   });
 });
 
