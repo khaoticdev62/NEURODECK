@@ -33,7 +33,7 @@ export function SchedulerView() {
         cron: cron.trim(),
         goal: goal.trim(),
         enabled: true,
-      } as any);
+      });
       setName('');
       setGoal('');
       await load();

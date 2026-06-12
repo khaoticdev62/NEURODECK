@@ -826,7 +826,7 @@ export function CliMakerView() {
                   type="button"
                   onClick={() => {
                     const sel = document.getElementById('export-script-format') as HTMLSelectElement;
-                    handleExportScript((sel?.value as any) || 'sh');
+                    handleExportScript((sel?.value || 'sh') as 'sh' | 'py' | 'lua');
                   }}
                   className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
