@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "appId": "com.neurodeck.app",
+  "productName": "NEURODECK",
+  "version": "1.8.0",
+  "buildId": "dev",
+  "commit": "workspace",
+  "buildDate": "1970-01-01T00:00:00Z",
+  "supportedTargets": [
+    "linux-appimage",
+    "linux-portable",
+    "steamdeck-desktop",
+    "steamdeck-game-mode",
+    "windows-x64",
+    "windows-proton-validation"
+  ],
+  "steamDeckSupport": {
+    "nativeLinux": "supported",
+    "gameMode": "supported-with-launcher",
+    "protonWindows": "secondary-validated"
+  },
+  "launchModes": {
+    "desktop": {
+      "launcher": "neurodeck",
+      "defaultResolution": "1280x800"
+    },
+    "gameMode": {
+      "launcher": "neurodeck-gamemode",
+      "defaultResolution": "1280x800"
+    }
+  },
+  "paths": {
+    "app": "~/.local/share/neurodeck/app",
+    "bin": "~/.local/share/neurodeck/bin",
+    "config": "~/.config/neurodeck",
+    "logs": "~/.local/state/neurodeck/logs",
+    "cache": "~/.cache/neurodeck",
+    "plugins": "~/.local/share/neurodeck/plugins"
+  },
+  "featureAvailability": {
+    "browser": true,
+    "terminal": true,
+    "plugins": true,
+    "browserVpn": "optional-dependency",
+    "models": "provider-dependent",
+    "steamShortcutAutomation": "manual-fallback-safe"
+  }
+}

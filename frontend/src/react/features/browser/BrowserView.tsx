@@ -144,6 +144,7 @@ export function BrowserView() {
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
   const [activeDownloadCount, setActiveDownloadCount] = useState(0);
   const [showDownloadsMenu, setShowDownloadsMenu] = useState(false);
+  const [errorDetailsOpen, setErrorDetailsOpen] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
@@ -424,6 +425,21 @@ export function BrowserView() {
     }
   };
 
+  const handleClearData = async (scope: "currentTab" | "all") => {
+    if (window.neurodeck?.browser?.clearBrowserData) {
+      try {
+        const res = await window.neurodeck.browser.clearBrowserData(scope);
+        if (res?.success) {
+          alert(scope === "currentTab" ? "Current session data cleared successfully." : "All profile storage data purged successfully.");
+        } else {
+          alert("Failed to clear data.");
+        }
+      } catch (err: any) {
+        alert(`Failed to clear data: ${err.message || err}`);
+      }
+    }
+  };
+
   const openDevTools = async () => {
     if (activeTabId && window.neurodeck?.browser) {
       await window.neurodeck.browser.openDevTools(activeTabId);
@@ -495,6 +511,7 @@ export function BrowserView() {
         if (payload.activeTabId) {
           setActiveTabId(payload.activeTabId);
         }
+        setTimeout(reportBounds, 50);
       } else if (event === "permission-requested") {
         setPermissions((prev) => [...prev, payload]);
       } else if (event === "download-started") {
@@ -518,7 +535,7 @@ export function BrowserView() {
       }
     });
     return unsubscribe;
-  }, [tabs, activeTabId, loadTabs, loadDownloads]);
+  }, [tabs, activeTabId, loadTabs, loadDownloads, reportBounds]);
 
   // Keyboard controls
   useEffect(() => {
@@ -1175,7 +1192,16 @@ export function BrowserView() {
         {/* Viewport Overlay */}
         <div
           ref={viewportRef}
-          className={`flex-1 overflow-hidden relative ${visible ? "" : "hidden"}`}
+          className={`flex-1 overflow-hidden relative ${
+            visible &&
+            activeTab &&
+            activeTab.state !== "new" &&
+            activeTab.state !== "error" &&
+            activeTab.state !== "crashed" &&
+            activeTab.state !== "blocked"
+              ? ""
+              : "hidden"
+          }`}
           style={{ background: "transparent" }}
         />
         {!visible && (
@@ -1196,6 +1222,261 @@ export function BrowserView() {
               </button>
             </div>
           </div>
+        )}
+
+        {visible && activeTab && (
+          <>
+            {activeTab.state === "new" && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+                <div className="max-w-md w-full flex flex-col items-center gap-6">
+                  <Globe className="h-12 w-12 text-nd-accent animate-pulse" />
+                  <div>
+                    <h3 className="text-lg font-bold text-nd-text">New Session Tab</h3>
+                    <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
+                      Start browsing by typing a URL or searching Google. Your session is fully isolated.
+                    </p>
+                  </div>
+
+                  {/* Search / Navigate Bar */}
+                  <div className="flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-2 focus-within:ring-nd-accent/25 transition">
+                    <Search className="h-4 w-4 text-nd-text-muted" />
+                    <input
+                      id="new-tab-search-input"
+                      type="text"
+                      placeholder="Search Google or enter web address..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (e.target as HTMLInputElement).value;
+                          if (val.trim()) navigate(val.trim());
+                        }
+                      }}
+                      className="flex-1 bg-transparent text-xs text-nd-text outline-none animate-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = document.getElementById("new-tab-search-input") as HTMLInputElement;
+                        if (input && input.value.trim()) navigate(input.value.trim());
+                      }}
+                      className="rounded px-2.5 py-1 bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition"
+                    >
+                      Search
+                    </button>
+                  </div>
+
+                  {/* Quick Links */}
+                  <div className="w-full flex flex-col gap-2.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-nd-text-muted text-left">
+                      Quick Access
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate("https://github.com")}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                      >
+                        <Globe className="h-5 w-5 text-nd-accent" />
+                        <span className="text-[10px] font-semibold">GitHub</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate("https://stackoverflow.com")}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                      >
+                        <BookOpen className="h-5 w-5 text-nd-accent" />
+                        <span className="text-[10px] font-semibold">StackOverflow</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate("https://github.com/khaoticdev62/NEURODECK")}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                      >
+                        <Terminal className="h-5 w-5 text-nd-accent" />
+                        <span className="text-[10px] font-semibold">Repository</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Data Actions */}
+                  <div className="w-full flex flex-col gap-2.5 mt-2">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-nd-text-muted text-left">
+                      Privacy Actions
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleClearData("currentTab")}
+                        className="px-3 py-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 text-[10px] font-semibold text-nd-text hover:bg-nd-warning/10 hover:border-nd-warning/30 hover:text-nd-warning transition"
+                      >
+                        Clear Current Tab Data
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleClearData("all")}
+                        className="px-3 py-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 text-[10px] font-semibold text-nd-text hover:bg-nd-danger/10 hover:border-nd-danger/30 hover:text-nd-danger transition"
+                      >
+                        Purge All Sessions Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab.state === "error" && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+                <div className="max-w-md w-full flex flex-col items-center gap-6">
+                  <div className="h-12 w-12 rounded-full bg-nd-danger/10 flex items-center justify-center border border-nd-danger/25">
+                    <AlertTriangle className="h-6 w-6 text-nd-danger" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-nd-text">Failed to Load Page</h3>
+                    <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed truncate max-w-sm">
+                      Could not establish connection to <code className="text-nd-accent font-mono text-[10px]">{activeTab.url}</code>
+                    </p>
+                  </div>
+
+                  {/* Diagnostic Details */}
+                  <div className="w-full border border-nd-text-muted/10 bg-nd-surface/10 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setErrorDetailsOpen(!errorDetailsOpen)}
+                      className="w-full px-4 py-2.5 flex items-center justify-between text-xs text-nd-text font-semibold hover:bg-nd-surface/20 transition"
+                    >
+                      <span>Diagnostic Information</span>
+                      <ChevronDown className={`h-4 w-4 text-nd-text-muted transition-transform ${errorDetailsOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {errorDetailsOpen && (
+                      <div className="border-t border-nd-text-muted/10 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1.5 bg-nd-surface/5 max-h-40 overflow-y-auto scrollbar-thin">
+                        <div><span className="text-nd-accent">Error Code:</span> {activeTab.diagnostics?.lastErrorCode || "ERR_CONNECTION_REFUSED"}</div>
+                        <div><span className="text-nd-accent">Description:</span> {activeTab.diagnostics?.lastErrorMessage || "The server at the destination address refused the connection or DNS resolution failed."}</div>
+                        <div><span className="text-nd-accent">Target:</span> {activeTab.url}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      disabled={!activeTab?.canGoBack}
+                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition disabled:opacity-40"
+                    >
+                      Go Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={refresh}
+                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
+                    >
+                      Retry Connection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                      className="px-4 py-2 bg-nd-surface/30 border border-nd-text-muted/10 text-xs font-semibold text-nd-text-muted hover:text-nd-text rounded-xl transition flex items-center gap-1.5"
+                    >
+                      <span>Open Externally</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab.state === "crashed" && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+                <div className="max-w-md w-full flex flex-col items-center gap-6">
+                  <div className="h-12 w-12 rounded-full bg-nd-warning/10 flex items-center justify-center border border-nd-warning/25 animate-pulse">
+                    <Terminal className="h-6 w-6 text-nd-warning" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-nd-text">Renderer Process Crashed</h3>
+                    <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
+                      The sandboxed web page process has crashed. This can happen if the site uses excessive memory resources.
+                    </p>
+                  </div>
+
+                  {/* Diagnostic Details */}
+                  <div className="w-full p-3 border border-nd-warning/20 bg-nd-warning/5 rounded-xl text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
+                    <div><span className="text-nd-warning">Status:</span> PROCESS_CRASHED</div>
+                    <div><span className="text-nd-warning">Consecutive Crashes:</span> {activeTab.crashCount || 1}</div>
+                    <div><span className="text-nd-warning">Location:</span> {activeTab.url}</div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={(e) => closeTab(activeTab.id, e)}
+                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition"
+                    >
+                      Close Tab
+                    </button>
+                    <button
+                      type="button"
+                      onClick={refresh}
+                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
+                    >
+                      Recover Tab
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                      className="px-4 py-2 bg-nd-surface/30 border border-nd-text-muted/10 text-xs font-semibold text-nd-text-muted hover:text-nd-text rounded-xl transition flex items-center gap-1.5"
+                    >
+                      <span>Open Externally</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab.state === "blocked" && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+                <div className="max-w-md w-full flex flex-col items-center gap-6">
+                  <div className="h-12 w-12 rounded-full bg-nd-danger/10 flex items-center justify-center border border-nd-danger/25">
+                    <Lock className="h-6 w-6 text-nd-danger" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-nd-text">Website Access Blocked</h3>
+                    <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
+                      Access to this URL has been blocked in accordance with your security settings or local file access restrictions.
+                    </p>
+                  </div>
+
+                  {/* Policy details */}
+                  <div className="w-full p-3 border border-nd-text-muted/10 bg-nd-surface/10 rounded-xl text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
+                    <div><span className="text-nd-accent">Policy Rule:</span> LOCAL_FILE_SYSTEM_ISOLATION</div>
+                    <div><span className="text-nd-accent">Detail:</span> Accessing local machine files (file://) or system settings is disabled for browser security.</div>
+                    <div><span className="text-nd-accent">Attempted URL:</span> {activeTab.url}</div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      disabled={!activeTab?.canGoBack}
+                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition disabled:opacity-40"
+                    >
+                      Go Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition flex items-center gap-1.5"
+                    >
+                      <span>Open in External Browser</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Sidebar Drawer */}

@@ -4,6 +4,7 @@ import { browserProfileService } from "./browserProfileService";
 
 export class BrowserDownloadService {
   private activeDownloads: Map<string, DownloadItem> = new Map();
+  private nativeItems: Map<string, any> = new Map();
 
   sanitizeFilename(filename: string): string {
     // Prevent path traversal by keeping only the basename
@@ -24,7 +25,7 @@ export class BrowserDownloadService {
     return profile.policy.allowDownloads;
   }
 
-  registerDownload(item: Omit<DownloadItem, "receivedBytes" | "state" | "startTime">): DownloadItem {
+  registerDownload(item: Omit<DownloadItem, "receivedBytes" | "state" | "startTime">, nativeItem?: any): DownloadItem {
     const fresh: DownloadItem = {
       ...item,
       filename: this.sanitizeFilename(item.filename),
@@ -34,6 +35,9 @@ export class BrowserDownloadService {
     };
 
     this.activeDownloads.set(item.id, fresh);
+    if (nativeItem) {
+      this.nativeItems.set(item.id, nativeItem);
+    }
     return fresh;
   }
 
@@ -44,8 +48,56 @@ export class BrowserDownloadService {
       dl.state = state;
       if (state === "completed" || state === "cancelled" || state === "interrupted") {
         dl.endTime = new Date().toISOString();
+        this.nativeItems.delete(id);
       }
     }
+  }
+
+  cancelDownload(id: string): { success: boolean } {
+    const nativeItem = this.nativeItems.get(id);
+    if (nativeItem) {
+      try {
+        nativeItem.cancel();
+        this.nativeItems.delete(id);
+        const dl = this.activeDownloads.get(id);
+        if (dl) {
+          dl.state = "cancelled";
+          dl.endTime = new Date().toISOString();
+        }
+        return { success: true };
+      } catch (err) {
+        console.error(`Failed to cancel download ${id}:`, err);
+      }
+    }
+    return { success: false };
+  }
+
+  openDownload(id: string): { success: boolean } {
+    const dl = this.activeDownloads.get(id);
+    if (dl && dl.state === "completed") {
+      try {
+        const { shell } = require("electron");
+        shell.openPath(dl.savePath);
+        return { success: true };
+      } catch (err) {
+        console.error(`Failed to open download file ${id}:`, err);
+      }
+    }
+    return { success: false };
+  }
+
+  showDownload(id: string): { success: boolean } {
+    const dl = this.activeDownloads.get(id);
+    if (dl && dl.state === "completed") {
+      try {
+        const { shell } = require("electron");
+        shell.showItemInFolder(dl.savePath);
+        return { success: true };
+      } catch (err) {
+        console.error(`Failed to show download file in folder ${id}:`, err);
+      }
+    }
+    return { success: false };
   }
 
   getDownload(id: string): DownloadItem | undefined {

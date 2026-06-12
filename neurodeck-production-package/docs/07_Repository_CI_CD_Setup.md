@@ -326,3 +326,22 @@ npm run rust:check           # cargo check
 npm run rust:test            # cargo test --lib
 npm run frontend:build       # Vite build
 ```
+
+---
+
+## 6. Steam Deck Packaging Addendum
+
+- New top-level directory: `packaging/steamdeck/` now holds the runtime manifest, dependency registry, file manifest, checksums, and Steam Deck install docs.
+- New canonical script root: `scripts/steamdeck/` now owns install, update, repair, uninstall, runtime validation, Game Mode validation, Proton validation, diagnostics, and package assembly.
+- Compatibility wrappers remain in place for one release cycle:
+  - `./install.sh` forwards to `scripts/steamdeck/install.sh`
+  - `scripts/shell/build-steamdeck.sh` forwards to `scripts/steamdeck/package-steamdeck.sh --target linux`
+  - `neurodeck-production-package/scripts/install-steamdeck.sh` forwards to `scripts/steamdeck/install.sh`
+- CI source of truth: `.github/workflows/steam-deck-validation.yml` now validates feature dependency coverage, installer shell syntax, Linux AppImage/portable packaging, runtime self-test smoke, and Windows Proton artifact staging.
+- Canonical npm entrypoints:
+  - `npm run check:steamdeck-deps`
+  - `npm run check:installer`
+  - `npm run build:linux`
+  - `npm run package:steamdeck`
+  - `npm run validate:steamdeck-package`
+  - `npm run validate:proton-package`

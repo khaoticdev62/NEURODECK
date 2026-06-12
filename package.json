@@ -16,6 +16,7 @@
     "dev": "npm run build:main && npm run dev:autokill && node electron/scripts/dev-launcher.js",
     "dev:no-sidecar": "node electron/scripts/dev-launcher.js",
     "build": "npm run frontend:build && npm run sidecar:build && npm run build:main && npx electron-builder --config electron-builder.yml --projectDir .",
+    "build:linux": "bash scripts/steamdeck/package-steamdeck.sh --target linux",
     "sidecar:build": "cd src-tauri && cargo build --release",
     "frontend:dev": "npm -w frontend run dev",
     "frontend:build": "npm -w frontend run build",
@@ -124,7 +125,12 @@
     "verify:terminal-history": "tsx scripts/verify-terminal-history.ts",
     "verify:terminal-ai-assist": "tsx scripts/verify-terminal-ai-assist.ts",
     "report:terminal": "tsx scripts/export-terminal-readiness-report.ts",
-    "production:terminal-gate": "npm run verify:terminal-no-mocks && npm run verify:terminal-security && npm run verify:terminal-system && npm run verify:pty-sessions && npm run verify:terminal-command-policy && npm run verify:terminal-profiles && npm run verify:terminal-history && npm run verify:terminal-ai-assist && npm run verify:terminal-controller && npm run verify:terminal-self-healing && npm run report:terminal"
+    "production:terminal-gate": "npm run verify:terminal-no-mocks && npm run verify:terminal-security && npm run verify:terminal-system && npm run verify:pty-sessions && npm run verify:terminal-command-policy && npm run verify:terminal-profiles && npm run verify:terminal-history && npm run verify:terminal-ai-assist && npm run verify:terminal-controller && npm run verify:terminal-self-healing && npm run report:terminal",
+    "check:steamdeck-deps": "bash scripts/steamdeck/check-feature-dependencies.sh",
+    "check:installer": "bash scripts/steamdeck/validate-installer.sh",
+    "package:steamdeck": "bash scripts/steamdeck/package-steamdeck.sh --target all",
+    "validate:steamdeck-package": "bash scripts/steamdeck/validate-installer.sh",
+    "validate:proton-package": "bash scripts/steamdeck/validate-proton.sh"
   },
   "devDependencies": {
     "electron": "^36.0.0",

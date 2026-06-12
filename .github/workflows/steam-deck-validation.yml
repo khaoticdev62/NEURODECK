@@ -1,497 +1,127 @@
-# =============================================================================
-# steam-deck-validation.yml — Verify AppImage/Flatpak compatibility
-# =============================================================================
-#
-# Runs on:
-#   - Every push to main/master
-#   - Every pull request
-#   - Manual trigger (workflow_dispatch)
-#
-# Validates:
-#   1. AppImage runtime detection (glibc, GLVND, SDL2, EGL)
-#   2. Binary compatibility (x86_64 only, no ARM)
-#   3. Game controller input (gamepad detection)
-#   4. Wayland session support (KDE Plasma on Steam Deck)
-#   5. Audio subsystem (ALSA/PulseAudio via SDL)
-#   6. GPU compatibility (Vulkan, OpenGL ES)
-#   7. AppImage desktop integration (mimetypes, categories)
-#   8. Flatpak permissions (required for Steam Deck sandboxing)
-#   9. Resource constraints (binary size, startup time)
-#   10. Hardware-specific tweaks (CPU affinity, memory limits)
-#
-# =============================================================================
-
-name: Steam Deck Validation
+name: Steam Deck Packaging Validation
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
     branches: [main, master]
+  push:
+    branches: [main, master]
   workflow_dispatch:
-    inputs:
-      target:
-        description: 'Validation target'
-        required: false
-        default: 'appimage'
-        type: choice
-        options: [appimage, flatpak, both]
 
 concurrency:
-  group: steam-deck-validation-${{ github.ref }}
+  group: steamdeck-package-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: short
-
 jobs:
-
-  # ── Job 1: Build Minimal AppImage for Testing ──────────────────────────
-  build-test-appimage:
-    name: Build Test AppImage
+  dependency-manifest-check:
+    name: Dependency Manifest Check
     runs-on: ubuntu-latest
-    if: |
-      github.event.inputs.target == '' ||
-      github.event.inputs.target == 'appimage' ||
-      github.event.inputs.target == 'both'
-    outputs:
-      appimage-path: ${{ steps.build.outputs.appimage }}
-      version: ${{ steps.version.outputs.version }}
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 1
+          node-version: 20
+      - run: chmod +x scripts/steamdeck/*.sh
+      - run: bash scripts/steamdeck/check-feature-dependencies.sh
 
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*": "\(.*\)".*/\1/')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+  installer-static-check:
+    name: Installer Static Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x scripts/steamdeck/*.sh
+      - run: find scripts/steamdeck -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - run: test -f packaging/steamdeck/runtime-manifest.json
+      - run: test -f packaging/steamdeck/dependencies.json
+      - run: test -f packaging/steamdeck/feature-dependencies.json
+      - run: test -f packaging/steamdeck/file-manifest.json
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+  build-linux-package:
+    name: Build Linux AppImage + Portable
+    runs-on: ubuntu-latest
+    needs: [dependency-manifest-check, installer-static-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.92.0"
           targets: x86_64-unknown-linux-gnu
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
-            librsvg2-dev libudev-dev patchelf pkg-config libssl-dev \
-            libasound2-dev protobuf-compiler file fuse libfuse2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          npm -w frontend ci
-
-      - name: Build AppImage
-        id: build
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-        run: |
-          npm run build
-          APPIMAGE=$(find dist-electron -name "*.AppImage" | sort | tail -n1)
-          echo "appimage=$APPIMAGE" >> "$GITHUB_OUTPUT"
-          echo "Built: $APPIMAGE"
-
-      - name: Upload AppImage for validation
-        uses: actions/upload-artifact@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libudev-dev patchelf pkg-config libssl-dev libasound2-dev protobuf-compiler file fuse libfuse2 xvfb
+      - run: npm ci
+      - run: npm -w frontend ci
+      - run: chmod +x scripts/steamdeck/*.sh
+      - run: bash scripts/steamdeck/package-steamdeck.sh --target linux
+      - run: bash scripts/steamdeck/validate-installer.sh --artifact "$(find dist-electron -maxdepth 1 -name '*.AppImage' | head -n 1)"
+      - run: test -s packaging/steamdeck/checksums.sha256
+      - run: rg -n "AIza|GOCSPX-|Bearer " dist dist-electron && exit 1 || exit 0
+      - uses: actions/upload-artifact@v4
         with:
-          name: test-appimage-${{ steps.version.outputs.version }}
-          path: dist-electron/*.AppImage
-          retention-days: 1
+          name: steamdeck-linux-package
+          path: |
+            dist/steamdeck/**
+            dist-electron/*.AppImage
+            dist-electron/linux-unpacked/**
 
-  # ── Job 2: AppImage Runtime Compatibility ──────────────────────────────
-  validate-appimage-runtime:
-    name: Validate AppImage Runtime
+  runtime-smoke-check:
+    name: Runtime Smoke Check
     runs-on: ubuntu-latest
-    needs: build-test-appimage
-    if: success()
-
+    needs: build-linux-package
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download AppImage
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: test-appimage-${{ needs.build-test-appimage.outputs.version }}
-          path: ./
+          name: steamdeck-linux-package
+          path: .
+      - run: chmod +x scripts/steamdeck/*.sh
+      - run: xvfb-run -a bash scripts/steamdeck/validate-runtime.sh --binary dist-electron/linux-unpacked/NEURODECK
 
-      - name: Make executable
-        run: chmod +x *.AppImage
-
-      - name: Inspect AppImage runtime requirements
-        run: |
-          echo "=== AppImage Metadata ==="
-          file *.AppImage
-
-          echo ""
-          echo "=== Extracting AppImage ==="
-          APPIMAGE=$(ls *.AppImage | head -1)
-          mkdir -p appimage-extracted
-          cd appimage-extracted
-          ../$APPIMAGE --appimage-extract >/dev/null 2>&1 || true
-
-          echo "=== AppImage Structure ==="
-          ls -la squashfs-root/ || echo "Warning: Could not extract"
-
-          echo ""
-          echo "=== Looking for binary ==="
-          find squashfs-root -type f -executable 2>/dev/null | head -20
-
-          echo ""
-          echo "=== AppRun script ==="
-          cat squashfs-root/AppRun 2>/dev/null | head -20 || echo "No AppRun found"
-
-      - name: Validate glibc compatibility
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          # Electron AppImage main binary
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
-          # Fallback: Rust sidecar binary
-          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
-          fi
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            echo "::error::Main binary not found in AppImage"
-            exit 1
-          fi
-
-          echo "=== Binary Info ==="
-          file "$EXTRACTED_BIN"
-
-          if [[ -n "$SIDECAR_BIN" ]]; then
-            echo ""
-            echo "=== Sidecar Binary Info ==="
-            file "$SIDECAR_BIN"
-          fi
-
-          echo ""
-          echo "=== glibc Requirements ==="
-          ldd "$EXTRACTED_BIN" 2>/dev/null | grep -E "libc\.so|libm\.so|libpthread" || echo "Static build detected (good!)"
-
-          echo ""
-          echo "=== Runtime Libraries Needed ==="
-          ldd "$EXTRACTED_BIN" 2>/dev/null | grep "not found" && {
-            echo "::warning::Missing libraries detected — may not work on vanilla Steam Deck"
-          } || echo "✓ All shared libraries present"
-
-      - name: Validate Vulkan/OpenGL availability
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
-          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
-          fi
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            echo "::warning::Could not find binary for graphics validation"
-            exit 0
-          fi
-
-          echo "=== Checking for Graphics Libraries ==="
-
-          # Check for Vulkan symbols (Electron/Chromium bundles ANGLE/Vulkan)
-          if nm "$EXTRACTED_BIN" 2>/dev/null | grep -q "vk"; then
-            echo "✓ Vulkan support detected"
-          else
-            echo "⚠ No Vulkan symbols found (OK for non-graphical apps)"
-          fi
-
-          # Check for OpenGL
-          if nm "$EXTRACTED_BIN" 2>/dev/null | grep -qE "glX|EGL"; then
-            echo "✓ OpenGL/EGL support detected"
-          fi
-
-          # Check Rust sidecar for SDL2/gilrs (audio/input)
-          CHECK_BIN="${SIDECAR_BIN:-$EXTRACTED_BIN}"
-          if nm "$CHECK_BIN" 2>/dev/null | grep -q "SDL"; then
-            echo "✓ SDL2 linked (audio/gamepad support)"
-          fi
-
-      - name: Validate binary architecture
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
-          fi
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            echo "::error::Could not find binary for architecture validation"
-            exit 1
-          fi
-
-          echo "=== Binary Architecture ==="
-          ARCH=$(file "$EXTRACTED_BIN" | grep -o "x86-64\|ARM\|aarch64" || echo "unknown")
-
-          if [[ "$ARCH" == "x86-64" ]]; then
-            echo "✓ Correct: x86-64 (Steam Deck native)"
-          elif [[ "$ARCH" == "unknown" ]]; then
-            echo "::warning::Could not determine architecture"
-          else
-            echo "::error::Wrong architecture: $ARCH (Steam Deck requires x86-64)"
-            exit 1
-          fi
-
-      - name: Validate game controller support
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          SIDECAR_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -path "*/resources/*" -type f -executable 2>/dev/null | head -1)
-          EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -name "neurodeck" -type f -executable 2>/dev/null | head -1)
-
-          if [[ -z "$EXTRACTED_BIN" ]]; then
-            EXTRACTED_BIN=$(find appimage-extracted/squashfs-root -type f -executable 2>/dev/null | head -1)
-          fi
-
-          CHECK_BIN="${SIDECAR_BIN:-$EXTRACTED_BIN}"
-          if [[ -z "$CHECK_BIN" ]]; then
-            echo "::warning::Could not find binary for gamepad validation"
-            exit 0
-          fi
-
-          echo "=== Input Device Support ==="
-
-          if nm "$CHECK_BIN" 2>/dev/null | grep -q "gilrs"; then
-            echo "✓ Gamepad support (gilrs) detected"
-          elif nm "$CHECK_BIN" 2>/dev/null | grep -q "evdev"; then
-            echo "✓ Evdev input support detected"
-          else
-            echo "⚠ No explicit gamepad library detected (check if needed)"
-          fi
-
-      - name: Check AppImage size
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          SIZE_MB=$(du -m "$APPIMAGE" | cut -f1)
-          SIZE_GB=$(echo "scale=2; $SIZE_MB / 1024" | bc)
-
-          echo "=== AppImage Size ==="
-          echo "Size: ${SIZE_MB} MB (${SIZE_GB} GB)"
-
-          # Warn if >1GB (Steam Deck disk is limited)
-          if [[ "$SIZE_MB" -gt 1024 ]]; then
-            echo "::warning::AppImage is ${SIZE_GB}GB — consider stripping symbols or optimizing"
-          fi
-
-  # ── Job 3: Desktop Integration ─────────────────────────────────────────
-  validate-desktop-integration:
-    name: Validate Desktop Integration
-    runs-on: ubuntu-latest
-    needs: build-test-appimage
-
+  build-windows-artifact:
+    name: Build Windows Proton Artifact
+    runs-on: windows-latest
+    needs: [dependency-manifest-check, installer-static-check]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download AppImage
-        uses: actions/download-artifact@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
-          name: test-appimage-${{ needs.build-test-appimage.outputs.version }}
-          path: ./
+          toolchain: "1.92.0"
+          targets: x86_64-pc-windows-msvc
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm -w frontend ci
+      - run: npm run frontend:build
+      - run: npm run sidecar:build
+      - run: npm run build:main
+      - run: npx electron-builder --config electron-builder.yml --projectDir . --win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steamdeck-windows-artifact
+          path: |
+            dist-electron/win-unpacked/**
+            dist-electron/*.exe
+            dist-electron/*.zip
 
-      - name: Check for .desktop file
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-          mkdir -p appimage-extracted
-          cd appimage-extracted
-          ../$APPIMAGE --appimage-extract >/dev/null 2>&1 || true
-
-          echo "=== Looking for .desktop file ==="
-          DESKTOP_FILE=$(find squashfs-root -name "*.desktop" 2>/dev/null | head -1)
-
-          if [[ -n "$DESKTOP_FILE" ]]; then
-            echo "✓ Found: $DESKTOP_FILE"
-            echo ""
-            echo "=== Desktop File Content ==="
-            cat "$DESKTOP_FILE"
-          else
-            echo "::warning::.desktop file not found (AppImage may not integrate with Steam launcher)"
-          fi
-
-      - name: Check for AppImage metadata (AppImageKit)
-        run: |
-          APPIMAGE=$(ls *.AppImage | head -1)
-
-          echo "=== AppImageKit Info ==="
-          # Try to read AppImage header
-          xxd -l 512 "$APPIMAGE" 2>/dev/null | head -20 || echo "Could not read AppImage header"
-
-          # Check for .md.appimage signature
-          if file "$APPIMAGE" | grep -q "ELF"; then
-            echo "✓ Valid ELF AppImage format"
-          fi
-
-  # ── Job 4: Flatpak Permissions Validation ──────────────────────────────
-  validate-flatpak-permissions:
-    name: Validate Flatpak Permissions
+  proton-package-check:
+    name: Proton Package Check
     runs-on: ubuntu-latest
-    if: |
-      github.event.inputs.target == '' ||
-      github.event.inputs.target == 'flatpak' ||
-      github.event.inputs.target == 'both'
-
+    needs: build-windows-artifact
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check Flatpak manifest exists
-        run: |
-          MANIFESTS=$(find . -name "*.json" -path "*/flatpak/*" 2>/dev/null)
-
-          if [[ -z "$MANIFESTS" ]]; then
-            echo "::warning::No Flatpak manifest found"
-          else
-            echo "=== Found Flatpak Manifests ==="
-            echo "$MANIFESTS"
-          fi
-
-      - name: Validate Flatpak manifest schema
-        run: |
-          MANIFEST=$(find . -name "*.appimage-wrap.json" -path "*/flatpak/*" 2>/dev/null | head -1)
-
-          if [[ -n "$MANIFEST" ]]; then
-            echo "=== Validating: $MANIFEST ==="
-            python3 << 'PYTHON_EOF'
-import json
-import sys
-
-try:
-    with open("$MANIFEST") as f:
-        manifest = json.load(f)
-
-    REQUIRED = ["app-id", "runtime", "sdk", "modules"]
-    for field in REQUIRED:
-        if field not in manifest:
-            print(f"::error::Missing field: {field}")
-            sys.exit(1)
-
-    print(f"✓ App ID: {manifest.get('app-id')}")
-    print(f"✓ Runtime: {manifest.get('runtime')}")
-    print(f"✓ SDK: {manifest.get('sdk')}")
-
-    # Check for essential permissions for Steam Deck
-    finish_args = manifest.get("finish-args", [])
-    print(f"✓ Finish args: {len(finish_args)} permissions defined")
-
-    # Check for gamepad support
-    if any("device=input" in arg or "gamepad" in arg.lower() for arg in finish_args):
-        print("✓ Gamepad access enabled")
-    else:
-        print("::warning::Gamepad access not explicitly enabled in Flatpak permissions")
-
-    # Check for network (if needed)
-    if any("network" in arg for arg in finish_args):
-        print("✓ Network access enabled")
-
-    # Check for Wayland (Steam Deck uses Plasma Wayland)
-    if any("wayland" in arg.lower() for arg in finish_args):
-        print("✓ Wayland support enabled")
-    else:
-        print("::warning::Wayland not explicitly enabled (Steam Deck uses Wayland)")
-except Exception as e:
-    print(f"::error::Failed to validate manifest: {e}")
-    sys.exit(1)
-PYTHON_EOF
-          fi
-
-  # ── Job 5: Steam Deck Runtime Compatibility Check ──────────────────────
-  validate-steam-deck-runtime:
-    name: Steam Deck Runtime Compatibility
-    runs-on: ubuntu-latest
-    needs: build-test-appimage
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Emulate Steam Deck environment
-        run: |
-          echo "=== Simulating Steam Deck Runtime ==="
-
-          # Check glibc version (Steam Deck runs glibc 2.36)
-          ldd --version | head -1
-
-          # Check for required Steam Deck libraries
-          REQUIRED_LIBS=(
-            "libX11.so.6"
-            "libxcb.so.1"
-            "libstdc++.so.6"
-            "libc.so.6"
-            "libm.so.6"
-          )
-
-          echo ""
-          echo "=== Checking for required Steam Deck libraries ==="
-          for lib in "${REQUIRED_LIBS[@]}"; do
-            if ldconfig -p | grep -q "$lib"; then
-              echo "✓ $lib available"
-            else
-              echo "::warning::$lib not found (may be bundled in AppImage)"
-            fi
-          done
-
-      - name: Validate SDL2 for input/audio
-        run: |
-          echo "=== SDL2 Availability Check ==="
-
-          if pkg-config --exists sdl2; then
-            SDL_VERSION=$(pkg-config --modversion sdl2)
-            echo "✓ SDL2 $SDL_VERSION available"
-            pkg-config --list-all | grep -i sdl
-          else
-            echo "::warning::SDL2 not found in pkg-config (check if bundled)"
-          fi
-
-      - name: Validate Vulkan/GLVND
-        run: |
-          echo "=== GPU Stack Validation ==="
-
-          # Check for Vulkan ICD loader
-          if ldconfig -p | grep -q "libvulkan.so"; then
-            echo "✓ Vulkan ICD loader found"
-          fi
-
-          # Check for GLVND (modern OpenGL dispatch)
-          if ldconfig -p | grep -q "libGLX.so"; then
-            echo "✓ GLVND (GLX) found — good for graphics"
-          fi
-
-  # ── Summary ────────────────────────────────────────────────────────────
-  steam-deck-validation-summary:
-    name: Steam Deck Validation Summary
-    runs-on: ubuntu-latest
-    needs: [validate-appimage-runtime, validate-desktop-integration, validate-flatpak-permissions, validate-steam-deck-runtime]
-    if: always()
-
-    steps:
-      - name: Generate validation report
-        run: |
-          echo "## ✅ Steam Deck Compatibility Validation Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Check | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| AppImage Runtime | ${{ needs.validate-appimage-runtime.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Desktop Integration | ${{ needs.validate-desktop-integration.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Flatpak Permissions | ${{ needs.validate-flatpak-permissions.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Steam Deck Runtime | ${{ needs.validate-steam-deck-runtime.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          if [[ "${{ needs.validate-appimage-runtime.result }}" == "failure" ]]; then
-            echo "::error::AppImage runtime validation failed"
-            exit 1
+      - uses: actions/download-artifact@v4
+        with:
+          name: steamdeck-windows-artifact
+          path: .
+      - run: chmod +x scripts/steamdeck/*.sh
+      - run: |
+          set +e
+          bash scripts/steamdeck/validate-proton.sh --windows-artifact dist-electron/win-unpacked
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
+            exit "$rc"
           fi

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0.0",
+  "dependencies": [
+    {
+      "id": "electron-runtime",
+      "label": "Electron runtime bundle",
+      "severity": "required",
+      "installHint": "Install the NEURODECK AppImage or portable package produced by package:steamdeck.",
+      "ownedByFeatures": ["browser", "canvas", "docs", "settings", "terminal"],
+      "checks": ["artifact.appimage.present", "artifact.portable.present"]
+    },
+    {
+      "id": "rust-sidecar",
+      "label": "Rust sidecar bridge",
+      "severity": "required",
+      "installHint": "Package the release sidecar into the Linux and Windows artifacts.",
+      "ownedByFeatures": ["agents", "browser", "memory", "models", "plugins", "ssh", "terminal", "tunnel"],
+      "checks": ["artifact.sidecar.linux", "artifact.sidecar.windows", "runtime.bridge.health"]
+    },
+    {
+      "id": "gamescope",
+      "label": "Gamescope",
+      "severity": "optional",
+      "installHint": "Install gamescope on SteamOS/Desktop Linux for native 1280x800 Game Mode launch.",
+      "ownedByFeatures": ["settings", "terminal"],
+      "checks": ["runtime.gamescope.available", "launch.gamemode.defaultResolution"]
+    },
+    {
+      "id": "steam-client",
+      "label": "Steam client",
+      "severity": "optional",
+      "installHint": "Install the Steam client to add the generated helper launcher to the Steam library.",
+      "ownedByFeatures": ["browser", "settings", "terminal"],
+      "checks": ["steam.shortcut.manageable", "steam.shortcut.manualFallback"]
+    },
+    {
+      "id": "proton",
+      "label": "Proton compatibility tools",
+      "severity": "optional",
+      "installHint": "Install a Proton toolchain in Steam for secondary Windows artifact validation.",
+      "ownedByFeatures": ["browser", "terminal"],
+      "checks": ["proton.toolchain.available", "proton.launch.attempted"]
+    },
+    {
+      "id": "vpn-tooling",
+      "label": "VPN and proxy system tools",
+      "severity": "optional",
+      "installHint": "Install openvpn, wireguard, or NetworkManager only if the Browser VPN feature is required.",
+      "ownedByFeatures": ["browser-vpn"],
+      "checks": ["feature.browser-vpn.warningOnly"]
+    },
+    {
+      "id": "model-runtimes",
+      "label": "Configured model runtime",
+      "severity": "optional",
+      "installHint": "Set GEMINI_API_KEY or configure Ollama in llm-term.toml for live AI responses.",
+      "ownedByFeatures": ["agents", "models", "prompt-lab"],
+      "checks": ["feature.models.warningOnly"]
+    }
+  ]
+}

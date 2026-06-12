@@ -10,6 +10,16 @@ files:
 # M3: Only include cross-platform assets here.
 # Linux-only shell scripts (install.sh, launch_gamescope.sh) are in the linux section.
 extraResources:
+  - from: packaging/steamdeck
+    to: packaging/steamdeck
+    filter:
+      - "*.json"
+      - "*.sha256"
+      - "*.md"
+  - from: scripts/steamdeck
+    to: scripts/steamdeck
+    filter:
+      - "*.sh"
   - from: plugins
     to: plugins
     filter:
@@ -25,6 +35,7 @@ win:
   target:
     - nsis
     - zip
+    - dir
   icon: src-tauri/icons/icon.ico
   artifactName: ${productName}_${version}_windows_x64.${ext}
   extraResources:
@@ -33,6 +44,7 @@ win:
 linux:
   target:
     - AppImage
+    - dir
     - deb
   icon: src-tauri/icons
   category: Development
@@ -42,11 +54,6 @@ linux:
   extraResources:
     - from: target/release/app
       to: neurodeck
-    # M3: Linux/SteamOS-only deployment scripts
-    - from: install.sh
-      to: install.sh
-    - from: launch_gamescope.sh
-      to: launch_gamescope.sh
   desktop:
     Name: NEURODECK
     Comment: AI Terminal OS for Steam Deck

@@ -79,6 +79,10 @@ export class BrowserHistoryService {
     this.saveHistory();
   }
 
+  deleteHistory(id: string) {
+    this.deleteEntry(id);
+  }
+
   clearHistory(profileId?: string) {
     if (profileId) {
       this.history = this.history.filter((h) => h.profileId !== profileId);

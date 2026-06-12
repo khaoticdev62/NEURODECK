@@ -126,6 +126,35 @@ export class BrowserViewManager {
         this.broadcastTabsUpdate();
       });
 
+      // Handle popups safely by redirecting web links to a new managed tab
+      view.webContents.setWindowOpenHandler(({ url }) => {
+        const { browserSecurityService } = require("./browserSecurityService");
+        const { allowed, error } = browserSecurityService.validateUrl(url);
+        if (!allowed) {
+          console.warn(`[browser] Blocked unsafe popup window url: ${url}. Reason: ${error}`);
+          return { action: "deny" };
+        }
+
+        if (url.startsWith("mailto:") || url.startsWith("tel:") || url.startsWith("sms:")) {
+          try {
+            const { shell } = require("electron");
+            shell.openExternal(url);
+          } catch (_) {}
+          return { action: "deny" };
+        }
+
+        const activeTab = browserTabManager.getTab(tabId);
+        const profileId = activeTab?.profileId || "default";
+
+        setImmediate(() => {
+          const newTab = browserTabManager.createTab(url, profileId);
+          this.getOrCreateView(newTab.id);
+          this.syncActiveView();
+        });
+
+        return { action: "deny" };
+      });
+
       // Hook URLs for history
       const handleNavigation = (url: string) => {
         const title = view.webContents.getTitle() || url;
@@ -204,7 +233,7 @@ export class BrowserViewManager {
               totalBytes: item.getTotalBytes(),
               profileId: tab.profileId,
               tabId,
-            });
+            }, item);
 
             this.broadcastBrowserEvent("download-started", {
               id: downloadId,
@@ -253,7 +282,7 @@ export class BrowserViewManager {
             }
 
             const requestId = `perm-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-            browserPermissionService.registerRequest(requestId, callback);
+            browserPermissionService.registerRequest(requestId, origin, permission, tab.profileId, callback);
 
             this.broadcastBrowserEvent("permission-requested", {
               requestId,
@@ -261,6 +290,17 @@ export class BrowserViewManager {
               permission,
               profileId: tab.profileId,
             });
+          });
+
+          sess.setPermissionCheckHandler((webContents: any, permission: string, origin: string) => {
+            const { browserPermissionService } = require("./browserPermissionService");
+            const existingDecision = browserPermissionService.getDecision(origin, permission, tab.profileId);
+            if (existingDecision !== null) {
+              return existingDecision === "allow_once" || existingDecision === "allow_always";
+            }
+            // Default allow safe permissions
+            const allowed = new Set(["notifications", "fullscreen", "clipboard-sanitized-write"]);
+            return allowed.has(permission);
           });
         }
       }
@@ -335,7 +375,14 @@ export class BrowserViewManager {
       if (!view) continue;
 
       try {
-        if (this.isVisible && tab.id === activeTabId) {
+        const showView = this.isVisible && 
+                         tab.id === activeTabId && 
+                         tab.state !== "new" && 
+                         tab.state !== "error" && 
+                         tab.state !== "crashed" && 
+                         tab.state !== "blocked";
+
+        if (showView) {
           // Attach and show active tab
           this.mainWindow.contentView.addChildView(view);
           view.setVisible(true);
@@ -355,6 +402,7 @@ export const browserViewManager = new BrowserViewManager();
 // Wire change listeners to broadcast tab updates
 browserTabManager.addChangeListener(() => {
   browserViewManager.broadcastTabsUpdate();
+  browserViewManager.syncActiveView();
 });
 
 vpnRouteManager.onChange(() => {

@@ -6,7 +6,7 @@ import { browserProfileService } from "./browserProfileService";
 export class BrowserPermissionService {
   private permissionsPath: string;
   private decisions: BrowserPermissionState[] = [];
-  private pendingCallbacks: Map<string, (allowed: boolean) => void> = new Map();
+  private pendingRequests: Map<string, { origin: string; permission: string; profileId: string; callback: (allowed: boolean) => void }> = new Map();
 
   constructor() {
     try {
@@ -69,17 +69,27 @@ export class BrowserPermissionService {
     }
   }
 
-  registerRequest(requestId: string, callback: (allowed: boolean) => void) {
-    this.pendingCallbacks.set(requestId, callback);
+  registerRequest(requestId: string, origin: string, permission: string, profileId: string, callback: (allowed: boolean) => void) {
+    this.pendingRequests.set(requestId, { origin, permission, profileId, callback });
   }
 
   resolveRequest(requestId: string, decision: BrowserPermissionDecision) {
-    const callback = this.pendingCallbacks.get(requestId);
-    if (callback) {
+    const req = this.pendingRequests.get(requestId);
+    if (req) {
       const allowed = decision === "allow_once" || decision === "allow_always";
-      callback(allowed);
-      this.pendingCallbacks.delete(requestId);
+      req.callback(allowed);
+      this.saveDecision(req.origin, req.permission, req.profileId, decision);
+      this.pendingRequests.delete(requestId);
     }
+  }
+
+  respondToRequest(requestId: string, decision: BrowserPermissionDecision): { success: boolean } {
+    const req = this.pendingRequests.get(requestId);
+    if (req) {
+      this.resolveRequest(requestId, decision);
+      return { success: true };
+    }
+    return { success: false };
   }
 }
 

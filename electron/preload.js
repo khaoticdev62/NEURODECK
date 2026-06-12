@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Keep these constants in sync with electron/ipc-channels.js
 const IPC = Object.freeze({
   GET_BRIDGE_PORT: 'get-bridge-port',
+  GET_RUNTIME_MANIFEST: 'get-runtime-manifest',
   OPEN_EXTERNAL: 'open-external',
   SHOW_SAVE_DIALOG: 'show-save-dialog',
   SHOW_OPEN_DIALOG: 'show-open-dialog',
@@ -55,6 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Expose the bridge port chosen by the main process so neurobridge.js can use it
   getBridgePort: () => ipcRenderer.invoke(IPC.GET_BRIDGE_PORT),
+  getRuntimeManifest: () => ipcRenderer.invoke(IPC.GET_RUNTIME_MANIFEST),
 
   // Shell / OS integrations
   openExternal: (url) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
@@ -257,7 +259,10 @@ contextBridge.exposeInMainWorld('neurodeck', {
     goBack: (tabId) => ipcRenderer.invoke('browser:go-back', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
     goForward: (tabId) => ipcRenderer.invoke('browser:go-forward', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
     reload: (tabId) => ipcRenderer.invoke('browser:reload', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    hardReload: (tabId) => ipcRenderer.invoke('browser:hard-reload', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
     stop: (tabId) => ipcRenderer.invoke('browser:stop', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    getTabState: (tabId) => ipcRenderer.invoke('browser:get-tab-state', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    clearBrowserData: (scope) => ipcRenderer.invoke('browser:clear-browser-data', makeRequest({ scope })).then(r => r.ok ? r.data : null),
     findInPage: (tabId, text, findNext) => ipcRenderer.invoke('browser:find-in-page', makeRequest({ tabId, text, findNext })).then(r => r.ok ? r.data : null),
     setZoom: (tabId, zoomFactor) => ipcRenderer.invoke('browser:set-zoom', makeRequest({ tabId, zoomFactor })).then(r => r.ok ? r.data : null),
     setBounds: (bounds) => ipcRenderer.invoke('browser:set-bounds', makeRequest(bounds)).then(r => r.ok ? r.data : null),

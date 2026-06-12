@@ -505,6 +505,12 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     return browserTabManager.getActiveTab();
   });
 
+  guard(IPC.BROWSER_GET_TAB_STATE, {
+    tabId: { type: 'string', required: true }
+  }, async (payload) => {
+    return browserTabManager.getTab(payload.tabId);
+  });
+
   // navigation handlers
   guard(IPC.BROWSER_NAVIGATE_NEW, {
     tabId: { type: 'string', required: true },
@@ -528,7 +534,15 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
   guard(IPC.BROWSER_RELOAD_NEW, {
     tabId: { type: 'string', required: true }
   }, async (payload) => {
-    return { success: browserNavigationService.reload(payload.tabId) };
+    const success = browserNavigationService.reload(payload.tabId);
+    return { success };
+  });
+
+  guard(IPC.BROWSER_HARD_RELOAD, {
+    tabId: { type: 'string', required: true }
+  }, async (payload) => {
+    const success = browserNavigationService.hardReload(payload.tabId);
+    return { success };
   });
 
   guard(IPC.BROWSER_STOP_NEW, {
@@ -658,6 +672,28 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     return { success: result.ok };
   });
 
+  guard(IPC.BROWSER_CLEAR_BROWSER_DATA, {
+    scope: { type: 'string', required: true }
+  }, async (payload) => {
+    const activeTab = browserTabManager.getActiveTab();
+    const currentProfileId = activeTab?.profileId || "default";
+    const options = { cookies: true, cache: true, localStorage: true };
+
+    if (payload.scope === "currentTab" || payload.scope === "browserProfile") {
+      const result = await browserSessionService.clearSessionData(currentProfileId, options);
+      return { success: result.ok };
+    } else if (payload.scope === "all") {
+      const profilesList = browserProfileService.listProfiles();
+      let allSuccess = true;
+      for (const p of profilesList) {
+        const res = await browserSessionService.clearSessionData(p.id, options);
+        if (!res.ok) allSuccess = false;
+      }
+      return { success: allSuccess };
+    }
+    return { success: false };
+  });
+
   // history handlers
   guard(IPC.BROWSER_GET_HISTORY, {
     profileId: { type: 'string', required: false }
@@ -668,7 +704,7 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
   guard(IPC.BROWSER_DELETE_HISTORY, {
     id: { type: 'string', required: true }
   }, async (payload) => {
-    browserHistoryService.deleteEntry(payload.id);
+    browserHistoryService.deleteHistory(payload.id);
     return { success: true };
   });
 
@@ -710,32 +746,19 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
   guard(IPC.BROWSER_CANCEL_DOWNLOAD, {
     id: { type: 'string', required: true }
   }, async (payload) => {
-    browserDownloadService.updateDownloadProgress(payload.id, 0, "cancelled");
-    return { success: true };
+    return browserDownloadService.cancelDownload(payload.id);
   });
 
   guard(IPC.BROWSER_OPEN_DOWNLOAD, {
     id: { type: 'string', required: true }
   }, async (payload) => {
-    const dl = browserDownloadService.listDownloads().find((d) => d.id === payload.id);
-    if (dl && dl.savePath) {
-      const { shell } = require("electron");
-      shell.openPath(dl.savePath);
-      return { success: true };
-    }
-    return { success: false };
+    return browserDownloadService.openDownload(payload.id);
   });
 
   guard(IPC.BROWSER_SHOW_DOWNLOAD, {
     id: { type: 'string', required: true }
   }, async (payload) => {
-    const dl = browserDownloadService.listDownloads().find((d) => d.id === payload.id);
-    if (dl && dl.savePath) {
-      const { shell } = require("electron");
-      shell.showItemInFolder(dl.savePath);
-      return { success: true };
-    }
-    return { success: false };
+    return browserDownloadService.showDownload(payload.id);
   });
 
   // permissions handlers

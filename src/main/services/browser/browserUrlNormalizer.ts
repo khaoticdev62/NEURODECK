@@ -20,7 +20,11 @@ export class BrowserUrlNormalizer {
     const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)?(\/.*)?$/;
     const localhostRegex = /^localhost(:\d+)?(\/.*)?$/;
 
-    if (domainRegex.test(trimmed) || ipRegex.test(trimmed) || localhostRegex.test(trimmed)) {
+    if (localhostRegex.test(trimmed) || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("192.168.") || trimmed.startsWith("10.")) {
+      return `http://${trimmed}`;
+    }
+
+    if (domainRegex.test(trimmed) || ipRegex.test(trimmed)) {
       return `https://${trimmed}`;
     }
 

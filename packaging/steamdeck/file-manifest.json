@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "linuxAppImage": [
+    "NEURODECK_*.AppImage",
+    "packaging/steamdeck/runtime-manifest.json",
+    "packaging/steamdeck/dependencies.json",
+    "packaging/steamdeck/feature-dependencies.json",
+    "packaging/steamdeck/file-manifest.json"
+  ],
+  "linuxPortable": [
+    "app/NEURODECK",
+    "app/resources/neurodeck",
+    "scripts/steamdeck/install.sh",
+    "scripts/steamdeck/update.sh",
+    "scripts/steamdeck/repair.sh",
+    "scripts/steamdeck/uninstall.sh",
+    "scripts/steamdeck/validate-installer.sh",
+    "scripts/steamdeck/validate-runtime.sh",
+    "scripts/steamdeck/validate-game-mode.sh",
+    "scripts/steamdeck/collect-diagnostics.sh",
+    "packaging/steamdeck/runtime-manifest.json",
+    "packaging/steamdeck/checksums.sha256"
+  ],
+  "windowsProton": [
+    "NEURODECK.exe",
+    "resources/neurodeck.exe",
+    "resources/packaging/steamdeck/runtime-manifest.json",
+    "resources/packaging/steamdeck/file-manifest.json"
+  ]
+}

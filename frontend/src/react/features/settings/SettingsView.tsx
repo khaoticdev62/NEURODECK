@@ -30,6 +30,7 @@ import type {
   NeuroDeckAppActions,
   NeuroDeckState,
 } from "../../types/neurodeck";
+import type { RuntimeManifest } from "../../types/electron";
 import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 
 type ProviderOption = { id: AIProvider; runtimeId: string; label: string; description: string };
@@ -110,6 +111,7 @@ export function SettingsView({
   const [providerOptions, setProviderOptions] = useState<ProviderOption[]>([OFFLINE_PROVIDER]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [providersError, setProvidersError] = useState<string | null>(null);
+  const [runtimeManifest, setRuntimeManifest] = useState<RuntimeManifest | null>(null);
   const [fontScale, setFontScale] = useState(100);
   const [compactMode, setCompactMode] = useState(false);
 
@@ -149,6 +151,24 @@ export function SettingsView({
       }
     }
     void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRuntimeManifest() {
+      try {
+        const manifest = await window.electronAPI?.getRuntimeManifest?.();
+        if (!cancelled && manifest) {
+          setRuntimeManifest(manifest);
+        }
+      } catch (_) {
+        // Fallback to static labels below.
+      }
+    }
+    void loadRuntimeManifest();
     return () => {
       cancelled = true;
     };
@@ -650,9 +670,11 @@ export function SettingsView({
             <Panel eyebrow="About" title="NEURODECK">
               <div className="p-4 space-y-1.5 text-xs text-nd-text-muted">
                 {[
-                  ["Version", "v1.8.0 — Ptah"],
+                  ["Version", runtimeManifest ? `v${runtimeManifest.version}` : "v1.8.0 — Ptah"],
+                  ["Build", runtimeManifest?.buildId ?? "1.8.0-ptah"],
                   ["Runtime", "Electron + axum"],
                   ["Bridge", "localhost:9477"],
+                  ["Targets", runtimeManifest?.supportedTargets?.join(", ") ?? "linux-appimage, steamdeck-game-mode"],
                   ["License", "UNLICENSED — Khaotic Labs"],
                 ].map(([label, value]) => (
                   <div

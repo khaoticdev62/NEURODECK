@@ -78,6 +78,15 @@ export class BrowserNavigationService {
     return false;
   }
 
+  hardReload(tabId: string): boolean {
+    const view = browserViewManager.getOrCreateView(tabId);
+    if (view) {
+      view.webContents.reloadIgnoringCache();
+      return true;
+    }
+    return false;
+  }
+
   stop(tabId: string): boolean {
     const view = browserViewManager.getOrCreateView(tabId);
     if (view) {

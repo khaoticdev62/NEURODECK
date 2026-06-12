@@ -14,6 +14,10 @@ protocol.registerSchemesAsPrivileged([
 
 const SIDECAR_NAME = process.platform === 'win32' ? 'neurodeck.exe' : 'neurodeck';
 const DEFAULT_PORT = 9477;
+const APP_ARGS = new Set(process.argv.slice(1));
+const SELF_TEST_MODE = APP_ARGS.has('--self-test');
+const STEAM_DECK_MODE = APP_ARGS.has('--steam-deck');
+const EXIT_AFTER_SELF_TEST = APP_ARGS.has('--exit-after-self-test');
 
 // Only allow http/https URLs to be opened externally — blocks javascript:, file://, etc.
 const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['https:', 'http:']);
@@ -159,6 +163,143 @@ function getResourcesDir() {
     return process.resourcesPath;
   }
   return path.join(__dirname, '..');
+}
+
+function getRuntimeManifestPath() {
+  return path.join(getResourcesDir(), 'packaging', 'steamdeck', 'runtime-manifest.json');
+}
+
+function readRuntimeManifest() {
+  try {
+    const file = getRuntimeManifestPath();
+    if (fs.existsSync(file)) {
+      return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    }
+  } catch (error) {
+    console.error('[manifest] Failed to read runtime manifest:', error);
+  }
+  return null;
+}
+
+function resolveCanonicalPath(kind) {
+  const home = app.getPath('home');
+  const xdgConfig = process.env.XDG_CONFIG_HOME || path.join(home, '.config');
+  const xdgData = process.env.XDG_DATA_HOME || path.join(home, '.local', 'share');
+  const xdgState = process.env.XDG_STATE_HOME || path.join(home, '.local', 'state');
+  const xdgCache = process.env.XDG_CACHE_HOME || path.join(home, '.cache');
+
+  switch (kind) {
+    case 'app':
+      return path.join(xdgData, 'neurodeck', 'app');
+    case 'config':
+      return path.join(xdgConfig, 'neurodeck');
+    case 'logs':
+      return path.join(xdgState, 'neurodeck', 'logs');
+    case 'cache':
+      return path.join(xdgCache, 'neurodeck');
+    case 'plugins':
+      return path.join(xdgData, 'neurodeck', 'plugins');
+    default:
+      return path.join(xdgData, 'neurodeck');
+  }
+}
+
+function probeWritableDir(dir) {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const probe = path.join(dir, `.self-test-${Date.now()}.tmp`);
+    fs.writeFileSync(probe, 'ok');
+    fs.unlinkSync(probe);
+    return { ok: true, path: dir };
+  } catch (error) {
+    return { ok: false, path: dir, error: String(error.message || error) };
+  }
+}
+
+async function runSelfTest() {
+  const manifest = readRuntimeManifest();
+  const result = {
+    status: 'pass',
+    requestedSteamDeckMode: STEAM_DECK_MODE,
+    platform: process.platform,
+    timestamp: new Date().toISOString(),
+    manifest,
+    checks: {
+      bridge: { ok: false, port: bridgePort },
+      paths: {},
+      assets: {},
+      renderer: {},
+    },
+  };
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${bridgePort}/health`, { signal: AbortSignal.timeout(1500) });
+    result.checks.bridge.ok = response.ok;
+  } catch (error) {
+    result.checks.bridge = { ok: false, port: bridgePort, error: String(error.message || error) };
+  }
+
+  for (const kind of ['config', 'logs', 'cache', 'plugins']) {
+    result.checks.paths[kind] = probeWritableDir(resolveCanonicalPath(kind));
+  }
+
+  const resourceDir = getResourcesDir();
+  result.checks.assets = {
+    packagingManifest: fs.existsSync(getRuntimeManifestPath()),
+    assetsDir: fs.existsSync(path.join(resourceDir, 'assets')),
+    brandAssets: fs.existsSync(path.join(resourceDir, 'assets', 'brand')),
+    themeAssets: fs.existsSync(path.join(resourceDir, 'assets', 'steam-grid')),
+  };
+
+  try {
+    await new Promise((resolve, reject) => {
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', resolve);
+        mainWindow.webContents.once('did-fail-load', (_event, code, description) => {
+          reject(new Error(`did-fail-load ${code}: ${description}`));
+        });
+        return;
+      }
+      resolve();
+    });
+
+    const rendererResult = await mainWindow.webContents.executeJavaScript(`
+      (() => {
+        const key = "__neurodeck_self_test__";
+        localStorage.setItem(key, "ok");
+        sessionStorage.setItem(key, "ok");
+        const result = {
+          location: window.location.href,
+          localStorage: localStorage.getItem(key) === "ok",
+          sessionStorage: sessionStorage.getItem(key) === "ok",
+          userAgent: navigator.userAgent.includes("Electron") ? "electron" : "masked"
+        };
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+        return result;
+      })();
+    `);
+    result.checks.renderer = { ok: true, ...rendererResult };
+  } catch (error) {
+    result.checks.renderer = { ok: false, error: String(error.message || error) };
+  }
+
+  const failures = [
+    !result.checks.bridge.ok,
+    Object.values(result.checks.paths).some((entry) => !entry.ok),
+    !result.checks.assets.packagingManifest,
+    !result.checks.assets.assetsDir,
+    !result.checks.renderer.ok,
+    !result.checks.renderer.localStorage,
+    !result.checks.renderer.sessionStorage,
+  ].some(Boolean);
+
+  if (failures) {
+    result.status = 'fail';
+  }
+
+  console.log(`NEURODECK_SELF_TEST_RESULT=${JSON.stringify(result)}`);
+  return result;
 }
 
 function findFreePort(start = DEFAULT_PORT, max = start + 100) {
@@ -457,7 +598,9 @@ function createMainWindow() {
       splashWindow.close();
       splashWindow = null;
     }
-    mainWindow.show();
+    if (!SELF_TEST_MODE) {
+      mainWindow.show();
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -597,7 +740,9 @@ app.whenReady().then(async () => {
     }
   });
 
-  createSplashWindow();
+  if (!SELF_TEST_MODE) {
+    createSplashWindow();
+  }
   spawnSidecar(port);
 
   try {
@@ -610,7 +755,9 @@ app.whenReady().then(async () => {
   }
 
   createMainWindow();
-  createTray();
+  if (!SELF_TEST_MODE) {
+    createTray();
+  }
 
   // Initialize secure service layer
   const LspManager = require('./services/lsp/lsp-manager');
@@ -642,6 +789,17 @@ app.whenReady().then(async () => {
 
   // All IPC handlers are fully registered. Now it is safe to load the main window's URL.
   loadMainWindowURL();
+
+  if (SELF_TEST_MODE) {
+    const selfTest = await runSelfTest().catch((error) => ({
+      status: 'fail',
+      error: String(error.message || error),
+    }));
+    if (EXIT_AFTER_SELF_TEST) {
+      app.exit(selfTest.status === 'pass' ? 0 : 7);
+      return;
+    }
+  }
 
   // Run initial diagnostics probes in background
   setTimeout(() => {
@@ -690,6 +848,7 @@ function sanitizeDialogOptions(raw, allowed) {
 }
 
 ipcMain.handle(IPC.GET_BRIDGE_PORT, () => bridgePort);
+ipcMain.handle(IPC.GET_RUNTIME_MANIFEST, () => readRuntimeManifest());
 
 // C3: Validate URL protocol before opening externally
 ipcMain.handle(IPC.OPEN_EXTERNAL, (_event, url) => {

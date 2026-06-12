@@ -79,7 +79,10 @@ declare global {
         goBack: (tabId: string) => Promise<{ success: boolean }>;
         goForward: (tabId: string) => Promise<{ success: boolean }>;
         reload: (tabId: string) => Promise<{ success: boolean }>;
+        hardReload: (tabId: string) => Promise<{ success: boolean }>;
         stop: (tabId: string) => Promise<{ success: boolean }>;
+        getTabState: (tabId: string) => Promise<any>;
+        clearBrowserData: (scope: "currentTab" | "browserProfile" | "all") => Promise<{ success: boolean }>;
         findInPage: (
           tabId: string,
           text: string,

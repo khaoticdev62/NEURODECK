@@ -7,9 +7,11 @@ response_color = "#00FF88"
 
 [llm]
 default_provider = "ollama"
-ollama_model = "llama3.1:8b"
+ollama_model = "llama3"
 gemini_model = "gemini-2.0-flash"
-ollama_base_url = "http://localhost:11434"
+ollama_base_url = "http://127.0.0.1:11434"
+lm_studio_base_url = "http://127.0.0.1:1234"
+llamacpp_base_url = "http://127.0.0.1:8080"
 hf_model = "meta-llama/Llama-3.2-1B-Instruct"
 hf_api_key = ""
 hf_base_url = "https://api-inference.huggingface.co"
@@ -103,12 +105,12 @@ id = "default"
 name = "Default"
 description = "Standard agent permissions"
 granted = [
+    "memory_read",
+    "plugin_load",
+    "memory_write",
+    "network",
     "shell_exec",
     "browser",
-    "memory_write",
-    "plugin_load",
-    "network",
-    "memory_read",
 ]
 created_at = "2026-06-11T22:48:46.793280100+00:00"
 
@@ -124,14 +126,14 @@ id = "privileged"
 name = "Privileged"
 description = "Full system access"
 granted = [
-    "file_system_write",
-    "memory_write",
-    "plugin_load",
-    "network",
-    "memory_read",
-    "browser",
     "file_system_read",
+    "browser",
     "computer",
     "shell_exec",
+    "file_system_write",
+    "plugin_load",
+    "memory_write",
+    "network",
+    "memory_read",
 ]
 created_at = "2026-06-11T22:48:46.793281400+00:00"

@@ -37,6 +37,19 @@ interface ElectronVersions {
   node: string;
 }
 
+interface RuntimeManifest {
+  version: string;
+  buildId: string;
+  commit: string;
+  buildDate: string;
+  supportedTargets: string[];
+  steamDeckSupport?: {
+    nativeLinux?: string;
+    gameMode?: string;
+    protonWindows?: string;
+  };
+}
+
 interface ElectronAPI {
   /** Current platform string (e.g. 'win32', 'linux', 'darwin'). */
   readonly platform: NodeJS.Platform;
@@ -45,6 +58,7 @@ interface ElectronAPI {
 
   /** Returns the localhost port the Rust bridge sidecar is listening on. */
   getBridgePort(): Promise<number>;
+  getRuntimeManifest(): Promise<RuntimeManifest | null>;
 
   /** Opens a URL in the OS default browser. Only http/https URLs are allowed. */
   openExternal(url: string): Promise<void>;
@@ -119,4 +133,4 @@ declare global {
   }
 }
 
-export type { ElectronAPI, ElectronVersions, SafeStorageEncryptResult, SafeStorageDecryptResult, SafeStorageError };
+export type { ElectronAPI, ElectronVersions, RuntimeManifest, SafeStorageEncryptResult, SafeStorageDecryptResult, SafeStorageError };

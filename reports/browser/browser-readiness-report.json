@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T09:05:13.463Z",
+  "generatedAt": "2026-06-12T16:22:03.264Z",
   "version": "1.8.0",
   "services": [
     {
@@ -20,7 +20,7 @@
     {
       "name": "browserDownloadService.ts",
       "exists": true,
-      "sizeBytes": 2067
+      "sizeBytes": 3668
     },
     {
       "name": "browserFindInPageService.ts",
@@ -30,17 +30,17 @@
     {
       "name": "browserHistoryService.ts",
       "exists": true,
-      "sizeBytes": 2717
+      "sizeBytes": 2782
     },
     {
       "name": "browserNavigationService.ts",
       "exists": true,
-      "sizeBytes": 3071
+      "sizeBytes": 3289
     },
     {
       "name": "browserPermissionService.ts",
       "exists": true,
-      "sizeBytes": 2901
+      "sizeBytes": 3427
     },
     {
       "name": "browserProfileService.ts",
@@ -70,12 +70,12 @@
     {
       "name": "browserUrlNormalizer.ts",
       "exists": true,
-      "sizeBytes": 1100
+      "sizeBytes": 1251
     },
     {
       "name": "browserViewManager.ts",
       "exists": true,
-      "sizeBytes": 12560
+      "sizeBytes": 14696
     }
   ],
   "verifications": [
