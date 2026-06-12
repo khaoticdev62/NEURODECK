@@ -1356,7 +1356,7 @@ export default function App() {
           )}
         </div>
 
-        {state.showOnboarding && <OnboardingModal />}
+        {state.showOnboarding && <OnboardingModal state={state} dispatch={dispatch} />}
       </div>
     </ToastProvider>
   );

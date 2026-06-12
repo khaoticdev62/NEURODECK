@@ -40,7 +40,7 @@ export function TerminalSafetyConfirmModal({ open, command, safety, description,
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          {isDangerous ? <ShieldAlert className="mt-0.5 h-5 w-5 text-nd-danger" /> : <AlertTriangle className="mt-0.5 h-5 w-5 text-nd-warning" />}
+          {isDangerous ? <ShieldAlert className="mt-0.5 h-5 w-5 text-nd-danger" aria-hidden="true" /> : <AlertTriangle className="mt-0.5 h-5 w-5 text-nd-warning" aria-hidden="true" />}
           <div className="min-w-0">
             <div className="text-sm font-semibold text-nd-text">{safety.reason}</div>
             {description && <div className="mt-1 text-xs text-nd-text-muted">{description}</div>}

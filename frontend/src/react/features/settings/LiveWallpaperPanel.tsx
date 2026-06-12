@@ -18,7 +18,7 @@ export function LiveWallpaperPanel() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
-        <SlidersHorizontal className="h-4 w-4 shrink-0 text-nd-accent" />
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-center justify-between">
             <label htmlFor="wallpaper-opacity" className="text-xs font-semibold text-nd-text/80">
@@ -54,7 +54,7 @@ export function LiveWallpaperPanel() {
           aria-pressed={settings.activeWallpaperId === "none" || !settings.liveWallpaperEnabled}
         >
           <div className="flex h-20 w-full items-center justify-center rounded-t-xl bg-[#050505]">
-            <ImageIcon className="h-5 w-5 text-nd-text-muted/70" />
+            <ImageIcon className="h-5 w-5 text-nd-text-muted/70" aria-hidden="true" />
           </div>
           <div className="px-2 pb-2">
             <p className="text-[11px] font-semibold leading-tight text-nd-text/80">No Wallpaper</p>
@@ -90,7 +90,7 @@ export function LiveWallpaperPanel() {
                 <span className="rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                   {wallpaper.renderer.replace(/_/g, " ")}
                 </span>
-                <MonitorPlay className="h-4 w-4 text-white/70" />
+                <MonitorPlay className="h-4 w-4 text-white/70" aria-hidden="true" />
               </div>
               <div className="px-2 pb-2">
                 <p className="text-[11px] font-semibold leading-tight text-nd-text/80">

@@ -287,82 +287,9 @@ function glitchRedTokens(): ThemeTokenSet {
   };
 }
 
-// ─── Registry ─────────────────────────────────────────────────────────────────
+import { themePresets } from "../../../../src/shared/theme/themePresets";
 
-const THEMES: NeurodeckTheme[] = [
-  {
-    id: "blacksite_prime",
-    name: "Blacksite Prime",
-    description: "High-contrast tactical dark. Default NEURODECK theme.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: blacksiteTokens(),
-  },
-  {
-    id: "terminal_ghost",
-    name: "Terminal Ghost",
-    description: "Pure black with phosphor-green accents. Classic hacker aesthetic.",
-    category: "dark",
-    steamDeck: { oledTuned: true },
-    tokens: terminalGhostTokens(),
-  },
-  {
-    id: "synth_grid",
-    name: "Synth Grid",
-    description: "Deep purple field with magenta and cyan neon. Retrowave vibes.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: synthGridTokens(),
-  },
-  {
-    id: "deck_blue",
-    name: "Deck Blue",
-    description: "Navy base with sky-blue accents tuned for Steam Deck LCD.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: deckBlueTokens(),
-  },
-  {
-    id: "amber_crt",
-    name: "Amber CRT",
-    description: "Warm amber phosphor on near-black. Retro terminal warmth.",
-    category: "dark",
-    steamDeck: { oledTuned: true },
-    tokens: amberCrtTokens(),
-  },
-  {
-    id: "cyber_punk",
-    name: "Cyber Punk",
-    description: "Hot pink on deep purple with cyan contrast. Night city aesthetic.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: cyberPunkTokens(),
-  },
-  {
-    id: "matrix",
-    name: "Matrix",
-    description: "Cascading green on absolute black. The construct.",
-    category: "dark",
-    steamDeck: { oledTuned: true },
-    tokens: matrixTokens(),
-  },
-  {
-    id: "solarized",
-    name: "Solarized",
-    description: "Ethan Schoonover's classic dark teal base with warm accents.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: solarizedTokens(),
-  },
-  {
-    id: "glitch_red",
-    name: "Glitch Red",
-    description: "Deep crimson base with alert-red accents. High-tension palette.",
-    category: "dark",
-    steamDeck: { oledTuned: false },
-    tokens: glitchRedTokens(),
-  },
-];
+const THEMES: NeurodeckTheme[] = themePresets as unknown as NeurodeckTheme[];
 
 export const themeRegistry = {
   listThemes(): NeurodeckTheme[] {

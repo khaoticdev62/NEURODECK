@@ -19,7 +19,7 @@ vi.mock('../../services/bridgeAdapter', () => ({
 import { useNeuroDeckState } from '../../state/useNeuroDeckState';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 
-const storeMock = neurodeckApi.store as {
+const storeMock = neurodeckApi.store as unknown as {
   get: ReturnType<typeof vi.fn>;
   set: ReturnType<typeof vi.fn>;
   reset: ReturnType<typeof vi.fn>;

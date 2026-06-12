@@ -87,7 +87,7 @@ function ActionBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; la
       aria-label={label}
       title={label}
     >
-      <Icon className="h-3 w-3" />
+      <Icon className="h-3 w-3" aria-hidden="true" />
       <span>{label}</span>
     </button>
   );

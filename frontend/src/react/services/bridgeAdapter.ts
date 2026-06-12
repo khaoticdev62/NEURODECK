@@ -36,6 +36,7 @@ import type {
   TerminalEnvironmentReport,
   TerminalSessionSummary,
 } from "../../../../src/shared/terminal/terminalDiagnosticsTypes";
+import type { OnboardingDiagnosticResult } from "../types/onboarding";
 import type { TerminalProfileAvailability } from "../../../../src/shared/terminal/terminalProfiles";
 
 const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || "9477", 10);
@@ -170,6 +171,15 @@ const store = {
       localStorage.removeItem(key);
     }
     return { ok: true, updatedAt: new Date().toISOString() };
+  },
+  async setConfig(key: string, value: string) {
+    return bridgeInvoke<{ status: string; key: string; value: string }>("set_config", { key, value });
+  },
+  async saveGeminiApiKey(key: string) {
+    return bridgeInvoke<{ status: string }>("save_gemini_api_key", { key });
+  },
+  async saveOpenAiCompatApiKey(key: string) {
+    return bridgeInvoke<{ status: string }>("save_openai_compat_api_key", { key });
   },
 };
 
@@ -1037,6 +1047,9 @@ const diagnostics = {
     } catch (_) {
       return offlineDiagnosticsFallback;
     }
+  },
+  async runOnboardingDiagnostics(): Promise<OnboardingDiagnosticResult> {
+    return bridgeInvoke<OnboardingDiagnosticResult>("run_onboarding_diagnostics");
   },
   async logs(): Promise<DiagnosticLog[]> {
     try {

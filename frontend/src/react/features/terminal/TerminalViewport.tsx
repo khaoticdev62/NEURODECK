@@ -292,7 +292,7 @@ export function TerminalViewport({
         <div className="absolute inset-0 flex items-center justify-center bg-nd-bg/65 p-4 backdrop-blur-sm">
           <div className="max-w-md rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-panel-elevated">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning" aria-hidden="true" />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-nd-text">{pane.state === "blocked" ? "Session blocked" : pane.state === "error" ? "Session error" : "Session exited"}</div>
                 <div className="mt-1 text-xs text-nd-text-muted">{pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}</div>

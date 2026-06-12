@@ -52,7 +52,7 @@ export function ChatViewport({
           <div className="relative mb-5">
             <div className="absolute inset-0 rounded-3xl bg-nd-accent/20 blur-2xl" aria-hidden="true" />
             <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-nd-accent/30 bg-gradient-to-br from-nd-accent/20 to-nd-accent/5 shadow-glow-md">
-              <Sparkles className="h-10 w-10 text-nd-accent" />
+              <Sparkles className="h-10 w-10 text-nd-accent" aria-hidden="true" />
             </div>
           </div>
 
@@ -76,7 +76,7 @@ export function ChatViewport({
                 <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${s.color}`} aria-hidden="true" />
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-nd-text-muted/15 bg-nd-surface/60 transition group-hover:border-nd-accent/30 group-hover:bg-nd-accent/10">
-                    <s.icon className="h-4 w-4 text-nd-accent transition group-hover:scale-110" />
+                    <s.icon className="h-4 w-4 text-nd-accent transition group-hover:scale-110" aria-hidden="true" />
                   </div>
                   <p className="text-xs font-semibold text-nd-text/90">{s.label}</p>
                 </div>
@@ -123,7 +123,7 @@ function QuickChip({ icon: Icon, label, onClick }: { icon: LucideIcon; label: st
       onClick={onClick}
       className="flex items-center gap-1.5 rounded-full border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-1.5 text-xs text-nd-text-muted transition hover:-translate-y-px hover:border-nd-accent/30 hover:bg-nd-accent/[0.05] hover:text-nd-text/90"
     >
-      <Icon className="h-3.5 w-3.5" /> {label}
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" /> {label}
     </button>
   );
 }
