@@ -495,6 +495,8 @@ pub async fn run_bridge_server(
             "SAFE MODE active — plugin loading is disabled (NEURODECK_SAFE_MODE is set)"
         );
     }
+    // Seed bundled plugins into the user config dir before loading.
+    crate::plugin_mgr::seed_bundled_plugins();
     let plugins_dir = crate::plugin_mgr::plugins_dir();
     if !safe_mode && plugins_dir.exists() {
         let can_load_plugins = {

@@ -24,6 +24,79 @@ pub fn audit_log_path() -> PathBuf {
     crate::user_config_dir().join("logs").join(AUDIT_LOG_FILE)
 }
 
+/// Seed the user-config plugins directory with bundled `.lua` files if it
+/// currently contains no enabled plugins.  Called once at bridge startup so
+/// that out-of-box installs and dev runs both work without a manual copy step.
+///
+/// Source resolution order:
+///   1. `NEURODECK_PLUGINS_SOURCE` env var (explicit override)
+///   2. `<executable_dir>/plugins/`   (production installer layout)
+///   3. `<current_dir>/plugins/`      (dev: `cargo run` from project root)
+pub fn seed_bundled_plugins() {
+    let dest = plugins_dir();
+
+    // Skip seeding if there are already enabled plugins present.
+    let already_populated = fs::read_dir(&dest)
+        .map(|mut d| d.any(|e| e.map(|e| e.path().extension().and_then(|x| x.to_str()) == Some("lua")).unwrap_or(false)))
+        .unwrap_or(false);
+
+    if already_populated {
+        return;
+    }
+
+    // Locate the bundled source directory.
+    let source = std::env::var("NEURODECK_PLUGINS_SOURCE")
+        .map(PathBuf::from)
+        .ok()
+        .or_else(|| {
+            std::env::current_exe().ok().and_then(|exe| {
+                let candidate = exe.parent()?.join("plugins");
+                candidate.is_dir().then_some(candidate)
+            })
+        })
+        .or_else(|| {
+            std::env::current_dir().ok().map(|cwd| cwd.join("plugins"))
+        });
+
+    let source = match source {
+        Some(s) if s.is_dir() => s,
+        _ => {
+            tracing::warn!("seed_bundled_plugins: no bundled plugins directory found; set NEURODECK_PLUGINS_SOURCE to fix");
+            return;
+        }
+    };
+
+    let mut copied = 0usize;
+    let entries = match fs::read_dir(&source) {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!("seed_bundled_plugins: cannot read source dir {}: {}", source.display(), e);
+            return;
+        }
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = path.file_name() else { continue };
+        let name_str = name.to_string_lossy();
+        if !name_str.ends_with(".lua") {
+            continue;
+        }
+        let dest_path = dest.join(name);
+        if dest_path.exists() {
+            continue;
+        }
+        match fs::copy(&path, &dest_path) {
+            Ok(_) => copied += 1,
+            Err(e) => tracing::warn!("seed_bundled_plugins: failed to copy {}: {}", name_str, e),
+        }
+    }
+
+    if copied > 0 {
+        tracing::info!("seed_bundled_plugins: seeded {} plugin(s) from {}", copied, source.display());
+    }
+}
+
 /// Metadata parsed directly from a Lua plugin file's header comment block.
 /// Lines of the form `-- @key value` are extracted.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
