@@ -30,6 +30,13 @@ import type {
   CliCommandDef,
 } from "../types/neurodeck";
 import type { ProviderRuntimeProfile } from "../../shared/contracts/models.contracts";
+import type { TerminalCommandSafety } from "../../../../src/shared/terminal/terminalSafetyTypes";
+import type {
+  TerminalDiagnosticsReport,
+  TerminalEnvironmentReport,
+  TerminalSessionSummary,
+} from "../../../../src/shared/terminal/terminalDiagnosticsTypes";
+import type { TerminalProfileAvailability } from "../../../../src/shared/terminal/terminalProfiles";
 
 const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || "9477", 10);
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
@@ -1192,9 +1199,31 @@ const voice = {
 
 /* ── Terminal / PTY ──────────────────────────────────────────────────────── */
 
+export type TerminalSpawnOptions = {
+  cols?: number;
+  rows?: number;
+  args?: string[];
+  cwd?: string;
+  title?: string;
+  profileId?: string;
+  tabId?: string;
+  paneId?: string;
+};
+
 const terminal = {
-  async spawn(sessionId: string = "main_pty_session", shell?: string) {
-    return bridgeInvoke<{ success: boolean }>("pty_spawn", { id: sessionId, shell });
+  async spawn(sessionId: string = "main_pty_session", shell?: string, options?: TerminalSpawnOptions) {
+    return bridgeInvoke<{ success: boolean }>("pty_spawn", {
+      id: sessionId,
+      shell,
+      cols: options?.cols,
+      rows: options?.rows,
+      args: options?.args,
+      cwd: options?.cwd,
+      title: options?.title,
+      profileId: options?.profileId,
+      tabId: options?.tabId,
+      paneId: options?.paneId,
+    });
   },
   async kill(sessionId: string = "main_pty_session") {
     return bridgeInvoke<{ success: boolean }>("pty_kill", { id: sessionId });
@@ -1208,6 +1237,66 @@ const terminal = {
   async listSessions() {
     const result = await bridgeInvoke<{ sessions: string[]; count: number }>("get_pty_sessions");
     return result.sessions ?? [];
+  },
+  async getSessionDetails(): Promise<TerminalSessionSummary[]> {
+    try {
+      const result = await bridgeInvoke<{ sessions: TerminalSessionSummary[]; count: number }>("get_terminal_sessions");
+      return result.sessions ?? [];
+    } catch (_) {
+      return [];
+    }
+  },
+  async getEnvironment(): Promise<TerminalEnvironmentReport> {
+    try {
+      const result = await bridgeInvoke<{ environment: TerminalEnvironmentReport }>("get_terminal_environment");
+      return result.environment;
+    } catch (_) {
+      return {
+        platform: navigator.platform,
+        arch: "unknown",
+        steamDeckHost: false,
+        cwd: "",
+        shell: "",
+        probes: [],
+        missingTools: [],
+        readyProfiles: [],
+        warnings: [],
+      };
+    }
+  },
+  async getProfiles(): Promise<TerminalProfileAvailability[]> {
+    try {
+      const result = await bridgeInvoke<{ profiles: TerminalProfileAvailability[] }>("get_terminal_environment");
+      return result.profiles ?? [];
+    } catch (_) {
+      return [];
+    }
+  },
+  async getDiagnostics(): Promise<TerminalDiagnosticsReport> {
+    try {
+      return await bridgeInvoke<TerminalDiagnosticsReport>("get_terminal_diagnostics");
+    } catch (_) {
+      const environment = await terminal.getEnvironment();
+      return {
+        sessionCount: 0,
+        activeSessionCount: 0,
+        activeSessions: [],
+        environment,
+        safetyLevel: "unknown" as TerminalCommandSafety["level"],
+        warnings: [],
+      };
+    }
+  },
+  async classifyCommand(command: string, source: "user" | "assistant" | "palette" | "controller" | "history" = "palette") {
+    try {
+      return await bridgeInvoke<TerminalCommandSafety>("classify_terminal_command", { command, source });
+    } catch (_) {
+      return {
+        level: "unknown" as const,
+        reason: "Command classification unavailable.",
+        source,
+      };
+    }
   },
 };
 

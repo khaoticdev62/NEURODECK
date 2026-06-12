@@ -41,6 +41,7 @@ mod self_heal;
 mod services;
 mod sftp;
 mod storage;
+mod terminal;
 pub mod sync;
 mod torrent;
 mod transfer;

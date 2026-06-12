@@ -2,6 +2,7 @@ use crate::bridge::EventEmitter;
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -27,6 +28,26 @@ pub struct PtySession {
     pub writer: Box<dyn Write + Send>,
     pub master: Box<dyn MasterPty + Send>,
     pub spawned_at: Instant,
+    pub created_at: String,
+    pub spawn_token: String,
+    pub shell: String,
+    pub cwd: String,
+    pub title: String,
+    pub profile_id: Option<String>,
+    pub tab_id: Option<String>,
+    pub pane_id: Option<String>,
+    pub size: Arc<Mutex<(u16, u16)>>,
+    pub bytes_in: Arc<AtomicUsize>,
+    pub bytes_out: Arc<AtomicUsize>,
+}
+
+#[derive(Clone, Default)]
+pub struct PtySpawnOptions {
+    pub cwd: Option<std::path::PathBuf>,
+    pub title: Option<String>,
+    pub profile_id: Option<String>,
+    pub tab_id: Option<String>,
+    pub pane_id: Option<String>,
 }
 
 pub struct PtyState {
@@ -144,7 +165,7 @@ fn spawn_pty_with_timeout(
     candidates: Vec<String>,
     args: Option<Vec<String>>,
     shell_name: String,
-    workspace_path: Option<std::path::PathBuf>,
+    cwd: Option<std::path::PathBuf>,
 ) -> Result<SpawnParts, String> {
     let (tx, rx) = std::sync::mpsc::channel::<Result<SpawnParts, String>>();
 
@@ -164,7 +185,7 @@ fn spawn_pty_with_timeout(
             for (i, candidate) in candidates.iter().enumerate() {
                 let mut cmd = CommandBuilder::new(candidate);
 
-                if let Some(ref wp) = workspace_path {
+                if let Some(ref wp) = cwd {
                     cmd.cwd(wp);
                 }
 
@@ -230,10 +251,17 @@ pub fn pty_spawn<E: EventEmitter>(
     args: Option<Vec<String>>,
     broadcaster: E,
     state: Arc<PtyState>,
-    workspace_path: Option<std::path::PathBuf>,
+    options: PtySpawnOptions,
 ) -> Result<(), String> {
     let requested_shell = shell.unwrap_or_default();
     let candidates = build_shell_candidates(&requested_shell);
+    let cwd = options.cwd.clone();
+    let spawn_token = format!(
+        "{}-{}-{}",
+        id,
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default(),
+        std::process::id()
+    );
 
     let remote_tx_snap: Option<tokio::sync::broadcast::Sender<String>> = {
         state
@@ -248,12 +276,17 @@ pub fn pty_spawn<E: EventEmitter>(
         rows,
         candidates,
         args,
-        requested_shell,
-        workspace_path,
+        requested_shell.clone(),
+        cwd.clone(),
     )?;
 
     let broadcaster_clone = broadcaster.clone();
     let id_clone = id.clone();
+    let id_for_cleanup = id.clone();
+    let sessions_for_thread = Arc::clone(&state.sessions);
+    let bytes_out = Arc::new(AtomicUsize::new(0));
+    let bytes_out_thread = Arc::clone(&bytes_out);
+    let spawn_token_for_thread = spawn_token.clone();
 
     std::thread::spawn(move || {
         let mut buffer = [0u8; 4096];
@@ -261,6 +294,7 @@ pub fn pty_spawn<E: EventEmitter>(
             if n == 0 {
                 break;
             }
+            bytes_out_thread.fetch_add(n, Ordering::Relaxed);
             let text = String::from_utf8_lossy(&buffer[..n]).to_string();
             broadcaster_clone.emit(
                 "pty_output",
@@ -282,6 +316,14 @@ pub fn pty_spawn<E: EventEmitter>(
                 reason: "exited".to_string(),
             },
         );
+        let mut sessions = sessions_for_thread.lock().unwrap_or_else(|e| e.into_inner());
+        let should_remove = sessions
+            .get(&id_for_cleanup)
+            .map(|session| session.spawn_token == spawn_token_for_thread)
+            .unwrap_or(false);
+        if should_remove {
+            sessions.remove(&id_for_cleanup);
+        }
     });
 
     let mut sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
@@ -295,6 +337,20 @@ pub fn pty_spawn<E: EventEmitter>(
             writer,
             master,
             spawned_at: Instant::now(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            spawn_token,
+            shell: requested_shell.clone(),
+            cwd: cwd
+                .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
+                .display()
+                .to_string(),
+            title: options.title.unwrap_or_else(|| "Terminal".to_string()),
+            profile_id: options.profile_id,
+            tab_id: options.tab_id,
+            pane_id: options.pane_id,
+            size: Arc::new(Mutex::new((cols, rows))),
+            bytes_in: Arc::new(AtomicUsize::new(0)),
+            bytes_out,
         },
     );
 
@@ -309,6 +365,9 @@ pub fn pty_write(id: String, data: String, state: Arc<PtyState>) -> Result<(), S
             .write_all(data.as_bytes())
             .map_err(to_string_err)?;
         session.writer.flush().map_err(to_string_err)?;
+        session
+            .bytes_in
+            .fetch_add(data.len(), Ordering::Relaxed);
         Ok(())
     } else {
         Err(format!("PTY Session {} not found", id))
@@ -323,6 +382,9 @@ pub fn pty_resize(
 ) -> Result<(), String> {
     let sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get(&id) {
+        if let Ok(mut size) = session.size.lock() {
+            *size = (cols, rows);
+        }
         session
             .master
             .resize(PtySize {
@@ -345,6 +407,10 @@ pub fn pty_kill(id: String, state: Arc<PtyState>) -> Result<(), String> {
     } else {
         Err(format!("PTY Session {} not found", id))
     }
+}
+
+pub fn list_pty_sessions(state: Arc<PtyState>) -> Vec<crate::terminal::TerminalSessionSummary> {
+    crate::terminal::list_terminal_sessions(state)
 }
 
 #[cfg(test)]

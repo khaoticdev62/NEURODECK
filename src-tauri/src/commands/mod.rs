@@ -608,18 +608,42 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("shell")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string());
+            let workspace_path = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app.config.get_resolved_workspace()
+            };
             let args_list = args.get("args").and_then(|v| v.as_array()).map(|arr| {
                 arr.iter()
                     .filter_map(|v| v.as_str().map(|s| s.to_string()))
                     .collect::<Vec<_>>()
             });
+            let cwd = args
+                .get("cwd")
+                .and_then(|v| v.as_str())
+                .map(std::path::PathBuf::from)
+                .or_else(|| workspace_path.clone());
+            let title = args
+                .get("title")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let profile_id = args
+                .get("profileId")
+                .or_else(|| args.get("profile_id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let tab_id = args
+                .get("tabId")
+                .or_else(|| args.get("tab_id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let pane_id = args
+                .get("paneId")
+                .or_else(|| args.get("pane_id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
             let broadcaster = state.broadcaster.clone();
             let pty_state = state.pty.clone();
-            let workspace_path = {
-                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-                app.config.get_resolved_workspace()
-            };
 
             // Emit session created event before the blocking spawn.
             broadcaster.emit(
@@ -643,7 +667,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     args_list,
                     broadcaster.clone(),
                     pty_state,
-                    workspace_path,
+                    crate::pty_manager::PtySpawnOptions {
+                        cwd,
+                        title,
+                        profile_id,
+                        tab_id,
+                        pane_id,
+                    },
                 )
             })
             .await
@@ -723,6 +753,49 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 serde_json::json!({ "id": id, "cols": cols, "rows": rows }),
             );
             Ok(serde_json::json!({ "status": "resized", "id": id, "cols": cols, "rows": rows }))
+        }
+
+        "get_terminal_sessions" => {
+            let sessions = crate::terminal::list_terminal_sessions(state.pty.clone());
+            Ok(serde_json::json!({
+                "sessions": sessions,
+                "count": sessions.len()
+            }))
+        }
+
+        "get_terminal_environment" => {
+            let environment = crate::terminal::detect_terminal_environment();
+            let profiles = crate::terminal::detect_terminal_profiles();
+            Ok(serde_json::json!({
+                "environment": environment,
+                "profiles": profiles
+            }))
+        }
+
+        "get_terminal_diagnostics" => {
+            let environment = crate::terminal::detect_terminal_environment();
+            let sessions = crate::terminal::list_terminal_sessions(state.pty.clone());
+            Ok(serde_json::json!({
+                "session_count": sessions.len(),
+                "active_session_count": sessions.len(),
+                "active_sessions": sessions,
+                "environment": environment,
+                "safety_level": "safe",
+                "warnings": environment.warnings
+            }))
+        }
+
+        "classify_terminal_command" => {
+            let command = args
+                .get("command")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'command'")?;
+            let source = args
+                .get("source")
+                .and_then(|v| v.as_str())
+                .unwrap_or("palette");
+            let verdict = crate::terminal::classify_terminal_command(command, source);
+            Ok(serde_json::to_value(verdict).map_err(|e| e.to_string())?)
         }
 
         // ────────────────────────────────────────────────────────────────────

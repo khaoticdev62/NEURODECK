@@ -13,9 +13,9 @@
   "scripts": {
     "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",
     "build:main": "npx esbuild \"src/**/*.ts\" --platform=node --format=cjs --outdir=electron/dist --outbase=src",
-    "dev": "npm run dev:autokill && node electron/scripts/dev-launcher.js",
+    "dev": "npm run build:main && npm run dev:autokill && node electron/scripts/dev-launcher.js",
     "dev:no-sidecar": "node electron/scripts/dev-launcher.js",
-    "build": "npm run frontend:build && npm run sidecar:build && npx electron-builder --config electron-builder.yml --projectDir .",
+    "build": "npm run frontend:build && npm run sidecar:build && npm run build:main && npx electron-builder --config electron-builder.yml --projectDir .",
     "sidecar:build": "cd src-tauri && cargo build --release",
     "frontend:dev": "npm -w frontend run dev",
     "frontend:build": "npm -w frontend run build",
@@ -112,7 +112,19 @@
     "verify:browser-downloads": "tsx scripts/verify-browser-downloads.ts",
     "verify:no-mock-browser": "tsx scripts/verify-no-mock-browser-data.ts",
     "report:browser": "tsx scripts/export-browser-readiness-report.ts",
-    "production:browser-gate": "npm run verify:browser-tabs && npm run verify:browser-security && npm run verify:browser-sessions && npm run verify:browser-downloads && npm run verify:no-mock-browser && npm run report:browser"
+    "production:browser-gate": "npm run verify:browser-tabs && npm run verify:browser-security && npm run verify:browser-sessions && npm run verify:browser-downloads && npm run verify:no-mock-browser && npm run report:browser",
+    "verify:terminal-system": "tsx scripts/verify-terminal-system.ts",
+    "verify:pty-sessions": "tsx scripts/verify-pty-sessions.ts",
+    "verify:terminal-security": "tsx scripts/verify-terminal-security.ts",
+    "verify:terminal-no-mocks": "tsx scripts/verify-terminal-no-mocks.ts",
+    "verify:terminal-controller": "tsx scripts/verify-terminal-controller-ux.ts",
+    "verify:terminal-command-policy": "tsx scripts/verify-terminal-command-policy.ts",
+    "verify:terminal-self-healing": "tsx scripts/verify-terminal-self-healing.ts",
+    "verify:terminal-profiles": "tsx scripts/verify-terminal-profiles.ts",
+    "verify:terminal-history": "tsx scripts/verify-terminal-history.ts",
+    "verify:terminal-ai-assist": "tsx scripts/verify-terminal-ai-assist.ts",
+    "report:terminal": "tsx scripts/export-terminal-readiness-report.ts",
+    "production:terminal-gate": "npm run verify:terminal-no-mocks && npm run verify:terminal-security && npm run verify:terminal-system && npm run verify:pty-sessions && npm run verify:terminal-command-policy && npm run verify:terminal-profiles && npm run verify:terminal-history && npm run verify:terminal-ai-assist && npm run verify:terminal-controller && npm run verify:terminal-self-healing && npm run report:terminal"
   },
   "devDependencies": {
     "electron": "^36.0.0",
