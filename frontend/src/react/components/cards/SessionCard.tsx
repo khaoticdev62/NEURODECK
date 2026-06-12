@@ -2,6 +2,7 @@ import { MessageSquareText, Trash2, Edit2, Download } from 'lucide-react';
 import { Badge } from '../primitives/Badge';
 import type { SessionNode } from '../../types/neurodeck';
 import { useState } from 'react';
+import { bridgeInvoke, neurodeckApi } from '../../services/bridgeAdapter';
 
 interface SessionCardProps {
   node: SessionNode;
@@ -20,7 +21,6 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
     setLoading(true);
     setError(null);
     try {
-      const { neurodeckApi } = await import('../../services/bridgeAdapter');
       await neurodeckApi.sessions.delete(node.id);
       onRefresh?.();
     } catch (e) {
@@ -35,7 +35,6 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
     setLoading(true);
     setError(null);
     try {
-      const { neurodeckApi } = await import('../../services/bridgeAdapter');
       await neurodeckApi.sessions.rename(node.id, newName);
       onRefresh?.();
     } catch (e) {
@@ -48,7 +47,6 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
     setLoading(true);
     setError(null);
     try {
-      const { bridgeInvoke } = await import('../../services/bridgeAdapter');
       const result = await bridgeInvoke<{ ok?: boolean; file?: string; error?: string }>(
         'export_session_markdown',
         { session_id: node.id }

@@ -233,6 +233,62 @@ contextBridge.exposeInMainWorld('neurodeck', {
       return () => ipcRenderer.removeListener('controller:ide-mode-changed', handler);
     },
   },
+
+  theme: {
+    get: () => ipcRenderer.invoke('theme:get', makeRequest({})),
+    set: (settings) => ipcRenderer.invoke('theme:set', makeRequest({ settings })),
+    list: () => ipcRenderer.invoke('theme:list', makeRequest({})),
+  },
+
+  wallpaper: {
+    get: () => ipcRenderer.invoke('wallpaper:get', makeRequest({})),
+    set: (id) => ipcRenderer.invoke('wallpaper:set', makeRequest({ id })),
+    list: () => ipcRenderer.invoke('wallpaper:list', makeRequest({})),
+  },
+
+  browser: {
+    createTab: (url, profileId) => ipcRenderer.invoke('browser:create-tab', makeRequest({ url, profileId })).then(r => r.ok ? r.data : null),
+    closeTab: (tabId) => ipcRenderer.invoke('browser:close-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    switchTab: (tabId) => ipcRenderer.invoke('browser:switch-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    duplicateTab: (tabId) => ipcRenderer.invoke('browser:duplicate-tab', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    getTabs: () => ipcRenderer.invoke('browser:get-tabs', makeRequest({})).then(r => r.ok ? r.data : []),
+    getActiveTab: () => ipcRenderer.invoke('browser:get-active-tab', makeRequest({})).then(r => r.ok ? r.data : null),
+    navigate: (tabId, url) => ipcRenderer.invoke('browser:navigate', makeRequest({ tabId, url })).then(r => r.ok ? r.data : null),
+    goBack: (tabId) => ipcRenderer.invoke('browser:go-back', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    goForward: (tabId) => ipcRenderer.invoke('browser:go-forward', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    reload: (tabId) => ipcRenderer.invoke('browser:reload', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    stop: (tabId) => ipcRenderer.invoke('browser:stop', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    findInPage: (tabId, text, findNext) => ipcRenderer.invoke('browser:find-in-page', makeRequest({ tabId, text, findNext })).then(r => r.ok ? r.data : null),
+    setZoom: (tabId, zoomFactor) => ipcRenderer.invoke('browser:set-zoom', makeRequest({ tabId, zoomFactor })).then(r => r.ok ? r.data : null),
+    setBounds: (bounds) => ipcRenderer.invoke('browser:set-bounds', makeRequest(bounds)).then(r => r.ok ? r.data : null),
+    hide: () => ipcRenderer.invoke('browser:hide', makeRequest({})).then(r => r.ok ? r.data : null),
+    show: () => ipcRenderer.invoke('browser:show', makeRequest({})).then(r => r.ok ? r.data : null),
+    getProfiles: () => ipcRenderer.invoke('browser:get-profiles', makeRequest({})).then(r => r.ok ? r.data : []),
+    setProfile: (tabId, profileId) => ipcRenderer.invoke('browser:set-profile', makeRequest({ tabId, profileId })).then(r => r.ok ? r.data : null),
+    clearData: (profileId, options) => ipcRenderer.invoke('browser:clear-data', makeRequest({ profileId, options })).then(r => r.ok ? r.data : null),
+    getHistory: (profileId) => ipcRenderer.invoke('browser:get-history', makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    deleteHistory: (id) => ipcRenderer.invoke('browser:delete-history', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    clearHistory: (profileId) => ipcRenderer.invoke('browser:clear-history', makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getBookmarks: (profileId) => ipcRenderer.invoke('browser:get-bookmarks', makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    addBookmark: (url, title, profileId) => ipcRenderer.invoke('browser:add-bookmark', makeRequest({ url, title, profileId })).then(r => r.ok ? r.data : null),
+    deleteBookmark: (id) => ipcRenderer.invoke('browser:delete-bookmark', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    getDownloads: () => ipcRenderer.invoke('browser:get-downloads', makeRequest({})).then(r => r.ok ? r.data : []),
+    cancelDownload: (id) => ipcRenderer.invoke('browser:cancel-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    openDownload: (id) => ipcRenderer.invoke('browser:open-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    showDownload: (id) => ipcRenderer.invoke('browser:show-download', makeRequest({ id })).then(r => r.ok ? r.data : null),
+    getPermissions: () => ipcRenderer.invoke('browser:get-permissions', makeRequest({})).then(r => r.ok ? r.data : []),
+    setPermission: (payload) => ipcRenderer.invoke('browser:set-permission', makeRequest(payload)).then(r => r.ok ? r.data : null),
+    respondToPermission: (requestId, decision) => ipcRenderer.invoke('browser:respond-to-permission', makeRequest({ requestId, decision })).then(r => r.ok ? r.data : null),
+    openDevTools: (tabId) => ipcRenderer.invoke('browser:open-devtools', makeRequest({ tabId })).then(r => r.ok ? r.data : null),
+    getDiagnostics: () => ipcRenderer.invoke('browser:get-diagnostics', makeRequest({})).then(r => r.ok ? r.data : null),
+    normalizeUrl: (url) => ipcRenderer.invoke('browser:normalize-url', makeRequest({ url })).then(r => r.ok ? r.data : { url }),
+    saveToMemory: () => ipcRenderer.invoke('browser-save-to-memory', makeRequest({})).then(r => r.ok ? r.data : null),
+    onBrowserEvent: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('browser-event', handler);
+      return () => ipcRenderer.removeListener('browser-event', handler);
+    },
+  },
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

@@ -1,0 +1,34 @@
+{
+  "profiles": [
+    {
+      "name": "Default",
+      "partition": "persist:nb-default",
+      "persistent": true,
+      "isolatedCookies": true
+    },
+    {
+      "name": "Private",
+      "partition": "nb-private",
+      "persistent": false,
+      "isolatedCookies": true
+    },
+    {
+      "name": "Research",
+      "partition": "persist:nb-research",
+      "persistent": true,
+      "isolatedCookies": true
+    },
+    {
+      "name": "Developer",
+      "partition": "persist:nb-developer",
+      "persistent": true,
+      "isolatedCookies": true
+    },
+    {
+      "name": "Sandbox",
+      "partition": "persist:nb-sandbox",
+      "persistent": true,
+      "isolatedCookies": true
+    }
+  ]
+}

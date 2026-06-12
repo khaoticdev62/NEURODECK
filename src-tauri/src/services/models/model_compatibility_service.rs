@@ -252,8 +252,10 @@ mod tests {
     #[test]
     fn heavy_model_requires_opt_in_when_not_allowed() {
         let profile = sample_profile("a", "deck_heavy", "7b");
-        let mut options = ScoreOptions::default();
-        options.allow_heavy_models = false;
+        let options = ScoreOptions {
+            allow_heavy_models: false,
+            ..Default::default()
+        };
         let score = score_model(&profile, false, &options);
         assert!(score.requires_user_opt_in);
         assert!(score.warnings.iter().any(|w| w.contains("opt-in")));

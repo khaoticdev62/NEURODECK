@@ -1312,6 +1312,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             serde_json::to_value(events).map_err(|e| e.to_string())
         }
 
+        "get_model_support_metrics" => {
+            let metrics = crate::services::models::get_model_support_metrics();
+            serde_json::to_value(metrics).map_err(|e| e.to_string())
+        }
+
         "get_agent_model_policies" => {
             let policies = crate::services::models::get_agent_policies();
             serde_json::to_value(policies).map_err(|e| e.to_string())
@@ -3153,7 +3158,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 args.get("path")
                     .and_then(|v| v.as_str())
-                    .map(|s| std::path::PathBuf::from(s))
+                    .map(std::path::PathBuf::from)
                     .or_else(|| app_state.config.get_resolved_workspace())
                     .ok_or("No workspace path configured or provided")?
             };
@@ -4409,7 +4414,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         )
                         .await;
                     } else {
-                        let _ = crate::scheduler::unregister_task(s, &id, &state.scheduler.job_map)
+                        let _ = crate::scheduler::unregister_task(s, id, &state.scheduler.job_map)
                             .await;
                     }
                 }
@@ -7254,7 +7259,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let _ =
                         db.store_message(id, content.chars().take(4000).collect(), embedding, meta);
                     indexed += 1;
-                    if indexed % 10 == 0 {
+                    if indexed.is_multiple_of(10) {
                         broadcaster.emit(
                             "doc_index_progress",
                             serde_json::json!({ "indexed": indexed, "total": total }),
@@ -7544,7 +7549,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     if entry.path().is_dir() {
                         count += copy_dir(&entry.path(), &dest_path)?;
                     } else {
-                        std::fs::copy(&entry.path(), &dest_path)?;
+                        std::fs::copy(entry.path(), &dest_path)?;
                         count += 1;
                     }
                 }

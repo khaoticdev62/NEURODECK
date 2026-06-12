@@ -1,0 +1,35 @@
+{
+  "inventoryDate": "2026-06-11T22:54:00Z",
+  "files": [
+    {
+      "path": "src-tauri/src/models.rs",
+      "type": "rust_backend",
+      "status": "partially_wired",
+      "issues": ["Pre-React theme models exist, not integrated with React design tokens"]
+    },
+    {
+      "path": "frontend/src/react/types/seed.ts",
+      "type": "typescript_shared",
+      "status": "production_ready",
+      "issues": []
+    },
+    {
+      "path": "frontend/src/react/App.tsx",
+      "type": "typescript_view_entry",
+      "status": "production_ready",
+      "issues": ["Contains inline CSS injection code that needs refactoring to a helper service"]
+    },
+    {
+      "path": "frontend/src/react/features/themes/ThemesView.tsx",
+      "type": "typescript_component",
+      "status": "production_ready",
+      "issues": []
+    },
+    {
+      "path": "frontend/src/react/features/settings/wallpaperManager.ts",
+      "type": "typescript_service",
+      "status": "production_ready",
+      "issues": ["Procedural rendering lacks frame limiting and battery-saver pauses"]
+    }
+  ]
+}

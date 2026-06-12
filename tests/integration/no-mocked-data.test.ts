@@ -22,7 +22,7 @@ const PRODUCTION_STUBS_THAT_MUST_NOT_EXIST = [
 ];
 
 const PRODUCTION_REAL_WIRING_REQUIRED = [
-  { file: 'electron/main.js', pattern: /memory_add_fact/, desc: 'BROWSER_SAVE_TO_MEMORY → sidecar' },
+  { file: 'electron/ipc-handlers.js', pattern: /memory_add_fact/, desc: 'BROWSER_SAVE_TO_MEMORY → sidecar' },
   { file: 'electron/ipc-handlers.js', pattern: /callSidecar\(bridgePort,\s*'set_provider'/, desc: 'settings:set → sidecar set_provider' },
   { file: 'electron/ipc-handlers.js', pattern: /callSidecar\(bridgePort,\s*'set_model'/, desc: 'settings:set → sidecar set_model' },
   { file: 'frontend/src/react/components/cards/SessionCard.tsx', pattern: /export_session_markdown/, desc: 'SessionCard export → real bridge command' },

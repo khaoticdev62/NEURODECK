@@ -1,0 +1,18 @@
+{
+  "inventoryType": "tab-management",
+  "activeTabsCount": 1,
+  "maxTabsSupported": 1,
+  "tabs": [
+    {
+      "id": "single-active-tab",
+      "state": "active",
+      "url": "https://example.com",
+      "pinned": false,
+      "muted": false
+    }
+  ],
+  "findings": [
+    "No multi-tab layout supported in legacy BrowserView.",
+    "Switching tabs destroys/hides the single shared instance."
+  ]
+}

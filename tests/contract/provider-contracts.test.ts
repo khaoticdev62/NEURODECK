@@ -67,4 +67,28 @@ describe('ModelCard data contract', () => {
     expect(src).not.toContain("llama2");
     expect(src).toContain('model');
   });
+
+  it('ModelCard disables selection when policy blocks the model', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/components/cards/ModelCard.tsx'), 'utf8');
+    expect(src).toContain('policyAllowed');
+    expect(src).toContain('Blocked');
+    expect(src).toContain('disabled={policyAllowed === false}');
+  });
+});
+
+describe('SettingsView provider contract', () => {
+  it('no longer hardcodes the provider list', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/features/settings/SettingsView.tsx'), 'utf8');
+    expect(src).not.toMatch(/const providers\s*=/);
+    expect(src).toContain('listProviderRuntimes');
+  });
+});
+
+describe('DiagnosticsView bridge contract', () => {
+  it('uses bridge-backed diagnostics instead of preload API', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/features/diagnostics/DiagnosticsView.tsx'), 'utf8');
+    expect(src).not.toContain('window.neurodeck.diagnostics');
+    expect(src).toContain('neurodeckApi.diagnostics.getConnectionMatrix');
+    expect(src).toContain('neurodeckApi.diagnostics.runHealthProbe');
+  });
 });

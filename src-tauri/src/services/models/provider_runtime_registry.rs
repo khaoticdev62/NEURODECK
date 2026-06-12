@@ -68,6 +68,7 @@ pub struct ProviderSelfHealing {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 struct ProviderRuntimeRegistry {
     runtimes: Vec<ProviderRuntimeProfile>,
 }
@@ -144,6 +145,7 @@ pub fn resolve_base_url(runtime: &ProviderRuntimeProfile, config: &LlmConfig) ->
         })
 }
 
+#[allow(dead_code)]
 pub fn list_local_runtimes() -> Vec<ProviderRuntimeProfile> {
     load_provider_runtimes()
         .into_iter()
@@ -167,8 +169,10 @@ mod tests {
     #[test]
     fn resolve_base_url_uses_config_for_ollama() {
         let runtime = runtime_by_id("ollama-local").expect("ollama runtime");
-        let mut config = LlmConfig::default();
-        config.ollama_base_url = "http://deck:11434".to_string();
+        let config = LlmConfig {
+            ollama_base_url: "http://deck:11434".to_string(),
+            ..Default::default()
+        };
         assert_eq!(
             resolve_base_url(&runtime, &config),
             Some("http://deck:11434".to_string())

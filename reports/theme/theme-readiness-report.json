@@ -1,0 +1,439 @@
+{
+  "generatedAt": "2026-06-12T03:05:47.266Z",
+  "version": "1.0.0",
+  "themes": [
+    {
+      "id": "blacksite_prime",
+      "name": "Blacksite Prime",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "tactical_glass_ultra",
+      "name": "Tactical Glass Ultra",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "ghost_terminal_pro",
+      "name": "Ghost Terminal Pro",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "hologrid_command",
+      "name": "Hologrid Command",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "minimal_ops",
+      "name": "Minimal Ops",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "night_watch_elite",
+      "name": "Night Watch Elite",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "broadcast_studio",
+      "name": "Broadcast Studio",
+      "category": "core",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "oled_void",
+      "name": "OLED Void",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "aurora_deck",
+      "name": "Aurora Deck",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "deep_signal",
+      "name": "Deep Signal",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "obsidian_bloom",
+      "name": "Obsidian Bloom",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "plasma_grid",
+      "name": "Plasma Grid",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "indigo_command",
+      "name": "Indigo Command",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "crimson_debug",
+      "name": "Crimson Debug",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "emerald_matrix",
+      "name": "Emerald Matrix",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "solar_flare_ops",
+      "name": "Solar Flare Ops",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "moonlight_console",
+      "name": "Moonlight Console",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "blueprint_engine",
+      "name": "Blueprint Engine",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "carbon_fiber_hud",
+      "name": "Carbon Fiber HUD",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "sapphire_kernel",
+      "name": "Sapphire Kernel",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "violet_storm",
+      "name": "Violet Storm",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "amber_terminal",
+      "name": "Amber Terminal",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "iceglass_control",
+      "name": "Iceglass Control",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "cybernetic_garden",
+      "name": "Cybernetic Garden",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "neural_velvet",
+      "name": "Neural Velvet",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "deckos_native",
+      "name": "DeckOS Native",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "monochrome_pro",
+      "name": "Monochrome Pro",
+      "category": "premium",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "high_contrast_command",
+      "name": "High Contrast Command",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "low_vision_tactical",
+      "name": "Low Vision Tactical",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "colorblind_safe_ops",
+      "name": "Colorblind Safe Ops",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "reduced_motion_glass",
+      "name": "Reduced Motion Glass",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "dyslexia_focus_theme",
+      "name": "Dyslexia Focus",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "warm_eye_saver",
+      "name": "Warm Eye Saver",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "oled_pure_black",
+      "name": "OLED Pure Black",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "lcd_balanced_contrast",
+      "name": "LCD Balanced Contrast",
+      "category": "accessibility",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "syntax_forge",
+      "name": "Syntax Forge",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "code_noir",
+      "name": "Code Noir",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "compiler_heat",
+      "name": "Compiler Heat",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "debug_console_theme",
+      "name": "Debug Console",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "stack_trace",
+      "name": "Stack Trace",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "git_diff_theme",
+      "name": "Git Diff",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "lsp_focus",
+      "name": "LSP Focus",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    },
+    {
+      "id": "terminal_native_theme",
+      "name": "Terminal Native",
+      "category": "developer",
+      "performanceTier": "balanced",
+      "contrastRatio": 4.5
+    }
+  ],
+  "wallpapers": [
+    {
+      "id": "neural_aurora",
+      "name": "Neural Aurora",
+      "renderer": "css_gradient",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "tactical_signal_grid",
+      "name": "Tactical Signal Grid",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "oled_starfield",
+      "name": "OLED Starfield",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "hologrid_drift",
+      "name": "Hologrid Drift",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "command_waveform",
+      "name": "Command Waveform",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "deep_space_radar",
+      "name": "Deep Space Radar",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "liquid_glass_flow",
+      "name": "Liquid Glass Flow",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "terminal_rainfield",
+      "name": "Terminal Rainfield",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "memory_constellation",
+      "name": "Memory Constellation",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "agent_pulse_network",
+      "name": "Agent Pulse Network",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "kernel_heatmap",
+      "name": "Kernel Heatmap",
+      "renderer": "css_gradient",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "audio_spectrum_glass",
+      "name": "Audio Spectrum",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "code_stream",
+      "name": "Code Stream",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "telemetry_nebula",
+      "name": "Telemetry Nebula",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "blueprint_motion",
+      "name": "Blueprint Motion",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "blacksite_sweep",
+      "name": "Blacksite Sweep",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "ghost_particles",
+      "name": "Ghost Particles",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "sapphire_dataflow",
+      "name": "Sapphire Dataflow",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "violet_stormfront",
+      "name": "Violet Stormfront",
+      "renderer": "css_gradient",
+      "performanceTier": "balanced"
+    },
+    {
+      "id": "solar_circuit",
+      "name": "Solar Circuit",
+      "renderer": "canvas_2d",
+      "performanceTier": "balanced"
+    }
+  ],
+  "ipcAlignment": {
+    "themeHandlersRegistered": true,
+    "wallpaperHandlersRegistered": true
+  },
+  "summary": {
+    "totalThemes": 43,
+    "totalWallpapers": 20,
+    "a11yHighContrastThemes": 0,
+    "burnInAwareWallpapers": 1
+  }
+}

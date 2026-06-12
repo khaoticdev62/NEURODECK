@@ -41,7 +41,7 @@ describe('Memory storage contract', () => {
   });
 
   it('BROWSER_SAVE_TO_MEMORY hits sidecar memory_add_fact', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'electron/main.js'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'electron/ipc-handlers.js'), 'utf8');
     expect(src).toContain('memory_add_fact');
   });
 });

@@ -32,17 +32,25 @@
 | 6.6 | Workflow Execution Engine (Story 4.3) | v1.8.0-Ptah | ✅ Complete |
 | 6.7 | Plugin Permission Gating (Story 4.4) | v1.8.0-Ptah | ✅ Complete |
 | 7.0 | PromptFlow Integration (Production Code Prompt System) | v1.8.0-Ptah | ✅ Complete |
-| 7.1 | Production Package Hardening | v1.8.0-Ptah | 🔄 In Progress |
+| 7.1 | Production Package Hardening | v1.8.0-Ptah | ✅ Complete |
+| 8.0 | Model Runtime Provider Stack (Phases 8–10) | v1.8.0-Ptah | ✅ Complete |
 
 ---
 
 ## Current State
 
 ### Completed (v1.8.0-ptah)
-- 111 Rust unit tests passing
-- 10 integration tests passing
-- Bridge server: ~297/300 commands wired (>99% coverage)
-- 3 commands intentionally unavailable: `set_kiosk_mode`, `start_remote_server`, `stop_remote_server`
+- 143+ Rust unit tests passing; 10 integration tests passing
+- Bridge server: ~298/300 commands wired (>99% coverage)
+- 1 command intentionally unavailable: `set_kiosk_mode`
+- Model runtime/provider stack delivered:
+  - `list_provider_runtimes`, `discover_installed_models`, `get_provider_health`, `run_model_probe`
+  - `get_model_compatibility_scores`, `pick_best_local_model`
+  - `get_agent_model_policies`, `get_allowed_models_for_agent`, `validate_agent_model`
+  - `evaluate_recovery`, `record_recovery_event`, `get_recovery_event_log`, `get_model_support_metrics`
+- SettingsView uses registry-driven provider list; DiagnosticsView uses bridge-backed connection matrix
+- Dead-code verification works without the `fallow` CLI using committed baseline
+- Root `npm run frontend:test` fixed via bash wrapper to avoid Vitest setup-file context bug
 - Frontend: 15 radial segments, 19+ views, Command Palette, all modals with FocusTrap
 - CSS: Tactical Glass theme system, no horizontal overflow at 1280×800
 - Security: 9 capabilities, deny-by-default, 3 built-in profiles

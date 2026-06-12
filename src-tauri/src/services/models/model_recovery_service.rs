@@ -201,6 +201,13 @@ pub fn get_recovery_event_log() -> Vec<RecoveryEvent> {
 }
 
 pub fn record_recovery_event(event: RecoveryEvent) -> Result<(), String> {
+    log::info!(
+        "recovery_event runtime={} state={} action={} allowed={}",
+        event.runtime_id,
+        event.state,
+        event.action,
+        event.allowed
+    );
     let mut events = load_events();
     events.push(event);
     // Keep last 500 events to prevent unbounded growth.
@@ -208,6 +215,49 @@ pub fn record_recovery_event(event: RecoveryEvent) -> Result<(), String> {
         events.drain(0..events.len() - 500);
     }
     save_events(&events)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ModelSupportMetrics {
+    pub runtime_count: usize,
+    pub model_count: usize,
+    pub policy_block_count: u32,
+    pub recovery_attempt_count: u32,
+    pub last_recovery_action: Option<String>,
+    pub last_successful_health_check: std::collections::HashMap<String, String>,
+}
+
+pub fn get_model_support_metrics() -> ModelSupportMetrics {
+    let runtimes = super::provider_runtime_registry::load_provider_runtimes();
+    let events = load_events();
+
+    let policy_block_count = events
+        .iter()
+        .filter(|e| !e.allowed && e.action == "block_chat")
+        .count() as u32;
+    let recovery_attempt_count = events
+        .iter()
+        .filter(|e| e.allowed && !e.action.is_empty() && e.action != "block_chat")
+        .count() as u32;
+    let last_recovery_action = events.last().map(|e| e.action.clone());
+
+    let mut last_successful_health_check = std::collections::HashMap::new();
+    for e in events.iter().rev() {
+        if e.allowed && !last_successful_health_check.contains_key(&e.runtime_id) {
+            last_successful_health_check.insert(e.runtime_id.clone(), e.timestamp.clone());
+        }
+    }
+
+    let model_count = crate::model_registry::load_supported_models().len();
+
+    ModelSupportMetrics {
+        runtime_count: runtimes.len(),
+        model_count,
+        policy_block_count,
+        recovery_attempt_count,
+        last_recovery_action,
+        last_successful_health_check,
+    }
 }
 
 fn current_failover_chain_length(runtime_id: &str, _model_id: Option<&str>) -> usize {
@@ -227,6 +277,7 @@ pub async fn evaluate_recovery(
     config: &LlmConfig,
 ) -> RecoveryEvaluation {
     let state = state_from_str(state_str);
+    log::info!("evaluate_recovery runtime={} model={:?} state={}", runtime_id, model_id, state_str);
     let mut evidence = Vec::new();
     evidence.push(format!("evaluating recovery for {} state={}", runtime_id, state_str));
 
@@ -343,9 +394,11 @@ pub async fn evaluate_recovery(
         if chain_len >= MAX_FAILOVER_CHAIN_LENGTH {
             evidence.push("max failover chain length reached".into());
         } else {
-            let mut options = super::model_compatibility_service::ScoreOptions::default();
-            options.battery_mode = true;
-            options.allow_heavy_models = false;
+            let options = super::model_compatibility_service::ScoreOptions {
+                battery_mode: true,
+                allow_heavy_models: false,
+                ..Default::default()
+            };
 
             let best: Option<super::model_compatibility_service::ModelCompatibilityScore> = if let Some(agent_id) = agent_id {
                 super::agent_policy_service::pick_best_model_for_agent(agent_id, &options, config)
@@ -387,9 +440,11 @@ pub async fn evaluate_recovery(
             | ProviderConnectionState::Offline
             | ProviderConnectionState::Error
     ) {
-        let mut options = super::model_compatibility_service::ScoreOptions::default();
-        options.battery_mode = true;
-        options.allow_heavy_models = false;
+        let options = super::model_compatibility_service::ScoreOptions {
+            battery_mode: true,
+            allow_heavy_models: false,
+            ..Default::default()
+        };
         let scored = super::model_compatibility_service::get_model_compatibility_scores(&options, config).await;
         let current_model_id = model_id.unwrap_or_default().to_string();
         let allowed_ids: Option<HashSet<String>> = agent_id.map(|aid| {

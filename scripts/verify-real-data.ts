@@ -57,11 +57,11 @@ if (fs.existsSync(ipcHandlersPath)) {
 }
 
 // 5. Verify BROWSER_SAVE_TO_MEMORY is real
-const mainJsPath = path.join(ROOT, 'electron', 'main.js');
-if (fs.existsSync(mainJsPath)) {
-  const src = fs.readFileSync(mainJsPath, 'utf8');
-  check('main.js', 'BROWSER_SAVE_TO_MEMORY hits real sidecar memory_add_fact', src.includes('memory_add_fact'));
-  check('main.js', 'BROWSER_SAVE_TO_MEMORY not a stub', !src.includes("note: 'Not yet implemented'"));
+const browserHandlersPath = path.join(ROOT, 'electron', 'ipc-handlers.js');
+if (fs.existsSync(browserHandlersPath)) {
+  const src = fs.readFileSync(browserHandlersPath, 'utf8');
+  check('ipc-handlers.js', 'BROWSER_SAVE_TO_MEMORY hits real sidecar memory_add_fact', src.includes('memory_add_fact'));
+  check('ipc-handlers.js', 'BROWSER_SAVE_TO_MEMORY not a stub', !src.includes("note: 'Not yet implemented'"));
 }
 
 // Output

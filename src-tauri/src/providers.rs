@@ -98,6 +98,16 @@ pub(crate) fn provider_for(
                 api_key,
             ))
         }
+        "lmstudio" => Arc::new(OpenAICompatProvider::new(
+            config.llm.lm_studio_base_url.clone(),
+            model.to_string(),
+            String::new(),
+        )),
+        "llama_cpp" => Arc::new(OpenAICompatProvider::new(
+            config.llm.llamacpp_base_url.clone(),
+            model.to_string(),
+            String::new(),
+        )),
         _ => Arc::new(OllamaProvider::new(
             model.to_string(),
             config.llm.ollama_base_url.clone(),

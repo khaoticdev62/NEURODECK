@@ -6,6 +6,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     globals: false,
     environment: 'node',
+    pool: 'vmThreads',
     testTimeout: 10000,
     reporters: ['verbose'],
   },

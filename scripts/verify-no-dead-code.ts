@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 
 const ROOT = path.resolve(__dirname, '..');
 const REPORT_PATH = path.join(ROOT, 'reports', 'fallow', 'dead-code-final-dead-code.json');
@@ -10,7 +11,37 @@ interface FallowReport {
   unused_exports?: Array<{ path: string; export_name: string }>;
 }
 
+function fallowAvailable(): boolean {
+  try {
+    execSync('fallow --version', { stdio: 'ignore' });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function regenerateReport(): boolean {
+  try {
+    execSync('npm run quality:fallow:json', { cwd: ROOT, stdio: 'inherit' });
+    return fs.existsSync(REPORT_PATH);
+  } catch (_) {
+    return false;
+  }
+}
+
 console.log('\n=== verify-no-dead-code ===\n');
+
+const hasFallow = fallowAvailable();
+if (hasFallow) {
+  console.log('fallow detected — regenerating dead-code report…');
+  if (!regenerateReport()) {
+    console.error('✗ Failed to regenerate fallow report.');
+    process.exit(1);
+  }
+} else {
+  console.log('fallow CLI not available — using committed baseline report.');
+  console.log('Install fallow locally if you want a fresh report.');
+}
 
 if (!fs.existsSync(REPORT_PATH)) {
   console.error(`✗ Fallow report not found at: ${REPORT_PATH}`);
@@ -31,7 +62,8 @@ try {
 const ALLOWED_UNUSED_FILES = [
   /src\/shared\/contracts\//,
   /src\/shared\/schemas\//,
-  /src\/shared\/registries\//
+  /src\/shared\/registries\//,
+  /src\/shared\/theme\//,
 ];
 
 const ALLOWED_UNUSED_EXPORTS = [

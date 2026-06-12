@@ -46,6 +46,8 @@ import { RecoveryView } from './features/recovery/RecoveryView';
 import { SecurityView } from './features/security/SecurityView';
 import { ThemesView } from './features/themes/ThemesView';
 import { WorkspaceView } from './features/workspace/WorkspaceView';
+import { LiveWallpaperHost } from './features/wallpapers/LiveWallpaperHost';
+
 import { neurodeckApi } from './services/bridgeAdapter';
 import { useNeuroDeckState } from './state/useNeuroDeckState';
 import type { AIMessage, ExportSessionPayload, NeuroDeckAppActions, SavedSessionPayload, ViewId } from './types/neurodeck';
@@ -202,6 +204,37 @@ export default function App() {
     dispatch({ type: 'set-busy', label: null });
   }, [dispatch, state.activeProject?.path]);
 
+  const refreshModelScores = useCallback(async () => {
+    try {
+      const scores = await neurodeckApi.models.getCompatibilityScores({});
+      dispatch({ type: 'set-model-scores', scores });
+    } catch (e) {
+      dispatch({ type: 'set-model-scores', scores: [] });
+    }
+  }, [dispatch]);
+
+  const refreshAgentPolicies = useCallback(async () => {
+    try {
+      const policies = await neurodeckApi.models.getAgentModelPolicies();
+      dispatch({ type: 'set-agent-policies', policies });
+    } catch (e) {
+      dispatch({ type: 'set-agent-policies', policies: [] });
+    }
+  }, [dispatch]);
+
+  const refreshRecoveryEvents = useCallback(async () => {
+    try {
+      const events = await neurodeckApi.models.getRecoveryEventLog();
+      dispatch({ type: 'set-recovery-events', events });
+    } catch (e) {
+      dispatch({ type: 'set-recovery-events', events: [] });
+    }
+  }, [dispatch]);
+
+  const validateAgentModel = useCallback(async (agentId: string, modelId: string) => {
+    return neurodeckApi.models.validateAgentModel(agentId, modelId);
+  }, []);
+
   const detectModels = useCallback(async () => {
     dispatch({ type: 'set-busy', label: 'Detecting local model runtimes…' });
     const response = await neurodeckApi.models.detectLocal();
@@ -214,15 +247,17 @@ export default function App() {
       dispatch({ type: 'merge-detected-models', models: response.detection.discoveredModels });
       dispatch({ type: 'set-selected-model', id: response.detection.discoveredModels[0].id });
     }
+    await Promise.all([refreshModelScores(), refreshAgentPolicies()]);
     dispatch({ type: 'set-busy', label: null });
-  }, [dispatch]);
+  }, [dispatch, refreshModelScores, refreshAgentPolicies]);
 
   const checkAiHealth = useCallback(async () => {
     dispatch({ type: 'set-busy', label: 'Checking local AI runtimes…' });
     const health = await neurodeckApi.ai.health();
     dispatch({ type: 'set-ai-health', health });
+    await refreshRecoveryEvents();
     dispatch({ type: 'set-busy', label: null });
-  }, [dispatch]);
+  }, [dispatch, refreshRecoveryEvents]);
 
   const runAssistant = useCallback(async (overridePrompt?: string) => {
     const prompt = (overridePrompt ?? state.composerValue).trim();
@@ -230,6 +265,29 @@ export default function App() {
       dispatch({ type: 'set-error', error: { title: 'Prompt is empty', message: 'Type a task or choose a prompt template before running the assistant.', action: 'Try the Command Palette templates.' } });
       return;
     }
+
+    // Enforce agent/model policy for the active agent (default 'general').
+    if (state.selectedProvider !== 'offline-draft' && state.selectedModelId) {
+      try {
+        const allowance = await neurodeckApi.models.validateAgentModel(state.activeAgentId, state.selectedModelId);
+        if (!allowance.allowed) {
+          await neurodeckApi.models.recordRecoveryEvent({
+            runtimeId: state.selectedProvider,
+            modelId: state.selectedModelId,
+            state: 'blocked',
+            action: 'policy_block',
+            allowed: false,
+            reason: allowance.reason,
+          });
+          await refreshRecoveryEvents();
+          dispatch({ type: 'set-error', error: { title: 'Model blocked by agent policy', message: allowance.reason, action: 'Open Model Manager to switch to an allowed model, or change the active agent.' } });
+          return;
+        }
+      } catch (_) {
+        // Policy service unavailable — proceed rather than hard-block.
+      }
+    }
+
     const userMessage = makeUserMessage(prompt);
     dispatch({ type: 'append-message', message: userMessage });
     dispatch({ type: 'set-busy', label: `${state.selectedProvider} is generating…` });
@@ -270,12 +328,37 @@ export default function App() {
         },
       }
     );
-  }, [dispatch, modelName, selectedBackendModel, state.activeProject?.name, state.composerValue, state.messages, state.projectContext, state.selectedPersona, state.selectedProvider]);
+  }, [dispatch, modelName, selectedBackendModel, state.activeAgentId, state.activeProject?.name, state.composerValue, state.messages, state.projectContext, state.selectedModelId, state.selectedPersona, state.selectedProvider, refreshRecoveryEvents]);
 
   const runAgent = useCallback(async (agentId: string, overridePrompt?: string) => {
     const agent = state.agents.find((item) => item.id === agentId);
     if (!agent) return;
+    dispatch({ type: 'set-active-agent', id: agent.id });
     const prompt = (overridePrompt || state.composerValue || agent.task || `Run ${agent.name} review.`).trim();
+
+    // Enforce agent/model policy before invoking the agent.
+    if (state.selectedProvider !== 'offline-draft' && state.selectedModelId) {
+      try {
+        const allowance = await neurodeckApi.models.validateAgentModel(agent.id, state.selectedModelId);
+        if (!allowance.allowed) {
+          await neurodeckApi.models.recordRecoveryEvent({
+            runtimeId: state.selectedProvider,
+            modelId: state.selectedModelId,
+            state: 'blocked',
+            action: 'policy_block',
+            allowed: false,
+            reason: allowance.reason,
+          });
+          await refreshRecoveryEvents();
+          dispatch({ type: 'set-agent-status', id: agent.id, status: 'blocked', lastAction: allowance.reason, task: 'Policy block' });
+          dispatch({ type: 'set-error', error: { title: `${agent.name} model blocked by policy`, message: allowance.reason, action: 'Switch to an allowed model in Model Manager.' } });
+          return;
+        }
+      } catch (_) {
+        // Policy service unavailable — proceed rather than hard-block.
+      }
+    }
+
     dispatch({ type: 'set-agent-status', id: agent.id, status: 'thinking', lastAction: 'Agent execution started', task: prompt.slice(0, 100) });
     dispatch({ type: 'set-busy', label: `${agent.name} agent running…` });
     const response = await neurodeckApi.agents.run({
@@ -297,7 +380,7 @@ export default function App() {
     dispatch({ type: 'set-agent-status', id: agent.id, status: 'complete', lastAction: 'Agent execution complete', task: 'Ready' });
     dispatch({ type: 'append-message', message: { id: `agent-${response.run.id}`, role: 'assistant', content: response.run.result ?? 'Agent run complete.', createdAt: new Date().toISOString(), provider: response.run.provider, model: response.run.model } });
     dispatch({ type: 'set-busy', label: null });
-  }, [dispatch, modelName, state.agents, state.composerValue, state.projectContext, state.selectedPersona, state.selectedProvider]);
+  }, [dispatch, modelName, state.agents, state.activeAgentId, state.composerValue, state.projectContext, state.selectedModelId, state.selectedPersona, state.selectedProvider, refreshRecoveryEvents]);
 
   const refreshDiagnostics = useCallback(async () => {
     dispatch({ type: 'set-busy', label: 'Refreshing diagnostics…' });
@@ -434,10 +517,10 @@ export default function App() {
     addMemoryFact,
     deleteMemory,
     toggleMemoryPin,
-    refreshModelScores: async () => {},
-    refreshAgentPolicies: async () => {},
-    refreshRecoveryEvents: async () => {},
-    validateAgentModel: async () => ({ allowed: true, reason: 'not implemented' } as any),
+    refreshModelScores,
+    refreshAgentPolicies,
+    refreshRecoveryEvents,
+    validateAgentModel,
   };
 
   const openSettings = useCallback((panel = 'general') => {
@@ -562,32 +645,9 @@ export default function App() {
     const shell = shellRef.current;
     if (!shell) return;
 
-    // Helper: hex → "r, g, b"
-    const hexToRgb = (hex: string) => {
-      const clean = hex.replace('#', '');
-      const bigint = parseInt(clean, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `${r}, ${g}, ${b}`;
-    };
-
-    shell.style.setProperty('--nd-bg', activeTheme.background);
-    shell.style.setProperty('--nd-surface', activeTheme.surface);
-    shell.style.setProperty('--nd-surface-raised', activeTheme.surfaceRaised);
-    shell.style.setProperty('--nd-accent', activeTheme.accent);
-    shell.style.setProperty('--nd-accent-rgb', hexToRgb(activeTheme.accent));
-    shell.style.setProperty('--nd-success', activeTheme.success);
-    shell.style.setProperty('--nd-warning', activeTheme.warning);
-    shell.style.setProperty('--nd-danger', activeTheme.danger);
-    shell.style.setProperty('--nd-text', activeTheme.text);
-    shell.style.setProperty('--nd-text-muted', activeTheme.muted);
-    shell.style.setProperty('--nd-glow', activeTheme.glow);
     shell.style.setProperty('--font-body', activeFont.family);
-    shell.style.setProperty('--tw-shadow-color', activeTheme.glow);
-
     document.documentElement.style.setProperty('--font-body', activeFont.family);
-  }, [activeTheme, activeFont]);
+  }, [activeFont]);
 
   const renderView = (id: ViewId, node: ReactNode) => (
     <div data-testid={`view-${id}`} className="view-content active h-full min-h-0 animate-view-enter">
@@ -663,6 +723,7 @@ export default function App() {
         <img id="app-background-image" className="app-background-image" alt="" src="" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
         <canvas id="app-background-canvas" className="app-background-canvas" />
         <div id="app-background-css" className="app-background-css" />
+        <LiveWallpaperHost />
       </div>
       <TitleBar
         modelName={modelName}
@@ -742,8 +803,9 @@ export default function App() {
             {state.activeView === 'graph' && renderView('graph', <GraphView />)}
             {state.activeView === 'scheduler' && renderView('scheduler', <SchedulerView />)}
             {state.activeView === 'orchestrator' && renderView('orchestrator', <OrchestratorView />)}
+            {state.activeView === 'settings'    && renderView('settings',    <SettingsView    state={state} dispatch={dispatch} actions={appActions} />)}
             {state.activeView === 'security'    && renderView('security',    <SecurityView    state={state} actions={appActions} />)}
-            {state.activeView === 'themes'      && renderView('themes',      <ThemesView      state={state} dispatch={dispatch} />)}
+            {state.activeView === 'themes'      && renderView('themes',      <ThemesView />)}
             {state.activeView === 'exports'     && renderView('exports',     <ExportsView     state={state} actions={appActions} />)}
             {state.activeView === 'maintenance' && renderView('maintenance', <MaintenanceView state={state} actions={appActions} />)}
             {state.activeView === 'recovery'    && renderView('recovery',    <RecoveryView    state={state} dispatch={dispatch} actions={appActions} />)}

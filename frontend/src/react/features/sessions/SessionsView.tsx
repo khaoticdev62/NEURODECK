@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { FileDown, FileJson, RefreshCw, Archive } from 'lucide-react';
 import { Panel } from '../../components/primitives/Panel';
 import { SessionCard } from '../../components/cards/SessionCard';
+import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { NeuroDeckAppActions, NeuroDeckState, SessionNode } from '../../types/neurodeck';
 
 export function SessionsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
@@ -13,7 +14,6 @@ export function SessionsView({ state, actions }: { state: NeuroDeckState; action
     setLoading(true);
     setError(null);
     try {
-      const { neurodeckApi } = await import('../../services/bridgeAdapter');
       const meta = await neurodeckApi.sessions.listMeta();
       setSessionsList(meta as SessionNode[]);
     } catch (e) {

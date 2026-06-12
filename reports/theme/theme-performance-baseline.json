@@ -1,0 +1,25 @@
+{
+  "performanceBaselines": [
+    {
+      "platform": "steamdeck_lcd",
+      "targetFps": 60,
+      "measuredFpsBaseline": 58.2,
+      "maxCpuPercentLimit": 5.0,
+      "gpuUtilPercentLimit": 15.0
+    },
+    {
+      "platform": "steamdeck_oled",
+      "targetFps": 90,
+      "measuredFpsBaseline": 88.5,
+      "maxCpuPercentLimit": 4.5,
+      "gpuUtilPercentLimit": 12.0
+    },
+    {
+      "platform": "desktop_1080p",
+      "targetFps": 120,
+      "measuredFpsBaseline": 119.8,
+      "maxCpuPercentLimit": 2.0,
+      "gpuUtilPercentLimit": 5.0
+    }
+  ]
+}

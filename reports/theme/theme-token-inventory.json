@@ -1,0 +1,38 @@
+{
+  "themeTokenMetadata": {
+    "version": "1.0.0",
+    "requiredCategories": [
+      "color.surface",
+      "color.text",
+      "color.accent",
+      "color.state",
+      "color.border",
+      "color.syntax",
+      "color.telemetry",
+      "typography.fontFamily",
+      "typography.size",
+      "typography.weight",
+      "spacing",
+      "radius",
+      "shadow",
+      "glass",
+      "motion",
+      "wallpaper"
+    ]
+  },
+  "existingCssVariables": [
+    "--nd-bg",
+    "--nd-surface",
+    "--nd-surface-raised",
+    "--nd-accent",
+    "--nd-accent-rgb",
+    "--nd-success",
+    "--nd-warning",
+    "--nd-danger",
+    "--nd-text",
+    "--nd-text-muted",
+    "--nd-glow",
+    "--font-body",
+    "--tw-shadow-color"
+  ]
+}

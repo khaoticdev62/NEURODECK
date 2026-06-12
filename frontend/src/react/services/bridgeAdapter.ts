@@ -12,6 +12,8 @@ import type {
   AIChatResponse,
   AIProvider,
   AIProviderHealth,
+  AIRunStatus,
+  AgentModelPolicy,
   AgentRunRequest,
   AgentRunResponse,
   DiagnosticsPayload,
@@ -27,7 +29,7 @@ import type {
   DiagnosticsBundleResponse,
   CliCommandDef,
 } from '../types/neurodeck';
-import type { ProviderRuntimeProfile, AgentModelPolicy } from '../../shared/contracts/models.contracts';
+import type { ProviderRuntimeProfile } from '../../shared/contracts/models.contracts';
 
 const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || '9477', 10);
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
@@ -392,7 +394,7 @@ function mapRecoveryEvent(e: BackendRecoveryEvent): RecoveryEvent {
   };
 }
 
-function runtimeTypeToProvider(runtimeType: string): AIProvider {
+export function runtimeTypeToProvider(runtimeType: string): AIProvider {
   switch (runtimeType) {
     case 'ollama':
       return 'ollama';
@@ -506,7 +508,7 @@ const offlineHealthFallback: AIProviderHealth[] = [
   { provider: 'offline-draft', label: 'Backend unreachable', available: false, endpoint: '', detail: 'Offline fallback: cannot determine provider status. Start a local runtime or check the bridge connection.', checkedAt: new Date().toISOString() },
 ];
 
-function offlineDraftFallback(payload: AIChatPayload): AIChatResponse {
+function browserDraft(payload: AIChatPayload): AIChatResponse {
   const projectLine = payload.projectContext
     ? `Attached context: ${payload.projectContext.summary}`
     : 'No project context attached yet.';
@@ -583,7 +585,7 @@ const ai = {
         payload.model === 'NeuroDraft' ? undefined : payload.model
       );
       if (!res.ok) {
-        return offlineDraftFallback(payload);
+        return browserDraft(payload);
       }
       const response = res.data;
       return {
@@ -625,7 +627,7 @@ const ai = {
         },
       };
     } catch (e) {
-      return offlineDraftFallback(payload);
+      return browserDraft(payload);
     }
   },
   async chatStream(payload: AIChatPayload, callbacks: ChatStreamCallbacks): Promise<void> {
@@ -633,7 +635,7 @@ const ai = {
 
     // For offline-draft, bypass the bridge and return the draft immediately
     if (payload.provider === 'offline-draft') {
-      const draft = offlineDraftFallback(payload);
+      const draft = browserDraft(payload);
       if (draft.ok) onToken(draft.message.content);
       onDone();
       return;
@@ -722,7 +724,7 @@ const agents = {
         id: `agent-${Date.now()}`,
         agentId: payload.agentId,
         agentName: payload.agentName,
-        status: (result.error ? 'failed' : 'complete') as import('../types/neurodeck').AIRunStatus,
+        status: (result.error ? 'failed' : 'complete') as AIRunStatus,
         startedAt: new Date().toISOString(),
         finishedAt: new Date().toISOString(),
         provider: payload.provider,
@@ -892,6 +894,63 @@ const offlineDiagnosticsFallback: DiagnosticsPayload = {
   logCount: 0,
 };
 
+export type ConnectionMatrixEntry = {
+  id: string;
+  label: string;
+  category: 'api' | 'ipc' | 'lsp' | 'storage' | 'plugin' | 'system';
+  state: 'connected' | 'offline' | 'warning' | 'error' | 'unprobed';
+  latencyMs: number | null;
+  requestCount: number;
+  successCount: number;
+  evidence: ConnectionEvidence[];
+};
+
+export type ConnectionEvidence = {
+  requestId: string;
+  timestamp: string;
+  status: 'passed' | 'failed' | 'skipped';
+  summary: string;
+  durationMs: number;
+  bytesSent: number;
+  bytesReceived: number;
+  realTransportUsed: boolean;
+};
+
+function categoryForRuntimeType(type: string): ConnectionMatrixEntry['category'] {
+  switch (type) {
+    case 'ollama':
+    case 'lm_studio':
+    case 'llama_cpp_server':
+    case 'openai_compatible_local':
+    case 'openai_compatible_remote':
+    case 'custom_http_provider':
+      return 'api';
+    default:
+      return 'system';
+  }
+}
+
+function stateFromHealth(state?: string): ConnectionMatrixEntry['state'] {
+  switch (state) {
+    case 'connected':
+      return 'connected';
+    case 'degraded':
+    case 'recovering':
+      return 'warning';
+    case 'offline':
+    case 'missing_binary':
+    case 'missing_model':
+      return 'offline';
+    case 'error':
+    case 'crashed':
+    case 'auth_failed':
+    case 'rate_limited':
+      return 'error';
+    default:
+      return 'unprobed';
+  }
+}
+
 const diagnostics = {
   async get(): Promise<DiagnosticsPayload> {
     try {
@@ -947,6 +1006,85 @@ const diagnostics = {
       return { ok: false, error: String(e) };
     }
   },
+
+  async getConnectionMatrix(): Promise<{ ok: boolean; data: ConnectionMatrixEntry[] }> {
+    try {
+      const health = await bridgeInvoke<ProviderHealth[]>('get_provider_health');
+      const data: ConnectionMatrixEntry[] = health.map((h) => {
+        const latency = Number(h.latency_ms) || 0;
+        const connected = h.state === 'connected';
+        const evidence: ConnectionEvidence = {
+          requestId: `probe-${h.runtime_id}`,
+          timestamp: h.checked_at || new Date().toISOString(),
+          status: connected ? 'passed' : 'failed',
+          summary: connected
+            ? `${h.label || h.runtime_id} responded with ${h.models.length} model(s)`
+            : h.error || `${h.label || h.runtime_id} is ${h.state}`,
+          durationMs: latency,
+          bytesSent: 0,
+          bytesReceived: 0,
+          realTransportUsed: true,
+        };
+        return {
+          id: h.runtime_id,
+          label: h.label || h.runtime_id,
+          category: categoryForRuntimeType(h.runtime_type),
+          state: stateFromHealth(h.state),
+          latencyMs: latency || null,
+          requestCount: 1,
+          successCount: connected ? 1 : 0,
+          evidence: [evidence],
+        };
+      });
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, data: [] };
+    }
+  },
+
+  async runHealthProbe(id?: string): Promise<{ ok: boolean; data: ConnectionMatrixEntry[] }> {
+    try {
+      const health = await bridgeInvoke<ProviderHealth[]>('get_provider_health', id ? { runtimeId: id } : {});
+      const data: ConnectionMatrixEntry[] = health.map((h) => {
+        const latency = Number(h.latency_ms) || 0;
+        const connected = h.state === 'connected';
+        return {
+          id: h.runtime_id,
+          label: h.label || h.runtime_id,
+          category: categoryForRuntimeType(h.runtime_type),
+          state: stateFromHealth(h.state),
+          latencyMs: latency || null,
+          requestCount: 1,
+          successCount: connected ? 1 : 0,
+          evidence: [
+            {
+              requestId: `probe-${h.runtime_id}-${Date.now()}`,
+              timestamp: h.checked_at || new Date().toISOString(),
+              status: connected ? 'passed' : 'failed',
+              summary: connected
+                ? `${h.label || h.runtime_id} probe passed`
+                : h.error || `${h.label || h.runtime_id} probe failed (${h.state})`,
+              durationMs: latency,
+              bytesSent: 0,
+              bytesReceived: 0,
+              realTransportUsed: true,
+            },
+          ],
+        };
+      });
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, data: [] };
+    }
+  },
+
+  subscribeConnectionEvents(_callback: (data: { id: string; connection: ConnectionMatrixEntry }) => void): () => void {
+    // The bridge currently does not emit real-time connection events over the
+    // WebSocket. Returning a no-op keeps the UI stable; callers refresh via
+    // getConnectionMatrix / runHealthProbe.
+    return () => {};
+  },
+
   async memoryUsage(): Promise<{ rss_mb: number }> {
     try {
       return await bridgeInvoke<{ rss_mb: number }>('get_memory_usage');

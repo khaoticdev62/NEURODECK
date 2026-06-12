@@ -21,7 +21,7 @@
     "frontend:build": "npm -w frontend run build",
     "frontend:preview": "npm -w frontend run preview",
     "frontend:typecheck": "npm -w frontend run typecheck",
-    "frontend:test": "npm -w frontend run test",
+    "frontend:test": "bash -c \"cd frontend && node ../node_modules/vitest/dist/cli.js run\"",
     "rust:check": "cargo check",
     "rust:clippy": "cargo clippy",
     "rust:build": "cargo build",
@@ -105,7 +105,14 @@
     "verify:live-wallpapers": "tsx scripts/verify-live-wallpapers.ts",
     "verify:no-mock-theme-data": "tsx scripts/verify-no-mock-theme-data.ts",
     "report:theme": "tsx scripts/export-theme-readiness-report.ts",
-    "production:theme-gate": "npm run verify:theme-system && npm run verify:theme-tokens && npm run verify:theme-token-usage && npm run verify:theme-accessibility && npm run verify:theme-performance && npm run verify:live-wallpapers && npm run verify:no-mock-theme-data && npm run report:theme"
+    "production:theme-gate": "npm run verify:theme-system && npm run verify:theme-tokens && npm run verify:theme-token-usage && npm run verify:theme-accessibility && npm run verify:theme-performance && npm run verify:live-wallpapers && npm run verify:no-mock-theme-data && npm run report:theme",
+    "verify:browser-tabs": "tsx scripts/verify-browser-tabs.ts",
+    "verify:browser-security": "tsx scripts/verify-browser-security.ts",
+    "verify:browser-sessions": "tsx scripts/verify-browser-sessions.ts",
+    "verify:browser-downloads": "tsx scripts/verify-browser-downloads.ts",
+    "verify:no-mock-browser": "tsx scripts/verify-no-mock-browser-data.ts",
+    "report:browser": "tsx scripts/export-browser-readiness-report.ts",
+    "production:browser-gate": "npm run verify:browser-tabs && npm run verify:browser-security && npm run verify:browser-sessions && npm run verify:browser-downloads && npm run verify:no-mock-browser && npm run report:browser"
   },
   "devDependencies": {
     "electron": "^36.0.0",

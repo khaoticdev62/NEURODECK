@@ -159,7 +159,7 @@ pub async fn check_provider_health(
         .endpoints
         .list_models
         .as_deref()
-        .or_else(|| runtime.endpoints.health.as_deref())
+        .or(runtime.endpoints.health.as_deref())
         .unwrap_or("/");
     let url = format!("{}{}", base_url.trim_end_matches('/'), endpoint);
 

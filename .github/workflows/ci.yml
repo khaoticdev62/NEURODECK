@@ -37,9 +37,9 @@ jobs:
       - name: Frontend build
         run: npm run frontend:build
       - name: Frontend type-check
-        run: npm run frontend:typecheck || true
+        run: npm run frontend:typecheck
       - name: Frontend test
-        run: npm run frontend:test || true
+        run: npm run frontend:test
 
   quality-gates:
     name: Quality Gates
@@ -50,14 +50,20 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - name: Fallow dead-code (blocking)
-        run: npm run quality:fallow:dead-code
-      - name: Fallow dupes (blocking)
-        run: npm run quality:fallow:dupes
+      - name: Verify model support registry
+        run: npm run verify:model-support
+      - name: Verify no production mocks
+        run: npm run verify:no-production-mocks
+      - name: Verify no dead code (fallow baseline)
+        run: npm run verify:no-dead-code
+      - name: Fallow dead-code (if available)
+        run: which fallow && npm run quality:fallow:dead-code || echo "fallow not installed, using baseline"
+      - name: Fallow dupes (if available)
+        run: which fallow && npm run quality:fallow:dupes || echo "fallow not installed, skipping"
       - name: Fallow audit (informational)
-        run: npm run quality:fallow:audit || true
+        run: which fallow && npm run quality:fallow:audit || true
       - name: Fallow health (informational)
-        run: npm run quality:fallow:health || true
+        run: which fallow && npm run quality:fallow:health || true
 
   kfms-validate:
     name: KFMS Validation

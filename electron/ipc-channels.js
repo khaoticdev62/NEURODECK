@@ -63,6 +63,14 @@ const IPC = Object.freeze({
   // Ad blocker
   BROWSER_ADBLOCK_TOGGLE: 'browser-adblock-toggle',
   BROWSER_ADBLOCK_STATUS: 'browser-adblock-status',
+
+  // Theme & Wallpaper Overhaul (New)
+  THEME_GET: "theme:get",
+  THEME_SET: "theme:set",
+  THEME_LIST: "theme:list",
+  WALLPAPER_GET: "wallpaper:get",
+  WALLPAPER_SET: "wallpaper:set",
+  WALLPAPER_LIST: "wallpaper:list"
 });
 
 /** All channels that may be handled in main.js. */

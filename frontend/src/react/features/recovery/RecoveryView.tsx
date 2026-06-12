@@ -1,5 +1,5 @@
 import type { Dispatch } from 'react';
-import { AlertTriangle, CheckCircle2, RefreshCcw, RotateCcw, ShieldAlert, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, History, RefreshCcw, RotateCcw, ShieldAlert, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
@@ -74,6 +74,14 @@ export function RecoveryView({ state, dispatch, actions }: { state: NeuroDeckSta
               onClick={() => void actions.checkAiHealth()}
             />
             <RecoveryAction
+              icon={History}
+              label="Refresh Recovery Events"
+              description="Load the latest self-healing event log from the bridge."
+              badge="Safe"
+              badgeTone="success"
+              onClick={() => void actions.refreshRecoveryEvents()}
+            />
+            <RecoveryAction
               icon={Trash2}
               label="Clear Local State"
               description="Wipe all session history, memories, and preferences. OS keychain keys are preserved."
@@ -85,29 +93,30 @@ export function RecoveryView({ state, dispatch, actions }: { state: NeuroDeckSta
         </Panel>
       </div>
 
-      {/* Diagnostics Log */}
-      <Panel eyebrow="Event Log" title="Recent Events" className="min-h-0 overflow-hidden">
+      {/* Recovery Event Log */}
+      <Panel eyebrow="Event Log" title="Self-Healing Events" className="min-h-0 overflow-hidden">
         <div className="h-full overflow-y-auto p-4 scrollbar-thin">
-          {state.diagnosticLogs.length > 0 ? (
+          {state.recoveryEvents.length > 0 ? (
             <div className="space-y-2">
-              {state.diagnosticLogs.slice(-30).reverse().map((log) => (
-                <div key={log.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">
+              {state.recoveryEvents.slice().reverse().map((event) => (
+                <div key={event.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
-                    <Badge
-                      tone={log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'neutral'}
-                    >
-                      {log.level}
-                    </Badge>
-                    <span className="text-[10px] text-nd-text-muted/60">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <Badge tone={event.allowed ? 'success' : 'danger'}>{event.allowed ? 'allowed' : 'blocked'}</Badge>
+                    <span className="text-[10px] text-nd-text-muted/60">{new Date(event.timestamp).toLocaleString()}</span>
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-nd-text/80">{log.message}</p>
+                  <p className="mt-1 text-xs font-medium text-nd-text/80">
+                    {event.action} · {event.runtimeId}
+                    {event.modelId && ` · ${event.modelId}`}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-5 text-nd-text-muted">{event.reason}</p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-nd-text-muted/50">state: {event.state}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="flex flex-col items-center py-10 text-center">
               <ShieldAlert className="h-8 w-8 text-nd-text-muted/40" />
-              <p className="mt-3 text-sm text-nd-text-muted">No events logged yet.</p>
+              <p className="mt-3 text-sm text-nd-text-muted">No recovery events logged yet.</p>
             </div>
           )}
         </div>

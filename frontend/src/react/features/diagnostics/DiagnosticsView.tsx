@@ -22,6 +22,8 @@ import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
 import { DiagnosticsPanel } from '../../components/systems/DiagnosticsPanel';
 import type { DiagnosticsCheck } from '../../components/systems/DiagnosticsPanel';
+import { neurodeckApi } from '../../services/bridgeAdapter';
+import type { ConnectionMatrixEntry } from '../../services/bridgeAdapter';
 import type { DiagnosticLog, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
@@ -31,44 +33,52 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
   const [globalProbing, setGlobalProbing] = useState(false);
 
-  // Sync with main process connection health matrix
+  // Sync with bridge-backed connection health matrix
   useEffect(() => {
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
-    // Fetch initial health matrix
-    neurodeck.diagnostics.getConnectionMatrix().then((res: any) => {
-      if (res.ok) {
-        setMatrix(res.data || []);
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await neurodeckApi.diagnostics.getConnectionMatrix();
+        if (!cancelled && res.ok) {
+          setMatrix(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to get connection matrix:', err);
       }
-    }).catch((err: any) => {
-      console.error('Failed to get connection matrix:', err);
-    });
-
-    // Subscribe to live connection updates
-    const unsubscribe = neurodeck.diagnostics.subscribeConnectionEvents((data: any) => {
-      if (data && data.id && data.connection) {
-        setMatrix(prev => prev.map(c => c.id === data.id ? data.connection : c));
-      }
-    });
-
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
+    }
+    void load();
+    return () => { cancelled = true; };
   }, []);
+
+  const mergeProbeResults = (incoming: ConnectionMatrixEntry[]) => {
+    setMatrix(prev => {
+      const byId = new Map(prev.map(c => [c.id, c]));
+      for (const conn of incoming) {
+        const existing = byId.get(conn.id);
+        if (existing) {
+          const totalRequests = existing.requestCount + conn.requestCount;
+          const totalSuccess = existing.successCount + conn.successCount;
+          byId.set(conn.id, {
+            ...conn,
+            requestCount: totalRequests,
+            successCount: totalSuccess,
+            evidence: [...existing.evidence, ...conn.evidence].slice(-20),
+          });
+        } else {
+          byId.set(conn.id, conn);
+        }
+      }
+      return Array.from(byId.values());
+    });
+  };
 
   const runSingleProbe = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card selection toggle
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
     setIsProbing(prev => ({ ...prev, [id]: true }));
     try {
-      const res = await neurodeck.diagnostics.runHealthProbe(id);
+      const res = await neurodeckApi.diagnostics.runHealthProbe(id);
       if (res.ok) {
-        setMatrix(res.data || []);
+        mergeProbeResults(res.data || []);
       }
     } catch (err) {
       console.error(`Probe run failed for ${id}:`, err);
@@ -78,9 +88,6 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
   };
 
   const runAllProbes = async () => {
-    const neurodeck = (window as any).neurodeck;
-    if (!neurodeck?.diagnostics) return;
-
     setGlobalProbing(true);
     // Optimistically set all to probing status
     const allIds = matrix.map(c => c.id);
@@ -88,9 +95,9 @@ export function DiagnosticsView({ state, actions }: { state: NeuroDeckState; act
     setIsProbing(initialProbing);
 
     try {
-      const res = await neurodeck.diagnostics.runHealthProbe();
+      const res = await neurodeckApi.diagnostics.runHealthProbe();
       if (res.ok) {
-        setMatrix(res.data || []);
+        mergeProbeResults(res.data || []);
       }
     } catch (err) {
       console.error('Running all health probes failed:', err);

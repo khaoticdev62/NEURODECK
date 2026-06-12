@@ -417,10 +417,16 @@ npm run --prefix frontend build       # Vite build only
 cd src-tauri && cargo check           # Fast type-check
 cd src-tauri && cargo clippy          # Lint
 cd src-tauri && cargo build           # Debug build (~2min first time due to mlua vendored)
-cd src-tauri && cargo test --lib      # Unit tests (111 tests)
+cd src-tauri && cargo test --lib      # Unit tests (140+ tests)
 cd src-tauri && cargo test --tests    # Integration tests (10 tests)
 # Windows note: `cargo test --workspace --all-targets` may hit PDB limit (LNK1318).
 # Use `cargo test --lib` or individual `--test <name>` instead.
+
+# Frontend tests
+npm run frontend:test                 # Runs `cd frontend && node ../node_modules/vitest/dist/cli.js run`
+# Direct `npx vitest run` or `npm -w frontend run test` can hit a Vitest
+# setup-file suite-context bug when started from the workspace root; the
+# root script uses a bash wrapper to avoid this.
 
 # KFMS
 ./scripts/kfms/khaotic-init.sh stamp     # Re-stamp build block after changes

@@ -1,0 +1,27 @@
+name: Model Support Report
+
+on:
+  workflow_dispatch:
+
+jobs:
+  report:
+    name: Generate Model Support Readiness Report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm -w frontend ci
+      - name: Validate model support registry
+        run: npm run verify:model-support
+      - name: Export readiness report
+        run: npm run verify:report
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-readiness-report
+          path: reports/backend-readiness-report.md
+          retention-days: 14

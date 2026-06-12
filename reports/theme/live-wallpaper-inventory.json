@@ -1,0 +1,14 @@
+{
+  "liveBackgrounds": [
+    { "id": "matrix", "name": "Matrix Rain", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "starfield", "name": "Starfield Warp", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "particles", "name": "Quantum Net", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "grid", "name": "Synthwave Grid", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "radar", "name": "Tactical HUD", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "circuit", "name": "Cyber Circuit", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "wave", "name": "Digital Wave", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "ascii", "name": "Console Stream", "renderer": "canvas_2d", "performanceTier": "balanced" },
+    { "id": "css-nebula", "name": "Cosmic Nebula", "renderer": "css_gradient", "performanceTier": "battery_saver" },
+    { "id": "css-aurora", "name": "Aurora Borealis", "renderer": "css_gradient", "performanceTier": "battery_saver" }
+  ]
+}

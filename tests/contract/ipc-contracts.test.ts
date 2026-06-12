@@ -45,16 +45,16 @@ describe('IPC guards', () => {
   });
 });
 
-describe('Main process handlers', () => {
-  const main = readFile('electron/main.js');
+describe('Browser save handler', () => {
+  const handlers = readFile('electron/ipc-handlers.js');
 
   it('BROWSER_SAVE_TO_MEMORY is no longer a stub', () => {
-    expect(main).not.toContain("Not yet implemented");
-    expect(main).toContain('memory_add_fact');
+    expect(handlers).not.toContain("Not yet implemented");
+    expect(handlers).toContain('memory_add_fact');
   });
 
   it('BROWSER_SAVE_TO_MEMORY uses real executeJavaScript', () => {
-    expect(main).toContain('executeJavaScript');
+    expect(handlers).toContain('executeJavaScript');
   });
 });
 

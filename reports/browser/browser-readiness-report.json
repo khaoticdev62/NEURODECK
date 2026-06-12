@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-06-12T04:03:36.808Z",
+  "version": "1.8.0",
+  "services": [
+    {
+      "name": "browserBookmarkService.ts",
+      "exists": true,
+      "sizeBytes": 2977
+    },
+    {
+      "name": "browserCrashRecoveryService.ts",
+      "exists": true,
+      "sizeBytes": 1531
+    },
+    {
+      "name": "browserDiagnosticsService.ts",
+      "exists": true,
+      "sizeBytes": 1837
+    },
+    {
+      "name": "browserDownloadService.ts",
+      "exists": true,
+      "sizeBytes": 2007
+    },
+    {
+      "name": "browserFindInPageService.ts",
+      "exists": true,
+      "sizeBytes": 752
+    },
+    {
+      "name": "browserHistoryService.ts",
+      "exists": true,
+      "sizeBytes": 2625
+    },
+    {
+      "name": "browserNavigationService.ts",
+      "exists": true,
+      "sizeBytes": 2685
+    },
+    {
+      "name": "browserPermissionService.ts",
+      "exists": true,
+      "sizeBytes": 2815
+    },
+    {
+      "name": "browserProfileService.ts",
+      "exists": true,
+      "sizeBytes": 3344
+    },
+    {
+      "name": "browserSearchEngineService.ts",
+      "exists": true,
+      "sizeBytes": 743
+    },
+    {
+      "name": "browserSecurityService.ts",
+      "exists": true,
+      "sizeBytes": 2180
+    },
+    {
+      "name": "browserSessionService.ts",
+      "exists": true,
+      "sizeBytes": 1944
+    },
+    {
+      "name": "browserTabManager.ts",
+      "exists": true,
+      "sizeBytes": 3367
+    },
+    {
+      "name": "browserUrlNormalizer.ts",
+      "exists": true,
+      "sizeBytes": 1068
+    },
+    {
+      "name": "browserViewManager.ts",
+      "exists": true,
+      "sizeBytes": 11153
+    }
+  ],
+  "verifications": [
+    {
+      "script": "verify-browser-tabs.ts",
+      "passed": true,
+      "output": "[INFO] --- BrowserTabManager File Existence ---\n[PASS] browserTabManager.js found\n[INFO] --- Loading BrowserTabManager ---\n[PASS] BrowserTabManager loaded successfully\n[INFO] --- Testing Tab Creation ---\n[PASS] createTab returns a valid tab with correct URL and profile\n[PASS] listTabs count increased after tab creation\n[INFO] --- Testing Active Tab State ---\n[PASS] getActiveTabId returns the newly created tab ID\n[INFO] --- Testing Tab Switching ---\n[PASS] switchTab updates the active tab ID\n[INFO] --- Testing Tab Duplication ---\n[PASS] duplicateTab clones the URL and title correctly\n[INFO] --- Testing Tab Closure ---\n[PASS] closeTab decreases the total tab count\n\n=== verify-browser-tabs: 8/8 passed ==="
+    },
+    {
+      "script": "verify-browser-security.ts",
+      "passed": true,
+      "output": "[INFO] --- BrowserSecurityService File Existence ---\n[PASS] browserSecurityService.js found\n[INFO] --- Loading BrowserSecurityService ---\n[PASS] BrowserSecurityService loaded successfully\n[INFO] --- Testing URL Validation Policy ---\n[PASS] URL allowed as expected: \"https://google.com\"\n[PASS] URL allowed as expected: \"http://example.com/index.html\"\n[PASS] URL allowed as expected: \"https://github.com/trending?since=daily\"\n[PASS] URL blocked as expected: \"file:///etc/passwd\" (Reason: Local filesystem access (file://) is blocked for security reasons.)\n[PASS] URL blocked as expected: \"chrome://settings\" (Reason: Protocol scheme \"chrome:\" is not supported.)\n[PASS] URL blocked as expected: \"javascript:alert(1)\" (Reason: Protocol scheme \"javascript:\" is blocked for security reasons.)\n[PASS] URL blocked as expected: \"neurodeck://privileged-api\" (Reason: Protocol scheme \"neurodeck:\" is not supported.)\n[INFO] --- Auditing WebPreferences Security Guidelines ---\n[PASS] Safe webPreferences audit succeeds with zero issues\n[PASS] Unsafe webPreferences audit flags all four violations (Node, Context Isolation, Sandbox, Web Security)\n\n=== verify-browser-security: 11/11 passed ==="
+    },
+    {
+      "script": "verify-browser-sessions.ts",
+      "passed": true,
+      "output": "[INFO] --- File Existence Checks ---\n[PASS] Profile and Session services files exist\n[INFO] --- Loading Services ---\n[PASS] Services loaded successfully\n[INFO] --- Checking Profile Partitions ---\n[PASS] Found isolation profile: \"default\" (partition: persist:nb-default)\n[PASS] Found isolation profile: \"private\" (partition: nb-private)\n[PASS] Found isolation profile: \"research\" (partition: persist:nb-research)\n[PASS] Found isolation profile: \"developer\" (partition: persist:nb-developer)\n[PASS] Found isolation profile: \"sandbox\" (partition: persist:nb-sandbox)\n[INFO] --- Verifying Session Sandbox Isolation ---\n[PASS] getSession returned valid partition/session structure for profile: \"default\"\n[PASS] getSession returned valid partition/session structure for profile: \"private\"\n[PASS] getSession returned valid partition/session structure for profile: \"research\"\n[PASS] getSession returned valid partition/session structure for profile: \"developer\"\n[PASS] getSession returned valid partition/session structure for profile: \"sandbox\"\n[INFO] --- Verifying Data Cleansing Strategy ---\n\n=== verify-browser-sessions: 12/12 passed ==="
+    },
+    {
+      "script": "verify-browser-downloads.ts",
+      "passed": true,
+      "output": "[INFO] --- BrowserDownloadService File Existence ---\n[PASS] browserDownloadService.js found\n[INFO] --- Loading BrowserDownloadService ---\n[PASS] BrowserDownloadService loaded successfully\n[INFO] --- Testing Filename Path-Traversal Protection ---\n[PASS] Sanitization matches expected: \"../../etc/passwd\" → \"passwd\"\n[PASS] Sanitization matches expected: \"some\\dir\\file.txt\" → \"file.txt\"\n[PASS] Sanitization matches expected: \"normal-file.pdf\" → \"normal-file.pdf\"\n[PASS] Sanitization matches expected: \"file\u0000name.exe\" → \"file_name.exe\"\n[INFO] --- Testing High-Risk Extension Evaluation ---\n[PASS] High-risk extension correctly identified: \"program.exe\"\n[PASS] High-risk extension correctly identified: \"script.sh\"\n[PASS] High-risk extension correctly identified: \"installer.msi\"\n[PASS] High-risk extension correctly identified: \"setup.bat\"\n[PASS] High-risk extension correctly identified: \"macro.cmd\"\n[PASS] High-risk extension correctly identified: \"payload.js\"\n[PASS] Low-risk extension correctly cleared: \"document.pdf\"\n[PASS] Low-risk extension correctly cleared: \"image.png\"\n[PASS] Low-risk extension correctly cleared: \"archive.zip\"\n[PASS] Low-risk extension correctly cleared: \"text.txt\"\n[PASS] Low-risk extension correctly cleared: \"music.mp3\"\n\n=== verify-browser-downloads: 17/17 passed ==="
+    },
+    {
+      "script": "verify-no-mock-browser-data.ts",
+      "passed": true,
+      "output": "[INFO] --- Audit Bookmarks Service ---\n[PASS] No hardcoded mock bookmarks found in bookmark service code.\n[INFO] --- Audit History Service ---\n[PASS] No hardcoded mock history entries found in history service code.\n\n=== verify-no-mock-browser-data: 2/2 passed ==="
+    }
+  ],
+  "compliance": {
+    "sandboxIsolation": true,
+    "nodeIntegrationDisabled": true,
+    "contextIsolationEnabled": true,
+    "webSecurityEnabled": true,
+    "zeroMockCompliance": true
+  }
+}

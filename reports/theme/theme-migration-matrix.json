@@ -1,0 +1,46 @@
+{
+  "mappings": [
+    {
+      "legacyProperty": "background",
+      "newSemanticToken": "color.surface.app",
+      "type": "CSS_VAR",
+      "variableName": "--nd-bg"
+    },
+    {
+      "legacyProperty": "surface",
+      "newSemanticToken": "color.surface.base",
+      "type": "CSS_VAR",
+      "variableName": "--nd-surface"
+    },
+    {
+      "legacyProperty": "surfaceRaised",
+      "newSemanticToken": "color.surface.raised",
+      "type": "CSS_VAR",
+      "variableName": "--nd-surface-raised"
+    },
+    {
+      "legacyProperty": "accent",
+      "newSemanticToken": "color.accent.primary",
+      "type": "CSS_VAR",
+      "variableName": "--nd-accent"
+    },
+    {
+      "legacyProperty": "text",
+      "newSemanticToken": "color.text.primary",
+      "type": "CSS_VAR",
+      "variableName": "--nd-text"
+    },
+    {
+      "legacyProperty": "muted",
+      "newSemanticToken": "color.text.muted",
+      "type": "CSS_VAR",
+      "variableName": "--nd-text-muted"
+    },
+    {
+      "legacyProperty": "glow",
+      "newSemanticToken": "color.accent.glow",
+      "type": "CSS_VAR",
+      "variableName": "--nd-glow"
+    }
+  ]
+}

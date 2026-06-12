@@ -32,6 +32,7 @@ export function TitleBar({
   onOpenSettings,
 }: TopStatusBarProps) {
   const contextColor = contextUsed > 80 ? 'danger' : contextUsed > 60 ? 'warning' : 'success';
+  const usableModels = models.filter((m) => m.status !== 'disabled' && m.status !== 'missing');
   const [modelOpen, setModelOpen] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -52,11 +53,11 @@ export function TitleBar({
   // Focus the active model when dropdown opens
   useEffect(() => {
     if (!modelOpen) return;
-    const idx = models.findIndex((m) => m.id === selectedModelId);
+    const idx = usableModels.findIndex((m) => m.id === selectedModelId);
     const startIdx = idx >= 0 ? idx : 0;
     setFocusedIdx(startIdx);
     requestAnimationFrame(() => optionRefs.current[startIdx]?.focus());
-  }, [modelOpen, models, selectedModelId]);
+  }, [modelOpen, usableModels, selectedModelId]);
 
   const handleDropdownKey = useCallback((e: React.KeyboardEvent) => {
     if (!modelOpen) return;
@@ -69,7 +70,7 @@ export function TitleBar({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setFocusedIdx((prev) => {
-        const next = (prev + 1) % models.length;
+        const next = (prev + 1) % usableModels.length;
         optionRefs.current[next]?.focus();
         return next;
       });
@@ -78,7 +79,7 @@ export function TitleBar({
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       setFocusedIdx((prev) => {
-        const next = (prev - 1 + models.length) % models.length;
+        const next = (prev - 1 + usableModels.length) % usableModels.length;
         optionRefs.current[next]?.focus();
         return next;
       });
@@ -92,11 +93,11 @@ export function TitleBar({
     }
     if (e.key === 'End') {
       e.preventDefault();
-      const last = models.length - 1;
+      const last = usableModels.length - 1;
       setFocusedIdx(last);
       optionRefs.current[last]?.focus();
     }
-  }, [modelOpen, models.length]);
+  }, [modelOpen, usableModels.length]);
 
   return (
     <header
@@ -151,10 +152,12 @@ export function TitleBar({
                 <X className="h-3 w-3 nd-icon-svg" />
               </button>
             </div>
-            {models.length === 0 && (
-              <div className="px-3 py-2 text-xs text-nd-text-muted" role="option" aria-selected={false}>No models available</div>
+            {usableModels.length === 0 && (
+              <div className="px-3 py-2 text-xs text-nd-text-muted" role="option" aria-selected={false}>
+                No usable models detected. Start a local runtime (Ollama, LM Studio, etc.) or switch to Offline Draft.
+              </div>
             )}
-            {models.map((model, idx) => (
+            {usableModels.map((model, idx) => (
               <button
                 key={model.id}
                 id={`model-option-${idx}`}

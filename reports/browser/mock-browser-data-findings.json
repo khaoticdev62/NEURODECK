@@ -1,0 +1,10 @@
+{
+  "audit": "No Mock Browser Data Audit",
+  "violationsFound": 0,
+  "exemptions": [
+    {
+      "file": "tests/unit/browser/browserTabManager.test.ts",
+      "reason": "Authorized test runner mocks"
+    }
+  ]
+}

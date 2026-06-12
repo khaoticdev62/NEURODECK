@@ -62,6 +62,45 @@ declare global {
         securityReport: () => Promise<SecurityReport>;
         exportBundle: () => Promise<DiagnosticsBundleResponse>;
       };
+      browser: {
+        createTab: (url?: string, profileId?: string) => Promise<any>;
+        closeTab: (tabId: string) => Promise<{ success: boolean }>;
+        switchTab: (tabId: string) => Promise<{ success: boolean }>;
+        duplicateTab: (tabId: string) => Promise<any>;
+        getTabs: () => Promise<any[]>;
+        getActiveTab: () => Promise<any>;
+        navigate: (tabId: string, url: string) => Promise<any>;
+        goBack: (tabId: string) => Promise<{ success: boolean }>;
+        goForward: (tabId: string) => Promise<{ success: boolean }>;
+        reload: (tabId: string) => Promise<{ success: boolean }>;
+        stop: (tabId: string) => Promise<{ success: boolean }>;
+        findInPage: (tabId: string, text: string, findNext?: boolean) => Promise<{ success: boolean }>;
+        setZoom: (tabId: string, zoomFactor: number) => Promise<{ success: boolean }>;
+        setBounds: (bounds: { x: number; y: number; width: number; height: number }) => Promise<{ success: boolean }>;
+        hide: () => Promise<{ success: boolean }>;
+        show: () => Promise<{ success: boolean }>;
+        getProfiles: () => Promise<any[]>;
+        setProfile: (tabId: string, profileId: string) => Promise<{ success: boolean }>;
+        clearData: (profileId: string, options: any) => Promise<{ success: boolean }>;
+        getHistory: (profileId?: string) => Promise<any[]>;
+        deleteHistory: (id: string) => Promise<{ success: boolean }>;
+        clearHistory: (profileId?: string) => Promise<{ success: boolean }>;
+        getBookmarks: (profileId?: string) => Promise<any[]>;
+        addBookmark: (url: string, title: string, profileId: string) => Promise<{ success: boolean; bookmark?: any }>;
+        deleteBookmark: (id: string) => Promise<{ success: boolean }>;
+        getDownloads: () => Promise<any[]>;
+        cancelDownload: (id: string) => Promise<{ success: boolean }>;
+        openDownload: (id: string) => Promise<{ success: boolean }>;
+        showDownload: (id: string) => Promise<{ success: boolean }>;
+        getPermissions: () => Promise<any[]>;
+        setPermission: (payload: any) => Promise<{ success: boolean }>;
+        respondToPermission: (requestId: string, decision: string) => Promise<{ success: boolean }>;
+        openDevTools: (tabId: string) => Promise<{ success: boolean }>;
+        getDiagnostics: () => Promise<any>;
+        normalizeUrl: (url: string) => Promise<{ url: string }>;
+        saveToMemory: () => Promise<any>;
+        onBrowserEvent: (callback: (data: { event: string; payload: Record<string, unknown> }) => void) => () => void;
+      };
     };
   }
 }
