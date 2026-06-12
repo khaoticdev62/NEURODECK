@@ -45,6 +45,46 @@
   --nd-spacing-item: 8px;
   --nd-font-ui: 14px;
 
+  /* Motion — theme injector overrides these at runtime */
+  --nd-transition-fast: 150ms;
+  --nd-transition-normal: 250ms;
+  --nd-transition-slow: 400ms;
+  --nd-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --nd-ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --nd-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Extended surface tokens — defaults before injector fires */
+  --nd-surface-sunken: #07090C;
+  --nd-surface-overlay: rgba(10,13,16,0.85);
+  --nd-surface-modal: #0F1419;
+  --nd-surface-glass: rgba(17,22,28,0.72);
+  --nd-surface-sidebar: #0D1117;
+  --nd-surface-panel: #11161C;
+  --nd-surface-card: #131A22;
+  --nd-surface-input: #0A0D10;
+  --nd-surface-tooltip: #1C242E;
+
+  /* Extended text tokens */
+  --nd-text-secondary: #B8CCE0;
+  --nd-text-tertiary: #6E8499;
+  --nd-text-inverse: #0A0D10;
+  --nd-text-link: #5EEBFF;
+  --nd-text-code: #A6E3A1;
+  --nd-text-command: #CBA6F7;
+  --nd-text-danger: #FF5A6A;
+  --nd-text-warning: #FFC857;
+  --nd-text-success: #7CFFB2;
+  --nd-text-info: #89DCEB;
+
+  /* Extended accent tokens */
+  --nd-accent-secondary: #89DCEB;
+  --nd-accent-tertiary: #CBA6F7;
+  --nd-accent-soft: rgba(94, 235, 255, 0.08);
+  --nd-accent-strong: #0ACFD8;
+
+  /* Extended border tokens */
+  --nd-border-strong: color-mix(in srgb, var(--nd-text-muted) 28%, transparent);
+
   /* Z-index scale */
   --z-wallpaper: 0;
   --z-base: 1;

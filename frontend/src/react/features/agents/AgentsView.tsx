@@ -18,7 +18,7 @@ export function AgentsView({ state, dispatch, actions }: { state: NeuroDeckState
           onChange={(e) => setTask(e.target.value)}
           placeholder="Task for agent..."
           aria-label="Task for agent"
-          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:border-nd-accent/40"
+          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         />
       </div>
       <div className="grid gap-4 overflow-y-auto p-4 scrollbar-thin md:grid-cols-2 2xl:grid-cols-3">

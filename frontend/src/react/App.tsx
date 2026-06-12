@@ -1057,7 +1057,7 @@ export default function App() {
             dispatch={dispatch}
             onOpenSettings={() => openSettings("general")}
           />
-          <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
+          <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4 lg:pb-4">
             <div className="view-container h-full min-h-0">
               {(state.activeView === "chat" || state.activeView === "workspace") &&
                 renderView(

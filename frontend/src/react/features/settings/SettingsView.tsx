@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
+import { Toggle } from "../../components/primitives/Toggle";
 import { LiveWallpaperPanel } from "./LiveWallpaperPanel";
 import { neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
 import { useTheme } from "../../theme/useTheme";
@@ -60,32 +61,6 @@ function describeRuntime(runtime: ProviderRuntimeProfile): string {
     .map(([k]) => k.replace(/([A-Z])/g, " $1").toLowerCase());
   if (caps.length) parts.push(`supports ${caps.slice(0, 3).join(", ")}`);
   return parts.length ? parts.join(" · ") : runtime.label;
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${checked ? "bg-nd-accent" : "bg-nd-text-muted/20"}`}
-    >
-      <span
-        className={`absolute top-0.5 h-6 w-6 rounded-full bg-nd-bg shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`}
-        style={{ left: "2px" }}
-      />
-    </button>
-  );
 }
 
 function SettingRow({

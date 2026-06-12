@@ -250,11 +250,21 @@ export function BrowserView() {
   };
 
   const navigate = async (targetUrl: string) => {
-    if (!activeTabId || !targetUrl.trim() || !window.neurodeck?.browser) return;
+    if (!targetUrl.trim() || !window.neurodeck?.browser) return;
     try {
+      let tabId = activeTabId;
+      if (!tabId) {
+        const activeTab = tabs.find((t) => t.id === activeTabId);
+        const profileId = activeTab?.profileId || "default";
+        const tab = await window.neurodeck.browser.createTab("about:blank", profileId);
+        if (!tab) return;
+        tabId = tab.id;
+        await loadTabs();
+        reportBounds();
+      }
       const { url } = await window.neurodeck.browser.normalizeUrl(targetUrl.trim());
       setUrlInput(url);
-      await window.neurodeck.browser.navigate(activeTabId, url);
+      await window.neurodeck.browser.navigate(tabId!, url);
     } catch (_) {}
   };
 

@@ -1,13 +1,16 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
+  icon?: LucideIcon;
+  iconPosition?: 'left' | 'right';
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -19,15 +22,38 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
+  xs: 'h-7 gap-1 rounded-lg px-2 text-2xs',
   sm: 'h-8 gap-1.5 rounded-lg px-2.5 text-xs',
   md: 'h-10 gap-2 rounded-xl px-3.5 text-sm',
   lg: 'h-11 gap-2.5 rounded-xl px-4 text-sm font-medium',
 };
 
+const iconSizeClasses: Record<ButtonSize, string> = {
+  xs: 'h-3 w-3',
+  sm: 'h-3.5 w-3.5',
+  md: 'h-4 w-4',
+  lg: 'h-4 w-4',
+};
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'secondary', size = 'md', loading = false, fullWidth = false, className = '', children, disabled, ...rest },
+  {
+    variant = 'secondary',
+    size = 'md',
+    loading = false,
+    fullWidth = false,
+    icon: Icon,
+    iconPosition = 'left',
+    className = '',
+    children,
+    disabled,
+    ...rest
+  },
   ref,
 ) {
+  const iconEl = Icon && !loading ? (
+    <Icon className={iconSizeClasses[size]} aria-hidden="true" />
+  ) : null;
+
   return (
     <button
       ref={ref}
@@ -47,12 +73,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...rest}
     >
       {loading ? (
-        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+        <svg className={`${iconSizeClasses[size]} animate-spin`} viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
       ) : null}
+      {iconPosition === 'left' && iconEl}
       {children}
+      {iconPosition === 'right' && iconEl}
     </button>
   );
 });

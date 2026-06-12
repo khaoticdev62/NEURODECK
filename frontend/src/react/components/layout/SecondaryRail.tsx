@@ -119,7 +119,7 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
 function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 transition hover:border-nd-accent/20">
-      <Icon className="h-4 w-4 text-nd-accent" />
+      <Icon className="h-4 w-4 text-nd-accent" aria-hidden="true" />
       <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-nd-text-muted/60">{label}</p>
       <p className="mt-1 font-mono text-lg text-nd-text">{value}</p>
     </div>
