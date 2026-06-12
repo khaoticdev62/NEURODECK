@@ -172,6 +172,166 @@ lazy_static::lazy_static! {
             warning: "#FF9900".to_string(),
             error: "#FF0000".to_string(),
         },
+        Theme {
+            name: "GHOST_WHITE".to_string(),
+            color: "#E8F4FD".to_string(),
+            pulse: vec![
+                "#E8F4FD".to_string(), "#C9E6F8".to_string(), "#AAD8F3".to_string(),
+                "#8BCAEE".to_string(), "#6CBCE9".to_string(), "#4DAEE4".to_string(),
+                "#6CBCE9".to_string(), "#8BCAEE".to_string(), "#AAD8F3".to_string(),
+                "#C9E6F8".to_string()
+            ],
+            background: "#080808".to_string(),
+            foreground: "#FFFFFF".to_string(),
+            accent: "#E8F4FD".to_string(),
+            response: "#A8D8EA".to_string(),
+            warning: "#FFD166".to_string(),
+            error: "#FF4757".to_string(),
+        },
+        Theme {
+            name: "DEEP_VOID".to_string(),
+            color: "#7C3AED".to_string(),
+            pulse: vec![
+                "#7C3AED".to_string(), "#6D30D4".to_string(), "#5E26BB".to_string(),
+                "#4F1CA2".to_string(), "#401289".to_string(), "#310870".to_string(),
+                "#401289".to_string(), "#4F1CA2".to_string(), "#5E26BB".to_string(),
+                "#6D30D4".to_string()
+            ],
+            background: "#05020D".to_string(),
+            foreground: "#DDD6FE".to_string(),
+            accent: "#7C3AED".to_string(),
+            response: "#A78BFA".to_string(),
+            warning: "#FCD34D".to_string(),
+            error: "#F87171".to_string(),
+        },
+        Theme {
+            name: "NEON_ORANGE".to_string(),
+            color: "#FF6B00".to_string(),
+            pulse: vec![
+                "#FF6B00".to_string(), "#E56000".to_string(), "#CC5500".to_string(),
+                "#B24A00".to_string(), "#993F00".to_string(), "#803400".to_string(),
+                "#993F00".to_string(), "#B24A00".to_string(), "#CC5500".to_string(),
+                "#E56000".to_string()
+            ],
+            background: "#0D0600".to_string(),
+            foreground: "#FFE5C8".to_string(),
+            accent: "#FF6B00".to_string(),
+            response: "#FFD700".to_string(),
+            warning: "#FFAA00".to_string(),
+            error: "#FF2200".to_string(),
+        },
+        Theme {
+            name: "BLOOD_MOON".to_string(),
+            color: "#C62828".to_string(),
+            pulse: vec![
+                "#C62828".to_string(), "#B02424".to_string(), "#9A2020".to_string(),
+                "#841C1C".to_string(), "#6E1818".to_string(), "#581414".to_string(),
+                "#6E1818".to_string(), "#841C1C".to_string(), "#9A2020".to_string(),
+                "#B02424".to_string()
+            ],
+            background: "#070005".to_string(),
+            foreground: "#FFB8C6".to_string(),
+            accent: "#C62828".to_string(),
+            response: "#FF4D6D".to_string(),
+            warning: "#FFA726".to_string(),
+            error: "#EF5350".to_string(),
+        },
+        Theme {
+            name: "GOLD_SOVEREIGN".to_string(),
+            color: "#D4AF37".to_string(),
+            pulse: vec![
+                "#D4AF37".to_string(), "#BF9D31".to_string(), "#AA8B2B".to_string(),
+                "#957925".to_string(), "#80671F".to_string(), "#6B5519".to_string(),
+                "#80671F".to_string(), "#957925".to_string(), "#AA8B2B".to_string(),
+                "#BF9D31".to_string()
+            ],
+            background: "#0C0A00".to_string(),
+            foreground: "#FFF8DC".to_string(),
+            accent: "#D4AF37".to_string(),
+            response: "#FFD700".to_string(),
+            warning: "#FF9800".to_string(),
+            error: "#F44336".to_string(),
+        },
+        Theme {
+            name: "TRON_LEGACY".to_string(),
+            color: "#0FF0FC".to_string(),
+            pulse: vec![
+                "#0FF0FC".to_string(), "#0DD8E2".to_string(), "#0BC0C8".to_string(),
+                "#09A8AE".to_string(), "#079094".to_string(), "#05787A".to_string(),
+                "#079094".to_string(), "#09A8AE".to_string(), "#0BC0C8".to_string(),
+                "#0DD8E2".to_string()
+            ],
+            background: "#000000".to_string(),
+            foreground: "#FFFFFF".to_string(),
+            accent: "#0FF0FC".to_string(),
+            response: "#FFFFFF".to_string(),
+            warning: "#FFD700".to_string(),
+            error: "#FF0040".to_string(),
+        },
+        Theme {
+            name: "EMERALD_VOID".to_string(),
+            color: "#00A86B".to_string(),
+            pulse: vec![
+                "#00A86B".to_string(), "#009660".to_string(), "#008455".to_string(),
+                "#00724A".to_string(), "#00603F".to_string(), "#004E34".to_string(),
+                "#00603F".to_string(), "#00724A".to_string(), "#008455".to_string(),
+                "#009660".to_string()
+            ],
+            background: "#00080A".to_string(),
+            foreground: "#CCFFEE".to_string(),
+            accent: "#00A86B".to_string(),
+            response: "#00FF99".to_string(),
+            warning: "#FFCC00".to_string(),
+            error: "#FF4444".to_string(),
+        },
+        Theme {
+            name: "PLASMA_PINK".to_string(),
+            color: "#FF0080".to_string(),
+            pulse: vec![
+                "#FF0080".to_string(), "#E60073".to_string(), "#CC0066".to_string(),
+                "#B30059".to_string(), "#99004C".to_string(), "#80003F".to_string(),
+                "#99004C".to_string(), "#B30059".to_string(), "#CC0066".to_string(),
+                "#E60073".to_string()
+            ],
+            background: "#0D0008".to_string(),
+            foreground: "#FFD6F0".to_string(),
+            accent: "#FF0080".to_string(),
+            response: "#FF66CC".to_string(),
+            warning: "#FFAA00".to_string(),
+            error: "#FF2244".to_string(),
+        },
+        Theme {
+            name: "OBSIDIAN".to_string(),
+            color: "#94A3B8".to_string(),
+            pulse: vec![
+                "#94A3B8".to_string(), "#8594A7".to_string(), "#768596".to_string(),
+                "#677685".to_string(), "#586774".to_string(), "#495863".to_string(),
+                "#586774".to_string(), "#677685".to_string(), "#768596".to_string(),
+                "#8594A7".to_string()
+            ],
+            background: "#060608".to_string(),
+            foreground: "#E2E8F0".to_string(),
+            accent: "#94A3B8".to_string(),
+            response: "#CBD5E1".to_string(),
+            warning: "#FCD34D".to_string(),
+            error: "#FB7185".to_string(),
+        },
+        Theme {
+            name: "ASTRAL_BLUE".to_string(),
+            color: "#3B82F6".to_string(),
+            pulse: vec![
+                "#3B82F6".to_string(), "#3574DC".to_string(), "#2F66C2".to_string(),
+                "#2958A8".to_string(), "#234A8E".to_string(), "#1D3C74".to_string(),
+                "#234A8E".to_string(), "#2958A8".to_string(), "#2F66C2".to_string(),
+                "#3574DC".to_string()
+            ],
+            background: "#030712".to_string(),
+            foreground: "#DBEAFE".to_string(),
+            accent: "#3B82F6".to_string(),
+            response: "#93C5FD".to_string(),
+            warning: "#FDE68A".to_string(),
+            error: "#FC8181".to_string(),
+        },
     ];
 }
 

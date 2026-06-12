@@ -1,81 +1,81 @@
 {
-  "generatedAt": "2026-06-12T04:03:36.808Z",
+  "generatedAt": "2026-06-12T06:16:13.701Z",
   "version": "1.8.0",
   "services": [
     {
       "name": "browserBookmarkService.ts",
       "exists": true,
-      "sizeBytes": 2977
+      "sizeBytes": 3069
     },
     {
       "name": "browserCrashRecoveryService.ts",
       "exists": true,
-      "sizeBytes": 1531
+      "sizeBytes": 1576
     },
     {
       "name": "browserDiagnosticsService.ts",
       "exists": true,
-      "sizeBytes": 1837
+      "sizeBytes": 1884
     },
     {
       "name": "browserDownloadService.ts",
       "exists": true,
-      "sizeBytes": 2007
+      "sizeBytes": 2067
     },
     {
       "name": "browserFindInPageService.ts",
       "exists": true,
-      "sizeBytes": 752
+      "sizeBytes": 775
     },
     {
       "name": "browserHistoryService.ts",
       "exists": true,
-      "sizeBytes": 2625
+      "sizeBytes": 2717
     },
     {
       "name": "browserNavigationService.ts",
       "exists": true,
-      "sizeBytes": 2685
+      "sizeBytes": 3071
     },
     {
       "name": "browserPermissionService.ts",
       "exists": true,
-      "sizeBytes": 2815
+      "sizeBytes": 2901
     },
     {
       "name": "browserProfileService.ts",
       "exists": true,
-      "sizeBytes": 3344
+      "sizeBytes": 3480
     },
     {
       "name": "browserSearchEngineService.ts",
       "exists": true,
-      "sizeBytes": 743
+      "sizeBytes": 771
     },
     {
       "name": "browserSecurityService.ts",
       "exists": true,
-      "sizeBytes": 2180
+      "sizeBytes": 2259
     },
     {
       "name": "browserSessionService.ts",
       "exists": true,
-      "sizeBytes": 1944
+      "sizeBytes": 2008
     },
     {
       "name": "browserTabManager.ts",
       "exists": true,
-      "sizeBytes": 3367
+      "sizeBytes": 3493
     },
     {
       "name": "browserUrlNormalizer.ts",
       "exists": true,
-      "sizeBytes": 1068
+      "sizeBytes": 1100
     },
     {
       "name": "browserViewManager.ts",
       "exists": true,
-      "sizeBytes": 11153
+      "sizeBytes": 12560
     }
   ],
   "verifications": [

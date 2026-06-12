@@ -380,14 +380,9 @@ export function BrowserView() {
   };
 
   const handleToggleAdBlock = async () => {
-    if (window.neurodeck?.browser) {
-      const res = await window.neurodeck.browser.clearData("default", {}); // wait, toggle in backend
-      const result = await window.neurodeck.browser.respondToPermission("", ""); // toggle is toggleAdblock
-      // Let's use general ipcRenderer invoke since adblock status is exported on electronAPI
-      if (window.electronAPI?.browserAdblockToggle) {
-        const toggleRes = await window.electronAPI.browserAdblockToggle();
-        setAdBlockEnabled(toggleRes.enabled);
-      }
+    if (window.electronAPI?.browserAdblockToggle) {
+      const toggleRes = await window.electronAPI.browserAdblockToggle();
+      setAdBlockEnabled(toggleRes.enabled);
     }
   };
 

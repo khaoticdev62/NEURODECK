@@ -439,6 +439,55 @@ const LIVE_BACKGROUNDS = [
     preview:
       "linear-gradient(220deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 240, 255, 0.15) 50%, #050505 100%)",
   },
+  {
+    id: "plasma",
+    name: "Plasma Blobs",
+    desc: "Organic molten plasma interference",
+    preview:
+      "radial-gradient(circle at 40% 60%, rgba(255,0,128,0.2) 0%, rgba(128,0,255,0.15) 50%, #050505 100%)",
+  },
+  {
+    id: "dna",
+    name: "DNA Helix",
+    desc: "Rotating dual-strand DNA helix",
+    preview:
+      "linear-gradient(180deg, rgba(0,240,255,0.12) 0%, rgba(0,255,136,0.12) 100%)",
+  },
+  {
+    id: "glitch",
+    name: "Digital Glitch",
+    desc: "Screen corruption scanline artifacts",
+    preview:
+      "linear-gradient(0deg, rgba(255,0,80,0.18) 0%, rgba(0,240,255,0.1) 50%, #050505 100%)",
+  },
+  {
+    id: "blackhole",
+    name: "Black Hole",
+    desc: "Spinning gravitational accretion disk",
+    preview:
+      "radial-gradient(circle, rgba(255,140,0,0.25) 0%, rgba(80,0,80,0.15) 40%, #050505 80%)",
+  },
+  {
+    id: "css-synthsun",
+    name: "Synthwave Sun",
+    desc: "CSS retrowave rising sun gradient",
+    preview:
+      "linear-gradient(180deg, #0a0014 0%, #1a0030 40%, #ff006640 60%, #ff6600 80%, #ffcc00 100%)",
+  },
+  {
+    id: "css-void",
+    name: "Void Breath",
+    desc: "CSS minimalist breathing darkness",
+    preview:
+      "radial-gradient(ellipse at center, rgba(40,0,60,0.4) 0%, #030005 100%)",
+  },
+  {
+    id: "css-prism",
+    name: "Prism Refraction",
+    desc: "CSS slow-sweep prismatic spectrum",
+    preview:
+      "linear-gradient(135deg, rgba(255,0,128,0.15), rgba(0,240,255,0.15), rgba(168,85,247,0.15), #050505)",
+  },
 ];
 
 const STATIC_BACKGROUNDS = [
@@ -745,6 +794,36 @@ class LiveBackgroundManager {
           speed: 0.5 + Math.random() * 1.5,
           alpha: 0.15 + Math.random() * 0.35,
         }));
+    } else if (type === "plasma") {
+      const numBlobs = 6;
+      this.particles = Array(numBlobs).fill(0).map(() => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        r: 120 + Math.random() * 160,
+        hue: Math.random() * 360,
+        hueSpeed: (Math.random() - 0.5) * 0.4,
+      }));
+    } else if (type === "dna") {
+      this.angle = 0;
+    } else if (type === "glitch") {
+      this.particles = [];
+      this.angle = 0;
+    } else if (type === "blackhole") {
+      this.particles = Array(200).fill(0).map(() => {
+        const theta = Math.random() * Math.PI * 2;
+        const dist = 60 + Math.random() * Math.min(w, h) * 0.38;
+        return {
+          theta,
+          dist,
+          speed: 0.002 + (1 / dist) * 0.8,
+          alpha: 0.15 + Math.random() * 0.5,
+          size: 0.6 + Math.random() * 1.8,
+          hue: 20 + Math.random() * 40,
+        };
+      });
+      this.angle = 0;
     }
   }
 
@@ -819,6 +898,10 @@ class LiveBackgroundManager {
     else if (this.currentType === "circuit")   this._drawCircuit(ctx, w, h, ac, rc);
     else if (this.currentType === "wave")      this._drawWave(ctx, w, h, ac, rc);
     else if (this.currentType === "ascii")     this._drawAscii(ctx, w, h, ac);
+    else if (this.currentType === "plasma")    this._drawPlasma(ctx, w, h);
+    else if (this.currentType === "dna")       this._drawDna(ctx, w, h, ac, rc);
+    else if (this.currentType === "glitch")    this._drawGlitch(ctx, w, h, ac, rc);
+    else if (this.currentType === "blackhole") this._drawBlackhole(ctx, w, h, ac, rc);
   }
 
   _drawMatrix(ctx, w, h, ac) {
@@ -1033,6 +1116,112 @@ class LiveBackgroundManager {
         line.alpha = 0.15 + Math.random() * 0.35;
       }
     }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawPlasma(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < this.particles.length; i++) {
+      const b = this.particles[i];
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < -b.r || b.x > w + b.r) b.vx *= -1;
+      if (b.y < -b.r || b.y > h + b.r) b.vy *= -1;
+      b.hue = (b.hue + b.hueSpeed + 360) % 360;
+      const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      grad.addColorStop(0,   `hsla(${b.hue}, 100%, 60%, 0.22)`);
+      grad.addColorStop(0.5, `hsla(${(b.hue + 60) % 360}, 90%, 45%, 0.1)`);
+      grad.addColorStop(1,   "transparent");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  _drawDna(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h);
+    this.angle += 0.018;
+    const cx = w / 2, amplitude = Math.min(w * 0.12, 80), freq = 0.025;
+    const rungs = Math.floor(h / 18) + 2;
+    for (let i = 0; i < rungs; i++) {
+      const y = (i / rungs) * h;
+      const phase = freq * y + this.angle;
+      const x1 = cx + Math.sin(phase) * amplitude;
+      const x2 = cx + Math.sin(phase + Math.PI) * amplitude;
+      const progress = Math.abs(Math.sin(phase));
+      ctx.globalAlpha = 0.08 + progress * 0.18;
+      ctx.strokeStyle = ac; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x1 - 4, y); ctx.lineTo(x2 + 4, y); ctx.stroke();
+      ctx.fillStyle = ac; ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.arc(x1, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rc; ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.arc(x2, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 0.12; ctx.strokeStyle = ac; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= rungs; i++) {
+      const y = (i / rungs) * h;
+      const x = cx + Math.sin(freq * y + this.angle) * amplitude;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = rc;
+    ctx.beginPath();
+    for (let i = 0; i <= rungs; i++) {
+      const y = (i / rungs) * h;
+      const x = cx + Math.sin(freq * y + this.angle + Math.PI) * amplitude;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawGlitch(ctx, w, h, ac, rc) {
+    if (Math.random() > 0.35) { ctx.globalAlpha = 1.0; return; }
+    ctx.globalAlpha = 1.0;
+    const numSlices = Math.floor(Math.random() * 6) + 2;
+    for (let i = 0; i < numSlices; i++) {
+      const y = Math.random() * h;
+      const sliceH = Math.floor(Math.random() * 8) + 2;
+      const offset = (Math.random() - 0.5) * 40;
+      const color = Math.random() > 0.5 ? ac : rc;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.06 + Math.random() * 0.1;
+      ctx.fillRect(offset, y, w, sliceH);
+    }
+    if (Math.random() > 0.7) {
+      const blockY = Math.random() * h;
+      const blockH = Math.floor(Math.random() * 20) + 4;
+      ctx.fillStyle = ac;
+      ctx.globalAlpha = 0.04;
+      ctx.fillRect(0, blockY, w, blockH);
+    }
+    ctx.globalAlpha = 1.0;
+  }
+
+  _drawBlackhole(ctx, w, h, ac, rc) {
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2;
+    this.angle += 0.003;
+    const diskGrad = ctx.createRadialGradient(cx, cy, 28, cx, cy, Math.min(w, h) * 0.42);
+    diskGrad.addColorStop(0,   "rgba(0,0,0,1)");
+    diskGrad.addColorStop(0.18,"rgba(255,140,0,0.22)");
+    diskGrad.addColorStop(0.38,"rgba(255,80,0,0.14)");
+    diskGrad.addColorStop(0.65,"rgba(180,0,80,0.08)");
+    diskGrad.addColorStop(1,   "transparent");
+    ctx.fillStyle = diskGrad; ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      p.theta += p.speed * (1 + 30 / p.dist) + this.angle * 0.002;
+      const px = cx + Math.cos(p.theta) * p.dist;
+      const py = cy + Math.sin(p.theta) * p.dist * 0.32;
+      ctx.fillStyle = `hsl(${p.hue}, 100%, 65%)`;
+      ctx.globalAlpha = p.alpha * 0.35 * Math.min(1, (p.dist - 55) / 40);
+      ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2); ctx.fill();
+    }
+    const eventHorizon = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+    eventHorizon.addColorStop(0, "rgba(0,0,0,1)");
+    eventHorizon.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = eventHorizon; ctx.globalAlpha = 1.0;
+    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1.0;
   }
 }
