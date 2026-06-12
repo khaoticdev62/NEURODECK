@@ -1,10 +1,9 @@
-use super::provider_health_service::{ProviderConnectionState, check_all_provider_health};
+use super::provider_health_service::{check_all_provider_health, ProviderConnectionState};
 use crate::config::LlmConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum RecoveryAction {
@@ -89,7 +88,9 @@ impl RecoveryState {
     fn total_runtime_count(&self, runtime_id: &str) -> u32 {
         self.attempts
             .iter()
-            .filter(|(k, r)| k.runtime_id == runtime_id && r.first_at.elapsed() < Duration::from_secs(600))
+            .filter(|(k, r)| {
+                k.runtime_id == runtime_id && r.first_at.elapsed() < Duration::from_secs(600)
+            })
             .map(|(_, r)| r.count)
             .sum()
     }
@@ -192,8 +193,11 @@ fn save_events(events: &[RecoveryEvent]) -> Result<(), String> {
         "note": "Recovery events recorded by model_recovery_service.",
         "events": events,
     });
-    std::fs::write(&path, serde_json::to_string_pretty(&wrapper).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())
+    std::fs::write(
+        &path,
+        serde_json::to_string_pretty(&wrapper).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
 }
 
 pub fn get_recovery_event_log() -> Vec<RecoveryEvent> {
@@ -277,16 +281,25 @@ pub async fn evaluate_recovery(
     config: &LlmConfig,
 ) -> RecoveryEvaluation {
     let state = state_from_str(state_str);
-    log::info!("evaluate_recovery runtime={} model={:?} state={}", runtime_id, model_id, state_str);
+    log::info!(
+        "evaluate_recovery runtime={} model={:?} state={}",
+        runtime_id,
+        model_id,
+        state_str
+    );
     let mut evidence = Vec::new();
-    evidence.push(format!("evaluating recovery for {} state={}", runtime_id, state_str));
+    evidence.push(format!(
+        "evaluating recovery for {} state={}",
+        runtime_id, state_str
+    ));
 
     if with_state(|s| s.total_runtime_count(runtime_id)) >= MAX_RECOVERY_ATTEMPTS_PER_PROVIDER {
         return RecoveryEvaluation {
             action: RecoveryAction::Stop.to_string(),
             target_runtime_id: None,
             target_model_id: model_id.map(|s| s.to_string()),
-            reason: "Maximum recovery attempts for this provider reached in the last 10 minutes".into(),
+            reason: "Maximum recovery attempts for this provider reached in the last 10 minutes"
+                .into(),
             allowed: false,
             evidence,
         };
@@ -318,7 +331,10 @@ pub async fn evaluate_recovery(
     let healing = &runtime.self_healing;
     let health_results = check_all_provider_health(config).await;
     let health_by_runtime: HashMap<String, super::provider_health_service::ProviderHealth> =
-        health_results.into_iter().map(|h| (h.runtime_id.clone(), h)).collect();
+        health_results
+            .into_iter()
+            .map(|h| (h.runtime_id.clone(), h))
+            .collect();
 
     let current_key = |action: RecoveryAction| AttemptKey {
         runtime_id: runtime_id.to_string(),
@@ -345,8 +361,10 @@ pub async fn evaluate_recovery(
     }
 
     // 2. Reload model if model is missing/unloaded.
-    if matches!(state, ProviderConnectionState::MissingModel | ProviderConnectionState::Degraded)
-        && healing.can_reload_model
+    if matches!(
+        state,
+        ProviderConnectionState::MissingModel | ProviderConnectionState::Degraded
+    ) && healing.can_reload_model
     {
         let reload_key = current_key(RecoveryAction::ReloadModel);
         let reload_count = with_state(|s| s.count(&reload_key));
@@ -400,13 +418,17 @@ pub async fn evaluate_recovery(
                 ..Default::default()
             };
 
-            let best: Option<super::model_compatibility_service::ModelCompatibilityScore> = if let Some(agent_id) = agent_id {
-                super::agent_policy_service::pick_best_model_for_agent(agent_id, &options, config)
+            let best: Option<super::model_compatibility_service::ModelCompatibilityScore> =
+                if let Some(agent_id) = agent_id {
+                    super::agent_policy_service::pick_best_model_for_agent(
+                        agent_id, &options, config,
+                    )
                     .await
                     .map(|m| m.score)
-            } else {
-                super::model_compatibility_service::pick_best_local_model(&options, config).await
-            };
+                } else {
+                    super::model_compatibility_service::pick_best_local_model(&options, config)
+                        .await
+                };
             if let Some(best) = best {
                 if Some(best.model_id.as_str()) != model_id {
                     // Pick a runtime that lists the target model and is connected.
@@ -445,7 +467,9 @@ pub async fn evaluate_recovery(
             allow_heavy_models: false,
             ..Default::default()
         };
-        let scored = super::model_compatibility_service::get_model_compatibility_scores(&options, config).await;
+        let scored =
+            super::model_compatibility_service::get_model_compatibility_scores(&options, config)
+                .await;
         let current_model_id = model_id.unwrap_or_default().to_string();
         let allowed_ids: Option<HashSet<String>> = agent_id.map(|aid| {
             crate::model_registry::load_supported_models()
@@ -454,7 +478,11 @@ pub async fn evaluate_recovery(
                 .map(|p| p.id)
                 .collect()
         });
-        if let Some(current) = scored.iter().find(|s| s.model_id == current_model_id).cloned() {
+        if let Some(current) = scored
+            .iter()
+            .find(|s| s.model_id == current_model_id)
+            .cloned()
+        {
             let downgrade = scored
                 .into_iter()
                 .filter(|s| {
@@ -462,7 +490,10 @@ pub async fn evaluate_recovery(
                         && s.score > 0
                         && s.score < current.score
                         && s.installed
-                        && allowed_ids.as_ref().map(|set| set.contains(&s.model_id)).unwrap_or(true)
+                        && allowed_ids
+                            .as_ref()
+                            .map(|set| set.contains(&s.model_id))
+                            .unwrap_or(true)
                 })
                 .max_by_key(|s| s.score);
             if let Some(target) = downgrade {
@@ -504,7 +535,10 @@ mod tests {
     #[test]
     fn state_from_str_maps_common_states() {
         assert_eq!(state_from_str("offline"), ProviderConnectionState::Offline);
-        assert_eq!(state_from_str("connected"), ProviderConnectionState::Connected);
+        assert_eq!(
+            state_from_str("connected"),
+            ProviderConnectionState::Connected
+        );
     }
 
     #[test]

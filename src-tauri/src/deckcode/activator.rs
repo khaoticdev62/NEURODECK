@@ -19,6 +19,12 @@ pub struct ButtonState {
     pub press_count: u32,
 }
 
+impl Default for ButtonState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ButtonState {
     pub fn new() -> Self {
         Self {

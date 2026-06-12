@@ -596,7 +596,7 @@ async fn download_file(
 
         if last_emit.elapsed() >= Duration::from_millis(250) {
             last_emit = Instant::now();
-            let _ = app_handle.emit(
+            app_handle.emit(
                 "hf_download_progress",
                 serde_json::json!({
                     "id": download_id,
@@ -624,7 +624,7 @@ async fn download_file(
         }
     }
 
-    let _ = app_handle.emit(
+    app_handle.emit(
         "hf_download_progress",
         serde_json::json!({
             "id": download_id,

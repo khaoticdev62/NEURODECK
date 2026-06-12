@@ -123,7 +123,8 @@ pub(crate) fn default_agents() -> Vec<config::AgentConfig> {
     let profiles = crate::model_registry::load_supported_models();
     let policies = crate::model_registry::load_agent_policies();
 
-    let mut model_by_id: HashMap<String, &crate::model_registry::SupportedModelProfile> = HashMap::new();
+    let mut model_by_id: HashMap<String, &crate::model_registry::SupportedModelProfile> =
+        HashMap::new();
     for profile in &profiles {
         model_by_id.insert(profile.id.clone(), profile);
         for model_id in &profile.provider_model_ids {

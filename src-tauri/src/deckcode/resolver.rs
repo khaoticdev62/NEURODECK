@@ -179,7 +179,7 @@ impl DeckCodeResolver {
     }
 
     fn get_set_priority(&self, set_name: &str, context: &ResolverContext) -> i32 {
-        if set_name == &context.active_set {
+        if set_name == context.active_set {
             return 3;
         }
         if context.active_layers.contains(set_name) {

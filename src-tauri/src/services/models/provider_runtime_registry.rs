@@ -119,14 +119,18 @@ pub fn runtime_by_id(id: &str) -> Option<ProviderRuntimeProfile> {
 /// Resolve the effective base URL for a runtime, honoring user config overrides.
 pub fn resolve_base_url(runtime: &ProviderRuntimeProfile, config: &LlmConfig) -> Option<String> {
     let configured = match runtime.id.as_str() {
-        "ollama-local" if !config.ollama_base_url.is_empty() => Some(config.ollama_base_url.clone()),
+        "ollama-local" if !config.ollama_base_url.is_empty() => {
+            Some(config.ollama_base_url.clone())
+        }
         "lm-studio-local" if !config.lm_studio_base_url.is_empty() => {
             Some(config.lm_studio_base_url.clone())
         }
         "llama-cpp-server-local" if !config.llamacpp_base_url.is_empty() => {
             Some(config.llamacpp_base_url.clone())
         }
-        "huggingface-inference" if !config.hf_base_url.is_empty() => Some(config.hf_base_url.clone()),
+        "huggingface-inference" if !config.hf_base_url.is_empty() => {
+            Some(config.hf_base_url.clone())
+        }
         "kimi-cloud" if !config.kimi_base_url.is_empty() => Some(config.kimi_base_url.clone()),
         "openai-compatible-remote" if !config.openai_compat_base_url.is_empty() => {
             Some(config.openai_compat_base_url.clone())
@@ -134,15 +138,14 @@ pub fn resolve_base_url(runtime: &ProviderRuntimeProfile, config: &LlmConfig) ->
         _ => None,
     };
 
-    configured
-        .or_else(|| {
-            let url = runtime.base_url.trim();
-            if url.is_empty() {
-                None
-            } else {
-                Some(url.to_string())
-            }
-        })
+    configured.or_else(|| {
+        let url = runtime.base_url.trim();
+        if url.is_empty() {
+            None
+        } else {
+            Some(url.to_string())
+        }
+    })
 }
 
 #[allow(dead_code)]

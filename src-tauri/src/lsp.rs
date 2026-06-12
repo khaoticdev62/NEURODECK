@@ -18,6 +18,12 @@ use tokio::sync::{mpsc, oneshot};
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
+type LspChannels = (
+    mpsc::UnboundedSender<String>,
+    Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
+    Arc<AtomicU64>,
+);
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LspPosition {
     pub line: u32,
@@ -181,6 +187,12 @@ pub struct LspManager {
     servers: HashMap<String, LspServerState>,
 }
 
+impl Default for LspManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LspManager {
     pub fn new() -> Self {
         Self {
@@ -322,27 +334,25 @@ pub async fn spawn_server<E: EventEmitter>(
                         let _ = tx.send(result);
                     }
                 }
-            } else if let Some(method) = msg.get("method").and_then(|v| v.as_str()) {
-                match method {
-                    "textDocument/publishDiagnostics" => {
-                        if let Some(params) = msg.get("params") {
-                            let uri = params["uri"].as_str().unwrap_or("").to_string();
-                            let diags: Vec<LspDiagnostic> = params
-                                .get("diagnostics")
-                                .and_then(|v| serde_json::from_value(v.clone()).ok())
-                                .unwrap_or_default();
-                            diagnostics_r
-                                .lock()
-                                .unwrap_or_else(|e| e.into_inner())
-                                .insert(uri.clone(), diags.clone());
-                            let _ = app_r.emit(
-                                "lsp:diagnostics",
-                                json!({ "language": lang_r, "uri": uri, "diagnostics": diags }),
-                            );
-                        }
-                    }
-                    // Ignore window/logMessage, window/showMessage, etc.
-                    _ => {}
+            } else if let Some((method, params)) = msg
+                .get("method")
+                .and_then(|v| v.as_str())
+                .zip(msg.get("params"))
+            {
+                if method == "textDocument/publishDiagnostics" {
+                    let uri = params["uri"].as_str().unwrap_or("").to_string();
+                    let diags: Vec<LspDiagnostic> = params
+                        .get("diagnostics")
+                        .and_then(|v| serde_json::from_value(v.clone()).ok())
+                        .unwrap_or_default();
+                    diagnostics_r
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .insert(uri.clone(), diags.clone());
+                    app_r.emit(
+                        "lsp:diagnostics",
+                        json!({ "language": lang_r, "uri": uri, "diagnostics": diags }),
+                    );
                 }
             }
         }
@@ -433,7 +443,7 @@ pub async fn spawn_server<E: EventEmitter>(
                             .lock()
                             .unwrap_or_else(|e| e.into_inner())
                             .mark_status(&lang2, "error");
-                        let _ = app2.emit("lsp:error", json!({ "language": lang2, "message": format!("Serialize error: {e}") }));
+                        app2.emit("lsp:error", json!({ "language": lang2, "message": format!("Serialize error: {e}") }));
                         return;
                     }
                 }
@@ -441,14 +451,14 @@ pub async fn spawn_server<E: EventEmitter>(
                     .lock()
                     .unwrap_or_else(|e| e.into_inner())
                     .mark_status(&lang2, "ready");
-                let _ = app2.emit("lsp:ready", json!({ "language": lang2 }));
+                app2.emit("lsp:ready", json!({ "language": lang2 }));
             }
             _ => {
                 manager2
                     .lock()
                     .unwrap_or_else(|e| e.into_inner())
                     .mark_status(&lang2, "error");
-                let _ = app2.emit(
+                app2.emit(
                     "lsp:error",
                     json!({ "language": lang2, "message": "Initialize timed out" }),
                 );
@@ -461,14 +471,7 @@ pub async fn spawn_server<E: EventEmitter>(
 
 // ── Helper: clone channels from locked manager ───────────────────────────────
 
-fn take_channels(
-    mgr: &LspManager,
-    language: &str,
-) -> Option<(
-    mpsc::UnboundedSender<String>,
-    Arc<Mutex<HashMap<u64, oneshot::Sender<Value>>>>,
-    Arc<AtomicU64>,
-)> {
+fn take_channels(mgr: &LspManager, language: &str) -> Option<LspChannels> {
     mgr.servers
         .get(language)
         .map(|s| (s.stdin_tx.clone(), s.pending.clone(), s.next_id.clone()))
@@ -512,7 +515,6 @@ async fn send_request(
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
-
 
 /// Stop an LSP server for the given language.
 pub fn lsp_stop(language: String, state: Arc<Mutex<LspManager>>) -> Result<(), String> {

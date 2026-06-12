@@ -1,52 +1,77 @@
-import { useEffect, useState } from 'react';
-import type { Dispatch } from 'react';
+import { useEffect, useState } from "react";
+import type { Dispatch } from "react";
 import {
-  BrainCircuit, FileArchive, FileDown, Gamepad2, Palette, RefreshCcw,
-  Rocket, RotateCcw, Settings, Cpu, HardDrive, Shield, Sliders,
-  ChevronRight, Check, AlertTriangle,
-} from 'lucide-react';
-import { themes } from '../../types/seed';
-import { Badge } from '../../components/primitives/Badge';
-import { Panel } from '../../components/primitives/Panel';
-import { LiveWallpaperPanel } from './LiveWallpaperPanel';
-import { neurodeckApi, runtimeTypeToProvider } from '../../services/bridgeAdapter';
-import type { AIProvider, NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ThemeName } from '../../types/neurodeck';
-import type { ProviderRuntimeProfile } from '../../../shared/contracts/models.contracts';
+  BrainCircuit,
+  FileArchive,
+  FileDown,
+  Gamepad2,
+  Palette,
+  RefreshCcw,
+  Rocket,
+  RotateCcw,
+  Settings,
+  Cpu,
+  HardDrive,
+  Shield,
+  Sliders,
+  ChevronRight,
+  Check,
+  AlertTriangle,
+} from "lucide-react";
+import { themes } from "../../types/seed";
+import { Badge } from "../../components/primitives/Badge";
+import { Panel } from "../../components/primitives/Panel";
+import { LiveWallpaperPanel } from "./LiveWallpaperPanel";
+import { neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
+import type {
+  AIProvider,
+  NeuroDeckAction,
+  NeuroDeckAppActions,
+  NeuroDeckState,
+  ThemeName,
+} from "../../types/neurodeck";
+import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 
 type ProviderOption = { id: AIProvider; runtimeId: string; label: string; description: string };
 
 const OFFLINE_PROVIDER: ProviderOption = {
-  id: 'offline-draft',
-  runtimeId: 'offline-draft',
-  label: 'Offline Draft',
-  description: 'Always-available deterministic planning fallback.',
+  id: "offline-draft",
+  runtimeId: "offline-draft",
+  label: "Offline Draft",
+  description: "Always-available deterministic planning fallback.",
 };
 
 const NAV_PANELS = [
-  { key: 'general',     label: 'General',     icon: Settings },
-  { key: 'ai',          label: 'AI',           icon: BrainCircuit },
-  { key: 'appearance',  label: 'Appearance',   icon: Palette },
-  { key: 'input',       label: 'Input',        icon: Gamepad2 },
-  { key: 'performance', label: 'Performance',  icon: Cpu },
-  { key: 'extensions',  label: 'Extensions',   icon: Sliders },
-  { key: 'privacy',     label: 'Privacy',      icon: Shield },
+  { key: "general", label: "General", icon: Settings },
+  { key: "ai", label: "AI", icon: BrainCircuit },
+  { key: "appearance", label: "Appearance", icon: Palette },
+  { key: "input", label: "Input", icon: Gamepad2 },
+  { key: "performance", label: "Performance", icon: Cpu },
+  { key: "extensions", label: "Extensions", icon: Sliders },
+  { key: "privacy", label: "Privacy", icon: Shield },
 ] as const;
 
-type PanelKey = typeof NAV_PANELS[number]['key'];
+type PanelKey = (typeof NAV_PANELS)[number]["key"];
 
 function describeRuntime(runtime: ProviderRuntimeProfile): string {
   const parts: string[] = [];
   if (runtime.baseUrl) parts.push(runtime.baseUrl);
   const caps = Object.entries(runtime.supports)
     .filter(([, v]) => v)
-    .map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase());
-  if (caps.length) parts.push(`supports ${caps.slice(0, 3).join(', ')}`);
-  return parts.length ? parts.join(' · ') : runtime.label;
+    .map(([k]) => k.replace(/([A-Z])/g, " $1").toLowerCase());
+  if (caps.length) parts.push(`supports ${caps.slice(0, 3).join(", ")}`);
+  return parts.length ? parts.join(" · ") : runtime.label;
 }
 
 function Toggle({
-  checked, onChange, label,
-}: { checked: boolean; onChange: () => void; label: string }) {
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
   return (
     <button
       type="button"
@@ -54,19 +79,27 @@ function Toggle({
       aria-checked={checked}
       aria-label={label}
       onClick={onChange}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${checked ? 'bg-nd-accent' : 'bg-nd-text-muted/20'}`}
+      className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${checked ? "bg-nd-accent" : "bg-nd-text-muted/20"}`}
     >
       <span
-        className={`absolute top-0.5 h-6 w-6 rounded-full bg-nd-bg shadow transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`}
-        style={{ left: '2px' }}
+        className={`absolute top-0.5 h-6 w-6 rounded-full bg-nd-bg shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`}
+        style={{ left: "2px" }}
       />
     </button>
   );
 }
 
 function SettingRow({
-  icon: Icon, title, description, children,
-}: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
       <div className="flex items-center gap-3 min-w-0">
@@ -94,9 +127,9 @@ export function SettingsView({
   onClose?: () => void;
 }) {
   const [activePanel, setActivePanel] = useState<PanelKey>(() => {
-    const saved = localStorage.getItem('settingsActivePanel');
-    const stripped = saved?.replace('sp-', '') ?? 'general';
-    return (NAV_PANELS.some((p) => p.key === stripped) ? stripped : 'general') as PanelKey;
+    const saved = localStorage.getItem("settingsActivePanel");
+    const stripped = saved?.replace("sp-", "") ?? "general";
+    return (NAV_PANELS.some((p) => p.key === stripped) ? stripped : "general") as PanelKey;
   });
 
   const [providerOptions, setProviderOptions] = useState<ProviderOption[]>([OFFLINE_PROVIDER]);
@@ -106,10 +139,10 @@ export function SettingsView({
   const [compactMode, setCompactMode] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('nd:fontScale');
+    const saved = localStorage.getItem("nd:fontScale");
     if (saved) setFontScale(Number(saved));
-    const compact = localStorage.getItem('nd:compactMode');
-    if (compact) setCompactMode(compact === 'true');
+    const compact = localStorage.getItem("nd:compactMode");
+    if (compact) setCompactMode(compact === "true");
   }, []);
 
   useEffect(() => {
@@ -119,13 +152,18 @@ export function SettingsView({
         setProvidersLoading(true);
         setProvidersError(null);
         const runtimes = await neurodeckApi.models.listProviderRuntimes();
-        const seen = new Set<string>(['offline-draft']);
+        const seen = new Set<string>(["offline-draft"]);
         const options: ProviderOption[] = [OFFLINE_PROVIDER];
         for (const runtime of runtimes) {
           const id = runtimeTypeToProvider(runtime.type);
           if (seen.has(id)) continue;
           seen.add(id);
-          options.push({ id, runtimeId: runtime.id, label: runtime.label || id, description: describeRuntime(runtime) });
+          options.push({
+            id,
+            runtimeId: runtime.id,
+            label: runtime.label || id,
+            description: describeRuntime(runtime),
+          });
         }
         if (!cancelled) setProviderOptions(options);
       } catch (e) {
@@ -138,26 +176,28 @@ export function SettingsView({
       }
     }
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selectPanel = (name: PanelKey) => {
-    localStorage.setItem('settingsActivePanel', `sp-${name}`);
+    localStorage.setItem("settingsActivePanel", `sp-${name}`);
     setActivePanel(name);
     onPanelChange?.(name);
   };
 
   const applyFontScale = (val: number) => {
     setFontScale(val);
-    localStorage.setItem('nd:fontScale', String(val));
+    localStorage.setItem("nd:fontScale", String(val));
     document.documentElement.style.fontSize = `${val}%`;
   };
 
   const applyCompactMode = (val: boolean) => {
     setCompactMode(val);
-    localStorage.setItem('nd:compactMode', String(val));
+    localStorage.setItem("nd:compactMode", String(val));
     if (val) {
-      dispatch({ type: 'toggle-deck-mode' });
+      dispatch({ type: "toggle-deck-mode" });
     }
   };
 
@@ -167,7 +207,9 @@ export function SettingsView({
       <aside className="flex min-h-0 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2.5 gap-1">
         <div className="flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/10 px-3 py-2 mb-1">
           <Settings className="h-4 w-4 text-nd-accent" />
-          <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent">Settings</span>
+          <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent">
+            Settings
+          </span>
         </div>
         {NAV_PANELS.map(({ key, label, icon: Icon }) => {
           const active = activePanel === key;
@@ -175,12 +217,12 @@ export function SettingsView({
             <button
               key={key}
               type="button"
-              aria-current={active ? 'page' : undefined}
+              aria-current={active ? "page" : undefined}
               onClick={() => selectPanel(key)}
               className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 active
-                  ? 'border-nd-accent/35 bg-nd-accent/10 text-nd-accent font-semibold'
-                  : 'border-transparent text-nd-text/70 hover:border-nd-text-muted/15 hover:bg-nd-surface/60 hover:text-nd-text'
+                  ? "border-nd-accent/35 bg-nd-accent/10 text-nd-accent font-semibold"
+                  : "border-transparent text-nd-text/70 hover:border-nd-text-muted/15 hover:bg-nd-surface/60 hover:text-nd-text"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -193,17 +235,32 @@ export function SettingsView({
 
       {/* Content */}
       <section className="min-h-0 overflow-y-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 scrollbar-thin">
-
         {/* ── General ──────────────────────────────── */}
-        {activePanel === 'general' && (
+        {activePanel === "general" && (
           <div className="space-y-4">
             <Panel eyebrow="Application" title="General Settings">
               <div className="space-y-2 p-4">
-                <SettingRow icon={Rocket} title="Onboarding Wizard" description="Display the welcome wizard on next app launch.">
-                  <Toggle checked={state.showOnboarding} onChange={() => dispatch({ type: 'toggle-onboarding' })} label="Toggle onboarding wizard" />
+                <SettingRow
+                  icon={Rocket}
+                  title="Onboarding Wizard"
+                  description="Display the welcome wizard on next app launch."
+                >
+                  <Toggle
+                    checked={state.showOnboarding}
+                    onChange={() => dispatch({ type: "toggle-onboarding" })}
+                    label="Toggle onboarding wizard"
+                  />
                 </SettingRow>
-                <SettingRow icon={Gamepad2} title="Deck Mode" description="Controller-first layout — larger targets, tighter density.">
-                  <Toggle checked={state.deckMode} onChange={() => dispatch({ type: 'toggle-deck-mode' })} label="Toggle Deck Mode" />
+                <SettingRow
+                  icon={Gamepad2}
+                  title="Deck Mode"
+                  description="Controller-first layout — larger targets, tighter density."
+                >
+                  <Toggle
+                    checked={state.deckMode}
+                    onChange={() => dispatch({ type: "toggle-deck-mode" })}
+                    label="Toggle Deck Mode"
+                  />
                 </SettingRow>
               </div>
             </Panel>
@@ -216,11 +273,13 @@ export function SettingsView({
                     <button
                       key={theme.name}
                       type="button"
-                      onClick={() => dispatch({ type: 'set-theme', theme: theme.name as ThemeName })}
+                      onClick={() =>
+                        dispatch({ type: "set-theme", theme: theme.name as ThemeName })
+                      }
                       className={`relative rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         active
-                          ? 'border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow'
-                          : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'
+                          ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
+                          : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
                       }`}
                     >
                       {active && (
@@ -229,8 +288,18 @@ export function SettingsView({
                         </span>
                       )}
                       <div className="mb-2 flex gap-1">
-                        {[theme.accent, theme.success, theme.warning, theme.danger, theme.surface].map((c) => (
-                          <span key={c} className="h-3 flex-1 rounded-full" style={{ backgroundColor: c }} />
+                        {[
+                          theme.accent,
+                          theme.success,
+                          theme.warning,
+                          theme.danger,
+                          theme.surface,
+                        ].map((c) => (
+                          <span
+                            key={c}
+                            className="h-3 flex-1 rounded-full"
+                            style={{ backgroundColor: c }}
+                          />
                         ))}
                       </div>
                       <p className="text-xs font-semibold text-nd-text truncate">{theme.name}</p>
@@ -239,14 +308,15 @@ export function SettingsView({
                 })}
               </div>
               <p className="px-4 pb-4 text-xs text-nd-text-muted">
-                For the full design-system theme experience with wallpapers and token tuning, use the <strong className="text-nd-text">Themes</strong> tab.
+                For the full design-system theme experience with wallpapers and token tuning, use
+                the <strong className="text-nd-text">Themes</strong> tab.
               </p>
             </Panel>
           </div>
         )}
 
         {/* ── AI ───────────────────────────────────── */}
-        {activePanel === 'ai' && (
+        {activePanel === "ai" && (
           <div className="space-y-4">
             <Panel eyebrow="AI Runtime" title="Provider Selection">
               <div className="space-y-2 p-4">
@@ -261,37 +331,52 @@ export function SettingsView({
                     {providersError}
                   </div>
                 )}
-                {!providersLoading && providerOptions.map((provider) => {
-                  const health = state.aiHealth.find((item) => item.provider === provider.id);
-                  const active = state.selectedProvider === provider.id;
-                  return (
-                    <button
-                      key={provider.runtimeId}
-                      type="button"
-                      onClick={() => {
-                        dispatch({ type: 'set-provider', provider: provider.id });
-                        void neurodeckApi.ai.setProvider(provider.id);
-                      }}
-                      className={`w-full rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                        active
-                          ? 'border-nd-accent/40 bg-nd-accent/[0.07]'
-                          : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent" />
-                          <span className="font-semibold text-nd-text text-sm truncate">{provider.label}</span>
+                {!providersLoading &&
+                  providerOptions.map((provider) => {
+                    const health = state.aiHealth.find((item) => item.provider === provider.id);
+                    const active = state.selectedProvider === provider.id;
+                    return (
+                      <button
+                        key={provider.runtimeId}
+                        type="button"
+                        onClick={() => {
+                          dispatch({ type: "set-provider", provider: provider.id });
+                          void neurodeckApi.ai.setProvider(provider.id);
+                        }}
+                        className={`w-full rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                          active
+                            ? "border-nd-accent/40 bg-nd-accent/[0.07]"
+                            : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent" />
+                            <span className="font-semibold text-nd-text text-sm truncate">
+                              {provider.label}
+                            </span>
+                          </div>
+                          <Badge
+                            tone={
+                              health?.available
+                                ? "success"
+                                : provider.id === "offline-draft"
+                                  ? "success"
+                                  : "warning"
+                            }
+                          >
+                            {health?.available ? "ready" : "cold"}
+                          </Badge>
                         </div>
-                        <Badge tone={health?.available ? 'success' : provider.id === 'offline-draft' ? 'success' : 'warning'}>
-                          {health?.available ? 'ready' : 'cold'}
-                        </Badge>
-                      </div>
-                      <p className="mt-1.5 text-xs text-nd-text-muted leading-5">{provider.description}</p>
-                      {health?.detail && <p className="mt-1 text-xs text-nd-text-muted/60">{health.detail}</p>}
-                    </button>
-                  );
-                })}
+                        <p className="mt-1.5 text-xs text-nd-text-muted leading-5">
+                          {provider.description}
+                        </p>
+                        {health?.detail && (
+                          <p className="mt-1 text-xs text-nd-text-muted/60">{health.detail}</p>
+                        )}
+                      </button>
+                    );
+                  })}
                 <button
                   type="button"
                   onClick={() => void actions.checkAiHealth()}
@@ -305,7 +390,7 @@ export function SettingsView({
         )}
 
         {/* ── Appearance ───────────────────────────── */}
-        {activePanel === 'appearance' && (
+        {activePanel === "appearance" && (
           <div className="space-y-4">
             <Panel eyebrow="Display" title="Font Scale">
               <div className="space-y-3 p-4">
@@ -324,15 +409,25 @@ export function SettingsView({
                   aria-label="Font scale percentage"
                 />
                 <div className="flex justify-between text-xs text-nd-text-muted/60">
-                  <span>75%</span><span>100%</span><span>130%</span>
+                  <span>75%</span>
+                  <span>100%</span>
+                  <span>130%</span>
                 </div>
               </div>
             </Panel>
 
             <Panel eyebrow="Layout" title="Compact Mode">
               <div className="p-4">
-                <SettingRow icon={Sliders} title="Compact Layout" description="Tighter spacing for maximum information density.">
-                  <Toggle checked={compactMode} onChange={() => applyCompactMode(!compactMode)} label="Toggle compact mode" />
+                <SettingRow
+                  icon={Sliders}
+                  title="Compact Layout"
+                  description="Tighter spacing for maximum information density."
+                >
+                  <Toggle
+                    checked={compactMode}
+                    onChange={() => applyCompactMode(!compactMode)}
+                    label="Toggle compact mode"
+                  />
                 </SettingRow>
               </div>
             </Panel>
@@ -346,26 +441,36 @@ export function SettingsView({
         )}
 
         {/* ── Input ────────────────────────────────── */}
-        {activePanel === 'input' && (
+        {activePanel === "input" && (
           <div className="space-y-4">
             <Panel eyebrow="Controller" title="Steam Deck Input">
               <div className="space-y-2 p-4">
-                <SettingRow icon={Gamepad2} title="Deck Mode" description="Larger touch targets and controller-first focus affordances.">
-                  <Toggle checked={state.deckMode} onChange={() => dispatch({ type: 'toggle-deck-mode' })} label="Toggle Deck Mode" />
+                <SettingRow
+                  icon={Gamepad2}
+                  title="Deck Mode"
+                  description="Larger touch targets and controller-first focus affordances."
+                >
+                  <Toggle
+                    checked={state.deckMode}
+                    onChange={() => dispatch({ type: "toggle-deck-mode" })}
+                    label="Toggle Deck Mode"
+                  />
                 </SettingRow>
                 <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 space-y-2 text-xs text-nd-text-muted">
                   <p className="font-semibold text-nd-text text-sm">Default bindings</p>
                   {[
-                    ['Back / ` (backtick)', 'Open radial menu'],
-                    ['L2', 'Radial menu (gamepad)'],
-                    ['A', 'Accept / confirm'],
-                    ['B', 'Back / dismiss'],
-                    ['R5', 'Command palette'],
-                    ['L4 + R4', 'Accept completion'],
+                    ["Back / ` (backtick)", "Open radial menu"],
+                    ["L2", "Radial menu (gamepad)"],
+                    ["A", "Accept / confirm"],
+                    ["B", "Back / dismiss"],
+                    ["R5", "Command palette"],
+                    ["L4 + R4", "Accept completion"],
                   ].map(([key, desc]) => (
                     <div key={key} className="flex items-center justify-between gap-3">
                       <span>{desc}</span>
-                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent text-[10px]">{key}</kbd>
+                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent text-[10px]">
+                        {key}
+                      </kbd>
                     </div>
                   ))}
                 </div>
@@ -375,20 +480,39 @@ export function SettingsView({
         )}
 
         {/* ── Performance ──────────────────────────── */}
-        {activePanel === 'performance' && (
+        {activePanel === "performance" && (
           <div className="space-y-4">
             <Panel eyebrow="Runtime" title="Performance Tier">
               <div className="space-y-2 p-4">
-                {(['battery', 'balanced', 'performance', 'quality'] as const).map((tier) => {
+                {(["battery", "balanced", "performance", "quality"] as const).map((tier) => {
                   const meta = {
-                    battery:     { label: 'Battery Saver',    desc: 'Minimal animations, reduced blur, low GPU load.', badge: 'muted' as const },
-                    balanced:    { label: 'Balanced',         desc: 'Default. Good visuals without draining resources.', badge: 'accent' as const },
-                    performance: { label: 'Performance',      desc: 'Full animations, real-time effects, max quality.', badge: 'success' as const },
-                    quality:     { label: 'Ultra Quality',    desc: 'Max visual fidelity — plugged-in only.', badge: 'warning' as const },
+                    battery: {
+                      label: "Battery Saver",
+                      desc: "Minimal animations, reduced blur, low GPU load.",
+                      badge: "muted" as const,
+                    },
+                    balanced: {
+                      label: "Balanced",
+                      desc: "Default. Good visuals without draining resources.",
+                      badge: "accent" as const,
+                    },
+                    performance: {
+                      label: "Performance",
+                      desc: "Full animations, real-time effects, max quality.",
+                      badge: "success" as const,
+                    },
+                    quality: {
+                      label: "Ultra Quality",
+                      desc: "Max visual fidelity — plugged-in only.",
+                      badge: "warning" as const,
+                    },
                   }[tier];
-                  const active = tier === 'balanced';
+                  const active = tier === "balanced";
                   return (
-                    <div key={tier} className={`rounded-xl border p-3.5 ${active ? 'border-nd-accent/40 bg-nd-accent/[0.07]' : 'border-nd-text-muted/15 bg-nd-surface/40'}`}>
+                    <div
+                      key={tier}
+                      className={`rounded-xl border p-3.5 ${active ? "border-nd-accent/40 bg-nd-accent/[0.07]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-nd-text text-sm">{meta.label}</span>
                         {active && <Badge tone="accent">Active</Badge>}
@@ -397,17 +521,22 @@ export function SettingsView({
                     </div>
                   );
                 })}
-                <p className="text-xs text-nd-text-muted/60 pt-1">Performance tier persistence coming in v1.9.</p>
+                <p className="text-xs text-nd-text-muted/60 pt-1">
+                  Performance tier persistence coming in v1.9.
+                </p>
               </div>
             </Panel>
 
             <Panel eyebrow="Diagnostics" title="System Telemetry">
               <div className="p-4 grid gap-2 sm:grid-cols-2">
                 {[
-                  ['Latency', `${state.telemetry.latencyMs ?? '--'}ms`],
-                  ['Context used', `${state.telemetry.contextUsed ?? 0}%`],
+                  ["Latency", `${state.telemetry.latencyMs ?? "--"}ms`],
+                  ["Context used", `${state.telemetry.contextUsed ?? 0}%`],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 py-3">
+                  <div
+                    key={label}
+                    className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 py-3"
+                  >
                     <p className="text-xs text-nd-text-muted">{label}</p>
                     <p className="mt-1 font-mono text-lg font-bold text-nd-accent">{value}</p>
                   </div>
@@ -418,21 +547,31 @@ export function SettingsView({
         )}
 
         {/* ── Extensions ───────────────────────────── */}
-        {activePanel === 'extensions' && (
+        {activePanel === "extensions" && (
           <div className="space-y-4">
             <Panel eyebrow="Native Actions" title="Utilities">
               <div className="space-y-2 p-4">
                 <button
                   type="button"
                   onClick={async () => {
-                    dispatch({ type: 'set-busy', label: 'Refreshing diagnostic metrics...' });
+                    dispatch({ type: "set-busy", label: "Refreshing diagnostic metrics..." });
                     try {
-                      const [diag, logs] = await Promise.all([neurodeckApi.diagnostics.get(), neurodeckApi.diagnostics.logs()]);
-                      dispatch({ type: 'set-diagnostics', diagnostics: diag, logs });
+                      const [diag, logs] = await Promise.all([
+                        neurodeckApi.diagnostics.get(),
+                        neurodeckApi.diagnostics.logs(),
+                      ]);
+                      dispatch({ type: "set-diagnostics", diagnostics: diag, logs });
                     } catch (e) {
-                      dispatch({ type: 'set-error', error: { title: 'Failed to refresh diagnostics', message: String(e), action: 'Retry later' } });
+                      dispatch({
+                        type: "set-error",
+                        error: {
+                          title: "Failed to refresh diagnostics",
+                          message: String(e),
+                          action: "Retry later",
+                        },
+                      });
                     }
-                    dispatch({ type: 'set-busy', label: null });
+                    dispatch({ type: "set-busy", label: null });
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
@@ -448,14 +587,24 @@ export function SettingsView({
                 <button
                   type="button"
                   onClick={async () => {
-                    dispatch({ type: 'set-busy', label: 'Exporting sanitized diagnostics bundle...' });
+                    dispatch({
+                      type: "set-busy",
+                      label: "Exporting sanitized diagnostics bundle...",
+                    });
                     const response = await neurodeckApi.diagnostics.exportBundle();
                     if (!response.ok) {
-                      dispatch({ type: 'set-error', error: { title: 'Diagnostics export failed', message: response.error, action: 'Refresh Diagnostics, then retry.' } });
+                      dispatch({
+                        type: "set-error",
+                        error: {
+                          title: "Diagnostics export failed",
+                          message: response.error,
+                          action: "Refresh Diagnostics, then retry.",
+                        },
+                      });
                     } else {
-                      dispatch({ type: 'set-export-path', path: response.file });
+                      dispatch({ type: "set-export-path", path: response.file });
                     }
-                    dispatch({ type: 'set-busy', label: null });
+                    dispatch({ type: "set-busy", label: null });
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
@@ -477,20 +626,22 @@ export function SettingsView({
         )}
 
         {/* ── Privacy ──────────────────────────────── */}
-        {activePanel === 'privacy' && (
+        {activePanel === "privacy" && (
           <div className="space-y-4">
             <Panel eyebrow="Storage" title="Local Data">
               <div className="p-4 space-y-4">
                 <p className="text-xs leading-5 text-nd-text-muted">
-                  All data — settings, project context, AI messages, agent runs, and UI state — persists locally in the Electron userData folder. Nothing is sent to external servers without your explicit action.
+                  All data — settings, project context, AI messages, agent runs, and UI state —
+                  persists locally in the Electron userData folder. Nothing is sent to external
+                  servers without your explicit action.
                 </p>
                 <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 space-y-1.5 text-xs text-nd-text-muted">
                   {[
-                    ['Sessions', 'userData/sessions/'],
-                    ['Exports', 'userData/exports/'],
-                    ['Vector memory', 'userData/data/memory/'],
-                    ['Profiles', 'userData/data/profiles/'],
-                    ['Logs', 'userData/logs/'],
+                    ["Sessions", "userData/sessions/"],
+                    ["Exports", "userData/exports/"],
+                    ["Vector memory", "userData/data/memory/"],
+                    ["Profiles", "userData/data/profiles/"],
+                    ["Logs", "userData/logs/"],
                   ].map(([label, path]) => (
                     <div key={label} className="flex items-center justify-between gap-3">
                       <span className="text-nd-text">{label}</span>
@@ -503,7 +654,10 @@ export function SettingsView({
 
             <Panel eyebrow="Danger Zone" title="Reset">
               <div className="p-4 space-y-3">
-                <p className="text-xs text-nd-text-muted">Clears stored UI preferences, active session, and cached context. Does not delete sessions or exports from disk.</p>
+                <p className="text-xs text-nd-text-muted">
+                  Clears stored UI preferences, active session, and cached context. Does not delete
+                  sessions or exports from disk.
+                </p>
                 <button
                   type="button"
                   onClick={() => void actions.resetLocalState()}
@@ -517,12 +671,15 @@ export function SettingsView({
             <Panel eyebrow="About" title="NEURODECK">
               <div className="p-4 space-y-1.5 text-xs text-nd-text-muted">
                 {[
-                  ['Version', 'v1.8.0 — Ptah'],
-                  ['Runtime', 'Electron + axum'],
-                  ['Bridge', 'localhost:9477'],
-                  ['License', 'UNLICENSED — Khaotic Labs'],
+                  ["Version", "v1.8.0 — Ptah"],
+                  ["Runtime", "Electron + axum"],
+                  ["Bridge", "localhost:9477"],
+                  ["License", "UNLICENSED — Khaotic Labs"],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between gap-3 rounded-lg px-2 py-1">
+                  <div
+                    key={label}
+                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-1"
+                  >
                     <span className="text-nd-text/60">{label}</span>
                     <span className="font-mono text-nd-text">{value}</span>
                   </div>

@@ -13,7 +13,15 @@ type Particle =
   | { x: number; y: number; z: number; color: string }
   | { x: number; y: number; vx: number; vy: number; r: number }
   | { x: number; y: number; size: number; alpha: number; speed: number; label: string }
-  | { points: Array<{ x: number; y: number }>; dirX: number; dirY: number; growSpeed: number; stepsRemaining: number; alpha: number; color: string }
+  | {
+      points: Array<{ x: number; y: number }>;
+      dirX: number;
+      dirY: number;
+      growSpeed: number;
+      stepsRemaining: number;
+      alpha: number;
+      color: string;
+    }
   | { text: string; y: number; speed: number; alpha: number };
 
 const LOG_LINES = [
@@ -106,7 +114,9 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         size: Math.random() * 2 + 1,
         alpha: Math.random(),
         speed: 0.005 + Math.random() * 0.01,
-        label: `SECTOR_${Math.floor(Math.random() * 256).toString(16).toUpperCase()}`,
+        label: `SECTOR_${Math.floor(Math.random() * 256)
+          .toString(16)
+          .toUpperCase()}`,
       }));
     } else if (wallpaperId === "solar_circuit") {
       particlesRef.current = Array.from({ length: 6 }, () => makeCircuitLine(w, h));
@@ -212,13 +222,22 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     }
   };
 
-  const drawStarfield = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string, rc: string) => {
+  const drawStarfield = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    ac: string,
+    rc: string
+  ) => {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2, speed = 3;
+    const cx = w / 2,
+      cy = h / 2,
+      speed = 3;
     const ps = particlesRef.current as Array<{ x: number; y: number; z: number; color: string }>;
     for (const star of ps) {
-      const px = (star.x / star.z) * cx + cx, py = (star.y / star.z) * cy + cy;
+      const px = (star.x / star.z) * cx + cx,
+        py = (star.y / star.z) * cy + cy;
       star.z -= speed;
       if (star.z <= 0) {
         star.x = Math.random() * w - cx;
@@ -226,7 +245,8 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         star.z = w;
         continue;
       }
-      const nx = (star.x / star.z) * cx + cx, ny = (star.y / star.z) * cy + cy;
+      const nx = (star.x / star.z) * cx + cx,
+        ny = (star.y / star.z) * cy + cy;
       if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
         const alpha = 1 - star.z / w;
         ctx.strokeStyle = star.color.includes("accent") ? ac : rc;
@@ -243,7 +263,13 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
 
   const drawParticles = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string) => {
     ctx.clearRect(0, 0, w, h);
-    const ps = particlesRef.current as Array<{ x: number; y: number; vx: number; vy: number; r: number }>;
+    const ps = particlesRef.current as Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      r: number;
+    }>;
     for (const p of ps) {
       p.x += p.vx;
       p.y += p.vy;
@@ -259,9 +285,16 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.globalAlpha = 1;
   };
 
-  const drawGrid = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string, rc: string) => {
+  const drawGrid = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    ac: string,
+    rc: string
+  ) => {
     ctx.clearRect(0, 0, w, h);
-    const horizon = h * 0.45, gh = h - horizon;
+    const horizon = h * 0.45,
+      gh = h - horizon;
     angleRef.current = (angleRef.current + 0.6) % 40;
     const g = ctx.createLinearGradient(0, horizon - 50, 0, horizon + 50);
     g.addColorStop(0, "transparent");
@@ -279,7 +312,8 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.stroke();
 
     for (let i = 0; i <= 20; i++) {
-      const xTop = (w / 20) * i, xBottom = w / 2 + (xTop - w / 2) * 2.5;
+      const xTop = (w / 20) * i,
+        xBottom = w / 2 + (xTop - w / 2) * 2.5;
       ctx.strokeStyle = ac;
       ctx.globalAlpha = 0.08;
       ctx.beginPath();
@@ -290,9 +324,17 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.globalAlpha = 1;
   };
 
-  const drawRadar = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string, rc: string) => {
+  const drawRadar = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    ac: string,
+    rc: string
+  ) => {
     ctx.clearRect(0, 0, w, h);
-    const cx = w * 0.75, cy = h * 0.5, mr = Math.min(w, h) * 0.4;
+    const cx = w * 0.75,
+      cy = h * 0.5,
+      mr = Math.min(w, h) * 0.4;
     angleRef.current = (angleRef.current + 0.004) % (Math.PI * 2);
     ctx.save();
     ctx.translate(cx, cy);
@@ -316,7 +358,13 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.globalAlpha = 1;
   };
 
-  const drawCircuit = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string, rc: string) => {
+  const drawCircuit = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    ac: string,
+    rc: string
+  ) => {
     ctx.clearRect(0, 0, w, h);
     const ps = particlesRef.current as Array<{
       points: Array<{ x: number; y: number }>;
@@ -356,7 +404,13 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.globalAlpha = 1;
   };
 
-  const drawWave = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string, rc: string) => {
+  const drawWave = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    ac: string,
+    rc: string
+  ) => {
     ctx.clearRect(0, 0, w, h);
     angleRef.current += 0.015;
     ctx.strokeStyle = ac;
@@ -366,7 +420,10 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.beginPath();
     ctx.moveTo(0, midY);
     for (let x = 0; x < w; x += 10) {
-      ctx.lineTo(x, midY + Math.sin(x * 0.004 + angleRef.current) * 30 * Math.sin((x / w) * Math.PI));
+      ctx.lineTo(
+        x,
+        midY + Math.sin(x * 0.004 + angleRef.current) * 30 * Math.sin((x / w) * Math.PI)
+      );
     }
     ctx.stroke();
     ctx.globalAlpha = 1;
@@ -377,7 +434,12 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.fillRect(0, 0, w, h);
     ctx.font = "12px monospace";
     ctx.fillStyle = ac;
-    const ps = particlesRef.current as Array<{ text: string; y: number; speed: number; alpha: number }>;
+    const ps = particlesRef.current as Array<{
+      text: string;
+      y: number;
+      speed: number;
+      alpha: number;
+    }>;
     for (const line of ps) {
       ctx.globalAlpha = line.alpha;
       ctx.fillText(line.text, 20, line.y);

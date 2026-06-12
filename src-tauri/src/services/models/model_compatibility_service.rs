@@ -66,7 +66,8 @@ pub fn score_model(
         }
         "remote_or_docked_only" => {
             score -= 20;
-            warnings.push("Too large for comfortable local use; remote or docked recommended".into());
+            warnings
+                .push("Too large for comfortable local use; remote or docked recommended".into());
         }
         "unsupported" => {
             score -= 50;
@@ -86,7 +87,10 @@ pub fn score_model(
     match profile.parameter_class.as_str() {
         "sub_1b" | "1b" | "1_5b" | "2b" | "3b" => {
             score += 10;
-            reasons.push(format!("Small parameter class ({})", profile.parameter_class));
+            reasons.push(format!(
+                "Small parameter class ({})",
+                profile.parameter_class
+            ));
         }
         "7b" | "8b" => {
             score -= 10;
@@ -147,7 +151,9 @@ pub fn score_model(
 }
 
 fn has_all_capabilities(profile: &SupportedModelProfile, required: &[String]) -> bool {
-    required.iter().all(|cap| profile.capabilities.contains(cap))
+    required
+        .iter()
+        .all(|cap| profile.capabilities.contains(cap))
 }
 
 pub async fn get_model_compatibility_scores(
@@ -231,8 +237,13 @@ mod tests {
     #[test]
     fn deck_default_scores_higher_than_unsupported() {
         let options = ScoreOptions::default();
-        let default_score = score_model(&sample_profile("a", "deck_default", "1b"), false, &options);
-        let unsupported_score = score_model(&sample_profile("b", "unsupported", "30b_plus"), false, &options);
+        let default_score =
+            score_model(&sample_profile("a", "deck_default", "1b"), false, &options);
+        let unsupported_score = score_model(
+            &sample_profile("b", "unsupported", "30b_plus"),
+            false,
+            &options,
+        );
         assert!(
             default_score.score > unsupported_score.score,
             "default should outrank unsupported"

@@ -49,7 +49,7 @@ pub async fn api_request(
         return Err("file:// URLs are not allowed".to_string());
     }
 
-    let clamped_timeout = timeout_secs.max(5).min(120);
+    let clamped_timeout = timeout_secs.clamp(5, 120);
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(clamped_timeout as u64))
         .build()

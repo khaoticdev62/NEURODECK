@@ -1,8 +1,8 @@
-import { MessageSquareText, Trash2, Edit2, Download } from 'lucide-react';
-import { Badge } from '../primitives/Badge';
-import type { SessionNode } from '../../types/neurodeck';
-import { useState } from 'react';
-import { bridgeInvoke, neurodeckApi } from '../../services/bridgeAdapter';
+import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
+import { Badge } from "../primitives/Badge";
+import type { SessionNode } from "../../types/neurodeck";
+import { useState } from "react";
+import { bridgeInvoke, neurodeckApi } from "../../services/bridgeAdapter";
 
 interface SessionCardProps {
   node: SessionNode;
@@ -12,7 +12,7 @@ interface SessionCardProps {
 export function SessionCard({ node, onRefresh }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const formattedDate = new Date(node.created_at).toLocaleString();
   const displayName = node.name || node.id;
 
@@ -30,7 +30,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
   };
 
   const handleRename = async () => {
-    const newName = prompt('Enter new session name:', node.name || '');
+    const newName = prompt("Enter new session name:", node.name || "");
     if (newName === null) return;
     setLoading(true);
     setError(null);
@@ -48,7 +48,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
     setError(null);
     try {
       const result = await bridgeInvoke<{ ok?: boolean; file?: string; error?: string }>(
-        'export_session_markdown',
+        "export_session_markdown",
         { session_id: node.id }
       );
       if (result?.file) {
@@ -85,7 +85,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
             {error && <p className="mt-2 text-xs text-nd-error">{error}</p>}
           </div>
         </div>
-        
+
         <div className="flex shrink-0 items-center gap-2 self-end sm:self-start">
           <button
             onClick={handleRename}

@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
-import type { NeurodeckTheme, ThemeSettings, ThemeTokenSet, LiveWallpaperProfile } from "../../shared/theme/themeContracts";
+import type {
+  NeurodeckTheme,
+  ThemeSettings,
+  ThemeTokenSet,
+  LiveWallpaperProfile,
+} from "../../shared/theme/themeContracts";
 import { themeRegistry } from "../../shared/theme/themeRegistry";
 import { wallpaperRegistry } from "../../shared/theme/wallpaperRegistry";
 import { themePersistenceClient } from "./themePersistenceClient";

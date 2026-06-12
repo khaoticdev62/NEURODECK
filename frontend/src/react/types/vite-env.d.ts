@@ -18,12 +18,18 @@ import type {
   SavedSessionPayload,
   SaveSessionResponse,
   SessionExportResponse,
-} from './types/neurodeck';
+} from "./types/neurodeck";
 
 type NeuroDeckStoreResult = { ok: boolean; updatedAt?: string; reason?: string };
-type ProjectScanResponse = { canceled: true } | { canceled: false; project?: ProjectScanResult; error?: string };
-type ProjectContextResponse = { ok: true; context: ProjectContextSnapshot } | { ok: false; error: string };
-type ModelDetectionResponse = { ok: true; detection: ModelDetectionResult } | { ok: false; error: string };
+type ProjectScanResponse =
+  | { canceled: true }
+  | { canceled: false; project?: ProjectScanResult; error?: string };
+type ProjectContextResponse =
+  | { ok: true; context: ProjectContextSnapshot }
+  | { ok: false; error: string };
+type ModelDetectionResponse =
+  | { ok: true; detection: ModelDetectionResult }
+  | { ok: false; error: string };
 
 declare global {
   interface Window {
@@ -74,9 +80,18 @@ declare global {
         goForward: (tabId: string) => Promise<{ success: boolean }>;
         reload: (tabId: string) => Promise<{ success: boolean }>;
         stop: (tabId: string) => Promise<{ success: boolean }>;
-        findInPage: (tabId: string, text: string, findNext?: boolean) => Promise<{ success: boolean }>;
+        findInPage: (
+          tabId: string,
+          text: string,
+          findNext?: boolean
+        ) => Promise<{ success: boolean }>;
         setZoom: (tabId: string, zoomFactor: number) => Promise<{ success: boolean }>;
-        setBounds: (bounds: { x: number; y: number; width: number; height: number }) => Promise<{ success: boolean }>;
+        setBounds: (bounds: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        }) => Promise<{ success: boolean }>;
         hide: () => Promise<{ success: boolean }>;
         show: () => Promise<{ success: boolean }>;
         getProfiles: () => Promise<any[]>;
@@ -86,7 +101,11 @@ declare global {
         deleteHistory: (id: string) => Promise<{ success: boolean }>;
         clearHistory: (profileId?: string) => Promise<{ success: boolean }>;
         getBookmarks: (profileId?: string) => Promise<any[]>;
-        addBookmark: (url: string, title: string, profileId: string) => Promise<{ success: boolean; bookmark?: any }>;
+        addBookmark: (
+          url: string,
+          title: string,
+          profileId: string
+        ) => Promise<{ success: boolean; bookmark?: any }>;
         deleteBookmark: (id: string) => Promise<{ success: boolean }>;
         getDownloads: () => Promise<any[]>;
         cancelDownload: (id: string) => Promise<{ success: boolean }>;
@@ -99,7 +118,9 @@ declare global {
         getDiagnostics: () => Promise<any>;
         normalizeUrl: (url: string) => Promise<{ url: string }>;
         saveToMemory: () => Promise<any>;
-        onBrowserEvent: (callback: (data: { event: string; payload: Record<string, unknown> }) => void) => () => void;
+        onBrowserEvent: (
+          callback: (data: { event: string; payload: Record<string, unknown> }) => void
+        ) => () => void;
       };
     };
   }

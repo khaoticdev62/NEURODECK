@@ -45,7 +45,10 @@ class SecurityAuditor:
     # Utility helpers
     # ------------------------------------------------------------------
     def _read(self, rel: str) -> str:
-        return (self.root / rel).read_text(encoding="utf-8", errors="ignore")
+        path = self.root / rel
+        if not path.exists():
+            return ""
+        return path.read_text(encoding="utf-8", errors="ignore")
 
     def _write(self, rel: str, content: str) -> None:
         (self.root / rel).write_text(content, encoding="utf-8")
@@ -71,6 +74,9 @@ class SecurityAuditor:
     # ------------------------------------------------------------------
     def check_csp(self, apply: bool):
         rel = "src-tauri/tauri.conf.json"
+        if not (self.root / rel).exists():
+            # Pure Electron build: CSP is injected via Electron webRequest.
+            return
         text = self._read(rel)
         csp_match = re.search(r'"csp"\s*:\s*"([^"]+)"', text)
         if not csp_match:

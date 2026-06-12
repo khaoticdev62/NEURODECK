@@ -1,11 +1,17 @@
-import { useEffect, useState, useCallback } from 'react';
-import { FileDown, FileJson, RefreshCw, Archive } from 'lucide-react';
-import { Panel } from '../../components/primitives/Panel';
-import { SessionCard } from '../../components/cards/SessionCard';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { NeuroDeckAppActions, NeuroDeckState, SessionNode } from '../../types/neurodeck';
+import { useEffect, useState, useCallback } from "react";
+import { FileDown, FileJson, RefreshCw, Archive } from "lucide-react";
+import { Panel } from "../../components/primitives/Panel";
+import { SessionCard } from "../../components/cards/SessionCard";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { NeuroDeckAppActions, NeuroDeckState, SessionNode } from "../../types/neurodeck";
 
-export function SessionsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
+export function SessionsView({
+  state,
+  actions,
+}: {
+  state: NeuroDeckState;
+  actions: NeuroDeckAppActions;
+}) {
   const [sessionsList, setSessionsList] = useState<SessionNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +48,9 @@ export function SessionsView({ state, actions }: { state: NeuroDeckState; action
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent disabled:opacity-50"
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh List
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh List
           </button>
-          
+
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
             <h4 className="text-sm font-semibold text-nd-text">Active Session Actions</h4>
             <button
@@ -62,7 +68,9 @@ export function SessionsView({ state, actions }: { state: NeuroDeckState; action
               <FileJson className="h-4 w-4" /> Save JSON Session
             </button>
             {state.lastExportPath && (
-              <p className="mt-3 break-all text-xs text-nd-text-muted">Last export: {state.lastExportPath}</p>
+              <p className="mt-3 break-all text-xs text-nd-text-muted">
+                Last export: {state.lastExportPath}
+              </p>
             )}
           </div>
         </div>

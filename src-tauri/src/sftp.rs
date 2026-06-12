@@ -43,7 +43,7 @@ fn build_sftp_command(
     key_path: Option<&str>,
 ) -> std::process::Command {
     let mut cmd;
-    if auth_type == "key" || password.map_or(true, |p| p.is_empty()) {
+    if auth_type == "key" || password.is_none_or(|p| p.is_empty()) {
         cmd = std::process::Command::new("sftp");
     } else {
         // SECURITY: Use sshpass -e with SSHPASS env var instead of -p

@@ -452,6 +452,9 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
   const { browserProfileService } = require('./dist/main/services/browser/browserProfileService');
   const { browserUrlNormalizer } = require('./dist/main/services/browser/browserUrlNormalizer');
   const { browserSearchEngineService } = require('./dist/main/services/browser/browserSearchEngineService');
+  const { vpnRouteManager } = require('./dist/main/services/browser-vpn/vpnRouteManager');
+  const { vpnConfigImportService } = require('./dist/main/services/browser-vpn/vpnConfigImportService');
+  const { vpnDiagnosticsService } = require('./dist/main/services/browser-vpn/vpnDiagnosticsService');
 
   browserViewManager.setMainWindow(mainWindow);
 
@@ -782,6 +785,28 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     const searchUrl = browserSearchEngineService.getSearchEngineUrl();
     return { url: browserUrlNormalizer.normalize(payload.url, searchUrl) };
   });
+
+  // â”€â”€ Browser VPN Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  guard(IPC.VPN_LIST_PROFILES, {}, async () => vpnRouteManager.listProfiles());
+  guard(IPC.VPN_GET_PROFILE, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.getProfile(payload.profileId));
+  guard(IPC.VPN_CREATE_PROFILE, { name: { type: 'string', required: true } }, async (payload) => vpnRouteManager.createProfile(payload));
+  guard(IPC.VPN_UPDATE_PROFILE, { id: { type: 'string', required: true } }, async (payload) => vpnRouteManager.updateProfile(payload));
+  guard(IPC.VPN_DELETE_PROFILE, { profileId: { type: 'string', required: true } }, async (payload) => ({ success: vpnRouteManager.deleteProfile(payload.profileId) }));
+  guard(IPC.VPN_IMPORT_CONFIG, { text: { type: 'string', required: true }, kind: { type: 'string', required: false } }, async (payload) => vpnConfigImportService.importText(payload.text, payload.kind));
+  guard(IPC.VPN_VALIDATE_CONFIG, { text: { type: 'string', required: true }, kind: { type: 'string', required: false } }, async (payload) => vpnConfigImportService.importText(payload.text, payload.kind));
+  guard(IPC.VPN_LIST_TEMPLATES, {}, async () => vpnRouteManager.listTemplates());
+  guard(IPC.VPN_CONNECT, { profileId: { type: 'string', required: true }, browserProfileId: { type: 'string', required: false } }, async (payload) => vpnRouteManager.connect(payload.profileId, payload.browserProfileId));
+  guard(IPC.VPN_DISCONNECT, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.disconnect(payload.profileId));
+  guard(IPC.VPN_VERIFY, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.verify(payload.profileId));
+  guard(IPC.VPN_REPAIR, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.repair(payload.profileId));
+  guard(IPC.VPN_GET_STATUS, { profileId: { type: 'string', required: false } }, async (payload) => vpnDiagnosticsService.getReport(payload.profileId));
+  guard(IPC.VPN_GET_EVIDENCE, { profileId: { type: 'string', required: false } }, async (payload) => vpnRouteManager.getEvidence(payload.profileId));
+  guard(IPC.VPN_GET_RECOVERY_EVENTS, {}, async () => vpnRouteManager.getRecoveryEvents());
+  guard(IPC.VPN_SET_KILL_SWITCH, { profileId: { type: 'string', required: true }, enabled: { type: 'boolean', required: true } }, async (payload) => vpnRouteManager.setKillSwitch(payload.profileId, payload.enabled));
+  guard(IPC.VPN_APPLY_BROWSER_PROXY, { profileId: { type: 'string', required: true }, browserProfileId: { type: 'string', required: false } }, async (payload) => vpnRouteManager.applyBrowserProxy(payload.profileId, payload.browserProfileId));
+  guard(IPC.VPN_CLEAR_BROWSER_PROXY, { profileId: { type: 'string', required: true }, browserProfileId: { type: 'string', required: false } }, async (payload) => vpnRouteManager.clearBrowserProxy(payload.profileId, payload.browserProfileId));
+  guard(IPC.VPN_GET_PROVIDER_MATRIX, {}, async () => vpnRouteManager.getProviderMatrix());
+  guard(IPC.VPN_EXPORT_REDACTED_PROFILE, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.exportRedactedProfile(payload.profileId));
 }
 
 module.exports = { registerIpcHandlers };

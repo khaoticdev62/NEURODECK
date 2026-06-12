@@ -1,9 +1,9 @@
-use crate::AppState;
 use crate::paths::user_config_dir;
-use std::sync::{Arc, Mutex};
+use crate::AppState;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
-use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use crate::plugin_mgr;
 use crate::whisper;
@@ -595,7 +595,6 @@ pub fn run_memory_backup(db: &crate::memory::MemoryDB) -> Result<String, String>
 
     Ok(dest.to_string_lossy().into_owned())
 }
-
 
 #[derive(serde::Serialize)]
 pub struct DiagnosticResult {

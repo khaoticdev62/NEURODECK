@@ -1,4 +1,4 @@
-use super::provider_runtime_registry::{ProviderRuntimeProfile, resolve_base_url};
+use super::provider_runtime_registry::{resolve_base_url, ProviderRuntimeProfile};
 use crate::config::LlmConfig;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -60,7 +60,9 @@ fn keychain_key(runtime_id: &str) -> Option<String> {
     let key = match runtime_id {
         "gemini-cloud" => neurodeck_infrastructure::secrets::get_gemini_api_key(),
         "huggingface-inference" => neurodeck_infrastructure::secrets::get_hf_api_key(),
-        "openai-compatible-remote" => neurodeck_infrastructure::secrets::get_openai_compat_api_key(),
+        "openai-compatible-remote" => {
+            neurodeck_infrastructure::secrets::get_openai_compat_api_key()
+        }
         _ => return None,
     };
     key.ok().filter(|k| !k.is_empty())
@@ -71,7 +73,10 @@ fn has_required_auth(runtime: &ProviderRuntimeProfile, config: &LlmConfig) -> bo
         return true;
     }
     for env_var in &runtime.auth.env_vars {
-        if std::env::var(env_var).map(|v| !v.is_empty()).unwrap_or(false) {
+        if std::env::var(env_var)
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
+        {
             return true;
         }
     }

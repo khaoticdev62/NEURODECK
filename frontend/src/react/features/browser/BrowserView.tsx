@@ -1,10 +1,40 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Globe, ArrowLeft, ArrowRight, RotateCcw, Home, ExternalLink, Eye, EyeOff, Save,
-  ZoomIn, ZoomOut, Focus, Search, X, Star, BookOpen, Shield, ShieldCheck,
-  Download, Clock, Trash2, BookMarked, ChevronDown, Plus, Pin, Volume2, VolumeX,
-  Lock, Unlock, Settings, AlertTriangle, Terminal, Info, RefreshCw
-} from 'lucide-react';
+  Globe,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw,
+  Home,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Save,
+  ZoomIn,
+  ZoomOut,
+  Focus,
+  Search,
+  X,
+  Star,
+  BookOpen,
+  Shield,
+  ShieldCheck,
+  Download,
+  Clock,
+  Trash2,
+  BookMarked,
+  ChevronDown,
+  Plus,
+  Pin,
+  Volume2,
+  VolumeX,
+  Lock,
+  Unlock,
+  Settings,
+  AlertTriangle,
+  Terminal,
+  Info,
+  RefreshCw,
+} from "lucide-react";
 
 interface BrowserTab {
   id: string;
@@ -14,14 +44,14 @@ interface BrowserTab {
   url: string;
   displayUrl: string;
   favicon?: string;
-  state: 'new' | 'loading' | 'ready' | 'blocked' | 'crashed' | 'offline' | 'error' | 'closed';
+  state: "new" | "loading" | "ready" | "blocked" | "crashed" | "offline" | "error" | "closed";
   canGoBack: boolean;
   canGoForward: boolean;
   isLoading: boolean;
   isMuted: boolean;
   isPinned: boolean;
   isPrivate: boolean;
-  security: 'secure' | 'insecure' | 'warning' | 'broken';
+  security: "secure" | "insecure" | "warning" | "broken";
   permissions: any[];
   crashCount: number;
   diagnostics: {
@@ -81,7 +111,7 @@ interface DownloadItem {
   savePath: string;
   totalBytes: number;
   receivedBytes: number;
-  state: 'progressing' | 'completed' | 'cancelled' | 'interrupted';
+  state: "progressing" | "completed" | "cancelled" | "interrupted";
   profileId: string;
   startTime: string;
 }
@@ -97,10 +127,10 @@ export function BrowserView() {
   const [tabs, setTabs] = useState<BrowserTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<BrowserProfile[]>([]);
-  const [urlInput, setUrlInput] = useState('');
+  const [urlInput, setUrlInput] = useState("");
   const [findOpen, setFindOpen] = useState(false);
-  const [findText, setFindText] = useState('');
-  const [showSidebar, setShowSidebar] = useState<'history' | 'bookmarks' | null>(null);
+  const [findText, setFindText] = useState("");
+  const [showSidebar, setShowSidebar] = useState<"history" | "bookmarks" | null>(null);
   const [history, setHistory] = useState<BrowserHistoryEntry[]>([]);
   const [bookmarks, setBookmarks] = useState<BrowserBookmark[]>([]);
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
@@ -136,10 +166,10 @@ export function BrowserView() {
       const active = await window.neurodeck.browser.getActiveTab();
       if (active) {
         setActiveTabId(active.id);
-        setUrlInput(active.displayUrl || active.url || '');
+        setUrlInput(active.displayUrl || active.url || "");
       } else if (list.length > 0) {
         setActiveTabId(list[0].id);
-        setUrlInput(list[0].displayUrl || list[0].url || '');
+        setUrlInput(list[0].displayUrl || list[0].url || "");
       }
     } catch (_) {}
   }, []);
@@ -147,7 +177,7 @@ export function BrowserView() {
   const loadHistory = useCallback(async () => {
     if (!window.neurodeck?.browser) return;
     const activeTab = tabs.find((t) => t.id === activeTabId);
-    const profileId = activeTab?.profileId || 'default';
+    const profileId = activeTab?.profileId || "default";
     try {
       const list = await window.neurodeck.browser.getHistory(profileId);
       setHistory(list);
@@ -157,7 +187,7 @@ export function BrowserView() {
   const loadBookmarks = useCallback(async () => {
     if (!window.neurodeck?.browser) return;
     const activeTab = tabs.find((t) => t.id === activeTabId);
-    const profileId = activeTab?.profileId || 'default';
+    const profileId = activeTab?.profileId || "default";
     try {
       const list = await window.neurodeck.browser.getBookmarks(profileId);
       setBookmarks(list);
@@ -169,16 +199,16 @@ export function BrowserView() {
     try {
       const list = await window.neurodeck.browser.getDownloads();
       setDownloads(list);
-      const activeCount = list.filter((d) => d.state === 'progressing').length;
+      const activeCount = list.filter((d) => d.state === "progressing").length;
       setActiveDownloadCount(activeCount);
     } catch (_) {}
   }, []);
 
-  const createTab = async (urlStr: string = 'https://example.com') => {
+  const createTab = async (urlStr: string = "https://example.com") => {
     if (!window.neurodeck?.browser) return;
     try {
       const activeTab = tabs.find((t) => t.id === activeTabId);
-      const profileId = activeTab?.profileId || 'default';
+      const profileId = activeTab?.profileId || "default";
       await window.neurodeck.browser.createTab(urlStr, profileId);
       await loadTabs();
       setTimeout(reportBounds, 100);
@@ -202,7 +232,7 @@ export function BrowserView() {
       setActiveTabId(tabId);
       const tab = tabs.find((t) => t.id === tabId);
       if (tab) {
-        setUrlInput(tab.displayUrl || tab.url || '');
+        setUrlInput(tab.displayUrl || tab.url || "");
       }
       setTimeout(reportBounds, 100);
     } catch (_) {}
@@ -227,15 +257,18 @@ export function BrowserView() {
   };
 
   const goBack = async () => {
-    if (activeTabId && window.neurodeck?.browser) await window.neurodeck.browser.goBack(activeTabId);
+    if (activeTabId && window.neurodeck?.browser)
+      await window.neurodeck.browser.goBack(activeTabId);
   };
 
   const goForward = async () => {
-    if (activeTabId && window.neurodeck?.browser) await window.neurodeck.browser.goForward(activeTabId);
+    if (activeTabId && window.neurodeck?.browser)
+      await window.neurodeck.browser.goForward(activeTabId);
   };
 
   const refresh = async () => {
-    if (activeTabId && window.neurodeck?.browser) await window.neurodeck.browser.reload(activeTabId);
+    if (activeTabId && window.neurodeck?.browser)
+      await window.neurodeck.browser.reload(activeTabId);
   };
 
   const stop = async () => {
@@ -257,7 +290,7 @@ export function BrowserView() {
     if (window.neurodeck?.browser) {
       try {
         await window.neurodeck.browser.saveToMemory();
-        alert('Page content captured and injected into universal vector memory.');
+        alert("Page content captured and injected into universal vector memory.");
       } catch (err: any) {
         alert(`Failed to save: ${err.message || err}`);
       }
@@ -290,7 +323,7 @@ export function BrowserView() {
   const handleFind = () => {
     if (findOpen) {
       setFindOpen(false);
-      setFindText('');
+      setFindText("");
     } else {
       setFindOpen(true);
     }
@@ -312,7 +345,11 @@ export function BrowserView() {
         await window.neurodeck.browser.deleteBookmark(b.id);
       }
     } else {
-      await window.neurodeck.browser.addBookmark(activeTab.url, activeTab.title || activeTab.url, activeTab.profileId);
+      await window.neurodeck.browser.addBookmark(
+        activeTab.url,
+        activeTab.title || activeTab.url,
+        activeTab.profileId
+      );
     }
     await loadBookmarks();
   };
@@ -333,7 +370,7 @@ export function BrowserView() {
 
   const clearHistory = async () => {
     const activeTab = tabs.find((t) => t.id === activeTabId);
-    const profileId = activeTab?.profileId || 'default';
+    const profileId = activeTab?.profileId || "default";
     if (window.neurodeck?.browser) {
       await window.neurodeck.browser.clearHistory(profileId);
       setHistory([]);
@@ -342,8 +379,8 @@ export function BrowserView() {
 
   const handleToggleAdBlock = async () => {
     if (window.neurodeck?.browser) {
-      const res = await window.neurodeck.browser.clearData('default', {}); // wait, toggle in backend
-      const result = await window.neurodeck.browser.respondToPermission('', ''); // toggle is toggleAdblock
+      const res = await window.neurodeck.browser.clearData("default", {}); // wait, toggle in backend
+      const result = await window.neurodeck.browser.respondToPermission("", ""); // toggle is toggleAdblock
       // Let's use general ipcRenderer invoke since adblock status is exported on electronAPI
       if (window.electronAPI?.browserAdblockToggle) {
         const toggleRes = await window.electronAPI.browserAdblockToggle();
@@ -370,7 +407,11 @@ export function BrowserView() {
 
   const clearProfileData = async (profileId: string) => {
     if (window.neurodeck?.browser) {
-      await window.neurodeck.browser.clearData(profileId, { cookies: true, cache: true, localStorage: true });
+      await window.neurodeck.browser.clearData(profileId, {
+        cookies: true,
+        cache: true,
+        localStorage: true,
+      });
       setShowProfilesMenu(false);
       alert(`Partition data purged for profile: ${profileId}`);
     }
@@ -416,9 +457,9 @@ export function BrowserView() {
 
   // Sidebar loading sync
   useEffect(() => {
-    if (showSidebar === 'history') {
+    if (showSidebar === "history") {
       loadHistory();
-    } else if (showSidebar === 'bookmarks') {
+    } else if (showSidebar === "bookmarks") {
       loadBookmarks();
     }
   }, [showSidebar, loadHistory, loadBookmarks]);
@@ -428,11 +469,11 @@ export function BrowserView() {
     if (!visible) return;
     reportBounds();
     const onResize = () => reportBounds();
-    window.addEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
     const ro = new ResizeObserver(() => reportBounds());
     if (viewportRef.current) ro.observe(viewportRef.current);
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
   }, [visible, reportBounds, activeTabId, tabs]);
@@ -442,24 +483,26 @@ export function BrowserView() {
     if (!window.neurodeck?.browser) return;
     const unsubscribe = window.neurodeck.browser.onBrowserEvent((data: any) => {
       const { event, payload } = data;
-      if (event === 'tabs-updated') {
+      if (event === "tabs-updated") {
         setTabs(payload.tabs || []);
         if (payload.activeTabId) {
           setActiveTabId(payload.activeTabId);
         }
-      } else if (event === 'permission-requested') {
+      } else if (event === "permission-requested") {
         setPermissions((prev) => [...prev, payload]);
-      } else if (event === 'download-started') {
+      } else if (event === "download-started") {
         loadDownloads();
-      } else if (event === 'download-progress') {
-        setDownloads((prev) => prev.map((d) =>
-          d.id === payload.id
-            ? { ...d, receivedBytes: payload.receivedBytes, state: payload.state }
-            : d
-        ));
-      } else if (event === 'download-complete') {
+      } else if (event === "download-progress") {
+        setDownloads((prev) =>
+          prev.map((d) =>
+            d.id === payload.id
+              ? { ...d, receivedBytes: payload.receivedBytes, state: payload.state }
+              : d
+          )
+        );
+      } else if (event === "download-complete") {
         loadDownloads();
-      } else if (event === 'did-navigate') {
+      } else if (event === "did-navigate") {
         const activeTab = tabs.find((t) => t.id === activeTabId);
         if (activeTab && activeTab.id === payload.tabId) {
           setUrlInput(payload.url);
@@ -475,39 +518,39 @@ export function BrowserView() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       switch (e.key.toLowerCase()) {
-        case 't':
+        case "t":
           e.preventDefault();
           createTab();
           break;
-        case 'w':
+        case "w":
           if (activeTabId) {
             e.preventDefault();
             window.neurodeck?.browser?.closeTab(activeTabId).then(() => loadTabs());
           }
           break;
-        case 'l':
+        case "l":
           e.preventDefault();
           urlInputRef.current?.focus();
           urlInputRef.current?.select();
           break;
-        case 'r':
+        case "r":
           e.preventDefault();
           refresh();
           break;
-        case '+':
-        case '=':
+        case "+":
+        case "=":
           e.preventDefault();
           handleZoomIn();
           break;
-        case '-':
+        case "-":
           e.preventDefault();
           handleZoomOut();
           break;
-        case '0':
+        case "0":
           e.preventDefault();
           handleZoomReset();
           break;
-        case 'f':
+        case "f":
           if (!e.shiftKey) {
             e.preventDefault();
             handleFind();
@@ -515,8 +558,8 @@ export function BrowserView() {
           break;
       }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeTabId, tabs, loadTabs]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -525,7 +568,6 @@ export function BrowserView() {
 
   return (
     <div className="browser-container flex h-full flex-col bg-nd-bg text-nd-text select-none">
-      
       {/* Permission Prompts Overlay */}
       {permissions.length > 0 && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[9999] w-96 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">
@@ -534,31 +576,32 @@ export function BrowserView() {
             <div>
               <h4 className="text-sm font-semibold text-nd-text">Permission Request</h4>
               <p className="text-xs text-nd-text-muted mt-1 leading-relaxed">
-                The site <code className="text-nd-accent">{permissions[0].origin}</code> requests access to <code className="text-nd-accent">{permissions[0].permission}</code>.
+                The site <code className="text-nd-accent">{permissions[0].origin}</code> requests
+                access to <code className="text-nd-accent">{permissions[0].permission}</code>.
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             <button
-              onClick={() => respondToPermission(permissions[0].requestId, 'allow_once')}
+              onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}
               className="px-3 py-1.5 rounded-lg bg-nd-accent/10 border border-nd-accent/20 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition text-center"
             >
               Allow Once
             </button>
             <button
-              onClick={() => respondToPermission(permissions[0].requestId, 'allow_always')}
+              onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}
               className="px-3 py-1.5 rounded-lg bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition text-center"
             >
               Allow Always
             </button>
             <button
-              onClick={() => respondToPermission(permissions[0].requestId, 'block_once')}
+              onClick={() => respondToPermission(permissions[0].requestId, "block_once")}
               className="px-3 py-1.5 rounded-lg bg-nd-surface border border-nd-text-muted/15 text-xs text-nd-text-muted hover:text-nd-text transition text-center"
             >
               Block Once
             </button>
             <button
-              onClick={() => respondToPermission(permissions[0].requestId, 'block_always')}
+              onClick={() => respondToPermission(permissions[0].requestId, "block_always")}
               className="px-3 py-1.5 rounded-lg bg-nd-danger/10 border border-nd-danger/20 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20 transition text-center"
             >
               Block Always
@@ -578,25 +621,23 @@ export function BrowserView() {
                 onClick={() => switchTab(tab.id)}
                 className={`group relative flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border ${
                   isActive
-                    ? 'bg-nd-accent/10 border-nd-accent/30 text-nd-text font-semibold'
-                    : 'bg-nd-surface/30 border-transparent text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text'
+                    ? "bg-nd-accent/10 border-nd-accent/30 text-nd-text font-semibold"
+                    : "bg-nd-surface/30 border-transparent text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text"
                 }`}
               >
                 {tab.isPrivate ? (
                   <Lock className="h-3.5 w-3.5 text-nd-warning shrink-0" />
                 ) : (
-                  <Globe className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-nd-accent' : 'text-nd-text-muted'}`} />
+                  <Globe
+                    className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-nd-accent" : "text-nd-text-muted"}`}
+                  />
                 )}
-                <span className="max-w-[120px] truncate">{tab.title || 'New Tab'}</span>
+                <span className="max-w-[120px] truncate">{tab.title || "New Tab"}</span>
                 {tab.isLoading && (
                   <RefreshCw className="h-3 w-3 animate-spin text-nd-accent shrink-0" />
                 )}
-                {tab.isMuted && (
-                  <VolumeX className="h-3 w-3 text-nd-danger shrink-0" />
-                )}
-                {tab.isPinned && (
-                  <Pin className="h-3 w-3 text-nd-accent shrink-0 rotate-45" />
-                )}
+                {tab.isMuted && <VolumeX className="h-3 w-3 text-nd-danger shrink-0" />}
+                {tab.isPinned && <Pin className="h-3 w-3 text-nd-accent shrink-0 rotate-45" />}
                 <button
                   onClick={(e) => closeTab(tab.id, e)}
                   className="rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-nd-surface text-nd-text-muted hover:text-nd-text shrink-0"
@@ -621,8 +662,8 @@ export function BrowserView() {
             onClick={() => setShowDownloadsMenu((v) => !v)}
             className={`relative rounded-xl border p-2 text-nd-text transition ${
               showDownloadsMenu || activeDownloadCount > 0
-                ? 'bg-nd-accent/15 border-nd-accent/30 text-nd-accent'
-                : 'bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text'
+                ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
+                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
             title="Downloads"
           >
@@ -641,8 +682,8 @@ export function BrowserView() {
             }}
             className={`rounded-xl border p-2 text-nd-text transition ${
               showDiagnostics
-                ? 'bg-nd-accent/15 border-nd-accent/30 text-nd-accent'
-                : 'bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text'
+                ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
+                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
             title="Session Diagnostics"
           >
@@ -673,12 +714,12 @@ export function BrowserView() {
           <button
             onClick={activeTab?.isLoading ? stop : refresh}
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
-            title={activeTab?.isLoading ? 'Stop' : 'Reload'}
+            title={activeTab?.isLoading ? "Stop" : "Reload"}
           >
             {activeTab?.isLoading ? <X className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
           </button>
           <button
-            onClick={() => navigate('https://example.com')}
+            onClick={() => navigate("https://example.com")}
             className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
             title="Home"
           >
@@ -688,17 +729,21 @@ export function BrowserView() {
 
         {/* Address Bar */}
         <div className="flex flex-1 min-w-[240px] items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/20 px-3 py-1.5 focus-within:border-nd-accent/40 focus-within:ring-2 focus-within:ring-nd-accent/25 transition">
-          {activeTab?.security === 'secure' ? (
-            <span title="Secure HTTPS connection"><Lock className="h-3.5 w-3.5 text-nd-success" /></span>
+          {activeTab?.security === "secure" ? (
+            <span title="Secure HTTPS connection">
+              <Lock className="h-3.5 w-3.5 text-nd-success" />
+            </span>
           ) : (
-            <span title="Insecure HTTP connection"><Unlock className="h-3.5 w-3.5 text-nd-warning" /></span>
+            <span title="Insecure HTTP connection">
+              <Unlock className="h-3.5 w-3.5 text-nd-warning" />
+            </span>
           )}
           <input
             ref={urlInputRef}
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && navigate(urlInput)}
+            onKeyDown={(e) => e.key === "Enter" && navigate(urlInput)}
             className="flex-1 bg-transparent text-xs text-nd-text outline-none"
             placeholder="Search or enter web URL..."
           />
@@ -716,22 +761,22 @@ export function BrowserView() {
             onClick={toggleBookmark}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               isBookmarked
-                ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
-                : 'border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text'
+                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
+                : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title={isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'}
+            title={isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
           >
-            <Star className="h-4 w-4" fill={isBookmarked ? 'currentColor' : 'none'} />
+            <Star className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} />
           </button>
 
           <button
             onClick={handleToggleAdBlock}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               adBlockEnabled
-                ? 'border-nd-success/30 bg-nd-success/10 text-nd-success'
-                : 'border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text'
+                ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
+                : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
             }`}
-            title={adBlockEnabled ? 'Shield Active (Ad Blocker)' : 'Shield Inactive (Ad Blocker)'}
+            title={adBlockEnabled ? "Shield Active (Ad Blocker)" : "Shield Inactive (Ad Blocker)"}
           >
             {adBlockEnabled ? <ShieldCheck className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
           </button>
@@ -747,7 +792,7 @@ export function BrowserView() {
               className="flex items-center gap-1.5 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 px-3 py-2 text-xs font-semibold text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
             >
               <Settings className="h-3.5 w-3.5" />
-              <span>{activeProfile?.name || 'Profile'}</span>
+              <span>{activeProfile?.name || "Profile"}</span>
               <ChevronDown className="h-3.5 w-3.5 shrink-0" />
             </button>
 
@@ -764,18 +809,22 @@ export function BrowserView() {
                       onClick={() => changeProfile(p.id)}
                       className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition ${
                         isCurrent
-                          ? 'bg-nd-accent/10 text-nd-accent font-semibold'
-                          : 'hover:bg-nd-surface/50 text-nd-text/80 hover:text-nd-text'
+                          ? "bg-nd-accent/10 text-nd-accent font-semibold"
+                          : "hover:bg-nd-surface/50 text-nd-text/80 hover:text-nd-text"
                       }`}
                     >
                       <div className="flex flex-col">
                         <span>{p.name}</span>
                         <span className="text-[10px] text-nd-text-muted">
-                          {p.persistent ? 'Persistent Session' : 'In-Memory/Private'}
+                          {p.persistent ? "Persistent Session" : "In-Memory/Private"}
                         </span>
                       </div>
                       <div className="flex gap-1.5">
-                        {!p.persistent && <span title="Private mode"><Lock className="h-3 w-3 text-nd-warning" /></span>}
+                        {!p.persistent && (
+                          <span title="Private mode">
+                            <Lock className="h-3 w-3 text-nd-warning" />
+                          </span>
+                        )}
                         {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-nd-accent" />}
                       </div>
                     </button>
@@ -799,8 +848,8 @@ export function BrowserView() {
             onClick={handleFind}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
               findOpen
-                ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
-                : 'border-nd-text-muted/10 text-nd-text-muted'
+                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
+                : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
             title="Find in page"
           >
@@ -809,13 +858,13 @@ export function BrowserView() {
 
           <button
             onClick={() => {
-              if (showSidebar === 'history') setShowSidebar(null);
-              else setShowSidebar('history');
+              if (showSidebar === "history") setShowSidebar(null);
+              else setShowSidebar("history");
             }}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              showSidebar === 'history'
-                ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
-                : 'border-nd-text-muted/10 text-nd-text-muted'
+              showSidebar === "history"
+                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
+                : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
             title="History"
           >
@@ -824,13 +873,13 @@ export function BrowserView() {
 
           <button
             onClick={() => {
-              if (showSidebar === 'bookmarks') setShowSidebar(null);
-              else setShowSidebar('bookmarks');
+              if (showSidebar === "bookmarks") setShowSidebar(null);
+              else setShowSidebar("bookmarks");
             }}
             className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              showSidebar === 'bookmarks'
-                ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
-                : 'border-nd-text-muted/10 text-nd-text-muted'
+              showSidebar === "bookmarks"
+                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
+                : "border-nd-text-muted/10 text-nd-text-muted"
             }`}
             title="Bookmarks"
           >
@@ -856,7 +905,7 @@ export function BrowserView() {
           <button
             onClick={toggleVisibility}
             className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
-            title={visible ? 'Hide Viewport' : 'Show Viewport'}
+            title={visible ? "Hide Viewport" : "Show Viewport"}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -871,7 +920,7 @@ export function BrowserView() {
             type="text"
             value={findText}
             onChange={(e) => setFindText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submitFind(true)}
+            onKeyDown={(e) => e.key === "Enter" && submitFind(true)}
             placeholder="Search text in page..."
             className="flex-1 bg-transparent text-xs text-nd-text outline-none"
             autoFocus
@@ -931,18 +980,30 @@ export function BrowserView() {
                   <span className="text-nd-text-muted">Profile Partitions:</span>
                   <span className="font-semibold">{diagnosticsReport.sessionsCount}</span>
                 </div>
-                {diagnosticsReport.tabs && diagnosticsReport.tabs.map((t: any) => (
-                  <div key={t.id} className="p-2 rounded-lg bg-nd-surface/30 border border-nd-text-muted/10">
-                    <div className="font-semibold text-nd-accent truncate">{t.title}</div>
-                    <div className="text-[10px] text-nd-text-muted mt-1 truncate">ID: {t.id}</div>
-                    <div className="text-[10px] text-nd-text-muted truncate">Profile: {t.profileId}</div>
-                    <div className="text-[10px] text-nd-text-muted">State: {t.state}</div>
-                    {t.pid && <div className="text-[10px] text-nd-success font-mono">Process PID: {t.pid}</div>}
-                  </div>
-                ))}
+                {diagnosticsReport.tabs &&
+                  diagnosticsReport.tabs.map((t: any) => (
+                    <div
+                      key={t.id}
+                      className="p-2 rounded-lg bg-nd-surface/30 border border-nd-text-muted/10"
+                    >
+                      <div className="font-semibold text-nd-accent truncate">{t.title}</div>
+                      <div className="text-[10px] text-nd-text-muted mt-1 truncate">ID: {t.id}</div>
+                      <div className="text-[10px] text-nd-text-muted truncate">
+                        Profile: {t.profileId}
+                      </div>
+                      <div className="text-[10px] text-nd-text-muted">State: {t.state}</div>
+                      {t.pid && (
+                        <div className="text-[10px] text-nd-success font-mono">
+                          Process PID: {t.pid}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             ) : (
-              <div className="text-nd-text-muted text-center py-4">Click Refresh to query details</div>
+              <div className="text-nd-text-muted text-center py-4">
+                Click Refresh to query details
+              </div>
             )}
           </div>
         </div>
@@ -970,36 +1031,50 @@ export function BrowserView() {
               </div>
             ) : (
               downloads.map((d) => {
-                const percent = d.totalBytes > 0 ? Math.round((d.receivedBytes / d.totalBytes) * 100) : 0;
+                const percent =
+                  d.totalBytes > 0 ? Math.round((d.receivedBytes / d.totalBytes) * 100) : 0;
                 return (
-                  <div key={d.id} className="p-2.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 text-xs flex flex-col gap-2">
+                  <div
+                    key={d.id}
+                    className="p-2.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 text-xs flex flex-col gap-2"
+                  >
                     <div className="flex justify-between gap-2">
                       <span className="font-semibold truncate text-nd-text">{d.filename}</span>
-                      <span className="text-[10px] uppercase font-bold text-nd-accent shrink-0">{d.state}</span>
+                      <span className="text-[10px] uppercase font-bold text-nd-accent shrink-0">
+                        {d.state}
+                      </span>
                     </div>
-                    {d.state === 'progressing' && (
+                    {d.state === "progressing" && (
                       <div className="flex flex-col gap-1">
                         <div className="h-1.5 w-full bg-nd-surface rounded-full overflow-hidden">
-                          <div className="h-full bg-nd-accent transition-all duration-300" style={{ width: `${percent}%` }} />
+                          <div
+                            className="h-full bg-nd-accent transition-all duration-300"
+                            style={{ width: `${percent}%` }}
+                          />
                         </div>
                         <div className="flex justify-between text-[10px] text-nd-text-muted">
                           <span>{percent}% Completed</span>
                           <span>
-                            {(d.receivedBytes / 1024 / 1024).toFixed(1)} / {(d.totalBytes / 1024 / 1024).toFixed(1)} MB
+                            {(d.receivedBytes / 1024 / 1024).toFixed(1)} /{" "}
+                            {(d.totalBytes / 1024 / 1024).toFixed(1)} MB
                           </span>
                         </div>
                       </div>
                     )}
                     <div className="flex gap-2 justify-end mt-1">
-                      {d.state === 'progressing' && (
+                      {d.state === "progressing" && (
                         <button
-                          onClick={() => window.neurodeck?.browser?.cancelDownload(d.id).then(() => loadDownloads())}
+                          onClick={() =>
+                            window.neurodeck?.browser
+                              ?.cancelDownload(d.id)
+                              .then(() => loadDownloads())
+                          }
                           className="px-2 py-1 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20 rounded text-[10px] font-semibold transition"
                         >
                           Cancel
                         </button>
                       )}
-                      {d.state === 'completed' && (
+                      {d.state === "completed" && (
                         <>
                           <button
                             onClick={() => window.neurodeck?.browser?.openDownload(d.id)}
@@ -1029,8 +1104,8 @@ export function BrowserView() {
         {/* Viewport Overlay */}
         <div
           ref={viewportRef}
-          className={`flex-1 overflow-hidden relative ${visible ? '' : 'hidden'}`}
-          style={{ background: 'transparent' }}
+          className={`flex-1 overflow-hidden relative ${visible ? "" : "hidden"}`}
+          style={{ background: "transparent" }}
         />
         {!visible && (
           <div className="flex flex-1 items-center justify-center bg-nd-surface/10 border border-nd-text-muted/10 m-4 rounded-2xl">
@@ -1038,7 +1113,8 @@ export function BrowserView() {
               <Globe className="h-10 w-10 text-nd-text-muted animate-pulse" />
               <p className="text-sm font-semibold text-nd-text">Viewport Suspended</p>
               <p className="text-xs text-nd-text-muted max-w-xs leading-relaxed">
-                Guest frame process detached to save Steam Deck CPU / GPU / Battery resource. Tap the eye icon in toolbar to resume.
+                Guest frame process detached to save Steam Deck CPU / GPU / Battery resource. Tap
+                the eye icon in toolbar to resume.
               </p>
               <button
                 onClick={toggleVisibility}
@@ -1055,7 +1131,7 @@ export function BrowserView() {
           <div className="w-80 border-l border-nd-text-muted/10 bg-nd-surface/20 flex flex-col shrink-0 animate-in slide-in-from-right duration-250 backdrop-blur-lg">
             <div className="flex items-center justify-between p-3 border-b border-nd-text-muted/10">
               <span className="text-xs font-bold uppercase tracking-wider text-nd-text">
-                {showSidebar === 'history' ? 'History Log' : 'Saved Bookmarks'}
+                {showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
               </span>
               <button
                 onClick={() => setShowSidebar(null)}
@@ -1067,7 +1143,7 @@ export function BrowserView() {
 
             {/* Sidebar content list */}
             <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin">
-              {showSidebar === 'history' ? (
+              {showSidebar === "history" ? (
                 <>
                   <div className="flex gap-2 mb-2">
                     <button
@@ -1079,7 +1155,9 @@ export function BrowserView() {
                     </button>
                   </div>
                   {history.length === 0 ? (
-                    <div className="text-xs text-nd-text-muted text-center py-8">No history recorded</div>
+                    <div className="text-xs text-nd-text-muted text-center py-8">
+                      No history recorded
+                    </div>
                   ) : (
                     history.map((h) => (
                       <div
@@ -1091,7 +1169,9 @@ export function BrowserView() {
                           <span className="font-medium truncate text-nd-text group-hover:text-nd-accent transition">
                             {h.title || h.url}
                           </span>
-                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">{h.url}</span>
+                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">
+                            {h.url}
+                          </span>
                         </div>
                         <button
                           onClick={() => deleteHistoryEntry(h.id)}
@@ -1107,7 +1187,9 @@ export function BrowserView() {
               ) : (
                 <>
                   {bookmarks.length === 0 ? (
-                    <div className="text-xs text-nd-text-muted text-center py-8">No bookmarks saved</div>
+                    <div className="text-xs text-nd-text-muted text-center py-8">
+                      No bookmarks saved
+                    </div>
                   ) : (
                     bookmarks.map((b) => (
                       <div
@@ -1119,7 +1201,9 @@ export function BrowserView() {
                           <span className="font-medium truncate text-nd-text group-hover:text-nd-accent transition">
                             {b.title || b.url}
                           </span>
-                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">{b.url}</span>
+                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">
+                            {b.url}
+                          </span>
                         </div>
                         <button
                           onClick={() => deleteBookmark(b.id)}
@@ -1142,16 +1226,28 @@ export function BrowserView() {
       <div className="flex items-center justify-between border-t border-nd-text-muted/10 bg-nd-surface/10 px-4 py-2 text-[10px] font-semibold text-nd-text-muted shrink-0">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">L2</span> Navigate Back
+            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+              L2
+            </span>{" "}
+            Navigate Back
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">R2</span> Navigate Forward
+            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+              R2
+            </span>{" "}
+            Navigate Forward
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">Y</span> Focus Address Bar
+            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+              Y
+            </span>{" "}
+            Focus Address Bar
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">X</span> Toggle Tab Strip
+            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+              X
+            </span>{" "}
+            Toggle Tab Strip
           </span>
         </div>
         <div>

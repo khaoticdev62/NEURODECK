@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { CheckCircle2, RotateCcw, Monitor, Settings, Eye, Sliders, ShieldAlert, Sparkles, Layers } from "lucide-react";
+import {
+  CheckCircle2,
+  RotateCcw,
+  Monitor,
+  Settings,
+  Eye,
+  Sliders,
+  ShieldAlert,
+  Sparkles,
+  Layers,
+} from "lucide-react";
 import { Panel } from "../../components/primitives/Panel";
 import { useTheme } from "../../theme/useTheme";
 import type { ThemeDisplayTarget, ThemeSettings } from "../../../shared/theme/themeContracts";
@@ -15,7 +25,9 @@ export function ThemesView() {
     resetToDefaults,
   } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<"themes" | "wallpapers" | "settings" | "diagnostics">("themes");
+  const [activeTab, setActiveTab] = useState<"themes" | "wallpapers" | "settings" | "diagnostics">(
+    "themes"
+  );
   const [showTokenInspector, setShowTokenInspector] = useState(false);
   const [exportStr, setExportStr] = useState("");
   const [importStr, setImportStr] = useState("");
@@ -35,7 +47,11 @@ export function ThemesView() {
   };
 
   return (
-    <Panel eyebrow="Appearance" title="Supreme Theme System" className="h-full overflow-hidden flex flex-col">
+    <Panel
+      eyebrow="Appearance"
+      title="Supreme Theme System"
+      className="h-full overflow-hidden flex flex-col"
+    >
       {/* Tabs Row */}
       <div className="flex gap-2 border-b border-nd-text-muted/15 px-4 py-2 bg-nd-surface/30">
         {(["themes", "wallpapers", "settings", "diagnostics"] as const).map((tab) => (
@@ -86,10 +102,22 @@ export function ThemesView() {
 
                     {/* Color Swatch Strip */}
                     <div className="mb-3 flex h-6 overflow-hidden rounded-lg">
-                      <div className="flex-1" style={{ background: theme.tokens.color.surface.app }} />
-                      <div className="flex-1" style={{ background: theme.tokens.color.surface.raised }} />
-                      <div className="w-6" style={{ background: theme.tokens.color.accent.primary }} />
-                      <div className="w-6" style={{ background: theme.tokens.color.text.primary }} />
+                      <div
+                        className="flex-1"
+                        style={{ background: theme.tokens.color.surface.app }}
+                      />
+                      <div
+                        className="flex-1"
+                        style={{ background: theme.tokens.color.surface.raised }}
+                      />
+                      <div
+                        className="w-6"
+                        style={{ background: theme.tokens.color.accent.primary }}
+                      />
+                      <div
+                        className="w-6"
+                        style={{ background: theme.tokens.color.text.primary }}
+                      />
                     </div>
 
                     <p className="text-sm font-semibold text-nd-text">{theme.name}</p>
@@ -122,7 +150,9 @@ export function ThemesView() {
                     <label className="text-sm font-semibold text-nd-text">Live Wallpaper</label>
                     <button
                       type="button"
-                      onClick={() => updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })}
+                      onClick={() =>
+                        updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })
+                      }
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nd-accent ${
                         settings.liveWallpaperEnabled ? "bg-nd-accent" : "bg-nd-surface"
                       }`}
@@ -135,14 +165,19 @@ export function ThemesView() {
                     </button>
                   </div>
                   <p className="text-xs text-nd-text-muted">
-                    Enable beautiful dynamic particles or CSS mesh gradients. Disabled on reduced motion.
+                    Enable beautiful dynamic particles or CSS mesh gradients. Disabled on reduced
+                    motion.
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="wall-opacity" className="text-sm font-semibold text-nd-text">Background Opacity</label>
-                    <span className="text-xs text-nd-accent font-semibold">{settings.wallpaperOpacity}%</span>
+                    <label htmlFor="wall-opacity" className="text-sm font-semibold text-nd-text">
+                      Background Opacity
+                    </label>
+                    <span className="text-xs text-nd-accent font-semibold">
+                      {settings.wallpaperOpacity}%
+                    </span>
                   </div>
                   <input
                     id="wall-opacity"
@@ -222,13 +257,18 @@ export function ThemesView() {
               {/* Display & Accessibility Selectors */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-2">
-                  <label htmlFor="display-profile" className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
+                  <label
+                    htmlFor="display-profile"
+                    className="text-sm font-semibold text-nd-text flex items-center gap-1.5"
+                  >
                     <Monitor className="h-4 w-4 text-nd-accent" /> Display Profile
                   </label>
                   <select
                     id="display-profile"
                     value={settings.displayProfile}
-                    onChange={(e) => updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })}
+                    onChange={(e) =>
+                      updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })
+                    }
                     className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus:border-nd-accent outline-none"
                   >
                     <option value="steamdeck_lcd">Steam Deck LCD (Contrast Boost)</option>
@@ -239,13 +279,18 @@ export function ThemesView() {
                 </div>
 
                 <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-2">
-                  <label htmlFor="accessibility-profile" className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
+                  <label
+                    htmlFor="accessibility-profile"
+                    className="text-sm font-semibold text-nd-text flex items-center gap-1.5"
+                  >
                     <Sliders className="h-4 w-4 text-nd-accent" /> Accessibility Mode
                   </label>
                   <select
                     id="accessibility-profile"
                     value={settings.accessibilityProfile}
-                    onChange={(e) => updateSettings({ accessibilityProfile: e.target.value as any })}
+                    onChange={(e) =>
+                      updateSettings({ accessibilityProfile: e.target.value as any })
+                    }
                     className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus:border-nd-accent outline-none"
                   >
                     <option value="default">Default (Standard Styling)</option>
@@ -335,13 +380,34 @@ export function ThemesView() {
                 </button>
                 {showTokenInspector && (
                   <div className="max-h-60 overflow-y-auto p-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/50 font-mono text-[11px] text-nd-text-secondary flex flex-col gap-1.5 scrollbar-thin">
-                    <p><span className="text-nd-accent">--nd-bg</span>: {resolvedTokens.color.surface.app}</p>
-                    <p><span className="text-nd-accent">--nd-surface</span>: {resolvedTokens.color.surface.base}</p>
-                    <p><span className="text-nd-accent">--nd-accent</span>: {resolvedTokens.color.accent.primary}</p>
-                    <p><span className="text-nd-accent">--nd-text</span>: {resolvedTokens.color.text.primary}</p>
-                    <p><span className="text-nd-accent">--nd-text-muted</span>: {resolvedTokens.color.text.muted}</p>
-                    <p><span className="text-nd-accent">--nd-glow</span>: {resolvedTokens.color.accent.glow}</p>
-                    <p><span className="text-nd-accent">--font-body</span>: {resolvedTokens.typography.fontFamily.ui}</p>
+                    <p>
+                      <span className="text-nd-accent">--nd-bg</span>:{" "}
+                      {resolvedTokens.color.surface.app}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--nd-surface</span>:{" "}
+                      {resolvedTokens.color.surface.base}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--nd-accent</span>:{" "}
+                      {resolvedTokens.color.accent.primary}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--nd-text</span>:{" "}
+                      {resolvedTokens.color.text.primary}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--nd-text-muted</span>:{" "}
+                      {resolvedTokens.color.text.muted}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--nd-glow</span>:{" "}
+                      {resolvedTokens.color.accent.glow}
+                    </p>
+                    <p>
+                      <span className="text-nd-accent">--font-body</span>:{" "}
+                      {resolvedTokens.typography.fontFamily.ui}
+                    </p>
                   </div>
                 )}
               </div>
@@ -353,7 +419,9 @@ export function ThemesView() {
         <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-nd-text-muted/15 p-4 flex flex-col gap-4 bg-nd-surface/10 shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-nd-accent" />
-            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-nd-text-muted">Active Setup</h4>
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-nd-text-muted">
+              Active Setup
+            </h4>
           </div>
           <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3 flex flex-col gap-1.5">
             <p className="text-[10px] text-nd-text-muted uppercase font-bold">Theme Name</p>
@@ -361,13 +429,15 @@ export function ThemesView() {
           </div>
 
           <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3 flex flex-col gap-1.5">
-            <p className="text-[10px] text-nd-text-muted uppercase font-bold">Display Calibration</p>
+            <p className="text-[10px] text-nd-text-muted uppercase font-bold">
+              Display Calibration
+            </p>
             <p className="text-xs text-nd-text-secondary leading-relaxed">
               {settings.displayProfile === "steamdeck_lcd"
                 ? "LCD Mode: Enhanced contrast and luminance settings active."
                 : settings.displayProfile === "steamdeck_oled"
-                ? "OLED Mode: True black mapping active to optimize screen efficiency."
-                : "Standard desktop scaling applied."}
+                  ? "OLED Mode: True black mapping active to optimize screen efficiency."
+                  : "Standard desktop scaling applied."}
             </p>
           </div>
 

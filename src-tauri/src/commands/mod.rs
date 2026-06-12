@@ -667,12 +667,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'data'")?;
 
-            crate::pty_manager::pty_write(
-                id.to_string(),
-                data.to_string(),
-                state.pty.clone(),
-            )
-            .map_err(|e| format!("Failed to write to PTY: {}", e))?;
+            crate::pty_manager::pty_write(id.to_string(), data.to_string(), state.pty.clone())
+                .map_err(|e| format!("Failed to write to PTY: {}", e))?;
 
             Ok(serde_json::json!({
                 "status": "written",
@@ -719,13 +715,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_u64())
                 .ok_or("Missing 'rows'")? as u16;
 
-            crate::pty_manager::pty_resize(
-                id.to_string(),
-                cols,
-                rows,
-                state.pty.clone(),
-            )
-            .map_err(|e| format!("Failed to resize PTY: {}", e))?;
+            crate::pty_manager::pty_resize(id.to_string(), cols, rows, state.pty.clone())
+                .map_err(|e| format!("Failed to resize PTY: {}", e))?;
 
             state.broadcaster.emit(
                 "pty_resized",
@@ -790,7 +781,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     if let (Some(ref p), Some(ref m)) = (&request_provider, &request_model) {
                         crate::providers::provider_for(p, m, &app.config)
                     } else if let Some(ref id) = request_agent_id {
-                        app.config.llm.agents
+                        app.config
+                            .llm
+                            .agents
                             .iter()
                             .find(|a| &a.id == id)
                             .map(|a| crate::providers::provider_from_agent(a))
@@ -1129,10 +1122,14 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "list_models" => {
             let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let profiles = crate::model_registry::load_supported_models();
-            let mut groups: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+            let mut groups: std::collections::HashMap<String, Vec<String>> =
+                std::collections::HashMap::new();
             for profile in profiles {
                 let provider = crate::model_registry::provider_label(&profile).to_string();
-                groups.entry(provider).or_default().extend(profile.provider_model_ids.clone());
+                groups
+                    .entry(provider)
+                    .or_default()
+                    .extend(profile.provider_model_ids.clone());
             }
 
             Ok(serde_json::json!({
@@ -1176,7 +1173,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     .config
                     .clone()
             };
-            let runtime_id = args.get("runtimeId").and_then(|v| v.as_str()).unwrap_or_default();
+            let runtime_id = args
+                .get("runtimeId")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default();
             let results = if runtime_id.is_empty() {
                 crate::services::models::check_all_provider_health(&config.llm).await
             } else if let Some(runtime) = crate::services::models::runtime_by_id(runtime_id) {
@@ -1221,7 +1221,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let options: crate::services::models::ScoreOptions =
                 serde_json::from_value(args).unwrap_or_default();
             let scores =
-                crate::services::models::get_model_compatibility_scores(&options, &config.llm).await;
+                crate::services::models::get_model_compatibility_scores(&options, &config.llm)
+                    .await;
             serde_json::to_value(scores).map_err(|e| e.to_string())
         }
 
@@ -1236,8 +1237,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             };
             let options: crate::services::models::ScoreOptions =
                 serde_json::from_value(args).unwrap_or_default();
-            let best =
-                crate::services::models::pick_best_local_model(&options, &config.llm).await;
+            let best = crate::services::models::pick_best_local_model(&options, &config.llm).await;
             serde_json::to_value(best).map_err(|e| e.to_string())
         }
 
@@ -1276,7 +1276,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("runtimeId")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'runtimeId'")?;
-            let model_id = args.get("modelId").and_then(|v| v.as_str().map(String::from));
+            let model_id = args
+                .get("modelId")
+                .and_then(|v| v.as_str().map(String::from));
             let state = args
                 .get("state")
                 .and_then(|v| v.as_str())
@@ -1287,7 +1289,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .unwrap_or_default()
                 .to_string();
-            let allowed = args.get("allowed").and_then(|v| v.as_bool()).unwrap_or(false);
+            let allowed = args
+                .get("allowed")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             let reason = args
                 .get("reason")
                 .and_then(|v| v.as_str())
@@ -1337,7 +1342,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .ok_or("Missing 'agentId'")?;
             let options: crate::services::models::ScoreOptions =
                 serde_json::from_value(args.clone()).unwrap_or_default();
-            let ranked = crate::services::models::rank_models_for_agent(agent_id, &options, &config.llm).await;
+            let ranked =
+                crate::services::models::rank_models_for_agent(agent_id, &options, &config.llm)
+                    .await;
             serde_json::to_value(ranked).map_err(|e| e.to_string())
         }
 
@@ -1970,7 +1977,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         let path = entry.path();
                         let fname = path.file_name().unwrap_or_default().to_string_lossy();
                         if fname.starts_with("appmanifest_") && fname.ends_with(".acf") {
-                            if let Some((name, app_id, last_played)) = crate::game::parse_acf(&path) {
+                            if let Some((name, app_id, last_played)) = crate::game::parse_acf(&path)
+                            {
                                 games.push(serde_json::json!({
                                     "name": name,
                                     "app_id": app_id,
@@ -1982,7 +1990,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 }
             }
             games.sort_by(|a: &serde_json::Value, b: &serde_json::Value| {
-                b.get("last_played").and_then(|v| v.as_u64()).unwrap_or(0)
+                b.get("last_played")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0)
                     .cmp(&a.get("last_played").and_then(|v| v.as_u64()).unwrap_or(0))
             });
             Ok(serde_json::json!({ "games": games, "count": games.len() }))
@@ -2010,7 +2020,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .ok_or("Missing 'notes'")?;
             let dir = crate::user_config_dir().join("data/game_notes");
             std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-            let path = dir.join(format!("{}.md", game_id.replace(|c: char| !c.is_alphanumeric(), "_")));
+            let path = dir.join(format!(
+                "{}.md",
+                game_id.replace(|c: char| !c.is_alphanumeric(), "_")
+            ));
             std::fs::write(&path, notes).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "saved", "path": path.display().to_string() }))
         }
@@ -2507,8 +2520,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-
-
         // ────────────────────────────────────────────────────────────────────
         // Chat History Management
         // ────────────────────────────────────────────────────────────────────
@@ -2525,10 +2536,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .take(limit)
                 .enumerate()
                 .map(|(i, msg)| {
-                    let (role, content) = if msg.starts_with("User: ") {
-                        ("user", msg["User: ".len()..].to_string())
-                    } else if msg.starts_with("AI: ") {
-                        ("assistant", msg["AI: ".len()..].to_string())
+                    let (role, content) = if let Some(rest) = msg.strip_prefix("User: ") {
+                        ("user", rest.to_string())
+                    } else if let Some(rest) = msg.strip_prefix("AI: ") {
+                        ("assistant", rest.to_string())
                     } else {
                         ("system", msg.clone())
                     };
@@ -2953,7 +2964,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let mut s = System::new_all();
             s.refresh_all();
             let pid = get_current_pid().map_err(|e| e.to_string())?;
-            let (rss_bytes, virt_bytes) = s.process(pid)
+            let (rss_bytes, virt_bytes) = s
+                .process(pid)
                 .map(|p| (p.memory(), p.virtual_memory()))
                 .unwrap_or((0, 0));
             Ok(serde_json::json!({
@@ -3148,7 +3160,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         "get_recommended_models" => {
             let models = crate::commands::agent::get_recommended_models();
             Ok(serde_json::to_value(models).map_err(|e| e.to_string())?)
-        },
+        }
 
         // ────────────────────────────────────────────────────────────────────
         // IDE / Workspace File System
@@ -3735,53 +3747,98 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ── Headless browser session commands (spawn_blocking — headless_chrome is sync) ──
-
         "browser_open_session" => {
-            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?
+                .to_string();
             let app_state = state.app_state.clone();
             let session_id = tokio::task::spawn_blocking(move || {
                 crate::commands::browser::browser_open_session(url, app_state)
-            }).await.map_err(|e| e.to_string())??;
+            })
+            .await
+            .map_err(|e| e.to_string())??;
             Ok(serde_json::json!({ "session_id": session_id }))
         }
 
         "browser_navigate_session" => {
-            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
-            let url = args.get("url").and_then(|v| v.as_str()).ok_or("Missing 'url'")?.to_string();
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'session_id'")?
+                .to_string();
+            let url = args
+                .get("url")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'url'")?
+                .to_string();
             let app_state = state.app_state.clone();
             tokio::task::spawn_blocking(move || {
                 crate::commands::browser::browser_navigate_session(session_id, url, app_state)
-            }).await.map_err(|e| e.to_string())??;
+            })
+            .await
+            .map_err(|e| e.to_string())??;
             Ok(serde_json::json!({ "status": "navigated" }))
         }
 
         "browser_click" => {
-            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
-            let selector = args.get("selector").and_then(|v| v.as_str()).ok_or("Missing 'selector'")?.to_string();
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'session_id'")?
+                .to_string();
+            let selector = args
+                .get("selector")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'selector'")?
+                .to_string();
             let app_state = state.app_state.clone();
             tokio::task::spawn_blocking(move || {
                 crate::commands::browser::browser_click(session_id, selector, app_state)
-            }).await.map_err(|e| e.to_string())??;
+            })
+            .await
+            .map_err(|e| e.to_string())??;
             Ok(serde_json::json!({ "status": "clicked" }))
         }
 
         "browser_fill" => {
-            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
-            let selector = args.get("selector").and_then(|v| v.as_str()).ok_or("Missing 'selector'")?.to_string();
-            let value = args.get("value").and_then(|v| v.as_str()).ok_or("Missing 'value'")?.to_string();
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'session_id'")?
+                .to_string();
+            let selector = args
+                .get("selector")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'selector'")?
+                .to_string();
+            let value = args
+                .get("value")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'value'")?
+                .to_string();
             let app_state = state.app_state.clone();
             tokio::task::spawn_blocking(move || {
                 crate::commands::browser::browser_fill(session_id, selector, value, app_state)
-            }).await.map_err(|e| e.to_string())??;
+            })
+            .await
+            .map_err(|e| e.to_string())??;
             Ok(serde_json::json!({ "status": "filled" }))
         }
 
         "browser_close_session" => {
-            let session_id = args.get("session_id").and_then(|v| v.as_str()).ok_or("Missing 'session_id'")?.to_string();
+            let session_id = args
+                .get("session_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'session_id'")?
+                .to_string();
             let app_state = state.app_state.clone();
             tokio::task::spawn_blocking(move || {
                 crate::commands::browser::browser_close_session(session_id, app_state)
-            }).await.map_err(|e| e.to_string())??;
+            })
+            .await
+            .map_err(|e| e.to_string())??;
             Ok(serde_json::json!({ "status": "closed" }))
         }
 
@@ -3871,9 +3928,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             )
         }
 
-        "sync_now" => {
-            handle_sync_now(state).await
-        }
+        "sync_now" => handle_sync_now(state).await,
 
         // ────────────────────────────────────────────────────────────────────
         // Prompt Lab
@@ -4202,7 +4257,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('{}');",
                     text.replace('\'', "''")
                 );
-                let _ = std::process::Command::new("powershell").args(["-Command", &ps]).spawn();
+                let _ = std::process::Command::new("powershell")
+                    .args(["-Command", &ps])
+                    .spawn();
             }
             state
                 .broadcaster
@@ -4222,7 +4279,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "transcribe_audio_whisper" => {
             match system::transcribe_audio_whisper(state.app_state.clone()).await {
-                Ok(transcript) => Ok(serde_json::json!({ "status": "complete", "transcript": transcript })),
+                Ok(transcript) => {
+                    Ok(serde_json::json!({ "status": "complete", "transcript": transcript }))
+                }
                 Err(e) => Err(e),
             }
         }
@@ -5225,7 +5284,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let connected = h.connected.load(std::sync::atomic::Ordering::Relaxed);
                     let elapsed = h.started_at.elapsed().as_secs();
                     let ttl_rem = 900u64.saturating_sub(elapsed);
-                    let url = format!("http://{}:{}/#pin={}&session={}", h.local_ip, h.port, h.pin, h.access_token);
+                    let url = format!(
+                        "http://{}:{}/#pin={}&session={}",
+                        h.local_ip, h.port, h.pin, h.access_token
+                    );
                     Ok(serde_json::json!({
                         "running":                true,
                         "port":                   h.port,
@@ -6555,17 +6617,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "get_discovered_peers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let peers: Vec<_> = transfer_state.peers.values().map(|(p, _)| p.clone()).collect();
+            let peers: Vec<_> = transfer_state
+                .peers
+                .values()
+                .map(|(p, _)| p.clone())
+                .collect();
             Ok(serde_json::json!(peers))
         }
 
         "get_active_transfers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let transfers: Vec<_> = transfer_state
-                .transfers
-                .values()
-                .cloned()
-                .collect();
+            let transfers: Vec<_> = transfer_state.transfers.values().cloned().collect();
             Ok(serde_json::json!(transfers))
         }
 
@@ -6833,8 +6895,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 state.app_state.clone(),
                 state.broadcaster.clone(),
             )
-                .await
-                .map_err(|e| e.to_string())?;
+            .await
+            .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "installed", "url": url }))
         }
 
@@ -7252,10 +7314,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     meta.insert("path".to_string(), file.display().to_string());
 
                     // Try to generate embedding; fall back to zero vector
-                    let embedding = match provider.generate_embedding(&content).await {
-                        Ok(e) => e,
-                        Err(_) => vec![],
-                    };
+                    let embedding: Vec<f32> = provider
+                        .generate_embedding(&content)
+                        .await
+                        .unwrap_or_default();
                     let _ =
                         db.store_message(id, content.chars().take(4000).collect(), embedding, meta);
                     indexed += 1;
@@ -8433,7 +8495,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // CLI Maker commands
         // ────────────────────────────────────────────────────────────────────
-
         "cli_list_commands" => {
             let json = crate::commands::cli_maker::cli_list_commands()?;
             Ok(serde_json::from_str(&json).unwrap_or(serde_json::json!([])))
@@ -8556,7 +8617,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // execute_lua — debug-only Lua execution from the UI
         // ────────────────────────────────────────────────────────────────────
-
         "execute_lua" => {
             let code = args
                 .get("code")

@@ -1,3 +1,5 @@
+#![allow(dead_code, clippy::too_many_arguments, clippy::type_complexity)]
+
 mod audio_recorder;
 pub mod bridge;
 mod canvas_collab;

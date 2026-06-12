@@ -862,7 +862,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_add(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state.emitter.emit("remote_client_connected", count);
+    ws_state.emitter.emit("remote_client_connected", count);
 
     let mut rx = ws_state.broadcast_tx.subscribe();
     let emitter = ws_state.emitter.clone();
@@ -900,7 +900,7 @@ async fn handle_ws_connection(socket: WebSocket, ip: std::net::IpAddr, ws_state:
 
     ws_state.connected.fetch_sub(1, Ordering::Relaxed);
     let count = ws_state.connected.load(Ordering::Relaxed);
-    let _ = ws_state.emitter.emit("remote_client_disconnected", count);
+    ws_state.emitter.emit("remote_client_disconnected", count);
 }
 
 async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
@@ -967,7 +967,6 @@ async fn dispatch_remote_command(msg: &Value, emitter: &AppEmitter) {
     }
 }
 
-
 // ── Bridge-compatible commands (Electron sidecar) ─────────────────────────────
 
 /// Start the remote control server in bridge mode (no Tauri runtime).
@@ -986,9 +985,8 @@ pub async fn start_remote_server_bridge(
             .unwrap_or_else(|e| e.into_inner());
         if let Some(old) = guard.take() {
             let _ = old.shutdown_tx.send(());
-            if let EventListenerHandle::Bridge(abort) = old.event_listener {
-                abort.abort();
-            }
+            let EventListenerHandle::Bridge(abort) = old.event_listener;
+            abort.abort();
         }
     }
 
@@ -1114,9 +1112,8 @@ pub async fn stop_remote_server_bridge(
         .unwrap_or_else(|e| e.into_inner());
     if let Some(handle) = guard.take() {
         let _ = handle.shutdown_tx.send(());
-        if let EventListenerHandle::Bridge(abort) = handle.event_listener {
-            abort.abort();
-        }
+        let EventListenerHandle::Bridge(abort) = handle.event_listener;
+        abort.abort();
     }
     let mut rtx = pty_state
         .remote_tx
@@ -1125,8 +1122,6 @@ pub async fn stop_remote_server_bridge(
     *rtx = None;
     Ok(())
 }
-
-
 
 #[cfg(test)]
 mod tests {

@@ -104,7 +104,7 @@ pub async fn host<E: EventEmitter>(port: u16, app: E) -> Result<(u16, CollabSess
                                 let mut guard = accept_peers.lock().await;
                                 guard.push(peer_tx.clone());
                             }
-                            let _ = app.emit("canvas_collab_event",
+                            app.emit("canvas_collab_event",
                                 format!("peer_connected:{}", peer_str));
                             // Send full state to new peer so they catch up immediately
                             let catchup = {
@@ -127,7 +127,7 @@ pub async fn host<E: EventEmitter>(port: u16, app: E) -> Result<(u16, CollabSess
                             ));
                         }
                         Err(e) => {
-                            let _ = app.emit("canvas_collab_event", format!("error:{}", e));
+                            app.emit("canvas_collab_event", format!("error:{}", e));
                             break;
                         }
                     }
@@ -166,7 +166,7 @@ pub async fn join<E: EventEmitter>(addr: &str, app: E) -> Result<CollabSession, 
     let stream = TcpStream::connect(addr)
         .await
         .map_err(|e| format!("Connect to {} failed: {}", addr, e))?;
-    let _ = app.emit("canvas_collab_event", format!("peer_connected:{}", addr));
+    app.emit("canvas_collab_event", format!("peer_connected:{}", addr));
 
     let (tx, rx) = mpsc::channel::<String>(256);
     let peer_count = Arc::new(AtomicUsize::new(1));
@@ -219,10 +219,7 @@ async fn run_peer_io<E: EventEmitter>(
                         if let Some(data_b64) = val["data"].as_str() {
                             if let Ok(bytes) = STANDARD.decode(data_b64) {
                                 let doc = doc_mutex.lock().await;
-                                match doc.apply_update(&bytes) {
-                                    Ok(text) => Some(text),
-                                    Err(_) => None,
-                                }
+                                doc.apply_update(&bytes).ok()
                             } else {
                                 None
                             }
@@ -262,7 +259,7 @@ async fn run_peer_io<E: EventEmitter>(
             line.clone()
         };
 
-        let _ = app.emit("canvas_sync", emit_payload.clone());
+        app.emit("canvas_sync", emit_payload.clone());
 
         if let Some(relay) = &inbound_relay {
             let _ = relay.send(emit_payload).await;
@@ -277,5 +274,5 @@ async fn run_peer_io<E: EventEmitter>(
             })
             .ok();
     }
-    let _ = app.emit("canvas_collab_event", "peer_disconnected".to_string());
+    app.emit("canvas_collab_event", "peer_disconnected".to_string());
 }

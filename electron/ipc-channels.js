@@ -64,6 +64,28 @@ const IPC = Object.freeze({
   BROWSER_ADBLOCK_TOGGLE: 'browser-adblock-toggle',
   BROWSER_ADBLOCK_STATUS: 'browser-adblock-status',
 
+  // Browser VPN
+  VPN_LIST_PROFILES: 'vpn:list-profiles',
+  VPN_GET_PROFILE: 'vpn:get-profile',
+  VPN_CREATE_PROFILE: 'vpn:create-profile',
+  VPN_UPDATE_PROFILE: 'vpn:update-profile',
+  VPN_DELETE_PROFILE: 'vpn:delete-profile',
+  VPN_IMPORT_CONFIG: 'vpn:import-config',
+  VPN_VALIDATE_CONFIG: 'vpn:validate-config',
+  VPN_LIST_TEMPLATES: 'vpn:list-templates',
+  VPN_CONNECT: 'vpn:connect',
+  VPN_DISCONNECT: 'vpn:disconnect',
+  VPN_VERIFY: 'vpn:verify',
+  VPN_REPAIR: 'vpn:repair',
+  VPN_GET_STATUS: 'vpn:get-status',
+  VPN_GET_EVIDENCE: 'vpn:get-evidence',
+  VPN_GET_RECOVERY_EVENTS: 'vpn:get-recovery-events',
+  VPN_SET_KILL_SWITCH: 'vpn:set-kill-switch',
+  VPN_APPLY_BROWSER_PROXY: 'vpn:apply-browser-proxy',
+  VPN_CLEAR_BROWSER_PROXY: 'vpn:clear-browser-proxy',
+  VPN_GET_PROVIDER_MATRIX: 'vpn:get-provider-matrix',
+  VPN_EXPORT_REDACTED_PROFILE: 'vpn:export-redacted-profile',
+
   // Theme & Wallpaper Overhaul (New)
   THEME_GET: "theme:get",
   THEME_SET: "theme:set",

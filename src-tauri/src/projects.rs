@@ -166,7 +166,7 @@ impl ProjectDB {
         let pool = &*self.pool;
         sqlx::query("DELETE FROM projects WHERE id = ?")
             .bind(id)
-            .execute(&*pool)
+            .execute(pool)
             .await
             .map_err(|e| format!("Failed to delete project: {}", e))?;
         Ok(())
@@ -181,7 +181,7 @@ impl ProjectDB {
         sqlx::query("UPDATE sessions SET project_id = ? WHERE id = ?")
             .bind(&project_id)
             .bind(session_id)
-            .execute(&*pool)
+            .execute(pool)
             .await
             .map_err(|e| format!("Failed to set session project: {}", e))?;
         Ok(())
@@ -196,7 +196,7 @@ impl ProjectDB {
         sqlx::query("UPDATE memory_records SET project_id = ? WHERE id = ?")
             .bind(&project_id)
             .bind(memory_id)
-            .execute(&*pool)
+            .execute(pool)
             .await
             .map_err(|e| format!("Failed to set memory project: {}", e))?;
         Ok(())

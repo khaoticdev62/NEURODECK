@@ -14,11 +14,7 @@ export type AccessibilityProfile =
   | "colorblind_protanopia"
   | "colorblind_tritanopia";
 
-export type PerformanceTier =
-  | "battery"
-  | "balanced"
-  | "performance"
-  | "quality";
+export type PerformanceTier = "battery" | "balanced" | "performance" | "quality";
 
 export interface ThemeTokenSet {
   color: {

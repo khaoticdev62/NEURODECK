@@ -289,6 +289,29 @@ contextBridge.exposeInMainWorld('neurodeck', {
       return () => ipcRenderer.removeListener('browser-event', handler);
     },
   },
+
+  vpn: {
+    listProfiles: () => ipcRenderer.invoke(IPC.VPN_LIST_PROFILES, makeRequest({})).then(r => r.ok ? r.data : []),
+    getProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    createProfile: (payload) => ipcRenderer.invoke(IPC.VPN_CREATE_PROFILE, makeRequest(payload)).then(r => r.ok ? r.data : null),
+    updateProfile: (payload) => ipcRenderer.invoke(IPC.VPN_UPDATE_PROFILE, makeRequest(payload)).then(r => r.ok ? r.data : null),
+    deleteProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_DELETE_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    importConfig: (text, kind) => ipcRenderer.invoke(IPC.VPN_IMPORT_CONFIG, makeRequest({ text, kind })).then(r => r.ok ? r.data : null),
+    validateConfig: (text, kind) => ipcRenderer.invoke(IPC.VPN_VALIDATE_CONFIG, makeRequest({ text, kind })).then(r => r.ok ? r.data : null),
+    listTemplates: () => ipcRenderer.invoke(IPC.VPN_LIST_TEMPLATES, makeRequest({})).then(r => r.ok ? r.data : []),
+    connect: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_CONNECT, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    disconnect: (profileId) => ipcRenderer.invoke(IPC.VPN_DISCONNECT, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    verify: (profileId) => ipcRenderer.invoke(IPC.VPN_VERIFY, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    repair: (profileId) => ipcRenderer.invoke(IPC.VPN_REPAIR, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getStatus: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_STATUS, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+    getEvidence: (profileId) => ipcRenderer.invoke(IPC.VPN_GET_EVIDENCE, makeRequest({ profileId })).then(r => r.ok ? r.data : []),
+    getRecoveryEvents: () => ipcRenderer.invoke(IPC.VPN_GET_RECOVERY_EVENTS, makeRequest({})).then(r => r.ok ? r.data : []),
+    setKillSwitch: (profileId, enabled) => ipcRenderer.invoke(IPC.VPN_SET_KILL_SWITCH, makeRequest({ profileId, enabled })).then(r => r.ok ? r.data : null),
+    applyBrowserProxy: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_APPLY_BROWSER_PROXY, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    clearBrowserProxy: (profileId, browserProfileId) => ipcRenderer.invoke(IPC.VPN_CLEAR_BROWSER_PROXY, makeRequest({ profileId, browserProfileId })).then(r => r.ok ? r.data : null),
+    getProviderMatrix: () => ipcRenderer.invoke(IPC.VPN_GET_PROVIDER_MATRIX, makeRequest({})).then(r => r.ok ? r.data : []),
+    exportRedactedProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_EXPORT_REDACTED_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
+  },
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

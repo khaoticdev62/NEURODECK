@@ -54,7 +54,7 @@ impl SearchEngine {
         let mut projects: Vec<SearchResult> = vec![];
 
         // Search messages
-        if source_filter.as_deref().unwrap_or("") == ""
+        if source_filter.as_deref().unwrap_or("").is_empty()
             || source_filter.as_deref() == Some("messages")
         {
             let rows = sqlx::query_as::<_, SearchRow>(
@@ -94,7 +94,7 @@ impl SearchEngine {
         }
 
         // Search memory
-        if source_filter.as_deref().unwrap_or("") == ""
+        if source_filter.as_deref().unwrap_or("").is_empty()
             || source_filter.as_deref() == Some("memory")
         {
             let rows = sqlx::query_as::<_, SearchRow>(
@@ -133,7 +133,7 @@ impl SearchEngine {
         }
 
         // Search projects
-        if source_filter.as_deref().unwrap_or("") == ""
+        if source_filter.as_deref().unwrap_or("").is_empty()
             || source_filter.as_deref() == Some("projects")
         {
             let rows = sqlx::query_as::<_, SearchRow>(
