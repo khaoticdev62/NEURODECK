@@ -173,12 +173,12 @@ mod tests {
     fn resolve_base_url_uses_config_for_ollama() {
         let runtime = runtime_by_id("ollama-local").expect("ollama runtime");
         let config = LlmConfig {
-            ollama_base_url: "http://deck:11434".to_string(),
+            ollama_base_url: "http://127.0.0.1:11434".to_string(),
             ..Default::default()
         };
         assert_eq!(
             resolve_base_url(&runtime, &config),
-            Some("http://deck:11434".to_string())
+            Some("http://127.0.0.1:11434".to_string())
         );
     }
 

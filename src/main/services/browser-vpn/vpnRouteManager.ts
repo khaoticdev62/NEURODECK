@@ -418,16 +418,16 @@ export class VpnRouteManager {
     if (!profile.policy.killSwitchEnabled) return false;
     const allowed = url.startsWith("about:") || url.startsWith("neurodeck:") || url.startsWith("chrome:") || url.startsWith("devtools:");
     if (allowed) return false;
-    const blocked = vpnKillSwitchService.isBlocked(profileId);
+    const blocked = vpnKillSwitchService.isBlocked(profile.id);
     if (blocked) {
       this.blockedRequests += 1;
-      this.recordEvidence(profileId, "kill_switch_block", "blocked", "browser", url, "Browser request blocked because VPN route is inactive.", {
+      this.recordEvidence(profile.id, "kill_switch_block", "blocked", "browser", url, "Browser request blocked because VPN route is inactive.", {
         code: "VPN_KILLSWITCH_BLOCKED",
         message: "Browser traffic blocked while VPN is inactive.",
         recoverable: true,
         userAction: "Connect or verify the selected VPN profile, or disable the kill switch.",
       }).catch(() => {});
-      vpnKillSwitchService.registerBlockedRequest(profileId);
+      vpnKillSwitchService.registerBlockedRequest(profile.id);
     }
     return blocked;
   }

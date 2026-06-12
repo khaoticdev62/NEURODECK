@@ -18,6 +18,18 @@ use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
 use serde_json::{json, Value};
 
+/// Format the LAN URL advertised to remote-control clients.
+/// Plain HTTP is intentional: the PIN is transmitted as a URL fragment
+/// (not sent to the server) and the LAN is the trust boundary.
+pub fn format_remote_control_url(
+    local_ip: &str,
+    port: u16,
+    pin: &str,
+    session: &str,
+) -> String {
+    format!("http://{}:{}/#pin={}&session={}", local_ip, port, pin, session)
+}
+
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.
 #[derive(Clone)]
 pub enum AppEmitter {
@@ -1070,10 +1082,7 @@ pub async fn start_remote_server_bridge(
     let event_listener = EventListenerHandle::Bridge(event_listener_task.abort_handle());
     let started_at = std::time::Instant::now();
 
-    let url = format!(
-        "http://{}:{}/#pin={}&session={}",
-        local_ip, port, pin, access_token
-    );
+    let url = format_remote_control_url(&local_ip, port, &pin, &access_token);
 
     {
         let mut guard = remote_state

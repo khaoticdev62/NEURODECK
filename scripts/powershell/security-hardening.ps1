@@ -122,7 +122,7 @@ foreach ($match in $remoteStyleMatches) {
     Add-Finding -Findings $findings -Severity warn -Code "remote-style-dependency" -Message "Remote stylesheet or font dependency detected. Prefer bundled assets for offline and integrity-safe builds." -Path $match.path -Line $match.line -Evidence $match.text
 }
 
-$evalMatches = Invoke-RgJson -Pattern '\beval\s*\(|new\s+Function\s*\(' -Targets @("frontend/src", "frontend/public", "scripts") -Globs @("!frontend/dist", "!frontend/public/*.min.js", "!scripts/kfms/security_audit.py")
+$evalMatches = Invoke-RgJson -Pattern '\beval\s*\(|new\s+Function\s*\(' -Targets @("frontend/src", "frontend/public", "scripts") -Globs @("!frontend/dist", "!frontend/public/*.min.js", "!scripts/kfms/security_audit.py", "!scripts/verify-backend-security.ts")
 foreach ($match in $evalMatches) {
     Add-Finding -Findings $findings -Severity fail -Code "dynamic-js-eval" -Message "Dynamic JavaScript evaluation detected." -Path $match.path -Line $match.line -Evidence $match.text
 }

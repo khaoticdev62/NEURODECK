@@ -5284,9 +5284,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let connected = h.connected.load(std::sync::atomic::Ordering::Relaxed);
                     let elapsed = h.started_at.elapsed().as_secs();
                     let ttl_rem = 900u64.saturating_sub(elapsed);
-                    let url = format!(
-                        "http://{}:{}/#pin={}&session={}",
-                        h.local_ip, h.port, h.pin, h.access_token
+                    let url = crate::remote_control::format_remote_control_url(
+                        &h.local_ip, h.port, &h.pin, &h.access_token
                     );
                     Ok(serde_json::json!({
                         "running":                true,
