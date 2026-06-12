@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Panel } from "../../components/primitives/Panel";
 import { useTheme } from "../../theme/useTheme";
-import type { ThemeDisplayTarget, ThemeSettings } from "../../../shared/theme/themeContracts";
+import type { AccessibilityProfile, ThemeDisplayTarget } from "../../../shared/theme/themeContracts";
 
 export function ThemesView() {
   const {
@@ -296,7 +296,7 @@ export function ThemesView() {
                     id="accessibility-profile"
                     value={settings.accessibilityProfile}
                     onChange={(e) =>
-                      updateSettings({ accessibilityProfile: e.target.value as any })
+                      updateSettings({ accessibilityProfile: e.target.value as AccessibilityProfile })
                     }
                     className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   >

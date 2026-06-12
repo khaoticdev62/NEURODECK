@@ -47,7 +47,7 @@ export function ModelCard({
           <div
             className={`flex h-12 w-12 items-center justify-center rounded-2xl border text-nd-accent ${policyAllowed === false ? "border-nd-danger/25 bg-nd-danger/10 text-nd-danger" : "border-nd-accent/25 bg-nd-accent/10"}`}
           >
-            <BrainCircuit className="h-6 w-6" />
+            <BrainCircuit className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
             <h3 className="font-semibold text-nd-text">{model.name}</h3>
@@ -88,7 +88,7 @@ export function ModelCard({
           }}
           className="inline-flex items-center gap-2 rounded-xl border border-nd-success/25 bg-nd-success/10 px-3 py-2 text-xs font-semibold text-nd-success transition hover:bg-nd-success/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <CheckCircle2 className="h-4 w-4" /> Mark Ready
+          <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Mark Ready
         </button>
         <button
           type="button"
@@ -98,14 +98,14 @@ export function ModelCard({
           }}
           className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
-          <DownloadCloud className="h-4 w-4" /> Indexed
+          <DownloadCloud className="h-4 w-4" aria-hidden="true" /> Indexed
         </button>
         <button
           type="button"
           onClick={() => onDisable(model.id)}
           className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-xs font-semibold text-nd-text-muted transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-text-muted/40"
         >
-          <Power className="h-4 w-4" /> Disable
+          <Power className="h-4 w-4" aria-hidden="true" /> Disable
         </button>
       </div>
     </article>

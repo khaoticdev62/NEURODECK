@@ -3,6 +3,7 @@ import { CalendarClock, Plus, Trash2, Play, Pause, RefreshCw } from 'lucide-reac
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ScheduledTask } from '../../services/bridgeAdapter';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { LoadingState } from '../../components/primitives/LoadingState';
 
 export function SchedulerView() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
@@ -112,7 +113,8 @@ export function SchedulerView() {
       </div>
 
       <div className="flex-1 overflow-auto space-y-2">
-        {tasks.length === 0 && !loading && (
+        {loading && <LoadingState label="Loading tasks…" />}
+        {!loading && tasks.length === 0 && (
           <EmptyState icon={CalendarClock} title="No scheduled tasks" description="Add a task using the form above." />
         )}
         {tasks.map((task) => (
