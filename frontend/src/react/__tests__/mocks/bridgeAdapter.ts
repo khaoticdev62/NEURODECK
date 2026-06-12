@@ -17,8 +17,10 @@ export const neurodeckApi = {
   },
   ai: {
     chat: fn(),
-    checkHealth: fn(),
-    streamChat: fn(),
+    chatStream: fn(),
+    health: fn().mockResolvedValue([]),
+    setProvider: fn(),
+    setModel: fn(),
   },
   agents: {
     list: fn(),
@@ -26,8 +28,19 @@ export const neurodeckApi = {
     stop: fn(),
   },
   models: {
-    detectLocal: fn(),
-    list: fn(),
+    detectLocal: fn().mockResolvedValue({ ok: true, detection: { scannedAt: '', runtimes: [], discoveredModels: [], summary: '' } }),
+    listProviderRuntimes: fn(),
+    discoverInstalledModels: fn(),
+    getProviderHealth: fn(),
+    runModelProbe: fn(),
+    getCompatibilityScores: fn(),
+    pickBestLocalModel: fn(),
+    getAgentModelPolicies: fn(),
+    getAllowedModelsForAgent: fn(),
+    validateAgentModel: fn(),
+    evaluateRecovery: fn(),
+    recordRecoveryEvent: fn(),
+    getRecoveryEventLog: fn(),
   },
   git: {
     status: fn(),
@@ -89,9 +102,12 @@ export const neurodeckApi = {
     deletePreset: fn(),
   },
   diagnostics: {
+    get: fn(),
+    logs: fn(),
     run: fn(),
     generateBundle: fn(),
     getHealth: fn(),
+    exportBundle: fn(),
   },
   sessions: {
     list: fn(),
@@ -99,6 +115,8 @@ export const neurodeckApi = {
     rename: fn(),
     exportMarkdown: fn(),
     exportContent: fn(),
+    save: fn(),
+    listMeta: fn(),
   },
   system: {
     getStats: fn(),

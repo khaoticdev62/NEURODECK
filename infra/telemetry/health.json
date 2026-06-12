@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-12T02:29:20Z",
+    "stamped_at_utc":  "2026-06-12T02:37:46Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,36 +47,36 @@
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
-                                           "duration_ms":  759,
-                                           "started_at_utc":  "2026-06-12T02:34:42Z",
-                                           "finished_at_utc":  "2026-06-12T02:34:42Z"
+                                           "duration_ms":  2230,
+                                           "started_at_utc":  "2026-06-12T02:37:53Z",
+                                           "finished_at_utc":  "2026-06-12T02:37:55Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  31811,
-                                           "started_at_utc":  "2026-06-12T02:34:42Z",
-                                           "finished_at_utc":  "2026-06-12T02:35:14Z"
+                                           "duration_ms":  33748,
+                                           "started_at_utc":  "2026-06-12T02:37:55Z",
+                                           "finished_at_utc":  "2026-06-12T02:38:29Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  121873,
-                                           "started_at_utc":  "2026-06-12T02:35:14Z",
-                                           "finished_at_utc":  "2026-06-12T02:37:16Z"
+                                           "duration_ms":  154189,
+                                           "started_at_utc":  "2026-06-12T02:38:29Z",
+                                           "finished_at_utc":  "2026-06-12T02:41:03Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  3454,
-                                           "started_at_utc":  "2026-06-12T02:37:16Z",
-                                           "finished_at_utc":  "2026-06-12T02:37:19Z"
+                                           "duration_ms":  3099,
+                                           "started_at_utc":  "2026-06-12T02:41:03Z",
+                                           "finished_at_utc":  "2026-06-12T02:41:06Z"
                                        }
                                    ],
                          "blockers":  [
@@ -84,7 +84,7 @@
                                           "Loose root files are present outside the preserved set.",
                                           "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log"
                                       ],
-                         "duration_ms":  157925,
-                         "checked_at_utc":  "2026-06-12T02:37:19Z"
+                         "duration_ms":  193299,
+                         "checked_at_utc":  "2026-06-12T02:41:06Z"
                      }
 }

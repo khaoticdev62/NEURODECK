@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-11T22:00:00Z",
+  "phase": 6,
+  "note": "Implementation evidence for agent/model policy enforcement.",
+  "evidence": [
+    {
+      "requestId": "phase6-agent-policy-service",
+      "timestamp": "2026-06-11T22:00:00Z",
+      "providerId": "all",
+      "providerType": "registry",
+      "probe": "policy_evaluation",
+      "status": "passed",
+      "realTransportUsed": false,
+      "mockDataDetected": false,
+      "durationMs": 0,
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "source": "src-tauri/src/services/models/agent_policy_service.rs",
+      "target": "assets/model-registry/agent-policies.json"
+    },
+    {
+      "requestId": "phase6-get-agent-model-policies-command",
+      "timestamp": "2026-06-11T22:00:00Z",
+      "providerId": "all",
+      "providerType": "bridge",
+      "probe": "command_dispatch",
+      "status": "passed",
+      "realTransportUsed": false,
+      "mockDataDetected": false,
+      "durationMs": 0,
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "source": "frontend / bridge",
+      "target": "src-tauri/src/commands/mod.rs#get_agent_model_policies"
+    },
+    {
+      "requestId": "phase6-get-allowed-models-for-agent-command",
+      "timestamp": "2026-06-11T22:00:00Z",
+      "providerId": "all",
+      "providerType": "bridge",
+      "probe": "command_dispatch",
+      "status": "passed",
+      "realTransportUsed": false,
+      "mockDataDetected": false,
+      "durationMs": 0,
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "source": "frontend / bridge",
+      "target": "src-tauri/src/commands/mod.rs#get_allowed_models_for_agent"
+    },
+    {
+      "requestId": "phase6-validate-agent-model-command",
+      "timestamp": "2026-06-11T22:00:00Z",
+      "providerId": "all",
+      "providerType": "bridge",
+      "probe": "command_dispatch",
+      "status": "passed",
+      "realTransportUsed": false,
+      "mockDataDetected": false,
+      "durationMs": 0,
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "source": "frontend / bridge",
+      "target": "src-tauri/src/commands/mod.rs#validate_agent_model"
+    },
+    {
+      "requestId": "phase6-cargo-test",
+      "timestamp": "2026-06-11T22:00:00Z",
+      "providerId": "all",
+      "providerType": "test",
+      "probe": "unit_test_suite",
+      "status": "passed",
+      "realTransportUsed": false,
+      "mockDataDetected": false,
+      "durationMs": 0,
+      "bytesSent": 0,
+      "bytesReceived": 0,
+      "source": "cargo test",
+      "target": "src-tauri/src/services/models/agent_policy_service.rs"
+    }
+  ]
+}

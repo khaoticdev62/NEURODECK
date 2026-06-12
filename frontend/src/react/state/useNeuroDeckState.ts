@@ -12,6 +12,7 @@ const initialState: NeuroDeckState = {
   selectedPersona: 'Developer',
   selectedProvider: 'ollama',
   selectedModelId: '',
+  activeAgentId: 'general',
   selectedFont: 'inter',
   showOnboarding: true,
   composerValue: '',
@@ -22,6 +23,9 @@ const initialState: NeuroDeckState = {
   aiHealth: [],
   diagnostics: null,
   diagnosticLogs: [],
+  modelScores: [],
+  agentPolicies: [],
+  recoveryEvents: [],
   lastExportPath: null,
   lastError: null,
   agents: [],
@@ -181,6 +185,14 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
       return { ...state, lastError: action.error, busyLabel: null };
     case 'set-export-path':
       return { ...state, lastExportPath: action.path, lastError: null };
+    case 'set-active-agent':
+      return { ...state, activeAgentId: action.id };
+    case 'set-model-scores':
+      return { ...state, modelScores: action.scores };
+    case 'set-agent-policies':
+      return { ...state, agentPolicies: action.policies };
+    case 'set-recovery-events':
+      return { ...state, recoveryEvents: action.events };
     case 'reset-local-state':
       return { ...initialState, hydrated: true };
     default:

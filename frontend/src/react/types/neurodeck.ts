@@ -15,7 +15,7 @@ export type ModelStatus = 'ready' | 'indexed' | 'missing' | 'disabled';
 export type MemoryScope = 'Global' | 'Project' | 'Session';
 export type PluginStatus = 'enabled' | 'disabled' | 'needs review';
 export type LogLevel = 'info' | 'warning' | 'error';
-export type AIProvider = 'ollama' | 'lmstudio' | 'offline-draft';
+export type AIProvider = 'ollama' | 'lmstudio' | 'openai_compat' | 'llama_cpp' | 'offline-draft';
 export type AIRole = 'system' | 'user' | 'assistant' | 'tool';
 export type AIRunStatus = 'queued' | 'running' | 'complete' | 'failed';
 export type ContextFileKind = 'manifest' | 'docs' | 'source' | 'config' | 'security' | 'unknown';
@@ -315,6 +315,52 @@ export interface FontOption {
   weights: number[];
 }
 
+export interface ModelCompatibilityScore {
+  modelId: string;
+  displayName: string;
+  tier: string;
+  score: number;
+  reasons: string[];
+  warnings: string[];
+  recommendedContextTokens: number;
+  recommendedBatchSize: number;
+  recommendedGpuLayers?: number;
+  allowAutoLoad: boolean;
+  requiresUserOptIn: boolean;
+  installed: boolean;
+}
+
+export interface AgentModelPolicy {
+  agentId: string;
+  preferredModels: string[];
+  allowedModelCapabilities: string[];
+  blockedModelFamilies: string[];
+  minimumCompatibilityTier: string;
+  allowHeavyModels: boolean;
+  allowRemoteFallback: boolean;
+}
+
+export interface AgentModelAllowance {
+  allowed: boolean;
+  reason: string;
+  tierOk: boolean;
+  capabilitiesOk: boolean;
+  familyOk: boolean;
+  heavyOk: boolean;
+  remoteOk: boolean;
+}
+
+export interface RecoveryEvent {
+  id: string;
+  timestamp: string;
+  runtimeId: string;
+  modelId?: string;
+  state: string;
+  action: string;
+  allowed: boolean;
+  reason: string;
+}
+
 export interface NeuroDeckState {
   hydrated: boolean;
   activeView: ViewId;
@@ -324,6 +370,7 @@ export interface NeuroDeckState {
   selectedPersona: string;
   selectedProvider: AIProvider;
   selectedModelId: string;
+  activeAgentId: string;
   selectedFont: string;
   showOnboarding: boolean;
   composerValue: string;
@@ -334,6 +381,9 @@ export interface NeuroDeckState {
   aiHealth: AIProviderHealth[];
   diagnostics: DiagnosticsPayload | null;
   diagnosticLogs: DiagnosticLog[];
+  modelScores: ModelCompatibilityScore[];
+  agentPolicies: AgentModelPolicy[];
+  recoveryEvents: RecoveryEvent[];
   lastExportPath: string | null;
   lastError: AppError | null;
   agents: Agent[];
@@ -409,6 +459,10 @@ export interface NeuroDeckAppActions {
   addMemoryFact: (content: string) => Promise<void>;
   deleteMemory: (id: string) => Promise<void>;
   toggleMemoryPin: (id: string, pinned: boolean) => Promise<void>;
+  refreshModelScores: () => Promise<void>;
+  refreshAgentPolicies: () => Promise<void>;
+  refreshRecoveryEvents: () => Promise<void>;
+  validateAgentModel: (agentId: string, modelId: string) => Promise<AgentModelAllowance>;
 }
 
 export type NeuroDeckAction =
@@ -441,6 +495,10 @@ export type NeuroDeckAction =
   | { type: 'set-busy'; label: string | null }
   | { type: 'set-error'; error: AppError | null }
   | { type: 'set-export-path'; path: string | null }
+  | { type: 'set-active-agent'; id: string }
+  | { type: 'set-model-scores'; scores: ModelCompatibilityScore[] }
+  | { type: 'set-agent-policies'; policies: AgentModelPolicy[] }
+  | { type: 'set-recovery-events'; events: RecoveryEvent[] }
   | { type: 'set-memories'; memories: MemoryItem[] }
   | { type: 'add-memory'; memory: MemoryItem }
   | { type: 'delete-memory'; id: string }

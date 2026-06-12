@@ -94,4 +94,20 @@ Required fields:
   - Bridge commands: `list_provider_runtimes`, `discover_installed_models`, `get_provider_health`, `run_model_probe`
   - Report: `reports/models/phase-3-discovery-health-probes.md`
   - Evidence: `reports/models/phase-3-evidence.json`
-- **Remaining probes**: `stream_probe`, `embedding_probe`, `tool_probe`, `runtime_process_check`, `self_healing_recovery`, `failover_route` are planned for Phases 4–10.
+- **Phase 4 (compatibility scoring)**: complete.
+  - Rust service: `src-tauri/src/services/models/model_compatibility_service.rs`
+  - Bridge commands: `get_model_compatibility_scores`, `pick_best_local_model`
+  - Report: `reports/models/phase-4-compatibility-scoring.md`
+  - Evidence: `reports/models/phase-4-evidence.json`
+- **Phase 5 (self-healing recovery engine)**: complete.
+  - Rust service: `src-tauri/src/services/models/model_recovery_service.rs`
+  - Bridge commands: `evaluate_recovery`, `record_recovery_event`, `get_recovery_event_log`
+  - Report: `reports/models/phase-5-self-healing-recovery.md`
+  - Evidence: `reports/models/phase-5-evidence.json`
+- **Phase 6 (agent/model policy enforcement)**: complete.
+  - Rust service: `src-tauri/src/services/models/agent_policy_service.rs`
+  - Recovery service updated to respect agent policy during failover/downgrade.
+  - Bridge commands: `get_agent_model_policies`, `get_allowed_models_for_agent`, `validate_agent_model`
+  - Report: `reports/models/phase-6-agent-policy-enforcement.md`
+  - Evidence: `reports/models/phase-6-evidence.json`
+- **Remaining probes / work**: `stream_probe`, `embedding_probe`, `tool_probe`, `runtime_process_check`, live transport failover verification, UI integration, and production gate are planned for Phases 7–10.

@@ -1241,6 +1241,141 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             serde_json::to_value(best).map_err(|e| e.to_string())
         }
 
+        "evaluate_recovery" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let runtime_id = args
+                .get("runtimeId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'runtimeId'")?;
+            let model_id = args.get("modelId").and_then(|v| v.as_str());
+            let state = args
+                .get("state")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'state'")?;
+            let agent_id = args.get("agentId").and_then(|v| v.as_str());
+            let evaluation = crate::services::models::evaluate_recovery(
+                runtime_id,
+                model_id,
+                state,
+                agent_id,
+                &config.llm,
+            )
+            .await;
+            serde_json::to_value(evaluation).map_err(|e| e.to_string())
+        }
+
+        "record_recovery_event" => {
+            let runtime_id = args
+                .get("runtimeId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'runtimeId'")?;
+            let model_id = args.get("modelId").and_then(|v| v.as_str().map(String::from));
+            let state = args
+                .get("state")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            let action = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            let allowed = args.get("allowed").and_then(|v| v.as_bool()).unwrap_or(false);
+            let reason = args
+                .get("reason")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
+            let event = crate::services::models::RecoveryEvent {
+                id: uuid::Uuid::new_v4().to_string(),
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                runtime_id: runtime_id.to_string(),
+                model_id,
+                state,
+                action,
+                allowed,
+                reason,
+            };
+            crate::services::models::record_recovery_event(event.clone())?;
+            serde_json::to_value(event).map_err(|e| e.to_string())
+        }
+
+        "get_recovery_event_log" => {
+            let events = crate::services::models::get_recovery_event_log();
+            serde_json::to_value(events).map_err(|e| e.to_string())
+        }
+
+        "get_agent_model_policies" => {
+            let policies = crate::services::models::get_agent_policies();
+            serde_json::to_value(policies).map_err(|e| e.to_string())
+        }
+
+        "get_allowed_models_for_agent" => {
+            let config = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .config
+                    .clone()
+            };
+            let agent_id = args
+                .get("agentId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'agentId'")?;
+            let options: crate::services::models::ScoreOptions =
+                serde_json::from_value(args.clone()).unwrap_or_default();
+            let ranked = crate::services::models::rank_models_for_agent(agent_id, &options, &config.llm).await;
+            serde_json::to_value(ranked).map_err(|e| e.to_string())
+        }
+
+        "validate_agent_model" => {
+            let agent_id = args
+                .get("agentId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'agentId'")?;
+            let model_id = args
+                .get("modelId")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'modelId'")?;
+            let profiles = crate::model_registry::load_supported_models();
+            let result = profiles
+                .iter()
+                .find(|p| p.id == model_id)
+                .map(|profile| {
+                    if let Some(policy) = crate::services::models::get_policy_for_agent(agent_id) {
+                        crate::services::models::evaluate_policy_for_model(&policy, profile)
+                    } else {
+                        crate::services::models::AgentModelAllowance {
+                            allowed: true,
+                            reason: "No agent policy configured".into(),
+                            tier_ok: true,
+                            capabilities_ok: true,
+                            family_ok: true,
+                            heavy_ok: true,
+                            remote_ok: true,
+                        }
+                    }
+                })
+                .unwrap_or(crate::services::models::AgentModelAllowance {
+                    allowed: false,
+                    reason: "Model not found in registry".into(),
+                    tier_ok: false,
+                    capabilities_ok: false,
+                    family_ok: false,
+                    heavy_ok: false,
+                    remote_ok: false,
+                });
+            serde_json::to_value(result).map_err(|e| e.to_string())
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // Utility & Diagnostics
         // ────────────────────────────────────────────────────────────────────
