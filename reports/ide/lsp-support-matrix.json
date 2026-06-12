@@ -1,0 +1,146 @@
+{
+  "generatedAt": "2026-06-12T22:46:00Z",
+  "generatedBy": "export-ide-readiness-report.ts",
+  "totalServers": 9,
+  "ipcChannels": 9,
+  "servers": [
+    {
+      "serverId": "tsserver",
+      "displayName": "TypeScript Language Server",
+      "installCommand": "npm install -g typescript-language-server typescript",
+      "languageIds": ["typescript", "javascript"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": true,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": true
+      }
+    },
+    {
+      "serverId": "pyright",
+      "displayName": "Pyright",
+      "installCommand": "pip install pyright",
+      "languageIds": ["python"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": true,
+        "diagnostics": true,
+        "formatting": false,
+        "codeActions": true
+      }
+    },
+    {
+      "serverId": "rust-analyzer",
+      "displayName": "rust-analyzer",
+      "installCommand": "rustup component add rust-analyzer",
+      "languageIds": ["rust"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": true,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": true
+      }
+    },
+    {
+      "serverId": "gopls",
+      "displayName": "gopls",
+      "installCommand": "go install golang.org/x/tools/gopls@latest",
+      "languageIds": ["go"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": true,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": true
+      }
+    },
+    {
+      "serverId": "lua-language-server",
+      "displayName": "Lua Language Server",
+      "installCommand": "Download from https://github.com/LuaLS/lua-language-server/releases",
+      "languageIds": ["lua"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": true,
+        "diagnostics": true,
+        "formatting": false,
+        "codeActions": true
+      }
+    },
+    {
+      "serverId": "bash-language-server",
+      "displayName": "Bash Language Server",
+      "installCommand": "npm install -g bash-language-server",
+      "languageIds": ["bash"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": false,
+        "diagnostics": true,
+        "formatting": false,
+        "codeActions": false
+      }
+    },
+    {
+      "serverId": "vscode-html-language-server",
+      "displayName": "VSCode HTML Language Server",
+      "installCommand": "npm install -g vscode-langservers-extracted",
+      "languageIds": ["html"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": false,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": false
+      }
+    },
+    {
+      "serverId": "vscode-css-language-server",
+      "displayName": "VSCode CSS Language Server",
+      "installCommand": "npm install -g vscode-langservers-extracted",
+      "languageIds": ["css"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": false,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": false
+      }
+    },
+    {
+      "serverId": "vscode-json-language-server",
+      "displayName": "VSCode JSON Language Server",
+      "installCommand": "npm install -g vscode-langservers-extracted",
+      "languageIds": ["json"],
+      "capabilities": {
+        "completion": true,
+        "hover": true,
+        "definition": false,
+        "diagnostics": true,
+        "formatting": true,
+        "codeActions": false
+      }
+    }
+  ],
+  "ipcChannels": [
+    "lsp:start-server",
+    "lsp:stop-server",
+    "lsp:open-document",
+    "lsp:close-document",
+    "lsp:change-document",
+    "lsp:completion",
+    "lsp:hover",
+    "lsp:definition",
+    "lsp:format",
+    "lsp:diagnostics"
+  ]
+}

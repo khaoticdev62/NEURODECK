@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-06-12T22:46:00Z",
+  "generatedBy": "export-ide-readiness-report.ts",
+  "summary": {
+    "totalLanguages": 13,
+    "totalCommands": 58,
+    "totalSnippets": 72,
+    "languagesWithLsp": 9,
+    "languagesWithRunCommand": 7,
+    "languagesWithTestCommand": 6,
+    "languagesWithBuildCommand": 5,
+    "languagesWithFormatCommand": 11
+  },
+  "languages": [
+    {
+      "id": "typescript",
+      "displayName": "TypeScript",
+      "extensions": [".ts", ".tsx", ".mts"],
+      "lsp": "typescript-language-server",
+      "commandCount": 14,
+      "snippetCount": 8,
+      "categories": ["runFile", "testProject", "build", "lint", "format", "typecheck", "packageInstall", "dependencyAdd"]
+    },
+    {
+      "id": "javascript",
+      "displayName": "JavaScript",
+      "extensions": [".js", ".jsx", ".mjs", ".cjs"],
+      "lsp": "typescript-language-server",
+      "commandCount": 8,
+      "snippetCount": 8,
+      "categories": ["runFile", "testProject", "build", "lint", "format", "packageInstall", "dependencyAdd"]
+    },
+    {
+      "id": "python",
+      "displayName": "Python",
+      "extensions": [".py", ".pyw", ".pyi"],
+      "lsp": "pyright-langserver",
+      "commandCount": 7,
+      "snippetCount": 8,
+      "categories": ["runFile", "testProject", "lint", "format", "typecheck", "packageInstall"]
+    },
+    {
+      "id": "rust",
+      "displayName": "Rust",
+      "extensions": [".rs"],
+      "lsp": "rust-analyzer",
+      "commandCount": 9,
+      "snippetCount": 8,
+      "categories": ["runProject", "testProject", "build", "lint", "format", "typecheck", "dependencyAdd"]
+    },
+    {
+      "id": "go",
+      "displayName": "Go",
+      "extensions": [".go"],
+      "lsp": "gopls",
+      "commandCount": 7,
+      "snippetCount": 8,
+      "categories": ["runFile", "testProject", "build", "lint", "format", "packageInstall", "dependencyAdd"]
+    },
+    {
+      "id": "lua",
+      "displayName": "Lua",
+      "extensions": [".lua"],
+      "lsp": "lua-language-server",
+      "commandCount": 5,
+      "snippetCount": 8,
+      "categories": ["runFile", "testProject", "lint", "format"]
+    },
+    {
+      "id": "bash",
+      "displayName": "Bash/Shell",
+      "extensions": [".sh", ".bash", ".zsh"],
+      "lsp": "bash-language-server",
+      "commandCount": 3,
+      "snippetCount": 6,
+      "categories": ["runFile", "lint", "format"],
+      "note": "runFile requires confirm tier"
+    },
+    {
+      "id": "html",
+      "displayName": "HTML",
+      "extensions": [".html", ".htm"],
+      "lsp": "vscode-html-language-server",
+      "commandCount": 1,
+      "snippetCount": 4,
+      "categories": ["format"]
+    },
+    {
+      "id": "css",
+      "displayName": "CSS",
+      "extensions": [".css", ".scss", ".sass"],
+      "lsp": "vscode-css-language-server",
+      "commandCount": 1,
+      "snippetCount": 4,
+      "categories": ["lint", "format"]
+    },
+    {
+      "id": "json",
+      "displayName": "JSON",
+      "extensions": [".json", ".jsonc"],
+      "lsp": "vscode-json-language-server",
+      "commandCount": 1,
+      "snippetCount": 4,
+      "categories": ["format"]
+    },
+    {
+      "id": "yaml",
+      "displayName": "YAML",
+      "extensions": [".yaml", ".yml"],
+      "lsp": "yaml-language-server",
+      "commandCount": 1,
+      "snippetCount": 6,
+      "categories": ["lint"]
+    },
+    {
+      "id": "toml",
+      "displayName": "TOML",
+      "extensions": [".toml"],
+      "lsp": "taplo",
+      "commandCount": 1,
+      "snippetCount": 6,
+      "categories": ["format", "lint"]
+    },
+    {
+      "id": "markdown",
+      "displayName": "Markdown",
+      "extensions": [".md", ".mdx"],
+      "lsp": "marksman",
+      "commandCount": 0,
+      "snippetCount": 4,
+      "categories": []
+    }
+  ]
+}
