@@ -1,0 +1,257 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "rust",
+      "displayName": "Rust",
+      "fileExtensions": [".rs"],
+      "configFiles": ["Cargo.toml", "Cargo.lock"],
+      "lsp": {
+        "serverId": "rust-analyzer",
+        "serverCommand": "rust-analyzer",
+        "serverArgs": [],
+        "installHint": "rustup component add rust-analyzer",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": true,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": true
+      },
+      "commands": {
+        "runProject": [
+          {
+            "id": "rs.cargo-run",
+            "label": "cargo run",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["run"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Build and run the Rust project"
+          }
+        ],
+        "build": [
+          {
+            "id": "rs.cargo-build",
+            "label": "cargo build",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["build"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Compile the project in debug mode"
+          },
+          {
+            "id": "rs.cargo-build-release",
+            "label": "cargo build --release",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["build", "--release"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Compile with optimisations"
+          }
+        ],
+        "testProject": [
+          {
+            "id": "rs.cargo-test",
+            "label": "cargo test",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["test"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Run all tests"
+          }
+        ],
+        "typecheck": [
+          {
+            "id": "rs.cargo-check",
+            "label": "cargo check",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["check"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Fast type-check without linking"
+          }
+        ],
+        "lint": [
+          {
+            "id": "rs.cargo-clippy",
+            "label": "cargo clippy",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["clippy"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Lint with Clippy"
+          }
+        ],
+        "format": [
+          {
+            "id": "rs.cargo-fmt",
+            "label": "cargo fmt",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["fmt"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "safe",
+            "description": "Format all source files with rustfmt"
+          }
+        ],
+        "dependencyAdd": [
+          {
+            "id": "rs.cargo-add",
+            "label": "cargo add <crate>",
+            "languageId": "rust",
+            "command": "cargo",
+            "args": ["add", "${1:crate}"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["Cargo.toml"] },
+            "safety": "confirm",
+            "description": "Add a crate dependency"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "rs.function",
+          "languageId": "rust",
+          "label": "fn",
+          "description": "Rust function",
+          "triggerContexts": ["toplevel", "impl"],
+          "insertText": "fn ${1:name}(${2:params}) -> ${3:()} {\n    ${4:todo!()}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "my_function" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "()" },
+            { "index": 4, "label": "body", "defaultValue": "todo!()" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.async-fn",
+          "languageId": "rust",
+          "label": "async fn",
+          "description": "Async Rust function",
+          "triggerContexts": ["toplevel", "impl"],
+          "insertText": "async fn ${1:name}(${2:params}) -> Result<${3:()}, ${4:Box<dyn std::error::Error>>> {\n    ${5:todo!()}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "fetch" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "okType", "defaultValue": "()" },
+            { "index": 4, "label": "errType", "defaultValue": "Box<dyn std::error::Error>" },
+            { "index": 5, "label": "body", "defaultValue": "todo!()" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.struct",
+          "languageId": "rust",
+          "label": "struct",
+          "description": "Rust struct with derive",
+          "triggerContexts": ["toplevel"],
+          "insertText": "#[derive(Debug, Clone)]\npub struct ${1:Name} {\n    pub ${2:field}: ${3:String},\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyStruct" },
+            { "index": 2, "label": "field", "defaultValue": "value" },
+            { "index": 3, "label": "type", "defaultValue": "String" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.match",
+          "languageId": "rust",
+          "label": "match",
+          "description": "Pattern match expression",
+          "triggerContexts": ["block"],
+          "insertText": "match ${1:value} {\n    ${2:pattern} => ${3:todo!()},\n    _ => ${4:todo!()},\n}",
+          "placeholders": [
+            { "index": 1, "label": "value", "defaultValue": "value" },
+            { "index": 2, "label": "pattern", "defaultValue": "Some(x)" },
+            { "index": 3, "label": "arm1", "defaultValue": "todo!()" },
+            { "index": 4, "label": "default", "defaultValue": "todo!()" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.impl",
+          "languageId": "rust",
+          "label": "impl",
+          "description": "Impl block",
+          "triggerContexts": ["toplevel"],
+          "insertText": "impl ${1:Name} {\n    pub fn new(${2:}) -> Self {\n        Self {\n            ${3:}\n        }\n    }\n}",
+          "placeholders": [
+            { "index": 1, "label": "type", "defaultValue": "MyStruct" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "fields", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.test",
+          "languageId": "rust",
+          "label": "#[test]",
+          "description": "Rust unit test",
+          "triggerContexts": ["tests_module"],
+          "insertText": "#[test]\nfn ${1:test_name}() {\n    // Arrange\n    ${2:}\n    // Assert\n    assert_eq!(${3:actual}, ${4:expected});\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "test_something" },
+            { "index": 2, "label": "arrange", "defaultValue": "" },
+            { "index": 3, "label": "actual", "defaultValue": "result" },
+            { "index": 4, "label": "expected", "defaultValue": "expected" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.main",
+          "languageId": "rust",
+          "label": "fn main",
+          "description": "Main function entrypoint",
+          "triggerContexts": ["toplevel"],
+          "insertText": "fn main() {\n    ${1:println!(\"Hello, world!\");}\n}",
+          "placeholders": [
+            { "index": 1, "label": "body", "defaultValue": "println!(\"Hello, world!\");" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "rs.result-propagate",
+          "languageId": "rust",
+          "label": "Result<T,E>",
+          "description": "Result return type with ? operator",
+          "triggerContexts": ["block"],
+          "insertText": "let ${1:value} = ${2:operation}?;",
+          "placeholders": [
+            { "index": 1, "label": "binding", "defaultValue": "result" },
+            { "index": 2, "label": "operation", "defaultValue": "some_fallible_op()" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": ["cargo add", "cargo remove", "cargo update"],
+        "blockedCommands": ["sudo", "rm -rf"]
+      }
+    }
+  ]
+}

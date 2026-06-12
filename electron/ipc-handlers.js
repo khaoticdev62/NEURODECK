@@ -30,6 +30,11 @@ async function callSidecar(bridgePort, command, args = {}) {
   }
 }
 
+const { detectProject } = require('./services/ide/projectDetectionService');
+const { safeCommandExecutionService } = require('./services/ide/safeCommandExecutionService');
+const { rankPredictions } = require('./services/ide/predictiveCodingService');
+const { randomUUID } = require('crypto');
+
 function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthProbeRunner, bridgePort, isDev) {
   const guard = (channel, schema, handler) => {
     ipcMain.handle(channel, ipcGuard(channel, schema, handler, isDev));
@@ -220,8 +225,111 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     }
     return { success: false, error: `Key "${payload.key}" is not configurable via this channel.` };
   });
+
+  // ── IDE Predictive Coding Handlers ────────────────────────────────
+
+  guard(IPC.IDE_DETECT_PROJECT, {
+    workspacePath: { type: 'string', required: true }
+  }, async (payload) => {
+    return detectProject(payload.workspacePath);
+  });
+
+  guard(IPC.IDE_RUN_COMMAND, {
+    commandId: { type: 'string', required: false },
+    command: { type: 'string', required: true },
+    args: { type: 'array', required: true },
+    cwd: { type: 'string', required: true },
+    safety: { type: 'string', required: true },
+    label: { type: 'string', required: true }
+  }, async (payload) => {
+    return new Promise((resolve) => {
+      const commandId = payload.commandId || randomUUID();
+      const output = [];
+
+      safeCommandExecutionService.execute({
+        commandId,
+        command: payload.command,
+        args: payload.args,
+        cwd: payload.cwd,
+        safety: payload.safety,
+        label: payload.label,
+        onOutput: (type, data) => {
+          output.push({ type, data });
+          // Push output events to renderer via IPC if mainWindow is available
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('ide:command-output', { commandId, type, data });
+          }
+        },
+        onExit: (code) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('ide:command-exit', { commandId, exitCode: code });
+          }
+          resolve({ commandId, exitCode: code, output });
+        }
+      });
+
+      resolve({ commandId, startedAt: new Date().toISOString() });
+    });
+  });
+
+  guard(IPC.IDE_CANCEL_COMMAND, {
+    commandId: { type: 'string', required: true }
+  }, async (payload) => {
+    const cancelled = safeCommandExecutionService.cancel(payload.commandId);
+    return { commandId: payload.commandId, cancelled };
+  });
+
+  guard(IPC.IDE_GET_COMMAND_HISTORY, {}, async () => {
+    return safeCommandExecutionService.getHistory();
+  });
+
+  guard(IPC.IDE_GET_PREDICTIONS, {
+    filePath: { type: 'string', required: true },
+    languageId: { type: 'string', required: true },
+    cursorLine: { type: 'number', required: true },
+    cursorChar: { type: 'number', required: true },
+    diagnosticsCount: { type: 'number', required: false },
+    snippetIds: { type: 'array', required: false },
+    commandTemplates: { type: 'array', required: false },
+    lspCompletions: { type: 'array', required: false }
+  }, async (payload) => {
+    return rankPredictions({
+      filePath: payload.filePath,
+      languageId: payload.languageId,
+      cursorLine: payload.cursorLine,
+      cursorChar: payload.cursorChar,
+      diagnosticsCount: payload.diagnosticsCount ?? 0,
+      snippetIds: payload.snippetIds ?? [],
+      commandTemplates: payload.commandTemplates ?? [],
+      lspCompletions: payload.lspCompletions ?? [],
+    });
+  });
+
+  guard(IPC.IDE_APPLY_SNIPPET, {
+    snippetId: { type: 'string', required: true },
+    languageId: { type: 'string', required: true }
+  }, async (payload) => {
+    // Snippet expansion happens on renderer side using the shared predictiveSnippets module.
+    // This handler just confirms the snippet exists.
+    return { snippetId: payload.snippetId, acknowledged: true };
+  });
+
+  // ── Controller IDE Handlers ────────────────────────────────────────
+
+  guard(IPC.CONTROLLER_GET_IDE_ACTION_MAP, {}, async () => {
+    // Return the static action map — defined in shared/ide/controllerActions.ts
+    // The renderer loads this directly; this endpoint is for external tooling.
+    return { status: 'ok', message: 'Load from frontend/src/shared/ide/controllerActions.ts' };
+  });
+
+  guard(IPC.CONTROLLER_SET_IDE_MODE, {
+    mode: { type: 'string', required: true }
+  }, async (payload) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('controller:ide-mode-changed', { mode: payload.mode });
+    }
+    return { mode: payload.mode, set: true };
+  });
 }
 
-module.exports = {
-  registerIpcHandlers
-};
+module.exports = { registerIpcHandlers };

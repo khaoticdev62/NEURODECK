@@ -10,6 +10,7 @@
 import type {
   AIChatPayload,
   AIChatResponse,
+  AIProvider,
   AIProviderHealth,
   AgentRunRequest,
   AgentRunResponse,
@@ -26,6 +27,7 @@ import type {
   DiagnosticsBundleResponse,
   CliCommandDef,
 } from '../types/neurodeck';
+import type { ProviderRuntimeProfile, AgentModelPolicy } from '../../shared/contracts/models.contracts';
 
 const BRIDGE_PORT = parseInt(import.meta.env.VITE_BRIDGE_PORT || '9477', 10);
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
@@ -204,75 +206,297 @@ export type ModelDetectionResponse =
   | { ok: true; detection: ModelDetectionResult }
   | { ok: false; error: string };
 
+export type ScoreOptions = {
+  hostMemoryGb?: number;
+  batteryMode?: boolean;
+  allowHeavyModels?: boolean;
+  requiredCapabilities?: string[];
+};
+
+export type ProviderHealth = {
+  runtime_id: string;
+  runtime_type: string;
+  label: string;
+  state: string;
+  base_url?: string;
+  latency_ms: number;
+  models: string[];
+  error?: string;
+  checked_at: string;
+};
+
+export type DiscoveredModelEntry = {
+  runtime_id: string;
+  runtime_type: string;
+  runtime_label: string;
+  model_id: string;
+  registry_model_id?: string;
+  display_name: string;
+  family?: string;
+  compatibility_tier: string;
+  capabilities: string[];
+  state: string;
+  latency_ms: number;
+};
+
+export type ModelProbeResult = {
+  runtimeId: string;
+  modelId: string;
+  state: string;
+  response: string;
+  latencyMs: number;
+  error?: string;
+};
+
+export type ModelCompatibilityScore = {
+  modelId: string;
+  displayName: string;
+  tier: string;
+  score: number;
+  reasons: string[];
+  warnings: string[];
+  recommendedContextTokens: number;
+  recommendedBatchSize: number;
+  recommendedGpuLayers?: number;
+  allowAutoLoad: boolean;
+  requiresUserOptIn: boolean;
+  installed: boolean;
+};
+
+type BackendModelCompatibilityScore = {
+  model_id: string;
+  display_name: string;
+  tier: string;
+  score: number;
+  reasons: string[];
+  warnings: string[];
+  recommended_context_tokens: number;
+  recommended_batch_size: number;
+  recommended_gpu_layers?: number;
+  allow_auto_load: boolean;
+  requires_user_opt_in: boolean;
+  installed: boolean;
+};
+
+export type AgentScoredModel = ModelCompatibilityScore & {
+  agentPreferred: boolean;
+  policyAllowed: boolean;
+  policyReason: string;
+};
+
+type BackendAgentScoredModel = BackendModelCompatibilityScore & {
+  agent_preferred: boolean;
+  policy_allowed: boolean;
+  policy_reason: string;
+};
+
+export type AgentModelAllowance = {
+  allowed: boolean;
+  reason: string;
+  tierOk: boolean;
+  capabilitiesOk: boolean;
+  familyOk: boolean;
+  heavyOk: boolean;
+  remoteOk: boolean;
+};
+
+export type RecoveryEvaluation = {
+  action: string;
+  targetRuntimeId?: string;
+  targetModelId?: string;
+  reason: string;
+  allowed: boolean;
+  evidence: string[];
+};
+
+export type RecoveryEvent = {
+  id: string;
+  timestamp: string;
+  runtimeId: string;
+  modelId?: string;
+  state: string;
+  action: string;
+  allowed: boolean;
+  reason: string;
+};
+
+type BackendRecoveryEvent = {
+  id: string;
+  timestamp: string;
+  runtime_id: string;
+  model_id?: string;
+  state: string;
+  action: string;
+  allowed: boolean;
+  reason: string;
+};
+
+type BackendAgentModelPolicy = {
+  agent_id: string;
+  preferred_models: string[];
+  allowed_model_capabilities: string[];
+  blocked_model_families: string[];
+  minimum_compatibility_tier: string;
+  allow_heavy_models: boolean;
+  allow_remote_fallback: boolean;
+};
+
+function mapAgentPolicy(p: BackendAgentModelPolicy): AgentModelPolicy {
+  return {
+    agentId: p.agent_id,
+    preferredModels: p.preferred_models,
+    allowedModelCapabilities: p.allowed_model_capabilities,
+    blockedModelFamilies: p.blocked_model_families,
+    minimumCompatibilityTier: p.minimum_compatibility_tier,
+    allowHeavyModels: p.allow_heavy_models,
+    allowRemoteFallback: p.allow_remote_fallback,
+  };
+}
+
+function mapScore(s: BackendModelCompatibilityScore): ModelCompatibilityScore {
+  return {
+    modelId: s.model_id,
+    displayName: s.display_name,
+    tier: s.tier,
+    score: s.score,
+    reasons: s.reasons,
+    warnings: s.warnings,
+    recommendedContextTokens: s.recommended_context_tokens,
+    recommendedBatchSize: s.recommended_batch_size,
+    recommendedGpuLayers: s.recommended_gpu_layers,
+    allowAutoLoad: s.allow_auto_load,
+    requiresUserOptIn: s.requires_user_opt_in,
+    installed: s.installed,
+  };
+}
+
+function mapAgentScoredModel(m: BackendAgentScoredModel): AgentScoredModel {
+  return {
+    ...mapScore(m),
+    agentPreferred: m.agent_preferred,
+    policyAllowed: m.policy_allowed,
+    policyReason: m.policy_reason,
+  };
+}
+
+function mapRecoveryEvent(e: BackendRecoveryEvent): RecoveryEvent {
+  return {
+    id: e.id,
+    timestamp: e.timestamp,
+    runtimeId: e.runtime_id,
+    modelId: e.model_id,
+    state: e.state,
+    action: e.action,
+    allowed: e.allowed,
+    reason: e.reason,
+  };
+}
+
+function runtimeTypeToProvider(runtimeType: string): AIProvider {
+  switch (runtimeType) {
+    case 'ollama':
+      return 'ollama';
+    case 'lm_studio':
+      return 'lmstudio';
+    case 'llama_cpp_server':
+      return 'llama_cpp';
+    case 'openai_compatible_local':
+    case 'openai_compatible_remote':
+    case 'custom_http_provider':
+      return 'openai_compat';
+    default:
+      return 'ollama';
+  }
+}
+
 const models = {
   async detectLocal(): Promise<ModelDetectionResponse> {
-    const neurodeck = (window as any).neurodeck;
-    if (neurodeck?.models) {
-      const res = await neurodeck.models.list();
-      if (!res.ok) {
-        return { ok: false, error: res.error?.message || 'Failed to list models via preload' };
-      }
-      const ollama = res.data || [];
-      const discovered: ModelDetectionResult['discoveredModels'] = ollama.map((m: any) => ({
-        id: m.name,
-        name: m.name,
-        provider: 'ollama',
-        size: m.size ? String(m.size) : 'unknown',
-        quantization: 'unknown',
-        context: 0,
-        bestFor: [],
-        status: 'ready',
-        ramEstimate: 'unknown',
-      }));
-      const healthRes = await neurodeck.models.status();
-      const hasOllama = discovered.length > 0;
-      return {
-        ok: true,
-        detection: {
-          scannedAt: new Date().toISOString(),
-          runtimes: [
-            { name: 'Ollama', path: 'http://localhost:11434', type: 'api', exists: hasOllama, status: hasOllama ? 'detected' : 'missing' },
-          ],
-          discoveredModels: discovered,
-          summary: discovered.length
-            ? `${discovered.length} model(s) discovered via Ollama`
-            : 'No local model runtimes detected.',
-        },
-      };
-    }
-
     try {
-      const res = await bridgeInvoke<{ models: Array<{ name: string; size?: number }> }>('ollama_list_models', {
-        baseUrl: 'http://localhost:11434',
-      }).catch(() => ({ models: [] }));
-      const ollama = res.models ?? [];
-      const discovered: ModelDetectionResult['discoveredModels'] = ollama.map((m: any) => ({
-        id: m.name,
-        name: m.name,
-        provider: 'ollama',
-        size: m.size ? String(m.size) : 'unknown',
-        quantization: 'unknown',
-        context: 0,
-        bestFor: [],
-        status: 'ready',
-        ramEstimate: 'unknown',
+      const discovered = await bridgeInvoke<DiscoveredModelEntry[]>('discover_installed_models').catch(() => [] as DiscoveredModelEntry[]);
+      const health = await bridgeInvoke<ProviderHealth[]>('get_provider_health').catch(() => [] as ProviderHealth[]);
+
+      const localModels: ModelDetectionResult['discoveredModels'] = discovered.map((entry) => {
+        const profileId = entry.registry_model_id ?? entry.model_id;
+        return {
+          id: profileId,
+          name: entry.display_name || entry.model_id,
+          provider: entry.runtime_label || entry.runtime_id,
+          backendProvider: runtimeTypeToProvider(entry.runtime_type),
+          backendModel: entry.model_id,
+          size: 'unknown',
+          quantization: 'unknown',
+          context: 0,
+          bestFor: entry.capabilities ?? [],
+          status: entry.state === 'connected' ? 'ready' : entry.state === 'degraded' ? 'indexed' : 'missing',
+          ramEstimate: 'unknown',
+        };
+      });
+
+      const runtimes: ModelDetectionResult['runtimes'] = health.map((h) => ({
+        name: h.label || h.runtime_id,
+        path: h.base_url || h.runtime_id,
+        type: 'api',
+        exists: h.state === 'connected' || h.models.length > 0,
+        status: h.state === 'connected' ? 'detected' : 'missing',
       }));
+
       return {
         ok: true,
         detection: {
           scannedAt: new Date().toISOString(),
-          runtimes: [
-            { name: 'Ollama', path: 'http://localhost:11434', type: 'api', exists: discovered.length > 0, status: discovered.length > 0 ? 'detected' : 'missing' },
-          ],
-          discoveredModels: discovered,
+          runtimes,
+          discoveredModels: localModels,
           summary: discovered.length
-            ? `${discovered.length} model(s) discovered via Ollama`
+            ? `${discovered.length} model(s) discovered across ${runtimes.length} runtime(s)`
             : 'No local model runtimes detected.',
         },
       };
     } catch (e) {
       return { ok: false, error: String(e) };
     }
+  },
+
+  // Phase 3–6 model support bridge commands
+  async listProviderRuntimes(): Promise<ProviderRuntimeProfile[]> {
+    return bridgeInvoke<ProviderRuntimeProfile[]>('list_provider_runtimes');
+  },
+  async discoverInstalledModels(): Promise<DiscoveredModelEntry[]> {
+    return bridgeInvoke<DiscoveredModelEntry[]>('discover_installed_models');
+  },
+  async getProviderHealth(runtimeId?: string): Promise<ProviderHealth[]> {
+    return bridgeInvoke<ProviderHealth[]>('get_provider_health', { runtimeId });
+  },
+  async runModelProbe(runtimeId: string, modelId: string): Promise<ModelProbeResult> {
+    return bridgeInvoke<ModelProbeResult>('run_model_probe', { runtimeId, modelId });
+  },
+  async getCompatibilityScores(options?: ScoreOptions): Promise<ModelCompatibilityScore[]> {
+    const rows = await bridgeInvoke<BackendModelCompatibilityScore[]>('get_model_compatibility_scores', options ?? {});
+    return rows.map(mapScore);
+  },
+  async pickBestLocalModel(options?: ScoreOptions): Promise<ModelCompatibilityScore | null> {
+    const row = await bridgeInvoke<BackendModelCompatibilityScore | null>('pick_best_local_model', options ?? {});
+    return row ? mapScore(row) : null;
+  },
+  async getAgentModelPolicies(): Promise<AgentModelPolicy[]> {
+    const rows = await bridgeInvoke<BackendAgentModelPolicy[]>('get_agent_model_policies');
+    return rows.map(mapAgentPolicy);
+  },
+  async getAllowedModelsForAgent(agentId: string, options?: ScoreOptions): Promise<AgentScoredModel[]> {
+    const rows = await bridgeInvoke<BackendAgentScoredModel[]>('get_allowed_models_for_agent', { agentId, ...(options ?? {}) });
+    return rows.map(mapAgentScoredModel);
+  },
+  async validateAgentModel(agentId: string, modelId: string): Promise<AgentModelAllowance> {
+    return bridgeInvoke<AgentModelAllowance>('validate_agent_model', { agentId, modelId });
+  },
+  async evaluateRecovery(runtimeId: string, state: string, modelId?: string, agentId?: string): Promise<RecoveryEvaluation> {
+    return bridgeInvoke<RecoveryEvaluation>('evaluate_recovery', { runtimeId, state, modelId, agentId });
+  },
+  async recordRecoveryEvent(event: Omit<RecoveryEvent, 'id' | 'timestamp'>): Promise<RecoveryEvent> {
+    return bridgeInvoke<RecoveryEvent>('record_recovery_event', event);
+  },
+  async getRecoveryEventLog(): Promise<RecoveryEvent[]> {
+    const rows = await bridgeInvoke<BackendRecoveryEvent[]>('get_recovery_event_log');
+    return rows.map(mapRecoveryEvent);
   },
 };
 
@@ -321,26 +545,31 @@ export interface ChatStreamCallbacks {
 
 const ai = {
   async health(): Promise<AIProviderHealth[]> {
-    const neurodeck = (window as any).neurodeck;
-    if (neurodeck?.models) {
-      const res = await neurodeck.models.status();
-      if (res.ok) {
-        const provider = res.data?.provider || 'gemini';
-        return [
-          { provider: 'offline-draft', label: 'Offline Draft Engine', available: true, endpoint: 'renderer-local', detail: 'Always available', checkedAt: new Date().toISOString() },
-          { provider: 'ollama', label: 'Ollama', available: provider === 'ollama', endpoint: 'http://127.0.0.1:11434', detail: provider === 'ollama' ? 'Active provider' : 'Not active', checkedAt: new Date().toISOString() },
-          { provider: 'lmstudio', label: 'LM Studio', available: false, endpoint: 'http://127.0.0.1:1234', detail: 'Not configured', checkedAt: new Date().toISOString() },
-        ];
-      }
-    }
     try {
-      const config = await bridgeInvoke<{ llm?: { provider?: string } }>('get_config');
-      const provider = config?.llm?.provider || 'gemini';
-      return [
-        { provider: 'offline-draft', label: 'Offline Draft Engine', available: true, endpoint: 'renderer-local', detail: 'Always available', checkedAt: new Date().toISOString() },
-        { provider: 'ollama', label: 'Ollama', available: provider === 'ollama', endpoint: 'http://127.0.0.1:11434', detail: provider === 'ollama' ? 'Active provider' : 'Not active', checkedAt: new Date().toISOString() },
-        { provider: 'lmstudio', label: 'LM Studio', available: false, endpoint: 'http://127.0.0.1:1234', detail: 'Not configured', checkedAt: new Date().toISOString() },
-      ];
+      const health = await bridgeInvoke<ProviderHealth[]>('get_provider_health');
+      const offline: AIProviderHealth = {
+        provider: 'offline-draft',
+        label: 'Offline Draft Engine',
+        available: true,
+        endpoint: 'renderer-local',
+        detail: 'Always available',
+        checkedAt: new Date().toISOString(),
+      };
+      const mapped = health.map((h): AIProviderHealth => {
+        const connected = h.state === 'connected';
+        return {
+          provider: runtimeTypeToProvider(h.runtime_type),
+          label: h.label || h.runtime_id,
+          available: connected,
+          endpoint: h.base_url || h.runtime_id,
+          detail: connected
+            ? `${h.models.length} model(s) listed`
+            : h.error || h.state,
+          checkedAt: h.checked_at,
+          latencyMs: Number(h.latency_ms),
+        };
+      });
+      return [offline, ...mapped];
     } catch (_) {
       return offlineHealthFallback;
     }
@@ -915,6 +1144,65 @@ const ide = {
   },
   async deleteWorkspaceFile(path: string) {
     return bridgeInvoke<{ status: string }>('delete_workspace_file', { path });
+  },
+
+  async detectProject(workspacePath: string) {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.detectProject) return nd.ide.detectProject(workspacePath);
+    return { rootPath: workspacePath, detectedLanguages: [], packageManager: 'none', hasGit: false, configFiles: [], availableScripts: {}, detectedAt: new Date().toISOString() };
+  },
+
+  async getPredictions(
+    filePath: string,
+    languageId: string,
+    cursorLine: number,
+    cursorChar: number,
+    diagnosticsCount = 0,
+    snippetIds: string[] = [],
+    commandTemplates: unknown[] = [],
+    lspCompletions: unknown[] = [],
+  ) {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.getPredictions) {
+      return nd.ide.getPredictions(filePath, languageId, cursorLine, cursorChar, diagnosticsCount, snippetIds, commandTemplates, lspCompletions);
+    }
+    return [];
+  },
+
+  async runCommand(command: string, args: string[], cwd: string, safety: string, label: string, commandId?: string) {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.runCommand) return nd.ide.runCommand(command, args, cwd, safety, label, commandId);
+    throw new Error('ide.runCommand not available — Electron preload required');
+  },
+
+  async cancelCommand(commandId: string) {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.cancelCommand) return nd.ide.cancelCommand(commandId);
+    return { commandId, cancelled: false };
+  },
+
+  async getCommandHistory() {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.getCommandHistory) return nd.ide.getCommandHistory();
+    return [];
+  },
+
+  async applySnippet(snippetId: string, languageId: string) {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.applySnippet) return nd.ide.applySnippet(snippetId, languageId);
+    return { snippetId, acknowledged: true };
+  },
+
+  onCommandOutput(callback: (data: { commandId: string; type: 'stdout' | 'stderr'; data: string }) => void): () => void {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.onCommandOutput) return nd.ide.onCommandOutput(callback);
+    return () => {};
+  },
+
+  onCommandExit(callback: (data: { commandId: string; exitCode: number | null }) => void): () => void {
+    const nd = (window as any).neurodeck;
+    if (nd?.ide?.onCommandExit) return nd.ide.onCommandExit(callback);
+    return () => {};
   },
 };
 

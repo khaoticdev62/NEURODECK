@@ -1,0 +1,168 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "bash",
+      "displayName": "Bash / Shell",
+      "fileExtensions": [".sh", ".bash", ".zsh", ".ksh"],
+      "configFiles": [".shellcheckrc", "shfmt.toml"],
+      "lsp": {
+        "serverId": "bash-language-server",
+        "serverCommand": "bash-language-server",
+        "serverArgs": ["start"],
+        "installHint": "npm install -g bash-language-server",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": false,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "runFile": [
+          {
+            "id": "sh.run-bash",
+            "label": "bash <file>",
+            "languageId": "bash",
+            "command": "bash",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".sh", ".bash"] },
+            "safety": "confirm",
+            "description": "Execute shell script with bash"
+          },
+          {
+            "id": "sh.run-sh",
+            "label": "sh <file>",
+            "languageId": "bash",
+            "command": "sh",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".sh"] },
+            "safety": "confirm",
+            "description": "Execute shell script with sh"
+          }
+        ],
+        "lint": [
+          {
+            "id": "sh.shellcheck",
+            "label": "shellcheck <file>",
+            "languageId": "bash",
+            "command": "shellcheck",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".sh", ".bash"], "commandsAvailable": ["shellcheck"] },
+            "safety": "safe",
+            "description": "Lint with shellcheck"
+          }
+        ],
+        "format": [
+          {
+            "id": "sh.shfmt",
+            "label": "shfmt -w <file>",
+            "languageId": "bash",
+            "command": "shfmt",
+            "args": ["-w", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "commandsAvailable": ["shfmt"] },
+            "safety": "safe",
+            "description": "Format with shfmt"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "sh.shebang",
+          "languageId": "bash",
+          "label": "#!/usr/bin/env bash",
+          "description": "Bash shebang + strict mode",
+          "triggerContexts": ["toplevel_empty"],
+          "insertText": "#!/usr/bin/env bash\nset -euo pipefail\n\n${1:# Script body}",
+          "placeholders": [
+            { "index": 1, "label": "body", "defaultValue": "# Script body" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "sh.function",
+          "languageId": "bash",
+          "label": "function",
+          "description": "Shell function",
+          "triggerContexts": ["toplevel"],
+          "insertText": "${1:name}() {\n  ${2:# body}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "my_function" },
+            { "index": 2, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "sh.if",
+          "languageId": "bash",
+          "label": "if",
+          "description": "If statement",
+          "triggerContexts": ["block"],
+          "insertText": "if ${1:[ condition ]}; then\n  ${2:# body}\nfi",
+          "placeholders": [
+            { "index": 1, "label": "condition", "defaultValue": "[ -f \"$FILE\" ]" },
+            { "index": 2, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "sh.for-in",
+          "languageId": "bash",
+          "label": "for in",
+          "description": "For-in loop",
+          "triggerContexts": ["block"],
+          "insertText": "for ${1:item} in ${2:\"$@\"}; do\n  ${3:echo \"$item\"}\ndone",
+          "placeholders": [
+            { "index": 1, "label": "var", "defaultValue": "item" },
+            { "index": 2, "label": "list", "defaultValue": "\"$@\"" },
+            { "index": 3, "label": "body", "defaultValue": "echo \"$item\"" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "sh.case",
+          "languageId": "bash",
+          "label": "case",
+          "description": "Case statement",
+          "triggerContexts": ["block"],
+          "insertText": "case \"${1:\\$1}\" in\n  ${2:pattern})\n    ${3:# body}\n    ;;\n  *)\n    echo \"Unknown option: $1\"\n    exit 1\n    ;;\nesac",
+          "placeholders": [
+            { "index": 1, "label": "variable", "defaultValue": "$1" },
+            { "index": 2, "label": "pattern", "defaultValue": "--help" },
+            { "index": 3, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "sh.error-exit",
+          "languageId": "bash",
+          "label": "error exit",
+          "description": "Error message and exit",
+          "triggerContexts": ["block"],
+          "insertText": "echo \"Error: ${1:message}\" >&2\nexit ${2:1}",
+          "placeholders": [
+            { "index": 1, "label": "message", "defaultValue": "something went wrong" },
+            { "index": 2, "label": "code", "defaultValue": "1" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": false,
+        "requiresConfirmation": ["bash", "sh", "chmod", "chown"],
+        "blockedCommands": ["rm -rf /", "sudo rm", "chmod -R 777", ":(){ :|:& };:"]
+      }
+    }
+  ]
+}

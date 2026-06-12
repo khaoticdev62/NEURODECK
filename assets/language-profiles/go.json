@@ -1,0 +1,243 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "go",
+      "displayName": "Go",
+      "fileExtensions": [".go"],
+      "configFiles": ["go.mod", "go.sum"],
+      "lsp": {
+        "serverId": "gopls",
+        "serverCommand": "gopls",
+        "serverArgs": [],
+        "installHint": "go install golang.org/x/tools/gopls@latest",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": true,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": true
+      },
+      "commands": {
+        "runProject": [
+          {
+            "id": "go.run",
+            "label": "go run .",
+            "languageId": "go",
+            "command": "go",
+            "args": ["run", "."],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "safe",
+            "description": "Run the Go module"
+          }
+        ],
+        "runFile": [
+          {
+            "id": "go.run-file",
+            "label": "go run <file>",
+            "languageId": "go",
+            "command": "go",
+            "args": ["run", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".go"] },
+            "safety": "safe",
+            "description": "Run a single Go file"
+          }
+        ],
+        "build": [
+          {
+            "id": "go.build",
+            "label": "go build ./...",
+            "languageId": "go",
+            "command": "go",
+            "args": ["build", "./..."],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "safe",
+            "description": "Build all packages"
+          }
+        ],
+        "testProject": [
+          {
+            "id": "go.test",
+            "label": "go test ./...",
+            "languageId": "go",
+            "command": "go",
+            "args": ["test", "./..."],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "safe",
+            "description": "Run all tests"
+          }
+        ],
+        "lint": [
+          {
+            "id": "go.vet",
+            "label": "go vet ./...",
+            "languageId": "go",
+            "command": "go",
+            "args": ["vet", "./..."],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "safe",
+            "description": "Vet all packages"
+          }
+        ],
+        "format": [
+          {
+            "id": "go.fmt",
+            "label": "go fmt ./...",
+            "languageId": "go",
+            "command": "go",
+            "args": ["fmt", "./..."],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "safe",
+            "description": "Format all Go files"
+          }
+        ],
+        "packageInstall": [
+          {
+            "id": "go.mod-tidy",
+            "label": "go mod tidy",
+            "languageId": "go",
+            "command": "go",
+            "args": ["mod", "tidy"],
+            "cwdStrategy": "nearestGitRoot",
+            "appliesWhen": { "configFilesAny": ["go.mod"] },
+            "safety": "confirm",
+            "description": "Tidy go.mod and go.sum"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "go.function",
+          "languageId": "go",
+          "label": "func",
+          "description": "Go function",
+          "triggerContexts": ["toplevel"],
+          "insertText": "func ${1:Name}(${2:params}) ${3:error} {\n\t${4:return nil}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyFunc" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returns", "defaultValue": "error" },
+            { "index": 4, "label": "body", "defaultValue": "return nil" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.struct",
+          "languageId": "go",
+          "label": "struct",
+          "description": "Go struct type",
+          "triggerContexts": ["toplevel"],
+          "insertText": "type ${1:Name} struct {\n\t${2:Field} ${3:string}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyStruct" },
+            { "index": 2, "label": "field", "defaultValue": "Value" },
+            { "index": 3, "label": "type", "defaultValue": "string" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.if-err",
+          "languageId": "go",
+          "label": "if err != nil",
+          "description": "Go error check pattern",
+          "triggerContexts": ["block"],
+          "insertText": "if err != nil {\n\treturn ${1:nil}, fmt.Errorf(\"${2:operation}: %w\", err)\n}",
+          "placeholders": [
+            { "index": 1, "label": "zeroValue", "defaultValue": "nil" },
+            { "index": 2, "label": "operation", "defaultValue": "operation failed" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.for-range",
+          "languageId": "go",
+          "label": "for range",
+          "description": "Range-based for loop",
+          "triggerContexts": ["block"],
+          "insertText": "for ${1:i}, ${2:v} := range ${3:items} {\n\t${4:_ = v}\n}",
+          "placeholders": [
+            { "index": 1, "label": "index", "defaultValue": "i" },
+            { "index": 2, "label": "value", "defaultValue": "v" },
+            { "index": 3, "label": "iterable", "defaultValue": "items" },
+            { "index": 4, "label": "body", "defaultValue": "_ = v" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.test",
+          "languageId": "go",
+          "label": "func Test",
+          "description": "Go test function",
+          "triggerContexts": ["toplevel"],
+          "insertText": "func Test${1:Name}(t *testing.T) {\n\t${2:// arrange}\n\tif got := ${3:result}; got != ${4:want} {\n\t\tt.Errorf(\"got %v, want %v\", got, ${4:want})\n\t}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "Something" },
+            { "index": 2, "label": "arrange", "defaultValue": "" },
+            { "index": 3, "label": "got", "defaultValue": "result" },
+            { "index": 4, "label": "want", "defaultValue": "expected" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.interface",
+          "languageId": "go",
+          "label": "interface",
+          "description": "Go interface",
+          "triggerContexts": ["toplevel"],
+          "insertText": "type ${1:Name} interface {\n\t${2:Method}(${3:}) ${4:error}\n}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyInterface" },
+            { "index": 2, "label": "method", "defaultValue": "Do" },
+            { "index": 3, "label": "params", "defaultValue": "" },
+            { "index": 4, "label": "returns", "defaultValue": "error" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.goroutine",
+          "languageId": "go",
+          "label": "goroutine",
+          "description": "Go goroutine launch",
+          "triggerContexts": ["block"],
+          "insertText": "go func() {\n\t${1:// work}\n}()",
+          "placeholders": [
+            { "index": 1, "label": "body", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "go.main",
+          "languageId": "go",
+          "label": "main",
+          "description": "Go main entrypoint",
+          "triggerContexts": ["toplevel"],
+          "insertText": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"${1:Hello, World!}\")\n}",
+          "placeholders": [
+            { "index": 1, "label": "message", "defaultValue": "Hello, World!" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": ["go mod tidy", "go get", "go install"],
+        "blockedCommands": ["sudo", "rm -rf"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "generatedAt": "2026-06-12T02:28:26.265Z",
+  "version": "1.0.0",
+  "languages": [
+    {
+      "id": "bash",
+      "displayName": "Bash / Shell",
+      "fileExtensions": [
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ksh"
+      ],
+      "lspServer": "bash-language-server",
+      "commandCount": 4,
+      "snippetCount": 6,
+      "allowRunByDefault": false,
+      "blockedCommands": 4
+    },
+    {
+      "id": "json",
+      "displayName": "JSON",
+      "fileExtensions": [
+        ".json",
+        ".jsonc",
+        ".json5"
+      ],
+      "lspServer": "vscode-json-language-server",
+      "commandCount": 2,
+      "snippetCount": 4,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "yaml",
+      "displayName": "YAML",
+      "fileExtensions": [
+        ".yaml",
+        ".yml"
+      ],
+      "lspServer": "yaml-language-server",
+      "commandCount": 2,
+      "snippetCount": 5,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "toml",
+      "displayName": "TOML",
+      "fileExtensions": [
+        ".toml"
+      ],
+      "lspServer": "taplo",
+      "commandCount": 1,
+      "snippetCount": 5,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "markdown",
+      "displayName": "Markdown",
+      "fileExtensions": [
+        ".md",
+        ".mdx",
+        ".markdown"
+      ],
+      "lspServer": "marksman",
+      "commandCount": 2,
+      "snippetCount": 4,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "go",
+      "displayName": "Go",
+      "fileExtensions": [
+        ".go"
+      ],
+      "lspServer": "gopls",
+      "commandCount": 7,
+      "snippetCount": 8,
+      "allowRunByDefault": true,
+      "blockedCommands": 2
+    },
+    {
+      "id": "html",
+      "displayName": "HTML",
+      "fileExtensions": [
+        ".html",
+        ".htm",
+        ".xhtml"
+      ],
+      "lspServer": "vscode-html-language-server",
+      "commandCount": 2,
+      "snippetCount": 4,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "css",
+      "displayName": "CSS / SCSS",
+      "fileExtensions": [
+        ".css",
+        ".scss",
+        ".sass",
+        ".less"
+      ],
+      "lspServer": "vscode-css-language-server",
+      "commandCount": 2,
+      "snippetCount": 4,
+      "allowRunByDefault": true,
+      "blockedCommands": 0
+    },
+    {
+      "id": "lua",
+      "displayName": "Lua",
+      "fileExtensions": [
+        ".lua"
+      ],
+      "lspServer": "lua-language-server",
+      "commandCount": 5,
+      "snippetCount": 8,
+      "allowRunByDefault": true,
+      "blockedCommands": 3
+    },
+    {
+      "id": "python",
+      "displayName": "Python",
+      "fileExtensions": [
+        ".py",
+        ".pyi",
+        ".pyw"
+      ],
+      "lspServer": "pyright-langserver",
+      "commandCount": 9,
+      "snippetCount": 8,
+      "allowRunByDefault": true,
+      "blockedCommands": 3
+    },
+    {
+      "id": "rust",
+      "displayName": "Rust",
+      "fileExtensions": [
+        ".rs"
+      ],
+      "lspServer": "rust-analyzer",
+      "commandCount": 8,
+      "snippetCount": 8,
+      "allowRunByDefault": true,
+      "blockedCommands": 2
+    },
+    {
+      "id": "typescript",
+      "displayName": "TypeScript / JavaScript",
+      "fileExtensions": [
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".cjs",
+        ".mts",
+        ".cts"
+      ],
+      "lspServer": "typescript-language-server",
+      "commandCount": 14,
+      "snippetCount": 8,
+      "allowRunByDefault": true,
+      "blockedCommands": 3
+    }
+  ],
+  "lsp": {
+    "channelsRegistered": [
+      "lsp:start-server",
+      "lsp:stop-server",
+      "lsp:open-document",
+      "lsp:change-document",
+      "lsp:close-document",
+      "lsp:completion",
+      "lsp:hover",
+      "lsp:definition",
+      "lsp:format"
+    ],
+    "managerExists": true,
+    "preloadMethods": [
+      "startServer",
+      "stopServer",
+      "openDocument",
+      "changeDocument",
+      "closeDocument",
+      "completion",
+      "hover",
+      "definition",
+      "format",
+      "onDiagnostics",
+      "onStatusChanged"
+    ]
+  },
+  "controller": {
+    "ideActionsRegistered": [
+      "IDE_ACCEPT_COMPLETION",
+      "IDE_NEXT_COMPLETION",
+      "IDE_PREV_COMPLETION",
+      "IDE_DISMISS_COMPLETION",
+      "IDE_OPEN_COMMAND_WHEEL",
+      "IDE_FORMAT_FILE",
+      "IDE_RUN_COMMAND",
+      "IDE_NEXT_DIAGNOSTIC",
+      "IDE_GO_TO_DEFINITION",
+      "IDE_TOGGLE_PREDICTIVE_BAR",
+      "IDE_SAVE_FILE",
+      "IDE_PREV_TAB",
+      "IDE_NEXT_TAB",
+      "IDE_CANCEL_COMMAND",
+      "IDE_CONFIRM_COMMAND",
+      "IDE_ENTER_EDIT_MODE",
+      "IDE_ENTER_NAVIGATION_MODE"
+    ],
+    "modeBindings": [
+      "ide_prediction",
+      "ide_edit",
+      "ide_navigation",
+      "ide_command",
+      "ide_snippet"
+    ]
+  },
+  "summary": {
+    "totalLanguages": 12,
+    "totalCommands": 58,
+    "totalSnippets": 72,
+    "lspChannels": 9,
+    "ideActions": 17
+  }
+}

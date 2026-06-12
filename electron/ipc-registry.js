@@ -75,7 +75,19 @@ const IPC_CHANNELS = Object.freeze({
 
   // Settings (New Target)
   SETTINGS_GET: "settings:get",
-  SETTINGS_SET: "settings:set"
+  SETTINGS_SET: "settings:set",
+
+  // IDE Predictive Coding (New)
+  IDE_DETECT_PROJECT: "ide:detect-project",
+  IDE_RUN_COMMAND: "ide:run-command",
+  IDE_CANCEL_COMMAND: "ide:cancel-command",
+  IDE_GET_COMMAND_HISTORY: "ide:get-command-history",
+  IDE_GET_PREDICTIONS: "ide:get-predictions",
+  IDE_APPLY_SNIPPET: "ide:apply-snippet",
+
+  // Controller IDE (New)
+  CONTROLLER_GET_IDE_ACTION_MAP: "controller:get-ide-action-map",
+  CONTROLLER_SET_IDE_MODE: "controller:set-ide-mode"
 });
 
 const ALLOWED_CHANNELS = new Set(Object.values(IPC_CHANNELS));

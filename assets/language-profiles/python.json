@@ -1,0 +1,270 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "python",
+      "displayName": "Python",
+      "fileExtensions": [".py", ".pyi", ".pyw"],
+      "configFiles": ["pyproject.toml", "requirements.txt", "Pipfile", "setup.py", "setup.cfg", "pytest.ini", "ruff.toml", ".ruff.toml"],
+      "lsp": {
+        "serverId": "pyright",
+        "serverCommand": "pyright-langserver",
+        "serverArgs": ["--stdio"],
+        "installHint": "pip install pyright  OR  npm install -g pyright",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": true,
+        "supportsFormatting": false,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": true
+      },
+      "commands": {
+        "runFile": [
+          {
+            "id": "py.run-python3",
+            "label": "python3 <file>",
+            "languageId": "python",
+            "command": "python3",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".py"] },
+            "safety": "safe",
+            "description": "Run Python file with python3"
+          },
+          {
+            "id": "py.run-python",
+            "label": "python <file>",
+            "languageId": "python",
+            "command": "python",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".py"], "commandsAvailable": ["python"] },
+            "safety": "safe",
+            "description": "Run Python file with python (Windows / venv)"
+          }
+        ],
+        "testProject": [
+          {
+            "id": "py.pytest",
+            "label": "pytest",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "pytest"],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "configFilesAny": ["pytest.ini", "pyproject.toml"] },
+            "safety": "safe",
+            "description": "Run test suite with pytest"
+          },
+          {
+            "id": "py.pytest-file",
+            "label": "pytest <file>",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "pytest", "${file}"],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "fileExtensions": [".py"] },
+            "safety": "safe",
+            "description": "Run tests in current file"
+          }
+        ],
+        "lint": [
+          {
+            "id": "py.ruff-check",
+            "label": "ruff check",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "ruff", "check", "."],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "configFilesAny": ["ruff.toml", ".ruff.toml", "pyproject.toml"] },
+            "safety": "safe",
+            "description": "Lint with ruff"
+          }
+        ],
+        "format": [
+          {
+            "id": "py.ruff-format",
+            "label": "ruff format",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "ruff", "format", "."],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "configFilesAny": ["ruff.toml", ".ruff.toml", "pyproject.toml"] },
+            "safety": "safe",
+            "description": "Format with ruff"
+          },
+          {
+            "id": "py.black",
+            "label": "black .",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "black", "."],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "commandsAvailable": ["black"] },
+            "safety": "safe",
+            "description": "Format with black"
+          }
+        ],
+        "typecheck": [
+          {
+            "id": "py.mypy",
+            "label": "mypy .",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "mypy", "."],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "commandsAvailable": ["mypy"] },
+            "safety": "safe",
+            "description": "Type-check with mypy"
+          }
+        ],
+        "packageInstall": [
+          {
+            "id": "py.pip-install",
+            "label": "pip install -r requirements.txt",
+            "languageId": "python",
+            "command": "python",
+            "args": ["-m", "pip", "install", "-r", "requirements.txt"],
+            "cwdStrategy": "workspaceRoot",
+            "appliesWhen": { "configFilesAny": ["requirements.txt"] },
+            "safety": "confirm",
+            "description": "Install dependencies from requirements.txt"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "py.function",
+          "languageId": "python",
+          "label": "def",
+          "description": "Python function definition",
+          "triggerContexts": ["toplevel", "class"],
+          "insertText": "def ${1:name}(${2:params}) -> ${3:None}:\n    \"\"\"${4:Docstring.}\"\"\"\n    ${5:pass}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "my_function" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "None" },
+            { "index": 4, "label": "docstring", "defaultValue": "" },
+            { "index": 5, "label": "body", "defaultValue": "pass" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.async-function",
+          "languageId": "python",
+          "label": "async def",
+          "description": "Async Python function",
+          "triggerContexts": ["toplevel", "class"],
+          "insertText": "async def ${1:name}(${2:params}) -> ${3:None}:\n    \"\"\"${4:Docstring.}\"\"\"\n    ${5:pass}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "fetch_data" },
+            { "index": 2, "label": "params", "defaultValue": "" },
+            { "index": 3, "label": "returnType", "defaultValue": "None" },
+            { "index": 4, "label": "docstring", "defaultValue": "" },
+            { "index": 5, "label": "body", "defaultValue": "pass" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.class",
+          "languageId": "python",
+          "label": "class",
+          "description": "Python class definition",
+          "triggerContexts": ["toplevel"],
+          "insertText": "class ${1:Name}:\n    \"\"\"${2:Docstring.}\"\"\"\n\n    def __init__(self${3:, params}):\n        ${4:pass}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyClass" },
+            { "index": 2, "label": "docstring", "defaultValue": "" },
+            { "index": 3, "label": "params", "defaultValue": "" },
+            { "index": 4, "label": "body", "defaultValue": "pass" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.trycatch",
+          "languageId": "python",
+          "label": "try/except",
+          "description": "Try-except block",
+          "triggerContexts": ["block"],
+          "insertText": "try:\n    ${1:pass}\nexcept ${2:Exception} as e:\n    print(f'Error: {e}')",
+          "placeholders": [
+            { "index": 1, "label": "body", "defaultValue": "pass" },
+            { "index": 2, "label": "exception", "defaultValue": "Exception" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.for-loop",
+          "languageId": "python",
+          "label": "for loop",
+          "description": "For loop with range or iterable",
+          "triggerContexts": ["block"],
+          "insertText": "for ${1:item} in ${2:items}:\n    ${3:pass}",
+          "placeholders": [
+            { "index": 1, "label": "item", "defaultValue": "item" },
+            { "index": 2, "label": "iterable", "defaultValue": "items" },
+            { "index": 3, "label": "body", "defaultValue": "pass" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.with-context",
+          "languageId": "python",
+          "label": "with",
+          "description": "Context manager",
+          "triggerContexts": ["block"],
+          "insertText": "with ${1:open('${2:file.txt}')} as ${3:f}:\n    ${4:pass}",
+          "placeholders": [
+            { "index": 1, "label": "expression", "defaultValue": "open('file.txt')" },
+            { "index": 2, "label": "filename", "defaultValue": "file.txt" },
+            { "index": 3, "label": "alias", "defaultValue": "f" },
+            { "index": 4, "label": "body", "defaultValue": "pass" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.test-case",
+          "languageId": "python",
+          "label": "test function",
+          "description": "pytest test function",
+          "triggerContexts": ["toplevel"],
+          "insertText": "def test_${1:description}():\n    # Arrange\n    ${2:}\n    # Assert\n    assert ${3:actual} == ${4:expected}",
+          "placeholders": [
+            { "index": 1, "label": "description", "defaultValue": "something" },
+            { "index": 2, "label": "arrange", "defaultValue": "" },
+            { "index": 3, "label": "actual", "defaultValue": "result" },
+            { "index": 4, "label": "expected", "defaultValue": "True" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "py.dataclass",
+          "languageId": "python",
+          "label": "dataclass",
+          "description": "Python dataclass",
+          "triggerContexts": ["toplevel"],
+          "insertText": "from dataclasses import dataclass\n\n@dataclass\nclass ${1:Name}:\n    ${2:field}: ${3:str}",
+          "placeholders": [
+            { "index": 1, "label": "name", "defaultValue": "MyData" },
+            { "index": 2, "label": "field", "defaultValue": "value" },
+            { "index": 3, "label": "type", "defaultValue": "str" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": ["pip install", "pip uninstall", "python -m venv"],
+        "blockedCommands": ["sudo", "rm -rf", "sudo pip"]
+      }
+    }
+  ]
+}

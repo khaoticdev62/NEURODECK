@@ -1,0 +1,464 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-06-12",
+  "profiles": [
+    {
+      "id": "json",
+      "displayName": "JSON",
+      "fileExtensions": [".json", ".jsonc", ".json5"],
+      "configFiles": [".prettierrc", "prettier.config.js"],
+      "lsp": {
+        "serverId": "vscode-json-language-server",
+        "serverCommand": "vscode-json-language-server",
+        "serverArgs": ["--stdio"],
+        "installHint": "npm install -g vscode-langservers-extracted",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "format": [
+          {
+            "id": "json.prettier",
+            "label": "Prettier (file)",
+            "languageId": "json",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "configFilesAny": [".prettierrc", "prettier.config.js"] },
+            "safety": "safe",
+            "description": "Format JSON with Prettier"
+          },
+          {
+            "id": "json.python-tool",
+            "label": "python json.tool",
+            "languageId": "json",
+            "command": "python3",
+            "args": ["-m", "json.tool", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "fileExtensions": [".json"] },
+            "safety": "safe",
+            "description": "Validate and pretty-print JSON with Python"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "json.object",
+          "languageId": "json",
+          "label": "object",
+          "description": "JSON object with key-value",
+          "triggerContexts": ["value"],
+          "insertText": "{\n  \"${1:key}\": \"${2:value}\"\n}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "name" },
+            { "index": 2, "label": "value", "defaultValue": "value" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "json.array",
+          "languageId": "json",
+          "label": "array",
+          "description": "JSON array",
+          "triggerContexts": ["value"],
+          "insertText": "[\n  \"${1:item1}\",\n  \"${2:item2}\"\n]",
+          "placeholders": [
+            { "index": 1, "label": "item1", "defaultValue": "item1" },
+            { "index": 2, "label": "item2", "defaultValue": "item2" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "json.string-field",
+          "languageId": "json",
+          "label": "\"key\": \"value\"",
+          "description": "String field",
+          "triggerContexts": ["object"],
+          "insertText": "\"${1:key}\": \"${2:value}\"",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "field" },
+            { "index": 2, "label": "value", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "json.bool-field",
+          "languageId": "json",
+          "label": "\"key\": true",
+          "description": "Boolean field",
+          "triggerContexts": ["object"],
+          "insertText": "\"${1:enabled}\": ${2:true}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "enabled" },
+            { "index": 2, "label": "value", "defaultValue": "true" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": [],
+        "blockedCommands": []
+      }
+    },
+    {
+      "id": "yaml",
+      "displayName": "YAML",
+      "fileExtensions": [".yaml", ".yml"],
+      "configFiles": [".yamllint", ".yamllint.yml", ".prettierrc"],
+      "lsp": {
+        "serverId": "yaml-language-server",
+        "serverCommand": "yaml-language-server",
+        "serverArgs": ["--stdio"],
+        "installHint": "npm install -g yaml-language-server",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": false,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "lint": [
+          {
+            "id": "yaml.yamllint",
+            "label": "yamllint <file>",
+            "languageId": "yaml",
+            "command": "yamllint",
+            "args": ["${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "commandsAvailable": ["yamllint"] },
+            "safety": "safe",
+            "description": "Lint YAML file"
+          }
+        ],
+        "format": [
+          {
+            "id": "yaml.prettier",
+            "label": "Prettier (file)",
+            "languageId": "yaml",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "configFilesAny": [".prettierrc"] },
+            "safety": "safe",
+            "description": "Format YAML with Prettier"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "yaml.mapping",
+          "languageId": "yaml",
+          "label": "key: value",
+          "description": "YAML key-value pair",
+          "triggerContexts": ["block"],
+          "insertText": "${1:key}: ${2:value}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "name" },
+            { "index": 2, "label": "value", "defaultValue": "value" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "yaml.list",
+          "languageId": "yaml",
+          "label": "list",
+          "description": "YAML list items",
+          "triggerContexts": ["block"],
+          "insertText": "${1:key}:\n  - ${2:item1}\n  - ${3:item2}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "items" },
+            { "index": 2, "label": "item1", "defaultValue": "item1" },
+            { "index": 3, "label": "item2", "defaultValue": "item2" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "yaml.multiline",
+          "languageId": "yaml",
+          "label": "multiline |",
+          "description": "YAML literal block scalar",
+          "triggerContexts": ["block"],
+          "insertText": "${1:key}: |\n  ${2:line1}\n  ${3:line2}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "text" },
+            { "index": 2, "label": "line1", "defaultValue": "First line" },
+            { "index": 3, "label": "line2", "defaultValue": "Second line" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "yaml.anchor",
+          "languageId": "yaml",
+          "label": "&anchor / *alias",
+          "description": "YAML anchor and alias",
+          "triggerContexts": ["block"],
+          "insertText": "${1:base}: &${2:anchor}\n  ${3:key}: ${4:value}\n\n${5:derived}:\n  <<: *${2:anchor}",
+          "placeholders": [
+            { "index": 1, "label": "base", "defaultValue": "base" },
+            { "index": 2, "label": "anchor", "defaultValue": "anchor" },
+            { "index": 3, "label": "key", "defaultValue": "key" },
+            { "index": 4, "label": "value", "defaultValue": "value" },
+            { "index": 5, "label": "derived", "defaultValue": "derived" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "yaml.env-var",
+          "languageId": "yaml",
+          "label": "env var",
+          "description": "Environment variable reference",
+          "triggerContexts": ["value"],
+          "insertText": "${1:key}: \"$${2:ENV_VAR}\"",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "value" },
+            { "index": 2, "label": "env", "defaultValue": "MY_ENV" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": [],
+        "blockedCommands": []
+      }
+    },
+    {
+      "id": "toml",
+      "displayName": "TOML",
+      "fileExtensions": [".toml"],
+      "configFiles": [],
+      "lsp": {
+        "serverId": "taplo",
+        "serverCommand": "taplo",
+        "serverArgs": ["lsp", "stdio"],
+        "installHint": "cargo install taplo-cli --locked",
+        "supportsCompletion": true,
+        "supportsHover": true,
+        "supportsDefinition": false,
+        "supportsFormatting": true,
+        "supportsDiagnostics": true,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "format": [
+          {
+            "id": "toml.taplo",
+            "label": "taplo fmt <file>",
+            "languageId": "toml",
+            "command": "taplo",
+            "args": ["fmt", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "commandsAvailable": ["taplo"] },
+            "safety": "safe",
+            "description": "Format TOML with taplo"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "toml.table",
+          "languageId": "toml",
+          "label": "[table]",
+          "description": "TOML table section",
+          "triggerContexts": ["toplevel"],
+          "insertText": "[${1:section}]\n${2:key} = \"${3:value}\"",
+          "placeholders": [
+            { "index": 1, "label": "section", "defaultValue": "section" },
+            { "index": 2, "label": "key", "defaultValue": "name" },
+            { "index": 3, "label": "value", "defaultValue": "value" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "toml.array",
+          "languageId": "toml",
+          "label": "[[array]]",
+          "description": "TOML array of tables",
+          "triggerContexts": ["toplevel"],
+          "insertText": "[[${1:array}]]\n${2:key} = \"${3:value}\"",
+          "placeholders": [
+            { "index": 1, "label": "array", "defaultValue": "items" },
+            { "index": 2, "label": "key", "defaultValue": "name" },
+            { "index": 3, "label": "value", "defaultValue": "value" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "toml.string",
+          "languageId": "toml",
+          "label": "key = \"value\"",
+          "description": "TOML string field",
+          "triggerContexts": ["table"],
+          "insertText": "${1:key} = \"${2:value}\"",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "name" },
+            { "index": 2, "label": "value", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "toml.bool",
+          "languageId": "toml",
+          "label": "key = true",
+          "description": "TOML boolean field",
+          "triggerContexts": ["table"],
+          "insertText": "${1:key} = ${2:true}",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "enabled" },
+            { "index": 2, "label": "value", "defaultValue": "true" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "toml.inline-array",
+          "languageId": "toml",
+          "label": "key = [...]",
+          "description": "TOML inline array",
+          "triggerContexts": ["table"],
+          "insertText": "${1:key} = [\"${2:item1}\", \"${3:item2}\"]",
+          "placeholders": [
+            { "index": 1, "label": "key", "defaultValue": "values" },
+            { "index": 2, "label": "item1", "defaultValue": "a" },
+            { "index": 3, "label": "item2", "defaultValue": "b" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": [],
+        "blockedCommands": []
+      }
+    },
+    {
+      "id": "markdown",
+      "displayName": "Markdown",
+      "fileExtensions": [".md", ".mdx", ".markdown"],
+      "configFiles": [".markdownlintrc", ".markdownlint.json", ".prettierrc"],
+      "lsp": {
+        "serverId": "marksman",
+        "serverCommand": "marksman",
+        "serverArgs": ["server"],
+        "installHint": "Download from https://github.com/artempyanykh/marksman/releases",
+        "supportsCompletion": true,
+        "supportsHover": false,
+        "supportsDefinition": true,
+        "supportsFormatting": false,
+        "supportsDiagnostics": false,
+        "supportsCodeActions": false
+      },
+      "commands": {
+        "format": [
+          {
+            "id": "md.prettier",
+            "label": "Prettier (file)",
+            "languageId": "markdown",
+            "command": "npx",
+            "args": ["prettier", "--write", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "configFilesAny": [".prettierrc", "prettier.config.js"] },
+            "safety": "safe",
+            "description": "Format Markdown with Prettier"
+          }
+        ],
+        "lint": [
+          {
+            "id": "md.markdownlint",
+            "label": "markdownlint <file>",
+            "languageId": "markdown",
+            "command": "npx",
+            "args": ["markdownlint", "${file}"],
+            "cwdStrategy": "fileDirectory",
+            "appliesWhen": { "configFilesAny": [".markdownlintrc", ".markdownlint.json"] },
+            "safety": "safe",
+            "description": "Lint Markdown with markdownlint"
+          }
+        ]
+      },
+      "snippets": [
+        {
+          "id": "md.heading",
+          "languageId": "markdown",
+          "label": "## Heading",
+          "description": "Section heading",
+          "triggerContexts": ["block"],
+          "insertText": "## ${1:Heading}",
+          "placeholders": [
+            { "index": 1, "label": "title", "defaultValue": "Section Title" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "md.code-block",
+          "languageId": "markdown",
+          "label": "```code```",
+          "description": "Fenced code block",
+          "triggerContexts": ["block"],
+          "insertText": "```${1:typescript}\n${2:// code here}\n```",
+          "placeholders": [
+            { "index": 1, "label": "language", "defaultValue": "typescript" },
+            { "index": 2, "label": "code", "defaultValue": "" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "md.table",
+          "languageId": "markdown",
+          "label": "table",
+          "description": "Markdown table",
+          "triggerContexts": ["block"],
+          "insertText": "| ${1:Column A} | ${2:Column B} |\n|---|---|\n| ${3:value1} | ${4:value2} |",
+          "placeholders": [
+            { "index": 1, "label": "col1", "defaultValue": "Column A" },
+            { "index": 2, "label": "col2", "defaultValue": "Column B" },
+            { "index": 3, "label": "val1", "defaultValue": "value1" },
+            { "index": 4, "label": "val2", "defaultValue": "value2" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        },
+        {
+          "id": "md.link",
+          "languageId": "markdown",
+          "label": "[link](url)",
+          "description": "Hyperlink",
+          "triggerContexts": ["inline"],
+          "insertText": "[${1:link text}](${2:https://example.com})",
+          "placeholders": [
+            { "index": 1, "label": "text", "defaultValue": "link text" },
+            { "index": 2, "label": "url", "defaultValue": "https://example.com" }
+          ],
+          "controllerFriendly": true,
+          "safety": "safe"
+        }
+      ],
+      "safety": {
+        "allowRunByDefault": true,
+        "requiresConfirmation": [],
+        "blockedCommands": []
+      }
+    }
+  ]
+}

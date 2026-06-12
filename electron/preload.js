@@ -188,7 +188,51 @@ contextBridge.exposeInMainWorld('neurodeck', {
     get: (key) => ipcRenderer.invoke('settings:get', makeRequest({ key })),
     set: (key, value) => ipcRenderer.invoke('settings:set', makeRequest({ key, value })),
     validate: (key, value) => Promise.resolve({ valid: true })
-  }
+  },
+
+  ide: {
+    detectProject: (workspacePath) =>
+      ipcRenderer.invoke('ide:detect-project', makeRequest({ workspacePath })),
+    runCommand: (command, args, cwd, safety, label, commandId) =>
+      ipcRenderer.invoke('ide:run-command', makeRequest({ command, args, cwd, safety, label, commandId })),
+    cancelCommand: (commandId) =>
+      ipcRenderer.invoke('ide:cancel-command', makeRequest({ commandId })),
+    getCommandHistory: () =>
+      ipcRenderer.invoke('ide:get-command-history', makeRequest({})),
+    getPredictions: (filePath, languageId, cursorLine, cursorChar, diagnosticsCount, snippetIds, commandTemplates, lspCompletions) =>
+      ipcRenderer.invoke('ide:get-predictions', makeRequest({
+        filePath, languageId, cursorLine, cursorChar,
+        diagnosticsCount: diagnosticsCount ?? 0,
+        snippetIds: snippetIds ?? [],
+        commandTemplates: commandTemplates ?? [],
+        lspCompletions: lspCompletions ?? [],
+      })),
+    applySnippet: (snippetId, languageId) =>
+      ipcRenderer.invoke('ide:apply-snippet', makeRequest({ snippetId, languageId })),
+
+    onCommandOutput: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('ide:command-output', handler);
+      return () => ipcRenderer.removeListener('ide:command-output', handler);
+    },
+    onCommandExit: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('ide:command-exit', handler);
+      return () => ipcRenderer.removeListener('ide:command-exit', handler);
+    },
+  },
+
+  controller: {
+    getIdeActionMap: () =>
+      ipcRenderer.invoke('controller:get-ide-action-map', makeRequest({})),
+    setIdeMode: (mode) =>
+      ipcRenderer.invoke('controller:set-ide-mode', makeRequest({ mode })),
+    onIdeModeChanged: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('controller:ide-mode-changed', handler);
+      return () => ipcRenderer.removeListener('controller:ide-mode-changed', handler);
+    },
+  },
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

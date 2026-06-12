@@ -65,6 +65,10 @@ const initialState: NeuroDeckState = {
     cacheHealth: 94,
     activeAgents: 1,
   },
+  activeAgentId: 'general',
+  modelScores: [],
+  agentPolicies: [],
+  recoveryEvents: [],
 };
 
 // ---- minimal reducer replica (mirrors useNeuroDeckState.ts exactly) ----

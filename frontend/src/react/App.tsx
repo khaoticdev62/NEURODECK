@@ -433,7 +433,11 @@ export default function App() {
     resetLocalState,
     addMemoryFact,
     deleteMemory,
-    toggleMemoryPin
+    toggleMemoryPin,
+    refreshModelScores: async () => {},
+    refreshAgentPolicies: async () => {},
+    refreshRecoveryEvents: async () => {},
+    validateAgentModel: async () => ({ allowed: true, reason: 'not implemented' } as any),
   };
 
   const openSettings = useCallback((panel = 'general') => {

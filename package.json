@@ -78,7 +78,15 @@
     "test:backend:integration": "vitest run tests/integration/",
     "test:backend": "vitest run tests/contract/ tests/integration/",
     "production:gate": "npm run verify:wiring && npm run verify:ipc && npm run verify:lsp && npm run verify:all",
-    "production:chat-gate": "npm run verify:ai-chat && npm run verify:agent-selection && npm run verify:no-mock-chat && npm run verify:chat-security && npm run report:chat"
+    "production:chat-gate": "npm run verify:ai-chat && npm run verify:agent-selection && npm run verify:no-mock-chat && npm run verify:chat-security && npm run report:chat",
+    "verify:language-commands": "tsx scripts/verify-language-commands.ts",
+    "verify:controller-coding": "tsx scripts/verify-controller-coding.ts",
+    "verify:predictive-snippets": "tsx scripts/verify-predictive-snippets.ts",
+    "verify:lsp-ide": "tsx scripts/verify-lsp-ide-support.ts",
+    "verify:safe-commands": "tsx scripts/verify-safe-command-execution.ts",
+    "verify:no-mock-ide": "tsx scripts/verify-no-mock-ide-data.ts",
+    "report:ide": "tsx scripts/export-ide-readiness-report.ts",
+    "production:ide-gate": "npm run frontend:typecheck && npm run verify:no-mock-ide && npm run verify:language-commands && npm run verify:controller-coding && npm run verify:predictive-snippets && npm run verify:lsp-ide && npm run verify:safe-commands && npm run report:ide"
   },
   "devDependencies": {
     "electron": "^36.0.0",

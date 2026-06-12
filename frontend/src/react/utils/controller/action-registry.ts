@@ -27,9 +27,33 @@ export enum ActionId {
   NEXT_PANEL = 'NEXT_PANEL',
   PREVIOUS_CATEGORY = 'PREVIOUS_CATEGORY',
   NEXT_CATEGORY = 'NEXT_CATEGORY',
+
+  // IDE-specific actions
+  IDE_ACCEPT_COMPLETION = 'IDE_ACCEPT_COMPLETION',
+  IDE_NEXT_COMPLETION = 'IDE_NEXT_COMPLETION',
+  IDE_PREV_COMPLETION = 'IDE_PREV_COMPLETION',
+  IDE_DISMISS_COMPLETION = 'IDE_DISMISS_COMPLETION',
+  IDE_OPEN_COMMAND_WHEEL = 'IDE_OPEN_COMMAND_WHEEL',
+  IDE_FORMAT_FILE = 'IDE_FORMAT_FILE',
+  IDE_RUN_COMMAND = 'IDE_RUN_COMMAND',
+  IDE_NEXT_DIAGNOSTIC = 'IDE_NEXT_DIAGNOSTIC',
+  IDE_GO_TO_DEFINITION = 'IDE_GO_TO_DEFINITION',
+  IDE_TOGGLE_PREDICTIVE_BAR = 'IDE_TOGGLE_PREDICTIVE_BAR',
+  IDE_OPEN_FILE_TREE = 'IDE_OPEN_FILE_TREE',
+  IDE_SAVE_FILE = 'IDE_SAVE_FILE',
+  IDE_PREV_TAB = 'IDE_PREV_TAB',
+  IDE_NEXT_TAB = 'IDE_NEXT_TAB',
+  IDE_OPEN_SNIPPET_WHEEL = 'IDE_OPEN_SNIPPET_WHEEL',
+  IDE_ACCEPT_SNIPPET = 'IDE_ACCEPT_SNIPPET',
+  IDE_NEXT_PLACEHOLDER = 'IDE_NEXT_PLACEHOLDER',
+  IDE_PREV_PLACEHOLDER = 'IDE_PREV_PLACEHOLDER',
+  IDE_CANCEL_COMMAND = 'IDE_CANCEL_COMMAND',
+  IDE_CONFIRM_COMMAND = 'IDE_CONFIRM_COMMAND',
+  IDE_ENTER_EDIT_MODE = 'IDE_ENTER_EDIT_MODE',
+  IDE_ENTER_NAVIGATION_MODE = 'IDE_ENTER_NAVIGATION_MODE',
 }
 
-export type ActionCategory = 'navigation' | 'prompt' | 'command' | 'macro' | 'agent' | 'system';
+export type ActionCategory = 'navigation' | 'prompt' | 'command' | 'macro' | 'agent' | 'system' | 'ide';
 
 export interface ActionDefinition {
   id: ActionId | string;
@@ -76,6 +100,29 @@ export const defaultActions: ActionDefinition[] = [
   { id: ActionId.NAV_DOWN, title: 'Navigate Down', category: 'navigation', keyboardFallback: 'ArrowDown' },
   { id: ActionId.NAV_LEFT, title: 'Navigate Left', category: 'navigation', keyboardFallback: 'ArrowLeft' },
   { id: ActionId.NAV_RIGHT, title: 'Navigate Right', category: 'navigation', keyboardFallback: 'ArrowRight' },
+
+  // IDE actions — active when IDEView has focus
+  { id: ActionId.IDE_ACCEPT_COMPLETION, title: 'Accept Completion', category: 'ide', keyboardFallback: 'Tab' },
+  { id: ActionId.IDE_NEXT_COMPLETION, title: 'Next Completion', category: 'ide', keyboardFallback: 'ArrowDown' },
+  { id: ActionId.IDE_PREV_COMPLETION, title: 'Previous Completion', category: 'ide', keyboardFallback: 'ArrowUp' },
+  { id: ActionId.IDE_DISMISS_COMPLETION, title: 'Dismiss Completion', category: 'ide', keyboardFallback: 'Escape' },
+  { id: ActionId.IDE_OPEN_COMMAND_WHEEL, title: 'Open Command Wheel', category: 'ide', keyboardFallback: 'y' },
+  { id: ActionId.IDE_FORMAT_FILE, title: 'Format File', category: 'ide', keyboardFallback: 'l5' },
+  { id: ActionId.IDE_RUN_COMMAND, title: 'Run Command', category: 'ide', keyboardFallback: 'r5' },
+  { id: ActionId.IDE_NEXT_DIAGNOSTIC, title: 'Next Diagnostic', category: 'ide', keyboardFallback: 'l1' },
+  { id: ActionId.IDE_GO_TO_DEFINITION, title: 'Go to Definition', category: 'ide', keyboardFallback: 'a_hold' },
+  { id: ActionId.IDE_TOGGLE_PREDICTIVE_BAR, title: 'Toggle Predictive Bar', category: 'ide', keyboardFallback: 'x' },
+  { id: ActionId.IDE_SAVE_FILE, title: 'Save File', category: 'ide', keyboardFallback: 'Ctrl+s' },
+  { id: ActionId.IDE_PREV_TAB, title: 'Previous Tab', category: 'ide', keyboardFallback: 'l1' },
+  { id: ActionId.IDE_NEXT_TAB, title: 'Next Tab', category: 'ide', keyboardFallback: 'r1' },
+  { id: ActionId.IDE_OPEN_SNIPPET_WHEEL, title: 'Open Snippet Wheel', category: 'ide', keyboardFallback: 'l2' },
+  { id: ActionId.IDE_ACCEPT_SNIPPET, title: 'Accept Snippet', category: 'ide', keyboardFallback: 'Tab' },
+  { id: ActionId.IDE_NEXT_PLACEHOLDER, title: 'Next Snippet Placeholder', category: 'ide', keyboardFallback: 'Tab' },
+  { id: ActionId.IDE_PREV_PLACEHOLDER, title: 'Previous Snippet Placeholder', category: 'ide', keyboardFallback: 'Shift+Tab' },
+  { id: ActionId.IDE_CANCEL_COMMAND, title: 'Cancel Running Command', category: 'ide', keyboardFallback: 'b', destructive: false },
+  { id: ActionId.IDE_CONFIRM_COMMAND, title: 'Confirm Command', category: 'ide', keyboardFallback: 'a' },
+  { id: ActionId.IDE_ENTER_EDIT_MODE, title: 'Enter Edit Mode', category: 'ide', keyboardFallback: 'Start' },
+  { id: ActionId.IDE_ENTER_NAVIGATION_MODE, title: 'Enter Navigation Mode', category: 'ide', keyboardFallback: 'Select' },
 ];
 
 export const defaultSteamDeckProfile = {
@@ -106,5 +153,25 @@ export const defaultSteamDeckProfile = {
     'R5.hold': ActionId.EXECUTE_PROMPT,
     'L4+R4.chord': ActionId.COMPLETE_PROMPT,
     'L5+R5.chord': ActionId.START_MACRO_RECORDING,
+
+    // IDE mode bindings (active when IDEView has focus + IDE_EDIT or IDE_PREDICTION mode)
+    'A.ide_prediction': ActionId.IDE_ACCEPT_COMPLETION,
+    'B.ide_prediction': ActionId.IDE_DISMISS_COMPLETION,
+    'DPadDown.ide_prediction': ActionId.IDE_NEXT_COMPLETION,
+    'DPadUp.ide_prediction': ActionId.IDE_PREV_COMPLETION,
+    'Y.ide_edit': ActionId.IDE_OPEN_COMMAND_WHEEL,
+    'X.ide_edit': ActionId.IDE_TOGGLE_PREDICTIVE_BAR,
+    'L5.ide_edit': ActionId.IDE_FORMAT_FILE,
+    'R5.ide_edit': ActionId.IDE_RUN_COMMAND,
+    'L1.ide_edit': ActionId.IDE_NEXT_DIAGNOSTIC,
+    'A.ide_edit_hold': ActionId.IDE_GO_TO_DEFINITION,
+    'L1.ide_navigation': ActionId.IDE_PREV_TAB,
+    'R1.ide_navigation': ActionId.IDE_NEXT_TAB,
+    'A.ide_command': ActionId.IDE_CONFIRM_COMMAND,
+    'B.ide_command': ActionId.IDE_CANCEL_COMMAND,
+    'A.ide_snippet': ActionId.IDE_ACCEPT_SNIPPET,
+    'B.ide_snippet': ActionId.IDE_DISMISS_COMPLETION,
+    'L1.ide_snippet': ActionId.IDE_PREV_PLACEHOLDER,
+    'R1.ide_snippet': ActionId.IDE_NEXT_PLACEHOLDER,
   },
 } as const;
