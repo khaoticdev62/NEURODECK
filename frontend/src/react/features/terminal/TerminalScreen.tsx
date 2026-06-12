@@ -827,8 +827,8 @@ export function TerminalScreen() {
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Session Manager</p>
                 <h3 className="text-sm font-semibold text-nd-text">Tabs and panes</h3>
               </div>
-              <button type="button" onClick={() => setSessionManagerOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-                <TerminalIcon className="h-4 w-4" />
+              <button type="button" aria-label="Toggle session manager" onClick={() => setSessionManagerOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                <TerminalIcon className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
             <div className="space-y-2">
@@ -903,17 +903,17 @@ export function TerminalScreen() {
                       <span>{activeTab.cwd || environment?.cwd || "cwd unavailable"}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setSearchOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-                        <Search className="h-4 w-4" />
+                      <button type="button" aria-label="Search terminal output" onClick={() => setSearchOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                        <Search className="h-4 w-4" aria-hidden="true" />
                       </button>
-                      <button type="button" onClick={() => splitActivePane("horizontal")} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-                        <SplitSquareHorizontal className="h-4 w-4" />
+                      <button type="button" aria-label="Split pane horizontally" onClick={() => splitActivePane("horizontal")} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                        <SplitSquareHorizontal className="h-4 w-4" aria-hidden="true" />
                       </button>
-                      <button type="button" onClick={() => void resetPane(activePaneId)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-                        <RefreshCw className="h-4 w-4" />
+                      <button type="button" aria-label="Reset pane" onClick={() => void resetPane(activePaneId)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
                       </button>
-                      <button type="button" onClick={() => void closePane(activePaneId)} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger">
-                        <Trash2 className="h-4 w-4" />
+                      <button type="button" aria-label="Close pane" onClick={() => void closePane(activePaneId)} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -968,8 +968,8 @@ export function TerminalScreen() {
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">AI Assistant</p>
                     <h3 className="text-sm font-semibold text-nd-text">Command help</h3>
                   </div>
-                  <button type="button" onClick={() => setAssistantOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-                    <X className="h-4 w-4" />
+                  <button type="button" aria-label="Close command help" onClick={() => setAssistantOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -1038,8 +1038,8 @@ export function TerminalScreen() {
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Search</div>
               <div className="text-sm font-semibold text-nd-text">Terminal output</div>
             </div>
-            <button type="button" onClick={() => setSearchOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-              <X className="h-4 w-4" />
+            <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="mt-3 flex gap-2">
@@ -1075,8 +1075,8 @@ export function TerminalScreen() {
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Sessions</div>
               <div className="text-sm font-semibold text-nd-text">Terminal tabs and panes</div>
             </div>
-            <button type="button" onClick={() => setSessionManagerOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted">
-              <X className="h-4 w-4" />
+            <button type="button" aria-label="Close session manager" onClick={() => setSessionManagerOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="mt-3 space-y-2">

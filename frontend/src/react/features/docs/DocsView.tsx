@@ -77,8 +77,8 @@ export function DocsView() {
           <h2 className="text-lg font-semibold text-nd-text">Knowledge Base</h2>
           <p className="text-xs text-nd-text-muted">Indexed documentation with semantic search</p>
         </div>
-        <button type="button" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <button type="button" aria-label="Refresh docs index" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -96,8 +96,8 @@ export function DocsView() {
           />
           <button type="button" onClick={search} className="text-xs font-medium text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Search</button>
         </div>
-        <button type="button" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
-          <Trash2 className="h-4 w-4" />
+        <button type="button" aria-label="Clear all docs" onClick={clear} className="rounded-lg border border-nd-danger/30 bg-nd-danger/10 p-2 text-nd-danger hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 

@@ -35,8 +35,8 @@ export function OrchestratorView() {
           <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}>
             {running ? <><Square className="h-4 w-4" /> Stop</> : <><Play className="h-4 w-4" /> Run</>}
           </button>
-          <button type="button" className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Plus className="h-4 w-4" />
+          <button type="button" aria-label="Add workflow node" className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <Plus className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

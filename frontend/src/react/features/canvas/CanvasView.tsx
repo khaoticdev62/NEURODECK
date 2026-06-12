@@ -102,17 +102,17 @@ export function CanvasView() {
           {running ? <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" /> : <Play className="h-4 w-4 nd-icon-svg" />}
           Run
         </button>
-        <button id="canvas-copy-btn" type="button" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Copy className="h-4 w-4 nd-icon-svg" />
+        <button id="canvas-copy-btn" type="button" aria-label="Copy code" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Copy className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-clear-btn" type="button" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Trash2 className="h-4 w-4 nd-icon-svg" />
+        <button id="canvas-clear-btn" type="button" aria-label="Clear canvas" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Trash2 className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-ai-edit-btn" type="button" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Sparkles className="h-4 w-4 nd-icon-svg" />
+        <button id="canvas-ai-edit-btn" type="button" aria-label="AI edit" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Sparkles className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-collab-btn" type="button" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Users className="h-4 w-4 nd-icon-svg" />
+        <button id="canvas-collab-btn" type="button" aria-label="Collaborate" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <Users className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
       </div>
 

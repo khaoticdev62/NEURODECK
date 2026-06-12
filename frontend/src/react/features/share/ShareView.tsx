@@ -62,8 +62,8 @@ export function ShareView() {
           <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P, SFTP, FTP transfers</p>
         </div>
-        <button type="button" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <button type="button" aria-label="Refresh transfer status" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
