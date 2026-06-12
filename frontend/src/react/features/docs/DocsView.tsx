@@ -21,14 +21,28 @@ export function DocsView() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [indexPath, setIndexPath] = useState('');
+  const [status, setStatus] = useState('Load indexed docs or add a folder to begin.');
+  const [error, setError] = useState('');
 
   const loadDocs = useCallback(async () => {
     setLoading(true);
+    setError('');
+    setStatus('Refreshing indexed docs...');
     try {
       const res = await neurodeckApi.docs.getIndexedDocs();
-      setDocs(res.docs || []);
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+      const nextDocs = res.docs || [];
+      setDocs(nextDocs);
+      setStatus(
+        nextDocs.length > 0
+          ? `Loaded ${nextDocs.length} indexed doc${nextDocs.length === 1 ? '' : 's'}.`
+          : 'No documents are indexed yet. Use Index to add a folder.',
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load indexed docs.');
+      setStatus('Refresh failed.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -38,32 +52,56 @@ export function DocsView() {
   const search = async () => {
     if (!query.trim()) return;
     setLoading(true);
+    setError('');
+    setStatus(`Searching for “${query.trim()}”...`);
     try {
       const res = await neurodeckApi.docs.searchDocs(query);
-      setResults(res.results || []);
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+      const nextResults = res.results || [];
+      setResults(nextResults);
+      setStatus(
+        nextResults.length > 0
+          ? `Found ${nextResults.length} result${nextResults.length === 1 ? '' : 's'}.`
+          : 'No matches found for that query.',
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to search indexed docs.');
+      setStatus('Search failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const indexDir = async () => {
     if (!indexPath.trim()) return;
     setLoading(true);
+    setError('');
+    setStatus(`Indexing ${indexPath.trim()}...`);
     try {
       await neurodeckApi.docs.indexDirectory(indexPath.trim());
       setIndexPath('');
       await loadDocs();
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start indexing.');
+      setStatus('Index request failed.');
+      setLoading(false);
+    }
   };
 
   const clear = async () => {
     setLoading(true);
+    setError('');
+    setStatus('Clearing document index...');
     try {
       await neurodeckApi.docs.clearIndex();
       setDocs([]);
       setResults([]);
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+      setStatus('Document index cleared.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear the index.');
+      setStatus('Clear failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,9 +115,17 @@ export function DocsView() {
           <h2 className="text-lg font-semibold text-nd-text">Knowledge Base</h2>
           <p className="text-xs text-nd-text-muted">Indexed documentation with semantic search</p>
         </div>
-        <button type="button" aria-label="Refresh docs index" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+        <button type="button" aria-label="Reload indexed docs" onClick={loadDocs} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted">
+        <div className="flex items-center justify-between gap-3">
+          <span>{status}</span>
+          {loading && <span className="shrink-0 text-nd-accent">Working…</span>}
+        </div>
+        {error ? <p className="mt-1 text-nd-danger">{error}</p> : null}
       </div>
 
       <div className="docs-search-shell mb-4 flex gap-2">
@@ -130,12 +176,18 @@ export function DocsView() {
                 <span className="truncate">{doc.title || doc.path}</span>
               </div>
             ))}
-            {!docs.length && <p className="py-4 text-center text-xs text-nd-text-muted/70">No documents indexed</p>}
+            {!docs.length && !loading && <p className="py-4 text-center text-xs text-nd-text-muted/70">No documents indexed</p>}
+            {!docs.length && loading && <p className="py-4 text-center text-xs text-nd-text-muted/70">Refreshing index…</p>}
           </div>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-          {results.length > 0 ? (
+          {loading && !results.length ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-nd-text-muted/70">
+              <RefreshCw className="mb-2 h-8 w-8 animate-spin" />
+              <p className="text-sm">Loading docs…</p>
+            </div>
+          ) : results.length > 0 ? (
             <div className="space-y-3">
               {results.map((r) => (
                 <div key={r.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 p-3">
