@@ -36,8 +36,10 @@ type Props = {
 
 function fallbackShell(profile: TerminalProfileAvailability | null, environment: TerminalEnvironmentReport | null) {
   if (profile?.shellAvailable) return profile.detectedPath ?? profile.shellPath;
-  if ((environment?.platform ?? "").includes("win")) return "powershell.exe";
-  return "/bin/sh";
+  const plat = environment?.platform ?? "";
+  if (plat.includes("win")) return "powershell.exe";
+  if (plat === "darwin" || plat.includes("Mac")) return "/bin/zsh";
+  return "/bin/bash";
 }
 
 function selectedText(term: XTerm | null) {

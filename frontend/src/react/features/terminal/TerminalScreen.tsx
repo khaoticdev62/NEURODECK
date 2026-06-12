@@ -50,7 +50,8 @@ function createId(prefix: string) {
 
 function platformToProfile(platform: string) {
   if (platform.startsWith("Win")) return "power-shell";
-  if (platform.includes("Mac")) return "linux-sh";
+  if (platform.includes("Mac") || platform === "darwin") return "macos-zsh";
+  if (platform === "linux") return "linux-bash";
   return DEFAULT_PROFILE_ID;
 }
 

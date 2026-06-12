@@ -79,23 +79,40 @@ pub struct CommandSafetyVerdict {
 }
 
 fn command_exists(command: &str) -> bool {
+    resolve_command_path(command).is_some()
+}
+
+fn resolve_command_path(command: &str) -> Option<String> {
     if command.is_empty() {
-        return false;
+        return None;
     }
 
     if cfg!(target_os = "windows") {
-        Command::new("where")
-            .arg(command)
-            .output()
-            .map(|output| output.status.success())
-            .unwrap_or(false)
+        let output = Command::new("where").arg(command).output().ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        stdout
+            .lines()
+            .map(str::trim)
+            .find(|line| !line.is_empty())
+            .map(|line| line.to_string())
     } else {
-        Command::new("sh")
+        let output = Command::new("sh")
             .arg("-lc")
-            .arg(format!("command -v {} >/dev/null 2>&1", command))
+            .arg(format!("command -v {} 2>/dev/null", command))
             .output()
-            .map(|output| output.status.success())
-            .unwrap_or(false)
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        stdout
+            .lines()
+            .map(str::trim)
+            .find(|line| !line.is_empty())
+            .map(|line| line.to_string())
     }
 }
 
@@ -129,7 +146,9 @@ pub fn detect_terminal_environment() -> TerminalEnvironmentReport {
         probe("Bash", "/bin/bash"),
         probe("Zsh", "/bin/zsh"),
         probe("Fish", "/usr/bin/fish"),
+        probe("Fish (local)", "/usr/local/bin/fish"),
         probe("Sh", "/bin/sh"),
+        probe("WSL", "wsl.exe"),
         probe("PowerShell", "powershell.exe"),
         probe("PowerShell Core", "pwsh"),
         probe("Cmd", "cmd.exe"),
@@ -184,13 +203,89 @@ pub fn detect_terminal_environment() -> TerminalEnvironmentReport {
 }
 
 pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
+    fn resolve_profile_shell(candidates: &[&str]) -> (String, bool, Option<String>) {
+        for candidate in candidates {
+            if let Some(path) = resolve_command_path(candidate) {
+                return ((*candidate).to_string(), true, Some(path));
+            }
+        }
+        (
+            candidates.first().copied().unwrap_or("").to_string(),
+            false,
+            None,
+        )
+    }
+
     let profiles = vec![
+        (
+            "linux-bash",
+            "Linux Bash",
+            "Standard Linux Bash login shell for general development workflows.",
+            "linux",
+            vec!["/bin/bash", "bash"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "linux-zsh",
+            "Linux Zsh",
+            "Zsh login shell for Linux with Oh-My-Zsh and plugin support.",
+            "linux",
+            vec!["/bin/zsh", "zsh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "fish-shell",
+            "Fish Shell",
+            "Friendly interactive shell with smart completions and syntax highlighting.",
+            "linux",
+            vec!["/usr/bin/fish", "/usr/local/bin/fish", "fish"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "macos-zsh",
+            "macOS Zsh",
+            "Default macOS system shell. Z shell with macOS environment and Homebrew paths.",
+            "macos",
+            vec!["/bin/zsh", "zsh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "macos-bash",
+            "macOS Bash",
+            "macOS Bash login shell. Useful for legacy scripts and compatibility with bash 3.2.",
+            "macos",
+            vec!["/bin/bash", "bash"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "wsl-bash",
+            "WSL Bash",
+            "Windows Subsystem for Linux Bash. Runs a full Linux environment inside Windows.",
+            "windows",
+            vec!["wsl.exe"],
+            vec!["bash".to_string(), "--login".to_string()],
+            "home",
+        ),
         (
             "steamos-bash",
             "SteamOS Bash",
             "Default Steam Deck shell with project-aware workspace launch.",
             "steamdeck",
-            "/bin/bash",
+            vec!["/bin/bash", "bash"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "steamos-zsh",
+            "SteamOS Zsh",
+            "Steam Deck Zsh profile for users with custom shell setups.",
+            "steamdeck",
+            vec!["/bin/zsh"],
             vec!["--login".to_string()],
             "workspaceRoot",
         ),
@@ -199,7 +294,7 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
             "Linux Sh",
             "Portable POSIX shell for recovery and low-assumption workflows.",
             "linux",
-            "/bin/sh",
+            vec!["/bin/sh", "sh"],
             vec![],
             "home",
         ),
@@ -208,16 +303,124 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
             "PowerShell",
             "Windows desktop shell profile with explicit confirmation gates.",
             "windows",
-            "powershell.exe",
+            vec!["powershell.exe"],
             vec!["-NoLogo".to_string()],
             "home",
+        ),
+        (
+            "power-shell-core",
+            "PowerShell Core",
+            "Cross-platform PowerShell profile for modern automation flows.",
+            "windows",
+            vec!["pwsh", "pwsh.exe"],
+            vec!["-NoLogo".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "windows-cmd",
+            "Windows CMD",
+            "Minimal Windows command prompt profile for compatibility work.",
+            "windows",
+            vec!["cmd.exe"],
+            vec!["/Q".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "git-bash",
+            "Git Bash",
+            "Git for Windows Bash profile for Unix-oriented workflows.",
+            "windows",
+            vec!["bash.exe"],
+            vec!["--login".to_string(), "-i".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "developer-shell",
+            "Developer Shell",
+            "General-purpose development profile with workspace env injection.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "project-shell",
+            "Project Shell",
+            "Launches in the active project root for repo-local commands.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "projectRoot",
+        ),
+        (
+            "python-env-shell",
+            "Python Env Shell",
+            "Project-root shell intended for Python virtualenv and test flows.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "projectRoot",
+        ),
+        (
+            "node-project-shell",
+            "Node Project Shell",
+            "Project-root shell tuned for npm, pnpm, yarn, and bun workflows.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "projectRoot",
+        ),
+        (
+            "rust-project-shell",
+            "Rust Project Shell",
+            "Project-root shell for cargo, clippy, fmt, and test loops.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "projectRoot",
+        ),
+        (
+            "go-project-shell",
+            "Go Project Shell",
+            "Project-root shell for go build, test, fmt, and module maintenance.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "projectRoot",
+        ),
+        (
+            "lua-hermes-shell",
+            "Lua/Hermes Shell",
+            "Plugin and Lua automation shell for validation and repair flows.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "security-tools-shell",
+            "Security Tools Shell",
+            "Auditing profile for diagnostics, scanning, and hardened inspection tasks.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
+        ),
+        (
+            "vpn-network-tools-shell",
+            "VPN/Network Tools Shell",
+            "Networking profile for route checks, proxy diagnostics, and VPN verification.",
+            "cross_platform",
+            vec!["/bin/bash", "bash", "pwsh", "powershell.exe", "cmd.exe", "/bin/sh", "sh"],
+            vec!["--login".to_string()],
+            "workspaceRoot",
         ),
         (
             "read-only-safe-shell",
             "Read-Only Safe Shell",
             "Conservative shell profile for diagnostics and inspection only.",
             "cross_platform",
-            "/bin/sh",
+            vec!["/bin/sh", "sh", "powershell.exe", "cmd.exe"],
             vec![],
             "workspaceRoot",
         ),
@@ -225,8 +428,9 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
 
     profiles
         .into_iter()
-        .map(|(id, name, description, platform, shell_path, shell_args, cwd_strategy)| {
-            let shell_available = command_exists(shell_path);
+        .map(|(id, name, description, platform, shell_candidates, shell_args, cwd_strategy)| {
+            let (shell_path, shell_available, detected_path) =
+                resolve_profile_shell(&shell_candidates);
             TerminalProfileAvailability {
                 id: id.to_string(),
                 name: name.to_string(),
@@ -237,7 +441,7 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
                 cwd_strategy: cwd_strategy.to_string(),
                 shell_available,
                 shell_status: if shell_available { "ready".into() } else { "missing_shell_binary".into() },
-                detected_path: if shell_available { Some(shell_path.to_string()) } else { None },
+                detected_path,
                 production_ready: shell_available,
             }
         })
