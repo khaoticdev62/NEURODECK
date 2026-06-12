@@ -155,9 +155,10 @@ export function TitleBar({
               <button
                 type="button"
                 onClick={() => setModelOpen(false)}
+                aria-label="Close model selector"
                 className="agent-switcher-close rounded-lg p-1 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
               >
-                <X className="h-3 w-3 nd-icon-svg" />
+                <X className="h-3 w-3 nd-icon-svg" aria-hidden="true" />
               </button>
             </div>
             {usableModels.length === 0 && (

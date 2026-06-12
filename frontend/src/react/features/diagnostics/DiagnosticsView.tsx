@@ -34,7 +34,7 @@ export function DiagnosticsView({
   actions: NeuroDeckAppActions;
 }) {
   const diagnostics = state.diagnostics;
-  const [matrix, setMatrix] = useState<any[]>([]);
+  const [matrix, setMatrix] = useState<ConnectionMatrixEntry[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
   const [globalProbing, setGlobalProbing] = useState(false);

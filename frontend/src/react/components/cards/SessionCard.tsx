@@ -87,7 +87,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
                 {node.preview}
               </p>
             )}
-            {error && <p className="mt-2 text-xs text-nd-error">{error}</p>}
+            {error && <p className="mt-2 text-xs text-nd-danger">{error}</p>}
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-error/20 hover:text-nd-error disabled:opacity-50"
+            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-danger/20 hover:text-nd-danger disabled:opacity-50"
             title="Delete Session"
           >
             <Trash2 className="h-4 w-4" />

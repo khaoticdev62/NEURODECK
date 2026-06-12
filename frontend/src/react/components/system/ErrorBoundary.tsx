@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Erro
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-danger/25 bg-nd-danger/10 px-4 py-2 text-sm font-semibold text-nd-danger transition hover:bg-danger/15"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-4 py-2 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15"
               >
                 <RotateCcw className="h-4 w-4" /> Reload Renderer
               </button>

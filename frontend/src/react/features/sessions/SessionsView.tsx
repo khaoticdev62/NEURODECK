@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { FileDown, FileJson, RefreshCw, Archive } from "lucide-react";
+import { FileDown, FileJson, RefreshCw, Archive, History } from "lucide-react";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
+import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
 import { SessionCard } from "../../components/cards/SessionCard";
 import { neurodeckApi } from "../../services/bridgeAdapter";
@@ -76,17 +79,22 @@ export function SessionsView({
         </div>
 
         <div className="space-y-3">
-          {error && (
-            <div className="rounded-xl border border-nd-error/25 bg-nd-error/10 p-4 text-sm text-nd-error">
-              {error}
-            </div>
+          {loading && <LoadingState label="Loading sessions…" fullHeight />}
+          {!loading && error && (
+            <ErrorState
+              title="Failed to load sessions"
+              message={error}
+              onRetry={() => void fetchSessions()}
+            />
           )}
           {!loading && !error && sessionsList.length === 0 && (
-            <div className="flex h-40 flex-col items-center justify-center text-nd-text-muted">
-              <p>No saved sessions found.</p>
-            </div>
+            <EmptyState
+              icon={History}
+              title="No saved sessions"
+              description="Your conversation sessions will appear here once saved."
+            />
           )}
-          {sessionsList.map((node) => (
+          {!loading && !error && sessionsList.map((node) => (
             <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
           ))}
         </div>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Database, Pin, Trash2 } from 'lucide-react';
+import { Database, Pin, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { EmptyState } from '../../components/primitives/EmptyState';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
@@ -48,7 +49,7 @@ export function MemoryView({
               value={newFact}
               onChange={(e) => setNewFact(e.target.value)}
               placeholder="Type a new fact to persist..."
-              className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 h-10"
+              className="h-10 w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 hover:border-nd-text-muted/30"
             />
           </div>
           <button
@@ -70,12 +71,27 @@ export function MemoryView({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search memory..."
             aria-label="Search memories"
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 h-10"
+            className="h-10 w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 hover:border-nd-text-muted/30"
           />
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin lg:grid-cols-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar-thin">
+        {filtered.length === 0 && state.memories.length === 0 && (
+          <EmptyState
+            icon={Database}
+            title="Memory vault is empty"
+            description="Add facts above to persist knowledge across sessions."
+          />
+        )}
+        {filtered.length === 0 && state.memories.length > 0 && (
+          <EmptyState
+            icon={Search}
+            title="No matches found"
+            description={`No memories match "${query}". Try a different search term.`}
+          />
+        )}
+        <div className="grid gap-4 lg:grid-cols-3">
         {filtered.map((memory) => (
           <article key={memory.id} className={`rounded-3xl border p-4 transition ${memory.pinned ? 'border-nd-accent/30 bg-nd-accent/[0.055]' : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'}`}>
             <div className="flex items-start justify-between gap-3">
@@ -110,6 +126,7 @@ export function MemoryView({
             </div>
           </article>
         ))}
+        </div>
       </div>
     </Panel>
   );

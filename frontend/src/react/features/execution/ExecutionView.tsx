@@ -80,7 +80,7 @@ function RunCard({ run }: { run: AgentRun }) {
         <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-nd-text/80">{run.prompt}</p>
       </div>
       {(run.result || run.error) && (
-        <div className={`mt-3 rounded-2xl border p-3 ${run.error ? 'border-danger/20 bg-nd-danger/10' : 'border-nd-accent/20 bg-nd-accent/[0.045]'}`}>
+        <div className={`mt-3 rounded-2xl border p-3 ${run.error ? 'border-nd-danger/20 bg-nd-danger/10' : 'border-nd-accent/20 bg-nd-accent/[0.045]'}`}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted/70">{run.error ? 'Error' : 'Result'}</p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-nd-text/80">{run.error ?? run.result}</p>
         </div>

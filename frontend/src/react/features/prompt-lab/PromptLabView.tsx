@@ -400,7 +400,7 @@ export function PromptLabView() {
             <button id="pd-save-btn" type="button" onClick={savePrompt} disabled={!valid} className="flex min-h-10 items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               <Save className="h-4 w-4" /> Save Prompt
             </button>
-            <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${recordingId ? 'border-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>
+            <button id="pd-macro-toggle-btn" type="button" onClick={toggleMacro} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${recordingId ? 'border-nd-danger/35 bg-nd-danger/10 text-nd-danger' : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60'}`}>
               {recordingId ? <Square className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
               {recordingId ? 'Stop Macro' : 'Record Macro'}
             </button>
@@ -430,7 +430,7 @@ export function PromptLabView() {
                     </div>
                     <div className="flex shrink-0 gap-1">
                       <button type="button" onClick={() => replayMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-nd-accent/25 px-2.5 text-xs text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">Replay</button>
-                      <button type="button" onClick={() => deleteMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-danger/25 px-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
+                      <button type="button" onClick={() => deleteMacro(macro.id)} className="inline-flex h-8 items-center rounded-lg border border-nd-danger/25 px-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"><Trash2 className="h-3.5 w-3.5" /><span className="sr-only">Delete</span></button>
                     </div>
                   </div>
                 )) : <div className="text-xs text-nd-text-muted/70">No macros recorded.</div>}

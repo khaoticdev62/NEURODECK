@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import type { NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
@@ -16,6 +17,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
   const [error, setError] = useState<string | null>(null);
   const [installUrl, setInstallUrl] = useState('');
   const [installing, setInstalling] = useState(false);
+  const [confirmUninstallId, setConfirmUninstallId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -70,8 +72,10 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
     }
   };
 
-  const uninstall = async (pluginId: string) => {
-    if (!window.confirm(`Uninstall plugin '${pluginId}'?`)) return;
+  const confirmAndUninstall = async () => {
+    if (!confirmUninstallId) return;
+    const pluginId = confirmUninstallId;
+    setConfirmUninstallId(null);
     try {
       await neurodeckApi.plugins.uninstall(pluginId);
       await neurodeckApi.plugins.reload();
@@ -223,7 +227,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
               {p.id && (
                 <button
                   type="button"
-                  onClick={() => uninstall(p.id!)}
+                  onClick={() => setConfirmUninstallId(p.id!)}
                   aria-label={`Uninstall ${p.name}`}
                   className="ml-auto rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-danger/10 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
                 >
@@ -240,6 +244,15 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
           </div>
         ))}
       </div>
+      <ConfirmDialog
+        open={!!confirmUninstallId}
+        onConfirm={() => void confirmAndUninstall()}
+        onCancel={() => setConfirmUninstallId(null)}
+        title="Uninstall plugin?"
+        message={`Remove '${confirmUninstallId ?? ''}' from the plugin directory. This cannot be undone without reinstalling.`}
+        confirmLabel="Uninstall"
+        destructive
+      />
     </div>
   );
 }

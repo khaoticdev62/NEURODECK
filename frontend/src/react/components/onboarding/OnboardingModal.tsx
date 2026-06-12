@@ -83,8 +83,8 @@ export function OnboardingModal() {
       <div className="no-drag w-full max-w-lg overflow-hidden rounded-3xl border border-nd-accent/20 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10">
         {/* Header */}
         <div className="relative border-b border-nd-text-muted/15 px-6 py-5">
-          <button type="button" onClick={dismiss} className="absolute right-4 top-4 rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text/90">
-            <X className="h-4 w-4" />
+          <button type="button" onClick={dismiss} aria-label="Close welcome wizard" className="absolute right-4 top-4 rounded-lg p-1.5 text-nd-text-muted transition hover:bg-nd-surface/50 hover:text-nd-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
