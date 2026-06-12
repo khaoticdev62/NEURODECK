@@ -96,7 +96,7 @@ function ipcGuard(channel, schema, handler, isDev = false) {
       validateSender(event.senderFrame, isDev);
 
       // 3. Enforce Payload Size Limit
-      const payloadString = JSON.stringify(request);
+      const payloadString = JSON.stringify(request || {});
       if (payloadString.length > MAX_PAYLOAD_SIZE) {
         throw createError('PAYLOAD_TOO_LARGE', `Request payload size exceeds the limit of 5MB`, 'validation', { recoverable: true });
       }
