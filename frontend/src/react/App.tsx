@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusRestoration } from "./hooks/useFocusRestoration";
 import type { ReactNode } from "react";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
 import { CommandPalette } from "./components/command/CommandPalette";
@@ -71,12 +72,6 @@ export default function App() {
   const { activeTheme } = useTheme();
   const shellRef = useRef<HTMLDivElement>(null);
   const shortcutSinkRef = useRef<HTMLInputElement>(null);
-  // Overlay trigger refs — used to restore focus when overlays close
-  const settingsTriggerRef = useRef<HTMLElement | null>(null);
-  const notifTriggerRef = useRef<HTMLElement | null>(null);
-  const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
-  const ctrlPromptTriggerRef = useRef<HTMLElement | null>(null);
-  const quickSwitcherTriggerRef = useRef<HTMLElement | null>(null);
   // Overlay panel focus targets
   const settingsDialogRef = useRef<HTMLDivElement>(null);
   const notifDialogRef = useRef<HTMLDivElement>(null);
@@ -135,78 +130,17 @@ export default function App() {
     });
   }, [state.activeView]);
 
-  // Focus management for overlays — move focus in on open, restore on close
-  useEffect(() => {
-    if (settingsOpen) {
-      settingsTriggerRef.current = document.activeElement as HTMLElement;
-      requestAnimationFrame(() => {
-        const el = settingsDialogRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        (el ?? settingsDialogRef.current)?.focus();
-      });
-    } else {
-      (settingsTriggerRef.current as HTMLElement | null)?.focus();
-    }
-  }, [settingsOpen]);
-
-  useEffect(() => {
-    if (notificationsOpen) {
-      notifTriggerRef.current = document.activeElement as HTMLElement;
-      requestAnimationFrame(() => {
-        const el = notifDialogRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        (el ?? notifDialogRef.current)?.focus();
-      });
-    } else {
-      (notifTriggerRef.current as HTMLElement | null)?.focus();
-    }
-  }, [notificationsOpen]);
-
-  useEffect(() => {
-    if (shortcutsOpen) {
-      shortcutsTriggerRef.current = document.activeElement as HTMLElement;
-      requestAnimationFrame(() => {
-        const el = shortcutsDialogRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        (el ?? shortcutsDialogRef.current)?.focus();
-      });
-    } else {
-      (shortcutsTriggerRef.current as HTMLElement | null)?.focus();
-    }
-  }, [shortcutsOpen]);
-
-  useEffect(() => {
-    if (ctrlPromptOpen) {
-      ctrlPromptTriggerRef.current = document.activeElement as HTMLElement;
-      requestAnimationFrame(() => {
-        const el = ctrlPromptDialogRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        (el ?? ctrlPromptDialogRef.current)?.focus();
-      });
-    } else {
-      (ctrlPromptTriggerRef.current as HTMLElement | null)?.focus();
-    }
-  }, [ctrlPromptOpen]);
-
-  useEffect(() => {
-    if (quickSwitcherOpen) {
-      quickSwitcherTriggerRef.current = document.activeElement as HTMLElement;
-      setQuickSwitcherFocusIdx(0);
-      requestAnimationFrame(() => {
-        const list =
-          quickSwitcherDialogRef.current?.querySelectorAll<HTMLButtonElement>(
-            "button[data-qs-item]"
-          );
-        list?.[0]?.focus();
-      });
-    } else {
-      (quickSwitcherTriggerRef.current as HTMLElement | null)?.focus();
-    }
-  }, [quickSwitcherOpen]);
+  // Focus management for overlays — move focus in on open, restore trigger on close
+  useFocusRestoration(settingsDialogRef, settingsOpen);
+  useFocusRestoration(notifDialogRef, notificationsOpen);
+  useFocusRestoration(shortcutsDialogRef, shortcutsOpen);
+  useFocusRestoration(ctrlPromptDialogRef, ctrlPromptOpen);
+  useFocusRestoration(
+    quickSwitcherDialogRef,
+    quickSwitcherOpen,
+    () => setQuickSwitcherFocusIdx(0),
+    "button[data-qs-item]",
+  );
 
   // Defensive: hide browser native overlay when switching away from browser tab
   useEffect(() => {
@@ -758,7 +692,6 @@ export default function App() {
   };
 
   const openSettings = useCallback((panel = "general") => {
-    settingsTriggerRef.current = document.activeElement as HTMLElement;
     localStorage.setItem("settingsActivePanel", `sp-${panel}`);
     setSettingsPanel(panel);
     setSettingsOpen(true);
@@ -913,6 +846,7 @@ export default function App() {
 
   const renderView = (id: ViewId, node: ReactNode) => (
     <div
+      id={`view-${id}`}
       data-testid={`view-${id}`}
       data-controller-screen={id}
       data-controller-screen-active={state.activeView === id ? "true" : "false"}
