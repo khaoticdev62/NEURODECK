@@ -1,6 +1,7 @@
 import { useState, useId, useRef, KeyboardEvent } from 'react';
 import { X, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
+import { MentorPanel } from './MentorPanel';
 import { gradeAlertAnalysis, alertScoreLabel, alertScoreTone } from '../utils/socGrading';
 import type { SocAlert, AlertDisposition, AlertAnalysisState, AlertGradeResult } from '../types';
 
@@ -226,6 +227,17 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
           )}
         </div>
       )}
+
+      {/* Mentor panel — context omits correct answers; only observable evidence */}
+      <MentorPanel
+        context={[
+          `Alert: ${alert.title}`,
+          `Severity: ${alert.severity} | Source: ${alert.source}`,
+          `Description: ${alert.description}`,
+          `Analyst context: ${alert.context}`,
+        ].join('\n')}
+        greeting={`I'm here to help you think through this alert. What's your question?`}
+      />
     </div>
   );
 }

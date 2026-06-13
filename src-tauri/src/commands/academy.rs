@@ -1,7 +1,10 @@
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
+use crate::bridge::WsBroadcaster;
 use crate::user_config_dir;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -192,4 +195,94 @@ pub fn list_portfolio() -> Result<Vec<PortfolioEntry>, String> {
     }
     entries.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     Ok(entries)
+}
+
+// ── AI Mentor ─────────────────────────────────────────────────────────────────
+
+/// A single turn in a mentor conversation (serialised to/from the frontend).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MentorMessage {
+    pub role: String,    // "student" | "mentor"
+    pub content: String,
+}
+
+/// Payload from the frontend when the student asks the mentor a question.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MentorQueryPayload {
+    /// Plain-text context visible to the student (title + description only — no answers).
+    pub context: String,
+    /// Current student question.
+    pub question: String,
+    /// Conversation history for this session (oldest first).
+    pub history: Vec<MentorMessage>,
+}
+
+const MENTOR_SYSTEM_PROMPT: &str = r#"You are Alex Raines, an L3 SOC analyst with 12 years of incident response experience.
+You are acting as a training mentor for a cybersecurity student.
+
+Your rules (follow them without exception):
+- Use the Socratic method: guide with questions, do not give direct answers
+- NEVER reveal correct dispositions, MITRE technique IDs, or flag values directly
+- You MAY confirm when the student is thinking in the right direction
+- You MAY explain general cybersecurity concepts and terminology
+- Keep responses concise — 2–4 sentences unless a conceptual explanation is needed
+- Be direct, technical, and no-nonsense — you are not a cheerleader
+- Reference real-world SOC context naturally (alert fatigue, triage prioritisation, IR process)
+
+The student is currently working on the following activity:"#;
+
+/// Streams a mentor response via WebSocket events `mentor:token`, `mentor:done`, `mentor:error`.
+/// Does NOT write to AppState.messages so it never pollutes the main chat session.
+pub async fn mentor_query(
+    payload: MentorQueryPayload,
+    app_state: Arc<Mutex<crate::AppState>>,
+    broadcaster: WsBroadcaster,
+) -> Result<(), String> {
+    let provider = {
+        let app = app_state.lock().unwrap_or_else(|e| e.into_inner());
+        app.provider.clone()
+    };
+
+    // Build system prompt: persona + scoped context
+    let system_prompt = format!(
+        "{}\n\n{}\n\nNever reveal the correct answer, solution, or expected values for this activity.",
+        MENTOR_SYSTEM_PROMPT,
+        payload.context
+    );
+
+    // Build message: conversation history + current question
+    let message = {
+        let mut parts: Vec<String> = Vec::new();
+        if !payload.history.is_empty() {
+            parts.push("Conversation so far:".to_string());
+            for msg in &payload.history {
+                let label = if msg.role == "student" { "Student" } else { "Alex" };
+                parts.push(format!("{}: {}", label, msg.content));
+            }
+            parts.push(String::new());
+        }
+        parts.push(format!("Student: {}", payload.question));
+        parts.join("\n")
+    };
+
+    let bc = broadcaster.clone();
+    tokio::spawn(async move {
+        let mut stream = provider.stream_response(&message, &system_prompt);
+        while let Some(chunk_res) = stream.next().await {
+            match chunk_res {
+                Ok(chunk) => {
+                    bc.emit("mentor:token", serde_json::json!({ "token": chunk }));
+                }
+                Err(e) => {
+                    bc.emit("mentor:error", serde_json::json!({ "error": e }));
+                    return;
+                }
+            }
+        }
+        bc.emit("mentor:done", serde_json::json!({ "status": "complete" }));
+    });
+
+    Ok(())
 }

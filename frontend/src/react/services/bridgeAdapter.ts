@@ -2407,6 +2407,13 @@ const academy = {
   async completeLab(payload: AcademyCompletionPayload): Promise<AcademyCompletionResult> {
     return bridgeInvoke<AcademyCompletionResult>("academy_complete_lab", payload);
   },
+  async mentorQuery(payload: {
+    context: string;
+    question: string;
+    history: { role: string; content: string }[];
+  }): Promise<{ status: string }> {
+    return bridgeInvoke<{ status: string }>("academy_mentor_query", payload);
+  },
 };
 
 /* ── Exported API surface (matches v6 neurodeckApi exactly) ──────────────── */

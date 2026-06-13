@@ -4,6 +4,7 @@ import { Badge } from '../../../components/primitives/Badge';
 import { ErrorState } from '../../../components/primitives/ErrorState';
 import { TaskCard } from '../components/TaskCard';
 import { SkillBar } from '../components/SkillBar';
+import { MentorPanel } from '../components/MentorPanel';
 import { gradeAnswer, labOverallScore, scoreLabel, scoreTone } from '../utils/grading';
 import { SKILL_LABELS } from '../types';
 import { neurodeckApi } from '../../../services/bridgeAdapter';
@@ -309,6 +310,18 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
           </section>
         )}
       </div>
+
+      {/* Mentor panel — only visible while actively running tasks */}
+      {phase === 'running' && (
+        <MentorPanel
+          context={[
+            `Lab: ${lab.title}`,
+            `Objectives: ${lab.objectives.join('; ')}`,
+            currentTask ? `Current task: ${currentTask.prompt}` : '',
+          ].filter(Boolean).join('\n')}
+          greeting={`Ready when you are. What's your question about "${lab.title}"?`}
+        />
+      )}
     </div>
   );
 }

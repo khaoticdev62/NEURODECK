@@ -9195,6 +9195,19 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
         }
 
+        "academy_mentor_query" => {
+            let payload: academy::MentorQueryPayload = serde_json::from_value(args.clone())
+                .map_err(|e| format!("Invalid mentor query payload: {e}"))?;
+            let app_state_clone = state.app_state.clone();
+            let broadcaster_clone = state.broadcaster.clone();
+            tokio::spawn(async move {
+                if let Err(e) = academy::mentor_query(payload, app_state_clone, broadcaster_clone).await {
+                    eprintln!("[academy_mentor] Error: {e}");
+                }
+            });
+            Ok(serde_json::json!({ "status": "streaming" }))
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
