@@ -674,7 +674,7 @@ fn validate_safe_lua_file_name(file_name: &str, allow_disabled: bool) -> Result<
         || file_name.contains('\\')
         || !file_name
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' || c == ' ' || c == '(' || c == ')' || c == '[' || c == ']')
     {
         return Err("Invalid plugin file name".to_string());
     }

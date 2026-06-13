@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, Database, Download, FileDown, FileJson, FolderOpen, Globe, HardDrive, Lock, Paintbrush, Palette, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, Trash2, Workflow, Wrench } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileCode, FileDown, FileJson, FolderOpen, GitBranch, Globe, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
@@ -78,6 +78,19 @@ const commands: CommandItem[] = [
   { label: 'Open Prompt Lab', hint: 'Prompt engineering formulas and PromptDrive', view: 'prompt-lab', icon: Sparkles },
   { label: 'Open Remote', hint: 'Mobile remote control server', view: 'remote', icon: Radio },
   { label: 'Open Docs', hint: 'Knowledge base and indexed docs', view: 'docs', icon: BookOpen },
+  { label: 'Open IDE', hint: 'Integrated code workspace with file tree and editor', view: 'ide', icon: Code },
+  { label: 'Open Git', hint: 'Repository status, diff, commit, and branch operations', view: 'git', icon: GitBranch },
+  { label: 'Open API Lab', hint: 'Interactive HTTP request builder and tester', view: 'api-lab', icon: Webhook },
+  { label: 'Open CLI Maker', hint: 'Visual CLI argument schema builder', view: 'cli-maker', icon: TerminalSquare },
+  { label: 'Open Torrent', hint: 'BitTorrent and magnet-link downloads', view: 'torrent', icon: Magnet },
+  { label: 'Open Project', hint: 'Project folder scan, stack detection, and context', view: 'project', icon: FolderOpen },
+  { label: 'Open Graph', hint: 'Knowledge and memory relationship visualizer', view: 'graph', icon: Network },
+  { label: 'Open Scheduler', hint: 'Cron job management and timed automation', view: 'scheduler', icon: CalendarClock },
+  { label: 'Open Orchestrator', hint: 'Multi-step LLM pipeline builder', view: 'orchestrator', icon: Layers },
+  { label: 'Open Plugins', hint: 'Lua plugin manager and extension tools', view: 'plugins', icon: Plug },
+  { label: 'Open Diagnostics', hint: 'IPC logs, runtime health, and connection matrix', view: 'diagnostics', icon: Activity },
+  { label: 'Open Sessions', hint: 'Saved conversations and export history', view: 'sessions', icon: History },
+  { label: 'Open Font Manager', hint: 'Typography preferences and font preview', view: 'fonts', icon: Type },
   { label: 'Scan Project Folder', hint: 'Select a folder and detect stack, risks, scripts, and docs', icon: FolderOpen, action: 'scanProject' },
   { label: 'Build Project Context', hint: 'Read allowlisted files and redact sensitive values', icon: FileJson, action: 'buildProjectContext' },
   { label: 'Open Model Manager', hint: 'Local model inventory', view: 'models', icon: BrainCircuit },

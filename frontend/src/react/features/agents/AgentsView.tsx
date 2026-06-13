@@ -26,7 +26,7 @@ export function AgentsView({
   };
 
   return (
-    <Panel eyebrow="Agent Dock" title="Specialized Operators" className="agent-shell h-full overflow-hidden">
+    <Panel eyebrow="Agent Dock" title="Specialized Operators" className="agent-shell flex h-full flex-col overflow-hidden">
       <div className="agent-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
         Agent
       </div>
