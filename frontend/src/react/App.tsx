@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusRestoration } from "./hooks/useFocusRestoration";
 import type { ReactNode } from "react";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
@@ -11,41 +11,45 @@ import { TitleBar } from "./components/layout/TitleBar";
 import { StatusBar } from "./components/layout/StatusBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
+// ─── Eager imports — default view, overlay views, and lightweight core views ──
 import { AgentsView } from "./features/agents/AgentsView";
 import { ApiLabView } from "./features/api-lab/ApiLabView";
-import { BrowserView } from "./features/browser/BrowserView";
 import { CacheView } from "./features/cache/CacheView";
-import { CanvasView } from "./features/canvas/CanvasView";
 import { CliMakerView } from "./features/cli-maker/CliMakerView";
 import { DiagnosticsView } from "./features/diagnostics/DiagnosticsView";
-import { DocsView } from "./features/docs/DocsView";
 import { ExecutionView } from "./features/execution/ExecutionView";
 import { GitView } from "./features/git/GitView";
-import { GraphView } from "./features/graph/GraphView";
-import { IDEView } from "./features/ide/IDEView";
 import { MemoryView } from "./features/memory/MemoryView";
 import { ModelsView } from "./features/models/ModelsView";
-import { OrchestratorView } from "./features/orchestrator/OrchestratorView";
 import { PluginsView } from "./features/plugins/PluginsView";
 import { ProjectView } from "./features/project/ProjectView";
-import { AcademyView } from "./features/academy/AcademyView";
-import { PromptLabView } from "./features/prompt-lab/PromptLabView";
-import { RemoteView } from "./features/remote/RemoteView";
-import { SchedulerView } from "./features/scheduler/SchedulerView";
 import { SessionsView } from "./features/sessions/SessionsView";
 import { SettingsView } from "./features/settings/SettingsView";
-import { ShareView } from "./features/share/ShareView";
-import { TorrentView } from "./features/torrent/TorrentView";
 import { SSHView } from "./features/ssh/SSHView";
 import { TerminalView } from "./features/terminal/TerminalView";
-import { TunnelView } from "./features/tunnel/TunnelView";
-import { ExportsView } from "./features/exports/ExportsView";
-import { FontManagerView } from "./features/fonts/FontManagerView";
-import { MaintenanceView } from "./features/maintenance/MaintenanceView";
-import { RecoveryView } from "./features/recovery/RecoveryView";
-import { SecurityView } from "./features/security/SecurityView";
-import { ThemesView } from "./features/themes/ThemesView";
 import { WorkspaceView } from "./features/workspace/WorkspaceView";
+
+// ─── Lazy imports — heavy or infrequently-visited feature modules ─────────────
+const AcademyView    = lazy(() => import("./features/academy/AcademyView").then((m) => ({ default: m.AcademyView })));
+const BrowserView    = lazy(() => import("./features/browser/BrowserView").then((m) => ({ default: m.BrowserView })));
+const CanvasView     = lazy(() => import("./features/canvas/CanvasView").then((m) => ({ default: m.CanvasView })));
+const DocsView       = lazy(() => import("./features/docs/DocsView").then((m) => ({ default: m.DocsView })));
+const ExportsView    = lazy(() => import("./features/exports/ExportsView").then((m) => ({ default: m.ExportsView })));
+const FontManagerView = lazy(() => import("./features/fonts/FontManagerView").then((m) => ({ default: m.FontManagerView })));
+const GraphView      = lazy(() => import("./features/graph/GraphView").then((m) => ({ default: m.GraphView })));
+const IDEView        = lazy(() => import("./features/ide/IDEView").then((m) => ({ default: m.IDEView })));
+const MaintenanceView = lazy(() => import("./features/maintenance/MaintenanceView").then((m) => ({ default: m.MaintenanceView })));
+const OrchestratorView = lazy(() => import("./features/orchestrator/OrchestratorView").then((m) => ({ default: m.OrchestratorView })));
+const PromptLabView  = lazy(() => import("./features/prompt-lab/PromptLabView").then((m) => ({ default: m.PromptLabView })));
+const RecoveryView   = lazy(() => import("./features/recovery/RecoveryView").then((m) => ({ default: m.RecoveryView })));
+const RemoteView     = lazy(() => import("./features/remote/RemoteView").then((m) => ({ default: m.RemoteView })));
+const SchedulerView  = lazy(() => import("./features/scheduler/SchedulerView").then((m) => ({ default: m.SchedulerView })));
+const SecurityView   = lazy(() => import("./features/security/SecurityView").then((m) => ({ default: m.SecurityView })));
+const ShareView      = lazy(() => import("./features/share/ShareView").then((m) => ({ default: m.ShareView })));
+const ThemesView     = lazy(() => import("./features/themes/ThemesView").then((m) => ({ default: m.ThemesView })));
+const TorrentView    = lazy(() => import("./features/torrent/TorrentView").then((m) => ({ default: m.TorrentView })));
+const TunnelView     = lazy(() => import("./features/tunnel/TunnelView").then((m) => ({ default: m.TunnelView })));
+
 import { LiveWallpaperHost } from "./features/wallpapers/LiveWallpaperHost";
 import { ControllerDebugOverlay } from "./input/controller/ControllerDebugOverlay";
 import { ControllerHelpOverlay } from "./input/controller/ControllerHelpOverlay";
@@ -62,6 +66,17 @@ import type {
   ViewId,
 } from "./types/neurodeck";
 import { fontOptions, navItems } from "./types/seed";
+
+function ViewLoader() {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-nd-accent/30 border-t-nd-accent" aria-hidden="true" />
+        <p className="text-2xs text-nd-text-muted">Loading view…</p>
+      </div>
+    </div>
+  );
+}
 
 function makeUserMessage(content: string): AIMessage {
   return { id: `user-${Date.now()}`, role: "user", content, createdAt: new Date().toISOString() };
@@ -1070,6 +1085,7 @@ export default function App() {
             data-controller-default="true"
             className="min-w-0 flex-1 overflow-hidden p-3 pb-16 md:p-4"
           >
+            <Suspense fallback={<ViewLoader />}>
             <div className="view-container h-full min-h-0">
               {(state.activeView === "chat" || state.activeView === "workspace") &&
                 renderView(
@@ -1146,6 +1162,7 @@ export default function App() {
               {state.activeView === "fonts" &&
                 renderView("fonts", <FontManagerView state={state} dispatch={dispatch} />)}
             </div>
+            </Suspense>
           </main>
           <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
         </div>
