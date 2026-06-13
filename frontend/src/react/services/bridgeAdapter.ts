@@ -54,7 +54,7 @@ const BRIDGE_PORT = getBridgePort();
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
 
 let _ws: WebSocket | null = null;
-let _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
+const _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
 if (typeof window !== "undefined") {
   (window as any).__wsListeners = _wsListeners;
 }
@@ -138,10 +138,6 @@ async function bridgeInvoke<T>(cmd: string, args?: unknown): Promise<T> {
     throw new Error(text);
   }
   return res.json() as Promise<T>;
-}
-
-async function appInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return bridgeInvoke<T>(cmd, args);
 }
 
 /* ── Store (bridge-backed via localStorage fallback) ─────────────────────── */
@@ -239,11 +235,6 @@ export interface DashboardStats {
     message_count: number;
   }[];
 }
-
-const unsupportedProjectScan: ProjectScanResponse = {
-  canceled: false,
-  error: "Project scanning requires the NEURODECK bridge server.",
-};
 
 const projects = {
   async selectAndScan(): Promise<ProjectScanResponse> {

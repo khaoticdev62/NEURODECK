@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Power, PowerOff, Radio, Copy, Users, Clock, AlertTriangle } from 'lucide-react';
+import { Power, PowerOff, Radio, Copy, Users, Clock } from 'lucide-react';
 import QRCode from 'qrcode';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 

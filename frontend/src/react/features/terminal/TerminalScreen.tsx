@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid, Plus, RefreshCw, Search, ShieldCheck, SplitSquareHorizontal, SplitSquareVertical, Terminal as TerminalIcon, Trash2, X } from "lucide-react";
-import { Modal } from "../../components/primitives/Modal";
 import { useNeuroDeckState } from "../../state/useNeuroDeckState";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
 import { classifyTerminalCommand, requiresConfirmation } from "../../../../../src/shared/terminal/terminalCommandPolicy";
 import { TERMINAL_PROFILES, type TerminalProfile, type TerminalProfileAvailability } from "../../../../../src/shared/terminal/terminalProfiles";
 import type { TerminalCommandHistoryEntry, TerminalSession, TerminalTab } from "../../../../../src/shared/terminal/terminalContracts";
 import type { TerminalCommandSafety } from "../../../../../src/shared/terminal/terminalSafetyTypes";
-import type { TerminalDiagnosticsReport, TerminalEnvironmentReport, TerminalSessionSummary } from "../../../../../src/shared/terminal/terminalDiagnosticsTypes";
+import type { TerminalDiagnosticsReport, TerminalEnvironmentReport } from "../../../../../src/shared/terminal/terminalDiagnosticsTypes";
 import { TerminalCommandPalette } from "./TerminalCommandPalette";
 import { TerminalControllerHintBar } from "./TerminalControllerHintBar";
 import { TerminalDiagnosticsPanel } from "./TerminalDiagnosticsPanel";
@@ -446,10 +445,6 @@ export function TerminalScreen() {
     }
   }, [panes, restartPane, tabs, updatePaneMap, updateTabs]);
 
-  const renameTab = useCallback((tabId: string, label: string) => {
-    updateTabs((current) => current.map((tab) => tab.id === tabId ? { ...tab, label, updatedAt: new Date().toISOString() } : tab));
-  }, [updateTabs]);
-
   const pinTab = useCallback((tabId: string) => {
     updateTabs((current) => current.map((tab) => tab.id === tabId ? { ...tab, pinned: !tab.pinned } : tab));
   }, [updateTabs]);
@@ -618,7 +613,7 @@ export function TerminalScreen() {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
     const snapshot = restoreWorkspace();
-    if (snapshot) {
+    if (snapshot && snapshot.tabs.length > 0) {
       const restoredPanes = Object.fromEntries(snapshot.panes.map((pane) => [pane.id, pane]));
       setTabs(snapshot.tabs);
       setPanes(restoredPanes);
@@ -833,7 +828,7 @@ export function TerminalScreen() {
               </button>
             </div>
             <div className="space-y-2">
-              {tabs.map((tab, index) => {
+              {tabs.map((tab) => {
                 const pane = panes[tab.activePaneId];
                 return (
                   <button

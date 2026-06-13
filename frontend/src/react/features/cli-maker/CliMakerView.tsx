@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   TerminalSquare, Plus, Copy, Play, Trash2, Save, Upload, Code, Sparkles,
-  Command, Settings, Folder, ArrowRight, HelpCircle, Check, AlertCircle,
-  Search, FileText, Globe, Activity, Layers, Cpu
+  Command, Settings, Folder, HelpCircle, Check, AlertCircle,
+  Search, Globe, Activity, Layers
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { CliCommandDef, CliAction } from '../../types/neurodeck';

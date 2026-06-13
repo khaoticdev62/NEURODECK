@@ -9,9 +9,6 @@ import {
   Eye,
   EyeOff,
   Save,
-  ZoomIn,
-  ZoomOut,
-  Focus,
   Search,
   X,
   Star,
@@ -25,14 +22,12 @@ import {
   ChevronDown,
   Plus,
   Pin,
-  Volume2,
   VolumeX,
   Lock,
   Unlock,
   Settings,
   AlertTriangle,
   Terminal,
-  Info,
   RefreshCw,
 } from "lucide-react";
 import { BrowserVpnPanel } from "../browser-vpn/BrowserVpnPanel";
@@ -263,15 +258,6 @@ export function BrowserView() {
       if (tab) {
         setUrlInput(tab.displayUrl || tab.url || "");
       }
-      setTimeout(reportBounds, 100);
-    } catch (_) {}
-  };
-
-  const duplicateTab = async (tabId: string) => {
-    if (!window.neurodeck?.browser) return;
-    try {
-      await window.neurodeck.browser.duplicateTab(tabId);
-      await loadTabs();
       setTimeout(reportBounds, 100);
     } catch (_) {}
   };

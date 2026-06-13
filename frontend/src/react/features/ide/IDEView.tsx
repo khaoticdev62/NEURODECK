@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Code, FileCode, FolderOpen, Plus, Save, Trash2, RefreshCw,
-  X, FilePlus, FolderPlus, AlertCircle
+  Code, FileCode, FolderOpen, Save, Trash2, RefreshCw,
+  X, FilePlus, AlertCircle
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PredictionResult, CommandTemplate, IdeMode } from '../../../shared/ide/ideContracts';
@@ -103,7 +103,7 @@ export function IDEView() {
   const [diagnosticFixes, setDiagnosticFixes] = useState<DiagnosticFix[]>([]);
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
   const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState('');
-  const [commandOutput, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
+  const [, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
   const [newFileModalOpen, setNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('untitled.txt');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);

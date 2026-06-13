@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useId } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Timer, Play, Flag, ChevronLeft, ChevronRight,
   CheckCircle2, XCircle, BookOpen, RotateCcw, Award,
@@ -156,7 +156,6 @@ function ExamRunner({
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const navId = useId();
 
   const remaining = session.timeLimitSeconds - elapsed;
   const timerWarning = remaining < 120;
@@ -476,7 +475,7 @@ function ExamReview({
             No questions match this filter
           </div>
         )}
-        {filtered.map((q, i) => {
+        {filtered.map((q) => {
           const userAnswer = session.answers[q.id] ?? -1;
           const isCorrect = userAnswer === q.correct;
           const expanded = expandedId === q.id;

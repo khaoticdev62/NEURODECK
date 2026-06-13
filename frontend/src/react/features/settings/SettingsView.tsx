@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Settings,
   Cpu,
-  HardDrive,
   Shield,
   Sliders,
   ChevronRight,

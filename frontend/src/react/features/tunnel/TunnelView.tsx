@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeftRight, Power, PowerOff, RefreshCw, Send, FolderOpen } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeftRight, Power, PowerOff, Send, FolderOpen } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 
 export function TunnelView() {

@@ -58,17 +58,18 @@ export function DatasetViewer({ sections, maxHeight = 280 }: DatasetViewerProps)
   const [searchTerm, setSearchTerm] = useState('');
 
   const active = sections[activeIdx] ?? sections[0];
-  if (!active) return null;
-
-  const lines = active.content.split('\n');
 
   const filteredLines = useMemo(() => {
+    if (!active) return [];
+    const lines = active.content.split('\n');
     if (!searchTerm.trim()) return lines.map((l, i) => ({ line: l, origIdx: i }));
     const term = searchTerm.toLowerCase();
     return lines
       .map((l, i) => ({ line: l, origIdx: i }))
       .filter(({ line }) => line.toLowerCase().includes(term));
-  }, [lines, searchTerm]);
+  }, [active, searchTerm]);
+
+  if (!active) return null;
 
   const matchCount = searchTerm ? filteredLines.length : null;
 

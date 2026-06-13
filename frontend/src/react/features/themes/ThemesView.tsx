@@ -14,7 +14,6 @@ import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
 import { Select } from "../../components/primitives/Select";
-import { TextInput } from "../../components/primitives/TextInput";
 import { Toggle } from "../../components/primitives/Toggle";
 import { useTheme } from "../../theme/useTheme";
 import type { AccessibilityProfile, ThemeDisplayTarget } from "../../../shared/theme/themeContracts";

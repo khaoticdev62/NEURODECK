@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Lock, Server, Save, Trash2, Plug, Unplug, AlertTriangle } from 'lucide-react';
+import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { SSHTerminal, type SSHConnectionConfig } from './SSHTerminal';
 

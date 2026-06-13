@@ -11,11 +11,10 @@ import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../..
 
 export function MemoryView({
   state,
-  dispatch,
   actions,
 }: {
   state: NeuroDeckState;
-  dispatch: Dispatch<NeuroDeckAction>;
+  dispatch?: Dispatch<NeuroDeckAction>;
   actions: NeuroDeckAppActions;
 }) {
   const [query, setQuery] = useState('');

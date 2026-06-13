@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type Dispatch } from 'react';
 import {
-  Plug, RefreshCw, ShieldCheck, ShieldAlert, Download, Trash2,
-  ToggleLeft, ToggleRight, Tag, User, FileCode, AlertTriangle,
-  Copy, Shield
+  Plug, RefreshCw, ShieldCheck, Download, Trash2,
+  FileCode, AlertTriangle, Copy
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
@@ -223,7 +222,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
       return ['http:', 'https:', 'file:'].includes(url.protocol);
     } catch {
       // Allow simple registry identifiers like "author/plugin-name"
-      return /^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(trimmed);
+      return /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(trimmed);
     }
   };
 

@@ -10,7 +10,7 @@ import { scoreSteamDeckCompatibility, type SteamDeckScoreOptions } from './steam
 export function isPolicySatisfied(
   policy: AgentModelPolicy,
   profile: SupportedModelProfile,
-  score: SteamDeckModelScore
+  _score: SteamDeckModelScore
 ): boolean {
   if (!isTierAtLeast(profile.compatibilityTier, policy.minimumCompatibilityTier)) return false;
   if (!hasAllCapabilities(profile, policy.allowedModelCapabilities)) return false;

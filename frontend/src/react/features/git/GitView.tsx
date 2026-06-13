@@ -24,28 +24,24 @@ export function GitView() {
   const loadStatus = useCallback(async () => {
     setLoading(true);
     setGitUnavailable(false);
-    let statusOk = false;
     try {
       const status = await neurodeckApi.git.status();
       setStaged(status.staged || []);
       setUnstaged(status.unstaged || []);
       setUntracked(status.untracked || []);
-      statusOk = true;
     } catch (e) {
       setGitUnavailable(true);
       setLoading(false);
       return;
     }
-    if (statusOk) {
-      try {
-        const branchList = await neurodeckApi.git.branchList();
-        setBranches(branchList);
-      } catch (_) {}
-      try {
-        const log = await neurodeckApi.git.log(20);
-        setCommits(log);
-      } catch (_) {}
-    }
+    try {
+      const branchList = await neurodeckApi.git.branchList();
+      setBranches(branchList);
+    } catch (_) {}
+    try {
+      const log = await neurodeckApi.git.log(20);
+      setCommits(log);
+    } catch (_) {}
     setLoading(false);
   }, []);
 

@@ -1,5 +1,3 @@
-import type { NeurodeckTheme, ThemeSettings, LiveWallpaperProfile } from "./themeContracts";
-
 export function validateTheme(theme: any): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   if (!theme || typeof theme !== "object") {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Share2, Users, ArrowUpDown, RefreshCw, Send, Radio,
+  Share2, Users, ArrowUpDown, Send, Radio,
   CheckCircle2, XCircle, X, Download, Upload, Loader2,
   Wifi, AlertTriangle, KeyRound
 } from 'lucide-react';
@@ -638,7 +638,7 @@ export function ShareView() {
       <div className={`flex min-h-0 flex-1 flex-col ${activePanel === 'warpinator' ? '' : 'hidden'}`}>
         <WarpinatorPanel />
       </div>
-      <div id="share-panel-torrent" className={`flex min-h-0 flex-1 flex-col ${activePanel === 'torrent' ? '' : 'hidden'}`}>
+      <div id="share-panel-torrent" className={`flex min-h-0 flex-1 flex-col ${activePanel === 'torrent' ? 'active' : 'hidden'}`}>
         <TorrentView />
       </div>
     </div>

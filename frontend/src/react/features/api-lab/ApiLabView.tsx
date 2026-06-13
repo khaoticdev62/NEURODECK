@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Webhook, Send, Copy, Plus, Trash2 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { ApiRequest, ApiResponse } from '../../services/bridgeAdapter';
+import type { ApiResponse } from '../../services/bridgeAdapter';
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 

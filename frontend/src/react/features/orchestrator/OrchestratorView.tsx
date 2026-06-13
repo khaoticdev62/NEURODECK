@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, Loader2, TerminalSquare } from 'lucide-react';
+import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, TerminalSquare } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { listenBridge } from '../../services/bridgeAdapter';
 import type { WorkflowDoc, WorkflowSummary } from '../../services/bridgeAdapter';

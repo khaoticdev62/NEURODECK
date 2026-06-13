@@ -268,16 +268,6 @@ const DEFAULT_TYPOGRAPHY_WEIGHT: NonNullable<DesignTokenInput["typography"]["wei
   bold: 700,
 };
 
-const DEFAULT_MOTION: SemanticMotionTokens = {
-  fast: "150ms",
-  normal: "250ms",
-  slow: "400ms",
-  focus: "200ms",
-  modal: "250ms",
-  panel: "200ms",
-  reducedMotion: false,
-};
-
 /**
  * Derive a semantic token set from a concrete `ThemeTokenSet`.
  *

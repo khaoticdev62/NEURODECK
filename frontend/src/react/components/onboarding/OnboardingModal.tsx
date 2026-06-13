@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState, useRef, type Dispatch } from 'react';
 import {
-  CheckCircle2, Circle, Loader2, Rocket, Terminal, Wifi, KeyRound, ShieldCheck, X,
-  Volume2, HardDrive, ArrowLeft, ArrowRight, Save, Play, RefreshCw, Palette,
+  CheckCircle2, Circle, Loader2, Rocket, Terminal, Wifi, KeyRound, ShieldCheck,
+  Volume2, HardDrive, ArrowLeft, ArrowRight, Play, RefreshCw,
   Eye, EyeOff, Check, AlertTriangle, ShieldAlert, Shield, Network
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { useControllerAction } from '../../input/controller/useControllerAction';
 import { useTheme } from '../../theme/useTheme';
-import type { NeuroDeckState, NeuroDeckAction, AIProvider } from '../../types/neurodeck';
+import type { NeuroDeckState, NeuroDeckAction, AIProvider, ThemeName } from '../../types/neurodeck';
 import type { OnboardingStep, SetupWarning, SetupError, OnboardingDiagnosticResult } from '../../types/onboarding';
 
 const ONBOARDING_STORE_KEY = 'neurodeck_onboarding_state';
@@ -49,7 +49,7 @@ export function OnboardingModal({
   // Wizard state
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [completedSteps, setCompletedSteps] = useState<OnboardingStep[]>([]);
-  const [skippedSteps, setSkippedSteps] = useState<OnboardingStep[]>([]);
+  const [skippedSteps] = useState<OnboardingStep[]>([]);
   
   // welcome step checks
   const [precheckPassed, setPrecheckPassed] = useState(false);
@@ -454,7 +454,7 @@ export function OnboardingModal({
       accessibilityProfile: reducedMotion ? 'reduced_motion' : 'default',
     });
 
-    dispatch({ type: 'set-theme', theme: (availableThemes.find((t) => t.id === themeId)?.name || 'Blacksite') as any });
+    dispatch({ type: 'set-theme', theme: (availableThemes.find((t) => t.id === themeId)?.name || 'Blacksite') as ThemeName });
     if (state.deckMode !== compactMode) {
       dispatch({ type: 'toggle-deck-mode' });
     }
@@ -1010,7 +1010,7 @@ export function OnboardingModal({
                       <select
                         data-controller-default="true"
                         value={providerType}
-                        onChange={(e) => setProviderType(e.target.value as any)}
+                        onChange={(e) => setProviderType(e.target.value as AIProvider | 'skip')}
                         className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                       >
                         <option value="ollama">Ollama (Local)</option>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp,
-  FolderOpen, ArrowUpRight, Copy, Info, Search, CheckSquare, Square as SquareIcon,
+  FolderOpen, ArrowUpRight, Copy, Search, CheckSquare, Square as SquareIcon,
   PauseCircle, PlayCircle, Trash, Filter, ArrowDownUp
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
@@ -193,9 +193,6 @@ export function TorrentView() {
     });
   };
 
-  const selectAll = () => {
-    setSelectedIds(new Set(filteredTorrents.map((t) => t.id)));
-  };
 
   const deselectAll = () => {
     setSelectedIds(new Set());

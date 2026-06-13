@@ -1374,8 +1374,8 @@ export default function App() {
                   className="ctrl-prompt-title flex items-center gap-2 text-sm font-semibold text-nd-text"
                 >
                   <Sparkles className="nd-icon-svg h-4 w-4 text-nd-accent" aria-hidden="true" />
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-nd-text-muted/15 bg-nd-surface/50">
-                    <Command className="ctrl-prompt-cat-icon nd-icon-svg h-3.5 w-3.5 text-nd-text/90" aria-hidden="true" />
+                  <span className="ctrl-prompt-cat-icon inline-flex h-6 w-6 items-center justify-center rounded-lg border border-nd-text-muted/15 bg-nd-surface/50">
+                    <Command className="nd-icon-svg h-3.5 w-3.5 text-nd-text/90" aria-hidden="true" />
                   </span>
                   Controller Prompt
                 </div>

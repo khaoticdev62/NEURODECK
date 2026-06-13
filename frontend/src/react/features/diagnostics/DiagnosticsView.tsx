@@ -14,7 +14,6 @@ import {
   Settings,
   Zap,
   Clock,
-  ArrowRight,
   ShieldCheck,
   Server,
 } from "lucide-react";
@@ -50,7 +49,7 @@ export function DiagnosticsView({
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
   const [globalProbing, setGlobalProbing] = useState(false);
   const [matrixError, setMatrixError] = useState<string | null>(null);
-  const [probeErrors, setProbeErrors] = useState<Record<string, string>>({});
+  const [, setProbeErrors] = useState<Record<string, string>>({});
 
   // Sync with bridge-backed connection health matrix
   useEffect(() => {
