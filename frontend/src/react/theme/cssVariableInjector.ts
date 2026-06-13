@@ -15,7 +15,9 @@ export function hexToRgb(hex: string): string {
 }
 
 export function injectThemeVariables(tokens: ThemeTokenSet) {
+  if (!tokens?.color?.accent) return;
   const root = document.documentElement;
+  try {
 
   // Surfaces
   root.style.setProperty("--nd-bg", tokens.color.surface.app);
@@ -92,5 +94,8 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
   const semanticVars = semanticTokensToCssVars(semantic);
   for (const [key, value] of Object.entries(semanticVars)) {
     root.style.setProperty(key, value);
+  }
+  } catch {
+    // Malformed token set — CSS variables retain their last valid state.
   }
 }

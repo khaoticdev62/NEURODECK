@@ -90,8 +90,8 @@ export function SessionsView({
           {!loading && !error && sessionsList.length === 0 && (
             <EmptyState
               icon={History}
-              title="No saved sessions"
-              description="Your conversation sessions will appear here once saved."
+              title="No sessions yet."
+              description="Start a conversation to create your first session."
             />
           )}
           {!loading && !error && sessionsList.map((node) => (

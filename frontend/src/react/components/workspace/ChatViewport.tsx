@@ -8,6 +8,7 @@ import type { AIMessage } from '../../types/neurodeck';
 
 interface ChatViewportProps {
   messages: AIMessage[];
+  busyLabel?: string | null;
   onRunStarter: (prompt: string) => void;
   onRegenerate?: (messageId: string) => void;
   onScanProject: () => void;
@@ -27,6 +28,7 @@ const STARTERS = [
 
 export function ChatViewport({
   messages,
+  busyLabel,
   onRunStarter,
   onRegenerate,
   onScanProject,
@@ -109,6 +111,17 @@ export function ChatViewport({
               style={{ animationDelay: `${index * 40}ms` }}
             />
           ))}
+          {busyLabel && (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-label={busyLabel}
+              className="flex items-center gap-2 px-1 py-1.5 text-xs text-nd-text-muted animate-fade-in"
+            >
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-nd-accent" aria-hidden="true" />
+              {busyLabel}
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
       )}

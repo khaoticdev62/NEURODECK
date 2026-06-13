@@ -80,8 +80,8 @@ export function MemoryView({
         {filtered.length === 0 && state.memories.length === 0 && (
           <EmptyState
             icon={Database}
-            title="Memory vault is empty"
-            description="Add facts above to persist knowledge across sessions."
+            title="Memory vault is empty."
+            description="Conversations and facts will appear here as the agent builds context."
           />
         )}
         {filtered.length === 0 && state.memories.length > 0 && (

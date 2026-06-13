@@ -120,6 +120,28 @@
   --z-quick-switcher: 20000;
   --z-toast-peak: 30000;
 
+  /* ================================================================
+     BRAND TOKENS — Canonical NEURODECK gradient, glow, and surface
+     layer values. Use these in components that need explicit brand
+     expression (splash screens, wordmark backdrops, hero panels).
+     ================================================================ */
+
+  /* Brand gradients */
+  --brand-gradient: linear-gradient(135deg, #5eebff 0%, #3b82f6 45%, #8b5cf6 100%);
+  --brand-gradient-dark: linear-gradient(180deg, rgba(16,24,32,0.92), rgba(5,7,10,0.96));
+
+  /* Brand glow shadows (named by intensity) */
+  --brand-glow: 0 0 24px rgba(94, 235, 255, 0.22);
+  --brand-glow-strong: 0 0 40px rgba(94, 235, 255, 0.38);
+
+  /* Surface layer tokens — L0 (deepest) through L3 (glass panel).
+     Aligns with the brand's L0–L7 layered surface specification.
+     L4–L7 (drawers, modals, overlays) use existing --z-* tokens. */
+  --surface-l0: #05070a;
+  --surface-l1: #0b1117;
+  --surface-l2: #101820;
+  --surface-l3: rgba(20, 32, 42, 0.72);
+
 }
 
 *,
@@ -2215,8 +2237,10 @@ body::before {
 .settings-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.88);
-  z-index: var(--z-highlight);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

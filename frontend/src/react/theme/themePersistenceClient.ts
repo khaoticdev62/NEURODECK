@@ -45,7 +45,11 @@ export class ThemePersistenceClient {
 
   async saveSettings(settings: ThemeSettings): Promise<void> {
     const local = JSON.stringify(settings);
-    localStorage.setItem("themeSettings", local);
+    try {
+      localStorage.setItem("themeSettings", local);
+    } catch {
+      // QuotaExceededError — storage full; settings will reload from defaults next session.
+    }
 
     try {
       const api = (window as any).neurodeck?.settings;

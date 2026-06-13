@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch } from "react";
-import { RefreshCcw } from "lucide-react";
+import { Cpu, RefreshCcw } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
+import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
 import { ModelCard } from "../../components/cards/ModelCard";
 import { neurodeckApi } from "../../services/bridgeAdapter";
@@ -19,10 +22,14 @@ export function ModelsView({
 }) {
   const [allowedModels, setAllowedModels] = useState<AgentScoredModel[]>([]);
   const [scoresMap, setScoresMap] = useState<Record<string, ModelCompatibilityScore>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
+      setLoading(true);
+      setError(null);
       try {
         const [scored, scores] = await Promise.all([
           neurodeckApi.models.getAllowedModelsForAgent(state.activeAgentId),
@@ -31,12 +38,16 @@ export function ModelsView({
         if (!mounted) return;
         setAllowedModels(scored);
         setScoresMap(Object.fromEntries(scores.map((s) => [s.modelId, s])));
-      } catch (_) {
+      } catch (e) {
+        if (!mounted) return;
         setAllowedModels([]);
         setScoresMap({});
+        setError(String(e));
+      } finally {
+        if (mounted) setLoading(false);
       }
     }
-    load();
+    void load();
     return () => {
       mounted = false;
     };
@@ -54,35 +65,69 @@ export function ModelsView({
         title="Local Runtime Inventory"
         className="flex flex-col min-h-0 overflow-hidden"
       >
-        <div className="flex-1 min-h-0 grid gap-4 overflow-y-auto p-4 scrollbar-thin lg:grid-cols-2">
-          {state.models.map((model) => {
-            const scored = allowedById[model.id];
-            return (
-              <ModelCard
-                key={model.id}
-                model={model}
-                selected={state.selectedModelId === model.id}
-                policyAllowed={scored?.policyAllowed ?? true}
-                policyReason={scored?.policyReason}
-                agentPreferred={scored?.agentPreferred}
-                onMarkReady={(id) => {
-                  if (scored && !scored.policyAllowed) return;
-                  dispatch({ type: "set-model-status", id, status: "ready" });
-                  dispatch({ type: "set-selected-model", id });
-                  const backendProvider = model.backendProvider ?? "ollama";
-                  const backendModel = model.backendModel ?? model.id;
-                  dispatch({ type: "set-provider", provider: backendProvider });
-                  void neurodeckApi.ai.setProvider(backendProvider);
-                  void neurodeckApi.ai.setModel(backendModel);
-                }}
-                onMarkIndexed={(id) =>
-                  dispatch({ type: "set-model-status", id, status: "indexed" })
-                }
-                onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
-                onSelect={(id) => dispatch({ type: "set-selected-model", id })}
-              />
-            );
-          })}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar-thin">
+          {loading && (
+            <div className="flex h-full min-h-[120px] items-center justify-center">
+              <LoadingState label="Scanning for models…" />
+            </div>
+          )}
+          {!loading && error && (
+            <ErrorState
+              title="Model scan failed."
+              message={error}
+              onRetry={() => void actions.detectModels()}
+              retryLabel="Retry Detection"
+              fullHeight
+            />
+          )}
+          {!loading && !error && state.models.length === 0 && (
+            <EmptyState
+              icon={Cpu}
+              title="No models detected."
+              description="Run native detection to scan for Ollama, LM Studio, or OpenAI-compatible providers."
+              action={
+                <button
+                  type="button"
+                  onClick={() => void actions.detectModels()}
+                  className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                >
+                  <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Detect Models
+                </button>
+              }
+            />
+          )}
+          {!loading && !error && state.models.length > 0 && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {state.models.map((model) => {
+                const scored = allowedById[model.id];
+                return (
+                  <ModelCard
+                    key={model.id}
+                    model={model}
+                    selected={state.selectedModelId === model.id}
+                    policyAllowed={scored?.policyAllowed ?? true}
+                    policyReason={scored?.policyReason}
+                    agentPreferred={scored?.agentPreferred}
+                    onMarkReady={(id) => {
+                      if (scored && !scored.policyAllowed) return;
+                      dispatch({ type: "set-model-status", id, status: "ready" });
+                      dispatch({ type: "set-selected-model", id });
+                      const backendProvider = model.backendProvider ?? "ollama";
+                      const backendModel = model.backendModel ?? model.id;
+                      dispatch({ type: "set-provider", provider: backendProvider });
+                      void neurodeckApi.ai.setProvider(backendProvider);
+                      void neurodeckApi.ai.setModel(backendModel);
+                    }}
+                    onMarkIndexed={(id) =>
+                      dispatch({ type: "set-model-status", id, status: "indexed" })
+                    }
+                    onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
+                    onSelect={(id) => dispatch({ type: "set-selected-model", id })}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </Panel>
 

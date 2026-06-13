@@ -20,6 +20,12 @@ type PaneRuntime = TerminalSession & {
   active: boolean;
 };
 
+type AutoInputRule = {
+  pattern: string | RegExp;
+  input: string;
+  once?: boolean;
+};
+
 type Props = {
   pane: PaneRuntime;
   profile: TerminalProfileAvailability | null;
@@ -32,6 +38,7 @@ type Props = {
   onRequestRestart: () => void;
   onRequestClear: () => void;
   onRequestClose: () => void;
+  autoInputs?: AutoInputRule[];
 };
 
 function fallbackShell(profile: TerminalProfileAvailability | null, environment: TerminalEnvironmentReport | null) {
@@ -46,6 +53,10 @@ function selectedText(term: XTerm | null) {
   return term?.getSelection?.() ?? "";
 }
 
+function stripAnsiForMatching(text: string) {
+  return text.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, "").replace(/\r/g, "");
+}
+
 export function TerminalViewport({
   pane,
   profile,
@@ -58,17 +69,24 @@ export function TerminalViewport({
   onRequestRestart,
   onRequestClear,
   onRequestClose,
+  autoInputs,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const bufferRef = useRef("");
+  const autoInputBufferRef = useRef("");
+  const injectedAutoInputsRef = useRef<Set<number>>(new Set());
   const [status, setStatus] = useState<string>(pane.stateMessage ?? "starting");
 
   const shell = useMemo(() => fallbackShell(profile, environment), [environment, profile]);
 
   useEffect(() => {
     if (!containerRef.current || termRef.current) return;
+
+    const cssRoot = document.documentElement;
+    const getVar = (v: string, fallback: string) =>
+      getComputedStyle(cssRoot).getPropertyValue(v).trim() || fallback;
 
     const term = new XTerm({
       allowProposedApi: true,
@@ -78,10 +96,10 @@ export function TerminalViewport({
       scrollback: 4000,
       convertEol: true,
       theme: {
-        background: "#0A0D10",
-        foreground: "#E8F4FF",
-        cursor: "#5EEBFF",
-        selectionBackground: "rgba(94, 235, 255, 0.25)",
+        background:          getVar("--bg-color", "#0A0D10"),
+        foreground:          getVar("--fg-color", "#E8F4FF"),
+        cursor:              getVar("--accent-color", "#5EEBFF"),
+        selectionBackground: `rgba(${getVar("--accent-rgb", "94, 235, 255")}, 0.25)`,
       },
     });
     const fit = new FitAddon();
@@ -220,6 +238,29 @@ export function TerminalViewport({
     const unsubOutput = listenBridge("pty_output", (payload) => {
       const data = payload as { id?: string; data?: string };
       if (data?.id !== pane.sessionId || typeof data.data !== "string") return;
+
+      if (autoInputs?.length) {
+        autoInputBufferRef.current += data.data;
+        // Keep the buffer bounded; the prompt we care about is always near the end.
+        if (autoInputBufferRef.current.length > 2048) {
+          autoInputBufferRef.current = autoInputBufferRef.current.slice(-1024);
+        }
+        const normalized = stripAnsiForMatching(autoInputBufferRef.current);
+        autoInputs.forEach((rule, index) => {
+          if (rule.once && injectedAutoInputsRef.current.has(index)) return;
+          const regex = typeof rule.pattern === "string" ? new RegExp(rule.pattern) : rule.pattern;
+          if (regex.test(normalized)) {
+            injectedAutoInputsRef.current.add(index);
+            void neurodeckApi.terminal.write(pane.sessionId, rule.input);
+            if (rule.once) {
+              // Trim the buffer after a successful injection so the same prompt
+              // does not re-match on subsequent output.
+              autoInputBufferRef.current = "";
+            }
+          }
+        });
+      }
+
       termRef.current?.write(data.data);
       onPaneOutput(data.data);
       onPanePatch({

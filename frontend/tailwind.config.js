@@ -1,4 +1,13 @@
 /** @type {import('tailwindcss').Config} */
+const withOpacity = (variable) => {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `color-mix(in srgb, ${variable} ${opacityValue * 100}%, transparent)`;
+    }
+    return variable;
+  };
+};
+
 export default {
   content: [
     "./index.html",
@@ -10,70 +19,81 @@ export default {
         // NEURODECK design tokens — all mapped to runtime CSS custom properties
         nd: {
           // ── Semantic surfaces ──────────────────────────────────────────
-          'surface-base':   'var(--nd-surface-base, var(--nd-surface, #11161C))',
-          'surface-raised': 'var(--nd-surface-raised)',
-          'surface-glass':  'var(--nd-surface-glass, rgba(17,22,28,0.72))',
-          'surface-overlay':'var(--nd-surface-overlay, rgba(10,13,16,0.85))',
-          'surface-modal':  'var(--nd-surface-modal, #0F1419)',
-          'surface-danger': 'var(--nd-surface-danger, #FF5A6A)',
+          'surface-base':   withOpacity('var(--nd-surface-base, var(--nd-surface, #11161C))'),
+          'surface-raised': withOpacity('var(--nd-surface-raised)'),
+          'surface-glass':  withOpacity('var(--nd-surface-glass, rgba(17,22,28,0.72))'),
+          'surface-overlay':withOpacity('var(--nd-surface-overlay, rgba(10,13,16,0.85))'),
+          'surface-modal':  withOpacity('var(--nd-surface-modal, #0F1419)'),
+          'surface-danger': withOpacity('var(--nd-surface-danger, #FF5A6A)'),
 
           // Legacy surface aliases (kept for compatibility during migration)
-          bg:               'var(--nd-bg)',
-          surface:          'var(--nd-surface)',
-          'surface-sunken': 'var(--nd-surface-sunken, #07090C)',
-          'surface-sidebar':'var(--nd-surface-sidebar, #0D1117)',
-          'surface-panel':  'var(--nd-surface-panel, #11161C)',
-          'surface-card':   'var(--nd-surface-card, #131A22)',
-          'surface-input':  'var(--nd-surface-input, #0A0D10)',
-          'surface-tooltip':'var(--nd-surface-tooltip, #1C242E)',
+          bg:               withOpacity('var(--nd-bg)'),
+          surface:          withOpacity('var(--nd-surface)'),
+          'surface-sunken': withOpacity('var(--nd-surface-sunken, #07090C)'),
+          'surface-sidebar':withOpacity('var(--nd-surface-sidebar, #0D1117)'),
+          'surface-panel':  withOpacity('var(--nd-surface-panel, #11161C)'),
+          'surface-card':   withOpacity('var(--nd-surface-card, #131A22)'),
+          'surface-input':  withOpacity('var(--nd-surface-input, #0A0D10)'),
+          'surface-tooltip':withOpacity('var(--nd-surface-tooltip, #1C242E)'),
 
           // ── Semantic text ──────────────────────────────────────────────
-          'text-primary':   'var(--nd-text-primary, var(--nd-text, #E8F4FF))',
-          'text-secondary': 'var(--nd-text-secondary, #B8CCE0)',
-          'text-muted':     'var(--nd-text-muted)',
-          'text-disabled':  'var(--nd-text-disabled, rgba(255,255,255,0.05))',
+          'text-primary':   withOpacity('var(--nd-text-primary, var(--nd-text, #E8F4FF))'),
+          'text-secondary': withOpacity('var(--nd-text-secondary, #B8CCE0)'),
+          'text-muted':     withOpacity('var(--nd-text-muted)'),
+          'text-disabled':  withOpacity('var(--nd-text-disabled, rgba(255,255,255,0.05))'),
 
           // Legacy text aliases
-          text:             'var(--nd-text)',
-          'text-tertiary':  'var(--nd-text-tertiary, #6E8499)',
-          'text-inverse':   'var(--nd-text-inverse, #0A0D10)',
-          'text-link':      'var(--nd-text-link, #5EEBFF)',
-          'text-code':      'var(--nd-text-code, #A6E3A1)',
-          'text-command':   'var(--nd-text-command, #CBA6F7)',
-          'text-danger':    'var(--nd-text-danger, #FF5A6A)',
-          'text-warning':   'var(--nd-text-warning, #FFC857)',
-          'text-success':   'var(--nd-text-success, #7CFFB2)',
-          'text-info':      'var(--nd-text-info, #89DCEB)',
+          text:             withOpacity('var(--nd-text)'),
+          'text-tertiary':  withOpacity('var(--nd-text-tertiary, #6E8499)'),
+          'text-inverse':   withOpacity('var(--nd-text-inverse, #0A0D10)'),
+          'text-link':      withOpacity('var(--nd-text-link, #5EEBFF)'),
+          'text-code':      withOpacity('var(--nd-text-code, #A6E3A1)'),
+          'text-command':   withOpacity('var(--nd-text-command, #CBA6F7)'),
+          'text-danger':    withOpacity('var(--nd-text-danger, #FF5A6A)'),
+          'text-warning':   withOpacity('var(--nd-text-warning, #FFC857)'),
+          'text-success':   withOpacity('var(--nd-text-success, #7CFFB2)'),
+          'text-info':      withOpacity('var(--nd-text-info, #89DCEB)'),
 
           // ── Semantic accent ────────────────────────────────────────────
-          'accent-primary':   'var(--nd-accent-primary, var(--nd-accent, #5EEBFF))',
-          'accent-secondary': 'var(--nd-accent-secondary, #89DCEB)',
-          'accent-success':   'var(--nd-accent-success, #7CFFB2)',
-          'accent-warning':   'var(--nd-accent-warning, #FFC857)',
-          'accent-error':     'var(--nd-accent-error, #FF5A6A)',
-          'accent-info':      'var(--nd-accent-info, #89DCEB)',
+          'accent-primary':   withOpacity('var(--nd-accent-primary, var(--nd-accent, #5EEBFF))'),
+          'accent-secondary': withOpacity('var(--nd-accent-secondary, #89DCEB)'),
+          'accent-success':   withOpacity('var(--nd-accent-success, #7CFFB2)'),
+          'accent-warning':   withOpacity('var(--nd-accent-warning, #FFC857)'),
+          'accent-error':     withOpacity('var(--nd-accent-error, #FF5A6A)'),
+          'accent-info':      withOpacity('var(--nd-accent-info, #89DCEB)'),
 
           // Legacy accent aliases
-          accent:           'var(--nd-accent)',
-          'accent-tertiary': 'var(--nd-accent-tertiary, #CBA6F7)',
-          'accent-glow':    'var(--nd-accent-glow, rgba(94,235,255,0.18))',
-          'accent-soft':    'var(--nd-accent-soft, rgba(94,235,255,0.08))',
-          'accent-strong':  'var(--nd-accent-strong, #0ACFD8)',
+          accent:           withOpacity('var(--nd-accent)'),
+          'accent-tertiary': withOpacity('var(--nd-accent-tertiary, #CBA6F7)'),
+          'accent-glow':    withOpacity('var(--nd-accent-glow, rgba(94,235,255,0.18))'),
+          'accent-soft':    withOpacity('var(--nd-accent-soft, rgba(94,235,255,0.08))'),
+          'accent-strong':  withOpacity('var(--nd-accent-strong, #0ACFD8)'),
 
           // ── Semantic state ─────────────────────────────────────────────
-          success:          'var(--nd-success)',
-          warning:          'var(--nd-warning)',
-          danger:           'var(--nd-danger)',
-          glow:             'var(--nd-glow)',
+          success:          withOpacity('var(--nd-success)'),
+          warning:          withOpacity('var(--nd-warning)'),
+          danger:           withOpacity('var(--nd-danger)'),
+          glow:             withOpacity('var(--nd-glow)'),
 
           // ── Semantic borders ───────────────────────────────────────────
-          'border-subtle':  'var(--nd-border-subtle)',
-          'border-strong':  'var(--nd-border-strong, rgba(141,161,179,0.28))',
-          'border-focus':   'var(--nd-border-focus)',
+          'border-subtle':  withOpacity('var(--nd-border-subtle)'),
+          'border-strong':  withOpacity('var(--nd-border-strong, rgba(141,161,179,0.28))'),
+          'border-focus':   withOpacity('var(--nd-border-focus)'),
 
           // Legacy border aliases
-          'border-default': 'var(--nd-border-default)',
+          'border-default': withOpacity('var(--nd-border-default)'),
+
+          // ── Brand surface layers (L0–L3 per brand spec) ───────────────
+          'surface-l0': withOpacity('var(--surface-l0, #05070a)'),
+          'surface-l1': withOpacity('var(--surface-l1, #0b1117)'),
+          'surface-l2': withOpacity('var(--surface-l2, #101820)'),
+          'surface-l3': withOpacity('var(--surface-l3, rgba(20,32,42,0.72))'),
         },
+      },
+
+      backgroundImage: {
+        'brand-gradient':      'var(--brand-gradient)',
+        'brand-gradient-dark': 'var(--brand-gradient-dark)',
       },
 
       fontFamily: {
@@ -91,12 +111,14 @@ export default {
       },
 
       boxShadow: {
-        'focus':          '0 0 0 2px rgba(94, 235, 255, 0.25)',
-        'glow-sm':        '0 0 8px var(--nd-glow)',
-        'glow-md':        '0 0 16px var(--nd-glow)',
-        'glow-lg':        '0 0 32px var(--nd-glow)',
-        'panel':          '0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)',
-        'panel-elevated': '0 2px 4px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+        'focus':             '0 0 0 2px rgba(94, 235, 255, 0.25)',
+        'glow-sm':           '0 0 8px var(--nd-glow)',
+        'glow-md':           '0 0 16px var(--nd-glow)',
+        'glow-lg':           '0 0 32px var(--nd-glow)',
+        'panel':             '0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)',
+        'panel-elevated':    '0 2px 4px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+        'brand-glow':        'var(--brand-glow)',
+        'brand-glow-strong': 'var(--brand-glow-strong)',
       },
 
       zIndex: {

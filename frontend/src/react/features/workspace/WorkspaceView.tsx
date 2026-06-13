@@ -102,6 +102,7 @@ export function WorkspaceView({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
         <ChatViewport
           messages={state.messages}
+          busyLabel={state.busyLabel}
           onRunStarter={handleRunStarter}
           onRegenerate={handleRegenerate}
           onScanProject={() => void actions.scanProject()}

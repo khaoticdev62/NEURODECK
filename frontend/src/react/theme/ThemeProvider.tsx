@@ -24,8 +24,26 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const DEFAULT_SETTINGS_FALLBACK: ThemeSettings = {
+  activeThemeId: "blacksite_prime",
+  activeWallpaperId: "neural_aurora",
+  liveWallpaperEnabled: true,
+  displayProfile: "steamdeck_lcd",
+  performanceTier: "balanced",
+  accessibilityProfile: "default",
+  wallpaperIntensity: 50,
+  wallpaperOpacity: 10,
+  glowIntensity: 100,
+  glassIntensity: 100,
+  motionIntensity: 100,
+  fontScale: 100,
+  compactMode: false,
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<ThemeSettings | null>(null);
+  // Initialize with fallback so children never receive a null context — avoids the
+  // hard unmount/remount caused by returning null during async settings load.
+  const [settings, setSettings] = useState<ThemeSettings>(DEFAULT_SETTINGS_FALLBACK);
   const [backendReconciled, setBackendReconciled] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -33,23 +51,31 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const loaded = await themePersistenceClient.getSettings();
+      let loaded = await themePersistenceClient.getSettings();
       if (!mounted) return;
 
-      // Render immediately with local settings so the UI never waits on the bridge.
-      setSettings(loaded);
+      // Validate persisted theme ID — reset to default if the theme no longer exists
+      // (e.g. after a plugin removal or data corruption). The UI already shows
+      // DEFAULT_SETTINGS_FALLBACK while this runs, so no premature setSettings needed.
+      if (!themeRegistry.getTheme(loaded.activeThemeId)) {
+        loaded = { ...loaded, activeThemeId: DEFAULT_SETTINGS_FALLBACK.activeThemeId };
+      }
 
       try {
         const init = await neurodeckApi.getInitialState();
         const backendName = init?.active_theme_name ?? null;
         const backendId = resolveThemeIdFromBackend(backendName);
         if (backendId && themeRegistry.getTheme(backendId) && backendId !== loaded.activeThemeId) {
-          setSettings({ ...loaded, activeThemeId: backendId });
+          loaded = { ...loaded, activeThemeId: backendId };
         }
       } catch (_) {
-        // Keep local settings if the bridge is unreachable.
+        // Keep validated local settings if the bridge is unreachable.
       }
-      setBackendReconciled(true);
+
+      if (mounted) {
+        setSettings(loaded);
+        setBackendReconciled(true);
+      }
     }
     void load();
     return () => { mounted = false; };
@@ -59,12 +85,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const availableWallpapers = useMemo(() => wallpaperRegistry.listWallpapers(), []);
 
   const activeTheme = useMemo(() => {
-    if (!settings) return availableThemes[0];
     return themeRegistry.getTheme(settings.activeThemeId) || availableThemes[0];
   }, [settings, availableThemes]);
 
   const resolvedTokens = useMemo(() => {
-    if (!settings) return activeTheme.tokens;
     return (
       themeRegistry.resolveTokens(
         settings.activeThemeId,
@@ -89,12 +113,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Persist active theme changes back to the backend config
   useEffect(() => {
-    if (!settings || !backendReconciled) return;
+    if (!backendReconciled) return;
     void neurodeckApi.setTheme(settings.activeThemeId);
-  }, [settings?.activeThemeId, backendReconciled]);
+  }, [settings.activeThemeId, backendReconciled]);
 
   const updateSettings = async (newSettings: Partial<ThemeSettings>) => {
-    if (!settings) return;
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     // Debounce writes — slider drags produce many rapid calls; only persist after 300ms idle
@@ -106,28 +129,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const resetToDefaults = async () => {
-    const defaults: ThemeSettings = {
-      activeThemeId: "blacksite_prime",
-      activeWallpaperId: "neural_aurora",
-      liveWallpaperEnabled: true,
-      displayProfile: "steamdeck_lcd",
-      performanceTier: "balanced",
-      accessibilityProfile: "default",
-      wallpaperIntensity: 50,
-      wallpaperOpacity: 10,
-      glowIntensity: 100,
-      glassIntensity: 100,
-      motionIntensity: 100,
-      fontScale: 100,
-      compactMode: false,
-    };
-    setSettings(defaults);
-    await themePersistenceClient.saveSettings(defaults);
+    setSettings(DEFAULT_SETTINGS_FALLBACK);
+    await themePersistenceClient.saveSettings(DEFAULT_SETTINGS_FALLBACK);
   };
-
-  if (!settings) {
-    return null; // Await hydration
-  }
 
   return (
     <ThemeContext.Provider
