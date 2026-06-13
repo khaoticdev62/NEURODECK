@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const VITE_PORT = 1420;
 const VITE_HMR_PORT = 24678;
 const POLL_INTERVAL_MS = 300;
-const VITE_TIMEOUT_MS = 45_000;
+const VITE_TIMEOUT_MS = 90_000;
 
 /**
  * Run a one-shot npm script and return a promise that resolves on exit 0.
