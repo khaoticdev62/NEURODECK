@@ -28,6 +28,7 @@ import { ModelsView } from "./features/models/ModelsView";
 import { OrchestratorView } from "./features/orchestrator/OrchestratorView";
 import { PluginsView } from "./features/plugins/PluginsView";
 import { ProjectView } from "./features/project/ProjectView";
+import { AcademyView } from "./features/academy/AcademyView";
 import { PromptLabView } from "./features/prompt-lab/PromptLabView";
 import { RemoteView } from "./features/remote/RemoteView";
 import { SchedulerView } from "./features/scheduler/SchedulerView";
@@ -112,7 +113,7 @@ export default function App() {
     const api = window.electronAPI;
     if (!api?.onDiagnosticsPing) return;
     const unsubscribe = api.onDiagnosticsPing((data) => {
-      api.diagnosticsPong(data.requestId).catch(() => {});
+      api.diagnosticsPong({ requestId: data.requestId }).catch(() => {});
     });
     return unsubscribe;
   }, []);
@@ -1219,6 +1220,7 @@ export default function App() {
               {state.activeView === "remote" && renderView("remote", <RemoteView />)}
               {state.activeView === "docs" && renderView("docs", <DocsView />)}
               {state.activeView === "prompt-lab" && renderView("prompt-lab", <PromptLabView />)}
+              {state.activeView === "academy" && renderView("academy", <AcademyView />)}
               {state.activeView === "graph" && renderView("graph", <GraphView />)}
               {state.activeView === "scheduler" && renderView("scheduler", <SchedulerView />)}
               {state.activeView === "orchestrator" &&

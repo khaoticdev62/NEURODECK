@@ -1,3 +1,4 @@
+pub mod academy;
 pub mod agent;
 pub mod api_lab;
 pub mod browser;
@@ -9154,6 +9155,37 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             .await
             .map_err(|e| format!("Task join error: {}", e))?;
             Ok(serde_json::json!({ "status": "ok" }))
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // Academy (SOC Forge)
+        // ─────────────────────────────────────────────────────────────────
+        "academy_get_progress" => {
+            let progress = academy::get_progress()?;
+            Ok(serde_json::to_value(progress).map_err(|e| e.to_string())?)
+        }
+
+        "academy_save_progress" => {
+            let progress: academy::LearnerProgress = serde_json::from_value(
+                args.get("progress").cloned().unwrap_or_default(),
+            )
+            .map_err(|e| format!("Invalid progress payload: {e}"))?;
+            academy::save_progress(progress)?;
+            Ok(serde_json::json!({ "status": "saved" }))
+        }
+
+        "academy_save_portfolio_entry" => {
+            let entry: academy::PortfolioEntry = serde_json::from_value(
+                args.get("entry").cloned().unwrap_or_default(),
+            )
+            .map_err(|e| format!("Invalid portfolio entry payload: {e}"))?;
+            let id = academy::save_portfolio_entry(entry)?;
+            Ok(serde_json::json!({ "id": id }))
+        }
+
+        "academy_list_portfolio" => {
+            let entries = academy::list_portfolio()?;
+            Ok(serde_json::to_value(entries).map_err(|e| e.to_string())?)
         }
 
         // ────────────────────────────────────────────────────────────────────

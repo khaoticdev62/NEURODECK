@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileCode, FileDown, FileJson, FolderOpen, GitBranch, Globe, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileCode, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
@@ -76,6 +76,7 @@ const commands: CommandItem[] = [
   { label: 'Open Agent Dock', hint: 'Run specialized AI operators', view: 'agent', icon: Bot },
   { label: 'Open Memory Vault', hint: 'Pinned project knowledge', view: 'memory', icon: Database },
   { label: 'Open Prompt Lab', hint: 'Prompt engineering formulas and PromptDrive', view: 'prompt-lab', icon: Sparkles },
+  { label: 'Open Academy', hint: 'SOC Forge — cybersecurity labs, tracks, and portfolio', view: 'academy', icon: GraduationCap },
   { label: 'Open Remote', hint: 'Mobile remote control server', view: 'remote', icon: Radio },
   { label: 'Open Docs', hint: 'Knowledge base and indexed docs', view: 'docs', icon: BookOpen },
   { label: 'Open IDE', hint: 'Integrated code workspace with file tree and editor', view: 'ide', icon: Code },

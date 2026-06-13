@@ -1,7 +1,7 @@
 import {
   Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock,
   Code, Code2, Command, Database, Download, FileCode, FileText, FlaskConical,
-  FolderOpen, Gauge, GitBranch, Globe, HardDrive, History, Layers,
+  FolderOpen, Gauge, GitBranch, Globe, GraduationCap, HardDrive, History, Layers,
   LayoutDashboard, Lightbulb, Lock, Magnet, Network, Paintbrush, Palette,
   Plug, Radio, RotateCcw, Server, Settings, Share2, ShieldCheck, Sparkles,
   Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow
@@ -37,6 +37,7 @@ export const navItems: NavItem[] = [
   { id: 'project', label: 'Project', description: 'Folder scan and repo signals', icon: FolderOpen, shortcut: '5', section: 'Knowledge' },
   { id: 'docs', label: 'Docs', description: 'Knowledge base and indexed docs', icon: BookOpen, shortcut: '', section: 'Knowledge' },
   { id: 'prompt-lab', label: 'Prompt Lab', description: 'Prompt engineering formulas', icon: FlaskConical, shortcut: '', section: 'Knowledge' },
+  { id: 'academy', label: 'Academy', description: 'SOC training, labs, and portfolio', icon: GraduationCap, shortcut: '', section: 'Knowledge' },
   { id: 'graph', label: 'Graph', description: 'Relationship visualizations', icon: Network, shortcut: '', section: 'Knowledge' },
   { id: 'sessions', label: 'Sessions', description: 'Conversation graph and exports', icon: History, shortcut: '', section: 'Knowledge' },
 

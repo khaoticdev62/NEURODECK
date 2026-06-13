@@ -5,7 +5,7 @@ export type ViewId =
   | 'chat' | 'workspace' | 'execution' | 'agent' | 'agents' | 'memory'
   | 'canvas' | 'terminal' | 'ssh' | 'ide' | 'git' | 'api-lab' | 'cli-maker'
   | 'browser' | 'tunnel' | 'share' | 'remote' | 'torrent'
-  | 'project' | 'docs' | 'prompt-lab' | 'graph' | 'sessions'
+  | 'project' | 'docs' | 'prompt-lab' | 'academy' | 'graph' | 'sessions'
   | 'scheduler' | 'orchestrator'
   | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
   | 'security' | 'themes' | 'exports' | 'maintenance' | 'recovery'
