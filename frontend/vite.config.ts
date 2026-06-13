@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   clearScreen: false,
   server: {
+    host: '127.0.0.1',
     port: 1420,
     strictPort: true,
     watch: {
@@ -14,7 +15,7 @@ export default defineConfig({
       interval: 300,
     },
     hmr: {
-      host: 'localhost',
+      host: '127.0.0.1',
       port: 24678,
       protocol: 'ws',
       // Overlay error display inside Electron renderer
