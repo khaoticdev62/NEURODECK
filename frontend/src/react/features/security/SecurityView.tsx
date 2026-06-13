@@ -209,7 +209,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                     </div>
                     <div className="space-y-2">
                       {agents.map((agent) => {
-                        const mappedProfileId = permissionRegistry.agent_profile_map[agent.id];
+                        const mappedProfileId = (permissionRegistry.agent_profile_map || {})[agent.id];
                         const value = mappedProfileId ?? '__default__';
                         return (
                           <div

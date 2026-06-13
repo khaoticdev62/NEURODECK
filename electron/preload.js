@@ -143,7 +143,12 @@ const IPC = Object.freeze({
   THEME_LIST: "theme:list",
   WALLPAPER_GET: "wallpaper:get",
   WALLPAPER_SET: "wallpaper:set",
-  WALLPAPER_LIST: "wallpaper:list"
+  WALLPAPER_LIST: "wallpaper:list",
+
+  // Dependency Installer
+  DEPENDENCY_GET_STATUS: 'dependency:get-status',
+  DEPENDENCY_INSTALL: 'dependency:install',
+  DEPENDENCY_CANCEL: 'dependency:cancel'
 });
 
 // Expose a minimal API for Electron-specific features.
@@ -183,6 +188,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Notifications
   requestNotificationPermission: () => ipcRenderer.invoke(IPC.REQUEST_NOTIFICATION_PERMISSION),
+
+  // Dependency Installer
+  dependencyGetStatus: () => ipcRenderer.invoke(IPC.DEPENDENCY_GET_STATUS),
+  dependencyInstall: (id) => ipcRenderer.invoke(IPC.DEPENDENCY_INSTALL, { id }),
+  dependencyCancel: (id) => ipcRenderer.invoke(IPC.DEPENDENCY_CANCEL, { id }),
+  onDependencyProgress: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('dependency:progress', handler);
+    return () => ipcRenderer.removeListener('dependency:progress', handler);
+  },
 
   // Browser (WebContentsView)
   browserOpen: (url) => ipcRenderer.invoke(IPC.BROWSER_OPEN, url),

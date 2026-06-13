@@ -36,7 +36,13 @@ export interface ElectronAPI {
   /** Returns true if the window is currently in kiosk mode. */
   getIsKiosk(): Promise<boolean>;
   /** Requests OS notification permission (renderer-facing wrapper). */
-  requestNotificationPermission(): Promise<string>;
+  requestNotificationPermission(): Promise<boolean>;
+
+  // Dependency Installer
+  dependencyGetStatus: () => Promise<Record<string, boolean>>;
+  dependencyInstall: (id: string) => Promise<{ success: boolean }>;
+  dependencyCancel: (id: string) => Promise<boolean>;
+  onDependencyProgress: (callback: (data: any) => void) => () => void;
   vpn: {
     listProfiles(): Promise<unknown[]>;
     getProfile(profileId: string): Promise<unknown | null>;
