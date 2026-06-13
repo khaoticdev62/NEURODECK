@@ -2,7 +2,7 @@ export type LabType = 'log-analysis' | 'terminal' | 'soc-alert' | 'ticket' | 'pa
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type PathLevel = 'beginner' | 'intermediate' | 'advanced';
 export type TaskKind = 'identify' | 'classify' | 'write' | 'command';
-export type AcademyTab = 'home' | 'paths' | 'labs' | 'portfolio' | 'soc';
+export type AcademyTab = 'home' | 'paths' | 'labs' | 'portfolio' | 'soc' | 'query' | 'exam' | 'roadmap';
 
 // ── SOC Console types ────────────────────────────────────────────────────────
 
@@ -52,6 +52,14 @@ export interface LabTask {
   sampleAnswer: string;        // shown after submission
 }
 
+export type DatasetFormat = 'log' | 'json' | 'csv' | 'text' | 'pcap' | 'xml';
+
+export interface DatasetSection {
+  label: string;
+  content: string;
+  format: DatasetFormat;
+}
+
 export interface Lab {
   id: string;
   pathId: string;
@@ -61,9 +69,10 @@ export interface Lab {
   estimatedMinutes: number;
   objectives: string[];
   tasks: LabTask[];
-  datasetStub: string;
-  mitreMappings: string[];    // pre-defined MITRE ATT&CK technique IDs shown on completion
-  skillsEarned: SkillKey[];   // skills awarded when lab is completed
+  datasetStub: string;            // backward-compat plain text
+  datasetSections?: DatasetSection[]; // rich multi-tab data; overrides datasetStub when present
+  mitreMappings: string[];
+  skillsEarned: SkillKey[];
 }
 
 export interface Module {
@@ -111,6 +120,7 @@ export const SKILL_KEYS = [
   'security-fundamentals',
   'soc-triage',
   'log-analysis',
+  'threat-hunting',
 ] as const;
 
 export type SkillKey = typeof SKILL_KEYS[number];
@@ -122,7 +132,69 @@ export const SKILL_LABELS: Record<SkillKey, string> = {
   'security-fundamentals': 'Security Fundamentals',
   'soc-triage': 'SOC Triage',
   'log-analysis': 'Log Analysis',
+  'threat-hunting': 'Threat Hunting',
 };
+
+// ── Practice Exam types ──────────────────────────────────────────────────────
+
+export interface ExamQuestion {
+  id: string;
+  domain: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  stem: string;
+  options: [string, string, string, string];
+  correct: 0 | 1 | 2 | 3;
+  explanation: string;
+  mitreTechnique?: string;
+}
+
+export type ExamPhase = 'config' | 'running' | 'review';
+
+export interface ExamSession {
+  questionIds: string[];
+  answers: Record<string, number>;  // questionId → chosen option index (-1 = unanswered)
+  flagged: Set<string>;
+  startedAt: number;                // Date.now()
+  finishedAt?: number;
+  timeLimitSeconds: number;
+}
+
+// ── Certification Roadmap types ───────────────────────────────────────────────
+
+export interface CertObjective {
+  code: string;
+  title: string;
+  labIds: string[];
+  skillKeys: SkillKey[];
+}
+
+export interface CertDomain {
+  name: string;
+  weight: number;   // exam percentage weight
+  objectives: CertObjective[];
+}
+
+export interface ThmRoom {
+  slug: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  estimatedMinutes: number;
+  description: string;
+  skillKeys: SkillKey[];
+  certIds: string[];
+}
+
+export interface Certification {
+  id: string;
+  shortName: string;
+  name: string;
+  vendor: string;
+  level: 'entry' | 'associate' | 'professional';
+  color: string;      // Tailwind color token suffix, e.g. 'nd-accent'
+  domains: CertDomain[];
+  requiredSkillScores: Partial<Record<SkillKey, number>>;
+  thmRooms: ThmRoom[];
+}
 
 export function defaultProgress(): LearnerProgress {
   return {

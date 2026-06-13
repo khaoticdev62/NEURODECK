@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GraduationCap, Home, BookOpen, FlaskConical, FolderOpen, ShieldAlert, Database } from 'lucide-react';
+import { GraduationCap, Home, BookOpen, FlaskConical, FolderOpen, ShieldAlert, Database, ClipboardList, Map } from 'lucide-react';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import { ErrorState } from '../../components/primitives/ErrorState';
 import { AcademyHome } from './views/AcademyHome';
@@ -9,6 +9,8 @@ import { PortfolioView } from './views/PortfolioView';
 import { LabRunnerView } from './views/LabRunnerView';
 import { SOCConsoleView } from './views/SOCConsoleView';
 import { SIEMQueryView } from './views/SIEMQueryView';
+import { PracticeExamView } from './views/PracticeExamView';
+import { CertRoadmapView } from './views/CertRoadmapView';
 import { defaultProgress } from './types';
 import { getLabById } from './data/curricula';
 import { neurodeckApi } from '../../services/bridgeAdapter';
@@ -16,12 +18,14 @@ import type { AcademyLearnerProgress } from '../../services/bridgeAdapter';
 import type { AcademyTab, Lab, LearnerProgress } from './types';
 
 const TABS: { id: AcademyTab; label: string; icon: React.ElementType }[] = [
-  { id: 'home',      label: 'Home',      icon: Home         },
-  { id: 'paths',     label: 'Paths',     icon: BookOpen     },
-  { id: 'labs',      label: 'Labs',      icon: FlaskConical },
-  { id: 'portfolio', label: 'Portfolio', icon: FolderOpen   },
-  { id: 'soc',       label: 'SOC',       icon: ShieldAlert  },
-  { id: 'query',     label: 'SIEM',      icon: Database     },
+  { id: 'home',      label: 'Home',      icon: Home          },
+  { id: 'paths',     label: 'Paths',     icon: BookOpen      },
+  { id: 'labs',      label: 'Labs',      icon: FlaskConical  },
+  { id: 'portfolio', label: 'Portfolio', icon: FolderOpen    },
+  { id: 'soc',       label: 'SOC',       icon: ShieldAlert   },
+  { id: 'query',     label: 'SIEM',      icon: Database      },
+  { id: 'exam',      label: 'Exam',      icon: ClipboardList },
+  { id: 'roadmap',   label: 'Roadmap',   icon: Map           },
 ];
 
 const PROGRESS_LS_KEY = 'neurodeck_academy_progress';
@@ -121,7 +125,7 @@ export function AcademyView() {
         </div>
 
         <nav
-          className="mt-3 flex gap-1"
+          className="mt-3 flex gap-1 overflow-x-auto pb-0.5 scrollbar-none"
           role="tablist"
           aria-label="Academy navigation"
         >
@@ -151,7 +155,7 @@ export function AcademyView() {
         id={`academy-panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`academy-tab-${activeTab}`}
-        className={`flex-1 ${activeTab === 'soc' || activeTab === 'query' ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
+        className={`flex-1 ${activeTab === 'soc' || activeTab === 'query' || activeTab === 'exam' ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
         tabIndex={0}
       >
         {activeTab === 'home' && (
@@ -184,6 +188,12 @@ export function AcademyView() {
         )}
         {activeTab === 'query' && (
           <SIEMQueryView />
+        )}
+        {activeTab === 'exam' && (
+          <PracticeExamView />
+        )}
+        {activeTab === 'roadmap' && (
+          <CertRoadmapView progress={prog} />
         )}
       </main>
     </div>
