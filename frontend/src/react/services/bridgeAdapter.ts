@@ -2084,22 +2084,52 @@ const docs = {
 
 /* ── Share / Transfer ────────────────────────────────────────────────────── */
 
+export interface DiscoveredPeer {
+  ip: string;
+  hostname: string;
+  os: string;
+  port: number;
+  is_warpinator: boolean;
+}
+
+export interface FileTransfer {
+  id: string;
+  filename: string;
+  size: number;
+  progress: number;
+  status: string; // "Pending" | "Accepted" | "Rejected" | "Transferring" | "Completed" | "Failed" | "Cancelled"
+  direction: string; // "Incoming" | "Outgoing"
+  peer_ip: string;
+  peer_name: string;
+}
+
 const share = {
   async getPeers() {
-    return bridgeInvoke<Array<{ id: string; name: string; address: string }>>(
-      "get_discovered_peers"
-    );
+    return bridgeInvoke<DiscoveredPeer[]>("get_discovered_peers");
   },
   async getActiveTransfers() {
-    return bridgeInvoke<Array<{ id: string; filename: string; progress: number; status: string }>>(
-      "get_active_transfers"
-    );
+    return bridgeInvoke<FileTransfer[]>("get_active_transfers");
   },
   async startTransfer(filePath: string, peerId?: string) {
     return bridgeInvoke<{ success: boolean; transfer_id?: string }>("start_file_transfer", {
       file_path: filePath,
       peer_id: peerId,
     });
+  },
+  async cancelTransfer(id: string) {
+    return bridgeInvoke<{ status: string }>("transfer_cancel", { id });
+  },
+  async respondToTransfer(transferId: string, accept: boolean) {
+    return bridgeInvoke<{ status: string }>("respond_to_transfer", {
+      transfer_id: transferId,
+      accept,
+    });
+  },
+  async getGroupCode() {
+    return bridgeInvoke<{ code: string }>("get_group_code");
+  },
+  async setGroupCode(code: string) {
+    return bridgeInvoke<{ status: string; code: string }>("set_group_code", { code });
   },
 };
 
