@@ -3,7 +3,7 @@ import { FlaskConical } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Panel } from '../../../components/primitives/Panel';
 import { LabCard } from '../components/LabCard';
-import { STARTER_LABS, LEARNING_PATHS } from '../data/curricula';
+import { ALL_LABS, LEARNING_PATHS } from '../data/curricula';
 import type { LearnerProgress, LabType, Difficulty } from '../types';
 
 type FilterType = LabType | 'all';
@@ -29,7 +29,7 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
   const [filterPath, setFilterPath] = useState<FilterPath>('all');
   const [filterDiff, setFilterDiff] = useState<Difficulty | 0>(0);
 
-  const allLabs = STARTER_LABS;
+  const allLabs = ALL_LABS;
 
   const filtered = allLabs.filter((lab) => {
     if (filterType !== 'all' && lab.type !== filterType) return false;

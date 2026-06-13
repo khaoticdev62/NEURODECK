@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import { ArrowLeft, Copy, Check, Shield } from 'lucide-react';
+import { ArrowLeft, Check, Shield } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { ErrorState } from '../../../components/primitives/ErrorState';
+import { DatasetViewer } from '../components/DatasetViewer';
 import { TaskCard } from '../components/TaskCard';
 import { SkillBar } from '../components/SkillBar';
 import { MentorPanel } from '../components/MentorPanel';
-import { gradeAnswer, labOverallScore, scoreLabel, scoreTone } from '../utils/grading';
+import { labOverallScore, scoreLabel, scoreTone } from '../utils/grading';
 import { SKILL_LABELS } from '../types';
 import { neurodeckApi } from '../../../services/bridgeAdapter';
 import type { AcademyLearnerProgress } from '../../../services/bridgeAdapter';
@@ -29,7 +30,6 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
   const [phase, setPhase] = useState<RunnerPhase>('running');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const currentTask = lab.tasks[currentTaskIdx];
   const totalTasks = lab.tasks.length;
@@ -101,14 +101,6 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
     }
   }
 
-  async function copyDataset() {
-    try {
-      await navigator.clipboard.writeText(lab.datasetStub);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard may be unavailable */ }
-  }
-
   // ── Saved confirmation ─────────────────────────────────────────────────────
   if (phase === 'saved') {
     return (
@@ -177,22 +169,15 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Dataset */}
         <section aria-label="Lab dataset">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-nd-text-muted/60">Dataset</p>
-            <button
-              type="button"
-              onClick={copyDataset}
-              aria-label="Copy dataset to clipboard"
-              className="inline-flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface/40 px-2 py-1 text-[11px] text-nd-text-muted transition hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-            >
-              {copied
-                ? <><Check className="h-3 w-3 text-nd-success" aria-hidden="true" />Copied</>
-                : <><Copy className="h-3 w-3" aria-hidden="true" />Copy</>}
-            </button>
-          </div>
-          <pre className="max-h-56 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-base px-4 py-3 font-mono text-[11px] leading-5 text-nd-text-secondary whitespace-pre-wrap break-words">
-            {lab.datasetStub}
-          </pre>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-nd-text-muted/60">Dataset</p>
+          <DatasetViewer
+            sections={
+              lab.datasetSections && lab.datasetSections.length > 0
+                ? lab.datasetSections
+                : [{ label: 'Dataset', content: lab.datasetStub, format: 'log' }]
+            }
+            maxHeight={280}
+          />
         </section>
 
         {/* Tasks */}

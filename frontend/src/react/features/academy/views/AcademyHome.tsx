@@ -4,7 +4,7 @@ import { Panel } from '../../../components/primitives/Panel';
 import { SkillBar } from '../components/SkillBar';
 import { PathCard } from '../components/PathCard';
 import { LabCard } from '../components/LabCard';
-import { LEARNING_PATHS, STARTER_LABS, pathCompletionPercent } from '../data/curricula';
+import { LEARNING_PATHS, ALL_LABS, pathCompletionPercent } from '../data/curricula';
 import { SKILL_KEYS, SKILL_LABELS } from '../types';
 import type { LearnerProgress, AcademyTab } from '../types';
 
@@ -61,7 +61,7 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
         </button>
       }>
         <div className="space-y-3 p-4">
-          {STARTER_LABS.map((lab) => (
+          {ALL_LABS.map((lab) => (
             <LabCard
               key={lab.id}
               lab={lab}
@@ -106,7 +106,7 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
           ) : (
             <ul className="space-y-2">
               {recentIds.map((id) => {
-                const lab = STARTER_LABS.find((l) => l.id === id);
+                const lab = ALL_LABS.find((l) => l.id === id);
                 return (
                   <li key={id} className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">
                     <div className="h-2 w-2 rounded-full bg-nd-success" aria-hidden="true" />
