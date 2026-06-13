@@ -4,21 +4,28 @@ import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ScheduledTask } from '../../services/bridgeAdapter';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { LoadingState } from '../../components/primitives/LoadingState';
+import { ErrorState } from '../../components/primitives/ErrorState';
 
 export function SchedulerView() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [mutateError, setMutateError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [cron, setCron] = useState('0 9 * * MON');
   const [goal, setGoal] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const list = await neurodeckApi.scheduler.listTasks();
       setTasks(list);
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+    } catch (e) {
+      setLoadError(String(e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -27,6 +34,7 @@ export function SchedulerView() {
 
   const addTask = async () => {
     if (!name.trim() || !cron.trim()) return;
+    setMutateError(null);
     try {
       await neurodeckApi.scheduler.addTask({
         name: name.trim(),
@@ -37,28 +45,39 @@ export function SchedulerView() {
       setName('');
       setGoal('');
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (e) {
+      setMutateError(`Failed to add task: ${e}`);
+    }
   };
 
   const deleteTask = async (id: string) => {
+    setMutateError(null);
     try {
       await neurodeckApi.scheduler.deleteTask(id);
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (e) {
+      setMutateError(`Failed to delete task: ${e}`);
+    }
   };
 
   const toggleTask = async (id: string) => {
+    setMutateError(null);
     try {
       await neurodeckApi.scheduler.toggleTask(id);
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (e) {
+      setMutateError(`Failed to toggle task: ${e}`);
+    }
   };
 
   const runNow = async (id: string) => {
+    setMutateError(null);
     try {
       await neurodeckApi.scheduler.runTaskNow(id);
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (e) {
+      setMutateError(`Failed to run task: ${e}`);
+    }
   };
 
   return (
@@ -112,12 +131,36 @@ export function SchedulerView() {
         </button>
       </div>
 
+      {mutateError && (
+        <div
+          role="alert"
+          className="mb-3 flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger"
+        >
+          {mutateError}
+          <button
+            type="button"
+            onClick={() => setMutateError(null)}
+            aria-label="Dismiss error"
+            className="ml-auto text-nd-danger/70 hover:text-nd-danger"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto space-y-2">
         {loading && <LoadingState label="Loading tasks…" />}
-        {!loading && tasks.length === 0 && (
+        {!loading && loadError && (
+          <ErrorState
+            title="Failed to load tasks"
+            message={loadError}
+            onRetry={() => void load()}
+          />
+        )}
+        {!loading && !loadError && tasks.length === 0 && (
           <EmptyState icon={CalendarClock} title="No scheduled tasks" description="Add a task using the form above." />
         )}
-        {tasks.map((task) => (
+        {!loading && !loadError && tasks.map((task) => (
           <div key={task.id} className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
             <div className={`h-2 w-2 rounded-full ${task.enabled ? 'bg-nd-success' : 'bg-nd-text-muted/40'}`} />
             <div className="min-w-0 flex-1">

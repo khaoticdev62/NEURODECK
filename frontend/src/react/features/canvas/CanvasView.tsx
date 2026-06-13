@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { CodeLang } from '../../services/bridgeAdapter';
@@ -11,26 +11,37 @@ const LANG_OPTIONS: { value: CodeLang; label: string }[] = [
   { value: 'powershell', label: 'PowerShell' },
 ];
 
-const DEFAULT_CODE: Record<CodeLang, string> = {
-  html: '<!-- Try editing this HTML -->>\n<div style="padding: 20px; color: #5EEBFF;">\n  <h1>Hello NEURODECK</h1>\n  <p>Edit and click Run to preview</p>\n</div>',
+const DEFAULT_CODE: Partial<Record<CodeLang, string>> = {
+  html: '<!-- Try editing this HTML -->\n<div style="padding: 20px; color: #5EEBFF;">\n  <h1>Hello NEURODECK</h1>\n  <p>Edit and click Run to preview</p>\n</div>',
   python: '# Python code execution\nprint("Hello from NEURODECK Canvas")\nfor i in range(3):\n    print(f"Line {i+1}")',
   javascript: '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
-  js: '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
   bash: '#!/bin/bash\necho "Hello from NEURODECK Canvas"\nls -la',
   powershell: '# PowerShell\nWrite-Host "Hello from NEURODECK Canvas"\nGet-Date',
 };
 
 export function CanvasView() {
   const [lang, setLang] = useState<CodeLang>('html');
-  const [code, setCode] = useState(DEFAULT_CODE.html);
+  const [code, setCode] = useState(DEFAULT_CODE.html ?? '');
   const [output, setOutput] = useState('');
   const [running, setRunning] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const outputRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
-    const unsubLine = listenBridge('canvas_exec_line', (payload: any) => {
-      setOutput((prev) => prev + (payload.line ?? String(payload)) + '\n');
+    const unsubLine = listenBridge('canvas_exec_line', (payload: unknown) => {
+      const line = typeof payload === 'object' && payload !== null && 'line' in payload
+        ? String((payload as Record<string, unknown>).line)
+        : String(payload);
+      setOutput((prev) => {
+        const next = prev + line + '\n';
+        // Auto-scroll output pane to bottom
+        requestAnimationFrame(() => {
+          if (outputRef.current) {
+            outputRef.current.scrollTop = outputRef.current.scrollHeight;
+          }
+        });
+        return next;
+      });
     });
     const unsubDone = listenBridge('canvas_exec_done', () => {
       setRunning(false);
@@ -43,8 +54,9 @@ export function CanvasView() {
 
   useEffect(() => {
     setCode((prev) => {
-      const isDefault = Object.values(DEFAULT_CODE).includes(prev);
-      return isDefault ? DEFAULT_CODE[lang] : prev;
+      const defaults = Object.values(DEFAULT_CODE);
+      const isDefault = defaults.includes(prev);
+      return isDefault ? (DEFAULT_CODE[lang] ?? '') : prev;
     });
   }, [lang]);
 
@@ -66,15 +78,21 @@ export function CanvasView() {
 
   const clear = () => {
     setOutput('');
-    setCode('');
+    setCode(DEFAULT_CODE[lang] ?? '');
   };
 
   const copyCode = () => navigator.clipboard.writeText(code);
 
-  const htmlBlob = lang === 'html' ? URL.createObjectURL(new Blob([code], { type: 'text/html' })) : null;
+  // Stable object URL: only create/revoke when code changes while lang === 'html'.
+  const htmlBlob = useMemo(() => {
+    if (lang !== 'html') return null;
+    return URL.createObjectURL(new Blob([code], { type: 'text/html' }));
+  }, [lang, previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return () => { if (htmlBlob) URL.revokeObjectURL(htmlBlob); };
+    return () => {
+      if (htmlBlob) URL.revokeObjectURL(htmlBlob);
+    };
   }, [htmlBlob]);
 
   return (
@@ -84,7 +102,9 @@ export function CanvasView() {
           <Paintbrush className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
-          <div className="canvas-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Canvas</div>
+          <div className="canvas-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
+            Canvas
+          </div>
           <h2 className="text-lg font-semibold text-nd-text">Canvas</h2>
           <p className="text-xs text-nd-text-muted">Live code editor and execution</p>
         </div>
@@ -95,30 +115,68 @@ export function CanvasView() {
           className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
           {LANG_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
-        <button id="canvas-run-btn" type="button" onClick={run} disabled={running} className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40">
-          {running ? <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" aria-hidden="true" /> : <Play className="h-4 w-4 nd-icon-svg" aria-hidden="true" />}
+        <button
+          id="canvas-run-btn"
+          type="button"
+          onClick={run}
+          disabled={running}
+          className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
+        >
+          {running ? (
+            <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" aria-hidden="true" />
+          ) : (
+            <Play className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
+          )}
           Run
         </button>
-        <button id="canvas-copy-btn" type="button" aria-label="Copy code" onClick={copyCode} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+        <button
+          id="canvas-copy-btn"
+          type="button"
+          aria-label="Copy code"
+          onClick={copyCode}
+          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+        >
           <Copy className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-clear-btn" type="button" aria-label="Clear canvas" onClick={clear} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+        <button
+          id="canvas-clear-btn"
+          type="button"
+          aria-label="Reset canvas to default"
+          onClick={clear}
+          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+        >
           <Trash2 className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-ai-edit-btn" type="button" aria-label="AI edit" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+        <button
+          id="canvas-ai-edit-btn"
+          type="button"
+          aria-label="AI edit (coming soon)"
+          disabled
+          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted/40 cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+        >
           <Sparkles className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
-        <button id="canvas-collab-btn" type="button" aria-label="Collaborate" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+        <button
+          id="canvas-collab-btn"
+          type="button"
+          aria-label="Collaborate (coming soon)"
+          disabled
+          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted/40 cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+        >
           <Users className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
         </button>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
-          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">Editor</div>
+          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">
+            Editor
+          </div>
           <textarea
             id="canvas-monaco"
             value={code}
@@ -136,7 +194,7 @@ export function CanvasView() {
           {lang === 'html' ? (
             <iframe
               key={previewKey}
-              src={htmlBlob || undefined}
+              src={htmlBlob ?? undefined}
               title="Canvas Preview"
               sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
               className="min-h-0 flex-1 w-full border-none bg-nd-bg"
@@ -146,7 +204,9 @@ export function CanvasView() {
               ref={outputRef}
               className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm text-nd-text/80"
             >
-              {output || <span className="text-nd-text-muted/70">Output will appear here...</span>}
+              {output || (
+                <span className="text-nd-text-muted/70">Output will appear here...</span>
+              )}
             </pre>
           )}
         </div>

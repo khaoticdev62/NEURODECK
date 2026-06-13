@@ -40,7 +40,7 @@ export function MemoryView({
       <div className="grid gap-4 md:grid-cols-2 px-4 pt-3">
         <form onSubmit={handleAddFact} className="flex gap-2 items-end">
           <div className="flex-1 min-w-0">
-            <label htmlFor="new-memory-fact" className="block text-2xs font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
+            <label htmlFor="new-memory-fact" className="block text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
               Add Fact to Memory
             </label>
             <input
@@ -61,7 +61,7 @@ export function MemoryView({
         </form>
 
         <div className="memory-search-shell flex flex-col justify-end">
-          <label htmlFor="memory-search-input" className="block text-2xs font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
+          <label htmlFor="memory-search-input" className="block text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
             Search Memory Vault
           </label>
           <input
@@ -118,7 +118,7 @@ export function MemoryView({
                 </button>
               </div>
             </div>
-            <h3 className="mt-4 font-semibold text-nd-text">{memory.title}</h3>
+            <h3 className="mt-4 font-semibold text-nd-text">{memory.title ?? '(untitled)'}</h3>
             <p className="mt-2 text-sm leading-6 text-nd-text-muted">{memory.body}</p>
             <div className="mt-4 flex items-center justify-between">
               <Badge tone={memory.scope === 'Global' ? 'accent' : memory.scope === 'Project' ? 'success' : 'neutral'}>{memory.scope}</Badge>
