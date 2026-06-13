@@ -5,7 +5,7 @@
  * calls to the Rust sidecar bridge server running on localhost.
  */
 
-const BRIDGE_PORT = (typeof window !== 'undefined' && window.NEURODECK_PORT) ? window.NEURODECK_PORT : '9477';
+const BRIDGE_PORT = (typeof window !== 'undefined' && (window.NEURODECK_PORT || new URLSearchParams(window.location.search).get('port'))) || '9477';
 const BRIDGE_URL = `http://127.0.0.1:${BRIDGE_PORT}`;
 const WS_URL = `ws://127.0.0.1:${BRIDGE_PORT}/ws`;
 

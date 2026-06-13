@@ -365,20 +365,51 @@ fn compute_tool_status(state: &ServerState) -> Value {
 
 /// Build a consolidated status-bar payload from real backend state.
 fn build_status_bar_state(state: &ServerState) -> Result<Value, String> {
-    let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+    // Snapshot all AppState-dependent fields under one short lock.
+    // get_system_health and compute_tool_status take their own locks on AppState,
+    // so they must run after this guard is dropped to avoid deadlocks.
+    let (
+        provider,
+        model_name,
+        active_agent_id,
+        active_persona,
+        session_id,
+        message_count,
+        memory_ready,
+        memory_count,
+        mcp_running,
+        sync_enabled,
+        active_theme_name,
+    ) = {
+        let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
 
-    let model_name = match app.config.llm.default_provider.as_str() {
-        "gemini" => app.config.llm.gemini_model.clone(),
-        "kimi" => app.config.llm.kimi_model.clone(),
-        "huggingface" => app.config.llm.hf_model.clone(),
-        "openai_compat" => app.config.llm.openai_compat_model.clone(),
-        _ => app.config.llm.ollama_model.clone(),
-    };
+        let model_name = match app.config.llm.default_provider.as_str() {
+            "gemini" => app.config.llm.gemini_model.clone(),
+            "kimi" => app.config.llm.kimi_model.clone(),
+            "huggingface" => app.config.llm.hf_model.clone(),
+            "openai_compat" => app.config.llm.openai_compat_model.clone(),
+            _ => app.config.llm.ollama_model.clone(),
+        };
 
-    let (memory_ready, memory_count) = if let Some(ref db) = app.mem_db {
-        (true, db.list_all().map(|v| v.len()).unwrap_or(0))
-    } else {
-        (false, 0)
+        let (memory_ready, memory_count) = if let Some(ref db) = app.mem_db {
+            (true, db.list_all().map(|v| v.len()).unwrap_or(0))
+        } else {
+            (false, 0)
+        };
+
+        (
+            app.config.llm.default_provider.clone(),
+            model_name,
+            app.config.llm.active_agent_id.clone(),
+            app.active_persona.clone(),
+            app.session_id.clone(),
+            app.messages.len(),
+            memory_ready,
+            memory_count,
+            app.mcp_abort.is_some(),
+            app.config.sync.enabled,
+            app.config.theme.active_theme_name.clone(),
+        )
     };
 
     let pty_session_count = state
@@ -417,14 +448,14 @@ fn build_status_bar_state(state: &ServerState) -> Result<Value, String> {
             "issues": health.issues,
         },
         "ai": {
-            "provider": app.config.llm.default_provider,
+            "provider": provider,
             "model": model_name,
-            "active_agent_id": app.config.llm.active_agent_id,
-            "active_persona": app.active_persona,
+            "active_agent_id": active_agent_id,
+            "active_persona": active_persona,
         },
         "session": {
-            "id": app.session_id,
-            "message_count": app.messages.len(),
+            "id": session_id,
+            "message_count": message_count,
         },
         "memory": {
             "ready": memory_ready,
@@ -441,17 +472,17 @@ fn build_status_bar_state(state: &ServerState) -> Result<Value, String> {
             "active_count": active_transfer_count,
         },
         "mcp": {
-            "running": app.mcp_abort.is_some(),
+            "running": mcp_running,
         },
         "sync": {
-            "enabled": app.config.sync.enabled,
+            "enabled": sync_enabled,
             "syncing": sync_status.syncing,
             "last_sync_at": sync_status.last_sync_at,
             "last_error": sync_status.last_error,
             "pending_records": sync_status.pending_records,
         },
         "theme": {
-            "active_theme_name": app.config.theme.active_theme_name,
+            "active_theme_name": active_theme_name,
         },
         "safe_mode": std::env::var("NEURODECK_SAFE_MODE").is_ok(),
     }))
@@ -489,13 +520,43 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Chat & Session Management
         // ────────────────────────────────────────────────────────────────────
         "get_initial_state" => {
-            let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            let model_name = match app.config.llm.default_provider.as_str() {
-                "gemini" => app.config.llm.gemini_model.clone(),
-                "kimi" => app.config.llm.kimi_model.clone(),
-                "huggingface" => app.config.llm.hf_model.clone(),
-                "openai_compat" => app.config.llm.openai_compat_model.clone(),
-                _ => app.config.llm.ollama_model.clone(),
+            // Snapshot AppState and release the lock before calling compute_tool_status,
+            // which needs to lock AppState itself.
+            let (
+                model_name,
+                provider,
+                active_agent_id,
+                session_id,
+                active_persona,
+                memory_status,
+                boot_health_status,
+                boot_health_summary,
+                boot_health_recovered_count,
+                boot_health_warning_count,
+                active_theme_name,
+            ) = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                let model_name = match app.config.llm.default_provider.as_str() {
+                    "gemini" => app.config.llm.gemini_model.clone(),
+                    "kimi" => app.config.llm.kimi_model.clone(),
+                    "huggingface" => app.config.llm.hf_model.clone(),
+                    "openai_compat" => app.config.llm.openai_compat_model.clone(),
+                    _ => app.config.llm.ollama_model.clone(),
+                };
+
+                (
+                    model_name,
+                    app.config.llm.default_provider.clone(),
+                    app.config.llm.active_agent_id.clone(),
+                    app.session_id.clone(),
+                    app.active_persona.clone(),
+                    if app.mem_db.is_some() { "Stable".to_string() } else { "Offline".to_string() },
+                    app.boot_self_heal.status.clone(),
+                    app.boot_self_heal.summary(),
+                    app.boot_self_heal.recovered_count.to_string(),
+                    app.boot_self_heal.warning_count.to_string(),
+                    app.config.theme.active_theme_name.clone(),
+                )
             };
 
             let (game_name, game_id, game_running) = crate::detect_game();
@@ -503,20 +564,20 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
             Ok(serde_json::json!({
                 "model": model_name,
-                "provider": app.config.llm.default_provider,
-                "active_agent_id": app.config.llm.active_agent_id,
-                "session_id": app.session_id,
-                "active_persona": app.active_persona,
-                "memory_status": if app.mem_db.is_some() { "Stable" } else { "Offline" },
+                "provider": provider,
+                "active_agent_id": active_agent_id,
+                "session_id": session_id,
+                "active_persona": active_persona,
+                "memory_status": memory_status,
                 "tool_status": tool_status,
-                "boot_health_status": app.boot_self_heal.status,
-                "boot_health_summary": app.boot_self_heal.summary(),
-                "boot_health_recovered_count": app.boot_self_heal.recovered_count.to_string(),
-                "boot_health_warning_count": app.boot_self_heal.warning_count.to_string(),
+                "boot_health_status": boot_health_status,
+                "boot_health_summary": boot_health_summary,
+                "boot_health_recovered_count": boot_health_recovered_count,
+                "boot_health_warning_count": boot_health_warning_count,
                 "game_name": game_name,
                 "game_app_id": game_id,
                 "game_running": game_running.to_string(),
-                "active_theme_name": app.config.theme.active_theme_name,
+                "active_theme_name": active_theme_name,
             }))
         }
 
@@ -789,6 +850,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let cwd = args
                 .get("cwd")
                 .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
                 .map(std::path::PathBuf::from)
                 .or_else(|| workspace_path.clone());
             let title = args
@@ -6227,37 +6289,72 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "save_ssh_credential" => {
-            let name = args
-                .get("profile_name")
+            let host = args
+                .get("host")
+                .or_else(|| args.get("profile_name"))
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'profile_name'")?;
+                .ok_or("Missing 'host'")?;
+            let user = args
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let pass = args
                 .get("password")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'password'")?;
-            neurodeck_infrastructure::secrets::save_ssh_credential(name, pass)
+                .unwrap_or("");
+            let key_path = args
+                .get("key_path")
+                .or_else(|| args.get("keyPath"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            let payload = serde_json::json!({
+                "user": user,
+                "password": pass,
+                "key_path": key_path,
+            });
+            neurodeck_infrastructure::secrets::save_ssh_credential(host, &payload.to_string())
                 .map_err(|e| format!("Keychain save failed: {}", e))?;
-            Ok(serde_json::json!({ "status": "saved", "profile": name }))
+            Ok(serde_json::json!({ "status": "saved", "success": true, "host": host }))
         }
 
         "get_ssh_credential" => {
-            let name = args
-                .get("profile_name")
+            let host = args
+                .get("host")
+                .or_else(|| args.get("profile_name"))
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'profile_name'")?;
-            // Verify the credential exists; do not return the raw secret over the bridge.
-            let exists = neurodeck_infrastructure::secrets::get_ssh_credential(name).is_ok();
-            Ok(serde_json::json!({ "profile": name, "exists": exists }))
+                .ok_or("Missing 'host'")?;
+            let raw = neurodeck_infrastructure::secrets::get_ssh_credential(host)
+                .unwrap_or_else(|_| "{}".to_string());
+            // Stored as a JSON blob so we can keep user/key metadata alongside the secret.
+            // The password itself is never returned over the bridge.
+            let parsed: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|_| {
+                // Legacy plain-password entries are treated as password-only credentials
+                // with no user/key metadata so we never expose the secret as a username.
+                serde_json::json!({
+                    "user": "",
+                    "password": raw,
+                    "key_path": "",
+                })
+            });
+            let user = parsed.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let key_path = parsed.get("key_path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            Ok(serde_json::json!({
+                "host": host,
+                "user": user,
+                "has_key": !key_path.is_empty(),
+                "key_path": key_path,
+            }))
         }
 
         "delete_ssh_credential" => {
-            let name = args
-                .get("profile_name")
+            let host = args
+                .get("host")
+                .or_else(|| args.get("profile_name"))
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'profile_name'")?;
-            neurodeck_infrastructure::secrets::delete_ssh_credential(name)
+                .ok_or("Missing 'host'")?;
+            neurodeck_infrastructure::secrets::delete_ssh_credential(host)
                 .map_err(|e| format!("Keychain delete failed: {}", e))?;
-            Ok(serde_json::json!({ "status": "deleted", "profile": name }))
+            Ok(serde_json::json!({ "status": "deleted", "success": true, "host": host }))
         }
 
         "save_sftp_credential" => {
@@ -7675,6 +7772,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             )
         }
 
+        "get_default_docs_path" => {
+            let default_dir = std::env::current_dir()
+                .map_err(|e| format!("Could not determine working directory: {}", e))?
+                .join("docs");
+            let exists = default_dir.is_dir();
+            Ok(serde_json::json!({
+                "path": default_dir.display().to_string(),
+                "exists": exists,
+            }))
+        }
+
         "get_indexed_docs" => {
             let mem_db = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
@@ -8793,6 +8901,33 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             .await
             .map_err(|e| format!("spawn_blocking: {}", e))??;
             Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
+        }
+
+        "security_report" => {
+            let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let agent_workspace_only = app.config.security.agent_workspace_only;
+            let permission_registry_count = app.config.security.permission_registry.profiles.len();
+            drop(app);
+
+            let keychain_ok =
+                neurodeck_infrastructure::secrets::test_keychain_access().is_ok();
+            let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
+
+            Ok(serde_json::json!({
+                "keychain_ok": keychain_ok,
+                "safe_mode": safe_mode,
+                "agent_workspace_only": agent_workspace_only,
+                "permission_registry_count": permission_registry_count,
+            }))
+        }
+
+        "get_credential_status" => {
+            // Returns existence only — raw secrets are never sent over the bridge.
+            Ok(serde_json::json!({
+                "gemini": neurodeck_infrastructure::secrets::get_gemini_api_key().is_ok(),
+                "huggingface": neurodeck_infrastructure::secrets::get_hf_api_key().is_ok(),
+                "openai_compat": neurodeck_infrastructure::secrets::get_openai_compat_api_key().is_ok(),
+            }))
         }
 
         "get_system_health" => {

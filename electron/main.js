@@ -32,6 +32,21 @@ let bridgePort = DEFAULT_PORT;
 let browserView = null;
 let browserBounds = { x: 0, y: 0, width: 1280, height: 600 };
 
+// Hardening flags applied to the renderer webPreferences. Kept in one place
+// so the security report can return the same values that are actually enforced.
+const RENDERER_SECURITY_FLAGS = Object.freeze({
+  contextIsolation: true,
+  nodeIntegration: false,
+  sandbox: true,
+  webSecurity: true,
+  allowRunningInsecureContent: false,
+  // Electron's remote module is disabled by default in supported versions and
+  // the app never enables it.
+  remoteModuleDisabled: true,
+  // CSP is injected for every app-origin response in onHeadersReceived.
+  cspActive: true,
+});
+
 /* ── Browser state: bookmarks, history, ad-block, downloads ─────────────── */
 
 const BOOKMARKS_PATH = path.join(app.getPath('userData'), 'browser-bookmarks.json');
@@ -569,13 +584,7 @@ function createMainWindow() {
     icon: path.join(__dirname, '..', 'src-tauri', 'icons', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      // H3: sandbox isolates the renderer at the OS level (separate from contextIsolation).
-      // Safe here because preload only uses contextBridge + ipcRenderer (both sandbox-compatible).
-      sandbox: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
+      ...RENDERER_SECURITY_FLAGS,
       additionalArguments: [`--neurodeck-port=${bridgePort}`],
       // M1: only enable DevTools in dev mode
       devTools: !!process.env.ELECTRON_DEV,
@@ -850,6 +859,7 @@ function sanitizeDialogOptions(raw, allowed) {
 
 ipcMain.handle(IPC.GET_BRIDGE_PORT, () => bridgePort);
 ipcMain.handle(IPC.GET_RUNTIME_MANIFEST, () => readRuntimeManifest());
+ipcMain.handle(IPC.GET_SECURITY_FLAGS, () => RENDERER_SECURITY_FLAGS);
 
 // C3: Validate URL protocol before opening externally
 ipcMain.handle(IPC.OPEN_EXTERNAL, (_event, url) => {

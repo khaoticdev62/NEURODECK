@@ -13,6 +13,7 @@ const IPC = Object.freeze({
   // App / runtime
   GET_BRIDGE_PORT: 'get-bridge-port',
   GET_RUNTIME_MANIFEST: 'get-runtime-manifest',
+  GET_SECURITY_FLAGS: 'security:get-flags',
 
   // OS shell integration
   OPEN_EXTERNAL: 'open-external',

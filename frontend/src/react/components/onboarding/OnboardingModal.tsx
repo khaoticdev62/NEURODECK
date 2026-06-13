@@ -1097,7 +1097,7 @@ export function OnboardingModal({
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back
                 </button>
               )}
-              {currentStep === 'welcome' && precheckPassed && (
+              {(currentStep === 'welcome' || currentStep === 'environment') && (
                 <button
                   type="button"
                   onClick={() => dismiss('skipped')}

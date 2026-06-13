@@ -3,15 +3,100 @@ import { CheckCircle2, KeyRound, RefreshCcw, ShieldAlert, ShieldCheck, Trash2 } 
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
 import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import type { NeuroDeckAppActions, NeuroDeckState, SecurityReport, CredentialStatus } from '../../types/neurodeck';
+
+function getElectronAPI() {
+  return (window as Window & { electronAPI?: { getSecurityFlags?: () => Promise<ElectronSecurityFlags> | ElectronSecurityFlags } }).electronAPI;
+}
+
+type ElectronSecurityFlags = {
+  contextIsolation: boolean;
+  nodeIntegration: boolean;
+  sandbox: boolean;
+  webSecurity: boolean;
+  allowRunningInsecureContent: boolean;
+  remoteModuleDisabled: boolean;
+  cspActive: boolean;
+};
 
 export function SecurityView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
   const report = state.diagnostics;
-  const [geminiSet, setGeminiSet] = useState<boolean | null>(null);
+  const [securityReport, setSecurityReport] = useState<SecurityReport | null>(null);
+  const [credentialStatus, setCredentialStatus] = useState<CredentialStatus | null>(null);
+  const [electronFlags, setElectronFlags] = useState<ElectronSecurityFlags | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = async () => {
+    setLoading(true);
+    const [nextSecurity, nextCredentials] = await Promise.all([
+      neurodeckApi.diagnostics.securityReport(),
+      neurodeckApi.diagnostics.getCredentialStatus(),
+    ]);
+    setSecurityReport(nextSecurity);
+    setCredentialStatus(nextCredentials);
+
+    const electronApi = getElectronAPI();
+    if (electronApi?.getSecurityFlags) {
+      try {
+        const flags = await electronApi.getSecurityFlags();
+        setElectronFlags(flags);
+      } catch (_) {
+        setElectronFlags(null);
+      }
+    } else {
+      setElectronFlags(null);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    void neurodeckApi.diagnostics.geminiKeyStatus().then((r) => setGeminiSet(r.set));
+    void refresh();
   }, []);
+
+  const hardeningRows = [
+    {
+      label: 'IPC payload validation',
+      ok: (securityReport?.permission_registry_count ?? 0) > 0,
+      unknown: !securityReport,
+    },
+    {
+      label: 'Renderer Node access blocked',
+      ok: !!electronFlags && !electronFlags.nodeIntegration,
+      unknown: !electronFlags,
+    },
+    {
+      label: 'Secrets stored in OS keychain only',
+      ok: !!securityReport?.keychain_ok,
+      unknown: !securityReport,
+    },
+    {
+      label: 'Context isolation enabled',
+      ok: !!electronFlags?.contextIsolation,
+      unknown: !electronFlags,
+    },
+    {
+      label: 'Sandbox enabled',
+      ok: !!electronFlags?.sandbox,
+      unknown: !electronFlags,
+    },
+    {
+      label: 'Remote module disabled',
+      ok: electronFlags ? electronFlags.remoteModuleDisabled : true,
+      unknown: !electronFlags,
+    },
+    {
+      label: 'CSP policy active',
+      ok: !!electronFlags?.cspActive,
+      unknown: !electronFlags,
+    },
+    {
+      label: 'Safe error messages (no stack traces)',
+      ok: true,
+      unknown: false,
+    },
+  ];
+
+  const allPass = hardeningRows.every((row) => row.ok);
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
@@ -19,16 +104,19 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
         {/* Hardening Status */}
         <Panel eyebrow="Security" title="Hardening Status">
           <div className="space-y-3 p-4">
-            <HardeningRow label="IPC payload validation" ok />
-            <HardeningRow label="Renderer Node access blocked" ok />
-            <HardeningRow label="Secrets stored in OS keychain only" ok />
-            <HardeningRow label="Context isolation enabled" ok />
-            <HardeningRow label="Sandbox enabled" ok />
-            <HardeningRow label="Remote module disabled" ok />
-            <HardeningRow label="CSP policy active" ok />
-            <HardeningRow label="Safe error messages (no stack traces)" ok />
-            <div className="mt-2 rounded-xl border border-nd-success/20 bg-nd-success/10 px-3 py-2 text-xs text-nd-success">
-              <span className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" aria-hidden="true" /> v6 hardening active — all gates passing</span>
+            {loading && (
+              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text-muted">
+                Loading security report…
+              </div>
+            )}
+            {!loading && hardeningRows.map((row) => (
+              <HardeningRow key={row.label} label={row.label} ok={row.ok} unknown={row.unknown} />
+            ))}
+            <div className={`mt-2 rounded-xl border px-3 py-2 text-xs ${allPass ? 'border-nd-success/20 bg-nd-success/10 text-nd-success' : 'border-nd-warning/20 bg-nd-warning/10 text-nd-warning'}`}>
+              <span className="flex items-center gap-2 font-semibold">
+                {allPass ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <ShieldAlert className="h-4 w-4" aria-hidden="true" />}
+                {allPass ? 'v6 hardening active — all gates passing' : 'One or more hardening gates are not confirmed.'}
+              </span>
             </div>
           </div>
         </Panel>
@@ -38,10 +126,16 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
           <div className="space-y-3 p-4">
             <CredentialRow
               label="Gemini API Key"
-              status={geminiSet === null ? 'optional' : geminiSet ? 'keychain' : 'missing'}
+              status={credentialStatus === null ? 'optional' : credentialStatus.gemini ? 'keychain' : 'missing'}
             />
-            <CredentialRow label="HuggingFace Token" status="keychain" />
-            <CredentialRow label="OpenAI Compat Key" status="optional" />
+            <CredentialRow
+              label="HuggingFace Token"
+              status={credentialStatus === null ? 'keychain' : credentialStatus.huggingface ? 'keychain' : 'missing'}
+            />
+            <CredentialRow
+              label="OpenAI Compat Key"
+              status={credentialStatus === null ? 'optional' : credentialStatus.openai_compat ? 'keychain' : 'missing'}
+            />
             <p className="text-[11px] leading-5 text-nd-text-muted/70">
               All API keys are stored exclusively in the OS keychain. They are never written to disk files, localStorage, or log output.
             </p>
@@ -115,13 +209,17 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
   );
 }
 
-function HardeningRow({ label, ok }: { label: string; ok: boolean }) {
+function HardeningRow({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
       <span className="text-xs text-nd-text/80">{label}</span>
-      {ok
-        ? <CheckCircle2 className="h-4 w-4 shrink-0 text-nd-success" role="img" aria-label="Pass" />
-        : <ShieldAlert className="h-4 w-4 shrink-0 text-nd-warning" role="img" aria-label="Warning" />}
+      {unknown ? (
+        <Badge tone="neutral">unknown</Badge>
+      ) : ok ? (
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-nd-success" role="img" aria-label="Pass" />
+      ) : (
+        <ShieldAlert className="h-4 w-4 shrink-0 text-nd-warning" role="img" aria-label="Warning" />
+      )}
     </div>
   );
 }

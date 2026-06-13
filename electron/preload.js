@@ -6,6 +6,7 @@ const IPC = Object.freeze({
   // App / runtime
   GET_BRIDGE_PORT: 'get-bridge-port',
   GET_RUNTIME_MANIFEST: 'get-runtime-manifest',
+  GET_SECURITY_FLAGS: 'security:get-flags',
 
   // OS shell integration
   OPEN_EXTERNAL: 'open-external',
@@ -146,6 +147,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Expose the bridge port chosen by the main process so neurobridge.js can use it
   getBridgePort: () => ipcRenderer.invoke(IPC.GET_BRIDGE_PORT),
   getRuntimeManifest: () => ipcRenderer.invoke(IPC.GET_RUNTIME_MANIFEST),
+  getSecurityFlags: () => ipcRenderer.invoke(IPC.GET_SECURITY_FLAGS),
 
   // Shell / OS integrations
   openExternal: (url) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),

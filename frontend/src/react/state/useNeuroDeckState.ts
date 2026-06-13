@@ -72,6 +72,7 @@ function sanitizeHydrate(payload: Partial<NeuroDeckState> | null): Partial<Neuro
     diagnostics: _diagnostics,
     diagnosticLogs: _diagnosticLogs,
     lastError: _lastError,
+    showOnboarding: _showOnboarding,
     ...persistable
   } = payload;
   return persistable;

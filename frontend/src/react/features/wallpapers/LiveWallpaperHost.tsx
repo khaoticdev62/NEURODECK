@@ -27,6 +27,19 @@ export const LiveWallpaperHost: React.FC = () => {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
+  // Toggle body wallpaper-active class when wallpaper is active
+  useEffect(() => {
+    const isActive = settings.liveWallpaperEnabled && !reducedMotion && settings.activeWallpaperId !== "none";
+    if (isActive) {
+      document.body.classList.add("wallpaper-active");
+    } else {
+      document.body.classList.remove("wallpaper-active");
+    }
+    return () => {
+      document.body.classList.remove("wallpaper-active");
+    };
+  }, [settings.liveWallpaperEnabled, reducedMotion, settings.activeWallpaperId]);
+
   if (!settings.liveWallpaperEnabled || reducedMotion) {
     return null; // Don't render animations if disabled or user prefers reduced motion
   }

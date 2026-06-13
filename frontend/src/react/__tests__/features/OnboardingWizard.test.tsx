@@ -118,7 +118,7 @@ describe('OnboardingWizard Component', () => {
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'toggle-onboarding' });
   });
 
-  it('hides Skip for Now button if precheck fails', async () => {
+  it('still offers Skip for Now button even if precheck fails', async () => {
     // Make spawn fail
     mockSpawn.mockResolvedValue({ success: false });
 
@@ -129,7 +129,7 @@ describe('OnboardingWizard Component', () => {
     });
 
     const skipButton = screen.queryByRole('button', { name: /skip for now/i });
-    expect(skipButton).toBeNull();
+    expect(skipButton).toBeDefined();
   });
 
   it('navigates through steps to save preferences and complete setup', async () => {

@@ -1,25 +1,272 @@
-import { useState } from 'react';
-import { Layers, Play, Square, Plus, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, Loader2, TerminalSquare } from 'lucide-react';
+import { neurodeckApi } from '../../services/bridgeAdapter';
+import { listenBridge } from '../../services/bridgeAdapter';
+import type { WorkflowDoc, WorkflowSummary } from '../../services/bridgeAdapter';
 
-interface WorkflowNode {
+type LayoutNode = {
   id: string;
-  type: 'start' | 'llm' | 'agent' | 'condition' | 'action' | 'end';
+  type: string;
   label: string;
   x: number;
   y: number;
+};
+
+type RunState =
+  | { status: 'idle' }
+  | { status: 'running'; nodeId?: string }
+  | { status: 'error'; message: string }
+  | { status: 'complete'; outputs: Record<string, string>; finalOutput?: string };
+
+const NODE_COLORS: Record<string, { fill: string; stroke: string }> = {
+  trigger: { fill: 'rgba(94,235,255,0.12)', stroke: 'rgba(94,235,255,0.4)' },
+  prompt: { fill: 'rgba(139,92,246,0.12)', stroke: 'rgba(139,92,246,0.4)' },
+  shell: { fill: 'rgba(245,158,11,0.12)', stroke: 'rgba(245,158,11,0.4)' },
+  condition: { fill: 'rgba(16,185,129,0.12)', stroke: 'rgba(16,185,129,0.4)' },
+  output: { fill: 'rgba(94,235,255,0.12)', stroke: 'rgba(94,235,255,0.4)' },
+  default: { fill: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.15)' },
+};
+
+const SAMPLE_WORKFLOW: WorkflowDoc = {
+  name: 'sample-greet',
+  nodes: [
+    { id: 'start', type: 'trigger', config: { seed: 'world' } },
+    { id: 'greet', type: 'prompt', config: { prompt: 'Say a short greeting to {{input}}.' } },
+    { id: 'done', type: 'output', config: {} },
+  ],
+  edges: [
+    { id: 'e1', from: 'start', fromPort: 'out', to: 'greet' },
+    { id: 'e2', from: 'greet', fromPort: 'out', to: 'done' },
+  ],
+};
+
+function computeLayout(doc: WorkflowDoc): LayoutNode[] {
+  const inDegree = new Map<string, number>();
+  const outgoing = new Map<string, string[]>();
+  for (const node of doc.nodes) {
+    inDegree.set(node.id, 0);
+    outgoing.set(node.id, []);
+  }
+  for (const edge of doc.edges) {
+    if (inDegree.has(edge.to)) {
+      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
+    }
+    if (outgoing.has(edge.from)) {
+      outgoing.get(edge.from)!.push(edge.to);
+    }
+  }
+
+  const depth = new Map<string, number>();
+  const queue = Array.from(inDegree.entries())
+    .filter(([, d]) => d === 0)
+    .map(([id]) => id);
+  queue.forEach((id) => depth.set(id, 0));
+
+  const visited = new Set<string>();
+  while (queue.length) {
+    const id = queue.shift()!;
+    visited.add(id);
+    for (const next of outgoing.get(id) ?? []) {
+      depth.set(next, Math.max(depth.get(next) ?? 0, (depth.get(id) ?? 0) + 1));
+      const remaining = (inDegree.get(next) ?? 0) - 1;
+      inDegree.set(next, remaining);
+      if (remaining === 0) queue.push(next);
+    }
+  }
+
+  // Handle cycles / disconnected nodes by giving them depth 0
+  for (const node of doc.nodes) {
+    if (!depth.has(node.id)) depth.set(node.id, 0);
+  }
+
+  const byDepth = new Map<number, string[]>();
+  for (const [id, d] of depth.entries()) {
+    if (!byDepth.has(d)) byDepth.set(d, []);
+    byDepth.get(d)!.push(id);
+  }
+
+  const nodeMap = new Map(doc.nodes.map((n) => [n.id, n]));
+  const colWidth = 180;
+  const rowHeight = 80;
+  const positions: LayoutNode[] = [];
+  for (const [d, ids] of byDepth.entries()) {
+    ids.forEach((id, index) => {
+      const node = nodeMap.get(id);
+      positions.push({
+        id,
+        type: node?.type ?? 'unknown',
+        label: (node?.config?.label as string) ?? node?.type ?? id,
+        x: d * colWidth + 80,
+        y: index * rowHeight + 60,
+      });
+    });
+  }
+  return positions;
 }
 
-const DEMO_NODES: WorkflowNode[] = [
-  { id: '1', type: 'start', label: 'Start', x: 100, y: 50 },
-  { id: '2', type: 'llm', label: 'Analyze Prompt', x: 100, y: 150 },
-  { id: '3', type: 'condition', label: 'Need Research?', x: 100, y: 250 },
-  { id: '4', type: 'agent', label: 'Research Agent', x: 50, y: 350 },
-  { id: '5', type: 'action', label: 'Generate Output', x: 150, y: 350 },
-  { id: '6', type: 'end', label: 'End', x: 100, y: 450 },
-];
+function getNodeStyle(type: string) {
+  return NODE_COLORS[type] ?? NODE_COLORS.default;
+}
 
 export function OrchestratorView() {
-  const [running, setRunning] = useState(false);
+  const [workflows, setWorkflows] = useState<WorkflowSummary[]>([]);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [doc, setDoc] = useState<WorkflowDoc | null>(null);
+  const [editorText, setEditorText] = useState('');
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [runState, setRunState] = useState<RunState>({ status: 'idle' });
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const layout = useMemo(() => (doc ? computeLayout(doc) : []), [doc]);
+  const activeNodeId = runState.status === 'running' ? runState.nodeId : undefined;
+
+  const loadList = useCallback(async () => {
+    try {
+      const list = await neurodeckApi.workflow.list();
+      setWorkflows(list);
+      if (list.length > 0 && !selectedName) {
+        setSelectedName(list[0].name);
+      }
+    } catch (e) {
+      setLogs((prev) => [...prev, `Failed to load workflows: ${String(e)}`]);
+    }
+  }, [selectedName]);
+
+  const loadWorkflow = useCallback(async (name: string) => {
+    try {
+      const loaded = await neurodeckApi.workflow.load(name);
+      setDoc(loaded);
+      setEditorText(JSON.stringify(loaded, null, 2));
+      setEditorError(null);
+    } catch (e) {
+      setLogs((prev) => [...prev, `Failed to load ${name}: ${String(e)}`]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadList();
+  }, [loadList]);
+
+  useEffect(() => {
+    if (selectedName) void loadWorkflow(selectedName);
+  }, [selectedName, loadWorkflow]);
+
+  useEffect(() => {
+    const unsubStart = listenBridge('workflow_started', (payload) => {
+      const data = payload as { name?: string };
+      setRunState({ status: 'running' });
+      setLogs((prev) => [...prev, `Started workflow: ${data.name ?? 'unknown'}`]);
+    });
+    const unsubNode = listenBridge('workflow_node_start', (payload) => {
+      const data = payload as { node_id?: string; node_type?: string };
+      setRunState({ status: 'running', nodeId: data.node_id });
+      setLogs((prev) => [...prev, `Running node ${data.node_id ?? '?'} (${data.node_type ?? '?'})`]);
+    });
+    const unsubError = listenBridge('workflow_error', (payload) => {
+      const data = payload as { node_id?: string; error?: string };
+      setRunState({ status: 'error', message: data.error ?? 'Workflow failed' });
+      setLogs((prev) => [...prev, `Error at ${data.node_id ?? '?'}: ${data.error ?? ''}`]);
+    });
+    const unsubComplete = listenBridge('workflow_complete', (payload) => {
+      const data = payload as { workflow_name?: string; success?: boolean; outputs?: Record<string, string>; final_output?: string };
+      if (data.success) {
+        setRunState({ status: 'complete', outputs: data.outputs ?? {}, finalOutput: data.final_output });
+      } else {
+        setRunState({ status: 'error', message: 'Workflow completed with errors' });
+      }
+      setLogs((prev) => [...prev, `Completed workflow: ${data.workflow_name ?? 'unknown'}`]);
+    });
+    return () => {
+      unsubStart();
+      unsubNode();
+      unsubError();
+      unsubComplete();
+    };
+  }, []);
+
+  const handleSave = async () => {
+    if (!doc) return;
+    try {
+      const parsed = JSON.parse(editorText) as WorkflowDoc;
+      await neurodeckApi.workflow.save(parsed.name, parsed);
+      setDoc(parsed);
+      setEditorError(null);
+      setLogs((prev) => [...prev, `Saved workflow: ${parsed.name}`]);
+      if (parsed.name !== selectedName) {
+        setSelectedName(parsed.name);
+      }
+      void loadList();
+    } catch (e) {
+      setEditorError(String(e));
+    }
+  };
+
+  const handleRun = async () => {
+    if (!doc) return;
+    setRunState({ status: 'running' });
+    setLogs((prev) => [...prev, `Triggering workflow: ${doc.name}`]);
+    try {
+      await neurodeckApi.workflow.run(doc.name);
+    } catch (e) {
+      setRunState({ status: 'error', message: String(e) });
+      setLogs((prev) => [...prev, `Run failed: ${String(e)}`]);
+    }
+  };
+
+  const handleStop = () => {
+    setRunState({ status: 'idle' });
+    setLogs((prev) => [...prev, 'Run state reset locally (backend execution continues).']);
+  };
+
+  const handleDelete = async (name: string) => {
+    try {
+      await neurodeckApi.workflow.delete(name);
+      setLogs((prev) => [...prev, `Deleted workflow: ${name}`]);
+      if (selectedName === name) {
+        setSelectedName(null);
+        setDoc(null);
+        setEditorText('');
+      }
+      void loadList();
+    } catch (e) {
+      setLogs((prev) => [...prev, `Delete failed: ${String(e)}`]);
+    }
+  };
+
+  const handleCreateSample = async () => {
+    try {
+      await neurodeckApi.workflow.save(SAMPLE_WORKFLOW.name, SAMPLE_WORKFLOW);
+      setLogs((prev) => [...prev, `Created sample workflow: ${SAMPLE_WORKFLOW.name}`]);
+      void loadList().then(() => setSelectedName(SAMPLE_WORKFLOW.name));
+    } catch (e) {
+      setLogs((prev) => [...prev, `Create failed: ${String(e)}`]);
+    }
+  };
+
+  const handleImport = async () => {
+    const raw = window.prompt('Paste workflow JSON to import:');
+    if (!raw) return;
+    try {
+      const res = await neurodeckApi.workflow.importJson(raw);
+      setLogs((prev) => [...prev, `Imported workflow: ${res.name}`]);
+      void loadList().then(() => setSelectedName(res.name));
+    } catch (e) {
+      setLogs((prev) => [...prev, `Import failed: ${String(e)}`]);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!selectedName) return;
+    try {
+      const res = await neurodeckApi.workflow.export(selectedName);
+      await navigator.clipboard.writeText(res.ndwf);
+      setLogs((prev) => [...prev, `Exported ${res.name} to clipboard`]);
+    } catch (e) {
+      setLogs((prev) => [...prev, `Export failed: ${String(e)}`]);
+    }
+  };
+
+  const running = runState.status === 'running';
 
   return (
     <div className="flex h-full flex-col">
@@ -31,41 +278,181 @@ export function OrchestratorView() {
           <h2 className="text-lg font-semibold text-nd-text">Orchestrator</h2>
           <p className="text-xs text-nd-text-muted">Visual workflow automation builder</p>
         </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setRunning(!running)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={running ? handleStop : handleRun}
+            disabled={!doc}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}
+          >
             {running ? <><Square className="h-4 w-4" aria-hidden="true" /> Stop</> : <><Play className="h-4 w-4" aria-hidden="true" /> Run</>}
           </button>
-          <button type="button" aria-label="Add workflow node" className="rounded-xl border border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Plus className="h-4 w-4" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={handleCreateSample}
+            className="flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" /> Sample
+          </button>
+          <button
+            type="button"
+            onClick={handleImport}
+            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          >
+            <Upload className="h-4 w-4" aria-hidden="true" /> Import
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={!selectedName}
+            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" /> Export
           </button>
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
-        <svg className="h-full w-full" viewBox="0 0 300 550">
-          {/* Connections */}
-          <line x1="100" y1="80" x2="100" y2="120" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
-          <line x1="100" y1="180" x2="100" y2="220" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
-          <line x1="100" y1="280" x2="70" y2="320" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
-          <line x1="100" y1="280" x2="170" y2="320" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
-          <line x1="70" y1="380" x2="100" y2="420" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
-          <line x1="170" y1="380" x2="100" y2="420" stroke="rgba(141,161,179,0.2)" strokeWidth="2" />
+      <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[220px_1fr_320px]">
+        {/* Workflow list */}
+        <section className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">Workflows</div>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+            {workflows.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20 p-3 text-xs text-nd-text-muted">
+                No workflows yet.
+              </div>
+            ) : (
+              workflows.map((wf) => (
+                <div
+                  key={wf.name}
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${selectedName === wf.name ? 'border-nd-accent/30 bg-nd-accent/[0.08]' : 'border-nd-text-muted/15 bg-nd-surface/40'}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedName(wf.name)}
+                    className="min-w-0 flex-1 truncate text-left text-xs text-nd-text"
+                  >
+                    {wf.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(wf.name)}
+                    aria-label={`Delete ${wf.name}`}
+                    className="rounded-lg p-1 text-nd-danger hover:bg-nd-danger/10"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
 
-          {/* Nodes */}
-          {DEMO_NODES.map((node) => (
-            <g key={node.id} transform={`translate(${node.x - 60}, ${node.y - 20})`}>
-              <rect
-                width="120"
-                height="40"
-                rx="8"
-                fill={node.type === 'start' || node.type === 'end' ? 'rgba(94,235,255,0.1)' : 'rgba(255,255,255,0.04)'}
-                stroke={node.type === 'start' || node.type === 'end' ? 'rgba(94,235,255,0.3)' : 'rgba(255,255,255,0.1)'}
-                strokeWidth="1"
-              />
-              <text x="60" y="25" textAnchor="middle" fill="#9CA3AF" fontSize="12">{node.label}</text>
-            </g>
-          ))}
-        </svg>
+        {/* Graph preview */}
+        <section className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
+          {doc ? (
+            <div className="h-full w-full overflow-auto p-4">
+              <svg
+                className="min-h-[20rem] min-w-[20rem]"
+                viewBox={`0 0 ${Math.max(300, layout.length ? Math.max(...layout.map((n) => n.x)) + 140 : 300)} ${Math.max(300, layout.length ? Math.max(...layout.map((n) => n.y)) + 80 : 300)}`}
+              >
+                {doc.edges.map((edge) => {
+                  const from = layout.find((n) => n.id === edge.from);
+                  const to = layout.find((n) => n.id === edge.to);
+                  if (!from || !to) return null;
+                  return (
+                    <line
+                      key={edge.id}
+                      x1={from.x}
+                      y1={from.y}
+                      x2={to.x}
+                      y2={to.y}
+                      stroke="rgba(141,161,179,0.25)"
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+                {layout.map((node) => {
+                  const style = getNodeStyle(node.type);
+                  const isActive = activeNodeId === node.id;
+                  return (
+                    <g key={node.id} transform={`translate(${node.x - 60}, ${node.y - 20})`}>
+                      <rect
+                        width="120"
+                        height="40"
+                        rx="8"
+                        fill={style.fill}
+                        stroke={isActive ? '#5EEBFF' : style.stroke}
+                        strokeWidth={isActive ? 3 : 1}
+                        className={isActive ? 'animate-pulse' : ''}
+                      />
+                      <text x="60" y="17" textAnchor="middle" fill="#E8F4FF" fontSize="10" fontWeight="500">
+                        {node.type}
+                      </text>
+                      <text x="60" y="30" textAnchor="middle" fill="#9CA3AF" fontSize="9">
+                        {node.label.length > 16 ? `${node.label.slice(0, 16)}…` : node.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-nd-text-muted">
+              Select or create a workflow to preview.
+            </div>
+          )}
+          {runState.status === 'error' && (
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-danger/25 bg-nd-danger/10 p-3 text-xs text-nd-danger">
+              <AlertTriangle className="mr-2 inline h-4 w-4" aria-hidden="true" />
+              {runState.message}
+            </div>
+          )}
+          {runState.status === 'complete' && (
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-success/25 bg-nd-success/10 p-3 text-xs text-nd-success">
+              <CheckCircle2 className="mr-2 inline h-4 w-4" aria-hidden="true" />
+              Workflow completed. {runState.finalOutput ? `Output: ${runState.finalOutput}` : ''}
+            </div>
+          )}
+        </section>
+
+        {/* Editor + logs */}
+        <section className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">Workflow JSON</div>
+          <textarea
+            value={editorText}
+            onChange={(e) => setEditorText(e.target.value)}
+            disabled={!doc}
+            className="min-h-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 disabled:opacity-50"
+            spellCheck={false}
+          />
+          {editorError && (
+            <div className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
+              {editorError}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!doc}
+            className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/15 disabled:opacity-50"
+          >
+            Save Workflow
+          </button>
+
+          <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-nd-text-muted/15 bg-nd-bg/40 p-3">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-nd-text-muted">
+              <TerminalSquare className="h-3.5 w-3.5" aria-hidden="true" /> Run Log
+            </div>
+            <div className="h-full space-y-1 overflow-y-auto text-[11px] text-nd-text-muted">
+              {logs.length === 0 ? (
+                <span>No activity yet.</span>
+              ) : (
+                logs.slice(-50).map((line, i) => <div key={i}>{line}</div>)
+              )}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

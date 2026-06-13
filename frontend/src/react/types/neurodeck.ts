@@ -333,12 +333,17 @@ export interface DiagnosticsPayload {
 }
 
 export interface SecurityReport {
-  checkedAt: string;
-  ipcPayloadLimitBytes: number;
-  aiProviders: AIProvider[];
-  rendererPolicy: Record<string, boolean | string>;
-  guardrails: string[];
+  keychain_ok: boolean;
+  safe_mode: boolean;
+  agent_workspace_only: boolean;
+  permission_registry_count: number;
 }
+
+export type CredentialStatus = {
+  gemini: boolean;
+  huggingface: boolean;
+  openai_compat: boolean;
+};
 
 export type DiagnosticsBundleResponse = { ok: true; file: string } | { ok: false; error: string; code?: string };
 

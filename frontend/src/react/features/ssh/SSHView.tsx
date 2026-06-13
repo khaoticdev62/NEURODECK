@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Lock, Server, Save, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Lock, Server, Save, Trash2, Plug, Unplug, AlertTriangle } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import { SSHTerminal, type SSHConnectionConfig } from './SSHTerminal';
 
 export function SSHView() {
   const [host, setHost] = useState('');
@@ -10,20 +11,81 @@ export function SSHView() {
   const [keyPath, setKeyPath] = useState('');
   const [authType, setAuthType] = useState<'password' | 'key'>('password');
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [connectedConfig, setConnectedConfig] = useState<SSHConnectionConfig | null>(null);
 
   const saveCredential = async () => {
     if (!host.trim() || !user.trim()) return;
+    setError(null);
     try {
       await neurodeckApi.ssh.saveCredential(
         host.trim(),
         user.trim(),
-        authType === 'password' ? password.trim() : undefined,
+        authType === 'password' ? password : undefined,
         authType === 'key' ? keyPath.trim() : undefined
       );
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (_) { /* ignore */ }
+    } catch (e) {
+      setError(String(e));
+    }
   };
+
+  const loadSavedCredential = useCallback(async () => {
+    const h = host.trim();
+    if (!h) return;
+    try {
+      const cred = await neurodeckApi.ssh.getCredential(h);
+      if (cred.user && !user) setUser(cred.user);
+      if (cred.key_path && !keyPath) {
+        setKeyPath(cred.key_path);
+        setAuthType('key');
+      }
+    } catch (_) {
+      // No saved credential is fine.
+    }
+  }, [host, user, keyPath]);
+
+  useEffect(() => {
+    const t = setTimeout(() => void loadSavedCredential(), 300);
+    return () => clearTimeout(t);
+  }, [loadSavedCredential]);
+
+  const connect = () => {
+    const h = host.trim();
+    const u = user.trim();
+    const p = parseInt(port, 10);
+    if (!h || !u || Number.isNaN(p)) {
+      setError('Host, user, and port are required.');
+      return;
+    }
+    setError(null);
+    setConnectedConfig({
+      host: h,
+      port: p,
+      user: u,
+      authType,
+      password: authType === 'password' ? password : undefined,
+      keyPath: authType === 'key' ? keyPath.trim() : undefined,
+    });
+  };
+
+  const disconnect = () => {
+    setConnectedConfig(null);
+  };
+
+  const clearForm = () => {
+    setHost('');
+    setPort('22');
+    setUser('');
+    setPassword('');
+    setKeyPath('');
+    setAuthType('password');
+    setError(null);
+  };
+
+  const inputClass =
+    'w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40';
 
   return (
     <div className="ssh-container flex h-full flex-col">
@@ -47,7 +109,7 @@ export function SSHView() {
             onChange={(e) => setHost(e.target.value)}
             placeholder="Host"
             aria-label="SSH host"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+            className={`${inputClass} flex-1`}
           />
           <input
             type="text"
@@ -55,7 +117,7 @@ export function SSHView() {
             onChange={(e) => setPort(e.target.value)}
             placeholder="Port"
             aria-label="SSH port"
-            className="w-20 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+            className={`${inputClass} w-20`}
           />
         </div>
 
@@ -65,7 +127,7 @@ export function SSHView() {
           onChange={(e) => setUser(e.target.value)}
           placeholder="Username"
           aria-label="SSH username"
-          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+          className={inputClass}
         />
 
         <div className="flex gap-2">
@@ -94,7 +156,7 @@ export function SSHView() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             aria-label="SSH password"
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+            className={inputClass}
           />
         ) : (
           <input
@@ -103,22 +165,54 @@ export function SSHView() {
             onChange={(e) => setKeyPath(e.target.value)}
             placeholder="~/.ssh/id_rsa"
             aria-label="SSH key path"
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+            className={inputClass}
           />
         )}
 
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            {error}
+          </div>
+        )}
+
         <div className="flex gap-2 pt-2">
-          <button type="button" onClick={saveCredential} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Save className="h-4 w-4" /> {saved ? 'Saved!' : 'Save Profile'}
+          <button
+            type="button"
+            onClick={connect}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          >
+            <Plug className="h-4 w-4" aria-hidden="true" /> Connect
           </button>
-          <button type="button" onClick={() => { setHost(''); setUser(''); setPassword(''); setKeyPath(''); }} aria-label="Clear SSH credentials" className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+          <button
+            type="button"
+            onClick={saveCredential}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
+          >
+            <Save className="h-4 w-4" aria-hidden="true" /> {saved ? 'Saved!' : 'Save Profile'}
+          </button>
+          <button
+            type="button"
+            onClick={clearForm}
+            aria-label="Clear SSH credentials"
+            className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+          >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
-        <p className="text-sm text-nd-text-muted/70">Full SSH terminal integration coming in next build.</p>
+      <div className="mt-4 min-h-0 flex-1">
+        {connectedConfig ? (
+          <SSHTerminal config={connectedConfig} onClose={disconnect} />
+        ) : (
+          <div className="flex h-full flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
+            <div className="text-center">
+              <Server className="mx-auto h-8 w-8 text-nd-text-muted/40" aria-hidden="true" />
+              <p className="mt-2 text-sm text-nd-text-muted/70">Enter connection details and click Connect.</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 use crate::pty_manager::PtyState;
 use serde::Serialize;
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
@@ -87,33 +86,58 @@ fn resolve_command_path(command: &str) -> Option<String> {
         return None;
     }
 
-    if cfg!(target_os = "windows") {
-        let output = Command::new("where").arg(command).output().ok()?;
-        if !output.status.success() {
-            return None;
-        }
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        stdout
-            .lines()
-            .map(str::trim)
-            .find(|line| !line.is_empty())
-            .map(|line| line.to_string())
+    let is_windows = cfg!(target_os = "windows");
+    let extensions = if is_windows {
+        vec!["", ".exe", ".cmd", ".bat", ".com"]
     } else {
-        let output = Command::new("sh")
-            .arg("-lc")
-            .arg(format!("command -v {} 2>/dev/null", command))
-            .output()
-            .ok()?;
-        if !output.status.success() {
-            return None;
+        vec![""]
+    };
+
+    let check_file = |path: PathBuf| -> Option<String> {
+        if path.is_file() {
+            return Some(path.to_string_lossy().to_string());
         }
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        stdout
-            .lines()
-            .map(str::trim)
-            .find(|line| !line.is_empty())
-            .map(|line| line.to_string())
+        None
+    };
+
+    let path_buf = PathBuf::from(command);
+
+    if path_buf.is_absolute() || command.contains('/') || (is_windows && command.contains('\\')) {
+        for ext in &extensions {
+            let mut test_path = path_buf.clone();
+            if !ext.is_empty() {
+                if let Some(file_name) = path_buf.file_name() {
+                    let name_str = file_name.to_string_lossy();
+                    if !name_str.to_lowercase().ends_with(ext) {
+                        let mut new_name = name_str.into_owned();
+                        new_name.push_str(ext);
+                        test_path.set_file_name(new_name);
+                    }
+                }
+            }
+            if let Some(resolved) = check_file(test_path) {
+                return Some(resolved);
+            }
+        }
+        return None;
     }
+
+    if let Ok(env_path) = std::env::var("PATH") {
+        for path in std::env::split_paths(&env_path) {
+            for ext in &extensions {
+                let mut file_name = command.to_string();
+                if !ext.is_empty() && !file_name.to_lowercase().ends_with(ext) {
+                    file_name.push_str(ext);
+                }
+                let full_path = path.join(&file_name);
+                if let Some(resolved) = check_file(full_path) {
+                    return Some(resolved);
+                }
+            }
+        }
+    }
+
+    None
 }
 
 fn probe(name: &str, path: &str) -> TerminalEnvironmentProbe {

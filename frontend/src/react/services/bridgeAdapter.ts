@@ -27,6 +27,7 @@ import type {
   SessionExportResponse,
   SaveSessionResponse,
   DiagnosticsBundleResponse,
+  CredentialStatus,
   CliCommandDef,
   ToolStatus,
   StatusBarState,
@@ -1073,12 +1074,18 @@ const diagnostics = {
       return await bridgeInvoke<SecurityReport>("security_report");
     } catch (_) {
       return {
-        checkedAt: new Date().toISOString(),
-        ipcPayloadLimitBytes: 0,
-        aiProviders: ["offline-draft"],
-        rendererPolicy: { mode: "bridge" },
-        guardrails: ["Bridge security report unavailable."],
+        keychain_ok: false,
+        safe_mode: false,
+        agent_workspace_only: false,
+        permission_registry_count: 0,
       };
+    }
+  },
+  async getCredentialStatus(): Promise<CredentialStatus> {
+    try {
+      return await bridgeInvoke<CredentialStatus>("get_credential_status");
+    } catch (_) {
+      return { gemini: false, huggingface: false, openai_compat: false };
     }
   },
   async exportBundle(): Promise<DiagnosticsBundleResponse> {
@@ -1904,6 +1911,10 @@ const docs = {
     const res = await bridgeInvoke<{ status: string }>("index_directory", { path });
     return { success: res.status === "indexing", count: undefined };
   },
+  async getDefaultPath() {
+    const res = await bridgeInvoke<{ path: string; exists: boolean }>("get_default_docs_path", {});
+    return res;
+  },
   async getIndexedDocs() {
     const paths = await bridgeInvoke<string[]>("get_indexed_docs");
     return {
@@ -2000,23 +2011,42 @@ const apiLab = {
   },
 };
 
+export type WorkflowDoc = {
+  name: string;
+  nodes: Array<{ id: string; type: string; config?: Record<string, unknown> }>;
+  edges: Array<{ id: string; from: string; fromPort?: string; to: string }>;
+};
+
+export type WorkflowSummary = { name: string };
+
 /* ── Workflow / Orchestrator ─────────────────────────────────────────────── */
 
 const workflow = {
-  async list() {
-    return bridgeInvoke<Array<{ id: string; name: string }>>("list_workflows");
+  async list(): Promise<WorkflowSummary[]> {
+    const res = await bridgeInvoke<{ workflows: string[] }>("list_workflows");
+    return (res.workflows ?? []).map((name) => ({ name }));
   },
-  async load(id: string) {
-    return bridgeInvoke<{ workflow: unknown }>("load_workflow", { id });
+  async load(name: string): Promise<WorkflowDoc> {
+    const res = await bridgeInvoke<{ name: string; json: string }>("load_workflow", { name });
+    return JSON.parse(typeof res.json === "string" ? res.json : "{}") as WorkflowDoc;
   },
-  async save(id: string, name: string, workflow: unknown) {
-    return bridgeInvoke<{ success: boolean }>("save_workflow", { id, name, workflow });
+  async save(name: string, doc: WorkflowDoc): Promise<{ status: string; name: string }> {
+    return bridgeInvoke<{ status: string; name: string }>("save_workflow", {
+      name,
+      json: JSON.stringify(doc),
+    });
   },
-  async delete(id: string) {
-    return bridgeInvoke<{ success: boolean }>("delete_workflow", { id });
+  async delete(name: string): Promise<{ status: string; name: string }> {
+    return bridgeInvoke<{ status: string; name: string }>("delete_workflow", { name });
   },
-  async run(id: string, inputs?: Record<string, unknown>) {
-    return bridgeInvoke<{ run_id: string; status: string }>("workflow_run", { id, inputs });
+  async run(name: string): Promise<{ status: string; name: string }> {
+    return bridgeInvoke<{ status: string; name: string }>("workflow_run", { name });
+  },
+  async importJson(json: string): Promise<{ status: string; name: string }> {
+    return bridgeInvoke<{ status: string; name: string }>("workflow_import", { json });
+  },
+  async export(name: string): Promise<{ name: string; ndwf: string }> {
+    return bridgeInvoke<{ name: string; ndwf: string }>("workflow_export", { name });
   },
 };
 
@@ -2046,7 +2076,7 @@ const ssh = {
     });
   },
   async getCredential(host: string) {
-    return bridgeInvoke<{ user?: string; has_key?: boolean }>("get_ssh_credential", { host });
+    return bridgeInvoke<{ user?: string; has_key?: boolean; key_path?: string }>("get_ssh_credential", { host });
   },
 };
 

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 256" width="100%" height="100%">
+  <!-- Background with dark glass tone -->
+  <rect width="1024" height="256" fill="#0A0D10" stroke="#1F2937" stroke-width="2"/>
+  
+  <style>
+    .brand-title {
+      font-family: 'Orbitron', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 80px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      fill: #5EEBFF;
+      text-anchor: middle;
+    }
+    .brand-tagline {
+      font-family: 'Inter', 'JetBrains Mono', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.45em;
+      fill: #7CFFB2;
+      text-anchor: middle;
+    }
+  </style>
+
+  <!-- Glowing neon shadow behind text -->
+  <text x="518" y="132" class="brand-title" fill="#5EEBFF" filter="url(#glow)" opacity="0.65">NEURODECK</text>
+
+  <!-- Main Wordmark Title -->
+  <text x="512" y="128" class="brand-title">NEURODECK</text>
+
+  <!-- Tagline underneath -->
+  <text x="512" y="186" class="brand-tagline">AI-NATIVE TERMINAL OS</text>
+
+  <!-- Gradients & Filters Definitions -->
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+</svg>

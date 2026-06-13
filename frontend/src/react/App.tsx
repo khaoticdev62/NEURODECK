@@ -1041,7 +1041,7 @@ export default function App() {
         <input
           ref={shortcutSinkRef}
           tabIndex={0}
-          aria-hidden="true"
+          aria-label="Shortcut listener"
           className="pointer-events-none absolute left-0 top-0 h-2 w-2 opacity-0"
           onKeyDown={(event) => {
             const metaK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
@@ -1079,15 +1079,6 @@ export default function App() {
         />
         {/* Fixed background layers — registry-backed theme/wallpaper host */}
         <div className="app-background-container" aria-hidden="true">
-          <img
-            id="app-background-image"
-            className="app-background-image"
-            alt=""
-            src=""
-            style={{ objectFit: "cover", width: "100%", height: "100%" }}
-          />
-          <canvas id="app-background-canvas" className="app-background-canvas" />
-          <div id="app-background-css" className="app-background-css" />
           <LiveWallpaperHost />
         </div>
         <TitleBar
@@ -1270,7 +1261,7 @@ export default function App() {
               aria-modal="true"
               aria-labelledby="settings-dialog-title"
               tabIndex={-1}
-              className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
+              className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
               data-settings-theme={settingsPanel}
               data-controller-zone="dialog"
               onMouseDown={(e) => e.stopPropagation()}

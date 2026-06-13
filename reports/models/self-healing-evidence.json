@@ -1,6 +1,37 @@
 {
-  "version": "1.0.0",
-  "generatedAt": "2026-06-11T19:10:00Z",
-  "note": "Initial baseline before implementation. Recovery events will be recorded by connectionSelfHealingService after implementation.",
-  "events": []
+  "events": [
+    {
+      "action": "policy_block",
+      "allowed": false,
+      "id": "ec30da54-522c-49f6-b1ac-534fef761c7f",
+      "model_id": "llama3",
+      "reason": "Model not found in registry",
+      "runtime_id": "ollama",
+      "state": "blocked",
+      "timestamp": "2026-06-13T01:14:42.836126300+00:00"
+    },
+    {
+      "action": "policy_block",
+      "allowed": false,
+      "id": "886f541d-81d7-4e38-8166-8164371e8140",
+      "model_id": "llama3",
+      "reason": "Model not found in registry",
+      "runtime_id": "ollama",
+      "state": "blocked",
+      "timestamp": "2026-06-13T01:15:26.691030900+00:00"
+    },
+    {
+      "action": "policy_block",
+      "allowed": false,
+      "id": "1d845c15-660d-4222-9173-fe65a970901e",
+      "model_id": "llama3",
+      "reason": "Model not found in registry",
+      "runtime_id": "ollama",
+      "state": "blocked",
+      "timestamp": "2026-06-13T01:51:18.911308700+00:00"
+    }
+  ],
+  "generatedAt": "2026-06-13T01:51:18.911889500+00:00",
+  "note": "Recovery events recorded by model_recovery_service.",
+  "version": "1.0.0"
 }

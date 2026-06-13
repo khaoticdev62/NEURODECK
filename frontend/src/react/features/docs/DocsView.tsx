@@ -37,16 +37,50 @@ export function DocsView() {
           ? `Loaded ${nextDocs.length} indexed doc${nextDocs.length === 1 ? '' : 's'}.`
           : 'No documents are indexed yet. Use Index to add a folder.',
       );
+      return nextDocs;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load indexed docs.');
       setStatus('Refresh failed.');
+      return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDocs();
+    let mounted = true;
+    async function init() {
+      // Load any already-indexed docs first
+      const currentDocs = await loadDocs();
+      if (!mounted) return;
+
+      // Discover the default docs folder from the sidecar
+      try {
+        const defaultPath = await neurodeckApi.docs.getDefaultPath();
+        if (!mounted) return;
+        if (defaultPath.exists) {
+          setIndexPath(defaultPath.path);
+          // If nothing is indexed yet, automatically index the default folder
+          if (currentDocs.length === 0) {
+            setStatus(`Indexing default docs folder: ${defaultPath.path}...`);
+            setLoading(true);
+            try {
+              await neurodeckApi.docs.indexDirectory(defaultPath.path);
+              await loadDocs();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Failed to index default docs folder.");
+              setStatus("Default docs folder index failed.");
+            } finally {
+              if (mounted) setLoading(false);
+            }
+          }
+        }
+      } catch (_) {
+        // Default folder discovery is optional; leave the input empty
+      }
+    }
+    void init();
+    return () => { mounted = false; };
   }, [loadDocs]);
 
   const search = async () => {

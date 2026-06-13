@@ -35,7 +35,10 @@
     "ci:security": "bash scripts/kfms/kfms-ci.sh security",
     "ci:watch": "bash scripts/kfms/kfms-ci.sh watch",
     "ci:status": "bash scripts/kfms/kfms-ci.sh status",
-    "assets": "python assets/brand/generate_assets.py",
+     "assets": "python assets/brand/generate_assets.py",
+    "brand:generate": "node scripts/generate-brand-assets.mjs",
+    "brand:validate": "node scripts/validate-brand-assets.mjs",
+    "brand:build": "npm run brand:generate && npm run brand:validate",
     "setup": "npm install && echo \"\\nAll JS/Node deps installed. Next: uv sync (Python tooling) — then set GEMINI_API_KEY and run: npm run dev\"",
     "quality:fallow:audit": "node scripts/run-fallow-if-available.js audit",
     "quality:fallow:json": "node scripts/run-fallow-if-available.js audit --format json",
@@ -138,6 +141,7 @@
   "devDependencies": {
     "electron": "^36.0.0",
     "electron-builder": "^25.0.0",
+    "sharp": "^0.35.1",
     "tsx": "^4.19.0",
     "vitest": "^4.1.7"
   },
