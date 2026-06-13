@@ -72,8 +72,8 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
                 <div key={provider.provider} className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     {provider.available
-                      ? <CheckCircle2 className="h-4 w-4 text-nd-success" />
-                      : <Activity className="h-4 w-4 text-nd-warning" />}
+                      ? <CheckCircle2 className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                      : <Activity className="h-4 w-4 text-nd-warning" aria-hidden="true" />}
                     <span className="text-xs text-nd-text/80">{provider.provider}</span>
                   </div>
                   <Badge tone={provider.available ? 'success' : 'neutral'}>

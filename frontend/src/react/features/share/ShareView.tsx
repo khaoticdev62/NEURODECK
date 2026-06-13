@@ -47,8 +47,11 @@ export function ShareView() {
       await neurodeckApi.share.startTransfer(filePath.trim());
       setFilePath('');
       await load();
-    } catch (_) { /* ignore */ }
-    setLoading(false);
+    } catch (_) {
+      // Transfer errors surface in the transfers list from the backend
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +61,6 @@ export function ShareView() {
           <Share2 className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
-          <div className="share-view-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
           <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P, SFTP, FTP transfers</p>
         </div>
@@ -68,11 +70,11 @@ export function ShareView() {
       </div>
 
       {/* Inner Tabs */}
-      <div className="share-inner-tabs mb-4">
+      <div role="tablist" aria-label="Share panels" className="share-inner-tabs mb-4">
         <button
           type="button"
+          role="tab"
           className={`share-inner-tab ${activePanel === 'lan' ? 'active' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40`}
-          data-panel="lan"
           aria-selected={activePanel === 'lan'}
           onClick={() => setActivePanel('lan')}
         >
@@ -80,8 +82,8 @@ export function ShareView() {
         </button>
         <button
           type="button"
+          role="tab"
           className={`share-inner-tab ${activePanel === 'torrent' ? 'active' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40`}
-          data-panel="torrent"
           aria-selected={activePanel === 'torrent'}
           onClick={() => setActivePanel('torrent')}
         >

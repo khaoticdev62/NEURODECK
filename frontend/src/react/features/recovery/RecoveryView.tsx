@@ -32,7 +32,7 @@ export function RecoveryView({
             {hasError ? (
               <div className="rounded-2xl border border-nd-danger/25 bg-nd-danger/[0.06] p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-danger" />
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-danger" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-nd-text">{state.lastError!.title}</p>
                     <p className="mt-1 text-sm leading-6 text-nd-text-muted">
@@ -64,7 +64,7 @@ export function RecoveryView({
               </div>
             ) : (
               <div className="flex flex-col items-center py-8 text-center">
-                <CheckCircle2 className="h-12 w-12 text-nd-success" />
+                <CheckCircle2 className="h-12 w-12 text-nd-success" aria-hidden="true" />
                 <p className="mt-3 font-semibold text-nd-text">No active errors</p>
                 <p className="mt-1 text-sm text-nd-text-muted">
                   All systems are operating normally.
